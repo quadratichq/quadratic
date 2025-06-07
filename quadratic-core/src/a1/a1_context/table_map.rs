@@ -164,6 +164,13 @@ impl TableMap {
             .collect()
     }
 
+    /// Finds a table by position.
+    pub fn table_at(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
+        self.sheet_pos_to_table
+            .get(&sheet_pos)
+            .and_then(|table_name| self.tables.get(table_name))
+    }
+
     /// Inserts a test table into the table map.
     ///
     /// if all_columns is None, then it uses visible_columns.

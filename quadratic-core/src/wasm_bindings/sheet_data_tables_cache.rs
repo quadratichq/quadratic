@@ -1,6 +1,6 @@
-// This is wasm_bindgen code that provides a JavaScript interface to the SheetDataTablesCache.
-// This is meant for querying only, not for modifying the cache.
-// Cache modifications should be done through the SheetDataTables struct only.
+//! This is wasm_bindgen code that provides a JavaScript interface to the SheetDataTablesCache.
+//! This is meant for querying only, not for modifying the cache.
+//! Cache modifications should be done through the SheetDataTables struct only.
 
 use wasm_bindgen::prelude::*;
 

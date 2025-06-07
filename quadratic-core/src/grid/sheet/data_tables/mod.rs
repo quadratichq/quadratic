@@ -104,6 +104,8 @@ impl SheetDataTables {
     /// Updates mutual spill and cache for the data table at the given index and position.
     ///
     /// This function only updates spill due to another data table, not due to cell values in columns.
+    ///
+    /// Returns set of dirty rectangle
     fn update_spill_and_cache(
         &mut self,
         index: usize,
@@ -127,13 +129,9 @@ impl SheetDataTables {
                     .map(|(rect, _)| rect)
                     .collect::<Vec<_>>();
                 for rect in rects {
-                    self.cache.multi_cell_tables.set_rect(
-                        rect.min.x,
-                        rect.min.y,
-                        Some(rect.max.x),
-                        Some(rect.max.y),
-                        None,
-                    );
+                    self.cache
+                        .multi_cell_tables
+                        .set_rect(rect.min.x, rect.min.y, rect.max.x, rect.max.y, None);
                 }
             }
 
@@ -173,9 +171,9 @@ impl SheetDataTables {
                 self.cache.multi_cell_tables.set_rect(
                     new_spilled_output_rect.min.x,
                     new_spilled_output_rect.min.y,
-                    Some(new_spilled_output_rect.max.x),
-                    Some(new_spilled_output_rect.max.y),
-                    Some(*pos),
+                    new_spilled_output_rect.max.x,
+                    new_spilled_output_rect.max.y,
+                    Some((pos, data_table)),
                 );
             }
 

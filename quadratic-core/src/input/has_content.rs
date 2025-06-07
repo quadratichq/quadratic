@@ -1,0 +1,164 @@
+//! Helper functions for getting data from the caches.
+
+use crate::a1::{A1Context, TableMapEntry};
+use crate::grid::sheet::data_tables::cache::SheetDataTablesCache;
+use crate::wasm_bindings::sheet_content_cache::SheetContentCache;
+use crate::{Rect, SheetPos};
+
+/// Gets the Table that intersects a given position.
+pub fn table_at<'a>(
+    sheet_pos: SheetPos,
+    table_cache: &SheetDataTablesCache,
+    context: &'a A1Context,
+) -> Option<&'a TableMapEntry> {
+    let table_pos = match table_cache.multi_cell_tables.get(sheet_pos.into()) {
+        Some(pos) => pos.to_sheet_pos(sheet_pos.sheet_id),
+        None if table_cache
+            .single_cell_tables
+            .get(sheet_pos.into())
+            .is_some() =>
+        {
+            sheet_pos
+        }
+        _ => return None,
+    };
+
+    context.table_map.table_at(table_pos)
+}
+
+/// Determine whether there is a chart at a given position.
+pub fn chart_at(
+    sheet_pos: SheetPos,
+    table_cache: &SheetDataTablesCache,
+    context: &A1Context,
+) -> Option<Rect> {
+    let table = table_at(sheet_pos, table_cache, context)?;
+    if table.is_html_image {
+        Some(table.bounds)
+    } else {
+        None
+    }
+}
+
+/// Returns the bounds of the table header at a given position.
+pub fn table_header_at(
+    sheet_pos: SheetPos,
+    table_cache: &SheetDataTablesCache,
+    context: &A1Context,
+) -> Option<Rect> {
+    let table = table_at(sheet_pos, table_cache, context)?;
+    if table.show_name && sheet_pos.y == table.bounds.min.y {
+        Some(table.bounds)
+    } else {
+        None
+    }
+}
+
+/// Returns true if the cell is at the horizontal edge of a table.
+pub(crate) fn is_at_table_edge_col(
+    sheet_pos: SheetPos,
+    table_cache: &SheetDataTablesCache,
+    context: &A1Context,
+) -> bool {
+    if let Some(table) = table_at(sheet_pos, table_cache, context) {
+        if table.bounds.width() == 1 {
+            return false;
+        }
+        table.bounds.min.x == sheet_pos.x || table.bounds.max.x == sheet_pos.x
+    } else {
+        false
+    }
+}
+
+/// Returns true if the cell is at the vertical edge of a table.
+pub(crate) fn is_at_table_edge_row(
+    sheet_pos: SheetPos,
+    table_cache: &SheetDataTablesCache,
+    context: &A1Context,
+) -> bool {
+    if let Some(table) = table_at(sheet_pos, table_cache, context) {
+        // we handle charts separately in find_next_*;
+        // we ignore single_value tables
+        if table.bounds.height() == 1 {
+            return false;
+        }
+        if table.bounds.min.y == sheet_pos.y {
+            // table name, or column header if no table name, or top of data if no column header or table name
+            return true;
+        }
+
+        let show_name = table.show_name;
+        let show_columns = table.show_columns;
+
+        if table.bounds.min.y + (if show_name { 1 } else { 0 }) + (if show_columns { 1 } else { 0 })
+            == sheet_pos.y
+        {
+            // ignore column header--just go to first line of data or table name
+            return true;
+        } else if table.bounds.max.y == sheet_pos.y {
+            return true;
+        }
+    }
+    false
+}
+
+/// Uses the caches to return the bounds of the row or None if the row is empty
+/// of content.
+pub(crate) fn row_bounds(
+    row: i64,
+    content_cache: &SheetContentCache,
+    table_cache: &SheetDataTablesCache,
+) -> Option<(i64, i64)> {
+    let content_row_bounds = content_cache.row_bounds(row);
+    let table_row_bounds = table_cache.row_bounds(row);
+
+    if let (Some(content_row_bounds), Some(table_row_bounds)) =
+        (content_row_bounds, table_row_bounds)
+    {
+        Some((
+            content_row_bounds.0.min(table_row_bounds.0),
+            content_row_bounds.1.max(table_row_bounds.1),
+        ))
+    } else if let Some(content_row_bounds) = content_row_bounds {
+        Some(content_row_bounds)
+    } else if let Some(table_row_bounds) = table_row_bounds {
+        Some(table_row_bounds)
+    } else {
+        None
+    }
+}
+
+/// Uses the caches to return the bounds of the column or None if the column is
+/// empty of content.
+pub(crate) fn column_bounds(
+    column: i64,
+    content_cache: &SheetContentCache,
+    table_cache: &SheetDataTablesCache,
+) -> Option<(i64, i64)> {
+    let content_column_bounds = content_cache.column_bounds(column);
+    let table_column_bounds = table_cache.column_bounds(column);
+
+    if let (Some(content_column_bounds), Some(table_column_bounds)) =
+        (content_column_bounds, table_column_bounds)
+    {
+        Some((
+            content_column_bounds.0.min(table_column_bounds.0),
+            content_column_bounds.1.max(table_column_bounds.1),
+        ))
+    } else if let Some(content_column_bounds) = content_column_bounds {
+        Some(content_column_bounds)
+    } else if let Some(table_column_bounds) = table_column_bounds {
+        Some(table_column_bounds)
+    } else {
+        None
+    }
+}
+
+/// Returns true if the cell has content (either on the sheet or in a table).
+pub(crate) fn has_content_ignore_blank_table(
+    pos: SheetPos,
+    content_cache: &SheetContentCache,
+    table_cache: &SheetDataTablesCache,
+) -> bool {
+    todo!()
+}

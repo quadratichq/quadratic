@@ -121,6 +121,7 @@ extern "C" {
     pub fn jsA1Context(context: Vec<u8> /* A1Context */);
 
     pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */);
+    pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
 }
 
 #[cfg(test)]
@@ -552,4 +553,10 @@ pub fn jsA1Context(context: Vec<u8> /* A1Context */) {
 #[allow(non_snake_case)]
 pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */) {
     js_call("jsSendDataTablesCache", format!("{},{:?}", sheet_id, cache));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */) {
+    js_call("jsSendContentCache", format!("{},{:?}", sheet_id, cache));
 }

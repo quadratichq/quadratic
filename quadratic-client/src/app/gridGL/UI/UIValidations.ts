@@ -78,8 +78,8 @@ export class UIValidations extends Container<SpecialSprite> {
       return;
     }
 
-    const offsets = sheets.sheet.offsets;
-    const cellsLabels = pixiApp.cellsSheets.current?.cellsLabels;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
     for (let row = intersection.top; row < intersection.bottom; row++) {
       const yPlacement = offsets.getRowPlacement(row);
       const y = yPlacement.position;
@@ -89,7 +89,7 @@ export class UIValidations extends Container<SpecialSprite> {
         const key = `${column},${row}`;
         // Check if UIValidation has added content to this cell or if
         // CellsTextHash has rendered content in this cell.
-        if (!this.occupied.has(key) && !cellsLabels?.hasCell(column, row)) {
+        if (!this.occupied.has(key) && !sheet.hasContent(column, row)) {
           if (type === 'checkbox') {
             this.addChild(
               drawCheckbox({ x: x + xPlacement.size / 2, y: y + yPlacement.size / 2, column, row, value: false })

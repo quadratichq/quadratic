@@ -123,20 +123,6 @@ export interface CoreClientGetCodeCell {
   id: number;
 }
 
-export interface ClientCoreCellHasContent {
-  type: 'clientCoreCellHasContent';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
-}
-
-export interface CoreClientCellHasContent {
-  type: 'coreClientCellHasContent';
-  hasContent: boolean;
-  id: number;
-}
-
 export interface ClientCoreGetEditCell {
   type: 'clientCoreGetEditCell';
   sheetId: string;
@@ -1232,10 +1218,15 @@ export interface CoreClientDataTablesCache {
   dataTablesCache: Uint8Array;
 }
 
+export interface CoreClientContentCache {
+  type: 'coreClientContentCache';
+  sheetId: string;
+  contentCache: Uint8Array;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
-  | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
   | ClientCoreSetCellValues
@@ -1333,7 +1324,6 @@ export type ClientCoreMessage =
 export type CoreClientMessage =
   | CoreClientGetCodeCell
   | CoreClientGetEditCell
-  | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
@@ -1401,4 +1391,5 @@ export type CoreClientMessage =
   | CoreClientSetFormats
   | CoreClientGetAIFormats
   | CoreClientGridToDataTable
-  | CoreClientDataTablesCache;
+  | CoreClientDataTablesCache
+  | CoreClientContentCache;

@@ -17,7 +17,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import type { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
+import type { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
@@ -150,6 +150,7 @@ interface EventTypes {
   bitmapFontsLoaded: () => void;
 
   dataTablesCache: (sheetId: string, dataTablesCache: SheetDataTablesCache) => void;
+  contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();
