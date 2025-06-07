@@ -4,6 +4,7 @@ import type {
   AIModelKey,
   AIRequestBody,
   AnthropicModelKey,
+  BasetenModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
   OpenAIModelKey,
@@ -32,6 +33,10 @@ export function isAnthropicModel(modelKey: AIModelKey): modelKey is AnthropicMod
 
 export function isXAIModel(modelKey: AIModelKey): modelKey is XAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'xai';
+}
+
+export function isBasetenModel(modelKey: AIModelKey): modelKey is BasetenModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'baseten';
 }
 
 export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey {
