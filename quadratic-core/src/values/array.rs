@@ -675,11 +675,6 @@ impl Array {
         )
     }
 
-    /// Iterate over the values in the array
-    pub fn values_iter(&self) -> impl Iterator<Item = &CellValue> {
-        self.values.iter()
-    }
-
     pub fn update_empty_values_cache(&mut self) {
         self.empty_values_cache = Some(EmptyValuesCache::from((
             &self.values,
