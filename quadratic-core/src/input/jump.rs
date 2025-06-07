@@ -775,6 +775,10 @@ mod tests {
             None,
         );
 
+        print_first_sheet(&gc);
+
         assert_jump_left(&gc, pos![sheet_id!E3], pos![D3]);
+        assert_jump_left(&gc, pos![sheet_id!D3], pos![B3]);
+        assert_jump_left(&gc, pos![sheet_id!B3], pos![A3]);
     }
 }
