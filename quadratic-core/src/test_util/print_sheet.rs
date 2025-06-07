@@ -107,22 +107,18 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
                 }
                 Some(CellValue::Import(import)) => import.to_string(),
                 _ => {
-                    let display_value = sheet.display_value(pos);
-                    if display_value.is_none()
-                        || display_value
-                            .as_ref()
-                            .is_some_and(|value| matches!(value, CellValue::Blank))
-                    {
-                        if sheet
-                            .data_table_that_contains(pos)
-                            .is_some_and(|(_, dt)| dt.is_html_or_image())
-                        {
-                            CellValue::Text("chart".to_string())
-                        } else {
-                            CellValue::Blank
+                    match sheet.display_value(pos) {
+                        None | Some(CellValue::Blank) => {
+                            if sheet
+                                .data_table_that_contains(pos)
+                                .is_some_and(|(_, dt)| dt.is_html_or_image())
+                            {
+                                CellValue::Text("chart".to_string())
+                            } else {
+                                CellValue::Blank
+                            }
                         }
-                    } else {
-                        display_value.unwrap()
+                        Some(display_value) => display_value,
                     }
                 }
                 .to_string(),
