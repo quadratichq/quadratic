@@ -202,13 +202,9 @@ mod tests {
 
         test_create_data_table_with_values(&mut gc, sheet_id, pos![2, 2], 3, 1, &["1", "", "3"]);
 
-        print_first_sheet(&gc);
-
         let sheet = gc.sheet(sheet_id);
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
 
-        dbg!(sheet_data_tables_cache);
-        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 4]));
         assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 4]));
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 4]));
     }
