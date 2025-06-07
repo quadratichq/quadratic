@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use smallvec::SmallVec;
 
-use crate::{CellValue, grid::Contiguous2D};
+use crate::{CellValue, Pos, grid::Contiguous2D};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 #[cfg_attr(feature = "js", wasm_bindgen)]
@@ -23,23 +23,24 @@ impl From<(&SmallVec<[CellValue; 1]>, usize)> for EmptyValuesCache {
             return Self::new();
         }
 
-        let mut cache = Contiguous2D::new();
-        let mut has_empty = false;
+        let mut empty = Vec::<Pos>::new();
         for (i, value) in values.iter().enumerate() {
-            let x = i % width;
-            let y = i / width;
-
             if value.is_blank_or_empty_string() {
-                has_empty = true;
-                cache.set((x + 1, y + 1).into(), Some(Some(true)));
-            } else {
-                cache.set((x + 1, y + 1).into(), Some(None));
+                let x = i % width;
+                let y = i / width;
+                empty.push((x + 1, y + 1).into());
             }
         }
 
         // if there are no empty cells, we don't need to store the cache
-        if !has_empty {
+        if empty.is_empty() {
             return Self::new();
+        }
+
+        let mut cache = Contiguous2D::new();
+        cache.set_rect(1, 1, None, None, Some(None));
+        for pos in empty {
+            cache.set(pos, Some(Some(true)));
         }
 
         Self { cache: Some(cache) }
