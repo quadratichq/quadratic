@@ -65,6 +65,11 @@ impl SheetDataTablesCache {
     /// Returns true if the cell has content, ignoring blank cells within a
     /// multi-cell data table.
     pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
+        dbg!(pos);
+        dbg!(self.multi_cell_tables.get(pos));
+        if self.multi_cell_tables.get(pos).is_some() {
+            dbg!(self.has_empty_value(pos));
+        }
         self.single_cell_tables.get(pos).is_some()
             || self
                 .multi_cell_tables

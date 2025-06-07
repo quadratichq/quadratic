@@ -396,7 +396,10 @@ pub fn jump_right(
 
 #[cfg(test)]
 mod tests {
-    use crate::{controller::GridController, grid::CodeCellLanguage, test_util::*};
+    use crate::{
+        controller::GridController, grid::CodeCellLanguage, input::has_content::row_bounds,
+        test_util::*,
+    };
 
     use super::*;
 
@@ -780,6 +783,11 @@ mod tests {
         );
 
         print_first_sheet(&gc);
+
+        let sheet = gc.sheet(sheet_id);
+        let content_cache = sheet.content_cache();
+        let table_cache = sheet.data_tables.cache_ref();
+        assert_eq!(row_bounds(3, &content_cache, &table_cache), Some((1, 5)));
 
         assert_jump_left(&gc, pos![sheet_id!F3], pos![E3]);
         assert_jump_left(&gc, pos![sheet_id!E3], pos![C3]);
