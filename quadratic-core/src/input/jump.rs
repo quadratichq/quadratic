@@ -1250,8 +1250,6 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context().clone();
 
-        print_first_sheet(&gc);
-
         assert_eq!(
             jump_left(
                 pos![sheet_id!H2],
@@ -1261,14 +1259,6 @@ mod tests {
             ),
             pos![G2]
         );
-
-        dbg!(sheet_data_tables_cache);
-
-        dbg!(has_content_ignore_blank_table(
-            pos![sheet_id!F2],
-            &content_cache,
-            sheet_data_tables_cache
-        ));
 
         assert_eq!(
             jump_left(
@@ -1369,6 +1359,8 @@ mod tests {
             6,
             &["1", "2", "", "", "5", "6"],
         );
+
+        print_first_sheet(&gc);
 
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();
