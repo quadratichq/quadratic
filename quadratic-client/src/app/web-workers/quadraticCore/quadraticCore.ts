@@ -45,6 +45,7 @@ import type {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
+import { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   ClientCoreCellHasContent,
@@ -147,9 +148,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientTransactionStart') {
       events.emit('transactionStart', e.data);
       return;
-    } else if (e.data.type === 'coreClientTransactionProgress') {
-      events.emit('transactionProgress', e.data);
-      return;
     } else if (e.data.type === 'coreClientTransactionEnd') {
       events.emit('transactionEnd', e.data);
       return;
@@ -208,10 +206,11 @@ class QuadraticCore {
       events.emit('a1Context', e.data.context);
       return;
     } else if (e.data.type === 'coreClientCoreError') {
+      if (debug) console.error('[quadraticCore] core error', e.data.from, e.data.error);
       events.emit('coreError', e.data.from, e.data.error);
-      if (debug) {
-        console.error('[quadraticCore] core error', e.data.from, e.data.error);
-      }
+      return;
+    } else if (e.data.type === 'coreClientDataTablesCache') {
+      events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
       return;
     }
 

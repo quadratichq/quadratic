@@ -13,7 +13,6 @@ import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selectio
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsHashValidationWarnings, RefRangeBounds } from '@/app/quadratic-core-types';
-import { A1SelectionToJsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { ValidationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -62,7 +61,7 @@ export class UIValidations extends Container<SpecialSprite> {
       if (v.selection.sheet_id.id !== sheets.current || !type) continue;
 
       try {
-        const jsSelection = A1SelectionToJsSelection(v.selection, sheets.a1Context);
+        const jsSelection = sheets.A1SelectionToJsSelection(v.selection);
         const infiniteRanges: RefRangeBounds[] = jsSelection.getInfiniteRefRangeBounds();
         infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
       } catch (e) {

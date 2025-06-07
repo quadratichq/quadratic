@@ -4,6 +4,7 @@
     "AABB",
     "acked",
     "actix",
+    "allocvec",
     "autoclean",
     "autoincrement",
     "AVERAGEIF",

@@ -1,6 +1,5 @@
 //! A table in the grid.
 
-import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { TableHeader } from '@/app/gridGL/cells/tables/TableHeader';
 import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
@@ -108,11 +107,7 @@ export class Table extends Container {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
 
-    if (
-      !this.codeCell.spill_error &&
-      // !this.codeCell.is_html_image &&
-      this.codeCell.show_name
-    ) {
+    if (!this.codeCell.spill_error && this.codeCell.show_name) {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y, this.codeCell.w, 1);
     } else {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
@@ -168,12 +163,14 @@ export class Table extends Container {
   hideActive() {
     this.activate(false);
     htmlCellsHandler.hideActive(this.codeCell);
+    this.header.updateSelection();
     pixiApp.setViewportDirty();
   }
 
   showActive() {
     this.activate(true);
     htmlCellsHandler.showActive(this.codeCell);
+    this.header.updateSelection();
     pixiApp.setViewportDirty();
   }
 
@@ -196,23 +193,11 @@ export class Table extends Container {
     return intersects.rectangleRectangle(new Rectangle(this.codeCell.x, this.codeCell.y, width, height), rectangle);
   };
 
-  // Checks whether the cursor is on the table
-  isCursorOnDataTable(): boolean {
-    const cursor = sheets.sheet.cursor.position;
-    if (this.codeCell.spill_error) {
-      return this.codeCell.x === cursor.x && this.codeCell.y === cursor.y;
-    }
-    return intersects.rectanglePoint(
-      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
-      cursor
-    );
-  }
-
   getTableNameBounds(ignoreOverHeadings = false): Rectangle | undefined {
     if (!this.codeCell.show_name) {
       return;
     }
-    const bounds = this.header.getTableNameBounds().clone();
+    const bounds = this.header.getTableNameBounds()?.clone();
     if (!ignoreOverHeadings && this.inOverHeadings) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       bounds.y = bounds.top;
@@ -221,7 +206,7 @@ export class Table extends Container {
   }
 
   // Gets the column header bounds
-  getColumnHeaderBounds(index: number): Rectangle {
+  getColumnHeaderBounds(index: number): Rectangle | undefined {
     return this.header.getColumnHeaderBounds(index);
   }
 
@@ -289,6 +274,7 @@ export class Table extends Container {
     return this.codeCell.language !== 'Import';
   };
 
+  // returns whether the table's output is 1x1
   isSingleValue = (): boolean => {
     return this.codeCell.w === 1 && this.codeCell.h === 1;
   };

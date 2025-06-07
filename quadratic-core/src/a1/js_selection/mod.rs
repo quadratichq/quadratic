@@ -7,8 +7,9 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     Pos, Rect, SheetRect,
-    a1::{A1Context, A1Selection},
+    a1::A1Selection,
     grid::{DataTable, Sheet, SheetId},
+    wasm_bindings::js_a1_context::JsA1Context,
 };
 
 pub mod create;
@@ -26,7 +27,6 @@ pub struct JsCoordinate {
 #[wasm_bindgen]
 pub struct JsSelection {
     selection: A1Selection,
-    context: A1Context,
 }
 
 impl From<Pos> for JsCoordinate {
@@ -40,21 +40,12 @@ impl From<Pos> for JsCoordinate {
 
 #[wasm_bindgen]
 impl JsSelection {
-    #[wasm_bindgen(js_name = "updateContext")]
-    pub fn update_context(&mut self, context: &[u8]) {
-        let Ok(context) = serde_json::from_slice(context) else {
-            dbgjs!("Unable to unwrap context in update_context");
-            return;
-        };
-        self.context = context;
-    }
-
     #[wasm_bindgen(js_name = "excludeCells")]
-    pub fn exclude_cells(&mut self, x0: u32, y0: u32, x1: u32, y1: u32) {
+    pub fn exclude_cells(&mut self, x0: u32, y0: u32, x1: u32, y1: u32, context: &JsA1Context) {
         self.selection.exclude_cells(
             Pos::new(x0 as i64, y0 as i64),
             Some(Pos::new(x1 as i64, y1 as i64)),
-            &self.context,
+            context.get_context(),
         );
     }
 
@@ -70,7 +61,53 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "hideColumn")]
-    pub fn hide_column(&mut self, table_name: String, column_name: String) {
-        self.context.hide_column(&table_name, &column_name);
+    pub fn hide_column(
+        &mut self,
+        _table_name: String,
+        _column_name: String,
+        _context: &JsA1Context,
+    ) {
+        // this should be removed
+        todo!();
+        // context.get_context().hide_column(&table_name, &column_name);
+    }
+
+    #[wasm_bindgen(js_name = "getTableNameFromPos")]
+    pub fn get_table_from_pos(
+        &self,
+        sheet_id: &str,
+        col: u32,
+        row: u32,
+        context: &JsA1Context,
+    ) -> Option<String> {
+        let Ok(sheet_id) = SheetId::from_str(sheet_id) else {
+            return None;
+        };
+        let pos = Pos::new(col as i64, row as i64);
+        let table = context
+            .get_context()
+            .table_from_pos(pos.to_sheet_pos(sheet_id));
+        table.map(|t| t.table_name.to_string())
+    }
+
+    #[wasm_bindgen(js_name = "selectionToSheetRect")]
+    pub fn selection_to_sheet_rect(
+        &self,
+        sheet_id: &str,
+        selection: &str,
+        context: &JsA1Context,
+    ) -> Result<String, String> {
+        let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
+        let selection = A1Selection::parse_a1(selection, sheet_id, context.get_context())
+            .map_err(|e| format!("Invalid selection: {e}"))?;
+        let range = selection
+            .ranges
+            .first()
+            .ok_or("Invalid selection: no ranges")?;
+        let rect = range
+            .to_rect(context.get_context())
+            .ok_or("Invalid selection: not a rectangle")?;
+        let sheet_rect = rect.to_sheet_rect(sheet_id);
+        serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())
     }
 }

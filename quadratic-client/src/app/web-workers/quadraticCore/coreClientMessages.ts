@@ -755,12 +755,6 @@ export interface CoreClientTransactionStart {
   transactionName: TransactionName;
 }
 
-export interface CoreClientTransactionProgress {
-  type: 'coreClientTransactionProgress';
-  transactionId: string;
-  remainingOperations: number;
-}
-
 export interface CoreClientTransactionEnd {
   type: 'coreClientTransactionEnd';
   transactionId: string;
@@ -1232,6 +1226,12 @@ export interface ClientCoreResizeAllRows {
   cursor: string;
 }
 
+export interface CoreClientDataTablesCache {
+  type: 'coreClientDataTablesCache';
+  sheetId: string;
+  dataTablesCache: Uint8Array;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1361,7 +1361,6 @@ export type CoreClientMessage =
   | CoreClientSheetBoundsUpdate
   | CoreClientImportProgress
   | CoreClientTransactionStart
-  | CoreClientTransactionProgress
   | CoreClientTransactionEnd
   | CoreClientUpdateCodeCells
   | CoreClientMultiplayerState
@@ -1401,4 +1400,5 @@ export type CoreClientMessage =
   | CoreClientGetAICells
   | CoreClientSetFormats
   | CoreClientGetAIFormats
-  | CoreClientGridToDataTable;
+  | CoreClientGridToDataTable
+  | CoreClientDataTablesCache;

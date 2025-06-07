@@ -31,7 +31,9 @@ export const CodeRunning = () => {
       if (current) {
         // we move the code run indicator to the start of the data if table ui is showing
         // todo: in case of the table, we should replace the code language indicator with this indicator
-        const table = pixiApp.cellsSheets.getById(current.sheetPos.sheetId)?.tables.getTableFromCell(current.sheetPos);
+        const table = pixiApp.cellsSheets
+          .getById(current.sheetPos.sheetId)
+          ?.tables.getTable(current.sheetPos.x, current.sheetPos.y);
         let y = current.sheetPos.y;
         if (table && table.codeCell.show_name) {
           y = table.codeCell.y + (table.codeCell.show_columns ? 2 : 1);

@@ -10,7 +10,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import { A1SelectionToJsSelection, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
+import { type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { v4 } from 'uuid';
@@ -67,8 +67,8 @@ export class Sheet {
   // Returns all validations that intersect with the given point.
   getValidation = (x: number, y: number): Validation[] | undefined => {
     return this.validations.filter((v) => {
-      const selection = A1SelectionToJsSelection(v.selection, this.sheets.a1Context);
-      return selection.contains(x, y);
+      const selection = this.sheets.A1SelectionToJsSelection(v.selection);
+      return selection.contains(x, y, this.sheets.jsA1Context);
     });
   };
 
@@ -89,12 +89,13 @@ export class Sheet {
     }
   };
 
-  updateSheetInfo(info: SheetInfo) {
+  updateSheetInfo = (info: SheetInfo) => {
     this.name = info.name;
     this.order = info.order;
     this.color = info.color ?? undefined;
+    this.offsets.free();
     this.offsets = SheetOffsetsWasm.load(info.offsets);
-  }
+  };
 
   //#endregion
 
