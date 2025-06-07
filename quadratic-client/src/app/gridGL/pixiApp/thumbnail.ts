@@ -1,6 +1,7 @@
 import { events } from '@/app/events/events';
 import { apiClient } from '@/shared/api/apiClient';
-import { Rectangle, Renderer } from 'pixi.js';
+import type { Renderer } from 'pixi.js';
+import { autoDetectRenderer, Rectangle } from 'pixi.js';
 import { debugShowFileIO } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
@@ -15,10 +16,9 @@ const TIME_FOR_IDLE = 1000;
 class Thumbnail {
   private lastUpdate = 0;
   private thumbnailDirty = false;
-  private renderer: Renderer;
+  private renderer?: Renderer;
 
   constructor() {
-    this.renderer = new Renderer({ width: imageWidth, height: imageHeight, antialias: true, background: 0xffffff });
     events.on('generateThumbnail', this.setThumbnailDirty);
   }
 
@@ -28,7 +28,7 @@ class Thumbnail {
 
   destroy() {
     events.off('generateThumbnail', this.setThumbnailDirty);
-    this.renderer.destroy(false);
+    this.renderer?.destroy(false);
   }
 
   rendererBusy() {
@@ -68,14 +68,24 @@ class Thumbnail {
 
   /** returns a dataURL to a copy of the selected cells */
   private async generate(): Promise<Blob | null> {
+    if (!this.renderer) {
+      this.renderer = await autoDetectRenderer({
+        antialias: true,
+        backgroundColor: 0xffffff,
+      });
+    }
+
+    this.renderer.resize(imageWidth, imageHeight);
+    this.renderer.canvas.width = imageWidth;
+    this.renderer.canvas.height = imageHeight;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
     await pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
     pixiApp.gridLines.update(rectangle, undefined, true);
-    this.renderer.render(pixiApp.viewportContents);
+    this.renderer.render({ container: pixiApp.viewportContents });
     pixiApp.cleanUpAfterCopying(true);
     pixiApp.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
-      this.renderer.view.toBlob?.((blob) => resolve(blob));
+      this.renderer!.canvas.toBlob?.((blob) => resolve(blob));
     });
   }
 }

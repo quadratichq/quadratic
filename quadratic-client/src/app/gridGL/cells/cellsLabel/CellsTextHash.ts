@@ -12,7 +12,6 @@
  */
 
 import { Bounds } from '@/app/grid/sheet/Bounds';
-import { CellsDrawRects } from '@/app/gridGL/cells/cellsLabel/CellsDrawRects';
 import { CellsTextHashSpecial } from '@/app/gridGL/cells/cellsLabel/CellsTextHashSpecial';
 import { CellsTextHashValidations } from '@/app/gridGL/cells/cellsLabel/CellsTextHashValidations';
 import { LabelMeshEntry } from '@/app/gridGL/cells/cellsLabel/LabelMeshEntry';
@@ -24,8 +23,8 @@ import type { DrawRects } from '@/app/shared/types/size';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import type { Graphics, Point, Renderer } from 'pixi.js';
-import { BitmapText, Container, Rectangle } from 'pixi.js';
+import type { Point, Renderer } from 'pixi.js';
+import { BitmapText, Container, Graphics, Rectangle } from 'pixi.js';
 
 // Draw hashed regions of cell glyphs (the text + text formatting)
 export class CellsTextHash extends Container {
@@ -59,8 +58,9 @@ export class CellsTextHash extends Container {
 
   links: Link[];
 
-  newDrawRects: DrawRects[];
-  drawRects: CellsDrawRects;
+  // these are used to add lines to text (eg, strikethrough)
+  newTextLines: DrawRects[];
+  textLines: Graphics;
 
   constructor(sheetId: string, hashX: number, hashY: number, viewRectangle?: Rectangle) {
     super();
@@ -77,8 +77,10 @@ export class CellsTextHash extends Container {
     this.content = new CellsTextHashContent();
     this.links = [];
 
-    this.newDrawRects = [];
-    this.drawRects = this.addChild(new CellsDrawRects());
+    this.newTextLines = [];
+    this.textLines = this.addChild(new Graphics());
+
+    this.onRender = this.updateUniforms;
 
     // we track the bounds of both the text and validations
     this.bounds = new Bounds();
@@ -88,11 +90,23 @@ export class CellsTextHash extends Container {
   clear() {
     this.entries.removeChildren();
     this.special.clear();
-    this.drawRects.clear();
+    this.textLines.clear();
   }
 
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
     this.newChildren.push(new LabelMeshEntry(message));
+  }
+
+  // updates the text lines
+  private updateTextLines() {
+    this.textLines.clear();
+    this.newTextLines.forEach(({ rects, tint }) => {
+      rects.forEach((rect) => {
+        this.textLines.rect(rect.x, rect.y, rect.width, rect.height);
+        this.textLines.fill({ color: tint });
+      });
+    });
+    this.newTextLines = [];
   }
 
   finalizeLabelMeshEntries(special?: RenderSpecial) {
@@ -100,8 +114,7 @@ export class CellsTextHash extends Container {
     this.newChildren.forEach((child) => this.entries.addChild(child));
     this.newChildren = [];
     this.special.update(special);
-    this.drawRects.update(this.newDrawRects);
-    this.newDrawRects = [];
+    this.updateTextLines();
   }
 
   updateHashBounds() {
@@ -125,26 +138,26 @@ export class CellsTextHash extends Container {
     this.visible = false;
   }
 
-  // overrides container's render function
-  render(renderer: Renderer) {
-    if (this.visible && this.worldAlpha > 0 && this.renderable) {
-      const { a, b, c, d } = this.transform.worldTransform;
+  // updates uniforms for all children before rendering
+  updateUniforms = (renderer: Renderer) => {
+    if (this.visible && this.getGlobalAlpha(true) > 0 && this.renderable) {
+      const { a, b, c, d } = this.worldTransform;
       const dx = Math.sqrt(a * a + b * b);
       const dy = Math.sqrt(c * c + d * d);
       const worldScale = (Math.abs(dx) + Math.abs(dy)) / 2;
       const resolution = renderer.resolution;
       const scale = worldScale * resolution;
       this.entries.children.forEach((child) => child.setUniforms(scale));
-      super.render(renderer);
     }
-  }
+  };
 
   drawDebugBox(g: Graphics, c: Container) {
     const screen = this.textBounds;
-    g.beginFill(this.debugColor, 0.25);
-    g.drawShape(screen);
-    g.endFill();
-    const text = c.addChild(new BitmapText(`${this.hashX},${this.hashY}`, { fontName: 'OpenSans', fontSize: 12 }));
+    g.rect(screen.x, screen.y, screen.width, screen.height);
+    g.fill({ color: this.debugColor, alpha: 0.25 });
+    const text = c.addChild(
+      new BitmapText({ text: `${this.hashX},${this.hashY}`, style: { fontFamily: 'OpenSans', fontSize: 12 } })
+    );
     text.tint = 0xff0000;
     text.position.set(screen.x, screen.y);
   }

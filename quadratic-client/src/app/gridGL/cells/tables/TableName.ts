@@ -41,10 +41,14 @@ export class TableName extends Container {
     super();
     this.table = table;
     this.background = this.addChild(new Graphics());
-    this.text = this.addChild(new BitmapText('', { fontSize: TABLE_NAME_FONT_SIZE, fontName: 'OpenSans-Bold' }));
+    this.text = this.addChild(
+      new BitmapText({ text: '', style: { fontFamily: 'OpenSans-Bold', fontSize: TABLE_NAME_FONT_SIZE } })
+    );
     this.symbol = this.addChild(new Sprite());
     if (table.codeCell.is_code) {
-      this.modified = this.addChild(new BitmapText('', { fontSize: TABLE_MODIFIED_FONT_SIZE, fontName: 'OpenSans' }));
+      this.modified = this.addChild(
+        new BitmapText({ text: '', style: { fontFamily: 'OpenSans', fontSize: TABLE_MODIFIED_FONT_SIZE } })
+      );
     }
     const dropdownWhiteIconTexture = Assets.get('dropdown-white-icon');
     this.dropdown = this.addChild(new Sprite(dropdownWhiteIconTexture));
@@ -68,9 +72,8 @@ export class TableName extends Container {
     this.backgroundWidth = this.table.tableBounds.width;
     this.background.clear();
     const color = this.table.active ? 'primary' : 'muted-foreground';
-    this.background.beginFill(getCSSVariableTint(color));
-    this.background.drawShape(new Rectangle(0, 0, this.backgroundWidth, this.h));
-    this.background.endFill();
+    this.background.rect(0, 0, this.backgroundWidth, this.h);
+    this.background.fill({ color: getCSSVariableTint(color) });
   };
 
   private drawSymbol = () => {
