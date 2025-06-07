@@ -208,4 +208,33 @@ mod tests {
         assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 4]));
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 4]));
     }
+
+    #[test]
+    fn test_blanks_within_code_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_code_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![2, 2],
+            6,
+            1,
+            &["1", "2", "", "", "5", "6"],
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        print_first_sheet(&gc);
+
+        dbg!(sheet_data_tables_cache);
+
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 2]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 2]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![5, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![6, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![7, 2]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![8, 2]));
+    }
 }

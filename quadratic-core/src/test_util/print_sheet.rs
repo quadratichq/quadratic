@@ -71,12 +71,12 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
             let cell_value = match display_cell_values {
                 true => sheet.cell_value(pos),
                 false => {
-                    if let Some((_, dt)) = sheet.data_table_that_contains(pos) {
+                    if let Some((pos, dt)) = sheet.data_table_that_contains(pos) {
                         if dt.is_html_or_image() {
                             Some(CellValue::Text("chart".to_string()))
                         } else {
                             Some(
-                                dt.cell_value_at(x as u32, y as u32)
+                                dt.cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
                                     .unwrap_or(CellValue::Blank),
                             )
                         }
@@ -113,15 +113,13 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
                             .as_ref()
                             .is_some_and(|value| matches!(value, CellValue::Blank))
                     {
-                        if let Some((_, dt)) = sheet.data_table_that_contains(pos) {
-                            if dt.is_html_or_image() {
-                                CellValue::Text("chart".to_string())
-                            } else {
-                                dt.cell_value_at(x as u32, y as u32)
-                                    .unwrap_or(CellValue::Blank)
-                            }
+                        if sheet
+                            .data_table_that_contains(pos)
+                            .is_some_and(|(_, dt)| dt.is_html_or_image())
+                        {
+                            CellValue::Text("chart".to_string())
                         } else {
-                            sheet.cell_value(pos).unwrap_or(CellValue::Blank)
+                            CellValue::Blank
                         }
                     } else {
                         display_value.unwrap()
