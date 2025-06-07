@@ -121,10 +121,8 @@ pub(crate) fn row_bounds(
         ))
     } else if let Some(content_row_bounds) = content_row_bounds {
         Some(content_row_bounds)
-    } else if let Some(table_row_bounds) = table_row_bounds {
-        Some(table_row_bounds)
     } else {
-        None
+        table_row_bounds
     }
 }
 
@@ -147,10 +145,8 @@ pub(crate) fn column_bounds(
         ))
     } else if let Some(content_column_bounds) = content_column_bounds {
         Some(content_column_bounds)
-    } else if let Some(table_column_bounds) = table_column_bounds {
-        Some(table_column_bounds)
     } else {
-        None
+        table_column_bounds
     }
 }
 
@@ -160,5 +156,50 @@ pub(crate) fn has_content_ignore_blank_table(
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
 ) -> bool {
-    todo!()
+    if content_cache.has_content(pos.into()) {
+        return true;
+    }
+
+    table_cache.has_content_ignore_blank_table(pos.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::*;
+
+    #[test]
+    fn test_has_content_ignore_blank_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None);
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![2, 2], 3, 1, &["1", "", "3"]);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // normal content
+        assert!(has_content_ignore_blank_table(
+            pos![sheet_id!1, 1],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+        assert!(!has_content_ignore_blank_table(
+            pos![sheet_id!2, 1],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+
+        // table content
+        assert!(has_content_ignore_blank_table(
+            pos![sheet_id!2, 4],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+        assert!(!has_content_ignore_blank_table(
+            pos![sheet_id!3, 4],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+    }
 }

@@ -19,8 +19,12 @@ impl Sheet {
                     .unwrap_or(&CellValue::Blank);
                 let old_value = self.columns.set_value(&(x, y).into(), new_value.to_owned());
                 if let Some(old_value) = old_value {
-                    let _ =
-                        old_values.set((x - rect.min.x) as u32, (y - rect.min.y) as u32, old_value);
+                    let _ = old_values.set(
+                        (x - rect.min.x) as u32,
+                        (y - rect.min.y) as u32,
+                        old_value,
+                        false,
+                    );
                 }
             }
         }

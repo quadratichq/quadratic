@@ -251,10 +251,10 @@ export class Sheet {
   }
 
   hasContent(col: number, row: number): boolean {
-    return this.contentCache.has_content(col, row);
+    return this.contentCache.hasContent(col, row);
   }
 
   hasContentInRect(rect: Rectangle): boolean {
-    return this.contentCache.has_content_in_rect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
+    return this.contentCache.hasContentInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
   }
 }

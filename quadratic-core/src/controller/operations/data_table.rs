@@ -276,7 +276,7 @@ impl GridController {
 
                 let (cell_value, format_update) = self.string_to_cell_value(value, false);
 
-                if let Err(e) = cell_values.set(x as u32, y as u32, cell_value) {
+                if let Err(e) = cell_values.set(x as u32, y as u32, cell_value, false) {
                     dbgjs!(format!(
                         "[add_data_table_operations] Error setting cell value: {}",
                         e

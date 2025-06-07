@@ -93,7 +93,7 @@ impl GridController {
                     for (x, value) in record.iter().enumerate() {
                         let (cell_value, format_update) = self.string_to_cell_value(value, false);
                         cell_values
-                            .set(u32::try_from(x)?, y, cell_value)
+                            .set(u32::try_from(x)?, y, cell_value, false)
                             .map_err(|e| error(e.to_string()))?;
 
                         if !format_update.is_default() {
@@ -385,7 +385,7 @@ impl GridController {
         // add the headers to the first row
         for (x, header) in headers.into_iter().enumerate() {
             cell_values
-                .set(x as u32, 0, header)
+                .set(x as u32, 0, header, false)
                 .map_err(|e| error(e.to_string()))?;
         }
 
@@ -410,7 +410,7 @@ impl GridController {
 
                 for (index, value) in values.into_iter().enumerate() {
                     cell_values
-                        .set(x, y + index as u32, value)
+                        .set(x, y + index as u32, value, false)
                         .map_err(|e| error(e.to_string()))?;
                 }
 

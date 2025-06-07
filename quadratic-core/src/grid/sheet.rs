@@ -35,7 +35,6 @@ pub mod columns;
 pub mod data_table;
 pub mod data_tables;
 pub mod formats;
-pub mod keyboard;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;

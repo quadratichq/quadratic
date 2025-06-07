@@ -18,14 +18,12 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Direction,
   Format,
   FormatUpdate,
   JsBordersSheet,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
-  JsCoordinate,
   JsDataTableColumnHeader,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -68,7 +66,6 @@ import type {
   CoreClientGetJwt,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
-  CoreClientJumpCursor,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -1081,28 +1078,6 @@ class QuadraticCore {
   //#endregion
 
   //#region Bounds
-
-  jumpCursor(
-    sheetId: string,
-    current: JsCoordinate,
-    jump: boolean,
-    direction: Direction
-  ): Promise<JsCoordinate | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
-        resolve(message.coordinate);
-      };
-      this.send({
-        type: 'clientCoreJumpCursor',
-        sheetId,
-        current,
-        direction,
-        id,
-        jump,
-      });
-    });
-  }
 
   commitTransientResize(sheetId: string, transientResize: string) {
     this.send({

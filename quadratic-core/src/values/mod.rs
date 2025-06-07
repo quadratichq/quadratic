@@ -54,7 +54,8 @@ impl<T: Into<CellValue>> From<T> for Value {
     }
 }
 impl From<Array> for Value {
-    fn from(array: Array) -> Self {
+    fn from(mut array: Array) -> Self {
+        array.update_empty_values_cache();
         Value::Array(array)
     }
 }

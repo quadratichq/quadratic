@@ -170,7 +170,7 @@ impl SheetColumns {
                 let array_y = (y - rect.min.y) as u32;
                 if let Some(cell_value) = value {
                     old_cell_values_array
-                        .set(array_x, array_y, cell_value)
+                        .set(array_x, array_y, cell_value, false)
                         .expect("error inserting value into array of old cell values");
                 }
             }

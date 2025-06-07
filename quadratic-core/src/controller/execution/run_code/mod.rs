@@ -424,7 +424,7 @@ impl GridController {
                 let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
                 transaction.reverse_operations.extend(ops);
                 if let Some(array) = array {
-                    Value::Array(array)
+                    array.into()
                 } else {
                     Value::Single("".into())
                 }

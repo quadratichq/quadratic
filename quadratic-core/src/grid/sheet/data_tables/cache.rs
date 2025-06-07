@@ -38,8 +38,6 @@ impl SheetDataTablesCache {
 
         if single_cell_min == 0 {
             Some((multi_cell_min, multi_cell_max))
-        } else if multi_cell_min == 0 {
-            Some((single_cell_min, single_cell_max))
         } else {
             Some((single_cell_min, single_cell_max))
         }
@@ -59,11 +57,24 @@ impl SheetDataTablesCache {
 
         if single_cell_min == 0 {
             Some((multi_cell_min, multi_cell_max))
-        } else if multi_cell_min == 0 {
-            Some((single_cell_min, single_cell_max))
         } else {
             Some((single_cell_min, single_cell_max))
         }
+    }
+
+    /// Returns true if the cell has content, ignoring blank cells within a
+    /// multi-cell data table.
+    pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
+        self.single_cell_tables.get(pos).is_some()
+            || self
+                .multi_cell_tables
+                .get(pos)
+                .is_some_and(|_| !self.has_empty_value(pos))
+    }
+
+    /// Returns true if the cell has an empty value
+    pub fn has_empty_value(&self, pos: Pos) -> bool {
+        self.multi_cell_tables.has_empty_value(pos)
     }
 }
 
@@ -105,22 +116,22 @@ impl MultiCellTablesCache {
                 .set_rect(x1, y1, Some(x2), Some(y2), Some(*pos));
             if let Value::Array(array) = &data_table.value {
                 if let Some(mut empty_values_cache) = array.empty_values_cache_ref() {
-                    // mark table name and column headers as non-empty
                     let y_adjustment = data_table.y_adjustment(true);
+
+                    // update empty values cache
+                    empty_values_cache.translate_in_place(pos.x - 1, pos.y - 1 + y_adjustment);
+                    self.multi_cell_tables_empty.set_from(&empty_values_cache);
+
+                    // mark table name and column headers as non-empty
                     if y_adjustment > 0 {
                         self.multi_cell_tables_empty.set_rect(
                             x1,
                             y1,
                             Some(x2),
-                            Some(y1 + y_adjustment - 1),
+                            Some(y1 - 1 + y_adjustment),
                             None,
                         );
                     }
-
-                    // update empty values cache
-                    empty_values_cache
-                        .translate_in_place(pos.x - 1, pos.y + data_table.y_adjustment(true) - 1);
-                    self.multi_cell_tables_empty.set_from(&empty_values_cache);
                 } else {
                     self.multi_cell_tables_empty
                         .set_rect(x1, y1, Some(x2), Some(y2), None);
@@ -171,5 +182,57 @@ impl MultiCellTablesCache {
 
     pub fn finite_bounds(&self) -> Option<Rect> {
         self.multi_cell_tables.finite_bounds()
+    }
+
+    pub fn has_empty_value(&self, pos: Pos) -> bool {
+        self.multi_cell_tables_empty.get(pos).is_some()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::test_util::*;
+
+    #[test]
+    fn test_has_content_ignore_blank_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![2, 2], 3, 1, &["1", "", "3"]);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 4]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 4]));
+    }
+
+    #[test]
+    fn test_blanks_within_code_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_code_table_with_values(
+            &mut gc,
+            sheet_id,
+            pos![2, 2],
+            6,
+            1,
+            &["1", "2", "", "", "5", "6"],
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        print_first_sheet(&gc);
+
+        dbg!(sheet_data_tables_cache);
+
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![2, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![3, 2]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![4, 2]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![5, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![6, 2]));
+        assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![7, 2]));
+        assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![8, 2]));
     }
 }

@@ -348,6 +348,7 @@ mod test {
                 0,
                 0,
                 CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
+                false,
             )
             .unwrap();
         array
@@ -355,12 +356,20 @@ mod test {
                 1,
                 0,
                 CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
+                false,
             )
             .unwrap();
         array
-            .set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()))
+            .set(
+                0,
+                1,
+                CellValue::Number(BigDecimal::from_str("3").unwrap()),
+                false,
+            )
             .unwrap();
-        array.set(1, 1, CellValue::Text("Hello".into())).unwrap();
+        array
+            .set(1, 1, CellValue::Text("Hello".into()), false)
+            .unwrap();
 
         let result = gc.js_code_result_to_code_cell_value(
             &mut transaction,
@@ -380,7 +389,7 @@ mod test {
         let mut expected_result = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "JavaScript1",
-            Value::Array(array),
+            array.into(),
             false,
             None,
             None,
