@@ -1073,7 +1073,7 @@ mod tests {
     fn test_jump_right_simple_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
-        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
 
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();
@@ -1122,7 +1122,7 @@ mod tests {
     fn test_jump_right_simple_table_with_blanks() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
-        test_create_data_table_with_values(
+        test_create_code_table_with_values(
             &mut gc,
             sheet_id,
             pos![2, 2],
@@ -1250,8 +1250,6 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context().clone();
 
-        print_first_sheet(&gc);
-
         assert_eq!(
             jump_left(
                 pos![sheet_id!H2],
@@ -1261,14 +1259,6 @@ mod tests {
             ),
             pos![G2]
         );
-
-        dbg!(sheet_data_tables_cache);
-
-        dbg!(has_content_ignore_blank_table(
-            pos![sheet_id!F2],
-            &content_cache,
-            sheet_data_tables_cache
-        ));
 
         assert_eq!(
             jump_left(
@@ -1391,25 +1381,25 @@ mod tests {
                 &sheet_data_tables_cache,
                 &context
             ),
+            pos![B3]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B3],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
+            pos![B6]
+        );
+        assert_eq!(
+            jump_down(
+                pos![sheet_id!B6],
+                &content_cache,
+                &sheet_data_tables_cache,
+                &context
+            ),
             pos![B7]
-        );
-        assert_eq!(
-            jump_down(
-                pos![sheet_id!B7],
-                &content_cache,
-                &sheet_data_tables_cache,
-                &context
-            ),
-            pos![B8]
-        );
-        assert_eq!(
-            jump_down(
-                pos![sheet_id!B8],
-                &content_cache,
-                &sheet_data_tables_cache,
-                &context
-            ),
-            pos![B9]
         );
     }
 
@@ -1417,7 +1407,7 @@ mod tests {
     fn test_jump_up_simple_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
-        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 1, 5);
 
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();

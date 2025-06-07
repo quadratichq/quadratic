@@ -384,14 +384,6 @@ class CoreClient {
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         return;
 
-      case 'clientCoreJumpCursor':
-        this.send({
-          type: 'coreClientJumpCursor',
-          id: e.data.id,
-          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
-        });
-        return;
-
       case 'clientCoreCommitTransientResize':
         core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
         return;

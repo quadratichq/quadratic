@@ -17,14 +17,12 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Direction,
   Format,
   FormatUpdate,
   JsCellValue,
   JsCodeCell,
   JsCodeResult,
   JsColumnWidth,
-  JsCoordinate,
   JsDataTableColumnHeader,
   JsResponse,
   JsRowHeight,
@@ -871,29 +869,6 @@ class Core {
       } catch (e) {
         this.handleCoreError('exportCsvSelection', e);
         resolve('');
-      }
-    });
-  }
-
-  jumpCursor(
-    sheetId: string,
-    current: JsCoordinate,
-    jump: boolean,
-    direction: Direction
-  ): Promise<JsCoordinate | undefined> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const pos = this.gridController.jumpCursor(
-          sheetId,
-          posToPos(current.x, current.y),
-          jump,
-          JSON.stringify(direction)
-        );
-        resolve({ x: Number(pos.x), y: Number(pos.y) });
-      } catch (e) {
-        this.handleCoreError('jumpCursor', e);
-        resolve(undefined);
       }
     });
   }
