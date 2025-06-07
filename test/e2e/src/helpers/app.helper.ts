@@ -20,16 +20,6 @@ export const typeInCell = async (page: Page, { targetColumn, targetRow, text }: 
 };
 
 /**
- * Changes cursor location or selection via a1 notation in the goto box.
- */
-export const gotoCells = async (page: Page, a1: string) => {
-  await page.locator(`#QuadraticCanvasID`).click();
-  await page.keyboard.press('Control+G');
-  await page.keyboard.type(a1);
-  await page.keyboard.press('Enter');
-};
-
-/**
  * Navigates to a specified [Column, Row] in a spreadsheet-like interface on a webpage.
  */
 type NavigateOnSheetOptions = {
