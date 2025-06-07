@@ -6,7 +6,9 @@ import { createBorderTypes } from './generateTextures';
 
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
-const TIMEOUT = 60000;
+const TIMEOUT = 10000;
+
+let assetsLoaded = false;
 
 async function loadFont(fontName: string): Promise<void> {
   const font = new FontFaceObserver(fontName);
@@ -14,7 +16,7 @@ async function loadFont(fontName: string): Promise<void> {
 }
 
 export function isBitmapFontLoaded(): boolean {
-  return bitmapFonts.every((font) => BitmapFont.available[font]);
+  return assetsLoaded && bitmapFonts.every((font) => BitmapFont.available[font]);
 }
 
 export async function loadAssets() {
@@ -55,6 +57,8 @@ export async function loadAssets() {
   const openSansItalicPromise = loadFont('OpenSans-Italic');
   const openSansBoldItalicPromise = loadFont('OpenSans-BoldItalic');
   await Promise.all([openSansPromise, openSansBoldPromise, openSansItalicPromise, openSansBoldItalicPromise]);
+
+  assetsLoaded = true;
 
   if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   events.emit('bitmapFontsLoaded');
