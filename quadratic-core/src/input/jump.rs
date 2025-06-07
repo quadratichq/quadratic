@@ -400,6 +400,7 @@ mod tests {
 
     use super::*;
 
+    #[track_caller]
     fn assert_jump_left(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
         let content_cache = gc.sheet(sheet_id).content_cache();
@@ -410,6 +411,7 @@ mod tests {
         assert_eq!(new_pos, expected);
     }
 
+    #[track_caller]
     fn assert_jump_right(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
         let content_cache = gc.sheet(sheet_id).content_cache();
@@ -420,6 +422,7 @@ mod tests {
         assert_eq!(new_pos, expected);
     }
 
+    #[track_caller]
     fn assert_jump_up(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
         let content_cache = gc.sheet(sheet_id).content_cache();
@@ -430,6 +433,7 @@ mod tests {
         assert_eq!(new_pos, expected);
     }
 
+    #[track_caller]
     fn assert_jump_down(gc: &GridController, current: SheetPos, expected: Pos) {
         let sheet_id = current.sheet_id;
         let content_cache = gc.sheet(sheet_id).content_cache();
@@ -766,9 +770,9 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
         gc.set_code_cell(
-            pos![sheet_id!D3],
+            pos![sheet_id!E3],
             CodeCellLanguage::Formula,
             "A1".into(),
             None,
@@ -777,8 +781,8 @@ mod tests {
 
         print_first_sheet(&gc);
 
-        assert_jump_left(&gc, pos![sheet_id!E3], pos![D3]);
-        assert_jump_left(&gc, pos![sheet_id!D3], pos![B3]);
-        assert_jump_left(&gc, pos![sheet_id!B3], pos![A3]);
+        assert_jump_left(&gc, pos![sheet_id!F3], pos![E3]);
+        assert_jump_left(&gc, pos![sheet_id!E3], pos![C3]);
+        assert_jump_left(&gc, pos![sheet_id!C3], pos![A3]);
     }
 }
