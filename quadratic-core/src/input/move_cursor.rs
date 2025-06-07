@@ -168,83 +168,81 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
         let context = gc.a1_context();
 
-        print_first_sheet(&gc);
-
         // Test moving right into chart
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 3],
+                pos![sheet_id!B3],
                 Direction::Right,
                 sheet_data_tables_cache,
                 context
             ),
-            Pos { x: 3, y: 3 }
+            pos![C3]
         );
 
         // Test moving right from chart
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 3],
+                pos![sheet_id!C3],
                 Direction::Right,
                 sheet_data_tables_cache,
                 context
             ),
-            Pos { x: 5, y: 3 }
+            pos![E3]
         );
 
         // Test moving left from chart
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 3],
+                pos![sheet_id!E3],
                 Direction::Left,
                 sheet_data_tables_cache,
                 context
             ),
-            Pos { x: 2, y: 3 }
+            pos![D3]
         );
 
         // Test moving down into chart
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 2],
+                pos![sheet_id!D2],
                 Direction::Down,
                 sheet_data_tables_cache,
                 context
             ),
-            Pos { x: 3, y: 3 }
+            pos![D3]
         );
 
         // Test moving down from chart
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 3],
+                pos![sheet_id!D3],
                 Direction::Down,
                 sheet_data_tables_cache,
                 context
             ),
-            Pos { x: 4, y: 6 }
+            pos![D6]
         );
 
         // Test moving up into chart
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 4],
+                pos![sheet_id!D6],
                 Direction::Up,
                 sheet_data_tables_cache,
                 context
             ),
-            Pos { x: 3, y: 2 }
+            pos![D5]
         );
 
         // Test moving up from chart
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 4],
+                pos![sheet_id!D5],
                 Direction::Up,
                 sheet_data_tables_cache,
                 context
             ),
-            Pos { x: 4, y: 2 }
+            pos![D2]
         );
     }
 
@@ -262,65 +260,63 @@ mod tests {
         // move right into header
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 3],
+                pos![sheet_id!B3],
                 Direction::Right,
                 sheet_data_tables_cache,
                 context
             ),
-            pos![2, 4]
+            pos![C3]
         );
 
         // move right past header
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 4],
+                pos![sheet_id!C3],
                 Direction::Right,
                 sheet_data_tables_cache,
                 context
             ),
-            pos![2, 6]
+            pos![E3]
         );
 
         // move left into header
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 6],
+                pos![sheet_id!E3],
                 Direction::Left,
                 sheet_data_tables_cache,
                 context
             ),
-            pos![2, 4]
+            pos![D3]
         );
 
         // move left past header
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 4],
+                pos![sheet_id!D3],
                 Direction::Left,
                 sheet_data_tables_cache,
                 context
             ),
-            pos![2, 2]
-        );
-
-        // move left past header
-        assert_eq!(
-            move_cursor(
-                pos![sheet_id!2, 2],
-                Direction::Left,
-                sheet_data_tables_cache,
-                context
-            ),
-            pos![2, 1]
+            pos![B3]
         );
     }
 
     #[test]
-    fn test_table_header_navigation_no_name() {
+    fn test_table_header_navigation_no_ui() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        test_create_data_table(&mut gc, sheet_id, pos![3, 3], 2, 2);
+        test_create_data_table_no_ui(&mut gc, sheet_id, pos![C3], 2, 2);
+        gc.data_table_meta(
+            pos![sheet_id!C3],
+            None,
+            None,
+            None,
+            Some(Some(false)),
+            Some(Some(false)),
+            None,
+        );
 
         let sheet = gc.sheet(sheet_id);
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
@@ -329,30 +325,30 @@ mod tests {
         // move right with no name
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 3],
+                pos![sheet_id!B3],
                 Direction::Right,
                 sheet_data_tables_cache,
                 context
             ),
-            pos![2, 4]
+            pos![C3]
         );
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 4],
+                pos![sheet_id!C3],
                 Direction::Right,
                 sheet_data_tables_cache,
                 context
             ),
-            pos![2, 5]
+            pos![D3]
         );
         assert_eq!(
             move_cursor(
-                pos![sheet_id!2, 5],
+                pos![sheet_id!D3],
                 Direction::Right,
                 sheet_data_tables_cache,
                 context
             ),
-            pos![2, 6]
+            pos![E3]
         );
 
         // move left with no name

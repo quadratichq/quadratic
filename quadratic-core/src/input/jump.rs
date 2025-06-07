@@ -1073,7 +1073,7 @@ mod tests {
     fn test_jump_right_simple_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
-        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
 
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();
@@ -1122,7 +1122,7 @@ mod tests {
     fn test_jump_right_simple_table_with_blanks() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
-        test_create_data_table_with_values(
+        test_create_code_table_with_values(
             &mut gc,
             sheet_id,
             pos![2, 2],
@@ -1407,7 +1407,7 @@ mod tests {
     fn test_jump_up_simple_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
-        test_create_data_table(&mut gc, sheet_id, pos![2, 2], 5, 1);
+        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 1, 5);
 
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();
