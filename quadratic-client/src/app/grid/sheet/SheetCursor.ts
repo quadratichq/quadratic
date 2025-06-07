@@ -415,7 +415,7 @@ export class SheetCursor {
   private selectedTableNamesFromTableSelection(): string[] {
     const cache = pixiApp.cellsSheet().tables.dataTablesCache;
     if (!cache) return [];
-    return this.jsSelection.getSelectedTableNames(this.sheets.sheet.id, cache, this.sheets.jsA1Context) as string[];
+    return this.jsSelection.getSelectedTableNames(this.sheets.current, cache, this.sheets.jsA1Context) as string[];
   }
 
   /// Returns the names of the tables that are selected.
