@@ -44,14 +44,14 @@ export class LabelMeshEntry extends Mesh {
       uniforms: { uFWidth: 0 },
     });
 
-    geometry.getBuffer('aVertexPosition').update(message.vertices);
-    geometry.getBuffer('aTextureCoord').update(message.uvs);
-    geometry.getIndex().update(message.indices);
+    geometry.addAttribute('aVertexPosition', message.vertices, 2);
+    geometry.addAttribute('aTextureCoord', message.uvs, 2);
+    geometry.addIndex(Array.from(message.indices));
 
     if (message.hasColor && message.colors) {
       geometry.addAttribute('aColors', message.colors, 4);
     }
-
+    // ...
     super(geometry, material);
     this.fontName = message.fontName;
     this.blendMode = BLEND_MODES.NORMAL_NPM;
