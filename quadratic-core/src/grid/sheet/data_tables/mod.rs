@@ -253,11 +253,7 @@ impl SheetDataTables {
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
     pub fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
-        if self.cache.single_cell_tables.get(pos).is_some() {
-            Some(pos)
-        } else {
-            self.cache.multi_cell_tables.get(pos)
-        }
+        self.cache.get_pos_contains(pos)
     }
 
     /// Returns the data table (with anchor position) that contains the given position, if it exists.
@@ -495,17 +491,7 @@ impl SheetDataTables {
 
     /// Returns the finite bounds of the sheet data tables.
     pub fn finite_bounds(&self) -> Option<Rect> {
-        match (
-            self.cache.single_cell_tables.finite_bounds(),
-            self.cache.multi_cell_tables.finite_bounds(),
-        ) {
-            (Some(has_data_table_bounds), Some(output_rects_bounds)) => {
-                Some(has_data_table_bounds.union(&output_rects_bounds))
-            }
-            (Some(has_data_table_bounds), None) => Some(has_data_table_bounds),
-            (None, Some(output_rects_bounds)) => Some(output_rects_bounds),
-            (None, None) => None,
-        }
+        self.cache.finite_bounds()
     }
 
     /// Returns an iterator over all data tables in the sheet data tables.

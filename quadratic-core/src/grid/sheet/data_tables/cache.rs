@@ -71,6 +71,30 @@ impl SheetDataTablesCache {
         Some((min, max))
     }
 
+    /// Returns the finite bounds of the sheet data tables.
+    pub fn finite_bounds(&self) -> Option<Rect> {
+        match (
+            self.single_cell_tables.finite_bounds(),
+            self.multi_cell_tables.finite_bounds(),
+        ) {
+            (Some(has_data_table_bounds), Some(output_rects_bounds)) => {
+                Some(has_data_table_bounds.union(&output_rects_bounds))
+            }
+            (Some(has_data_table_bounds), None) => Some(has_data_table_bounds),
+            (None, Some(output_rects_bounds)) => Some(output_rects_bounds),
+            (None, None) => None,
+        }
+    }
+
+    /// Returns the anchor position of the data table which contains the given position, if it exists.
+    pub fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
+        if self.single_cell_tables.get(pos).is_some() {
+            Some(pos)
+        } else {
+            self.multi_cell_tables.get(pos)
+        }
+    }
+
     /// Returns true if the cell has content, ignoring blank cells within a
     /// multi-cell data table.
     pub fn has_content_ignore_blank_table(&self, pos: Pos) -> bool {
