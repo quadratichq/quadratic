@@ -49,6 +49,8 @@ export class HtmlCell {
   div: HTMLDivElement;
   iframe: HTMLIFrameElement;
 
+  private autoResizeTimeout: NodeJS.Timeout | undefined;
+
   constructor(htmlCell: JsHtmlOutput) {
     if (htmlCell.html === null) throw new Error('Expected html to be defined in HtmlCell constructor');
     this.htmlCell = htmlCell;
@@ -173,7 +175,6 @@ export class HtmlCell {
     this.border.style.height = `${this.height}px`;
     this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
     this.thumbnailImage = undefined;
-    this.recalculateBounds();
   }
 
   changeSheet(sheetId: string) {
@@ -349,6 +350,11 @@ export class HtmlCell {
   }
 
   private autoResize = () => {
+    if (this.autoResizeTimeout) {
+      clearTimeout(this.autoResizeTimeout);
+      this.autoResizeTimeout = undefined;
+    }
+
     if (this.iframe.contentWindow) {
       const plotly = (this.iframe.contentWindow as any).Plotly;
       const plotElement = this.iframe.contentWindow.document.querySelector('.js-plotly-plot');
@@ -359,7 +365,7 @@ export class HtmlCell {
         });
       }
     } else {
-      setTimeout(this.autoResize, 100);
+      this.autoResizeTimeout = setTimeout(this.autoResize, 100);
     }
   };
 
