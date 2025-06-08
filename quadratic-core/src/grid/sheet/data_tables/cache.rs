@@ -138,14 +138,40 @@ impl MultiCellTablesCache {
 
     pub fn set_rect(&mut self, x1: i64, y1: i64, x2: i64, y2: i64, data_table: Option<&DataTable>) {
         if let Some(data_table) = data_table {
+            // Update output rect
             self.multi_cell_tables
                 .set_rect(x1, y1, Some(x2), Some(y2), Some((x1, y1).into()));
 
+            // Multi Value, update empty values cache
             if let Value::Array(array) = &data_table.value {
-                if let Some(mut empty_values_cache) = array.empty_values_cache_ref() {
+                if let Some(mut empty_values_cache) = array.empty_values_cache_clone() {
                     let y_adjustment = data_table.y_adjustment(true);
 
-                    // update empty values cache
+                    // handle hidden columns
+                    if let Some(column_headers) = &data_table.column_headers {
+                        for column_header in column_headers.iter() {
+                            if !column_header.display {
+                                empty_values_cache
+                                    .remove_column(column_header.value_index as i64 + 1);
+                            }
+                        }
+                    }
+
+                    // handle sorted rows
+                    if let Some(display_buffer) = &data_table.display_buffer {
+                        let mut sorted_empty_values_cache = Contiguous2D::new();
+                        for (display_row, &actual_row) in display_buffer.iter().enumerate() {
+                            if let Some(mut row) =
+                                empty_values_cache.copy_row(actual_row as i64 + 1)
+                            {
+                                row.translate_in_place(0, display_row as i64 - actual_row as i64);
+                                sorted_empty_values_cache.set_from(&row);
+                            }
+                        }
+                        std::mem::swap(&mut empty_values_cache, &mut sorted_empty_values_cache);
+                    }
+
+                    // convert to sheet coordinates
                     empty_values_cache.translate_in_place(x1 - 1, y1 - 1 + y_adjustment);
                     self.multi_cell_tables_empty.set_from(&empty_values_cache);
 
@@ -164,7 +190,9 @@ impl MultiCellTablesCache {
                         .set_rect(x1, y1, Some(x2), Some(y2), None);
                 }
             }
-        } else {
+        }
+        // table is removed, set all to None
+        else {
             self.multi_cell_tables
                 .set_rect(x1, y1, Some(x2), Some(y2), None);
 

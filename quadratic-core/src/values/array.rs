@@ -723,7 +723,7 @@ impl Array {
         self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
     }
 
-    pub fn empty_values_cache_ref(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
+    pub fn empty_values_cache_clone(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.empty_values_cache
             .as_ref()
             .and_then(|cache| cache.get_cache())
