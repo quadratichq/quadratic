@@ -22,7 +22,6 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
-  AzureOpenAIDeepseekModelKey,
   AzureOpenAIModelKey,
   Content,
   ImageContent,
