@@ -1,6 +1,7 @@
 import type { Response } from 'express';
 import {
   isAnthropicModel,
+  isAzureFoundryModel,
   isAzureOpenAIModel,
   isBedrockAnthropicModel,
   isBedrockModel,
@@ -17,6 +18,7 @@ import { handleVertexAIRequest } from '../../ai/handler/vertexai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import {
   anthropic,
+  azure_foundry,
   azure_openai,
   bedrock,
   bedrock_anthropic,
@@ -28,6 +30,7 @@ import {
 import { debugAndNotInProduction, FINE_TUNE } from '../../env-vars';
 import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 import { calculateUsage } from '../helpers/usage.helper';
+import { handleAzureRequest } from './azure.handler';
 
 export const handleAIRequest = async (
   modelKey: AIModelKey,
@@ -54,7 +57,9 @@ export const handleAIRequest = async (
   } else if (isOpenAIModel(modelKey)) {
     parsedResponse = await handleOpenAIRequest(modelKey, args, openai, res);
   } else if (isAzureOpenAIModel(modelKey)) {
-    parsedResponse = await handleOpenAIRequest(modelKey, args, azure_openai, res);
+    parsedResponse = await handleAzureRequest(modelKey, args, azure_openai, res);
+  } else if (isAzureFoundryModel(modelKey)) {
+    parsedResponse = await handleAzureRequest(modelKey, args, azure_foundry, res);
   } else if (isXAIModel(modelKey)) {
     parsedResponse = await handleOpenAIRequest(modelKey, args, xai, res);
   } else if (isVertexAIModel(modelKey)) {

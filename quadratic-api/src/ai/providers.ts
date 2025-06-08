@@ -10,6 +10,9 @@ import {
   AWS_S3_ACCESS_KEY_ID,
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
+  AZURE_FOUNDRY_API_KEY,
+  AZURE_FOUNDRY_API_VERSION,
+  AZURE_FOUNDRY_ENDPOINT,
   AZURE_OPENAI_API_KEY,
   AZURE_OPENAI_API_VERSION,
   AZURE_OPENAI_ENDPOINT,
@@ -72,6 +75,15 @@ export const azure_openai = new OpenAI({
   defaultQuery: { 'api-version': AZURE_OPENAI_API_VERSION },
   defaultHeaders: {
     'api-key': AZURE_OPENAI_API_KEY || '',
+  },
+});
+
+export const azure_foundry = new OpenAI({
+  apiKey: AZURE_FOUNDRY_API_KEY || '',
+  baseURL: AZURE_FOUNDRY_ENDPOINT,
+  defaultQuery: { 'api-version': AZURE_FOUNDRY_API_VERSION },
+  defaultHeaders: {
+    'api-key': AZURE_FOUNDRY_API_KEY || '',
   },
 });
 

@@ -33,6 +33,12 @@ export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID as string;
 export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL as string;
 export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY as string;
 export const FINE_TUNE = process.env.FINE_TUNE || 'false';
+export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
+export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
+export const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || '2024-05-01-preview';
+export const AZURE_FOUNDRY_API_KEY = process.env.AZURE_FOUNDRY_API_KEY;
+export const AZURE_FOUNDRY_ENDPOINT = process.env.AZURE_FOUNDRY_ENDPOINT;
+export const AZURE_FOUNDRY_API_VERSION = process.env.AZURE_FOUNDRY_API_VERSION || '2024-05-01-preview';
 
 // Optional Billing
 export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
@@ -54,9 +60,6 @@ export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 export const XAI_API_KEY = process.env.XAI_API_KEY;
-export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
-export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
-export const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION || '2024-05-01-preview';
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';

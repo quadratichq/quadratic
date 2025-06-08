@@ -1,18 +1,17 @@
 import type { Response } from 'express';
 import OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
-import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { getModelFromModelKey, getModelOptions, isAzureFoundryModel } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
-  AIMessagePrompt,
   AIRequestHelperArgs,
-  OpenAIModelKey,
+  AzureFoundryModelKey,
+  AzureOpenAIModelKey,
   ParsedAIResponse,
-  XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
-export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | XAIModelKey,
+export const handleAzureRequest = async (
+  modelKey: AzureOpenAIModelKey | AzureFoundryModelKey,
   args: AIRequestHelperArgs,
   openai: OpenAI,
   response?: Response
@@ -20,6 +19,9 @@ export const handleOpenAIRequest = async (
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strictParams);
+  const isFoundry = isAzureFoundryModel(modelKey);
+  const path = isFoundry ? undefined : `/openai/deployments/${model}/chat/completions`;
+  const requestOptions = path ? { path } : undefined;
 
   try {
     let apiArgs: ChatCompletionCreateParamsStreaming | ChatCompletionCreateParamsNonStreaming = {
@@ -31,6 +33,7 @@ export const handleOpenAIRequest = async (
       tools,
       tool_choice,
     };
+
     if (options.stream) {
       response?.setHeader('Content-Type', 'text/event-stream');
       response?.setHeader('Cache-Control', 'no-cache');
@@ -43,36 +46,32 @@ export const handleOpenAIRequest = async (
           include_usage: true,
         },
       };
-      const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
+      const completion = await openai.chat.completions.create(
+        apiArgs as ChatCompletionCreateParamsStreaming,
+        requestOptions
+      );
 
       const parsedResponse = await parseOpenAIStream(completion, modelKey, response);
       return parsedResponse;
     } else {
-      const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
+      const result = await openai.chat.completions.create(
+        apiArgs as ChatCompletionCreateParamsNonStreaming,
+        requestOptions
+      );
 
       const parsedResponse = parseOpenAIResponse(result, modelKey, response);
       return parsedResponse;
     }
   } catch (error: any) {
-    if (!options.stream || !response?.headersSent) {
-      if (error instanceof OpenAI.APIError) {
-        response?.status(error.status ?? 400).json({ error: error.message });
-        console.error(error.status, error.message);
-      } else {
-        response?.status(400).json({ error });
-        console.error(error);
-      }
-    } else {
-      const responseMessage: AIMessagePrompt = {
-        role: 'assistant',
-        content: [{ type: 'text', text: error instanceof OpenAI.APIError ? error.message : JSON.stringify(error) }],
-        contextType: 'userPrompt',
-        toolCalls: [],
-        modelKey,
-      };
-      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-      response?.end();
-      console.error('Error occurred after headers were sent:', error);
+    if (error instanceof OpenAI.APIError) {
+      console.error('[API] Error', error.status, error.name, error.message);
+      response?.status(error.status || 500).json({ error: error.message });
+      return;
     }
+    if (error.request && error.request.aborted) {
+      // request was aborted, so we don't need to do anything
+      return;
+    }
+    response?.status(500).json({ error: 'Error processing request.' });
   }
 };
