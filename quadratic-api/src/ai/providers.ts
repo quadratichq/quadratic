@@ -10,6 +10,9 @@ import {
   AWS_S3_ACCESS_KEY_ID,
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
+  AZURE_OPENAI_API_KEY,
+  AZURE_OPENAI_API_VERSION,
+  AZURE_OPENAI_ENDPOINT,
   GCP_CLIENT_EMAIL,
   GCP_PRIVATE_KEY,
   GCP_PROJECT_ID,
@@ -61,6 +64,15 @@ export const anthropic = new Anthropic({
 
 export const openai = new OpenAI({
   apiKey: OPENAI_API_KEY || '',
+});
+
+export const azure_openai = new OpenAI({
+  apiKey: AZURE_OPENAI_API_KEY || '',
+  baseURL: AZURE_OPENAI_ENDPOINT,
+  defaultQuery: { 'api-version': AZURE_OPENAI_API_VERSION },
+  defaultHeaders: {
+    'api-key': AZURE_OPENAI_API_KEY || '',
+  },
 });
 
 export const xai = new OpenAI({

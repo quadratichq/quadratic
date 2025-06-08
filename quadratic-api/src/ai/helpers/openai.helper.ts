@@ -22,6 +22,7 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
+  AzureOpenAIModelKey,
   Content,
   ImageContent,
   OpenAIModelKey,
@@ -156,7 +157,7 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | XAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey,
   response?: Response
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
@@ -276,7 +277,7 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | XAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey,
   response?: Response
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {

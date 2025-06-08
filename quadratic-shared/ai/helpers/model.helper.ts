@@ -4,6 +4,7 @@ import type {
   AIModelKey,
   AIRequestBody,
   AnthropicModelKey,
+  AzureOpenAIModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
   OpenAIModelKey,
@@ -36,6 +37,10 @@ export function isXAIModel(modelKey: AIModelKey): modelKey is XAIModelKey {
 
 export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'openai';
+}
+
+export function isAzureOpenAIModel(modelKey: AIModelKey): modelKey is AzureOpenAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'azure-openai';
 }
 
 export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModelKey {

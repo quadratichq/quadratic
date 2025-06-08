@@ -56,7 +56,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
             {
               type: 'text',
               text: `
- <role>
+<role>
   You are an AI model selector for a spreadsheet application. Based on the user's prompt, choose the most suitable model.
  </role>
 
@@ -67,10 +67,9 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Augmenting data</capability>
     <capability>Processing images and PDFs</capability>
     <capability>Writing JavaScript</capability>
-    <capability>Formatting - simple, conditional, etc.</capability>
-    <capability>Editing existing charts</capability>
+    <capability>Conditional formatting</capability>
     <capability>API requests</capability>
-    <capability>Any capabilitiesnot defined in these instructions</capability>
+    <capability>Any capabilities not defined in these instructions</capability>
    </capabilities>
   </model>
   <model name="Claude">
@@ -78,7 +77,14 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
     <capability>Requests that involve frustration</capability>
+   </capabilities>
+  </model>
+  <model name="4.1">
+   <capabilities>
     <capability>Creating new charts</capability>
+    <capability>Editing existing charts</capability>
+    <capability>Simple/explicitly defined formatting</capability>
+    <capability>Moving data to specific cell locations</capability>
    </capabilities>
   </model>
  </models>
@@ -97,10 +103,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Create a chart</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
    <user>Create a debt snowball calculator</user>
    <answer>Claude</answer>
   </example>
@@ -109,12 +111,16 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Add an extra axis to my chart</user>
-   <answer>Pro</answer>
+   <user>try again</user>
+   <answer>Claude</answer>
   </example>
   <example>
-   <user>Change the line to blue</user>
-   <answer>Pro</answer>
+   <user>Why do you keep failing?</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Hi</user>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Analyze my PDFs</user>
@@ -122,14 +128,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Highlight all the cells with value > 50</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>try again</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
-   <user>move that to A9</user>
    <answer>Pro</answer>
   </example>
   <example>
@@ -145,32 +143,40 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Sum the values in column F</user>
-   <answer>Pro</answer>
-  </example>
- <example>
-   <user>Calculate the mean of costs</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Find the mean, filtered by product type</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Highlight column C blue</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
    <user>Highlight all male entries orange</user>
    <answer>Pro</answer>
   </example>
   <example>
-   <user>Why do you keep failing?</user>
-   <answer>Claude</answer>
+   <user>Highlight column C blue</user>
+   <answer>4.1</answer>
   </example>
   <example>
-   <user>Hi</user>
-   <answer>Claude</answer>
+   <user>Find the mean, filtered by product type</user>
+   <answer>4.1</answer>
+  </example>
+  <example>
+   <user>Sum the values in column F</user>
+   <answer>4.1</answer>
+  </example>
+  <example>
+    <user>Calculate the mean of costs</user>
+    <answer>4.1</answer>
+  </example>
+  <example>
+   <user>move that to A9</user>
+   <answer>4.1</answer>
+  </example>
+  <example>
+   <user>Add an extra axis to my chart</user>
+   <answer>4.1</answer>
+  </example>
+  <example>
+   <user>Change the line to blue</user>
+   <answer>4.1</answer>
+  </example>
+  <example>
+   <user>Create a chart</user>
+   <answer>4.1</answer>
   </example>
  </examples>
 `,
