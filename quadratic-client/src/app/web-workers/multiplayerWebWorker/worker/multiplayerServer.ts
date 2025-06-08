@@ -213,7 +213,7 @@ export class MultiplayerServer {
         file_id: this.fileId,
         update: this.userUpdate,
       };
-      this.websocket!.send(JSON.stringify(message));
+      this.websocket.send(JSON.stringify(message));
       this.userUpdate = {};
       this.lastHeartbeat = now;
     }
@@ -224,9 +224,9 @@ export class MultiplayerServer {
       const heartbeat: Heartbeat = {
         type: 'Heartbeat',
         session_id: this.sessionId,
-        file_id: this.fileId!,
+        file_id: this.fileId,
       };
-      this.websocket!.send(JSON.stringify(heartbeat));
+      this.websocket.send(JSON.stringify(heartbeat));
       this.lastHeartbeat = now;
     }
   };
