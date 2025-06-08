@@ -20,7 +20,7 @@ pub struct SheetContentCache {
 impl From<&Sheet> for SheetContentCache {
     fn from(sheet: &Sheet) -> Self {
         SheetContentCache {
-            has_cell_value: sheet.columns.has_cell_value_ref().clone(),
+            has_cell_value: sheet.columns.has_cell_value_ref().to_owned(),
         }
     }
 }
@@ -83,6 +83,9 @@ impl SheetContentCache {
     #[wasm_bindgen(js_name = "hasContentInRect")]
     pub fn has_content_in_rect(&self, x0: i32, y0: i32, x1: i32, y1: i32) -> bool {
         let rect = Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64);
-        self.has_cell_value.intersects(rect)
+        self.has_cell_value
+            .nondefault_rects_in_rect(rect)
+            .next()
+            .is_some()
     }
 }

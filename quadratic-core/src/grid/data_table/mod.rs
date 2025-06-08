@@ -830,11 +830,10 @@ pub mod test {
         let kind = data_table.kind.clone();
         let values = data_table.value.clone().into_array().unwrap();
 
-        let expected_values = values.clone();
         let expected_data_table = DataTable::new(
             kind.clone(),
             "test.csv",
-            expected_values.into(),
+            values.into(),
             false,
             None,
             None,

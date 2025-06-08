@@ -110,7 +110,6 @@ export type JsTableInfo = { name: string, sheet_id: string, chart: boolean, lang
 export type JsTablesContext = { sheet_name: string, data_tables: Array<JsDataTableContext>, code_tables: Array<JsCodeTableContext>, charts: Array<JsChartContext>, };
 export type JsUpdateCodeCell = { sheet_id: SheetId, pos: Pos, render_code_cell: JsRenderCodeCell | null, };
 export type JsValidationWarning = { pos: Pos, validation: string | null, style: ValidationStyle | null, };
-export type MinMax = { min: number, max: number, };
 export type NumberRange = { "Range": [number | null, number | null] } | { "Equal": Array<number> } | { "NotEqual": Array<number> };
 export type NumericFormat = { type: NumericFormatKind, symbol: string | null, };
 export type NumericFormatKind = "NUMBER" | "CURRENCY" | "PERCENTAGE" | "EXPONENTIAL";

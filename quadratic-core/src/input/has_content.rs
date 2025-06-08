@@ -3,7 +3,7 @@
 use crate::a1::{A1Context, TableMapEntry};
 use crate::grid::sheet::data_tables::cache::SheetDataTablesCache;
 use crate::wasm_bindings::sheet_content_cache::SheetContentCache;
-use crate::{Rect, SheetPos};
+use crate::{Pos, Rect, SheetPos};
 
 /// Gets the Table that intersects a given position.
 pub fn table_at<'a>(
@@ -152,15 +152,15 @@ pub(crate) fn column_bounds(
 
 /// Returns true if the cell has content (either on the sheet or in a table).
 pub(crate) fn has_content_ignore_blank_table(
-    pos: SheetPos,
+    pos: Pos,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
 ) -> bool {
-    if content_cache.has_content(pos.into()) {
+    if content_cache.has_content(pos) {
         return true;
     }
 
-    table_cache.has_content_ignore_blank_table(pos.into())
+    table_cache.has_content_ignore_blank_table(pos)
 }
 
 #[cfg(test)]
@@ -180,24 +180,24 @@ mod tests {
 
         // normal content
         assert!(has_content_ignore_blank_table(
-            pos![sheet_id!1, 1],
+            pos![1, 1],
             &sheet.content_cache(),
             &sheet.data_tables.cache_ref()
         ));
         assert!(!has_content_ignore_blank_table(
-            pos![sheet_id!2, 1],
+            pos![2, 1],
             &sheet.content_cache(),
             &sheet.data_tables.cache_ref()
         ));
 
         // table content
         assert!(has_content_ignore_blank_table(
-            pos![sheet_id!2, 4],
+            pos![2, 4],
             &sheet.content_cache(),
             &sheet.data_tables.cache_ref()
         ));
         assert!(!has_content_ignore_blank_table(
-            pos![sheet_id!3, 4],
+            pos![3, 4],
             &sheet.content_cache(),
             &sheet.data_tables.cache_ref()
         ));

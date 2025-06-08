@@ -64,22 +64,14 @@ fn jump_up(
     let prev_y: i64;
 
     // handle case of cell with content
-    if has_content_ignore_blank_table(
-        Pos { x, y }.to_sheet_pos(sheet_id),
-        content_cache,
-        table_cache,
-    ) {
+    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
         // if previous cell is empty, find the next cell with content
         if y - 1 == 0 {
             return Pos { x, y: 1 };
         }
 
         // if prev cell is empty, find the next cell with content
-        if !has_content_ignore_blank_table(
-            Pos { x, y: y - 1 }.to_sheet_pos(sheet_id),
-            content_cache,
-            table_cache,
-        ) {
+        if !has_content_ignore_blank_table(Pos { x, y: y - 1 }, content_cache, table_cache) {
             if let Some(prev) = find_next_row(
                 sheet_id,
                 y - 2,
@@ -152,17 +144,9 @@ fn jump_down(
     let mut next_y: Option<i64> = None;
 
     // handle case of cell with content
-    if has_content_ignore_blank_table(SheetPos { x, y, sheet_id }, content_cache, table_cache) {
+    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
         // if next cell is empty, find the next cell with content
-        if !has_content_ignore_blank_table(
-            SheetPos {
-                x,
-                y: y + 1,
-                sheet_id,
-            },
-            content_cache,
-            table_cache,
-        ) {
+        if !has_content_ignore_blank_table(Pos { x, y: y + 1 }, content_cache, table_cache) {
             if let Some(next) = find_next_row(
                 sheet_id,
                 y + 2,
@@ -244,20 +228,12 @@ fn jump_left(
     let prev_x;
 
     // handle case of cell with content
-    if has_content_ignore_blank_table(SheetPos { x, y, sheet_id }, content_cache, table_cache) {
+    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
         // if previous cell is empty, find the next cell with content
         if x - 1 == 0 {
             return Pos { x: 1, y };
         }
-        if !has_content_ignore_blank_table(
-            SheetPos {
-                x: x - 1,
-                y,
-                sheet_id,
-            },
-            content_cache,
-            table_cache,
-        ) {
+        if !has_content_ignore_blank_table(Pos { x: x - 1, y }, content_cache, table_cache) {
             if x - 2 == 0 {
                 return Pos { x: 1, y };
             }
@@ -331,17 +307,9 @@ pub fn jump_right(
 
     // handle case of cell with content
     let mut next_x: Option<i64> = None;
-    if has_content_ignore_blank_table(SheetPos { x, y, sheet_id }, content_cache, table_cache) {
+    if has_content_ignore_blank_table(Pos { x, y }, content_cache, table_cache) {
         // if next cell is empty, find the next cell with content
-        if !has_content_ignore_blank_table(
-            SheetPos {
-                x: x + 1,
-                y,
-                sheet_id,
-            },
-            content_cache,
-            table_cache,
-        ) {
+        if !has_content_ignore_blank_table(Pos { x: x + 1, y }, content_cache, table_cache) {
             if let Some(next) = find_next_column(
                 sheet_id,
                 x + 2,
