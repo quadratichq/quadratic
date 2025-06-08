@@ -92,8 +92,10 @@ impl GridController {
             // chart_output setting since it may have been set by the user.
             // TODO (DF): we should be tracking whether a user set this, and
             // if not, we should use the pixel output.
-            if new_data_table.is_html_or_image() {
-                new_data_table.chart_output = old_data_table.chart_output.to_owned();
+            if let Some((w, h)) = old_data_table.chart_output.to_owned() {
+                if w != 0 && h != 0 {
+                    new_data_table.chart_output = old_data_table.chart_output.to_owned();
+                }
             }
         }
 
