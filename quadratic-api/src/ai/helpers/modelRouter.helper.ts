@@ -77,6 +77,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
     <capability>Requests that involve frustration</capability>
+    <capability>Onboarding questions</capability>
    </capabilities>
   </model>
   <model name="4.1">
@@ -120,7 +121,11 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Hi</user>
+   <user>Chart is empty or missing data</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Hi, I'm new to Quadratic.</user>
    <answer>Claude</answer>
   </example>
   <example>
