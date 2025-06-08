@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
-import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { getModelFromModelKey, getModelOptions, isAzureOpenAIModel } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
   AIMessagePrompt,
   AIRequestHelperArgs,
@@ -23,6 +23,9 @@ export const handleOpenAIRequest = async (
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strictParams);
 
   try {
+    console.log('Azure OpenAI Debug - Model:', model, 'ModelKey:', modelKey);
+    console.log('Azure OpenAI Debug - Endpoint:', openai.baseURL);
+
     let apiArgs: ChatCompletionCreateParamsStreaming | ChatCompletionCreateParamsNonStreaming = {
       model,
       messages,
@@ -44,12 +47,18 @@ export const handleOpenAIRequest = async (
           include_usage: true,
         },
       };
-      const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
+      const completion = await openai.chat.completions.create(
+        apiArgs as ChatCompletionCreateParamsStreaming,
+        isAzureOpenAIModel(modelKey) ? { path: `/openai/deployments/${model}/chat/completions` } : undefined
+      );
 
       const parsedResponse = await parseOpenAIStream(completion, modelKey, response);
       return parsedResponse;
     } else {
-      const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
+      const result = await openai.chat.completions.create(
+        apiArgs as ChatCompletionCreateParamsNonStreaming,
+        isAzureOpenAIModel(modelKey) ? { path: `/openai/deployments/${model}/chat/completions` } : undefined
+      );
 
       const parsedResponse = parseOpenAIResponse(result, modelKey, response);
       return parsedResponse;

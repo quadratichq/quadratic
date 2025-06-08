@@ -580,8 +580,8 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 2.5,
     rate_per_million_cache_write_tokens: 0,
   },
-  'azure-openai:gpt-4.1-2025-04-14': {
-    model: 'gpt-4.1-2025-04-14',
+  'azure-openai:gpt-4.1': {
+    model: 'gpt-4.1',
     displayName: 'azure gpt 4.1',
     temperature: 0,
     max_tokens: 32768,
