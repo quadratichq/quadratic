@@ -25,47 +25,50 @@ pub struct SheetDataTablesCache {
 }
 
 impl SheetDataTablesCache {
+    /// Returns the bounds of the column or None if the column is empty of content.
+    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
+        let single_cell_min = self.single_cell_tables.col_min(column);
+        let multi_cell_min = self.multi_cell_tables.col_min(column);
+        let min = match (single_cell_min > 0, multi_cell_min > 0) {
+            (true, true) => single_cell_min.min(multi_cell_min),
+            (true, false) => single_cell_min,
+            (false, true) => multi_cell_min,
+            (false, false) => return None,
+        };
+
+        let single_cell_max = self.single_cell_tables.col_max(column);
+        let multi_cell_max = self.multi_cell_tables.col_max(column);
+        let max = match (single_cell_max > 0, multi_cell_max > 0) {
+            (true, true) => single_cell_max.max(multi_cell_max),
+            (true, false) => single_cell_max,
+            (false, true) => multi_cell_max,
+            (false, false) => return None,
+        };
+
+        Some((min, max))
+    }
+
     /// Returns the bounds of the row or None if the row is empty of content.
     pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         let single_cell_min = self.single_cell_tables.row_min(row);
-        let single_cell_max = self.single_cell_tables.row_max(row);
         let multi_cell_min = self.multi_cell_tables.row_min(row);
+        let min = match (single_cell_min > 0, multi_cell_min > 0) {
+            (true, true) => single_cell_min.min(multi_cell_min),
+            (true, false) => single_cell_min,
+            (false, true) => multi_cell_min,
+            (false, false) => return None,
+        };
+
+        let single_cell_max = self.single_cell_tables.row_max(row);
         let multi_cell_max = self.multi_cell_tables.row_max(row);
+        let max = match (single_cell_max > 0, multi_cell_max > 0) {
+            (true, true) => single_cell_max.max(multi_cell_max),
+            (true, false) => single_cell_max,
+            (false, true) => multi_cell_max,
+            (false, false) => return None,
+        };
 
-        if single_cell_min == 0 && multi_cell_min == 0 {
-            return None;
-        }
-
-        if single_cell_min == 0 {
-            Some((multi_cell_min, multi_cell_max))
-        } else {
-            Some((
-                single_cell_min.min(multi_cell_min),
-                single_cell_max.max(multi_cell_max),
-            ))
-        }
-    }
-
-    /// Returns the bounds of the column or None if the column is empty of
-    /// content.
-    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
-        let single_cell_min = self.single_cell_tables.col_min(column);
-        let single_cell_max = self.single_cell_tables.col_max(column);
-        let multi_cell_min = self.multi_cell_tables.col_min(column);
-        let multi_cell_max = self.multi_cell_tables.col_max(column);
-
-        if single_cell_min == 0 && multi_cell_min == 0 {
-            return None;
-        }
-
-        if single_cell_min == 0 {
-            Some((multi_cell_min, multi_cell_max))
-        } else {
-            Some((
-                single_cell_min.min(multi_cell_min),
-                single_cell_max.max(multi_cell_max),
-            ))
-        }
+        Some((min, max))
     }
 
     /// Returns true if the cell has content, ignoring blank cells within a

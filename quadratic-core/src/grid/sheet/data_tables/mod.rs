@@ -507,49 +507,13 @@ impl SheetDataTables {
     }
 
     /// Returns the bounds of the column at the given index.
-    pub fn column_bounds(&self, column: i64) -> (i64, i64) {
-        let single_cell_min = self.cache.single_cell_tables.col_min(column);
-        let multi_cell_min = self.cache.multi_cell_tables.col_min(column);
-        let min = match (single_cell_min > 0, multi_cell_min > 0) {
-            (true, true) => single_cell_min.min(multi_cell_min),
-            (true, false) => single_cell_min,
-            (false, true) => multi_cell_min,
-            (false, false) => 0,
-        };
-
-        let single_cell_max = self.cache.single_cell_tables.col_max(column);
-        let multi_cell_max = self.cache.multi_cell_tables.col_max(column);
-        let max = match (single_cell_max > 0, multi_cell_max > 0) {
-            (true, true) => single_cell_max.max(multi_cell_max),
-            (true, false) => single_cell_max,
-            (false, true) => multi_cell_max,
-            (false, false) => 0,
-        };
-
-        (min, max)
+    pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
+        self.cache.column_bounds(column)
     }
 
     /// Returns the bounds of the row at the given index.
-    pub fn row_bounds(&self, row: i64) -> (i64, i64) {
-        let single_cell_min = self.cache.single_cell_tables.row_min(row);
-        let multi_cell_min = self.cache.multi_cell_tables.row_min(row);
-        let min = match (single_cell_min > 0, multi_cell_min > 0) {
-            (true, true) => single_cell_min.min(multi_cell_min),
-            (true, false) => single_cell_min,
-            (false, true) => multi_cell_min,
-            (false, false) => 0,
-        };
-
-        let single_cell_max = self.cache.single_cell_tables.row_max(row);
-        let multi_cell_max = self.cache.multi_cell_tables.row_max(row);
-        let max = match (single_cell_max > 0, multi_cell_max > 0) {
-            (true, true) => single_cell_max.max(multi_cell_max),
-            (true, false) => single_cell_max,
-            (false, true) => multi_cell_max,
-            (false, false) => 0,
-        };
-
-        (min, max)
+    pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
+        self.cache.row_bounds(row)
     }
 
     /// Returns the finite bounds of the sheet data tables.

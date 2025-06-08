@@ -19,8 +19,7 @@ impl Sheet {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
         for col in column_start..=column_end {
-            let (bound_start, bound_end) = self.data_tables.column_bounds(col);
-            if bound_start > 0 && bound_end > 0 {
+            if let Some((bound_start, bound_end)) = self.data_tables.column_bounds(col) {
                 min = min
                     .map(|min| Some(min.min(bound_start)))
                     .unwrap_or(Some(bound_start));
@@ -41,8 +40,7 @@ impl Sheet {
         let mut min: Option<i64> = None;
         let mut max: Option<i64> = None;
         for row in row_start..=row_end {
-            let (bound_start, bound_end) = self.data_tables.row_bounds(row);
-            if bound_start > 0 && bound_end > 0 {
+            if let Some((bound_start, bound_end)) = self.data_tables.row_bounds(row) {
                 min = min
                     .map(|min| Some(min.min(bound_start)))
                     .unwrap_or(Some(bound_start));
