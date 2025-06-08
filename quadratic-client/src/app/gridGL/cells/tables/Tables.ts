@@ -358,7 +358,7 @@ export class Tables extends Container<Table> {
 
   pointerMove = (world: Point): boolean => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
-    const table = this.getTable(cell.x, cell.y);
+    const table = this.getTableIntersects(cell);
     if (!table) return false;
     const result = table.pointerMove(world);
     if (result) {
@@ -535,7 +535,7 @@ export class Tables extends Container<Table> {
 
   /// Returns the table name if the cell is in the table header.
   getTableNameInNameOrColumn = (x: number, y: number): string | undefined => {
-    const table = this.getTable(x, y);
+    const table = this.getTableIntersects({ x, y });
     if (table) {
       if (
         (table.codeCell.show_name && y === table.codeCell.y) ||

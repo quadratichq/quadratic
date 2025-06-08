@@ -1,5 +1,6 @@
 use crate::{
     CellValue, Pos, SheetPos, SheetRect,
+    a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -63,6 +64,8 @@ impl GridController {
                 Ok(())
             })?;
 
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
+
             transaction.forward_operations.push(op);
             transaction
                 .reverse_operations
@@ -104,6 +107,8 @@ impl GridController {
                 dt.chart_output = Some((w, h));
                 Ok(())
             })?;
+
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
             transaction.forward_operations.push(op);
             transaction
