@@ -38,6 +38,8 @@ impl SheetDataTablesCache {
 
         if single_cell_min == 0 {
             Some((multi_cell_min, multi_cell_max))
+        } else if multi_cell_min == 0 {
+            Some((single_cell_min, single_cell_max))
         } else {
             Some((
                 single_cell_min.min(multi_cell_min),
@@ -60,6 +62,8 @@ impl SheetDataTablesCache {
 
         if single_cell_min == 0 {
             Some((multi_cell_min, multi_cell_max))
+        } else if multi_cell_min == 0 {
+            Some((single_cell_min, single_cell_max))
         } else {
             Some((
                 single_cell_min.min(multi_cell_min),
