@@ -476,12 +476,6 @@ export class SheetCursor {
     this.jsSelection.updateColumnName(tableName, oldName, newName);
   };
 
-  hideColumn = (tableName: string, columnName: string) => {
-    this.jsSelection.hideColumn(tableName, columnName, this.sheets.jsA1Context);
-    const { x, y } = this.position;
-    this.selectRect(x, y, x, y);
-  };
-
   isEntireColumnSelected = (column: number): boolean => {
     return this.jsSelection.isEntireColumnSelected(column);
   };

@@ -367,7 +367,6 @@ export const hideTableColumn = () => {
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
-    sheets.sheet.cursor.hideColumn(table.name, columns[column].name);
   }
 };
 
