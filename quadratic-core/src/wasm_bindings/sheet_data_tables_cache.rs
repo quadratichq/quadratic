@@ -23,11 +23,7 @@ impl SheetDataTablesCache {
             x: x as i64,
             y: y as i64,
         };
-        if self.single_cell_tables.get(pos).is_some() {
-            Some(pos)
-        } else {
-            self.multi_cell_tables.get(pos)
-        }
+        self.get_pos_contains(pos)
     }
 
     /// Returns all single-cell tables in the given rectangle.
