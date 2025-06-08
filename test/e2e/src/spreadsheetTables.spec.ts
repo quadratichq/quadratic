@@ -2,6 +2,7 @@ import { expect, test } from '@playwright/test';
 import { navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
+import { gotoCells } from './helpers/sheet.helper';
 
 test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   // Constants
@@ -24,8 +25,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   //--------------------------------
   // Convert Data into a Table
   //--------------------------------
-  // Select [1, 1], [10, 12]
-  await selectCells(page, { startXY: [1, 1], endXY: [10, 12] });
+  await gotoCells(page, { a1: 'A1:J12' });
 
   // Right click on selected area
   await page.mouse.click(540, 200, { button: 'right' });
@@ -46,6 +46,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   await page.mouse.click(540, 200, { button: 'right' });
 
   // Click `Flatten` option
+  await page.getByRole(`menuitem`, { name: `table Table` }).click();
   await page.getByRole(`menuitem`, { name: `Flatten` }).click();
 
   // Short wait
@@ -2210,10 +2211,10 @@ test('Table Resize', async ({ page }) => {
   // Constants
   const fileName = 'Athletes_Table';
   const fileType = 'grid';
-  const startX = 567; // Bottom right corner of (E, 12)
-  const startY = 355; // Bottom right corner of (E, 12)
-  const endX = 665; // Bottom right corner of (F, 16)
-  const endY = 441; // Bottom right corner of (F, 16)
+  const startX = 523; // Bottom right corner of (E, 12)
+  const startY = 273; // Bottom right corner of (E, 12)
+  const endX = 620; // Bottom right corner of (F, 16)
+  const endY = 355; // Bottom right corner of (F, 16)
 
   // Log in
   await logIn(page, { emailPrefix: `e2e_table_resize` });
@@ -2233,17 +2234,25 @@ test('Table Resize', async ({ page }) => {
     maxDiffPixelRatio: 0.01,
   });
 
+  // await displayMouseCoords(page, { offsets: true });
+  // await page.pause();
+
+  // Get canvas bounding box
+  const canvas = page.locator('#QuadraticCanvasID');
+  const canvasBox = await canvas.boundingBox();
+  if (!canvasBox) throw new Error('Canvas not found');
+
   //--------------------------------
   // Resize Table to Add Data
   //--------------------------------
   // Hover and click down at start cell coordinates (E, 12)
-  await page.mouse.move(startX, startY, { steps: 50 });
+  await page.mouse.move(canvasBox.x + startX, canvasBox.y + startY, { steps: 50 });
   await page.waitForTimeout(5 * 1000);
   await page.mouse.down();
   await page.waitForTimeout(5 * 1000);
 
   // Move and mouse up at end cell coordinates (F, 16)
-  await page.mouse.move(endX, endY - 20, { steps: 50 });
+  await page.mouse.move(canvasBox.x + endX, canvasBox.y + endY, { steps: 50 });
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
   await page.waitForTimeout(5 * 1000);
@@ -2257,16 +2266,16 @@ test('Table Resize', async ({ page }) => {
   // Resize Table to Remove Data
   //--------------------------------
   // Click outside table to lose focus
-  await page.mouse.click(endX + 100, endY + 100);
+  await page.mouse.click(canvasBox.x + endX + 100, canvasBox.y + endY + 100);
 
   // Hover and click down at start cell coordinates (F, 16)
-  await page.mouse.move(endX, endY, { steps: 50 });
+  await page.mouse.move(canvasBox.x + endX, canvasBox.y + endY, { steps: 50 });
   await page.waitForTimeout(5 * 1000);
   await page.mouse.down();
   await page.waitForTimeout(5 * 1000);
 
   // Move and mouse up at end cell coordinates  (D, 8)
-  await page.mouse.move(startX - 100, startY - 100, { steps: 50 });
+  await page.mouse.move(canvasBox.x + startX - 120, canvasBox.y + startY - 100, { steps: 50 });
   await page.waitForTimeout(5 * 1000);
   await page.mouse.up();
   await page.waitForTimeout(5 * 1000);
@@ -2401,6 +2410,6 @@ test('Table Sort', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
-  await cleanUpFiles(page, { fileName });
+  // await page.locator(`nav a svg`).click();
+  // await cleanUpFiles(page, { fileName });
 });

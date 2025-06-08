@@ -246,59 +246,64 @@ export class PointerTableResize {
   };
 
   pointerUp = (): boolean => {
-    if (this.active) {
-      if (!this.selection || !this.selectionRight || !this.selectionBottom || !this.tableBounds) return true;
+    if (!this.active) {
+      return false;
+    }
 
-      const sheet = sheets.sheet;
-
-      if (this.endCell) {
-        const { column: columnSelection, row: rowSelection } = sheets.sheet.getColumnRowFromScreen(
-          this.selection.x,
-          this.selection.y
-        );
-
-        const width = columnSelection - this.tableBounds.column + 1;
-        const height = rowSelection - this.tableBounds.row + 1;
-        const newWidth = this.endCell.x - this.tableBounds.column;
-        const newHeight = this.endCell.y - this.tableBounds.row;
-
-        const newRectangle = new Rectangle(this.tableBounds.column, this.tableBounds.row, newWidth, newHeight);
-
-        if (
-          newRectangle.x !== this.tableBounds.column ||
-          newRectangle.y !== this.tableBounds.row ||
-          newRectangle.width !== width ||
-          newRectangle.height !== height
-        ) {
-          const columnsToAdd = Math.max(0, newWidth - width);
-          const columnsToRemove = Math.max(0, width - newWidth);
-          const rowsToAdd = Math.max(0, newHeight - height);
-          const rowsToRemove = Math.max(0, height - newHeight);
-          const toArray = (size: number, base: number, fn: (i: number, base: number) => number) =>
-            Array(size)
-              .fill(0)
-              .map((_, i) => fn(i, base));
-
-          // update the table
-          quadraticCore.dataTableMutations({
-            sheetId: sheet.id,
-            x: this.tableBounds.column,
-            y: this.tableBounds.row,
-            select_table: true,
-            columns_to_add: toArray(columnsToAdd, width, (i, base) => base + i),
-            columns_to_remove: toArray(columnsToRemove, width, (i, base) => base - i - 1),
-            rows_to_add: toArray(rowsToAdd, height, (i, base) => base + i),
-            rows_to_remove: toArray(rowsToRemove, height, (i, base) => base - i - 1),
-            flatten_on_delete: true,
-            swallow_on_insert: true,
-            cursor: sheets.getCursorPosition(),
-          });
-        }
-      }
-      this.reset();
+    if (!this.selection || !this.selectionRight || !this.selectionBottom || !this.tableBounds) {
       return true;
     }
-    return false;
+
+    const sheet = sheets.sheet;
+
+    if (this.endCell) {
+      const { column: columnSelection, row: rowSelection } = sheets.sheet.getColumnRowFromScreen(
+        this.selection.x,
+        this.selection.y
+      );
+
+      const width = columnSelection - this.tableBounds.column + 1;
+      const height = rowSelection - this.tableBounds.row + 1;
+      const newWidth = this.endCell.x - this.tableBounds.column;
+      const newHeight = this.endCell.y - this.tableBounds.row;
+
+      const newRectangle = new Rectangle(this.tableBounds.column, this.tableBounds.row, newWidth, newHeight);
+
+      if (
+        newRectangle.x !== this.tableBounds.column ||
+        newRectangle.y !== this.tableBounds.row ||
+        newRectangle.width !== width ||
+        newRectangle.height !== height
+      ) {
+        const columnsToAdd = Math.max(0, newWidth - width);
+        const columnsToRemove = Math.max(0, width - newWidth);
+        const rowsToAdd = Math.max(0, newHeight - height);
+        const rowsToRemove = Math.max(0, height - newHeight);
+        const toArray = (size: number, base: number, fn: (i: number, base: number) => number) =>
+          Array(size)
+            .fill(0)
+            .map((_, i) => fn(i, base));
+
+        // update the table
+        quadraticCore.dataTableMutations({
+          sheetId: sheet.id,
+          x: this.tableBounds.column,
+          y: this.tableBounds.row,
+          select_table: true,
+          columns_to_add: toArray(columnsToAdd, width, (i, base) => base + i),
+          columns_to_remove: toArray(columnsToRemove, width, (i, base) => base - i - 1),
+          rows_to_add: toArray(rowsToAdd, height, (i, base) => base + i),
+          rows_to_remove: toArray(rowsToRemove, height, (i, base) => base - i - 1),
+          flatten_on_delete: true,
+          swallow_on_insert: true,
+          cursor: sheets.getCursorPosition(),
+        });
+      }
+    }
+
+    this.reset();
+
+    return true;
   };
 
   handleEscape = (): boolean => {
