@@ -145,35 +145,6 @@ impl Sheet {
             .into()
     }
 
-    /// Sets the CellValue for a DataTable at the Pos.
-    /// Returns true if the value was set.
-    /// TODO(ddimaria): move to DataTable code
-    pub fn set_code_cell_value(&mut self, pos: Pos, value: CellValue) -> bool {
-        self.data_table_mut_that_contains(pos)
-            .map(|(code_cell_pos, data_table)| {
-                let x = (pos.x - code_cell_pos.x) as u32;
-                let y = (pos.y - code_cell_pos.y) as u32;
-                data_table.set_cell_value_at(x, y, value).then_some(|| true)
-            })
-            .is_some()
-    }
-
-    /// TODO(ddimaria): move to DataTable code
-    pub fn set_code_cell_values(&mut self, pos: Pos, mut values: CellValues) {
-        if let Some((code_cell_pos, data_table)) = self.data_table_mut_that_contains(pos) {
-            let rect = Rect::from(&values);
-            for y in rect.y_range() {
-                for x in rect.x_range() {
-                    let new_x = u32::try_from(pos.x - code_cell_pos.x + x).unwrap_or(0);
-                    let new_y = u32::try_from(pos.y - code_cell_pos.y + y).unwrap_or(0);
-                    if let Some(value) = values.remove(x as u32, y as u32) {
-                        data_table.set_cell_value_at(new_x, new_y, value);
-                    }
-                }
-            }
-        }
-    }
-
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
         self.data_tables_intersect_rect(rect)
             .map(|(_, pos, data_table)| {

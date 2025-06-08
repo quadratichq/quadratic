@@ -301,9 +301,11 @@ impl GridController {
 
             pos.y -= data_table.y_adjustment(true);
 
+            let is_sorted = data_table.display_buffer.is_some();
+
             // if there is a display buffer, use it to find the row index for all the values
             // this is used when the data table has sorted columns, maps input to actual coordinates
-            if data_table.display_buffer.is_some() {
+            if is_sorted {
                 // rebuild CellValues with unsorted coordinates
                 let mut values_unsorted = CellValues::new(0, 0);
                 let mut old_values_unsorted = CellValues::new(0, 0);
@@ -376,34 +378,48 @@ impl GridController {
                 values = actual_values;
             }
 
-            // set the new value
-            sheet.set_code_cell_values(pos, values);
-
-            // sort the data table and update the old values to match the new sorted data table
-            let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                if dt.display_buffer.is_some() {
-                    dt.check_sort()?;
-
-                    let mut old_sorted_values = CellValues::new(0, 0);
-
-                    let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
-                    for x in rect.x_range() {
+            // set the new value, and sort if necessary
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let (data_table, dirty_rects) =
+                sheet
+                    .data_tables
+                    .modify_data_table_at(&data_table_pos, |data_table| {
+                        let rect = Rect::from(&values);
                         for y in rect.y_range() {
-                            let value_x = u32::try_from(x)?;
-                            let value_y = u32::try_from(y)?;
-
-                            let display_y = dt.get_display_index_from_row_index(value_y as u64);
-
-                            if let Some(value) = old_values.remove(value_x, value_y) {
-                                old_sorted_values.set(value_x, display_y as u32, value);
+                            for x in rect.x_range() {
+                                let new_x = u32::try_from(pos.x - data_table_pos.x + x)?;
+                                let new_y = u32::try_from(pos.y - data_table_pos.y + y)?;
+                                if let Some(value) = values.remove(x as u32, y as u32) {
+                                    data_table.set_cell_value_at(new_x, new_y, value);
+                                }
                             }
                         }
-                    }
 
-                    old_values = old_sorted_values;
+                        if is_sorted {
+                            data_table.check_sort()?;
+                        }
+
+                        Ok(())
+                    })?;
+
+            // Update the old values to match the new sorted data table
+            if is_sorted {
+                let mut old_sorted_values = CellValues::new(0, 0);
+                let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
+                for x in rect.x_range() {
+                    for y in rect.y_range() {
+                        let value_x = u32::try_from(x)?;
+                        let value_y = u32::try_from(y)?;
+
+                        let display_y = data_table.get_display_index_from_row_index(value_y as u64);
+
+                        if let Some(value) = old_values.remove(value_x, value_y) {
+                            old_sorted_values.set(value_x, display_y as u32, value);
+                        }
+                    }
                 }
-                Ok(())
-            })?;
+                old_values = old_sorted_values;
+            }
 
             self.send_updated_bounds(transaction, sheet_id);
 

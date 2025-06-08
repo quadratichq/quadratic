@@ -262,34 +262,11 @@ impl SheetDataTables {
 
     /// Returns the data table (with anchor position) that contains the given position, if it exists.
     pub fn get_contains(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
-        if self.cache.single_cell_tables.get(pos).is_some() {
-            Some((pos, self.data_tables.get(&pos)?))
-        } else {
-            self.cache
-                .multi_cell_tables
-                .get(pos)
-                .and_then(|data_table_pos| {
-                    self.data_tables
-                        .get(&data_table_pos)
-                        .map(|data_table| (data_table_pos, data_table))
-                })
-        }
-    }
-
-    /// Returns a mutable reference to the data table (with anchor position) that contains the given position, if it exists.
-    pub fn get_mut_contains(&mut self, pos: Pos) -> Option<(Pos, &mut DataTable)> {
-        if self.cache.single_cell_tables.get(pos).is_some() {
-            Some((pos, self.data_tables.get_mut(&pos)?))
-        } else {
-            self.cache
-                .multi_cell_tables
-                .get(pos)
-                .and_then(|data_table_pos| {
-                    self.data_tables
-                        .get_mut(&data_table_pos)
-                        .map(|data_table| (data_table_pos, data_table))
-                })
-        }
+        self.get_pos_contains(pos).and_then(|data_table_pos| {
+            self.data_tables
+                .get(&data_table_pos)
+                .map(|data_table| (data_table_pos, data_table))
+        })
     }
 
     /// Returns an iterator over all positions in the sheet data tables that intersect with a given rectangle.
