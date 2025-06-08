@@ -173,7 +173,7 @@ impl SheetDataTables {
                     new_spilled_output_rect.min.y,
                     new_spilled_output_rect.max.x,
                     new_spilled_output_rect.max.y,
-                    Some((pos, data_table)),
+                    Some(data_table),
                 );
             }
 

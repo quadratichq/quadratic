@@ -136,23 +136,17 @@ impl MultiCellTablesCache {
         self.multi_cell_tables.get(pos)
     }
 
-    pub fn set_rect(
-        &mut self,
-        x1: i64,
-        y1: i64,
-        x2: i64,
-        y2: i64,
-        value: Option<(&Pos, &DataTable)>,
-    ) {
-        if let Some((pos, data_table)) = value {
+    pub fn set_rect(&mut self, x1: i64, y1: i64, x2: i64, y2: i64, data_table: Option<&DataTable>) {
+        if let Some(data_table) = data_table {
             self.multi_cell_tables
-                .set_rect(x1, y1, Some(x2), Some(y2), Some(*pos));
+                .set_rect(x1, y1, Some(x2), Some(y2), Some((x1, y1).into()));
+
             if let Value::Array(array) = &data_table.value {
                 if let Some(mut empty_values_cache) = array.empty_values_cache_ref() {
                     let y_adjustment = data_table.y_adjustment(true);
 
                     // update empty values cache
-                    empty_values_cache.translate_in_place(pos.x - 1, pos.y - 1 + y_adjustment);
+                    empty_values_cache.translate_in_place(x1 - 1, y1 - 1 + y_adjustment);
                     self.multi_cell_tables_empty.set_from(&empty_values_cache);
 
                     // mark table name and column headers as non-empty
@@ -173,6 +167,7 @@ impl MultiCellTablesCache {
         } else {
             self.multi_cell_tables
                 .set_rect(x1, y1, Some(x2), Some(y2), None);
+
             self.multi_cell_tables_empty
                 .set_rect(x1, y1, Some(x2), Some(y2), None);
         }
