@@ -1,22 +1,22 @@
 import { type Page } from '@playwright/test';
+import { gotoCells } from './sheet.helper';
 
 /*
  * Navigates to a specified [Column, Row] in a spreadsheet-like interface on a webpage, then fills in the cell with desired text
  * and arrows down to the next cell
  */
 type TypeInCellOptions = {
-  targetColumn: number;
-  targetRow: number;
+  a1: string;
   text: string;
 };
-export const typeInCell = async (page: Page, { targetColumn, targetRow, text }: TypeInCellOptions) => {
-  await navigateOnSheet(page, { targetColumn, targetRow });
+export const typeInCell = async (page: Page, { a1, text }: TypeInCellOptions) => {
+  await gotoCells(page, { a1 });
   // type some text
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(5 * 1000);
+  await page.waitForTimeout(2 * 1000);
   await page.keyboard.type(text, { delay: 250 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(5 * 1000);
+  await page.waitForTimeout(2 * 1000);
 };
 
 /**

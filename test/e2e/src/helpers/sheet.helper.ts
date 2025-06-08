@@ -12,8 +12,16 @@ export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
   await page.keyboard.press('Control+G');
   await page.keyboard.type(a1);
   await page.keyboard.press('Enter');
+  await page.waitForTimeout(2 * 1000);
+  await assertSelection(page, { a1 });
 };
 
-export const assertSelection = async (page: Page, a1: string) => {
+/**
+ * Asserts the selection is the expected a1 notation.
+ */
+type AssertSelectionOptions = {
+  a1: string;
+};
+export const assertSelection = async (page: Page, { a1 }: AssertSelectionOptions) => {
   await expect(page.locator(`[data-testid="cursor-position"]`)).toHaveValue(a1);
 };
