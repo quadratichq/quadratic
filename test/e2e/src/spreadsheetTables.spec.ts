@@ -2236,18 +2236,17 @@ test('Table Resize', async ({ page }) => {
   //--------------------------------
   // Resize Table to Add Data
   //--------------------------------
-  await gotoCells(page, 'A1:J12');
-  // // Hover and click down at start cell coordinates (E, 12)
-  // await page.mouse.move(startX, startY, { steps: 50 });
-  // await page.waitForTimeout(5 * 1000);
-  // await page.mouse.down();
-  // await page.waitForTimeout(5 * 1000);
+  // Hover and click down at start cell coordinates (E, 12)
+  await page.mouse.move(startX, startY, { steps: 50 });
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.down();
+  await page.waitForTimeout(5 * 1000);
 
-  // // Move and mouse up at end cell coordinates (F, 16)
-  // await page.mouse.move(endX, endY - 20, { steps: 50 });
-  // await page.waitForTimeout(5 * 1000);
-  // await page.mouse.up();
-  // await page.waitForTimeout(5 * 1000);
+  // Move and mouse up at end cell coordinates (F, 16)
+  await page.mouse.move(endX, endY - 20, { steps: 50 });
+  await page.waitForTimeout(5 * 1000);
+  await page.mouse.up();
+  await page.waitForTimeout(5 * 1000);
 
   // Assert table has been expanded and data has been added
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Table_Resize_Add_Data.png', {
