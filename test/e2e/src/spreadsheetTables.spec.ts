@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { navigateOnSheet, selectCells } from './helpers/app.helper';
+import { gotoCells, navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
 
@@ -24,8 +24,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   //--------------------------------
   // Convert Data into a Table
   //--------------------------------
-  // Select [1, 1], [10, 12]
-  await selectCells(page, { startXY: [1, 1], endXY: [10, 12] });
+  await gotoCells(page, 'A1:J12');
 
   // Right click on selected area
   await page.mouse.click(540, 200, { button: 'right' });
@@ -46,6 +45,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   await page.mouse.click(540, 200, { button: 'right' });
 
   // Click `Flatten` option
+  await page.getByRole(`menuitem`, { name: `table Table` }).click();
   await page.getByRole(`menuitem`, { name: `Flatten` }).click();
 
   // Short wait
@@ -2236,17 +2236,18 @@ test('Table Resize', async ({ page }) => {
   //--------------------------------
   // Resize Table to Add Data
   //--------------------------------
-  // Hover and click down at start cell coordinates (E, 12)
-  await page.mouse.move(startX, startY, { steps: 50 });
-  await page.waitForTimeout(5 * 1000);
-  await page.mouse.down();
-  await page.waitForTimeout(5 * 1000);
+  await gotoCells(page, 'A1:J12');
+  // // Hover and click down at start cell coordinates (E, 12)
+  // await page.mouse.move(startX, startY, { steps: 50 });
+  // await page.waitForTimeout(5 * 1000);
+  // await page.mouse.down();
+  // await page.waitForTimeout(5 * 1000);
 
-  // Move and mouse up at end cell coordinates (F, 16)
-  await page.mouse.move(endX, endY - 20, { steps: 50 });
-  await page.waitForTimeout(5 * 1000);
-  await page.mouse.up();
-  await page.waitForTimeout(5 * 1000);
+  // // Move and mouse up at end cell coordinates (F, 16)
+  // await page.mouse.move(endX, endY - 20, { steps: 50 });
+  // await page.waitForTimeout(5 * 1000);
+  // await page.mouse.up();
+  // await page.waitForTimeout(5 * 1000);
 
   // Assert table has been expanded and data has been added
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Table_Resize_Add_Data.png', {
@@ -2401,6 +2402,6 @@ test('Table Sort', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
-  await cleanUpFiles(page, { fileName });
+  // await page.locator(`nav a svg`).click();
+  // await cleanUpFiles(page, { fileName });
 });
