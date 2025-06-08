@@ -85,6 +85,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Editing existing charts</capability>
     <capability>Simple/explicitly defined formatting</capability>
     <capability>Moving data to specific cell locations</capability>
+    <capability>Simple calculations and formulas - sums, means, averages, filters, etc.</capability>
    </capabilities>
   </model>
  </models>
