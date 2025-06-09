@@ -1,8 +1,7 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
-import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
-import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuType, type ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
@@ -17,8 +16,7 @@ import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } f
 import type { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import type { Point, Rectangle } from 'pixi.js';
-import { Container } from 'pixi.js';
+import { Container, type Point, type Rectangle } from 'pixi.js';
 
 export interface TablePointerDownResult {
   table: JsRenderCodeCell;
@@ -372,7 +370,7 @@ export class Tables extends Container<Table> {
   // track and activate a table whose context menu is open (this handles the
   // case where you hover a table and open the context menu; we want to keep
   // that table active while the context menu is open)
-  contextMenu = (options: ContextMenuState) => {
+  private contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
@@ -554,14 +552,14 @@ export class Tables extends Container<Table> {
     return this.tablesCache.getByXY(x, y);
   };
 
-  /// Returns a single-cell code cell (Tables are excluded)
-  getSingleCodeCell = (x: number, y: number): JsRenderCodeCell | undefined => {
-    return this.singleCellTables[`${x},${y}`];
-  };
-
-  /// Returns a table by its name.
-  getTableFromName = (name: string): Table | undefined => {
-    return this.tablesCache.getByName(name);
+  /// Returns the table that the cell intersects (excludes single cell tables).
+  getTableIntersects = (cell: JsCoordinate): Table | undefined => {
+    if (this.dataTablesCache) {
+      const tablePos = this.dataTablesCache.getTableInPos(cell.x, cell.y);
+      if (tablePos) {
+        return this.getTable(tablePos.x, tablePos.y);
+      }
+    }
   };
 
   /// Returns a code cell from either a Table or a single code cell.
@@ -572,14 +570,14 @@ export class Tables extends Container<Table> {
     if (table) return table.codeCell;
   };
 
-  /// Returns the table that the cell intersects (excludes single cell tables).
-  getTableIntersects = (cell: JsCoordinate): Table | undefined => {
-    if (this.dataTablesCache) {
-      const tablePos = this.dataTablesCache.getTableInPos(cell.x, cell.y);
-      if (tablePos) {
-        return this.getTable(tablePos.x, tablePos.y);
-      }
-    }
+  /// Returns a table by its name.
+  getTableFromName = (name: string): Table | undefined => {
+    return this.tablesCache.getByName(name);
+  };
+
+  /// Returns a single-cell code cell (Tables are excluded)
+  private getSingleCodeCell = (x: number, y: number): JsRenderCodeCell | undefined => {
+    return this.singleCellTables[`${x},${y}`];
   };
 
   // Returns single cell code cells that are in the given cell-based rectangle.

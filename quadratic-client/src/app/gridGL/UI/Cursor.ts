@@ -142,14 +142,6 @@ export class Cursor extends Container {
       g.moveTo(x + width - indicatorOffset, y + height);
       g.lineTo(x, y + height);
       g.lineTo(x, y);
-    } else {
-      // this draws a border around the table name
-      // this.graphics.lineStyle({
-      //   width: 1,
-      //   color: getCSSVariableTint('background'),
-      //   alignment: 0,
-      // });
-      // this.graphics.drawRect(x + 1, y + 1, width - 2, height - 2);
     }
 
     if (showInput && inlineShowing) {

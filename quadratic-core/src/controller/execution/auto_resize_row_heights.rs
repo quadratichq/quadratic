@@ -13,12 +13,12 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
-    ) -> bool {
+    ) {
         if !(cfg!(target_family = "wasm") || cfg!(test))
             || !transaction.is_user()
             || rows.is_empty()
         {
-            return false;
+            return;
         }
 
         // send sheet info and offsets modified to get the correct row heights
@@ -31,7 +31,7 @@ impl GridController {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let mut auto_resize_rows = sheet.get_auto_resize_rows(rows);
             if auto_resize_rows.is_empty() {
-                return false;
+                return;
             }
 
             auto_resize_rows.sort();
@@ -45,7 +45,6 @@ impl GridController {
                 // as we will not receive renderer callback during tests and the transaction will never complete
                 if !cfg!(test) {
                     self.transactions.add_async_transaction(transaction);
-                    return true;
                 }
             } else {
                 dbgjs!(
@@ -55,7 +54,6 @@ impl GridController {
         } else {
             dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
         }
-        false
     }
 
     pub fn complete_auto_resize_row_heights(
