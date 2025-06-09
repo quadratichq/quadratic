@@ -32,6 +32,7 @@ export const GCP_REGION_ANTHROPIC = process.env.GCP_REGION_ANTHROPIC || 'us-east
 export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'GCP_PROJECT_ID';
 export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL || 'GCP_CLIENT_EMAIL';
 export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY || 'GCP_PRIVATE_KEY';
+export const GCP_GEMINI_API_KEY = process.env.GCP_GEMINI_API_KEY || 'GCP_GEMINI_API_KEY';
 export const FINE_TUNE = process.env.FINE_TUNE || 'false';
 
 // Optional Billing

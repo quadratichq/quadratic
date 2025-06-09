@@ -1,6 +1,6 @@
 import {
   getLastAIPromptMessageModelKey,
-  getPromptMessages,
+  getPromptMessagesForAI,
   isContentText,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
@@ -31,7 +31,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
       throw new Error('No messages provided');
     }
 
-    const promptMessages = getPromptMessages(messages);
+    const promptMessages = getPromptMessagesForAI(messages);
     const lastPromptMessage = promptMessages[promptMessages.length - 1];
     if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
       return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;

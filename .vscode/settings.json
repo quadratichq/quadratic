@@ -60,6 +60,7 @@
     "fontkit",
     "fontobject",
     "Fuzzysort",
+    "genai",
     "GETCELL",
     "getcells",
     "gramm",
