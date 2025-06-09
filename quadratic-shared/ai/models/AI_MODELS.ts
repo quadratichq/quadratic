@@ -11,7 +11,7 @@ export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemin
 
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
 
-export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-06-05';
+export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
 
 export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
 export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
@@ -191,8 +191,8 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     ...claude_sonnet_3_5_20250514_rate,
   },
-  'vertexai:gemini-2.5-pro-preview-06-05': {
-    model: 'gemini-2.5-pro-preview-06-05',
+  'vertexai:gemini-2.5-pro-preview-05-06': {
+    model: 'gemini-2.5-pro-preview-05-06',
     displayName: 'gemini 2.5 pro preview',
     temperature: 0,
     max_tokens: 65535,
@@ -236,8 +236,8 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'genai:gemini-2.5-pro-preview-06-05': {
-    model: 'gemini-2.5-pro-preview-06-05',
+  'genai:gemini-2.5-pro-preview-05-06': {
+    model: 'gemini-2.5-pro-preview-05-06',
     displayName: 'gemini 2.5 pro preview',
     temperature: 0,
     max_tokens: 65535,
