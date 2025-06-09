@@ -1,4 +1,5 @@
 import { events } from '@/app/events/events';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { apiClient } from '@/shared/api/apiClient';
 import { Rectangle, Renderer } from 'pixi.js';
 import { debugShowFileIO } from '../../debugFlags';
@@ -36,7 +37,11 @@ class Thumbnail {
   }
 
   async check() {
-    if (this.thumbnailDirty && !pixiApp.copying) {
+    if (
+      this.thumbnailDirty &&
+      !pixiApp.copying &&
+      pixiAppSettings.editorInteractionState.transactionsInfo.length === 0
+    ) {
       const now = performance.now();
       // don't do anything while the app is paused (since it may already be generating thumbnails)
       if (now - this.lastUpdate > TIME_FOR_IDLE) {

@@ -1,6 +1,5 @@
 import { events } from '@/app/events/events';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { debugShowFocus, debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
 import {
@@ -146,7 +145,7 @@ export class Update {
       debugShowChildren(pixiApp.stage, 'stage');
       debugShowCachedCounts();
       thumbnail.rendererBusy();
-    } else if (pixiAppSettings.editorInteractionState.transactionsInfo.length === 0) {
+    } else {
       debugRendererLight(false);
       thumbnail.check();
     }
