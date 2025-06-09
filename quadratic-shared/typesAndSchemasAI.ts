@@ -21,11 +21,11 @@ const VertexAnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-v2@20241022',
 ]);
 const VertexAIModelSchema = z.enum([
-  'gemini-2.5-pro-preview-05-06',
+  'gemini-2.5-pro-preview-06-05',
   'gemini-2.5-flash-preview-05-20',
   'gemini-2.0-flash-001',
 ]);
-const GenAIModelSchema = z.enum(['gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-05-20']);
+const GenAIModelSchema = z.enum(['gemini-2.5-pro-preview-06-05', 'gemini-2.5-flash-preview-05-20']);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-opus-4-20250514-v1:0',
   'us.anthropic.claude-sonnet-4-20250514-v1:0',
@@ -81,13 +81,13 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
 const VertexAIModelKeySchema = z.enum([
-  'vertexai:gemini-2.5-pro-preview-05-06',
+  'vertexai:gemini-2.5-pro-preview-06-05',
   'vertexai:gemini-2.5-flash-preview-05-20',
   'vertexai:gemini-2.0-flash-001',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
-const GenAIModelKeySchema = z.enum(['genai:gemini-2.5-pro-preview-05-06', 'genai:gemini-2.5-flash-preview-05-20']);
+const GenAIModelKeySchema = z.enum(['genai:gemini-2.5-pro-preview-06-05', 'genai:gemini-2.5-flash-preview-05-20']);
 export type GenAIModelKey = z.infer<typeof GenAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
