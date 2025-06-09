@@ -101,6 +101,8 @@ export class Sheets {
 
     // it's possible we deleted the sheet locally before receiving the message
     if (index === -1) return;
+
+    this.sheets[index]?.destroy();
     this.sheets.splice(index, 1);
 
     // todo: this code should be in quadratic-core, not here

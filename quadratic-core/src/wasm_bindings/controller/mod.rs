@@ -70,6 +70,9 @@ impl GridController {
                         grid.send_all_fills(*sheet_id);
 
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
+                            // sends SheetContentCache to the client
+                            sheet.send_content_cache();
+
                             // sends SheetDataTablesCache to the client
                             sheet.send_data_tables_cache();
 

@@ -314,6 +314,11 @@ impl SheetColumns {
             }
         }
     }
+
+    /// Returns a reference to has_cell_value cache to send to the client.
+    pub fn has_cell_value_ref(&self) -> &Contiguous2D<Option<bool>> {
+        &self.has_cell_value
+    }
 }
 
 #[cfg(test)]

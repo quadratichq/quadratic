@@ -66,6 +66,7 @@ declare var self: WorkerGlobalScope &
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
+    sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
   };
 
 class CoreClient {
@@ -101,6 +102,7 @@ class CoreClient {
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
     self.sendDataTablesCache = coreClient.sendDataTablesCache;
+    self.sendContentCache = coreClient.sendContentCache;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
   }
 
@@ -131,14 +133,6 @@ class CoreClient {
           type: 'coreClientGetCodeCell',
           id: e.data.id,
           cell: await core.getCodeCell(e.data.sheetId, e.data.x, e.data.y),
-        });
-        return;
-
-      case 'clientCoreCellHasContent':
-        this.send({
-          type: 'coreClientCellHasContent',
-          id: e.data.id,
-          hasContent: await core.cellHasContent(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
@@ -864,6 +858,10 @@ class CoreClient {
 
   sendDataTablesCache = (sheetId: string, dataTablesCache: Uint8Array) => {
     this.send({ type: 'coreClientDataTablesCache', sheetId, dataTablesCache }, dataTablesCache.buffer);
+  };
+
+  sendContentCache = (sheetId: string, contentCache: Uint8Array) => {
+    this.send({ type: 'coreClientContentCache', sheetId, contentCache }, contentCache.buffer);
   };
 }
 
