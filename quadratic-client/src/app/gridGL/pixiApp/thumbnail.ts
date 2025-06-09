@@ -10,7 +10,7 @@ const imageWidth = 1280;
 const imageHeight = imageWidth / (16 / 9);
 
 // time when renderer is not busy to perform an action
-const TIME_FOR_IDLE = 5 * 1000;
+const TIME_FOR_IDLE = 1000;
 
 class Thumbnail {
   private lastUpdate = 0;
@@ -37,10 +37,9 @@ class Thumbnail {
 
   async check() {
     if (this.thumbnailDirty && !pixiApp.copying) {
-      const previousLastUpdate = this.lastUpdate;
-      this.lastUpdate = performance.now();
+      const now = performance.now();
       // don't do anything while the app is paused (since it may already be generating thumbnails)
-      if (this.lastUpdate - previousLastUpdate > TIME_FOR_IDLE) {
+      if (now - this.lastUpdate > TIME_FOR_IDLE) {
         const url = window.location.pathname.split('/');
         const uuid = url[2];
         if (uuid) {
@@ -57,6 +56,7 @@ class Thumbnail {
           });
           this.thumbnailDirty = false;
         }
+        this.lastUpdate = now;
       }
     }
   }
