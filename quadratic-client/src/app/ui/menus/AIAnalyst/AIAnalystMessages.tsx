@@ -1,3 +1,4 @@
+import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -7,6 +8,7 @@ import {
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
+  aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
@@ -241,6 +243,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       <PDFImportLoading />
 
+      <WebSearchLoading />
+
       <AILoading loading={loading} />
     </div>
   );
@@ -367,4 +371,14 @@ const PDFImportLoading = memo(() => {
   }
 
   return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
+});
+
+const WebSearchLoading = memo(() => {
+  const webSearchLoading = useRecoilValue(aiAnalystWebSearchLoadingAtom);
+
+  if (!webSearchLoading) {
+    return null;
+  }
+
+  return <ToolCardQuery className="px-2" label="Searching the web…" isLoading={true} />;
 });
