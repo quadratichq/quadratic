@@ -31,6 +31,7 @@ import type {
   JsHtmlOutput,
   JsOffset,
   JsRenderFill,
+  JsResponse,
   JsSelectionContext,
   JsSheetFill,
   JsSummarizeSelectionResult,
@@ -75,6 +76,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientNeighborText,
   CoreClientSearch,
+  CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
@@ -953,15 +955,22 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setChartSize(sheetId: string, x: number, y: number, width: number, height: number) {
-    this.send({
-      type: 'clientCoreSetCellRenderResize',
-      sheetId,
-      x,
-      y,
-      width,
-      height,
-      cursor: sheets.getCursorPosition(),
+  setChartSize(sheetId: string, x: number, y: number, width: number, height: number): Promise<JsResponse | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientSetCellRenderResize) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreSetCellRenderResize',
+        sheetId,
+        x,
+        y,
+        width,
+        height,
+        cursor: sheets.getCursorPosition(),
+        id,
+      });
     });
   }
 
