@@ -75,7 +75,6 @@ use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
-use quadratic_core::wasm_bindings::controller::bounds::MinMax;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::{
     ArraySize, Axis, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Span,
@@ -166,7 +165,6 @@ fn main() {
         JsTablesContext,
         JsUpdateCodeCell,
         JsValidationWarning,
-        MinMax,
         NumberRange,
         NumericFormat,
         NumericFormatKind,

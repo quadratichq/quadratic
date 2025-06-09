@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
-import { gotoCells, navigateOnSheet, selectCells } from './helpers/app.helper';
+import { navigateOnSheet, selectCells } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
+import { gotoCells } from './helpers/sheet.helper';
 
 test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   // Constants

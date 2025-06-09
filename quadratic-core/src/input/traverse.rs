@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    Pos, SheetPos,
     a1::A1Context,
     grid::{SheetId, sheet::data_tables::cache::SheetDataTablesCache},
     input::has_content::{
@@ -16,6 +16,7 @@ use crate::{
 /// For charts, is uses the chart's bounds for intersection test (since charts are considered a single cell)
 ///
 /// Returns the found column matching the criteria of with_content
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn find_next_column(
     sheet_id: SheetId,
     column_start: i64,
@@ -36,15 +37,8 @@ pub(crate) fn find_next_column(
     let mut x = column_start;
     let mut at_table_edge = false;
     while (reverse && x >= bounds.0) || (!reverse && x <= bounds.1) {
-        let has_content = has_content_ignore_blank_table(
-            SheetPos {
-                x,
-                y: row,
-                sheet_id,
-            },
-            content_cache,
-            table_cache,
-        );
+        let has_content =
+            has_content_ignore_blank_table(Pos { x, y: row }, content_cache, table_cache);
 
         // add edges of data tables to the search
         at_table_edge = is_at_table_edge_col(
@@ -80,15 +74,8 @@ pub(crate) fn find_next_column(
     }
 
     // final check when we've exited the loop
-    let has_content = has_content_ignore_blank_table(
-        SheetPos {
-            x,
-            y: row,
-            sheet_id,
-        },
-        content_cache,
-        table_cache,
-    ) || at_table_edge;
+    let has_content = has_content_ignore_blank_table(Pos { x, y: row }, content_cache, table_cache)
+        || at_table_edge;
     if with_content == has_content {
         Some(x)
     } else {
@@ -102,6 +89,7 @@ pub(crate) fn find_next_column(
 /// content
 ///
 /// Returns the found row matching the criteria of with_content
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn find_next_row(
     sheet_id: SheetId,
     row_start: i64,
@@ -118,15 +106,8 @@ pub(crate) fn find_next_row(
     let mut y = row_start;
     let mut at_table_edge = false;
     while (reverse && y >= bounds.0) || (!reverse && y <= bounds.1) {
-        let has_content = has_content_ignore_blank_table(
-            SheetPos {
-                x: column,
-                y,
-                sheet_id,
-            },
-            content_cache,
-            table_cache,
-        );
+        let has_content =
+            has_content_ignore_blank_table(Pos { x: column, y }, content_cache, table_cache);
 
         // add edges of data tables to the search
         at_table_edge = is_at_table_edge_row(
@@ -151,26 +132,17 @@ pub(crate) fn find_next_row(
             );
         }
 
-        if has_content {
-            if with_content {
-                return Some(y);
-            }
-        } else if !with_content {
+        if (has_content && with_content) || (!has_content && !with_content) {
             return Some(y);
         }
+
         y += if reverse { -1 } else { 1 };
     }
 
     // final check when we've exited the loop
-    let has_content = has_content_ignore_blank_table(
-        SheetPos {
-            x: column,
-            y,
-            sheet_id,
-        },
-        content_cache,
-        table_cache,
-    ) || at_table_edge;
+    let has_content =
+        has_content_ignore_blank_table(Pos { x: column, y }, content_cache, table_cache)
+            || at_table_edge;
     if with_content == has_content {
         Some(y)
     } else {

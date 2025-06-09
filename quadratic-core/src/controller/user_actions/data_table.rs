@@ -481,7 +481,7 @@ mod tests {
             assert!(data_table.header_is_first_row);
             assert_eq!(
                 data_table.value,
-                Value::Array(Array::from(vec![
+                Array::from(vec![
                     vec![
                         CellValue::Text("Column 1".into()),
                         CellValue::Text("Column 2".into()),
@@ -497,7 +497,8 @@ mod tests {
                         CellValue::Number(5.into()),
                         CellValue::Number(6.into()),
                     ],
-                ]))
+                ])
+                .into()
             );
 
             // Check column headers

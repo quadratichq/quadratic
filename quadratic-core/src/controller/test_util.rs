@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 #[cfg(test)]
 use crate::{
-    Array, ArraySize, CellValue, SheetPos, Value,
+    Array, ArraySize, CellValue, SheetPos,
     cellvalue::Import,
     grid::Grid,
     grid::SheetId,
@@ -54,7 +54,7 @@ impl GridController {
                 } else {
                     CellValue::Text(s.to_string())
                 };
-                array.set(i as u32 % w, i as u32 / w, value).unwrap();
+                array.set(i as u32 % w, i as u32 / w, value, false).unwrap();
             }
         }
 
@@ -73,7 +73,7 @@ impl GridController {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table1",
-            Value::Array(array),
+            array.into(),
             false,
             Some(false),
             Some(false),
@@ -101,13 +101,13 @@ impl GridController {
         let cell_value = CellValue::Import(Import {
             file_name: "test".to_string(),
         });
-        let value = Value::Array(Array::new_empty(ArraySize::new(w, h).unwrap()));
+        let array = Array::new_empty(ArraySize::new(w, h).unwrap());
         let data_table = DataTable::new(
             DataTableKind::Import(Import {
                 file_name: "test".to_string(),
             }),
             "Table1",
-            value,
+            array.into(),
             header_is_first_row,
             show_name,
             show_columns,

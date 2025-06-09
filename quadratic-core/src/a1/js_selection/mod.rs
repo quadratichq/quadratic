@@ -60,18 +60,6 @@ impl JsSelection {
             .replace_column_name(&table_name, &old_name, &new_name);
     }
 
-    #[wasm_bindgen(js_name = "hideColumn")]
-    pub fn hide_column(
-        &mut self,
-        _table_name: String,
-        _column_name: String,
-        _context: &JsA1Context,
-    ) {
-        // this should be removed
-        todo!();
-        // context.get_context().hide_column(&table_name, &column_name);
-    }
-
     #[wasm_bindgen(js_name = "getTableNameFromPos")]
     pub fn get_table_from_pos(
         &self,

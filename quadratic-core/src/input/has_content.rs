@@ -3,7 +3,7 @@
 use crate::a1::{A1Context, TableMapEntry};
 use crate::grid::sheet::data_tables::cache::SheetDataTablesCache;
 use crate::wasm_bindings::sheet_content_cache::SheetContentCache;
-use crate::{Rect, SheetPos};
+use crate::{Pos, Rect, SheetPos};
 
 /// Gets the Table that intersects a given position.
 pub fn table_at<'a>(
@@ -121,10 +121,8 @@ pub(crate) fn row_bounds(
         ))
     } else if let Some(content_row_bounds) = content_row_bounds {
         Some(content_row_bounds)
-    } else if let Some(table_row_bounds) = table_row_bounds {
-        Some(table_row_bounds)
     } else {
-        None
+        table_row_bounds
     }
 }
 
@@ -147,18 +145,101 @@ pub(crate) fn column_bounds(
         ))
     } else if let Some(content_column_bounds) = content_column_bounds {
         Some(content_column_bounds)
-    } else if let Some(table_column_bounds) = table_column_bounds {
-        Some(table_column_bounds)
     } else {
-        None
+        table_column_bounds
     }
 }
 
 /// Returns true if the cell has content (either on the sheet or in a table).
 pub(crate) fn has_content_ignore_blank_table(
-    pos: SheetPos,
+    pos: Pos,
     content_cache: &SheetContentCache,
     table_cache: &SheetDataTablesCache,
 ) -> bool {
-    todo!()
+    if content_cache.has_content(pos) {
+        return true;
+    }
+
+    table_cache.has_content_ignore_blank_table(pos)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{grid::CodeCellLanguage, test_util::*};
+
+    #[test]
+    fn test_has_content_ignore_blank_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None);
+        test_create_data_table_with_values(&mut gc, sheet_id, pos![2, 2], 3, 1, &["1", "", "3"]);
+
+        let sheet = gc.sheet(sheet_id);
+
+        // normal content
+        assert!(has_content_ignore_blank_table(
+            pos![1, 1],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+        assert!(!has_content_ignore_blank_table(
+            pos![2, 1],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+
+        // table content
+        assert!(has_content_ignore_blank_table(
+            pos![2, 4],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+        assert!(!has_content_ignore_blank_table(
+            pos![3, 4],
+            &sheet.content_cache(),
+            &sheet.data_tables.cache_ref()
+        ));
+    }
+
+    #[test]
+    fn test_bounds() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        gc.set_code_cell(
+            pos![sheet_id!D1],
+            CodeCellLanguage::Formula,
+            "A1".into(),
+            None,
+            None,
+        );
+        gc.set_cell_value(pos![sheet_id!F1], "1".into(), None);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+
+        assert_eq!(
+            column_bounds(1, &sheet.content_cache(), &sheet_data_tables_cache),
+            Some((1, 4))
+        );
+        assert_eq!(
+            column_bounds(4, &sheet.content_cache(), &sheet_data_tables_cache),
+            Some((1, 1))
+        );
+        assert_eq!(
+            column_bounds(6, &sheet.content_cache(), &sheet_data_tables_cache),
+            Some((1, 1))
+        );
+
+        assert_eq!(
+            row_bounds(1, &sheet.content_cache(), &sheet_data_tables_cache),
+            Some((1, 6))
+        );
+        assert_eq!(
+            row_bounds(2, &sheet.content_cache(), &sheet_data_tables_cache),
+            Some((1, 2))
+        );
+    }
 }

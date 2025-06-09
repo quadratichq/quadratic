@@ -8,7 +8,6 @@ use util::set_panic_hook;
 pub mod ai_context;
 pub mod auto_complete;
 pub mod borders;
-pub mod bounds;
 pub mod cells;
 pub mod clipboard;
 pub mod code;
