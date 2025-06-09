@@ -370,7 +370,7 @@ const PDFImportLoading = memo(() => {
   return (
     <ToolCardQuery
       className="px-2"
-      label="Reading file. Large files may take a few minutes..."
+      label="Reading file. Large files may take a few minutes."
       isLoading={pdfImportLoading}
     />
   );
@@ -383,5 +383,5 @@ const WebSearchLoading = memo(() => {
     return null;
   }
 
-  return <ToolCardQuery className="px-2" label="Searching the web…" isLoading={webSearchLoading} />;
+  return <ToolCardQuery className="px-2" label="Searching the web." isLoading={webSearchLoading} />;
 });

@@ -30,7 +30,7 @@ export const WebSearch = memo(({ args, loading }: WebSearchProps) => {
     }
   }, [args, loading]);
 
-  const label = 'Searching the web…';
+  const label = 'Searching the web.';
 
   if (!!toolArgs && !toolArgs.success) {
     return <ToolCardQuery label={label} hasError />;

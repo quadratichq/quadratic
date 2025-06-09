@@ -43,7 +43,7 @@ export const GoogleSearchSources = memo(({ content }: { content: GoogleSearchCon
 
   return (
     <>
-      <ToolCardQuery className="px-2" label="Searching the web…" />
+      <ToolCardQuery className="px-2" label="Searching the web." />
 
       <div className="flex flex-wrap gap-1 px-2">
         {sources.map((source, index) => (
