@@ -8,6 +8,10 @@ import { Point, type Rectangle } from 'pixi.js';
 
 const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
 
+// animating viewport
+const ANIMATION_TIME = 150;
+const ANIMATION_EASE = 'easeInOutSine';
+
 export function getVisibleTopRow(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
   const top = viewport.top + pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
@@ -64,7 +68,7 @@ export function isColumnVisible(column: number): boolean {
   return true;
 }
 
-// Makes a rect visible in the viewport
+// Makes a rect visible in the viewport. Returns true if the rect is visible in the viewport.
 export function rectVisible(sheetId: string, min: JsCoordinate, max: JsCoordinate): boolean {
   if (sheetId !== sheets.current) {
     sheets.current = sheetId;
@@ -77,25 +81,33 @@ export function rectVisible(sheetId: string, min: JsCoordinate, max: JsCoordinat
   const topLeftCell = sheet.getCellOffsets(min.x, min.y);
   const bottomRightCell = sheet.getCellOffsets(max.x, max.y);
   let is_off_screen = false;
-
+  let right: number | undefined;
+  let left: number | undefined;
+  let bottom: number | undefined;
+  let top: number | undefined;
   if (bottomRightCell.right > viewport.right) {
-    viewport.right = bottomRightCell.right;
+    right = bottomRightCell.right;
     is_off_screen = true;
   }
   if (topLeftCell.left + headingSize.width < viewport.left) {
-    viewport.left = topLeftCell.left - headingSize.width / viewport.scale.x;
+    left = topLeftCell.left - headingSize.width / viewport.scale.x;
     is_off_screen = true;
   }
 
   if (bottomRightCell.bottom > viewport.bottom) {
-    viewport.bottom = bottomRightCell.bottom;
+    bottom = bottomRightCell.bottom;
     is_off_screen = true;
   }
   if (topLeftCell.top + headingSize.height < viewport.top) {
-    viewport.top = topLeftCell.top - headingSize.height / viewport.scale.x;
+    top = topLeftCell.top - headingSize.height / viewport.scale.x;
     is_off_screen = true;
   }
 
+  if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
+    const x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : viewport.x;
+    const y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : viewport.y;
+    animate(x, y);
+  }
   return !is_off_screen;
 }
 
@@ -156,58 +168,82 @@ export function cellVisible(
   const sheet = sheets.sheet;
   const headingSize = headings.headingSize;
 
+  // todo...
   // check if the cell is part of a table header that is visible b/c it is
   // hovering over the table
-  const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
-  if (tableName) return true;
+  // const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
+  // if (tableName) return true;
 
   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
   let is_off_screen = false;
 
-  const bounds = pixiApp.viewport.getVisibleBounds();
-  if (cell.x - headingSize.width / viewport.scale.x < viewport.left) {
-    viewport.left = Math.max(
-      -headingSize.width / viewport.scale.x,
-      cell.x - headingSize.width / viewport.scale.x //+ BUFFER[0]
-    );
-    is_off_screen = true;
-  } else if (cell.x + cell.width > viewport.right) {
-    // if the cell is wider than the viewport, then we show the start of the cell
-    if (cell.width > bounds.width) {
-      viewport.left = Math.max(
-        -headingSize.width / viewport.scale.x,
-        cell.x - headingSize.width / viewport.scale.x //+ BUFFER[0]
-      );
-    } else {
-      viewport.right = cell.x + cell.width + BUFFER[0];
-    }
+  let left: number | undefined;
+  let right: number | undefined;
+  let top: number | undefined;
+  let bottom: number | undefined;
+
+  const headingWidth = headingSize.unscaledWidth;
+  const bounds = viewport.getVisibleBounds();
+  if (cell.x < viewport.left - headingWidth) {
+    left = cell.x - headingWidth; //Math.max(-headingWidth, cell.x - headingWidth); // - BUFFER[0]);
     is_off_screen = true;
   }
+  // else if (cell.x + cell.width > viewport.right) {
+  //   // if the cell is wider than the viewport, then we show the sa1tart of the cell
+  //   if (cell.width > bounds.width) {
+  //     left = Math.max(headingWidth, cell.x + headingWidth); // - BUFFER[0]);
+  //   } else {
+  //     right = cell.x + cell.width + BUFFER[0];
+  //   }
+  //   is_off_screen = true;
+  // }
 
-  if (cell.y < viewport.top + headingSize.height / viewport.scale.y) {
-    viewport.top = Math.max(
-      -headingSize.height / viewport.scale.y,
-      cell.y - headingSize.height / viewport.scale.y - BUFFER[1]
-    );
+  const headingHeight = -headingSize.unscaledHeight;
+  if (cell.y < viewport.top + headingHeight) {
+    top = Math.max(headingHeight, cell.y + headingHeight); // - BUFFER[1]);
     is_off_screen = true;
   } else if (cell.y + cell.height > viewport.bottom) {
     // if the cell is taller than the viewport, then we show the start of the cell
     if (cell.height > bounds.height) {
-      viewport.top = Math.max(
-        -headingSize.height / viewport.scale.y,
-        cell.y - headingSize.height / viewport.scale.y - BUFFER[1]
-      );
+      top = Math.max(headingHeight, cell.y + headingHeight); // - BUFFER[1]);
     } else {
-      viewport.bottom = cell.y + cell.height + BUFFER[1];
+      bottom = cell.y + cell.height + BUFFER[1];
     }
     is_off_screen = true;
   }
+  pixiApp.debug
+    .clear()
+    .beginFill(0xff0000)
+    .drawCircle(cell.x - headingWidth, cell.y - headingHeight, 10)
+    .endFill();
 
   if (ensureCellIsNotUnderTableHeader(coordinate, cell)) {
     is_off_screen = true;
   }
 
+  if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
+    const halfWidth = bounds.width / 2;
+    const halfHeight = bounds.height / 2;
+    const x = left !== undefined ? left + halfWidth : right !== undefined ? right - halfWidth : viewport.center.x;
+    const y = top !== undefined ? top + halfHeight : bottom !== undefined ? bottom - halfHeight : viewport.center.y;
+    animate(x, y);
+
+    // setTimeout(() => {
+    //   console.log('topLeft', viewport.x, viewport.y);
+    //   console.log('center', viewport.center.x, viewport.center.y);
+    // }, 1000);
+  }
+
   return !is_off_screen;
+}
+
+function animate(x: number, y: number) {
+  pixiApp.viewport.animate({
+    position: new Point(x, y),
+    removeOnInterrupt: true,
+    time: ANIMATION_TIME,
+    ease: ANIMATION_EASE,
+  });
 }
 
 // Ensures the cursor is always visible

@@ -17,6 +17,13 @@ type Selected = 'all' | number[] | undefined;
 
 export type IntersectsHeadings = { column: number | null; row: number | null; corner?: true };
 
+interface HeadingSize {
+  width: number;
+  height: number;
+  unscaledWidth: number;
+  unscaledHeight: number;
+}
+
 // Constants for headers
 export const LABEL_MAXIMUM_WIDTH_PERCENT = 0.9;
 export const LABEL_MAXIMUM_HEIGHT_PERCENT = 0.5;
@@ -39,7 +46,7 @@ export class GridHeadings extends Container {
   private gridLinesRows: { row: number; y: number; height: number }[] = [];
   private rowWidth = 0;
 
-  headingSize: Size = { width: 0, height: 0 };
+  headingSize: HeadingSize = { width: 0, height: 0, unscaledWidth: 0, unscaledHeight: 0 };
 
   // heading location for hitTest
   private rowRect: Rectangle | undefined;
@@ -452,12 +459,13 @@ export class GridHeadings extends Container {
       this.visible = false;
       this.rowRect = undefined;
       this.columnRect = undefined;
-      this.headingSize = { width: 0, height: 0 };
+      this.headingSize = { width: 0, height: 0, unscaledWidth: 0, unscaledHeight: 0 };
       events.emit('headingSize', this.headingSize.width, this.headingSize.height);
       pixiApp.setViewportDirty();
       return;
     }
     this.visible = true;
+    this.alpha = 0.5;
     if (!this.characterSize) {
       this.calculateCharacterSize();
     }
@@ -468,7 +476,12 @@ export class GridHeadings extends Container {
     this.labels.update();
     this.drawCorner();
 
-    this.headingSize = { width: this.rowWidth * pixiApp.viewport.scale.x, height: CELL_HEIGHT };
+    this.headingSize = {
+      width: this.rowWidth * pixiApp.viewport.scale.x,
+      height: CELL_HEIGHT,
+      unscaledWidth: this.rowWidth,
+      unscaledHeight: CELL_HEIGHT / pixiApp.viewport.scale.y,
+    };
     events.emit('headingSize', this.headingSize.width, this.headingSize.height);
   };
 
