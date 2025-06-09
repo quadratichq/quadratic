@@ -11,7 +11,7 @@ import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { Texture } from 'pixi.js';
-import { Assets, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
+import { Assets, BitmapFont, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
 
 export class LabelMeshEntry extends Mesh {
   private fontName: string;
@@ -22,7 +22,7 @@ export class LabelMeshEntry extends Mesh {
     const shader = message.hasColor ? shaderTint : shaderNoTint;
 
     // Get the font from Assets
-    const font = Assets.get(message.fontName);
+    const font = BitmapFont.available[message.fontName];
     if (!font) {
       throw new Error(`Font not found: ${message.fontName}`);
     }
