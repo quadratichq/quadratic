@@ -367,7 +367,13 @@ const PDFImportLoading = memo(() => {
     return null;
   }
 
-  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
+  return (
+    <ToolCardQuery
+      className="px-2"
+      label="Reading file. Large files may take a few minutes..."
+      isLoading={pdfImportLoading}
+    />
+  );
 });
 
 const WebSearchLoading = memo(() => {
@@ -377,5 +383,5 @@ const WebSearchLoading = memo(() => {
     return null;
   }
 
-  return <ToolCardQuery className="px-2" label="Searching the web…" isLoading={true} />;
+  return <ToolCardQuery className="px-2" label="Searching the web…" isLoading={webSearchLoading} />;
 });
