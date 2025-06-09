@@ -361,7 +361,19 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setChartSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        const response = core.setChartSize(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.cursor
+        );
+        this.send({
+          type: 'coreClientSetCellRenderResize',
+          id: e.data.id,
+          response,
+        });
         return;
 
       case 'clientCoreAutocomplete':
