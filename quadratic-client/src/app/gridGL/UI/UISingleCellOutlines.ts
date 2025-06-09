@@ -13,6 +13,7 @@ export class UISingleCellOutlines extends Graphics {
   constructor() {
     super();
 
+    events.on('sheetInfoUpdate', this.setDirty);
     events.on('sheetOffsets', this.setDirty);
     events.on('resizeHeadingColumn', this.setDirty);
     events.on('resizeHeadingColumn', this.setDirty);
@@ -21,6 +22,7 @@ export class UISingleCellOutlines extends Graphics {
   }
 
   destroy() {
+    events.off('sheetInfoUpdate', this.setDirty);
     events.off('sheetOffsets', this.setDirty);
     events.off('resizeHeadingColumn', this.setDirty);
     events.off('resizeHeadingColumn', this.setDirty);
