@@ -11,7 +11,7 @@ const imageWidth = 1280;
 const imageHeight = imageWidth / (16 / 9);
 
 // time when renderer is not busy to perform an action
-const TIME_FOR_IDLE = 1000;
+const TIME_FOR_IDLE = 3000;
 
 class Thumbnail {
   private lastUpdate = 0;
