@@ -27,11 +27,13 @@ export const AWS_S3_ACCESS_KEY_ID = process.env.AWS_S3_ACCESS_KEY_ID as string;
 export const AWS_S3_SECRET_ACCESS_KEY = process.env.AWS_S3_SECRET_ACCESS_KEY as string;
 export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME as string;
 export const AWS_S3_ANALYTICS_BUCKET_NAME = process.env.AWS_S3_ANALYTICS_BUCKET_NAME as string;
-export const GCP_REGION = process.env.GCP_REGION as string;
-export const GCP_REGION_ANTHROPIC = process.env.GCP_REGION_ANTHROPIC as string;
-export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID as string;
-export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL as string;
-export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY as string;
+export const GCP_REGION = process.env.GCP_REGION || 'us-central1';
+export const GCP_REGION_ANTHROPIC = process.env.GCP_REGION_ANTHROPIC || 'us-east5';
+export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'GCP_PROJECT_ID';
+export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL || 'GCP_CLIENT_EMAIL';
+export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY || 'GCP_PRIVATE_KEY';
+export const GCP_GEMINI_API_KEY = process.env.GCP_GEMINI_API_KEY || 'GCP_GEMINI_API_KEY';
+export const FINE_TUNE = process.env.FINE_TUNE || 'false';
 
 // Optional Billing
 export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
@@ -55,6 +57,7 @@ export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 export const XAI_API_KEY = process.env.XAI_API_KEY;
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
+export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
 
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
@@ -83,3 +86,5 @@ function ensureSampleTokenNotUsedInProduction() {
     );
   }
 }
+
+export const debugAndNotInProduction = ENVIRONMENT !== 'production' && !!DEBUG;

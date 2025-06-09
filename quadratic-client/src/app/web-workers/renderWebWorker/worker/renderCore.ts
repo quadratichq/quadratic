@@ -6,7 +6,9 @@
  */
 
 import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
-import type { JsRenderCell } from '@/app/quadratic-core-types';
+import type { JsRenderCell, SheetBounds } from '@/app/quadratic-core-types';
+import { type JsOffset, type SheetInfo } from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
   CoreRenderMessage,
@@ -30,20 +32,20 @@ class RenderCore {
     if (debugFlag('debugWebWorkersMessages')) console.log(`[renderCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
-      case 'coreRenderSheetInfo':
-        renderText.coreInit(e.data.sheetInfo);
+      case 'coreRenderSheetsInfo':
+        renderText.coreInit(fromUint8Array<SheetInfo[]>(e.data.sheetsInfo));
         break;
 
       case 'coreRenderRenderCells':
         this.renderCells(e.data as CoreRenderCells);
         break;
 
-      case 'coreRenderCompleteRenderCells':
-        renderText.completeRenderCells(e.data);
+      case 'coreRenderHashRenderCells':
+        renderText.hashRenderCells(e.data.hashRenderCells);
         break;
 
       case 'coreRenderAddSheet':
-        renderText.addSheet(e.data.sheetInfo);
+        renderText.addSheet(fromUint8Array<SheetInfo>(e.data.sheetInfo));
         break;
 
       case 'coreRenderDeleteSheet':
@@ -51,15 +53,15 @@ class RenderCore {
         break;
 
       case 'coreRenderSheetOffsets':
-        renderText.sheetOffsetsSize(e.data.sheetId, e.data.offsets);
+        renderText.sheetOffsetsSize(e.data.sheetId, fromUint8Array<JsOffset[]>(e.data.offsets));
         break;
 
       case 'coreRenderSheetInfoUpdate':
-        renderText.sheetInfoUpdate(e.data.sheetInfo);
+        renderText.sheetInfoUpdate(fromUint8Array<SheetInfo>(e.data.sheetInfo));
         break;
 
       case 'coreRenderSheetBoundsUpdate':
-        renderText.sheetBoundsUpdate(e.data.sheetBounds);
+        renderText.sheetBoundsUpdate(fromUint8Array<SheetBounds>(e.data.sheetBounds));
         break;
 
       case 'coreRenderRequestRowHeights':
@@ -67,7 +69,7 @@ class RenderCore {
         break;
 
       case 'coreRenderHashesDirty':
-        renderText.setHashesDirty(e.data.sheetId, e.data.hashes);
+        renderText.setHashesDirty(e.data.dirtyHashes);
         break;
 
       case 'coreRenderViewportBuffer':
@@ -154,12 +156,16 @@ class RenderCore {
    * Core API responses *
    **********************/
 
-  private renderCells(event: CoreRenderCells) {
-    const { id, cells } = event;
+  private renderCells(message: CoreRenderCells) {
+    const { id, data } = message;
     const response = this.waitingForResponse.get(id);
     if (!response) {
       console.warn('No callback for requestRenderCells');
       return;
+    }
+    let cells = [] as JsRenderCell[];
+    if (data) {
+      cells = fromUint8Array<JsRenderCell[]>(data);
     }
     response(cells);
     this.waitingForResponse.delete(id);

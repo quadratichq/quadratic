@@ -17,6 +17,7 @@ import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUser
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -26,8 +27,11 @@ import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
+  isContentGoogleSearchInternal,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -159,11 +163,15 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugFlag('debugShowAIInternalContext') && message.contextType !== 'userPrompt') {
+        if (
+          !debugFlag('debugShowAIInternalContext') &&
+          !['userPrompt', 'webSearchInternal'].includes(message.contextType)
+        ) {
           return null;
         }
 
         const isCurrentMessage = index === messagesCount - 1;
+        const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
         return (
           <div
@@ -172,10 +180,18 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               'flex flex-col gap-3',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              message.contextType === 'userPrompt' ? '' : 'rounded-lg bg-gray-500 p-2'
+              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {message.role === 'user' && message.contextType === 'userPrompt' ? (
+            {debugFlag('debug') && !!modelKey && (
+              <span className="text-xs text-muted-foreground">{getModelFromModelKey(modelKey)}</span>
+            )}
+
+            {isInternalMessage(message) ? (
+              isContentGoogleSearchInternal(message.content) ? (
+                <GoogleSearchSources content={message.content} />
+              ) : null
+            ) : message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAnalystUserMessageForm
                 initialContent={message.content}
                 initialContext={message.context}
@@ -194,7 +210,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' ? (
+                  item.type === 'anthropic_thinking' && !!item.text ? (
                     <ThinkingBlock
                       key={item.text}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
@@ -202,7 +218,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       thinkingContent={item}
                       expandedDefault={true}
                     />
-                  ) : item.type === 'text' ? (
+                  ) : item.type === 'text' && !!item.text ? (
                     <Markdown key={item.text}>{item.text}</Markdown>
                   ) : null
                 )}

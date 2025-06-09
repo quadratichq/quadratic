@@ -50,7 +50,7 @@ impl Sheet {
             }
 
             // add edges of data tables to the search
-            at_table_edge = self.is_at_table_edge_col(Pos { x, y: row });
+            at_table_edge = self.is_at_table_edge_col(&Pos { x, y: row });
 
             if at_table_edge {
                 return Some(
@@ -129,7 +129,7 @@ impl Sheet {
             }
 
             // add edges of data tables to the search
-            at_table_edge = self.is_at_table_edge_row(Pos { x: column, y });
+            at_table_edge = self.is_at_table_edge_row(&Pos { x: column, y });
 
             if at_table_edge {
                 return Some(
@@ -239,14 +239,12 @@ mod test {
             "test",
             Value::Single(CellValue::Html("html".to_string())),
             false,
-            false,
             Some(true),
             Some(true),
             // make the chart take up 5x5 cells
-            Some((100.0 * 5.0, 20.0 * 5.0)),
+            Some((5, 5)),
         );
         dt.show_name = Some(false);
-        dt.chart_output = Some((5, 5));
         dt
     }
 
@@ -262,7 +260,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the anchor of the table
@@ -297,7 +295,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 20, y: 5 }, Some(chart_5x5_dt()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the first table
@@ -326,7 +324,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 5 }, Some(dt));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the anchor of the table
@@ -361,7 +359,7 @@ mod test {
             )),
         );
         sheet.set_data_table(Pos { x: 5, y: 20 }, Some(chart_5x5_dt()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // should find the first table

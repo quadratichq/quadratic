@@ -12,9 +12,9 @@ import type { Response } from 'express';
 import {
   getSystemPromptMessages,
   isContentText,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -70,13 +70,17 @@ export function getVertexAIApiArgs(args: AIRequestHelperArgs): {
       : undefined;
 
   const messages: VertexContent[] = promptMessages.reduce<VertexContent[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const vertexaiMessage: VertexContent = {
         role: message.role,
         parts: [
-          ...message.content.map((content) => ({
-            text: content.text,
-          })),
+          ...message.content
+            .filter((content) => content.text && content.type === 'text')
+            .map((content) => ({
+              text: content.text,
+            })),
           ...message.toolCalls.map((toolCall) => ({
             functionCall: {
               name: toolCall.name,
@@ -158,18 +162,18 @@ function getVertexAIToolChoice(toolName?: AITool): ToolConfig {
 
 export async function parseVertexAIStream(
   result: StreamGenerateContentResult,
-  response: Response,
-  modelKey: VertexAIModelKey
+  modelKey: VertexAIModelKey,
+  response?: Response
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   const usage: AIUsage = {
     inputTokens: 0,
@@ -184,7 +188,7 @@ export async function parseVertexAIStream(
       usage.outputTokens = Math.max(usage.outputTokens, chunk.usageMetadata.candidatesTokenCount ?? 0);
     }
 
-    if (!response.writableEnded) {
+    if (!response?.writableEnded) {
       const candidate = chunk.candidates?.[0];
       for (const part of candidate?.content.parts ?? []) {
         if (part.text !== undefined) {
@@ -207,12 +211,10 @@ export async function parseVertexAIStream(
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
           });
-        } else {
-          console.error(`Invalid AI response: ${JSON.stringify(part)}`);
         }
       }
 
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
     } else {
       break;
     }
@@ -231,10 +233,9 @@ export async function parseVertexAIStream(
     });
   }
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-
-  if (!response.writableEnded) {
-    response.end();
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  if (!response?.writableEnded) {
+    response?.end();
   }
 
   return { responseMessage, usage };
@@ -242,15 +243,15 @@ export async function parseVertexAIStream(
 
 export function parseVertexAIResponse(
   result: GenerateContentResult,
-  response: Response,
-  modelKey: VertexAIModelKey
+  modelKey: VertexAIModelKey,
+  response?: Response
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
   const candidate = result.response.candidates?.[0];
@@ -267,8 +268,6 @@ export function parseVertexAIResponse(
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,
       });
-    } else {
-      console.error(`Invalid AI response: ${JSON.stringify(message)}`);
     }
   });
 
@@ -279,7 +278,7 @@ export function parseVertexAIResponse(
     });
   }
 
-  response.json(responseMessage);
+  response?.json(responseMessage);
 
   const usage: AIUsage = {
     inputTokens: result.response.usageMetadata?.promptTokenCount ?? 0,

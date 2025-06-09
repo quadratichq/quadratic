@@ -1,11 +1,14 @@
-import type { AISource, AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
+  SetAIModel = 'set_ai_model',
   SetChatName = 'set_chat_name',
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
   SetCodeCellValue = 'set_code_cell_value',
+  SetFormulaCellValue = 'set_formula_cell_value',
   MoveCells = 'move_cells',
   DeleteCells = 'delete_cells',
   UpdateCodeCell = 'update_code_cell',
@@ -16,13 +19,17 @@ export enum AITool {
   SetTextFormats = 'set_text_formats',
   GetTextFormats = 'get_text_formats',
   ConvertToTable = 'convert_to_table',
+  WebSearch = 'web_search',
+  WebSearchInternal = 'web_search_internal',
 }
 
 export const AIToolSchema = z.enum([
+  AITool.SetAIModel,
   AITool.SetChatName,
   AITool.AddDataTable,
   AITool.SetCellValues,
   AITool.SetCodeCellValue,
+  AITool.SetFormulaCellValue,
   AITool.MoveCells,
   AITool.DeleteCells,
   AITool.UpdateCodeCell,
@@ -33,6 +40,8 @@ export const AIToolSchema = z.enum([
   AITool.SetTextFormats,
   AITool.GetTextFormats,
   AITool.ConvertToTable,
+  AITool.WebSearch,
+  AITool.WebSearchInternal,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -85,11 +94,19 @@ const array2DSchema = z
 const cellLanguageSchema = z
   .string()
   .transform((val) => val.toLowerCase())
-  .pipe(z.enum(['python', 'javascript', 'formula']))
+  .pipe(z.enum(['python', 'javascript']))
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-  .pipe(z.enum(['Python', 'Javascript', 'Formula']));
+  .pipe(z.enum(['Python', 'Javascript']));
+
+const modelRouterModels = z
+  .string()
+  .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
+  .pipe(z.enum(['claude', '4.1']));
 
 export const AIToolsArgsSchema = {
+  [AITool.SetAIModel]: z.object({
+    ai_model: modelRouterModels,
+  }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
   }),
@@ -105,6 +122,11 @@ export const AIToolsArgsSchema = {
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
+  }),
+  [AITool.SetFormulaCellValue]: z.object({
+    sheet_name: z.string(),
+    code_cell_position: z.string(),
+    formula_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
     sheet_name: z.string(),
@@ -171,13 +193,47 @@ export const AIToolsArgsSchema = {
     table_name: z.string(),
     first_row_is_column_names: z.boolean(),
   }),
+  [AITool.WebSearch]: z.object({
+    query: z.string(),
+  }),
+  [AITool.WebSearchInternal]: z.object({
+    query: z.string(),
+  }),
 } as const;
 
 export type AIToolSpecRecord = {
   [K in AITool]: AIToolSpec<K>;
 };
 
+export const MODELS_ROUTER_CONFIGURATION: {
+  [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
+} = {
+  claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
+  '4.1': 'openai:gpt-4.1-2025-04-14',
+};
+
 export const aiToolsSpec: AIToolSpecRecord = {
+  [AITool.SetAIModel]: {
+    sources: ['ModelRouter'],
+    description: `
+Sets the AI Model to use for this user prompt.\n
+Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        ai_model: {
+          type: 'string',
+          description:
+            'Value can be only one of the following: "claude" or "pro" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+        },
+      },
+      required: ['ai_model'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetAIModel],
+    prompt: '',
+  },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
     description: `
@@ -199,19 +255,14 @@ This name should be from user's perspective, not the assistant's.\n
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetChatName],
-    prompt: `
-You can use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
-This function requires the name of the chat, this should be concise and descriptive of the conversation, and should be easily understandable by a non-technical user.\n
-The chat name should be based on user's messages and should reflect his/her queries and goals.\n
-This name should be from user's perspective, not the assistant's.\n
-`,
+    prompt: '',
   },
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
-Do NOT use this tool if there is no data based in the data bounds provided for the sheet, or if you already have the data in context.\n
-You should use the get_cell_data function to get the values of the cells when you need more data to reference.\n
+Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
+You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
@@ -245,8 +296,9 @@ The string representation (in a1 notation) of the selection of cells to get the 
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
 This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
-Do NOT use this tool if there is no data based in the data bounds provided for the sheet, or if you already have the data in context.\n
-You should use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
+Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
+You SHOULD use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
+You SHOULD use the get_cell_data function rather than assuming patterns; if you're not perfectly confident with the data already provided, check the data on the sheet first.\n
 This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
 IMPORTANT: If the results include page information:\n
 - if the tool tells you it has too many pages, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
@@ -318,6 +370,7 @@ Values are string representation of text, number, logical, time instant, duratio
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
 All values can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add values manually in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
 `,
     parameters: {
       type: 'object',
@@ -359,18 +412,21 @@ When setting cell values, follow these rules for headers:\n
 This function requires the sheet name of the current sheet from the context, the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set. Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 Values set using this function will replace the existing values in the cell and can be referenced in the code cells immediately. Always refer to the cell by its position on respective sheet, in a1 notation. Don't add these in code cells.\n
 To clear the values of a cell, set the value to an empty string.\n
+Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
 `,
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the value of a code cell and runs it in the current open sheet, requires the language, cell position (in a1 notation), and code string.\n
+Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
-You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value function instead of responding with code.\n
+You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
-Note: we only rename the code cell if its new. Otherwise we keep the old name.\n
-Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in code cells.\n
+Note: only name the code cell if it is new.\n
+Always refer to the data from cell by its position in a1 notation from respective sheet.\n
+Do not attempt to add code to data tables, it will result in an error.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 `,
     parameters: {
       type: 'object',
@@ -387,7 +443,7 @@ Always refer to the data from cell by its position in a1 notation from respectiv
         code_cell_language: {
           type: 'string',
           description:
-            'The language of the code cell, this can be one of Python, Javascript or Formula. This is case sensitive.',
+            'The language of the code cell, this can be one of Python or Javascript. This is case sensitive.',
         },
         code_cell_position: {
           type: 'string',
@@ -405,22 +461,80 @@ Always refer to the data from cell by its position in a1 notation from respectiv
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
 You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value instead of responding with code.\n
+Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
-The required location code_cell_position for this code cell is one which satisfies the following conditions:\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
+
+Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
-- If the referenced data is portrait in a table format, the code cell should be next to the top right corner of the table.\n
-- If the referenced data is landscape in a table format, the code cell should be below the bottom left corner of the table.\n
-- Always leave a blank row / column between the code cell and the data it references. Example if placing to the right: if nearest content is in D1 and you're inserting to the right, you would use F1; example placement underneath: if nearest content is in C17 and you're inserting below, you would use C19.\n
+- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
+- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
+- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21.\n
 - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
 - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
 - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
-- Do not use conditional returns in python code cells.\n
-- Do not attempt to return data using conditionals in code cells. Even if the conditional is the last line, it will not be returned if buried in a conditional.
-- Don't prefix formulas with \`=\` in code cells.\n
+`,
+  },
+  [AITool.SetFormulaCellValue]: {
+    sources: ['AIAnalyst'],
+    description: `
+Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
+You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
+Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add static data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to formulas.\n
+Provide a name for the output of the formula cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Note: we only rename the formula cell if its new. Otherwise we keep the old name.\n
+Always refer to the data from cell by its position in a1 notation from respective sheet. Don't add values manually in formula cells.\n
+Do not attempt to add formulas to data tables, it will result in an error.\n
+This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_position: {
+          type: 'string',
+          description:
+            'The position of the formula cell in the current open sheet, in a1 notation. This should be a single cell, not a range.',
+        },
+        formula_string: {
+          type: 'string',
+          description: 'The formula which will run in the cell',
+        },
+      },
+      required: ['sheet_name', 'code_cell_position', 'formula_string'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetFormulaCellValue],
+    prompt: `
+You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value instead of responding with formulas.\n
+Never use set_formula_cell_value function to set the value of a cell to a value that is not a formula. Don't add data to the current open sheet using set_formula_cell_value function, use set_cell_values instead. set_formula_cell_value function is only meant to set the value of a cell to a formula.\n
+set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
+Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
+This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+Don't prefix formulas with \`=\` in formula cells.\n
+
+Formulas placement instructions:\n
+- The formula cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the formula result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- The formula cell should be near the data it references, so that it is easy to understand the formula in the context of the data. Identify the data being referenced from the Formula and use the nearest unoccupied cell. If multiple data references are being made, choose the one which is most relevant to the Formula.\n
+- Unlike code cell placement, Formula cell placement should not use an extra space; formulas should be placed next to the data they reference or next to a label for the calculation.\n
+- Pick the location that makes the most sense next to what is being referenced. E.g. formula aggregations often make sense directly underneath or directly beside the data being referenced or next to the label for the calculation.\n
+- When doing a calculation on a table column, place the formula directly below the last row of the table.\n
+
+When to use set_formula_cell_value:\n
+Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals, counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
+Examples: 
+- Finding the mean of a column of numbers
+- Counting the number of instances of a value in a column
+- Finding the max/min value 
+- Basic arithmetic operations 
+- Joining strings 
 `,
   },
   [AITool.MoveCells]: {
@@ -809,6 +923,59 @@ It requires the sheet name, a rectangular selection of cells to convert to a dat
 A data table cannot be created over any existing code cells or data tables.\n
 The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
 The data table will include a table name as the first row, which will push down all data by one row.\n
+`,
+  },
+  [AITool.WebSearch]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool searches the web for information based on the query.\n
+Use this tool when the user asks for information that is not already available in the context.\n
+When you would otherwise try to answer from memory or not have a way to answer the user's question, use this tool to retrieve the needed data from the web.\n
+This tool should also be used when trying to retrieve information for how to construct API requests that are not well-known from memory and when requiring information on code libraries that are not well-known from memory.\n
+It requires the query to search for.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.WebSearch],
+    prompt: `
+This tool searches the web for information based on the query.\n
+Use this tool when the user asks for information that is not already available in the context.\n
+When you would otherwise try to answer from memory or not have a way to answer the user's question, use this tool to retrieve the needed data from the web.\n
+This tool should also be used when trying to retrieve information for how to construct API requests that are not well-known from memory and when requiring information on code libraries that are not well-known from memory.\n
+It requires the query to search for.\n
+`,
+  },
+  // This is tool internal to AI model and is called by `WebSearch` tool.
+  [AITool.WebSearchInternal]: {
+    sources: ['WebSearch'],
+    description: `
+This tool searches the web for information based on the query.\n
+It requires the query to search for.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The search query',
+        },
+      },
+      required: ['query'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.WebSearchInternal],
+    prompt: `
+This tool searches the web for information based on the query.\n
+It requires the query to search for.\n
 `,
   },
 } as const;

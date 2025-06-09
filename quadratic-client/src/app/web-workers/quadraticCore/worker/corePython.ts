@@ -1,6 +1,6 @@
 import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 
@@ -71,10 +71,10 @@ class CorePython {
       responseUint8Array = toUint8Array(cellA1Response);
     }
 
-    const length = responseUint8Array.length;
+    const byteLength = responseUint8Array.byteLength;
 
-    Atomics.store(int32View, 1, length);
-    if (length !== 0) {
+    Atomics.store(int32View, 1, byteLength);
+    if (byteLength !== 0) {
       const id = this.id++;
       this.getCellsResponses[id] = responseUint8Array;
       Atomics.store(int32View, 2, id);

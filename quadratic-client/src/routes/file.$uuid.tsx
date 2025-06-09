@@ -62,7 +62,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing workers');
 
   if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
-  loadAssets();
+  loadAssets().catch((e) => console.error('Error loading assets', e));
   if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
 
   if (debugFlag('debugStartupTime'))

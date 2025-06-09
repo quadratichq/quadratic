@@ -32,7 +32,7 @@ class JavascriptCore {
 
     switch (e.data.type) {
       case 'coreJavascriptRun':
-        javascript.run(e.data);
+        await javascript.run(e.data);
         return;
     }
 

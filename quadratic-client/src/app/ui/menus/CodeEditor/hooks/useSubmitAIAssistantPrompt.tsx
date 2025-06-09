@@ -25,11 +25,10 @@ import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
-  getPromptMessagesWithoutPDF,
-  isContentText,
+  getPromptMessagesForAI,
+  isContentFile,
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRef } from 'react';
@@ -66,7 +65,7 @@ export function useSubmitAIAssistantPrompt() {
           ...currentSheetContext,
           ...visibleContext,
           ...codeContext,
-          ...getPromptMessagesWithoutPDF(prevMessages),
+          ...getPromptMessagesForAI(prevMessages),
         ];
 
         return messagesWithContext;
@@ -147,7 +146,7 @@ export function useSubmitAIAssistantPrompt() {
                 content: [{ type: 'text', text: 'Request aborted by the user.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model: getModelFromModelKey(modelKey),
+                modelKey,
               };
               return [...prevMessages, newLastMessage];
             }
@@ -279,7 +278,7 @@ export function useSubmitAIAssistantPrompt() {
 
             const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
               result.content.forEach((content) => {
-                if (!isContentText(content)) {
+                if (isContentFile(content)) {
                   acc.add(content.fileName);
                 }
               });
@@ -311,7 +310,7 @@ export function useSubmitAIAssistantPrompt() {
                 content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                model: getModelFromModelKey(modelKey),
+                modelKey,
               };
               return [...prevMessages, newLastMessage];
             }

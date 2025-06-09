@@ -6,7 +6,7 @@ use crate::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
     },
-    grid::{GridBounds, Sheet},
+    grid::Sheet,
 };
 
 use anyhow::{Result, bail};
@@ -63,36 +63,6 @@ impl Sheet {
             }]
         } else {
             vec![]
-        }
-    }
-
-    /// Removes any value at row and shifts the remaining values up by 1.
-    fn delete_and_shift_values(&mut self, row: i64) {
-        // use the sheet bounds to determine the approximate bounds for the impacted range
-        if let GridBounds::NonEmpty(bounds) = self.bounds(true) {
-            for x in bounds.min.x..=bounds.max.x {
-                if let Some(column) = self.columns.get_mut(&x) {
-                    if column.values.contains_key(&row) {
-                        column.values.remove(&row);
-                    }
-
-                    let mut keys_to_move: Vec<i64> = column
-                        .values
-                        .keys()
-                        .filter(|&key| *key > row)
-                        .cloned()
-                        .collect();
-
-                    keys_to_move.sort_unstable();
-
-                    // Move up remaining values
-                    for key in keys_to_move {
-                        if let Some(value) = column.values.remove(&key) {
-                            column.values.insert(key - 1, value);
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -158,11 +128,12 @@ impl Sheet {
         transaction.sheet_borders.insert(self.id);
 
         // update all cells that were impacted by the deletion
-        self.delete_and_shift_values(row);
+        self.columns.remove_row(row);
 
         let changed_selections = self
             .validations
             .remove_row(transaction, self.id, row, a1_context);
+
         transaction.add_dirty_hashes_from_selections(self, a1_context, changed_selections);
 
         if transaction.is_user_undo_redo() {
@@ -241,8 +212,8 @@ mod test {
                 "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P",
             ],
         );
-        sheet.recalculate_bounds(&sheet.make_a1_context());
-        sheet.delete_and_shift_values(1);
+        sheet.recalculate_bounds(&sheet.expensive_make_a1_context());
+        sheet.columns.remove_row(1);
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Text("E".to_string()))
@@ -289,7 +260,7 @@ mod test {
             .italic
             .set_rect(2, 1, Some(2), None, Some(false));
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         sheet.recalculate_bounds(&a1_context);
 
@@ -314,8 +285,8 @@ mod test {
             sheet.formats.fill_color.get(pos![C1]),
             Some("blue".to_string())
         );
-        assert!(sheet.data_tables.get(&Pos { x: 1, y: 2 }).is_some());
-        assert!(sheet.data_tables.get(&Pos { x: 1, y: 3 }).is_some());
+        assert!(sheet.data_tables.get_at(&Pos { x: 1, y: 2 }).is_some());
+        assert!(sheet.data_tables.get_at(&Pos { x: 1, y: 3 }).is_some());
     }
 
     #[test]
@@ -333,7 +304,7 @@ mod test {
         sheet.offsets.set_row_height(2, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
 
         let mut transaction = PendingTransaction::default();
         sheet.delete_row(&mut transaction, 2, &a1_context);

@@ -1,6 +1,6 @@
 import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
-import { toUint8Array } from '@/app/shared/utils/toUint8Array';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreJavascriptMessage,
   JavascriptCoreMessage,

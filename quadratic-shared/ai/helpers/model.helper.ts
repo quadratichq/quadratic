@@ -6,12 +6,18 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
+  GenAIModelKey,
   OpenAIModelKey,
+  QuadraticModelKey,
   VertexAIAnthropicModelKey,
   VertexAIModelKey,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { aiToolsSpec } from '../specs/aiToolsSpec';
+
+export function isQuadraticModel(modelKey: AIModelKey): modelKey is QuadraticModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'quadratic';
+}
 
 export function isVertexAIAnthropicModel(modelKey: AIModelKey): modelKey is VertexAIAnthropicModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'vertexai-anthropic';
@@ -35,6 +41,10 @@ export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey 
 
 export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'vertexai';
+}
+
+export function isGenAIModel(modelKey: AIModelKey): modelKey is GenAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'genai';
 }
 
 export function isBedrockModel(modelKey: AIModelKey): modelKey is BedrockModelKey {
@@ -69,7 +79,7 @@ export const getModelOptions = (
 
   const thinking = config.thinking;
 
-  const temperature = thinking ? (config.thinkingTemperature ?? config.temperature) : config.temperature;
+  const temperature = config.temperature;
 
   const promptCaching = config.promptCaching;
 

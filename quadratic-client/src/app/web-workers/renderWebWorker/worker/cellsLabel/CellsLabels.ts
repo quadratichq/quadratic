@@ -425,7 +425,7 @@ export class CellsLabels {
     }
   }
 
-  completeRenderCells(hashX: number, hashY: number, renderCells: JsRenderCell[]): void {
+  hashRenderCells(hashX: number, hashY: number, renderCells: JsRenderCell[]): void {
     const key = this.getHashKey(hashX, hashY);
     let cellsHash = this.cellsTextHash.get(key);
     if (!cellsHash) {
@@ -436,23 +436,18 @@ export class CellsLabels {
     cellsHash.dirty = renderCells;
   }
 
-  setHashesDirty(hashesString: string): void {
-    try {
-      const hashes = JSON.parse(hashesString) as Pos[];
-      hashes.forEach(({ x, y }) => {
-        const hashX = Number(x);
-        const hashY = Number(y);
-        const key = this.getHashKey(hashX, hashY);
-        let cellsHash = this.cellsTextHash.get(key);
-        if (!cellsHash) {
-          cellsHash = new CellsTextHash(this, hashX, hashY);
-          this.cellsTextHash.set(key, cellsHash);
-        }
-        cellsHash.dirty = true;
-      });
-    } catch (e) {
-      console.error('[CellsLabels] setHashesDirty: Error parsing hashes: ', e);
-    }
+  setHashesDirty(hashes: Pos[]): void {
+    hashes.forEach(({ x, y }) => {
+      const hashX = Number(x);
+      const hashY = Number(y);
+      const key = this.getHashKey(hashX, hashY);
+      let cellsHash = this.cellsTextHash.get(key);
+      if (!cellsHash) {
+        cellsHash = new CellsTextHash(this, hashX, hashY);
+        this.cellsTextHash.set(key, cellsHash);
+      }
+      cellsHash.dirty = true;
+    });
   }
 
   setOffsetsDelta = (column: number | null, row: number | null, delta: number) => {

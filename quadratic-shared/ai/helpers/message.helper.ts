@@ -1,8 +1,13 @@
 import type {
   AIMessagePrompt,
+  AIModelKey,
+  AIResponseContent,
   ChatMessage,
   Content,
+  GoogleSearchContent,
+  GoogleSearchGroundingMetadata,
   ImageContent,
+  InternalMessage,
   PdfFileContent,
   SystemMessage,
   TextContent,
@@ -12,8 +17,9 @@ import type {
   UserMessagePrompt,
   UserPromptContextType,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { isQuadraticModel } from './model.helper';
 
-export const getSystemMessages = (messages: ChatMessage[]): string[] => {
+const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
     (message): message is SystemMessage =>
       message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
@@ -21,16 +27,20 @@ export const getSystemMessages = (messages: ChatMessage[]): string[] => {
   return systemMessages.flatMap((message) => message.content.map((content) => content.text));
 };
 
-export const getPromptMessages = (
+const getPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+  return messages.filter((message) => message.contextType === 'userPrompt' || message.contextType === 'toolResult');
+};
+
+export const getPromptAndInternalMessages = (
   messages: ChatMessage[]
-): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt | InternalMessage)[] => {
   return messages.filter(
-    (message): message is UserMessagePrompt | ToolResultMessage | AIMessagePrompt =>
-      message.contextType === 'userPrompt' || message.contextType === 'toolResult'
+    (message) =>
+      message.contextType === 'userPrompt' || message.contextType === 'toolResult' || message.role === 'internal'
   );
 };
 
-export const getPromptMessagesWithoutPDF = (
+const getPromptMessagesWithoutPDF = (
   messages: ChatMessage[]
 ): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
   return getPromptMessages(messages).map((message) => {
@@ -45,11 +55,14 @@ export const getPromptMessagesWithoutPDF = (
   });
 };
 
-export const removeOldFilesInToolResult = (
-  messages: ChatMessage[],
-  files: Set<string>
+export const getPromptMessagesForAI = (
+  messages: ChatMessage[]
 ): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
-  return getPromptMessages(messages).map((message) => {
+  return getPromptMessagesWithoutPDF(messages);
+};
+
+export const removeOldFilesInToolResult = (messages: ChatMessage[], files: Set<string>): ChatMessage[] => {
+  return messages.map((message) => {
     if (message.contextType !== 'toolResult') {
       return message;
     }
@@ -86,6 +99,16 @@ export const getLastAIPromptMessageIndex = (messages: ChatMessage[]): number => 
   return getAIPromptMessages(messages).length - 1;
 };
 
+export const getLastAIPromptMessageModelKey = (messages: ChatMessage[]): AIModelKey | undefined => {
+  const aiPromptMessages = getAIPromptMessages(messages);
+  for (let i = aiPromptMessages.length - 1; i >= 0; i--) {
+    const message = aiPromptMessages[i];
+    if (!!message.modelKey && !isQuadraticModel(message.modelKey)) {
+      return message.modelKey;
+    }
+  }
+};
+
 export const getSystemPromptMessages = (
   messages: ChatMessage[]
 ): { systemMessages: string[]; promptMessages: ChatMessage[] } => {
@@ -104,20 +127,40 @@ export const isToolResultMessage = (message: ChatMessage): message is ToolResult
   return message.role === 'user' && message.contextType === 'toolResult';
 };
 
-export const isContentText = (content: Content[number]): content is TextContent => {
+export const isInternalMessage = (message: ChatMessage): message is InternalMessage => {
+  return message.role === 'internal';
+};
+
+export const isContentText = (content: Content[number] | AIResponseContent[number]): content is TextContent => {
   return content.type === 'text';
 };
 
-export const isContentImage = (content: Content[number]): content is ImageContent => {
+export const isContentImage = (content: Content[number] | AIResponseContent[number]): content is ImageContent => {
   return content.type === 'data' && ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(content.mimeType);
 };
 
-export const isContentPdfFile = (content: Content[number]): content is PdfFileContent => {
+export const isContentPdfFile = (content: Content[number] | AIResponseContent[number]): content is PdfFileContent => {
   return content.type === 'data' && content.mimeType === 'application/pdf';
 };
 
-export const isContentTextFile = (content: Content[number]): content is TextFileContent => {
+export const isContentTextFile = (content: Content[number] | AIResponseContent[number]): content is TextFileContent => {
   return content.type === 'data' && content.mimeType === 'text/plain';
+};
+
+export const isContentGoogleSearchInternal = (content: InternalMessage['content']): content is GoogleSearchContent => {
+  return content.source === 'google_search';
+};
+
+export const isContentGoogleSearchGroundingMetadata = (
+  content: Content[number] | AIResponseContent[number]
+): content is GoogleSearchGroundingMetadata => {
+  return content.type === 'google_search_grounding_metadata';
+};
+
+export const isContentFile = (
+  content: Content[number] | AIResponseContent[number]
+): content is ImageContent | PdfFileContent | TextFileContent => {
+  return isContentImage(content) || isContentPdfFile(content) || isContentTextFile(content);
 };
 
 export const filterImageFilesInChatMessages = (messages: ChatMessage[]): ImageContent[] => {

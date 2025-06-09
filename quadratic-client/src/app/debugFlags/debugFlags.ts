@@ -65,6 +65,8 @@ class DebugFlags {
   };
 }
 
+export const debugFlags = new DebugFlags();
+
 export const debugFlagWait = async (key: DebugFlag) => {
   await waitForDebugFlags();
   return debugFlag(key);
@@ -77,8 +79,6 @@ export const debugFlag = (key: DebugFlag) => {
 export const setDebugFlag = (key: DebugFlag, value: boolean) => {
   debugFlags.setFlag(key, value);
 };
-
-export const debugFlags = new DebugFlags();
 
 /// Returns a promise that resolves when the debug flags are initialized
 export const waitForDebugFlags = async (): Promise<void> => {
