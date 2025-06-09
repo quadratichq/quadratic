@@ -10,7 +10,7 @@ const imageWidth = 1280;
 const imageHeight = imageWidth / (16 / 9);
 
 // time when renderer is not busy to perform an action
-const TIME_FOR_IDLE = 1000;
+const TIME_FOR_IDLE = 5 * 1000;
 
 class Thumbnail {
   private lastUpdate = 0;
@@ -37,20 +37,16 @@ class Thumbnail {
 
   async check() {
     if (this.thumbnailDirty && !pixiApp.copying) {
-      const now = performance.now();
+      const previousLastUpdate = this.lastUpdate;
+      this.lastUpdate = performance.now();
       // don't do anything while the app is paused (since it may already be generating thumbnails)
-      if (this.lastUpdate + TIME_FOR_IDLE > now) {
+      if (this.lastUpdate - previousLastUpdate > TIME_FOR_IDLE) {
         const url = window.location.pathname.split('/');
         const uuid = url[2];
         if (uuid) {
           debugTimeReset();
           this.generate().then((blob) => {
             if (blob) {
-              // Open blob in new tab for preview
-              // const url = URL.createObjectURL(blob);
-              // window.open(url);
-              // URL.revokeObjectURL(url);
-
               debugTimeCheck('thumbnail', 20);
               apiClient.files.thumbnail.update(uuid, blob).then(() => {
                 if (debugShowFileIO) {
@@ -61,7 +57,6 @@ class Thumbnail {
           });
           this.thumbnailDirty = false;
         }
-        this.lastUpdate = performance.now();
       }
     }
   }

@@ -28,7 +28,7 @@ export class HtmlCell {
   private offset: Rectangle;
 
   // cache for the thumbnail image
-  private thumbnailImage: string | undefined;
+  private thumbnailImage: Promise<string | undefined> | undefined;
 
   // whether the cell is active
   active = false;
@@ -50,6 +50,7 @@ export class HtmlCell {
   iframe: HTMLIFrameElement;
 
   private autoResizeTimeout: NodeJS.Timeout | undefined;
+  private abortController = new AbortController();
 
   constructor(htmlCell: JsHtmlOutput) {
     if (htmlCell.html === null) throw new Error('Expected html to be defined in HtmlCell constructor');
@@ -175,6 +176,8 @@ export class HtmlCell {
     this.border.style.height = `${this.height}px`;
     this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
     this.thumbnailImage = undefined;
+    this.abortController.abort();
+    this.abortController = new AbortController();
   }
 
   changeSheet(sheetId: string) {
@@ -366,36 +369,54 @@ export class HtmlCell {
       }
     } else {
       this.autoResizeTimeout = setTimeout(this.autoResize, 100);
+      this.abortController.signal.addEventListener(
+        'abort',
+        () => {
+          clearTimeout(this.autoResizeTimeout);
+          this.autoResizeTimeout = undefined;
+        },
+        { once: true }
+      );
     }
   };
 
   getImageDataUrl = (): Promise<string | undefined> => {
+    if (this.thumbnailImage) {
+      return this.thumbnailImage;
+    }
+
     if (this.iframe.contentWindow?.document.readyState === 'complete') {
-      return this.getImageDataUrlAfterLoaded();
+      this.thumbnailImage = this.getImageDataUrlAfterLoaded(this.abortController);
     } else {
-      return new Promise((resolve) => {
+      this.thumbnailImage = new Promise((resolve) => {
         this.iframe.addEventListener(
           'load',
           () => {
-            this.getImageDataUrlAfterLoaded()
+            this.getImageDataUrlAfterLoaded(this.abortController)
               .then(resolve)
               .catch((error) => {
                 console.error('[HtmlCell.ts] getImageDataUrlAfterLoaded:', error);
                 resolve(undefined);
               });
           },
-          { once: true }
+          { once: true, signal: this.abortController.signal }
         );
       });
     }
+
+    return this.thumbnailImage;
   };
 
-  private getImageDataUrlAfterLoaded = (): Promise<string | undefined> => {
+  private getImageDataUrlAfterLoaded = (abortController: AbortController): Promise<string | undefined> => {
     return new Promise((resolve) => {
-      if (this.thumbnailImage) {
-        resolve(this.thumbnailImage);
-        return;
-      }
+      abortController.signal.addEventListener(
+        'abort',
+        () => {
+          resolve(undefined);
+        },
+        { once: true }
+      );
+
       const plotly = (this.iframe.contentWindow as any)?.Plotly;
       const plotElement = this.iframe.contentWindow?.document.querySelector('.js-plotly-plot');
       if (!plotly || !plotElement) {
@@ -408,7 +429,6 @@ export class HtmlCell {
             height: this.height,
           })
           .then((dataUrl: string) => {
-            this.thumbnailImage = dataUrl;
             resolve(dataUrl);
           })
           .catch((error: any) => {
