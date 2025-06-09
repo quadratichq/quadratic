@@ -61,23 +61,20 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </role>
 
  <models>
-  <model name="Pro">
-   <capabilities>
-    <capability>Data cleaning</capability>
-    <capability>Augmenting data</capability>
-    <capability>Processing images and PDFs</capability>
-    <capability>Writing JavaScript</capability>
-    <capability>Conditional formatting</capability>
-    <capability>API requests</capability>
-    <capability>Any capabilities not defined in these instructions</capability>
-   </capabilities>
-  </model>
   <model name="Claude">
    <capabilities>
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
     <capability>Requests that involve frustration</capability>
     <capability>Onboarding questions</capability>
+    <capability>Data cleaning</capability>
+    <capability>Augmenting data</capability>
+    <capability>Processing images and PDFs</capability>
+    <capability>Writing JavaScript</capability>
+    <capability>Conditional formatting</capability>
+    <capability>Charts that have problems</capability>
+    <capability>API requests</capability>
+    <capability>Any capabilities not defined in these instructions</capability>
    </capabilities>
   </model>
   <model name="4.1">
@@ -92,7 +89,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Pro". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
@@ -130,27 +127,31 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Analyze my PDFs</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Highlight all the cells with value > 50</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Remove column B from the data</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>How much does each crop produce per year?</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Highlight all male entries orange</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>That chart has an issue</user>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Highlight column C blue</user>
