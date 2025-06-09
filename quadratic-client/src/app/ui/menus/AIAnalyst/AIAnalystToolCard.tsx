@@ -7,6 +7,7 @@ import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
+import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
 import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
@@ -32,6 +33,8 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <SetCellValues args={args} loading={loading} />;
     case AITool.SetCodeCellValue:
       return <SetCodeCellValue args={args} loading={loading} />;
+    case AITool.SetFormulaCellValue:
+      return <SetFormulaCellValue args={args} loading={loading} />;
     case AITool.MoveCells:
       return <MoveCells args={args} loading={loading} />;
     case AITool.DeleteCells:
