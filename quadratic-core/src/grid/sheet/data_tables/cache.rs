@@ -132,6 +132,7 @@ impl MultiCellTablesCache {
         }
     }
 
+    /// Returns anchor position of the data table whose output rect contains the given position
     pub fn get(&self, pos: Pos) -> Option<Pos> {
         self.multi_cell_tables.get(pos)
     }
@@ -144,7 +145,7 @@ impl MultiCellTablesCache {
 
             // Multi Value, update empty values cache
             if let Value::Array(array) = &data_table.value {
-                if let Some(mut empty_values_cache) = array.empty_values_cache_clone() {
+                if let Some(mut empty_values_cache) = array.empty_values_cache_owned() {
                     let y_adjustment = data_table.y_adjustment(true);
 
                     // handle hidden columns
@@ -186,6 +187,7 @@ impl MultiCellTablesCache {
                         );
                     }
                 } else {
+                    // empty_values_cache is None, all cells are non-empty
                     self.multi_cell_tables_empty
                         .set_rect(x1, y1, Some(x2), Some(y2), None);
                 }
@@ -201,10 +203,12 @@ impl MultiCellTablesCache {
         }
     }
 
+    /// Returns true if all cells in the rect do not have a table output
     pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
         self.multi_cell_tables.is_all_default_in_rect(rect)
     }
 
+    /// Return rects which have table output
     pub fn nondefault_rects_in_rect(
         &self,
         rect: Rect,
@@ -212,34 +216,42 @@ impl MultiCellTablesCache {
         self.multi_cell_tables.nondefault_rects_in_rect(rect)
     }
 
+    /// Returns the unique table anchor positions in rect
     pub fn unique_values_in_rect(&self, rect: Rect) -> HashSet<Option<Pos>> {
         self.multi_cell_tables.unique_values_in_rect(rect)
     }
 
+    /// Returns the unique table anchor positions in range
     pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<Option<Pos>> {
         self.multi_cell_tables.unique_values_in_range(range)
     }
 
+    /// Returns the minimum column index of the multi-cell data tables
     pub fn col_min(&self, column: i64) -> i64 {
         self.multi_cell_tables.col_min(column)
     }
 
+    /// Returns the maximum column index of the multi-cell data tables
     pub fn col_max(&self, column: i64) -> i64 {
         self.multi_cell_tables.col_max(column)
     }
 
+    /// Returns the minimum row index of the multi-cell data tables
     pub fn row_min(&self, row: i64) -> i64 {
         self.multi_cell_tables.row_min(row)
     }
 
+    /// Returns the maximum row index of the multi-cell data tables
     pub fn row_max(&self, row: i64) -> i64 {
         self.multi_cell_tables.row_max(row)
     }
 
+    /// Returns the finite bounds of the multi-cell data tables
     pub fn finite_bounds(&self) -> Option<Rect> {
         self.multi_cell_tables.finite_bounds()
     }
 
+    /// Returns true if the cell has an empty value
     pub fn has_empty_value(&self, pos: Pos) -> bool {
         self.multi_cell_tables_empty.get(pos).is_some()
     }

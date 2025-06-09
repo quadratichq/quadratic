@@ -41,6 +41,9 @@ pub struct Array {
     values: SmallVec<[CellValue; 1]>,
     /// Cache of empty values in the array, never serialized to file, only used
     /// for performance optimizations in app.
+    ///
+    /// This is the update for SheetDataTablesCache -> MultiCellTablesCache -> multi_cell_tables_empty
+    /// This gets applied / removed when the data table is visible / spilled.
     #[serde(skip)]
     empty_values_cache: Option<EmptyValuesCache>,
 }
@@ -349,7 +352,7 @@ impl Array {
                 self.size.h = h;
                 let first_row = self.values.drain(0..width).collect();
                 if let Some(cache) = self.empty_values_cache.as_mut() {
-                    cache.remove_row(0);
+                    cache.remove_row(&self.size, 0);
                 }
                 Ok(first_row)
             }
@@ -506,7 +509,7 @@ impl Array {
                     self.size.h = h;
                     values = self.values.drain(start..end).collect();
                     if let Some(cache) = self.empty_values_cache.as_mut() {
-                        cache.remove_row(remove_at_index as i64);
+                        cache.remove_row(&self.size, remove_at_index as i64);
                     }
                 }
             }
@@ -723,10 +726,10 @@ impl Array {
         self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
     }
 
-    pub fn empty_values_cache_clone(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
+    pub fn empty_values_cache_owned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.empty_values_cache
             .as_ref()
-            .and_then(|cache| cache.get_cache())
+            .and_then(|cache| cache.get_cache_owned())
     }
 }
 
