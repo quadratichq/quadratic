@@ -1,12 +1,14 @@
-import { debugShowFileIO, debugStartupTime } from '@/app/debugFlags';
+import { debugStartupTime } from '@/app/debugFlags';
 import { events } from '@/app/events/events';
 import FontFaceObserver from 'fontfaceobserver';
-import { Assets, BitmapFont } from 'pixi.js';
+import { Assets } from 'pixi.js';
 import { createBorderTypes } from './generateTextures';
 
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 
 const TIMEOUT = 10000;
+
+let assetsLoaded = false;
 
 function loadFont(fontName: string): void {
   const font = new FontFaceObserver(fontName);
@@ -14,12 +16,11 @@ function loadFont(fontName: string): void {
 }
 
 export function isBitmapFontLoaded(): boolean {
-  return bitmapFonts.every((font) => BitmapFont.available[font]);
+  return assetsLoaded;
 }
 
 export async function loadAssets() {
   if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
-  if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
   // Load HTML fonts for Input

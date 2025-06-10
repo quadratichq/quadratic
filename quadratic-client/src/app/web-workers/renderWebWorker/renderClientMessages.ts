@@ -30,7 +30,7 @@ export interface RenderClientLabelMeshEntry {
   hasColor: boolean;
   vertices: Float32Array;
   uvs: Float32Array;
-  indices: Uint16Array;
+  indices: Uint32Array;
   colors?: Float32Array;
 }
 
