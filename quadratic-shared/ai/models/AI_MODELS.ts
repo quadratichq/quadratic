@@ -2,7 +2,7 @@ import type { AIModelConfig, AIModelKey, AIRates } from 'quadratic-shared/typesA
 
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash-001';
 
-export const DEFAULT_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_MODEL: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
 
 export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
@@ -17,8 +17,10 @@ export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.cla
 export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
 
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'genai:gemini-2.5-flash-preview-05-20';
+
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 16;
+export const DEFAULT_MODEL_VERSION = 17;
 
 const claude_sonnet_3_5_20250514_rate: AIRates = {
   rate_per_million_input_tokens: 15,
@@ -48,7 +50,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'quadratic',
     promptCaching: false,
     thinkingToggle: false,
@@ -64,7 +66,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    enabled: true,
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
@@ -234,6 +236,36 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
+  'genai:gemini-2.5-pro-preview-05-06': {
+    model: 'gemini-2.5-pro-preview-05-06',
+    displayName: 'gemini 2.5 pro preview',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'genai',
+    promptCaching: false,
+    rate_per_million_input_tokens: 1.25,
+    rate_per_million_output_tokens: 10,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'genai:gemini-2.5-flash-preview-05-20': {
+    model: 'gemini-2.5-flash-preview-05-20',
+    displayName: 'gemini 2.5 flash preview',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'genai',
+    promptCaching: false,
+    rate_per_million_input_tokens: 0.15,
+    rate_per_million_output_tokens: 1,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'bedrock-anthropic:claude-opus-4:thinking-toggle-off': {
     model: 'us.anthropic.claude-opus-4-20250514-v1:0',
     displayName: 'claude opus 4',
@@ -295,7 +327,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
@@ -308,7 +340,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,

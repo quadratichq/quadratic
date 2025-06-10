@@ -11,6 +11,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import { isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
@@ -87,7 +88,7 @@ export const AIUserMessageForm = memo(
       setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
       setPrompt(
         initialContent
-          ?.filter((item) => item.type === 'text')
+          ?.filter((item) => isContentText(item))
           .map((item) => item.text)
           .join('\n') ?? ''
       );
