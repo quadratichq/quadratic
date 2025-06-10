@@ -110,7 +110,7 @@ class RenderClient {
   }
 
   // sends a rendered LabelMeshEntry to the main thread for rendering
-  sendLabelMeshEntry(message: RenderClientLabelMeshEntry, data: ArrayBuffer[]) {
+  sendLabelMeshEntry(message: RenderClientLabelMeshEntry, data: ArrayBufferLike[]) {
     self.postMessage(message, data);
   }
 
