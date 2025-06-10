@@ -38,7 +38,6 @@
     "@aws-sdk/client-s3": "^3.427.0",
     "@aws-sdk/client-secrets-manager": "^3.441.0",
     "@aws-sdk/s3-request-presigner": "^3.427.0",
-    "@google-cloud/vertexai": "^1.10.0",
     "@google/genai": "^1.1.0",
     "@ory/kratos-client": "^1.2.1",
     "@prisma/client": "^4.12.0",
