@@ -465,7 +465,6 @@ export class GridHeadings extends Container {
       return;
     }
     this.visible = true;
-    this.alpha = 0.5;
     if (!this.characterSize) {
       this.calculateCharacterSize();
     }

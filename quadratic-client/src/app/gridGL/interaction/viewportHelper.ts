@@ -3,10 +3,9 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import { Point, type Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
 
-const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
+// const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
 
 // animating viewport
 const ANIMATION_TIME = 250;
@@ -138,28 +137,28 @@ export function ensureRectVisible(sheetId: string, min: JsCoordinate, max?: JsCo
   }
 }
 
-function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectangle): boolean {
-  const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
-  if (!table) return false;
-  const code = table.codeCell;
-  if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {
-    return false;
-  }
-  if (table.header.onGrid) return false;
+// function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectangle): boolean {
+//   const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
+//   if (!table) return false;
+//   const code = table.codeCell;
+//   if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {
+//     return false;
+//   }
+//   if (table.header.onGrid) return false;
 
-  // we need to manually update the table to ensure it is in the correct position
-  // this usually happens during the update loop, but that's too late for our needs
-  const bounds = pixiApp.viewport.getVisibleBounds();
-  const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-  table.update(bounds, gridHeading);
+//   // we need to manually update the table to ensure it is in the correct position
+//   // this usually happens during the update loop, but that's too late for our needs
+//   const bounds = pixiApp.viewport.getVisibleBounds();
+//   const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+//   table.update(bounds, gridHeading);
 
-  const tableHeaderBounds = table.header.getTableHeaderBounds();
-  if (intersects.rectangleRectangle(tableHeaderBounds, cell)) {
-    pixiApp.viewport.top -= tableHeaderBounds.bottom - cell.top;
-    return true;
-  }
-  return false;
-}
+//   const tableHeaderBounds = table.header.getTableHeaderBounds();
+//   if (intersects.rectangleRectangle(tableHeaderBounds, cell)) {
+//     pixiApp.viewport.top -= tableHeaderBounds.bottom - cell.top;
+//     return true;
+//   }
+//   return false;
+// }
 
 export function ensureSelectionVisible() {
   // use cell coordinates b/c selection may include unbounded ranges that we
