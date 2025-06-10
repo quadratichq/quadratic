@@ -1,9 +1,7 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { Animate } from '@/app/gridGL/pixiApp/viewport/Animate';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { Point, type Rectangle } from 'pixi.js';
@@ -11,7 +9,7 @@ import { Point, type Rectangle } from 'pixi.js';
 const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
 
 // animating viewport
-const ANIMATION_TIME = 1000;
+const ANIMATION_TIME = 250;
 const ANIMATION_EASE = 'easeInOutSine';
 
 export function getVisibleTopRow(): number {
@@ -74,28 +72,36 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   // returns true if the rect is visible in the viewport
   const { viewport, headings } = pixiApp;
   const sheet = sheets.sheet;
-  const headingWidth = headings.headingSize.unscaledWidth;
-  const headingHeight = headings.headingSize.unscaledHeight;
 
   const topLeftCell = sheet.getCellOffsets(min.x, min.y);
   const same = !max || (min.x === max.x && min.y === max.y);
   const bottomRightCell = same ? topLeftCell : sheet.getCellOffsets(max.x, max.y);
+
+  const headingHeight = headings.headingSize.unscaledHeight;
+
   let right: number | undefined;
   let left: number | undefined;
   let bottom: number | undefined;
   let top: number | undefined;
+  let y = viewport.y;
+  if (bottomRightCell.bottom > viewport.bottom) {
+    bottom = bottomRightCell.bottom;
+    y = bottom - viewport.worldScreenHeight;
+  }
+  if (topLeftCell.top + headingHeight < viewport.top) {
+    top = topLeftCell.top - headingHeight;
+    y = top;
+  }
+
+  // calculate the new rowWidth when at new Y location
+  const newHeadingSize = pixiApp.headings.getFutureSizes(y);
+  const headingWidth = newHeadingSize.unscaledWidth;
+
   if (bottomRightCell.right > viewport.right) {
     right = bottomRightCell.right;
   }
   if (topLeftCell.left + headingWidth < viewport.left) {
     left = topLeftCell.left - headingWidth;
-  }
-
-  if (bottomRightCell.bottom > viewport.bottom) {
-    bottom = bottomRightCell.bottom;
-  }
-  if (topLeftCell.top + headingHeight < viewport.top) {
-    top = topLeftCell.top - headingHeight;
   }
 
   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
@@ -114,29 +120,12 @@ export function rectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordina
   }
   const move = calculateRectVisible(min, max);
   if (move) {
-    const callbackBeforeUpdate = (animate: Animate) => {
-      if (animate.startX === undefined || animate.startY === undefined) {
-        throw new Error('Expected startX and startY to be defined in viewportHelper.animate');
-      }
-      pixiApp.headings.update(true);
-      const change = calculateRectVisible(min, max);
-      if (change) {
-        animate.deltaX = change.x - animate.startX;
-        animate.deltaY = change.y - animate.startY;
-        animate.options.position = change;
-        console.log(pixiApp.viewport.center.x, pixiApp.viewport.center.y, change.x, change.y);
-      }
-    };
-    pixiApp.viewport.plugins.add(
-      'animate',
-      new Animate(pixiApp.viewport, {
-        position: new Point(move.x, move.y),
-        removeOnInterrupt: true,
-        time: ANIMATION_TIME,
-        ease: ANIMATION_EASE,
-        callbackBeforeUpdate,
-      })
-    );
+    pixiApp.viewport.animate({
+      position: new Point(move.x, move.y),
+      removeOnInterrupt: true,
+      time: ANIMATION_TIME,
+      ease: ANIMATION_EASE,
+    });
     return false;
   } else {
     return true;

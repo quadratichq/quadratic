@@ -137,8 +137,8 @@ export class GridHeadings extends Container {
     if (!this.characterSize) return;
 
     const viewport = pixiApp.viewport;
-    const scale = viewport.scaled;
     const bounds = viewport.getVisibleBounds();
+    const scale = viewport.scaled;
     const offsets = sheets.sheet.offsets;
     const cellWidth = CELL_WIDTH / scale;
     const cellHeight = CELL_HEIGHT / scale;
@@ -528,4 +528,31 @@ export class GridHeadings extends Container {
       }
     }
   }
+
+  /// Returns future sizes based on a new viewport position (top left)
+  getFutureSizes = (viewportTopY: number): HeadingSize => {
+    if (!this.characterSize) {
+      throw new Error('Expected characterSize to be defined');
+    }
+    const { viewport } = pixiApp;
+    const bounds = viewport.getVisibleBounds();
+    const viewportHeight = bounds.height;
+
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
+
+    const endY = offsets.getYPlacement(viewportTopY + viewportHeight);
+    const bottomOffset = endY.position + endY.size;
+    const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
+    let rowWidth =
+      (bottomNumberLength * this.characterSize.width) / viewport.scale.x + (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
+    rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
+
+    return {
+      width: rowWidth * pixiApp.viewport.scale.x,
+      height: CELL_HEIGHT,
+      unscaledWidth: rowWidth,
+      unscaledHeight: CELL_HEIGHT / pixiApp.viewport.scale.y,
+    };
+  };
 }

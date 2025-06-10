@@ -193,7 +193,6 @@ export class Animate extends Plugin {
         this.options.callbackBeforeUpdate(this);
       }
       this.parent.moveCenter(this.options.position);
-      console.log('final:', this.options.position);
     }
 
     this.parent.emit('animate-end', this.parent);
