@@ -206,7 +206,7 @@ impl From<(Import, Array, &A1Context)> for DataTable {
         DataTable::new(
             DataTableKind::Import(import),
             &name,
-            Value::Array(cell_values),
+            cell_values.into(),
             false,
             None,
             None,
@@ -609,7 +609,7 @@ impl DataTable {
                     self.value = Value::Single(value);
                 }
                 Value::Array(ref mut a) => {
-                    if let Err(error) = a.set(x, y, value) {
+                    if let Err(error) = a.set(x, y, value, true) {
                         dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
                         return false;
                     }
@@ -855,11 +855,10 @@ pub mod test {
         let kind = data_table.kind.clone();
         let values = data_table.value.clone().into_array().unwrap();
 
-        let expected_values = Value::Array(values.clone());
         let expected_data_table = DataTable::new(
             kind.clone(),
             "test.csv",
-            expected_values,
+            values.into(),
             false,
             None,
             None,
@@ -931,7 +930,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            Array::new_empty(ArraySize::new(10, 11).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -970,7 +969,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            Array::new_empty(ArraySize::new(10, 11).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1028,7 +1027,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run.clone()),
             "Table 1",
-            Value::Array(single_column),
+            single_column.into(),
             false,
             Some(true),
             Some(true),
@@ -1041,7 +1040,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(multi_column),
+            multi_column.into(),
             false,
             Some(true),
             Some(true),
@@ -1069,7 +1068,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            Array::new_empty(ArraySize::new(4, 3).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1100,7 +1099,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            Array::new_empty(ArraySize::new(4, 3).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1339,7 +1338,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(2, 2).unwrap())),
+            Array::new_empty(ArraySize::new(2, 2).unwrap()).into(),
             false,
             Some(true),
             Some(true),

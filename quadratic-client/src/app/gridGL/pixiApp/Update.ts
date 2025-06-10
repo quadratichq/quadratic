@@ -74,8 +74,7 @@ export class Update {
       this.showFocus();
     }
 
-    pixiApp.viewport.updateViewport();
-
+    const viewportChanged = pixiApp.viewport.updateViewport();
     let rendererDirty =
       pixiApp.gridLines.dirty ||
       pixiApp.headings.dirty ||
@@ -86,7 +85,8 @@ export class Update {
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
       pixiApp.validations.dirty ||
-      pixiApp.copy.dirty;
+      pixiApp.copy.dirty ||
+      pixiApp.singleCellOutlines.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(
@@ -102,6 +102,7 @@ export class Update {
           pixiApp.cellMoving.dirty && 'cellMoving',
           pixiApp.validations.dirty && 'validations',
           pixiApp.copy.dirty && 'copy',
+          pixiApp.singleCellOutlines.dirty && 'singleCellOutlines',
         ]
           .filter(Boolean)
           .join(', ')}`
@@ -135,6 +136,8 @@ export class Update {
     debugTimeCheck('[Update] copy');
     this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
+    pixiApp.singleCellOutlines.update(viewportChanged);
+    debugTimeCheck('[Update] singleCellOutlines');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

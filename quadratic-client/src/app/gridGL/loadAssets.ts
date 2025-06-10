@@ -8,25 +8,22 @@ export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'Ope
 
 const TIMEOUT = 10000;
 
-function loadFont(fontName: string): void {
+let assetsLoaded = false;
+
+async function loadFont(fontName: string): Promise<void> {
   const font = new FontFaceObserver(fontName);
-  font.load(undefined, TIMEOUT);
+  await font.load(undefined, TIMEOUT);
 }
 
 export function isBitmapFontLoaded(): boolean {
-  return bitmapFonts.every((font) => BitmapFont.available[font]);
+  return assetsLoaded && bitmapFonts.every((font) => BitmapFont.available[font]);
 }
 
 export async function loadAssets() {
   if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
-  createBorderTypes();
 
-  // Load HTML fonts for Input
-  const font1Promise = loadFont('OpenSans');
-  const font2Promise = loadFont('OpenSans-Bold');
-  const font3Promise = loadFont('OpenSans-Italic');
-  const font4Promise = loadFont('OpenSans-BoldItalic');
+  createBorderTypes();
 
   // Load PixiJS fonts for canvas
   const bundle = {
@@ -50,12 +47,18 @@ export async function loadAssets() {
     'sort-ascending': '/images/sort-ascending.svg',
     'sort-descending': '/images/sort-descending.svg',
   };
-
   // Add bundles to Assets
   Assets.addBundle('bundle', bundle);
-  const bundlePromise = Assets.loadBundle('bundle');
+  await Assets.loadBundle('bundle');
 
-  await Promise.all([font1Promise, font2Promise, font3Promise, font4Promise, bundlePromise]);
+  // Load HTML fonts for Input
+  const openSansPromise = loadFont('OpenSans');
+  const openSansBoldPromise = loadFont('OpenSans-Bold');
+  const openSansItalicPromise = loadFont('OpenSans-Italic');
+  const openSansBoldItalicPromise = loadFont('OpenSans-BoldItalic');
+  await Promise.all([openSansPromise, openSansBoldPromise, openSansItalicPromise, openSansBoldItalicPromise]);
+
+  assetsLoaded = true;
 
   if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   events.emit('bitmapFontsLoaded');

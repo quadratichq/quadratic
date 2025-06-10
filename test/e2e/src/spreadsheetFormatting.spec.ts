@@ -809,7 +809,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   //--------------------------------
   const longText =
     "This is a very long text string that should wrap to the next line when it reaches the edge of the text area. We'll use this to test the text wrap functionality.";
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: longText });
+  await typeInCell(page, { a1: 'A1', text: longText });
 
   await page.locator(`[aria-label="Text wrap"]`).click();
   await page.locator(`[role="menuitem"] span:has-text("Overflow")`).click();
@@ -843,8 +843,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   const mediumText = 'Horizontal Align Testing left, center, and right.';
 
   await page.mouse.dblclick(119, 60);
-  await typeInCell(page, { targetColumn: 1, targetRow: 2, text: shortText });
-  await typeInCell(page, { targetColumn: 1, targetRow: 3, text: mediumText });
+  await typeInCell(page, { a1: 'A2', text: shortText });
+  await typeInCell(page, { a1: 'A3', text: mediumText });
 
   //--------------------------------
   // Act and Assert:

@@ -24,6 +24,7 @@ impl GridController {
         let mut context = self.a1_context().to_owned();
 
         let sheet = self.try_sheet_result(sheet_id)?;
+
         let data_tables_pos = sheet
             .data_tables
             .expensive_iter()
