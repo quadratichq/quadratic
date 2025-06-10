@@ -34,6 +34,7 @@ import {
 } from '../../ai/providers';
 import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
 import { createFileForFineTuning } from '../helpers/fineTuning.helper';
+import { countTokensInRequest } from '../helpers/tokenCounter.helper';
 import { calculateUsage } from '../helpers/usage.helper';
 import { handleGenAIRequest } from './genai.handler';
 
@@ -60,6 +61,10 @@ export const handleAIRequest = async (
       };
     }
 
+    // Count tokens before sending to model for logging and monitoring
+    const estimatedTokens = countTokensInRequest(args, modelKey);
+    console.log(`[AI.Request] Model: ${modelKey}, Source: ${args.source}, Estimated tokens: ${estimatedTokens}`);
+
     let parsedResponse: ParsedAIResponse | undefined;
     if (isVertexAIAnthropicModel(modelKey)) {
       parsedResponse = await handleAnthropicRequest(modelKey, args, vertex_anthropic, response);
@@ -85,7 +90,15 @@ export const handleAIRequest = async (
       parsedResponse.usage.source = args.source;
       parsedResponse.usage.modelKey = modelKey;
       parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
-      console.log('[AI.Usage]', parsedResponse.usage);
+      console.log('[AI.Usage]', {
+        ...parsedResponse.usage,
+        estimatedInputTokens: estimatedTokens,
+        actualInputTokens: parsedResponse.usage.inputTokens,
+        tokenEstimationAccuracy:
+          parsedResponse.usage.inputTokens > 0
+            ? `${Math.round((estimatedTokens / parsedResponse.usage.inputTokens) * 100)}%`
+            : 'N/A',
+      });
     }
 
     if (debugAndNotInProduction && FINE_TUNE === 'true' && !!parsedResponse) {

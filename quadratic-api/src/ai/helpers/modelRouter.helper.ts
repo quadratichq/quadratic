@@ -14,6 +14,7 @@ import {
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { handleAIRequest } from '../handler/ai.handler';
+import { countTokensInRequest } from './tokenCounter.helper';
 
 export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelperArgs): Promise<AIModelKey> => {
   try {
@@ -47,6 +48,9 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
       return DEFAULT_BACKUP_MODEL;
     }
 
+    // Count tokens in the request
+    const estimatedTokens = countTokensInRequest(inputArgs);
+
     const args: AIRequestHelperArgs = {
       source: 'ModelRouter',
       messages: [
@@ -56,9 +60,18 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
             {
               type: 'text',
               text: `
+ <context>
+  This request contains approximately ${estimatedTokens} tokens.
+ </context>
+
  <role>
   You are an AI model selector for a spreadsheet application. Based on the user's prompt, choose the most suitable model.
  </role>
+
+ <instructions>
+  If token count is > 28000, always use Claude. If token count is less than 30000, follow the instructions below.
+  Only respond with the model name: "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
+ </instructions>
 
  <models>
   <model name="Claude">
@@ -87,10 +100,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    </capabilities>
   </model>
  </models>
-
- <instructions>
-  Only respond with the model name: "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
- </instructions>
 
  <examples>
   <example>

@@ -64,6 +64,7 @@
     "ssh-keygen": "^0.5.0",
     "stripe": "^14.16.0",
     "supertest": "^6.3.3",
+    "tiktoken": "^1.0.17",
     "zod": "^3.25.3"
   },
   "devDependencies": {
