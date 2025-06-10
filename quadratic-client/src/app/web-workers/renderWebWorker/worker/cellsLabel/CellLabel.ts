@@ -49,6 +49,9 @@ interface CharRenderData {
   prevSpaces: number;
 }
 
+// Maximum number of characters to render per cell
+const MAX_CHAR_LENGTH = 1000;
+
 // magic numbers to make the WebGL rendering of OpenSans look similar to the HTML version
 export const OPEN_SANS_FIX = { x: 1.8, y: -1.8 };
 
@@ -141,22 +144,28 @@ export class CellLabel {
   private columnHeader: boolean;
 
   private getText = (cell: JsRenderCell) => {
+    let text = '';
     switch (cell?.special) {
       case 'SpillError':
-        return SPILL_ERROR_TEXT;
+        text = SPILL_ERROR_TEXT;
+        break;
       case 'RunError':
-        return RUN_ERROR_TEXT;
+        text = RUN_ERROR_TEXT;
+        break;
       case 'Chart':
-        return '';
+        text = '';
+        break;
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
-          return convertNumber(cell.value, cell.number).toUpperCase();
+          text = convertNumber(cell.value, cell.number).toUpperCase();
         } else {
           this.number = undefined;
-          return cell?.value;
+          text = cell?.value;
         }
     }
+    text = text.substring(0, MAX_CHAR_LENGTH);
+    return text;
   };
 
   get textRectangle() {
