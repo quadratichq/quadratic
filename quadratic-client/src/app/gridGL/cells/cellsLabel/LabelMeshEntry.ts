@@ -50,7 +50,6 @@ export class LabelMeshEntry extends Mesh {
     if (message.hasColor && message.colors) {
       geometry.addAttribute('aColors', message.colors, 4);
     }
-    // ...
     super(geometry, material);
     this.fontName = message.fontName;
     this.blendMode = BLEND_MODES.NORMAL_NPM;
