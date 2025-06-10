@@ -8,6 +8,7 @@ use crate::util::is_false;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
+pub mod fix_names;
 pub mod formats;
 pub mod row;
 pub mod send_render;
@@ -117,16 +118,24 @@ impl Grid {
 
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
-const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
+const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.\\]*$"#;
+const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\\]"#;
+const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z0-9_.\\]*$"#;
 const COLUMN_NAME_VALID_CHARS: &str =
     r#"^[a-zA-Z0-9_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
         Regex::new(R1C1_REGEX).expect("Failed to compile R1C1_REGEX");
-    static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
+    pub(crate) static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
         Regex::new(TABLE_NAME_VALID_CHARS).expect("Failed to compile TABLE_NAME_VALID_CHARS");
-    static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
+    pub(crate) static ref TABLE_NAME_FIRST_CHAR_COMPILED: Regex =
+        Regex::new(TABLE_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile TABLE_NAME_FIRST_CHARACTER");
+    pub(crate) static ref TABLE_NAME_REMAINING_CHARACTERS_COMPILED: Regex =
+        Regex::new(TABLE_NAME_REMAINING_CHARACTERS)
+            .expect("Failed to compile TABLE_NAME_REMAINING_CHARACTERS");
+    pub static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
         Regex::new(COLUMN_NAME_VALID_CHARS).expect("Failed to compile COLUMN_NAME_VALID_CHARS");
 }
 
@@ -370,6 +379,22 @@ impl DataTable {
             CellValue::Text(s) => s,
             _ => "",
         }
+    }
+
+    /// Validates and fixes the table name so its valid by replacing any invalid
+    /// characters with _.
+    pub fn fix_table_name(input: String) -> String {
+        let mut result = String::with_capacity(input.len());
+
+        for ch in input.chars() {
+            if TABLE_NAME_VALID_CHARS_COMPILED.is_match(&ch.to_string()) {
+                result.push(ch);
+            } else {
+                result.push('_');
+            }
+        }
+
+        result
     }
 
     /// Validates the table name. SheetPos is provided to allow the table to be

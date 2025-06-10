@@ -12,8 +12,8 @@ use crate::{
         execution::TransactionSource,
     },
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
-        unique_data_table_name,
+        CodeCellLanguage, CodeCellValue, DataTable, SheetId, fix_names::fix_table_name,
+        formats::SheetFormatUpdates, unique_data_table_name,
     },
 };
 use bytes::Bytes;
@@ -126,7 +126,7 @@ impl GridController {
         }
 
         let context = self.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(fix_table_name(file_name.into()));
         let mut data_table =
             DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
 
@@ -427,7 +427,7 @@ impl GridController {
         }
 
         let context = self.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(fix_table_name(file_name.into()));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
 
@@ -482,7 +482,7 @@ mod test {
             vec!["Southborough", "MA", "United States", "a lot of people"],
         ];
         let context = gc.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(fix_table_name(file_name.into()));
         let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
         assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
@@ -526,7 +526,7 @@ mod test {
             Some(false),
         );
 
-        let import = Import::new(file_name.into());
+        let import = Import::new(fix_table_name(file_name.into()));
         let cell_value = CellValue::Import(import.clone());
         assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
