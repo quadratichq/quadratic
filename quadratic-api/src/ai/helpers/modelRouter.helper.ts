@@ -69,7 +69,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </role>
 
  <instructions>
-  If token count is > 28000, always use Claude. If token count is less than 30000, follow the instructions below.
+  If token count is > 28000, always use Claude. If token count is less than 28000, follow the instructions below.
   Only respond with the model name: "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
  </instructions>
 
