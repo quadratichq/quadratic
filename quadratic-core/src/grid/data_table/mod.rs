@@ -381,22 +381,6 @@ impl DataTable {
         }
     }
 
-    /// Validates and fixes the table name so its valid by replacing any invalid
-    /// characters with _.
-    pub fn fix_table_name(input: String) -> String {
-        let mut result = String::with_capacity(input.len());
-
-        for ch in input.chars() {
-            if TABLE_NAME_VALID_CHARS_COMPILED.is_match(&ch.to_string()) {
-                result.push(ch);
-            } else {
-                result.push('_');
-            }
-        }
-
-        result
-    }
-
     /// Validates the table name. SheetPos is provided to allow the table to be
     /// renamed to itself (eg, with different casing).
     ///
