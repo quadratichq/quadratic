@@ -20,13 +20,12 @@ import type {
 import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
 import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
-import { handleVertexAIRequest } from '../../ai/handler/vertexai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import {
   anthropic,
   bedrock,
   bedrock_anthropic,
-  genai,
+  geminiai,
   openai,
   vertex_anthropic,
   vertexai,
@@ -77,9 +76,9 @@ export const handleAIRequest = async (
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, xai, response);
     } else if (isVertexAIModel(modelKey)) {
-      parsedResponse = await handleVertexAIRequest(modelKey, args, vertexai, response);
+      parsedResponse = await handleGenAIRequest(modelKey, args, vertexai, response);
     } else if (isGenAIModel(modelKey)) {
-      parsedResponse = await handleGenAIRequest(modelKey, args, genai, response);
+      parsedResponse = await handleGenAIRequest(modelKey, args, geminiai, response);
     } else if (isBedrockModel(modelKey)) {
       parsedResponse = await handleBedrockRequest(modelKey, args, bedrock, response);
     } else {
