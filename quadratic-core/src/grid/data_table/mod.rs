@@ -117,9 +117,8 @@ impl Grid {
 
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
-const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str =
-    r#"^[a-zA-Z0-9_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
+const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\-][a-zA-Z0-9_.-]*$"#;
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_-])?$"#;
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
