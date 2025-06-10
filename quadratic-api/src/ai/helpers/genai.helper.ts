@@ -22,10 +22,11 @@ import type {
   AISource,
   AIUsage,
   Content,
-  GenAIModelKey,
+  GeminiAIModelKey,
   ParsedAIResponse,
   TextContent,
   ToolResultContent,
+  VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
 function convertContent(content: Content): Part[] {
@@ -125,14 +126,14 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
 function getGenAITools(source: AISource, toolName?: AITool): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
+    if (!toolSpec.sources.includes(source)) {
+      return false;
     }
     if (name === AITool.WebSearchInternal) {
       hasWebSearchInternal = true;
       return false;
     }
-    return name === toolName;
+    return toolName ? name === toolName : true;
   });
 
   if (tools.length === 0 && !hasWebSearchInternal) {
@@ -169,7 +170,7 @@ function getGenAIToolChoice(toolName?: AITool): ToolConfig {
 
 export async function parseGenAIStream(
   result: AsyncGenerator<GenerateContentResponse, any, any>,
-  modelKey: GenAIModelKey,
+  modelKey: VertexAIModelKey | GeminiAIModelKey,
   response?: Response
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
@@ -265,7 +266,7 @@ export async function parseGenAIStream(
 
 export function parseGenAIResponse(
   result: GenerateContentResponse,
-  modelKey: GenAIModelKey,
+  modelKey: VertexAIModelKey | GeminiAIModelKey,
   response?: Response
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {

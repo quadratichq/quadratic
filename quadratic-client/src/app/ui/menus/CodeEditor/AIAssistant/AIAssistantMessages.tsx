@@ -3,7 +3,7 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
@@ -107,6 +107,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
         }
 
         const isCurrentMessage = index === messages.length - 1;
+        const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
         return (
           <div
@@ -118,6 +119,8 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
                 <GoogleSearchSources content={message.content} />

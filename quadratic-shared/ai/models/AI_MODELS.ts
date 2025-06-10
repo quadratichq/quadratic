@@ -17,7 +17,7 @@ export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.cla
 export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
 
-export const DEFAULT_SEARCH_MODEL: AIModelKey = 'genai:gemini-2.5-flash-preview-05-20';
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'geminiai:gemini-2.5-flash-preview-05-20';
 
 // updating this will force the model to be reset to the default model in local storage
 export const DEFAULT_MODEL_VERSION = 17;
@@ -236,7 +236,7 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'genai:gemini-2.5-pro-preview-06-05': {
+  'geminiai:gemini-2.5-pro-preview-06-05': {
     model: 'gemini-2.5-pro-preview-06-05',
     displayName: 'gemini 2.5 pro preview',
     temperature: 0,
@@ -244,14 +244,14 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
-    provider: 'genai',
+    provider: 'geminiai',
     promptCaching: false,
     rate_per_million_input_tokens: 1.25,
     rate_per_million_output_tokens: 10,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'genai:gemini-2.5-flash-preview-05-20': {
+  'geminiai:gemini-2.5-flash-preview-05-20': {
     model: 'gemini-2.5-flash-preview-05-20',
     displayName: 'gemini 2.5 flash preview',
     temperature: 0,
@@ -259,7 +259,7 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: false,
-    provider: 'genai',
+    provider: 'geminiai',
     promptCaching: false,
     rate_per_million_input_tokens: 0.15,
     rate_per_million_output_tokens: 1,

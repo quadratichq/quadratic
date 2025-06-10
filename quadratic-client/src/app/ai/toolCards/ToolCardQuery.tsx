@@ -38,11 +38,3 @@ export const ToolCardQuery = memo(
     );
   }
 );
-
-export function getRowColSentence({ rows, cols }: { rows: number; cols: number }) {
-  if (rows === 1 && cols === 1) {
-    return '1 cell';
-  }
-
-  return `${rows} row${rows === 1 ? '' : 's'} × ${cols} col${cols === 1 ? '' : 's'}`;
-}
