@@ -34,6 +34,12 @@ export const handleGenAIRequest = async (
         maxOutputTokens: options.max_tokens,
         tools,
         toolConfig: tool_choice,
+        ...(options.thinking && {
+          thinkingConfig: {
+            includeThoughts: true,
+            thinkingBudget: 32768, // Set a reasonable thinking budget for more responsive streaming
+          },
+        }),
       },
     };
 

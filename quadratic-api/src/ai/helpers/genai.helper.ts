@@ -195,28 +195,44 @@ export async function parseGenAIStream(
         usage.inputTokens,
         (chunk.usageMetadata?.promptTokenCount ?? 0) - (chunk.usageMetadata?.cachedContentTokenCount ?? 0)
       );
-      usage.outputTokens = Math.max(usage.outputTokens, chunk.usageMetadata.candidatesTokenCount ?? 0);
+      // Include thinking tokens in output tokens for Gemini models
+      usage.outputTokens = Math.max(
+        usage.outputTokens,
+        (chunk.usageMetadata.candidatesTokenCount ?? 0) + (chunk.usageMetadata.thoughtsTokenCount ?? 0)
+      );
       usage.cacheReadTokens = Math.max(usage.cacheReadTokens, chunk.usageMetadata.cachedContentTokenCount ?? 0);
     }
 
     if (!response?.writableEnded) {
       const candidate = chunk.candidates?.[0];
 
-      // text and tool calls
+      // text, thinking, and tool calls
       for (const part of candidate?.content?.parts ?? []) {
         if (part.text !== undefined) {
-          let currentContent = responseMessage.content.pop();
-          if (currentContent?.type !== 'text') {
-            if (currentContent?.text) {
-              responseMessage.content.push(currentContent);
+          const lastContent = responseMessage.content[responseMessage.content.length - 1];
+
+          if ((part as any).thought) {
+            // Handle thinking content
+            if (lastContent?.type === 'anthropic_thinking') {
+              lastContent.text += part.text;
+            } else {
+              responseMessage.content.push({
+                type: 'anthropic_thinking',
+                text: part.text,
+                signature: '',
+              });
             }
-            currentContent = {
-              type: 'text',
-              text: '',
-            };
+          } else {
+            // Handle regular text content
+            if (lastContent?.type === 'text') {
+              lastContent.text += part.text;
+            } else {
+              responseMessage.content.push({
+                type: 'text',
+                text: part.text,
+              });
+            }
           }
-          currentContent.text += part.text;
-          responseMessage.content.push(currentContent);
         } else if (part.functionCall?.name) {
           responseMessage.toolCalls.push({
             id: part.functionCall.id ?? part.functionCall.name,
@@ -278,13 +294,23 @@ export function parseGenAIResponse(
 
   const candidate = result?.candidates?.[0];
 
-  // text and tool calls
+  // text, thinking, and tool calls
   candidate?.content?.parts?.forEach((message) => {
     if (message.text) {
-      responseMessage.content.push({
-        type: 'text',
-        text: message.text,
-      });
+      if ((message as any).thought) {
+        // Handle thinking content
+        responseMessage.content.push({
+          type: 'anthropic_thinking',
+          text: message.text,
+          signature: '',
+        });
+      } else {
+        // Handle regular text content
+        responseMessage.content.push({
+          type: 'text',
+          text: message.text,
+        });
+      }
     } else if (message.functionCall?.name) {
       responseMessage.toolCalls.push({
         id: message.functionCall.id ?? message.functionCall.name,
@@ -314,7 +340,8 @@ export function parseGenAIResponse(
 
   const usage: AIUsage = {
     inputTokens: (result.usageMetadata?.promptTokenCount ?? 0) - (result.usageMetadata?.cachedContentTokenCount ?? 0),
-    outputTokens: result.usageMetadata?.candidatesTokenCount ?? 0,
+    // Include thinking tokens in output tokens for Gemini models
+    outputTokens: (result.usageMetadata?.candidatesTokenCount ?? 0) + (result.usageMetadata?.thoughtsTokenCount ?? 0),
     cacheReadTokens: result.usageMetadata?.cachedContentTokenCount ?? 0,
     cacheWriteTokens: 0,
   };

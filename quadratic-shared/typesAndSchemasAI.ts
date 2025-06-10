@@ -87,7 +87,12 @@ const VertexAIModelKeySchema = z.enum([
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
-const GenAIModelKeySchema = z.enum(['genai:gemini-2.5-pro-preview-05-06', 'genai:gemini-2.5-flash-preview-05-20']);
+const GenAIModelKeySchema = z.enum([
+  'genai:gemini-2.5-pro-preview-05-06',
+  'genai:gemini-2.5-pro-preview-05-06:thinking',
+  'genai:gemini-2.5-flash-preview-05-20',
+  'genai:gemini-2.5-flash-preview-05-20:thinking',
+]);
 export type GenAIModelKey = z.infer<typeof GenAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
