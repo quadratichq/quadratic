@@ -20,6 +20,7 @@ impl JsSelection {
         shift_key: bool,
         is_right_click: bool,
         top: u32,
+        context: &JsA1Context,
     ) {
         self.selection.select_column(
             column as i64,
@@ -27,7 +28,7 @@ impl JsSelection {
             shift_key,
             is_right_click,
             top as i64,
-            &self.context,
+            context.get_context(),
         );
     }
 
@@ -39,6 +40,7 @@ impl JsSelection {
         shift_key: bool,
         is_right_click: bool,
         left: u32,
+        context: &JsA1Context,
     ) {
         self.selection.select_row(
             row as i64,
@@ -46,7 +48,7 @@ impl JsSelection {
             shift_key,
             is_right_click,
             left as i64,
-            &self.context,
+            context.get_context(),
         );
     }
 
@@ -57,9 +59,9 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "selectTo")]
-    pub fn select_to(&mut self, x: u32, y: u32, append: bool) {
+    pub fn select_to(&mut self, x: u32, y: u32, append: bool, context: &JsA1Context) {
         self.selection
-            .select_to(x as i64, y as i64, append, &self.context);
+            .select_to(x as i64, y as i64, append, context.get_context());
     }
 
     #[wasm_bindgen(js_name = "moveTo")]
@@ -68,13 +70,13 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "setColumnsSelected")]
-    pub fn set_columns_selected(&mut self) {
-        self.selection.set_columns_selected(&self.context);
+    pub fn set_columns_selected(&mut self, context: &JsA1Context) {
+        self.selection.set_columns_selected(context.get_context());
     }
 
     #[wasm_bindgen(js_name = "setRowsSelected")]
-    pub fn set_rows_selected(&mut self) {
-        self.selection.set_rows_selected(&self.context);
+    pub fn set_rows_selected(&mut self, context: &JsA1Context) {
+        self.selection.set_rows_selected(context.get_context());
     }
 
     #[wasm_bindgen(js_name = "selectTable")]
@@ -85,11 +87,12 @@ impl JsSelection {
         screen_col_left: i32,
         shift_key: bool,
         ctrl_key: bool,
+        context: &JsA1Context,
     ) {
         self.selection.select_table(
             table_name,
             col,
-            &self.context,
+            context.get_context(),
             screen_col_left as i64,
             shift_key,
             ctrl_key,
@@ -97,10 +100,10 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "checkForTableRef")]
-    pub fn check_for_table_ref(&mut self, sheet_id: String) {
+    pub fn check_for_table_ref(&mut self, sheet_id: String, context: &JsA1Context) {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
             if let Some(last) = self.selection.ranges.last_mut() {
-                if let Some(range) = last.check_for_table_ref(sheet_id, &self.context) {
+                if let Some(range) = last.check_for_table_ref(sheet_id, context.get_context()) {
                     *last = range;
                 }
             }

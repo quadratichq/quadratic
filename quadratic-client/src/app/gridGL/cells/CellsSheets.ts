@@ -197,7 +197,7 @@ export class CellsSheets extends Container<CellsSheet> {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
     const cursor = sheets.sheet.cursor.position;
-    return cellsSheet.tables.isTable(cursor.x, cursor.y);
+    return cellsSheet.tables.isTableAnchor(cursor.x, cursor.y);
   }
 
   update = (dirtyViewport: boolean) => {
