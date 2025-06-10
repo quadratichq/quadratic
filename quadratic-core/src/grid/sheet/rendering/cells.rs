@@ -149,7 +149,9 @@ impl Sheet {
                         let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                         if let Some(value) = value {
-                            let mut format = if is_header {
+                            let mut format = if is_header
+                                || (data_table.get_show_name() && y == code_rect.min.y)
+                            {
                                 // column headers are always clipped and bold
                                 Format {
                                     wrap: Some(CellWrap::Clip),
