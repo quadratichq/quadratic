@@ -126,14 +126,14 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
 function getGenAITools(source: AISource, toolName?: AITool): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
-    if (toolName === undefined) {
-      return toolSpec.sources.includes(source);
+    if (!toolSpec.sources.includes(source)) {
+      return false;
     }
     if (name === AITool.WebSearchInternal) {
       hasWebSearchInternal = true;
       return false;
     }
-    return name === toolName;
+    return toolName ? name === toolName : true;
   });
 
   if (tools.length === 0 && !hasWebSearchInternal) {
