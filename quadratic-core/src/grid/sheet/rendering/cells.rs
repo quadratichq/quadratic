@@ -131,15 +131,14 @@ impl Sheet {
                     None,
                 ));
             } else if let Some(intersection) = code_rect.intersection(render_rect) {
-                let code_rect_start_y = code_rect.min.y + data_table.y_adjustment(false);
+                let code_rect_start_y = code_rect.min.y; // + data_table.y_adjustment(false);
 
                 for y in intersection.y_range() {
                     let is_header = data_table.get_show_columns() && y == code_rect_start_y - 1;
 
-                    // We skip rendering the header rows because we render it separately.
-                    if y < code_rect_start_y && !is_header {
-                        continue;
-                    }
+                    // We now render the header row to ensure clipping works
+                    // properly to the left of the header since we rely on the
+                    // renderer for clipping purposes
 
                     for x in intersection.x_range() {
                         let pos = Pos {
