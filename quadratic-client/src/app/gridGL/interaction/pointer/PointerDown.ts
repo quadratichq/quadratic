@@ -76,7 +76,7 @@ export class PointerDown {
         cursor.moveTo(column, row);
       }
       const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
-      if (codeCell) {
+      if (codeCell && codeCell?.language !== 'Import') {
         events.emit('contextMenu', {
           type: ContextMenuType.Table,
           world,

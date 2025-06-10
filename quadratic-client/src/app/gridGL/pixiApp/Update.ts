@@ -61,7 +61,6 @@ export class Update {
 
     if (pixiApp.copying) {
       this.raf = requestAnimationFrame(this.update);
-      this.fps?.update();
       return;
     }
 
@@ -85,7 +84,8 @@ export class Update {
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
       pixiApp.validations.dirty ||
-      pixiApp.copy.dirty;
+      pixiApp.copy.dirty ||
+      pixiApp.singleCellOutlines.dirty;
 
     if (rendererDirty && debugShowWhyRendering) {
       console.log(

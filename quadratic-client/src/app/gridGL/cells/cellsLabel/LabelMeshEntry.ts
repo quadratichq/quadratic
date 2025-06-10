@@ -11,7 +11,7 @@ import * as shaderNoTint from '@/app/gridGL/cells/cellsLabel/cellLabelShader';
 import * as shaderTint from '@/app/gridGL/cells/cellsLabel/cellLabelShaderTint';
 import type { RenderClientLabelMeshEntry } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import type { Texture } from 'pixi.js';
-import { Assets, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
+import { BitmapFont, BLEND_MODES, Mesh, MeshGeometry, MeshMaterial, Program } from 'pixi.js';
 
 export class LabelMeshEntry extends Mesh {
   private fontName: string;
@@ -21,8 +21,7 @@ export class LabelMeshEntry extends Mesh {
     const geometry = new MeshGeometry();
     const shader = message.hasColor ? shaderTint : shaderNoTint;
 
-    // Get the font from Assets
-    const font = Assets.get(message.fontName);
+    const font = BitmapFont.available[message.fontName];
     if (!font) {
       throw new Error(`Font not found: ${message.fontName}`);
     }
@@ -58,8 +57,7 @@ export class LabelMeshEntry extends Mesh {
   }
 
   setUniforms(scale: number) {
-    // Get font from Assets for uniform calculation
-    const font = Assets.get(this.fontName);
+    const font = BitmapFont.available[this.fontName];
     if (!font) {
       throw new Error(`Font not found: ${this.fontName}`);
     }

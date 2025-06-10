@@ -37,24 +37,17 @@ impl GridController {
         }
 
         loop {
-            if transaction.has_async > 0 {
-                self.transactions.update_async_transaction(transaction);
-                break;
-            }
-
             self.update_a1_context_table_map(
                 std::mem::take(&mut transaction.code_cells_a1_context),
                 false,
             );
 
-            if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
-                transaction.complete = true;
+            if transaction.has_async > 0 {
+                self.transactions.update_async_transaction(transaction);
                 break;
-            }
-
-            self.execute_operation(transaction);
-
-            if transaction.has_async == 0 && transaction.operations.is_empty() {
+            } else if !transaction.operations.is_empty() {
+                self.execute_operation(transaction);
+            } else if !transaction.resize_rows.is_empty() {
                 if let Some((sheet_id, rows)) = transaction
                     .resize_rows
                     .iter()
@@ -62,16 +55,15 @@ impl GridController {
                     .map(|(&k, v)| (k, v.clone()))
                 {
                     transaction.resize_rows.remove(&sheet_id);
-                    let resizing = self.start_auto_resize_row_heights(
+                    self.start_auto_resize_row_heights(
                         transaction,
                         sheet_id,
                         rows.into_iter().collect(),
                     );
-                    // break only if async resize operation is being executed
-                    if resizing {
-                        break;
-                    }
                 }
+            } else {
+                transaction.complete = true;
+                break;
             }
         }
     }

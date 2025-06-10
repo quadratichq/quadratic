@@ -102,9 +102,9 @@ impl Sheet {
                     CellValue::Text(s.to_string())
                 };
                 if vertical {
-                    let _ = array.set(0, i as u32, value);
+                    let _ = array.set(0, i as u32, value, false);
                 } else {
-                    let _ = array.set(i as u32, 0, value);
+                    let _ = array.set(i as u32, 0, value, false);
                 }
             }
         }
@@ -133,7 +133,7 @@ impl Sheet {
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table1",
-                Value::Array(array),
+                array.into(),
                 false,
                 Some(false),
                 Some(false),
@@ -162,7 +162,7 @@ impl Sheet {
                 } else {
                     CellValue::Text(s.to_string())
                 };
-                array.set(i as u32 % w, i as u32 / w, value).unwrap();
+                array.set(i as u32 % w, i as u32 / w, value, false).unwrap();
             }
         }
 
@@ -183,7 +183,7 @@ impl Sheet {
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table1",
-                Value::Array(array),
+                array.into(),
                 false,
                 Some(false),
                 Some(false),

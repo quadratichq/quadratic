@@ -1,8 +1,7 @@
 //! Tables renders all pixi-based UI elements for tables. Right now that's the
 //! headings.
 
-import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
-import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
+import { ContextMenuType, type ContextMenuState } from '@/app/atoms/contextMenuAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
@@ -17,8 +16,7 @@ import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } f
 import type { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
-import type { Point, Rectangle } from 'pixi.js';
-import { Container } from 'pixi.js';
+import { Container, type Point, type Rectangle } from 'pixi.js';
 
 export interface TablePointerDownResult {
   table: JsRenderCodeCell;
@@ -35,9 +33,13 @@ export class Tables extends Container<Table> {
   // cache to speed up lookups
   private tablesCache: TablesCache;
 
-  private dataTablesCache?: SheetDataTablesCache;
+  dataTablesCache?: SheetDataTablesCache;
 
+  // tables that are selected (ie, the selection overlaps the table name)
   private activeTables: Table[] = [];
+
+  // tables that have a column selection (used to draw the column selection background)
+  private columnTables: Table[] = [];
 
   // either rename or sort
   private actionDataTable: Table | undefined;
@@ -66,6 +68,7 @@ export class Tables extends Container<Table> {
     events.on('updateCodeCells', this.updateCodeCells);
 
     events.on('cursorPosition', this.cursorPosition);
+    events.on('a1ContextUpdated', this.cursorPosition);
     events.on('sheetOffsets', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
@@ -154,24 +157,48 @@ export class Tables extends Container<Table> {
     }
   };
 
+  // Updates the cells markers for a single cell table
+  private singleCellUpdate = (codeCell: JsRenderCodeCell) => {
+    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+    if (!cellsMarkers) return;
+    if (codeCell.state === 'RunError' || codeCell.state === 'SpillError') {
+      const box = this.sheet.getCellOffsets(codeCell.x, codeCell.y);
+      cellsMarkers.add(box, codeCell);
+    } else {
+      cellsMarkers.remove(codeCell.x, codeCell.y);
+    }
+  };
+
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
-    updateCodeCells
-      .filter((updateCodeCell) => updateCodeCell.sheet_id.id === this.cellsSheet.sheetId)
-      .forEach((updateCodeCell) => {
-        const { pos, render_code_cell } = updateCodeCell;
-        const x = Number(pos.x);
-        const y = Number(pos.y);
-        const key = `${x},${y}`;
-        if (!render_code_cell) {
-          delete this.singleCellTables[key];
-          this.deleteTable(x, y);
-          return;
-        }
+    // if the cursor is same as the code cell anchor cell, we may need to update the cursor
+    let updateCursor = false;
+    const isCursorSingleSelection = sheets.sheet.cursor.isSingleSelection();
+    const tableSelectionName = sheets.sheet.cursor.getSingleFullTableSelectionName();
+    const cursorSheetId = sheets.sheet.cursor.sheet.id;
+    const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
+
+    for (const updateCodeCell of updateCodeCells) {
+      if (updateCodeCell.sheet_id.id !== this.cellsSheet.sheetId) {
+        continue;
+      }
+
+      const { pos, render_code_cell } = updateCodeCell;
+      const x = Number(pos.x);
+      const y = Number(pos.y);
+      const key = `${x},${y}`;
+
+      const cursorIsSameAsCodeCell = cursorSheetId === sheets.current && cursorX === x && cursorY === y;
+
+      if (!render_code_cell) {
+        delete this.singleCellTables[key];
+        this.deleteTable(x, y);
+      } else {
         const isSingleCell = this.isCodeCellSingle(render_code_cell);
         if (isSingleCell) {
           this.singleCellTables[key] = render_code_cell;
           this.deleteTable(x, y);
+          this.singleCellUpdate(render_code_cell);
         } else {
           delete this.singleCellTables[key];
           const table = this.getTable(x, y);
@@ -187,9 +214,25 @@ export class Tables extends Container<Table> {
             const table = this.addChild(new Table(this.sheet, render_code_cell));
             this.tablesCache.add(table);
           }
+
+          // update cursor for multi-cell tables
+          if (cursorIsSameAsCodeCell && (isCursorSingleSelection || tableSelectionName === render_code_cell.name)) {
+            updateCursor = true;
+          }
         }
-        pixiApp.setViewportDirty();
+      }
+    }
+
+    pixiApp.setViewportDirty();
+    pixiApp.singleCellOutlines.setDirty();
+
+    if (updateCursor) {
+      sheets.sheet.cursor.moveTo(sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, {
+        checkForTableRef: true,
       });
+    } else if (this.sheet.id === sheets.current) {
+      events.emit('cursorPosition');
+    }
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
@@ -213,6 +256,7 @@ export class Tables extends Container<Table> {
     codeCells.forEach((codeCell) => {
       if (this.isCodeCellSingle(codeCell)) {
         this.singleCellTables[`${codeCell.x},${codeCell.y}`] = codeCell;
+        this.singleCellUpdate(codeCell);
         return;
       } else {
         const table = this.addChild(new Table(this.sheet, codeCell));
@@ -266,6 +310,18 @@ export class Tables extends Container<Table> {
       }
       return [];
     });
+    const columnTables = sheets.sheet.cursor.getTablesWithColumnSelection();
+    const newColumnTables = columnTables.flatMap((t) => {
+      const table = this.getTableFromName(t);
+      if (table) {
+        return [table];
+      } else {
+        return [];
+      }
+    });
+    const tablesNeedingUpdate = new Set([...this.columnTables, ...newColumnTables]);
+    tablesNeedingUpdate.forEach((table) => table.header.updateSelection());
+    this.columnTables = newColumnTables;
   };
 
   // Redraw the headings if the offsets change.
@@ -300,7 +356,7 @@ export class Tables extends Container<Table> {
 
   pointerMove = (world: Point): boolean => {
     const cell = this.sheet.getColumnRow(world.x, world.y);
-    const table = this.getTable(cell.x, cell.y);
+    const table = this.getTableIntersects(cell);
     if (!table) return false;
     const result = table.pointerMove(world);
     if (result) {
@@ -314,7 +370,7 @@ export class Tables extends Container<Table> {
   // track and activate a table whose context menu is open (this handles the
   // case where you hover a table and open the context menu; we want to keep
   // that table active while the context menu is open)
-  contextMenu = (options: ContextMenuState) => {
+  private contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
@@ -469,15 +525,15 @@ export class Tables extends Container<Table> {
     if (sheetId === this.sheet.id) {
       this.dataTablesCache?.free();
       this.dataTablesCache = dataTablesCache;
-      if (sheets.sheet.id === this.sheet.id) {
-        pixiApp.singleCellOutlines.dirty = true;
+      if (sheetId === sheets.current) {
+        pixiApp.singleCellOutlines.setDirty();
       }
     }
   };
 
   /// Returns the table name if the cell is in the table header.
   getTableNameInNameOrColumn = (x: number, y: number): string | undefined => {
-    const table = this.getTable(x, y);
+    const table = this.getTableIntersects({ x, y });
     if (table) {
       if (
         (table.codeCell.show_name && y === table.codeCell.y) ||
@@ -496,14 +552,14 @@ export class Tables extends Container<Table> {
     return this.tablesCache.getByXY(x, y);
   };
 
-  /// Returns a single-cell code cell (Tables are excluded)
-  getSingleCodeCell = (x: number, y: number): JsRenderCodeCell | undefined => {
-    return this.singleCellTables[`${x},${y}`];
-  };
-
-  /// Returns a table by its name.
-  getTableFromName = (name: string): Table | undefined => {
-    return this.tablesCache.getByName(name);
+  /// Returns the table that the cell intersects (excludes single cell tables).
+  getTableIntersects = (cell: JsCoordinate): Table | undefined => {
+    if (this.dataTablesCache) {
+      const tablePos = this.dataTablesCache.getTableInPos(cell.x, cell.y);
+      if (tablePos) {
+        return this.getTable(tablePos.x, tablePos.y);
+      }
+    }
   };
 
   /// Returns a code cell from either a Table or a single code cell.
@@ -514,14 +570,14 @@ export class Tables extends Container<Table> {
     if (table) return table.codeCell;
   };
 
-  /// Returns the table that the cell intersects (excludes single cell tables).
-  getTableIntersects = (cell: JsCoordinate): Table | undefined => {
-    if (this.dataTablesCache) {
-      const tablePos = this.dataTablesCache.getTableInPos(cell.x, cell.y);
-      if (tablePos) {
-        return this.getTable(tablePos.x, tablePos.y);
-      }
-    }
+  /// Returns a table by its name.
+  getTableFromName = (name: string): Table | undefined => {
+    return this.tablesCache.getByName(name);
+  };
+
+  /// Returns a single-cell code cell (Tables are excluded)
+  private getSingleCodeCell = (x: number, y: number): JsRenderCodeCell | undefined => {
+    return this.singleCellTables[`${x},${y}`];
   };
 
   // Returns single cell code cells that are in the given cell-based rectangle.

@@ -16,7 +16,7 @@ export function CodeEditorHeaderLabel() {
   const [cellRef, setCellRef] = useState<string | undefined>(undefined);
 
   const codeCellState = useRecoilValue(codeEditorCodeCellAtom);
-  const connectionsFetcher = useConnectionsFetcher();
+  const { connections } = useConnectionsFetcher();
 
   useEffect(() => {
     const updateCellRef = () => {
@@ -60,15 +60,15 @@ export function CodeEditorHeaderLabel() {
   // because they're in a file they have access to but not the team — or
   // the connection was deleted)
   const currentConnectionName = useMemo(() => {
-    if (connectionsFetcher.data) {
+    if (connections.length) {
       const connectionUuid = getConnectionUuid(codeCellState.language);
-      const foundConnection = connectionsFetcher.data.connections.find(({ uuid }) => uuid === connectionUuid);
+      const foundConnection = connections.find(({ uuid }) => uuid === connectionUuid);
       if (foundConnection) {
         return foundConnection.name;
       }
     }
     return '';
-  }, [codeCellState.language, connectionsFetcher.data]);
+  }, [codeCellState.language, connections]);
 
   const { renameTable } = useRenameTableName();
 

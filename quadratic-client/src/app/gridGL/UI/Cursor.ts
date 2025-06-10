@@ -81,8 +81,12 @@ export class Cursor extends Container {
       return;
     }
     const tables = pixiApp.cellsSheet().tables;
-    const table = tables.getTable(cell.x, cell.y);
-    const tableName = table?.getTableNameBounds();
+    let table = tables.getTableIntersects(cell);
+    let tableName =
+      table && table.codeCell.show_name && table.codeCell.y === cell.y ? table.getTableNameBounds() : undefined;
+    if (table && table.codeCell.is_html_image) {
+      tableName = table.getTableNameBounds();
+    }
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
     const color = pixiApp.accentColor;
@@ -122,7 +126,7 @@ export class Cursor extends Container {
       }
     }
 
-    if (!table || !tableName) {
+    if (!tableName) {
       let g = this.graphics;
       if (tableColumn) {
         g = pixiApp.hoverTableColumnsSelection;

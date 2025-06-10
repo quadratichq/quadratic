@@ -171,6 +171,7 @@ macro_rules! row {
 macro_rules! pos {
     [$sheet_id:ident ! $s:ident] => { pos![($sheet_id) ! $s] };
     [($sheet_id:expr) ! $s:ident] => { pos![$s].to_sheet_pos($sheet_id) };
+    [$sheet_id:ident ! $x:expr, $y:expr] => { pos![$x, $y].to_sheet_pos($sheet_id) };
     [$col:expr, $row:expr] => { $crate::Pos::new($col, $row) };
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
@@ -444,7 +445,7 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
 macro_rules! print_sheet {
     ($gc:expr, $sheet_id:expr) => {
         let sheet = $gc.try_sheet($sheet_id).unwrap();
-        $crate::test_util::print_sheet::print_sheet(&sheet);
+        $crate::test_util::print_sheet::print_sheet(sheet);
     };
 }
 
@@ -452,7 +453,7 @@ macro_rules! print_sheet {
 macro_rules! print_first_sheet {
     ($gc:expr) => {
         let sheet = $gc.try_sheet($gc.sheet_ids()[0]).unwrap();
-        $crate::test_util::print_sheet::print_sheet(&sheet);
+        $crate::test_util::print_sheet::print_sheet(sheet);
     };
 }
 

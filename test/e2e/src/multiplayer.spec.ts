@@ -80,8 +80,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Type in cell
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 4,
+    a1: 'B4',
     text: 'User 1 - Test',
   });
 
@@ -123,16 +122,14 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // Type some text as user 2
   await typeInCell(userPage2, {
-    targetColumn: 4,
-    targetRow: 4,
+    a1: 'D4',
     text: 'User 2 - Test',
   });
 
   // User 1: bring userPage1 to the front, type some text
   await userPage1.bringToFront();
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 6,
+    a1: 'B6',
     text: 'User 1 - Test',
   });
 
@@ -180,8 +177,8 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // User 3: add a python code cell
   await userPage3.bringToFront();
-  await typeInCell(userPage3, { targetColumn: 2, targetRow: 10, text: '24' });
-  await typeInCell(userPage3, { targetColumn: 2, targetRow: 11, text: '48' });
+  await typeInCell(userPage3, { a1: 'B10', text: '24' });
+  await typeInCell(userPage3, { a1: 'B11', text: '48' });
 
   await userPage3.waitForTimeout(2000);
   await userPage3.keyboard.press('/');
@@ -451,13 +448,11 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
 
   // User 1 to type in cell and fill color some cells
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 4,
+    a1: 'B4',
     text: 'User 1 - Test',
   });
   await typeInCell(userPage1, {
-    targetColumn: 3,
-    targetRow: 4,
+    a1: 'C4',
     text: 'User 1 - Test',
   });
   await navigateOnSheet(userPage1, { targetColumn: 3, targetRow: 4 });
@@ -480,20 +475,17 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   // User 1 and User 2 will type text and format items
   await userPage2.bringToFront();
   await typeInCell(userPage2, {
-    targetColumn: 2,
-    targetRow: 8,
+    a1: 'B8',
     text: 'User 2 - Test',
   });
   await typeInCell(userPage2, {
-    targetColumn: 2,
-    targetRow: 9,
+    a1: 'B9',
     text: 'User 2 - Test',
   });
   await navigateOnSheet(userPage2, { targetColumn: 2, targetRow: 8 });
   await userPage2.keyboard.press('Control+b');
   await typeInCell(userPage2, {
-    targetColumn: 5,
-    targetRow: 9,
+    a1: 'E9',
     text: 'User 2 - Test',
   });
 
@@ -607,13 +599,11 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   // User 1 to type in cell and fill color some cells
   await userPage1.bringToFront();
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 4,
+    a1: 'B4',
     text: 'User 1 - Test',
   });
   await typeInCell(userPage1, {
-    targetColumn: 3,
-    targetRow: 4,
+    a1: 'C4',
     text: 'User 1 - Test',
   });
   await navigateOnSheet(userPage1, {
@@ -642,20 +632,17 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage3.context().setOffline(true);
 
   await typeInCell(userPage3, {
-    targetColumn: 2,
-    targetRow: 8,
+    a1: 'B8',
     text: 'User 3 - Test',
   });
   await typeInCell(userPage3, {
-    targetColumn: 2,
-    targetRow: 9,
+    a1: 'B9',
     text: 'User 3 - Test',
   });
   await navigateOnSheet(userPage3, { targetColumn: 2, targetRow: 8 });
   await userPage3.keyboard.press('Control+b');
   await typeInCell(userPage3, {
-    targetColumn: 5,
-    targetRow: 9,
+    a1: 'E9',
     text: 'User 3 - Test',
   });
 

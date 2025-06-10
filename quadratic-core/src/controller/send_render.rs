@@ -36,6 +36,7 @@ impl GridController {
 
         self.send_a1_context();
         self.send_sheet_info(transaction);
+        self.send_content_cache(transaction);
         self.send_offsets_modified(transaction);
         self.send_code_cells(transaction);
         self.process_visible_dirty_hashes(transaction);
@@ -276,6 +277,8 @@ impl GridController {
                 ));
             }
         }
+
+        sheet.send_content_cache();
     }
 
     /// Sends delete sheet to the client
@@ -556,6 +559,22 @@ impl GridController {
                     e.to_string()
                 ));
             }
+        }
+    }
+
+    /// Sends the content cache to the client.
+    pub fn send_content_cache(&self, transaction: &mut PendingTransaction) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let sheet_content_cache = std::mem::take(&mut transaction.sheet_content_cache);
+        for sheet_id in sheet_content_cache.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            sheet.send_content_cache();
         }
     }
 

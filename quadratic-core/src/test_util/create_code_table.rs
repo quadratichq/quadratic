@@ -52,7 +52,7 @@ pub fn test_create_code_table_with_values(
             } else {
                 CellValue::Text(s.to_string())
             };
-            array.set(i as u32 % w, i as u32 / w, value).unwrap();
+            array.set(i as u32 % w, i as u32 / w, value, false).unwrap();
         }
     }
 
@@ -71,7 +71,7 @@ pub fn test_create_code_table_with_values(
     let data_table = DataTable::new(
         DataTableKind::CodeRun(code_run),
         "Table1",
-        Value::Array(array),
+        array.into(),
         false,
         Some(false),
         Some(false),

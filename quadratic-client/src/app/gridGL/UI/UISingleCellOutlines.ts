@@ -1,18 +1,53 @@
 //! Draws visible outlines for single cell tables.
 
+import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { Graphics } from 'pixi.js';
 
 export class UISingleCellOutlines extends Graphics {
-  dirty = true;
+  private _dirty = true;
+
+  constructor() {
+    super();
+
+    events.on('sheetInfoUpdate', this.setDirty);
+    events.on('sheetOffsets', this.setDirty);
+    events.on('resizeHeadingColumn', this.setDirty);
+    events.on('resizeHeadingColumn', this.setDirty);
+    events.on('resizeHeadingRow', this.setDirty);
+    events.on('resizeHeadingRow', this.setDirty);
+  }
+
+  destroy() {
+    events.off('sheetInfoUpdate', this.setDirty);
+    events.off('sheetOffsets', this.setDirty);
+    events.off('resizeHeadingColumn', this.setDirty);
+    events.off('resizeHeadingColumn', this.setDirty);
+    events.off('resizeHeadingRow', this.setDirty);
+    events.off('resizeHeadingRow', this.setDirty);
+
+    super.destroy();
+  }
+
+  get dirty(): boolean {
+    return this._dirty;
+  }
+
+  setDirty = () => {
+    this._dirty = true;
+  };
 
   update(dirty: boolean) {
     if (!dirty && !this.dirty) return;
 
-    this.dirty = false;
+    this._dirty = false;
     this.clear();
+
+    if (!pixiAppSettings.showCellTypeOutlines) return;
+
     const tables = pixiApp.cellsSheet().tables;
     const bounds = pixiApp.viewport.getVisibleBounds();
     const boundsCells = sheets.sheet.getRectangleFromScreen(bounds);

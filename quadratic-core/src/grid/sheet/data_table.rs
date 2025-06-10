@@ -41,11 +41,6 @@ impl Sheet {
         self.data_tables.get_contains(pos)
     }
 
-    /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_mut_that_contains(&mut self, pos: Pos) -> Option<(Pos, &mut DataTable)> {
-        self.data_tables.get_mut_contains(pos)
-    }
-
     /// Returns the data table pos of the data table that contains a position
     pub fn data_table_pos_that_contains(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {

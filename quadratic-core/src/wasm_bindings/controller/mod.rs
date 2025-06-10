@@ -8,7 +8,6 @@ use util::set_panic_hook;
 pub mod ai_context;
 pub mod auto_complete;
 pub mod borders;
-pub mod bounds;
 pub mod cells;
 pub mod clipboard;
 pub mod code;
@@ -70,6 +69,9 @@ impl GridController {
                         grid.send_all_fills(*sheet_id);
 
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
+                            // sends SheetContentCache to the client
+                            sheet.send_content_cache();
+
                             // sends SheetDataTablesCache to the client
                             sheet.send_data_tables_cache();
 

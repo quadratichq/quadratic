@@ -37,7 +37,7 @@ export function useVisibleContextMessages() {
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 I have an open sheet with the following part of the sheet visible: ${visibleA1String}\n\n
 The cursor is located at ${sheets.sheet.cursor.a1String()}\n\n
-The user's selection is ${sheets.getA1String(sheets.sheet.id)}\n\n
+The user's selection is ${sheets.getA1String(sheets.current)}\n\n
 ${
   !!visibleContext && visibleContext.length === 1
     ? `

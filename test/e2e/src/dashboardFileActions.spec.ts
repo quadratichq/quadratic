@@ -512,8 +512,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Navigate into file, assert the page is editable
   await navigateIntoFile(user2Page, { fileName });
   await typeInCell(user2Page, {
-    targetColumn: 4,
-    targetRow: 4,
+    a1: 'D4',
     text: 'User 2 - Edit test',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -569,8 +568,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
 
   // Assert no changes to the cell can be made
   await typeInCell(user2Page, {
-    targetColumn: 1,
-    targetRow: 1,
+    a1: 'A1',
     text: 'This should not show up',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -611,8 +609,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user2Page.reload();
   await user2Page.waitForTimeout(2000);
   await typeInCell(user2Page, {
-    targetColumn: 1,
-    targetRow: 1,
+    a1: 'A1',
     text: 'User 2 can edit this file',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -626,8 +623,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user3Page.bringToFront();
   await user3Page.reload();
   await typeInCell(user3Page, {
-    targetColumn: 3,
-    targetRow: 1,
+    a1: 'C1',
     text: 'User 3 can edit this file',
   });
   await user3Page.waitForTimeout(5 * 1000);
@@ -677,8 +673,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
 
   // Assert no changes to the cell can be made
   await typeInCell(user2Page, {
-    targetColumn: 1,
-    targetRow: 2,
+    a1: 'A2',
     text: 'User 2: this is a read only file',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -693,8 +688,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
 
   // Assert no changes to the cell can be made
   await typeInCell(user3Page, {
-    targetColumn: 3,
-    targetRow: 2,
+    a1: 'C2',
     text: 'User 3: this is a read only file',
   });
   await user3Page.waitForTimeout(5 * 1000);

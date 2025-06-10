@@ -69,7 +69,7 @@ export class TableHeader extends Container {
     }
   }
 
-  updatePosition() {
+  private updatePosition() {
     const showName = this.table.codeCell.show_name;
     const showColumns = this.table.codeCell.show_columns;
     if (!showName && !showColumns) {
@@ -159,12 +159,12 @@ export class TableHeader extends Container {
     }
   };
 
-  hideColumnHeaders(index: number) {
-    this.columnHeaders?.hide(index);
-  }
-
   showColumnHeaders() {
     this.columnHeaders?.show();
+  }
+
+  hideColumnHeaders(index: number) {
+    this.columnHeaders?.hide(index);
   }
 
   intersectsTableName(world: Point): TablePointerDownResult | undefined {

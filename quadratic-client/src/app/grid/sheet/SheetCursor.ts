@@ -413,7 +413,9 @@ export class SheetCursor {
   }
 
   private selectedTableNamesFromTableSelection(): string[] {
-    return this.jsSelection.getSelectedTableNames() as string[];
+    const cache = pixiApp.cellsSheet().tables.dataTablesCache;
+    if (!cache) return [];
+    return this.jsSelection.getSelectedTableNames(this.sheets.current, cache, this.sheets.jsA1Context) as string[];
   }
 
   /// Returns the names of the tables that are selected.
@@ -434,6 +436,10 @@ export class SheetCursor {
       console.warn('Error getting selected table names', e);
     }
     return Array.from(names);
+  };
+
+  getTablesWithColumnSelection = (): string[] => {
+    return this.jsSelection.getTablesWithColumnSelection();
   };
 
   getTableColumnSelection = (tableName: string): number[] | undefined => {
@@ -468,12 +474,6 @@ export class SheetCursor {
 
   updateColumnName = (tableName: string, oldName: string, newName: string) => {
     this.jsSelection.updateColumnName(tableName, oldName, newName);
-  };
-
-  hideColumn = (tableName: string, columnName: string) => {
-    this.jsSelection.hideColumn(tableName, columnName, this.sheets.jsA1Context);
-    const { x, y } = this.position;
-    this.selectRect(x, y, x, y);
   };
 
   isEntireColumnSelected = (column: number): boolean => {

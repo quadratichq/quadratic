@@ -250,10 +250,6 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
       const { x, y } = selection.getCursor();
 
-      if (code_cell_language === 'Formula' && code_string.startsWith('=')) {
-        code_string = code_string.slice(1);
-      }
-
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
         x,
@@ -282,6 +278,49 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     } catch (e) {
       return [{ type: 'text', text: `Error executing set code cell value tool: ${e}` }];
+    }
+  },
+  [AITool.SetFormulaCellValue]: async (args, messageMetaData) => {
+    let { sheet_name, formula_string, code_cell_position } = args;
+    try {
+      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const selection = sheets.stringToSelection(code_cell_position, sheetId);
+      if (!selection.isSingleSelection(sheets.jsA1Context)) {
+        return [{ type: 'text', text: 'Invalid formula cell position, this should be a single cell, not a range' }];
+      }
+      const { x, y } = selection.getCursor();
+
+      if (formula_string.startsWith('=')) {
+        formula_string = formula_string.slice(1);
+      }
+
+      const transactionId = await quadraticCore.setCodeCellValue({
+        sheetId,
+        x,
+        y,
+        codeString: formula_string,
+        language: 'Formula',
+        cursor: sheets.getCursorPosition(),
+      });
+
+      if (transactionId) {
+        await waitForSetCodeCellValue(transactionId);
+
+        // After execution, adjust viewport to show full output if it exists
+        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+        if (tableCodeCell) {
+          const width = tableCodeCell.w;
+          const height = tableCodeCell.h;
+          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+        }
+
+        const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
+        return result;
+      } else {
+        return [{ type: 'text', text: 'Error executing set formula cell value tool' }];
+      }
+    } catch (e) {
+      return [{ type: 'text', text: `Error executing set formula cell value tool: ${e}` }];
     }
   },
   [AITool.MoveCells]: async (args) => {
