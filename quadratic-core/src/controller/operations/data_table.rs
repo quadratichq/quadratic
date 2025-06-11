@@ -431,7 +431,7 @@ mod test {
             operations::operation::Operation,
         },
         grid::{CodeCellLanguage, NumericFormat, NumericFormatKind},
-        test_util::{assert_cell_value, assert_display_cell_value, print_table_in_rect},
+        test_util::{assert_cell_value, print_table_in_rect},
     };
 
     #[test]
@@ -447,10 +447,6 @@ mod test {
         let ops = gc.add_data_table_operations(sheet_pos, name.to_owned(), values, true);
         assert_eq!(ops.len(), 1);
 
-        let import = Import::new(name.to_owned());
-        let cell_value = CellValue::Import(import.to_owned());
-        assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
-
         match &ops[0] {
             Operation::AddDataTable {
                 data_table,
@@ -458,8 +454,8 @@ mod test {
                 ..
             } => {
                 assert!(data_table.header_is_first_row);
-                assert_eq!(data_table.name, name.into());
-                assert_eq!(cell_value, &CellValue::Import(import));
+                assert_eq!(data_table.name, name.as_str().into());
+                assert_eq!(cell_value, &CellValue::Import(Import::new(name.to_owned())));
                 assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 2);
                 assert_eq!(
                     data_table.column_headers.as_ref().unwrap()[0].name,

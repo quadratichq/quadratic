@@ -171,283 +171,314 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{assert_display_cell_value_first_sheet, print_first_sheet};
+    use crate::{
+        assert_cell_value_col, assert_cell_value_row, print_first_sheet, test_set_values_rect,
+        test_util::assert_display_cell_value_first_sheet,
+    };
 
     use super::*;
 
     #[test]
     fn test_move_cols_values() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        (&mut gc, 3, 4, 1, 3, vec!["1", "2", "3"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 3, vec!["1", "2", "3"]);
 
-        print_first_sheet(&gc);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["1", "2", "3"]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["", "", ""]);
 
         gc.move_columns(SheetId::TEST, 3, 3, 5, None);
 
-        assert_display_cell_value_first_sheet(&gc, 4, 3, "1");
-        assert_display_cell_value_first_sheet(&gc, 5, 3, "2");
-        assert_display_cell_value_first_sheet(&gc, 6, 3, "3");
-
-        print_first_sheet(&gc);
-
-        assert_display_cell_value_first_sheet(&gc, 5, 3, "1");
-        assert_display_cell_value_first_sheet(&gc, 6, 3, "2");
-        assert_display_cell_value_first_sheet(&gc, 7, 3, "3");
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["", "", ""]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["1", "2", "3"]);
     }
 
     #[test]
     fn test_move_rows_values() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        (&mut gc, 1, 3, 3, 4, vec!["1", "2", "3"]);
+        test_set_values_rect(&mut gc, 3, 4, 3, 1, vec!["1", "2", "3"]);
 
-        print_first_sheet(&gc);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["1", "2", "3"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["", "", ""]);
 
-        gc.move_rows(SheetId::TEST, 3, 3, 5, None);
+        gc.move_rows(SheetId::TEST, 4, 4, 6, None);
 
-        assert_display_cell_value_first_sheet(&gc, 3, 4, "1");
-        assert_display_cell_value_first_sheet(&gc, 3, 5, "2");
-        assert_display_cell_value_first_sheet(&gc, 3, 6, "3");
-
-        print_first_sheet(&gc);
-
-        assert_display_cell_value_first_sheet(&gc, 3, 5, "1");
-        assert_display_cell_value_first_sheet(&gc, 3, 6, "2");
-        assert_display_cell_value_first_sheet(&gc, 3, 7, "3");
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["", "", ""]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["1", "2", "3"]);
     }
 
     #[test]
     fn test_move_cols_multiple_columns() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up test data in columns 3-5
-        (&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
-        (&mut gc, 5, 4, 1, 3, vec!["G", "H", "I"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
+
+        test_set_values_rect(&mut gc, 5, 4, 1, 3, vec!["G", "H", "I"]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["G", "H", "I"]);
 
         // Move columns 3-5 to position 7
         gc.move_columns(SheetId::TEST, 3, 5, 7, None);
 
         // Verify data moved correctly
-        assert_display_cell_value_first_sheet(&gc, 7, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 8, 3, "D");
-        assert_display_cell_value_first_sheet(&gc, 9, 3, "G");
+        assert_cell_value_col(&mut gc, sheet_id, 7, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 8, 4, 6, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 9, 4, 6, vec!["G", "H", "I"]);
     }
 
     #[test]
     fn test_move_cols_to_earlier_position() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up test data in columns 5-6
-        (&mut gc, 5, 4, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 6, 4, 1, 3, vec!["D", "E", "F"]);
+        test_set_values_rect(&mut gc, 5, 4, 1, 3, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 6, 4, 1, 3, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["D", "E", "F"]);
 
         // Move columns 5-6 to position 2
         gc.move_columns(SheetId::TEST, 5, 6, 2, None);
 
         // Verify data moved correctly
-        assert_display_cell_value_first_sheet(&gc, 2, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "D");
+        assert_cell_value_col(&mut gc, sheet_id, 2, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["D", "E", "F"]);
     }
 
     #[test]
     fn test_move_rows_multiple_rows() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up test data in rows 3-5
-        (&mut gc, 1, 3, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 1, 4, 1, 3, vec!["D", "E", "F"]);
-        (&mut gc, 1, 5, 1, 3, vec!["G", "H", "I"]);
+        test_set_values_rect(&mut gc, 3, 3, 3, 1, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 3, 4, 3, 1, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
+
+        test_set_values_rect(&mut gc, 3, 5, 3, 1, vec!["G", "H", "I"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["G", "H", "I"]);
 
         // Move rows 3-5 to position 7
         gc.move_rows(SheetId::TEST, 3, 5, 7, None);
 
         // Verify data moved correctly
-        assert_display_cell_value_first_sheet(&gc, 1, 7, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 8, "D");
-        assert_display_cell_value_first_sheet(&gc, 1, 9, "G");
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 8, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 9, vec!["G", "H", "I"]);
     }
 
     #[test]
     fn test_move_rows_to_earlier_position() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up test data in rows 5-6
-        (&mut gc, 1, 5, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 1, 6, 1, 3, vec!["D", "E", "F"]);
+        test_set_values_rect(&mut gc, 3, 5, 3, 1, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 3, 6, 3, 1, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["D", "E", "F"]);
 
         // Move rows 5-6 to position 2
         gc.move_rows(SheetId::TEST, 5, 6, 2, None);
 
         // Verify data moved correctly
-        assert_display_cell_value_first_sheet(&gc, 1, 2, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 3, "D");
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 2, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 3, vec!["D", "E", "F"]);
     }
 
     #[test]
     fn test_move_cols_between_source_columns() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up test data in columns 3-5
-        (&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
-        (&mut gc, 5, 4, 1, 3, vec!["G", "H", "I"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
+
+        test_set_values_rect(&mut gc, 5, 4, 1, 3, vec!["G", "H", "I"]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["G", "H", "I"]);
 
         // Move columns 3-5 to position 4 (between source columns)
         gc.move_columns(SheetId::TEST, 3, 5, 4, None);
 
         // Should maintain original order starting at first column
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 4, 3, "D");
-        assert_display_cell_value_first_sheet(&gc, 5, 3, "G");
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["G", "H", "I"]);
     }
 
     #[test]
     fn test_move_cols_with_undo() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up initial data
-        (&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
 
-        // Verify initial state
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 4, 3, "D");
+        test_set_values_rect(&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // Move columns
         gc.move_columns(SheetId::TEST, 3, 4, 6, None);
 
         // Verify moved state
-        assert_display_cell_value_first_sheet(&gc, 6, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 7, 3, "D");
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 7, 4, 6, vec!["D", "E", "F"]);
 
         // Undo the move
         gc.undo(None);
 
         // Verify state is back to original
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 4, 3, "D");
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
     }
 
     #[test]
     fn test_move_rows_with_undo() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        // Set up initial data
-        (&mut gc, 1, 3, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 1, 4, 1, 3, vec!["D", "E", "F"]);
+        // Set up test data in rows 3-4
+        test_set_values_rect(&mut gc, 3, 3, 3, 1, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
 
-        // Verify initial state
-        assert_display_cell_value_first_sheet(&gc, 1, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 4, "D");
+        test_set_values_rect(&mut gc, 3, 4, 3, 1, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
 
         // Move rows
         gc.move_rows(SheetId::TEST, 3, 4, 6, None);
 
         // Verify moved state
-        assert_display_cell_value_first_sheet(&gc, 1, 6, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 7, "D");
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["D", "E", "F"]);
 
         // Undo the move
         gc.undo(None);
 
         // Verify state is back to original
-        assert_display_cell_value_first_sheet(&gc, 1, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 4, "D");
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
     }
 
     #[test]
     fn test_move_cols_undo_redo() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up initial data
-        (&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // Move columns
         gc.move_columns(SheetId::TEST, 3, 4, 6, None);
 
         // Verify moved state
-        assert_display_cell_value_first_sheet(&gc, 6, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 7, 3, "D");
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 7, 4, 6, vec!["D", "E", "F"]);
 
-        // Undo
+        // Undo the move
         gc.undo(None);
 
-        // Verify undone state
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 4, 3, "D");
+        // Verify state is back to original
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
-        // Redo
+        // Redo the move
         gc.redo(None);
 
         // Verify redone state
-        assert_display_cell_value_first_sheet(&gc, 6, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 7, 3, "D");
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 7, 4, 6, vec!["D", "E", "F"]);
     }
 
     #[test]
     fn test_move_rows_undo_redo() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
-        // Set up initial data
-        (&mut gc, 1, 3, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 1, 4, 1, 3, vec!["D", "E", "F"]);
+        // Set up test data in rows 3-4
+        test_set_values_rect(&mut gc, 3, 3, 3, 1, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 3, 4, 3, 1, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
 
         // Move rows
         gc.move_rows(SheetId::TEST, 3, 4, 6, None);
 
         // Verify moved state
-        assert_display_cell_value_first_sheet(&gc, 1, 6, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 7, "D");
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["D", "E", "F"]);
 
-        // Undo
+        // Undo the move
         gc.undo(None);
 
-        // Verify undone state
-        assert_display_cell_value_first_sheet(&gc, 1, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 4, "D");
+        // Verify state is back to original
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 3, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["D", "E", "F"]);
 
         // Redo
         gc.redo(None);
 
         // Verify redone state
-        assert_display_cell_value_first_sheet(&gc, 1, 6, "A");
-        assert_display_cell_value_first_sheet(&gc, 1, 7, "D");
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["D", "E", "F"]);
     }
 
     #[test]
     fn test_multiple_moves_with_undo() {
         let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
 
         // Set up initial data
-        (&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+
+        test_set_values_rect(&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
 
         // First move
-        gc.move_columns(SheetId::TEST, 3, 4, 6, None);
+        gc.move_columns(SheetId::TEST, 3, 3, 6, None);
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["D", "E", "F"]);
 
         // Second move
-        gc.move_columns(SheetId::TEST, 6, 7, 2, None);
-
-        // Verify final state
-        assert_display_cell_value_first_sheet(&gc, 2, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "D");
+        gc.move_columns(SheetId::TEST, 3, 3, 2, None);
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 2, 4, 6, vec!["D", "E", "F"]);
 
         // Undo second move
         gc.undo(None);
 
         // Verify first move state
-        assert_display_cell_value_first_sheet(&gc, 6, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 7, 3, "D");
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["D", "E", "F"]);
 
         // Undo first move
         gc.undo(None);
 
         // Verify original state
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "A");
-        assert_display_cell_value_first_sheet(&gc, 4, 3, "D");
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
     }
 
     #[test]
@@ -455,21 +486,28 @@ mod tests {
         let mut gc = GridController::test();
 
         // Set up sparse data
-        (&mut gc, 3, 4, 1, 1, vec!["A"]);
-        (&mut gc, 3, 4, 3, 3, vec!["B"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 1, vec!["A"]);
+        test_set_values_rect(&mut gc, 6, 7, 1, 1, vec!["B"]);
+
+        assert_display_cell_value_first_sheet(&gc, 3, 4, "A");
+        assert_display_cell_value_first_sheet(&gc, 6, 7, "B");
+
+        print_first_sheet(&gc);
 
         // Move columns
-        gc.move_columns(SheetId::TEST, 3, 4, 6, None);
+        gc.move_columns(SheetId::TEST, 3, 3, 6, None);
+
+        print_first_sheet(&gc);
 
         // Verify moved state
-        assert_display_cell_value_first_sheet(&gc, 6, 1, "A");
-        assert_display_cell_value_first_sheet(&gc, 6, 3, "B");
+        assert_display_cell_value_first_sheet(&gc, 6, 4, "A");
+        assert_display_cell_value_first_sheet(&gc, 5, 7, "B");
 
         // Undo
         gc.undo(None);
 
         // Verify original state
-        assert_display_cell_value_first_sheet(&gc, 3, 1, "A");
-        assert_display_cell_value_first_sheet(&gc, 3, 3, "B");
+        assert_display_cell_value_first_sheet(&gc, 3, 4, "A");
+        assert_display_cell_value_first_sheet(&gc, 6, 7, "B");
     }
 }
