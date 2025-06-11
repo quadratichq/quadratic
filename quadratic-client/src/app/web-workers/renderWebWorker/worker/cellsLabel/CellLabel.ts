@@ -164,7 +164,9 @@ export class CellLabel {
           text = cell?.value;
         }
     }
-    text = text.substring(0, MAX_CHAR_LENGTH - 1) + '…';
+    if (text.length > MAX_CHAR_LENGTH) {
+        text = text.substring(0, MAX_CHAR_LENGTH - 1) + '…';
+    }
     return text;
   };
 
