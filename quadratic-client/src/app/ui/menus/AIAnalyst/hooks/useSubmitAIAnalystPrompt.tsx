@@ -17,18 +17,20 @@ import {
   aiAnalystPromptSuggestionsAtom,
   aiAnalystShowChatHistoryAtom,
   aiAnalystWaitingOnMessageIndexAtom,
+  aiAnalystWebSearchAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugShowAIInternalContext } from '@/app/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
+import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
 import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
-  getPromptMessagesWithoutPDF,
-  isContentText,
+  getPromptMessagesForAI,
+  isContentFile,
   removeOldFilesInToolResult,
   replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -77,6 +79,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
+  const { search } = useAnalystWebSearch();
   const [modelKey] = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
@@ -97,7 +100,7 @@ export function useSubmitAIAnalystPrompt() {
           ...currentSheetContext,
           ...visibleContext,
           ...filesContext,
-          ...getPromptMessagesWithoutPDF(chatMessages),
+          ...getPromptMessagesForAI(chatMessages),
         ];
 
         return messagesWithContext;
@@ -174,6 +177,10 @@ export function useSubmitAIAnalystPrompt() {
             return undefined;
           });
           set(aiAnalystPDFImportAtom, (prev) => {
+            prev.abortController?.abort();
+            return { abortController: undefined, loading: false };
+          });
+          set(aiAnalystWebSearchAtom, (prev) => {
             prev.abortController?.abort();
             return { abortController: undefined, loading: false };
           });
@@ -314,7 +321,12 @@ export function useSubmitAIAnalystPrompt() {
               signal: abortController.signal,
             });
 
-            set(aiAnalystCurrentChatMessagesAtom, (prev) => replaceOldGetToolCallResults(prev));
+            let nextChatMessages: ChatMessage[] = [];
+            set(aiAnalystCurrentChatMessagesAtom, (prev) => {
+              nextChatMessages = replaceOldGetToolCallResults(prev);
+              return nextChatMessages;
+            });
+            chatMessages = nextChatMessages;
 
             if (response.toolCalls.length === 0) {
               break;
@@ -334,7 +346,7 @@ export function useSubmitAIAnalystPrompt() {
             >['prompt_suggestions'] = [];
 
             for (const toolCall of response.toolCalls) {
-              if (toolCall.name === AITool.PDFImport) {
+              if (toolCall.name === AITool.PDFImport || toolCall.name === AITool.WebSearch) {
                 continue;
               }
 
@@ -391,16 +403,35 @@ export function useSubmitAIAnalystPrompt() {
               });
             }
 
+            const webSearchToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.WebSearch);
+            for (const toolCall of webSearchToolCalls) {
+              const argsObject = JSON.parse(toolCall.arguments);
+              const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
+              const { toolResultContent, internal } = await search({ searchArgs });
+              toolResultMessage.content.push({
+                id: toolCall.id,
+                content: toolResultContent,
+              });
+
+              if (internal) {
+                let nextChatMessages: ChatMessage[] = [];
+                set(aiAnalystCurrentChatMessagesAtom, (prev) => {
+                  nextChatMessages = [...prev, internal];
+                  return nextChatMessages;
+                });
+                chatMessages = nextChatMessages;
+              }
+            }
+
             const filesInToolResult = toolResultMessage.content.reduce((acc, result) => {
               result.content.forEach((content) => {
-                if (!isContentText(content)) {
+                if (isContentFile(content)) {
                   acc.add(content.fileName);
                 }
               });
               return acc;
             }, new Set<string>());
 
-            let nextChatMessages: ChatMessage[] = [];
             set(aiAnalystCurrentChatMessagesAtom, (prev) => {
               nextChatMessages = [...removeOldFilesInToolResult(prev, filesInToolResult), toolResultMessage];
               return nextChatMessages;
@@ -449,7 +480,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, updateInternalContext, modelKey, importPDF]
+    [handleAIRequestToAPI, updateInternalContext, modelKey, importPDF, search]
   );
 
   return { submitPrompt };

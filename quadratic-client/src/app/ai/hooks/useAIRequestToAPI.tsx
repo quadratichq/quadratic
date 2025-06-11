@@ -54,7 +54,13 @@ export function useAIRequestToAPI() {
           });
 
           if (!response.ok) {
-            const data = await response.json();
+            let data;
+            try {
+              data = await response.json();
+            } catch (error) {
+              data = '';
+            }
+
             let text = '';
             switch (response.status) {
               case 429:
@@ -67,6 +73,7 @@ export function useAIRequestToAPI() {
                 text = `Looks like there was a problem. Error: ${JSON.stringify(data.error)}`;
                 break;
             }
+
             setMessages?.((prev) => [
               ...prev.slice(0, -1),
               {

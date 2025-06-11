@@ -16,6 +16,7 @@ import type {
   JsCoordinate,
   JsDataTableColumnHeader,
   JsRenderCell,
+  JsResponse,
   JsSelectionContext,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
@@ -496,6 +497,13 @@ export interface ClientCoreSetCellRenderResize {
   width: number;
   height: number;
   cursor: string;
+  id: number;
+}
+
+export interface CoreClientSetCellRenderResize {
+  type: 'coreClientSetCellRenderResize';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreAutocomplete {
@@ -1397,4 +1405,5 @@ export type CoreClientMessage =
   | CoreClientGetAICells
   | CoreClientSetFormats
   | CoreClientGetAIFormats
-  | CoreClientGridToDataTable;
+  | CoreClientGridToDataTable
+  | CoreClientSetCellRenderResize;
