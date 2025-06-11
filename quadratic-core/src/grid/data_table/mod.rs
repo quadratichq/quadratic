@@ -118,9 +118,17 @@ impl Grid {
 
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
+
+// Table name must start with alphabet character, and then can have a mix of
+// alphabet, numbers, and "_ . \". Note \p{L} provides foreign alphabetic
+// characters
 const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\p{L}\\][a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// we split the regex into two parts so we can properly sanitize it
 const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\p{L}\\]"#;
 const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// Column names are more open to other characters
 const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z\p{L}0-9_\-_.(){}`'"~!@$%^&*+=<>?/\\|:;,\p{Pd}][a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
 const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@$%^&*+=<>?/\\|:;,]$"#;
 const COLUMN_NAME_REMAINING_CHARS: &str =
