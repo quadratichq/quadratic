@@ -678,6 +678,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 4, vec!["2", "3"]);
 
         gc.data_table_mutations(
             pos![sheet_id!A1],
@@ -685,11 +686,18 @@ mod tests {
             None,
             None,
             None,
-            Some(vec![1, 2, 3, 4]),
+            Some(vec![2, 3]),
             None,
             None,
             None,
         );
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["", ""]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 4, vec!["2", "3"]);
+
+        gc.redo(None);
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["", ""]);
     }
 }

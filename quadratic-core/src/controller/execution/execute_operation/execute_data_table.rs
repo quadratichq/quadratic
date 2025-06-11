@@ -1646,6 +1646,7 @@ impl GridController {
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                     let table_display_height = dt.height(false);
                     dt.insert_row(table_display_height, None)?;
+
                     reverse_operations.push(Operation::DeleteDataTableRows {
                         sheet_pos,
                         rows: vec![table_display_height as u32],
@@ -1660,8 +1661,7 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
-            let output_rect = data_table.output_rect(data_table_pos, true);
-            let data_table_rect = output_rect.to_sheet_rect(sheet_id);
+            let data_table_rect = data_table.output_rect(data_table_pos, true);
             let y_adjustment = data_table.y_adjustment(true);
 
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
@@ -1672,7 +1672,7 @@ impl GridController {
             };
 
             // for flattening
-            let mut old_data_table_rect = output_rect.clone();
+            let mut old_data_table_rect = data_table.output_rect(data_table_pos, true);
             old_data_table_rect.min.y += y_adjustment;
             old_data_table_rect.min.y += 1; //cannot flatten the first row
             let mut sheet_cell_values =
