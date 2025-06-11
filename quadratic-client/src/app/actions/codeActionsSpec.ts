@@ -1,7 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -17,19 +16,16 @@ export const cancelExecution = () => {
 };
 
 export const executeCode = () => {
-  const cursor = sheets.sheet.cursor.position;
-  const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
-  if (codeCell?.is_code) {
-    quadraticCore.rerunCodeCells(sheets.current, codeCell.x, codeCell.y, sheets.getCursorPosition());
-  }
+  const selection = sheets.sheet.cursor.a1String();
+  quadraticCore.rerunCodeCells(sheets.current, selection, sheets.getCursorPosition());
 };
 
 export const rerunSheetCode = () => {
-  quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition());
+  quadraticCore.rerunCodeCells(sheets.current, undefined, sheets.getCursorPosition());
 };
 
 export const rerunAllCode = () => {
-  quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition());
+  quadraticCore.rerunCodeCells(undefined, undefined, sheets.getCursorPosition());
 };
 
 export const codeActionsSpec: CodeActionSpec = {

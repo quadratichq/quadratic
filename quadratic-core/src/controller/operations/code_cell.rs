@@ -3,6 +3,7 @@ use std::collections::HashSet;
 use super::operation::Operation;
 use crate::{
     CellValue, SheetPos,
+    a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
@@ -52,8 +53,25 @@ impl GridController {
     }
 
     /// Reruns a code cell
-    pub fn rerun_code_cell_operations(&self, sheet_pos: SheetPos) -> Vec<Operation> {
-        vec![Operation::ComputeCode { sheet_pos }]
+    pub fn rerun_code_cell_operations(&self, selection: A1Selection) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        let sheet_id = selection.sheet_id;
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            let rects = sheet.selection_to_rects(&selection, false, false, true, self.a1_context());
+            rects.iter().for_each(|rect| {
+                sheet
+                    .data_tables
+                    .get_code_runs_in_rect(*rect, false)
+                    .for_each(|(_, pos, _)| {
+                        ops.push(Operation::ComputeCode {
+                            sheet_pos: pos.to_sheet_pos(sheet_id),
+                        });
+                    })
+            });
+        }
+
+        ops
     }
 
     pub fn set_chart_size_operations(&self, sheet_pos: SheetPos, w: u32, h: u32) -> Vec<Operation> {
@@ -382,8 +400,8 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
         let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
+            x: 1,
+            y: 1,
             sheet_id,
         };
         gc.set_code_cell(
@@ -394,7 +412,7 @@ mod test {
             None,
         );
         gc.rerun_all_code_cells(None);
-        gc.rerun_code_cell(sheet_pos, None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
         gc.rerun_sheet_code_cells(sheet_id, None);
     }
 }

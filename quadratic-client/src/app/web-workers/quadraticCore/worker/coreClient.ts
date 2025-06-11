@@ -421,7 +421,7 @@ class CoreClient {
         return;
 
       case 'clientCoreRerunCodeCells':
-        core.rerunCodeCells(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreCancelExecution':
