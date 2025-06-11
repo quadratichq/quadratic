@@ -47,8 +47,9 @@ pub fn assert_display_cell_value(
     let cell_value = sheet
         .display_value(Pos { x, y })
         .map_or_else(|| CellValue::Blank, |v| CellValue::Text(v.to_string()));
-    let expected_text_or_blank =
-        |v: &CellValue| v == &CellValue::Text(value.into()) || v == &CellValue::Blank;
+    let expected_text_or_blank = |v: &CellValue| {
+        v == &CellValue::Text(value.into()) || (value.is_empty() && v == &CellValue::Blank)
+    };
 
     assert!(
         expected_text_or_blank(&cell_value),
