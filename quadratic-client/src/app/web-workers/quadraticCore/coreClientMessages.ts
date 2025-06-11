@@ -743,10 +743,6 @@ export interface CoreClientImportProgress {
   filename: string;
   current: number;
   total: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 export interface CoreClientTransactionStart {
