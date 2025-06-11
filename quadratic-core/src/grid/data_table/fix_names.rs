@@ -6,6 +6,7 @@ use crate::grid::{
 
 /// Validates and fixes table names.
 pub fn fix_table_name(name: String) -> String {
+    let name = name.trim().to_string();
     let mut result: String;
     if TABLE_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -37,6 +38,7 @@ pub fn fix_table_name(name: String) -> String {
 
 /// Validates and fixes column names.
 pub fn fix_column_name(name: String) -> String {
+    let name = name.trim().to_string();
     let mut result: String;
     if COLUMN_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -128,13 +130,13 @@ mod tests {
         assert_eq!(fix_table_name("`backtick".to_string()), "_backtick");
 
         // Space as first character
-        assert_eq!(fix_table_name(" space".to_string()), "_space");
+        assert_eq!(fix_table_name(" space".to_string()), "space");
 
         // Tab as first character
-        assert_eq!(fix_table_name("\tTab".to_string()), "_Tab");
+        assert_eq!(fix_table_name("\tTab".to_string()), "Tab");
 
         // Newline as first character
-        assert_eq!(fix_table_name("\nNewline".to_string()), "_Newline");
+        assert_eq!(fix_table_name("\nNewline".to_string()), "Newline");
     }
 
     #[test]
@@ -212,16 +214,16 @@ mod tests {
         assert_eq!(fix_table_name("#".to_string()), "_");
 
         // Only spaces
-        assert_eq!(fix_table_name("   ".to_string()), "___");
+        assert_eq!(fix_table_name("   ".to_string()), "_");
 
         // Only tabs
-        assert_eq!(fix_table_name("\t\t".to_string()), "__");
+        assert_eq!(fix_table_name("\t\t".to_string()), "_");
 
         // Only newlines
-        assert_eq!(fix_table_name("\n\n".to_string()), "__");
+        assert_eq!(fix_table_name("\n\n".to_string()), "_");
 
         // Mixed whitespace
-        assert_eq!(fix_table_name(" \t\n".to_string()), "___");
+        assert_eq!(fix_table_name(" \t\n".to_string()), "_");
 
         // Unicode characters (should be replaced)
         assert_eq!(fix_table_name("café".to_string()), "caf_");
@@ -305,7 +307,7 @@ mod tests {
         // Special characters at start should be replaced
         assert_eq!(fix_column_name("@column".to_string()), "_column");
         assert_eq!(fix_column_name("!important".to_string()), "_important");
-        assert_eq!(fix_column_name(" spaced".to_string()), "_spaced");
+        assert_eq!(fix_column_name(" spaced".to_string()), "spaced");
         assert_eq!(fix_column_name(".hidden".to_string()), "_hidden");
         assert_eq!(fix_column_name("(test)".to_string()), "_test)");
         assert_eq!(fix_column_name("#hashtag".to_string()), "_hashtag");
@@ -369,11 +371,11 @@ mod tests {
     }
 
     #[test]
-    fn test_column_name_invalid_final_character() {
+    fn test_column_name_final_character() {
         // Invalid final characters should be replaced
-        assert_eq!(fix_column_name("ends_with(".to_string()), "ends_with_");
-        assert_eq!(fix_column_name("ends_with)".to_string()), "ends_with_");
-        assert_eq!(fix_column_name("ends_with ".to_string()), "ends_with_");
+        assert_eq!(fix_column_name("ends_with(".to_string()), "ends_with(");
+        assert_eq!(fix_column_name("ends_with)".to_string()), "ends_with)");
+        assert_eq!(fix_column_name("ends_with ".to_string()), "ends_with");
         assert_eq!(fix_column_name("ends_with@".to_string()), "ends_with_");
         assert_eq!(fix_column_name("ends_with#".to_string()), "ends_with_");
         assert_eq!(fix_column_name("ends_with$".to_string()), "ends_with_");
@@ -394,7 +396,7 @@ mod tests {
         // Names requiring multiple fixes
         assert_eq!(
             fix_column_name("@invalid$middle.".to_string()),
-            "_invalid_middle_"
+            "_invalid_middle."
         );
         assert_eq!(
             fix_column_name("#start middle@".to_string()),
@@ -402,19 +404,19 @@ mod tests {
         );
         assert_eq!(
             fix_column_name("!test@email.com".to_string()),
-            "_test_email_com"
+            "_test_email.com"
         );
-        assert_eq!(fix_column_name("$price%20 ".to_string()), "_price_20_");
+        assert_eq!(fix_column_name("$price%20 ".to_string()), "_price_20");
         assert_eq!(fix_column_name("123@#$%".to_string()), "123____");
     }
 
     #[test]
     fn test_column_name_whitespace_handling() {
         // Spaces are valid in middle but not at start/end
-        assert_eq!(fix_column_name(" test ".to_string()), "_test_");
+        assert_eq!(fix_column_name(" test ".to_string()), "test");
         assert_eq!(
-            fix_column_name("  multiple  spaces  ".to_string()),
-            "_multiple  spaces_"
+            fix_column_name("  multiple  spaces".to_string()),
+            "multiple  spaces"
         );
         assert_eq!(fix_column_name("tab\there".to_string()), "tab_here");
         assert_eq!(fix_column_name("newline\nhere".to_string()), "newline_here");
