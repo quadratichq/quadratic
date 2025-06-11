@@ -121,8 +121,10 @@ const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
 const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.\\]*$"#;
 const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\\]"#;
 const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z0-9_.\\]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str =
-    r#"^[a-zA-Z0-9_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-][a-zA-Z0-9_\- .()\p{Pd}]*$"#;
+const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z0-9_\-]$"#;
+const COLUMN_NAME_REMAINING_CHARS: &str = r#"^[a-zA-Z0-9_\- .()\p{Pd}]*$"#;
+
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
@@ -137,6 +139,12 @@ lazy_static! {
             .expect("Failed to compile TABLE_NAME_REMAINING_CHARACTERS");
     pub static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
         Regex::new(COLUMN_NAME_VALID_CHARS).expect("Failed to compile COLUMN_NAME_VALID_CHARS");
+    pub(crate) static ref COLUMN_NAME_FIRST_CHARACTER_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile COLUMN_NAME_FIRST_CHARACTER");
+    pub(crate) static ref COLUMN_NAME_REMAINING_CHARS_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_REMAINING_CHARS)
+            .expect("Failed to compile COLUMN_NAME_FINAL_CHARACTER");
 }
 
 #[allow(clippy::large_enum_variant)]
