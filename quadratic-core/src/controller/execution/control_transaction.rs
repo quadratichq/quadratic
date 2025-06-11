@@ -229,9 +229,9 @@ impl GridController {
                 (Ok(array), None) => {
                     // subtract 1 from the length to account for the header row
                     let return_type =
-                        format!("{}×{} Array", array.width(), 0.max(array.height() - 1));
+                        format!("{}×{} Array", array.width(), array.height() - 1);
 
-                    (return_type, Value::Array(array.into()))
+                    (return_type, Value::Array(array))
                 }
                 (Err(e), None) => parse_error(&e.to_string()),
                 (_, Some(std_err)) => parse_error(std_err),
