@@ -118,12 +118,13 @@ impl Grid {
 
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
-const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.\\]*$"#;
-const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\\]"#;
-const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z0-9_.\\]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-][a-zA-Z0-9_\- .()\p{Pd}]*$"#;
-const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z0-9_\-]$"#;
-const COLUMN_NAME_REMAINING_CHARS: &str = r#"^[a-zA-Z0-9_\- .()\p{Pd}]*$"#;
+const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\p{L}\\][a-zA-Z\p{L}0-9_.\\]*$"#;
+const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\p{L}\\]"#;
+const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z\p{L}0-9_.\\]*$"#;
+const COLUMN_NAME_VALID_CHARS: &str =
+    r#"^[a-zA-Z\p{L}0-9_\-][a-zA-Z\p{L}0-9_\- .()!@#$%^&*+=<>?|:;,\p{Pd}]*$"#;
+const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z\p{L}0-9_\- .()!@$%^&*+=<>?|:;,]$"#;
+const COLUMN_NAME_REMAINING_CHARS: &str = r#"^[a-zA-Z\p{L}0-9_\- .()!@#$%^&*+=<>?|:;,\p{Pd}]*$"#;
 
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");

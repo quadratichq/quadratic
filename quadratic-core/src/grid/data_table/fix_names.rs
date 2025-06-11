@@ -225,10 +225,10 @@ mod tests {
         // Mixed whitespace
         assert_eq!(fix_table_name(" \t\n".to_string()), "_");
 
-        // Unicode characters (should be replaced)
-        assert_eq!(fix_table_name("café".to_string()), "caf_");
-        assert_eq!(fix_table_name("naïve".to_string()), "na_ve");
-        assert_eq!(fix_table_name("тест".to_string()), "____");
+        // Unicode characters
+        assert_eq!(fix_table_name("café".to_string()), "café");
+        assert_eq!(fix_table_name("naïve".to_string()), "naïve");
+        assert_eq!(fix_table_name("тест".to_string()), "тест");
 
         // Emoji (should be replaced)
         assert_eq!(fix_table_name("name😀test".to_string()), "name_test");
@@ -305,14 +305,14 @@ mod tests {
     #[test]
     fn test_column_name_invalid_first_character() {
         // Special characters at start should be replaced
-        assert_eq!(fix_column_name("@column".to_string()), "_column");
-        assert_eq!(fix_column_name("!important".to_string()), "_important");
+        assert_eq!(fix_column_name("@column".to_string()), "@column");
+        assert_eq!(fix_column_name("!important".to_string()), "!important");
         assert_eq!(fix_column_name(" spaced".to_string()), "spaced");
-        assert_eq!(fix_column_name(".hidden".to_string()), "_hidden");
-        assert_eq!(fix_column_name("(test)".to_string()), "_test)");
+        assert_eq!(fix_column_name(".hidden".to_string()), ".hidden");
+        assert_eq!(fix_column_name("(test)".to_string()), "(test)");
         assert_eq!(fix_column_name("#hashtag".to_string()), "_hashtag");
-        assert_eq!(fix_column_name("$price".to_string()), "_price");
-        assert_eq!(fix_column_name("%percent".to_string()), "_percent");
+        assert_eq!(fix_column_name("$price".to_string()), "$price");
+        assert_eq!(fix_column_name("%percent".to_string()), "%percent");
     }
 
     #[test]
@@ -338,24 +338,24 @@ mod tests {
     #[test]
     fn test_column_name_invalid_middle_characters() {
         // Invalid middle characters should be replaced with underscores
-        assert_eq!(fix_column_name("test@email".to_string()), "test_email");
-        assert_eq!(fix_column_name("price$100".to_string()), "price_100");
-        assert_eq!(fix_column_name("hash#tag".to_string()), "hash_tag");
+        assert_eq!(fix_column_name("test@email".to_string()), "test@email");
+        assert_eq!(fix_column_name("price$100".to_string()), "price$100");
+        assert_eq!(fix_column_name("hash#tag".to_string()), "hash#tag");
         assert_eq!(
             fix_column_name("percent%value".to_string()),
-            "percent_value"
+            "percent%value"
         );
         assert_eq!(
             fix_column_name("ampersand&test".to_string()),
-            "ampersand_test"
+            "ampersand&test"
         );
         assert_eq!(
             fix_column_name("question?mark".to_string()),
-            "question_mark"
+            "question?mark"
         );
         assert_eq!(
             fix_column_name("exclamation!point".to_string()),
-            "exclamation_point"
+            "exclamation!point"
         );
     }
 
@@ -376,17 +376,17 @@ mod tests {
         assert_eq!(fix_column_name("ends_with(".to_string()), "ends_with(");
         assert_eq!(fix_column_name("ends_with)".to_string()), "ends_with)");
         assert_eq!(fix_column_name("ends_with ".to_string()), "ends_with");
-        assert_eq!(fix_column_name("ends_with@".to_string()), "ends_with_");
-        assert_eq!(fix_column_name("ends_with#".to_string()), "ends_with_");
-        assert_eq!(fix_column_name("ends_with$".to_string()), "ends_with_");
+        assert_eq!(fix_column_name("ends_with@".to_string()), "ends_with@");
+        assert_eq!(fix_column_name("ends_with#".to_string()), "ends_with#");
+        assert_eq!(fix_column_name("ends_with$".to_string()), "ends_with$");
     }
 
     #[test]
     fn test_column_name_single_character_edge_cases() {
         // Single character names
-        assert_eq!(fix_column_name("@".to_string()), "_");
-        assert_eq!(fix_column_name(".".to_string()), "_");
-        assert_eq!(fix_column_name("(".to_string()), "_");
+        assert_eq!(fix_column_name("@".to_string()), "@");
+        assert_eq!(fix_column_name(".".to_string()), ".");
+        assert_eq!(fix_column_name("(".to_string()), "(");
         assert_eq!(fix_column_name(" ".to_string()), "_");
         assert_eq!(fix_column_name("#".to_string()), "_");
     }
@@ -396,18 +396,18 @@ mod tests {
         // Names requiring multiple fixes
         assert_eq!(
             fix_column_name("@invalid$middle.".to_string()),
-            "_invalid_middle."
+            "@invalid$middle."
         );
         assert_eq!(
             fix_column_name("#start middle@".to_string()),
-            "_start middle_"
+            "_start middle@"
         );
         assert_eq!(
             fix_column_name("!test@email.com".to_string()),
-            "_test_email.com"
+            "!test@email.com"
         );
-        assert_eq!(fix_column_name("$price%20 ".to_string()), "_price_20");
-        assert_eq!(fix_column_name("123@#$%".to_string()), "123____");
+        assert_eq!(fix_column_name("$price%20 ".to_string()), "$price%20");
+        assert_eq!(fix_column_name("123@#$%".to_string()), "123@#$%");
     }
 
     #[test]
@@ -425,9 +425,9 @@ mod tests {
     #[test]
     fn test_column_name_unicode_and_special_cases() {
         // Unicode and other edge cases
-        assert_eq!(fix_column_name("café".to_string()), "caf_");
-        assert_eq!(fix_column_name("résumé".to_string()), "r_sum_");
-        assert_eq!(fix_column_name("naïve".to_string()), "na_ve");
+        assert_eq!(fix_column_name("café".to_string()), "café");
+        assert_eq!(fix_column_name("résumé".to_string()), "résumé");
+        assert_eq!(fix_column_name("naïve".to_string()), "naïve");
         assert_eq!(fix_column_name("emoji😀test".to_string()), "emoji_test");
     }
 
@@ -440,7 +440,7 @@ mod tests {
         );
         assert_eq!(
             fix_column_name("@this@has@many@invalid@chars@".to_string()),
-            "_this_has_many_invalid_chars_"
+            "@this@has@many@invalid@chars@"
         );
     }
 
@@ -449,12 +449,12 @@ mod tests {
         // Multiple consecutive invalid characters
         assert_eq!(
             fix_column_name("test@@@multiple".to_string()),
-            "test___multiple"
+            "test@@@multiple"
         );
         assert_eq!(
             fix_column_name("start###middle$$$end".to_string()),
-            "start___middle___end"
+            "start###middle$$$end"
         );
-        assert_eq!(fix_column_name("@@@".to_string()), "___");
+        assert_eq!(fix_column_name("@@@".to_string()), "@@@");
     }
 }
