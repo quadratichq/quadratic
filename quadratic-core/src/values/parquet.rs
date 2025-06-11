@@ -81,8 +81,6 @@ mod test {
         let metadata = std::fs::metadata(PARQUET_FILE).expect("unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];
         file.read_exact(&mut buffer).expect("buffer overflow");
-
-        let _results = parquet_to_array(buffer, PARQUET_FILE, None::<fn(&str, u32, u32)>);
-        // println!("{:?}", results);
+        parquet_to_array(buffer, PARQUET_FILE, None::<fn(&str, u32, u32)>).unwrap();
     }
 }
