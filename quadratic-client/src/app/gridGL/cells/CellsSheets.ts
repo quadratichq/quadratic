@@ -186,7 +186,7 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  isCursorOnCodeCell(): boolean {
+  isSelectionOnCodeCell(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
     const cursor = sheets.sheet.cursor.position;

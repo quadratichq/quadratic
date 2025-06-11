@@ -38,6 +38,12 @@ impl From<Pos> for JsCoordinate {
     }
 }
 
+impl JsSelection {
+    pub fn get_selection(&self) -> &A1Selection {
+        &self.selection
+    }
+}
+
 #[wasm_bindgen]
 impl JsSelection {
     #[wasm_bindgen(js_name = "excludeCells")]

@@ -632,5 +632,10 @@ export class Tables extends Container<Table> {
     return this.dataTablesCache.hasTableInRect(r.x, r.y, r.right - 1, r.bottom - 1);
   };
 
+  hasCodeCellInCurrentSelection = () => {
+    if (!this.dataTablesCache) return false;
+    return this.dataTablesCache.hasTableInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
+  };
+
   //#endregion
 }

@@ -5,8 +5,8 @@ use std::collections::HashSet;
 
 use crate::{
     Pos, Rect, Value,
-    a1::RefRangeBounds,
-    grid::{Contiguous2D, DataTable},
+    a1::{A1Context, A1Selection, RefRangeBounds},
+    grid::{CodeCellLanguage, Contiguous2D, DataTable},
 };
 
 use serde::{Deserialize, Serialize};
@@ -108,6 +108,33 @@ impl SheetDataTablesCache {
     /// Returns true if the cell has an empty value
     pub fn has_empty_value(&self, pos: Pos) -> bool {
         self.multi_cell_tables.has_empty_value(pos)
+    }
+
+    /// Returns whether there are any code cells within a selection
+    pub fn code_in_selection(&self, selection: &A1Selection, context: &A1Context) -> bool {
+        let sheet_id = selection.sheet_id;
+        for range in selection.ranges.iter() {
+            if let Some(rect) = range.to_rect(context) {
+                if !self.single_cell_tables.is_all_default_in_rect(rect) {
+                    return true;
+                }
+                let tables = self.multi_cell_tables.unique_values_in_rect(rect);
+                if !tables.is_empty() {
+                    for table_pos in tables.iter() {
+                        if let Some(table_pos) = table_pos {
+                            if let Some(table) =
+                                context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                            {
+                                if table.language != CodeCellLanguage::Import {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        false
     }
 }
 

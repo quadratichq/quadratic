@@ -5,8 +5,9 @@
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Pos, Rect, compression::deserialize_from_bytes,
+    Pos, Rect, a1::js_selection::JsSelection, compression::deserialize_from_bytes,
     grid::sheet::data_tables::cache::SheetDataTablesCache,
+    wasm_bindings::js_a1_context::JsA1Context,
 };
 
 #[wasm_bindgen]
@@ -54,5 +55,14 @@ impl SheetDataTablesCache {
         let rect = Rect::new(x0 as i64, y0 as i64, x1 as i64, y1 as i64);
         !self.multi_cell_tables.is_all_default_in_rect(rect)
             && !self.single_cell_tables.is_all_default_in_rect(rect)
+    }
+
+    #[wasm_bindgen(js_name = "hasTableInSelection")]
+    pub fn has_table_in_selection(
+        &self,
+        js_selection: &JsSelection,
+        a1_context: &JsA1Context,
+    ) -> bool {
+        self.code_in_selection(js_selection.get_selection(), a1_context.get_context())
     }
 }
