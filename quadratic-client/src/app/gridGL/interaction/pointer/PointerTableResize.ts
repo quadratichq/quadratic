@@ -4,7 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { ColumnRow, JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { ColumnRow, JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { Point } from 'pixi.js';
@@ -16,17 +16,21 @@ export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefine
 export type DragDirection = 'right' | 'bottom' | 'corner' | undefined;
 
 export class PointerTableResize {
+  cursor?: string;
+
+  private selection?: Rectangle;
+  private selectionRight?: Rectangle;
+  private selectionBottom?: Rectangle;
+  private tableBounds?: ColumnRow;
+
   private endCell?: JsCoordinate;
+
   private stateHorizontal: StateHorizontal;
   private stateVertical: StateVertical;
-  dragDirection?: DragDirection;
-  selection?: Rectangle;
-  selectionRight?: Rectangle;
-  selectionBottom?: Rectangle;
-  tableBounds?: ColumnRow;
-  codeCell?: JsRenderCodeCell;
-  cursor?: string;
-  active = false;
+
+  private active = false;
+
+  private dragDirection?: DragDirection;
 
   pointerDown = (world: Point): boolean => {
     if (isMobile) return false;
@@ -71,7 +75,7 @@ export class PointerTableResize {
   };
 
   private applyState = (world: Point, isPointerDown: boolean = false): boolean => {
-    if (!this.selection || !this.tableBounds || !this.selectionRight || !this.selectionBottom) return false;
+    if (!this.selection || !this.selectionRight || !this.selectionBottom || !this.tableBounds) return false;
 
     const setValues = (direction: DragDirection) => {
       if (isPointerDown) {
@@ -111,6 +115,41 @@ export class PointerTableResize {
   pointerMove = (world: Point): boolean => {
     if (isMobile) return false;
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
+
+    if (!this.active) {
+      const table = pixiApp.cellsSheet().tables.getTableIntersectsWorld(world);
+      if (!!table && table.checkHover(world) && !table.codeCell.is_code) {
+        const cornerHandle = new Rectangle(
+          table.tableBounds.x + table.tableBounds.width - 4,
+          table.tableBounds.y + table.tableBounds.height - 4,
+          8,
+          8
+        );
+        const rightHandle = new Rectangle(
+          table.tableBounds.x + table.tableBounds.width - 4,
+          table.tableBounds.y,
+          8,
+          table.tableBounds.height - 8
+        );
+        const bottomHandle = new Rectangle(
+          table.tableBounds.x,
+          table.tableBounds.y + table.tableBounds.height - 4,
+          table.tableBounds.width - 8,
+          8
+        );
+
+        this.selection = cornerHandle;
+        this.selectionRight = rightHandle;
+        this.selectionBottom = bottomHandle;
+        this.tableBounds = table.sheet.getColumnRowFromScreen(table.tableBounds.x, table.tableBounds.y);
+      } else {
+        this.cursor = undefined;
+        this.selection = undefined;
+        this.selectionRight = undefined;
+        this.selectionBottom = undefined;
+        this.tableBounds = undefined;
+      }
+    }
 
     this.applyState(world);
 
