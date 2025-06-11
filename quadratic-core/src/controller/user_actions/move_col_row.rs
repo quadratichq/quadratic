@@ -63,7 +63,7 @@ impl GridController {
         } else {
             to
         };
-
+        dbg!(adjusted_to);
         // insert new columns at the adjusted location
         if let Some(sheet) = self.grid.try_sheet_mut(sheet_id) {
             for col in adjusted_to..=adjusted_to + col_end - col_start {
@@ -72,7 +72,7 @@ impl GridController {
         }
 
         // paste the copied data into the new columns
-        let selection = A1Selection::from_single_cell((to, 1, sheet_id).into());
+        let selection = A1Selection::from_single_cell((adjusted_to, 1, sheet_id).into());
         let insert_at = selection.cursor;
 
         if let Ok((ops, data_table_ops)) =
@@ -313,13 +313,17 @@ mod tests {
         test_set_values_rect(&mut gc, 5, 4, 1, 3, vec!["G", "H", "I"]);
         assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["G", "H", "I"]);
 
+        print_first_sheet(&gc);
+
         // Move columns 3-5 to position 4 (between source columns)
         gc.move_columns(SheetId::TEST, 3, 5, 4, None);
 
+        print_first_sheet(&gc);
+
         // Should maintain original order starting at first column
-        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["A", "B", "C"]);
-        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["D", "E", "F"]);
-        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["G", "H", "I"]);
+        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["G", "H", "I"]);
     }
 
     #[test]
