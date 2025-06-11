@@ -171,7 +171,10 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::{assert_display_cell_value_first_sheet, print_first_sheet};
+    use crate::{
+        test_set_values_rect,
+        test_util::{assert_display_cell_value_first_sheet, print_first_sheet},
+    };
 
     use super::*;
 
@@ -362,8 +365,8 @@ mod tests {
         let mut gc = GridController::test();
 
         // Set up initial data
-        (&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
-        (&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
+        test_set_values_rect(&mut gc, 3, 4, 1, 3, vec!["A", "B", "C"]);
+        test_set_values_rect(&mut gc, 4, 4, 1, 3, vec!["D", "E", "F"]);
 
         // Move columns
         gc.move_columns(SheetId::TEST, 3, 4, 6, None);
