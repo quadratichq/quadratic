@@ -7,8 +7,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { ColumnRow, JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import type { Point } from 'pixi.js';
-import { Rectangle } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
@@ -66,7 +65,7 @@ export class PointerTableResize {
         this.cursor = 'col-resize';
         break;
       case 'corner':
-        this.cursor = 'all-scroll';
+        this.cursor = 'nwse-resize';
         break;
       default:
         this.cursor = undefined;
@@ -117,7 +116,7 @@ export class PointerTableResize {
     if (pixiAppSettings.panMode !== PanMode.Disabled) return false;
 
     if (!this.active) {
-      const table = pixiApp.cellsSheet().tables.getTableIntersectsWorld(world);
+      const table = pixiApp.cellsSheet().tables.getTableIntersectsWorld(new Point(world.x - 4, world.y - 4));
       if (!!table && table.checkHover(world) && !table.codeCell.is_code) {
         const cornerHandle = new Rectangle(
           table.tableBounds.x + table.tableBounds.width - 4,
