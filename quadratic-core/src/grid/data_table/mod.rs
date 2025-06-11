@@ -121,10 +121,10 @@ const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
 const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\p{L}\\][a-zA-Z\p{L}0-9_.\\]*$"#;
 const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\p{L}\\]"#;
 const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z\p{L}0-9_.\\]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str =
-    r#"^[a-zA-Z\p{L}0-9_\-][a-zA-Z\p{L}0-9_\- .()!@#$%^&*+=<>?|:;,\p{Pd}]*$"#;
-const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z\p{L}0-9_\- .()!@$%^&*+=<>?|:;,]$"#;
-const COLUMN_NAME_REMAINING_CHARS: &str = r#"^[a-zA-Z\p{L}0-9_\- .()!@#$%^&*+=<>?|:;,\p{Pd}]*$"#;
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z\p{L}0-9_\-_.(){}`'"~!@$%^&*+=<>?/\\|:;,\p{Pd}][a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
+const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@$%^&*+=<>?/\\|:;,]$"#;
+const COLUMN_NAME_REMAINING_CHARS: &str =
+    r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
 
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
@@ -1246,6 +1246,31 @@ pub mod test {
             "a",
             "123",
             "1column",
+            "@Column",
+            "Column!",
+            "Column?",
+            "Column*",
+            "Column/",
+            "Column\\",
+            "Column$",
+            "Column%",
+            "Column^",
+            "Column&",
+            "Column+",
+            "Column=",
+            "Column;",
+            "Column,",
+            "Column<",
+            "Column>",
+            "Column{",
+            "Column}",
+            "Column|",
+            "Column`",
+            "Column~",
+            "Column'",
+            "Column\"",
+            "Column.",
+            ".Column",
             "Column-with–en—dash", // Testing various dash characters
             longest_name.as_str(),
         ];
@@ -1267,37 +1292,9 @@ pub mod test {
                 "Column name must be between 1 and 255 characters",
             ),
             ("#Invalid", "Column name contains invalid characters"),
-            ("@Column", "Column name contains invalid characters"),
-            ("Column!", "Column name contains invalid characters"),
-            ("Column?", "Column name contains invalid characters"),
-            ("Column*", "Column name contains invalid characters"),
-            ("Column/", "Column name contains invalid characters"),
-            ("Column\\", "Column name contains invalid characters"),
-            ("Column$", "Column name contains invalid characters"),
-            ("Column%", "Column name contains invalid characters"),
-            ("Column^", "Column name contains invalid characters"),
-            ("Column&", "Column name contains invalid characters"),
-            ("Column+", "Column name contains invalid characters"),
-            ("Column=", "Column name contains invalid characters"),
-            ("Column;", "Column name contains invalid characters"),
-            ("Column,", "Column name contains invalid characters"),
-            ("Column<", "Column name contains invalid characters"),
-            ("Column>", "Column name contains invalid characters"),
             ("Column[", "Column name contains invalid characters"),
             ("Column]", "Column name contains invalid characters"),
-            ("Column{", "Column name contains invalid characters"),
-            ("Column}", "Column name contains invalid characters"),
-            ("Column|", "Column name contains invalid characters"),
-            ("Column`", "Column name contains invalid characters"),
-            ("Column~", "Column name contains invalid characters"),
-            ("Column'", "Column name contains invalid characters"),
-            ("Column\"", "Column name contains invalid characters"),
             // Test names ending with invalid characters
-            ("Column ", "Column name contains invalid characters"),
-            ("Column.", "Column name contains invalid characters"),
-            // Test names starting with invalid characters (except underscore and dash)
-            (".Column", "Column name contains invalid characters"),
-            (" Column", "Column name contains invalid characters"),
         ];
 
         for (name, expected_error) in test_cases {
