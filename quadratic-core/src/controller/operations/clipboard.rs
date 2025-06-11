@@ -1997,7 +1997,9 @@ mod test {
             PasteSpecial::Formats,
             None,
         );
+        // values should be the same
         assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["1", "2", "3"]);
+        // formats should be pasted, offset by 1 column
         assert_cell_format_bold_row(&gc, sheet_id, 2, 5, 2, vec![false, true, false, false]);
     }
 }
