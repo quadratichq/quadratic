@@ -72,17 +72,10 @@ export class Multiplayer {
     window.addEventListener('offline', () => this.sendOffline());
     events.on('changeSheet', this.sendChangeSheet);
     events.on('pythonState', this.pythonState);
-    events.on('a1Context', this.updateA1Context);
     events.on('multiplayerState', (state: MultiplayerState) => {
       this.state = state;
     });
   }
-
-  private updateA1Context = (context: Uint8Array) => {
-    this.users.forEach((user) => {
-      user.parsedSelection?.updateContext(context);
-    });
-  };
 
   initWorker() {
     this.worker = new Worker(new URL('./worker/multiplayer.worker.ts', import.meta.url), { type: 'module' });
@@ -244,11 +237,17 @@ export class Multiplayer {
   };
 
   private sendOnline = () => {
-    this.send({ type: 'clientMultiplayerOnline' });
+    // don't send this event if we not in app, if not initialized yet
+    if (this.fileId) {
+      this.send({ type: 'clientMultiplayerOnline' });
+    }
   };
 
   private sendOffline = () => {
-    this.send({ type: 'clientMultiplayerOffline' });
+    // don't send this event if we not in app, if not initialized yet
+    if (this.fileId) {
+      this.send({ type: 'clientMultiplayerOffline' });
+    }
   };
 
   sendCellEdit(options: {
@@ -338,7 +337,7 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = new JsSelection(player.sheet_id, sheets.a1Context);
+      player.parsedSelection = new JsSelection(player.sheet_id);
       if (player.selection) {
         player.parsedSelection.load(player.selection);
       }
@@ -428,7 +427,7 @@ export class Multiplayer {
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
       } else {
         let player = this.users.get(user.session_id);
-        const parsedSelection = new JsSelection(user.sheet_id, sheets.a1Context);
+        const parsedSelection = new JsSelection(user.sheet_id);
         if (user.selection) {
           parsedSelection.load(user.selection);
         }

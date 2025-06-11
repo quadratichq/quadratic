@@ -15,6 +15,7 @@ import {
   isContentImage,
   isContentPdfFile,
   isContentTextFile,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -120,7 +121,9 @@ export function getAnthropicApiArgs(
   }));
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const anthropicMessage: MessageParam = {
         role: message.role,
         content: [
@@ -246,14 +249,16 @@ export async function parseAnthropicStream(
       switch (chunk.type) {
         case 'content_block_start':
           if (chunk.content_block.type === 'text') {
-            responseMessage.content.push({
-              type: 'text',
-              text: chunk.content_block.text ?? '',
-            });
+            if (chunk.content_block.text) {
+              responseMessage.content.push({
+                type: 'text',
+                text: chunk.content_block.text ?? '',
+              });
 
-            responseMessage.toolCalls.forEach((toolCall) => {
-              toolCall.loading = false;
-            });
+              responseMessage.toolCalls.forEach((toolCall) => {
+                toolCall.loading = false;
+              });
+            }
           } else if (chunk.content_block.type === 'tool_use') {
             responseMessage.toolCalls.push({
               id: chunk.content_block.id,
@@ -262,81 +267,97 @@ export async function parseAnthropicStream(
               loading: true,
             });
           } else if (chunk.content_block.type === 'thinking') {
-            responseMessage.content.push({
-              type: 'anthropic_thinking',
-              text: chunk.content_block.thinking ?? '',
-              signature: chunk.content_block.signature ?? '',
-            });
+            if (chunk.content_block.thinking) {
+              responseMessage.content.push({
+                type: 'anthropic_thinking',
+                text: chunk.content_block.thinking,
+                signature: chunk.content_block.signature,
+              });
 
-            responseMessage.toolCalls.forEach((toolCall) => {
-              toolCall.loading = false;
-            });
+              responseMessage.toolCalls.forEach((toolCall) => {
+                toolCall.loading = false;
+              });
+            }
           } else if (chunk.content_block.type === 'redacted_thinking') {
-            responseMessage.content.push({
-              type: 'anthropic_redacted_thinking',
-              text: chunk.content_block.data ?? '',
-            });
+            if (chunk.content_block.data) {
+              responseMessage.content.push({
+                type: 'anthropic_redacted_thinking',
+                text: chunk.content_block.data,
+              });
 
-            responseMessage.toolCalls.forEach((toolCall) => {
-              toolCall.loading = false;
-            });
+              responseMessage.toolCalls.forEach((toolCall) => {
+                toolCall.loading = false;
+              });
+            }
           }
           break;
         case 'content_block_delta':
           if (chunk.delta.type === 'text_delta') {
-            let currentContent = responseMessage.content.pop();
-            if (currentContent?.type !== 'text') {
-              if (currentContent?.text) {
-                responseMessage.content.push(currentContent);
+            if (chunk.delta.text) {
+              let currentContent = responseMessage.content.pop();
+              if (currentContent?.type !== 'text') {
+                if (currentContent?.text) {
+                  responseMessage.content.push(currentContent);
+                }
+                currentContent = {
+                  type: 'text',
+                  text: '',
+                };
               }
-              currentContent = {
-                type: 'text',
-                text: '',
-              };
+
+              currentContent.text += chunk.delta.text ?? '';
+              responseMessage.content.push(currentContent);
             }
-            currentContent.text += chunk.delta.text ?? '';
-            responseMessage.content.push(currentContent);
           } else if (chunk.delta.type === 'input_json_delta') {
-            const toolCall = {
-              ...(responseMessage.toolCalls.pop() ?? {
-                id: '',
-                name: '',
-                arguments: '',
-                loading: true,
-              }),
-            };
-            toolCall.arguments += chunk.delta.partial_json;
-            responseMessage.toolCalls.push(toolCall);
+            if (chunk.delta.partial_json) {
+              const toolCall = {
+                ...(responseMessage.toolCalls.pop() ?? {
+                  id: '',
+                  name: '',
+                  arguments: '',
+                  loading: true,
+                }),
+              };
+
+              toolCall.arguments += chunk.delta.partial_json;
+              responseMessage.toolCalls.push(toolCall);
+            }
           } else if (chunk.delta.type === 'thinking_delta') {
-            let currentContent = responseMessage.content.pop();
-            if (currentContent?.type !== 'anthropic_thinking') {
-              if (currentContent?.text) {
-                responseMessage.content.push(currentContent);
+            if (chunk.delta.thinking) {
+              let currentContent = responseMessage.content.pop();
+              if (currentContent?.type !== 'anthropic_thinking') {
+                if (currentContent?.text) {
+                  responseMessage.content.push(currentContent);
+                }
+                currentContent = {
+                  type: 'anthropic_thinking',
+                  text: '',
+                  signature: '',
+                };
               }
-              currentContent = {
-                type: 'anthropic_thinking',
-                text: '',
-                signature: '',
-              };
+
+              currentContent.text += chunk.delta.thinking;
+              responseMessage.content.push(currentContent);
             }
-            currentContent.text += chunk.delta.thinking ?? '';
-            responseMessage.content.push(currentContent);
           } else if (chunk.delta.type === 'signature_delta') {
-            let currentContent = responseMessage.content.pop();
-            if (currentContent?.type !== 'anthropic_thinking') {
-              if (currentContent?.text) {
-                responseMessage.content.push(currentContent);
+            if (chunk.delta.signature) {
+              let currentContent = responseMessage.content.pop();
+              if (currentContent?.type !== 'anthropic_thinking') {
+                if (currentContent?.text) {
+                  responseMessage.content.push(currentContent);
+                }
+                currentContent = {
+                  type: 'anthropic_thinking',
+                  text: '',
+                  signature: '',
+                };
               }
-              currentContent = {
-                type: 'anthropic_thinking',
-                text: '',
-                signature: '',
-              };
+
+              if (currentContent.type === 'anthropic_thinking') {
+                currentContent.signature += chunk.delta.signature;
+              }
+              responseMessage.content.push(currentContent);
             }
-            if (currentContent.type === 'anthropic_thinking') {
-              currentContent.signature += chunk.delta.signature ?? '';
-            }
-            responseMessage.content.push(currentContent);
           }
           break;
         case 'content_block_stop':
@@ -412,10 +433,12 @@ export function parseAnthropicResponse(
   result.content?.forEach((message) => {
     switch (message.type) {
       case 'text':
-        responseMessage.content.push({
-          type: 'text',
-          text: message.text ?? '',
-        });
+        if (message.text) {
+          responseMessage.content.push({
+            type: 'text',
+            text: message.text,
+          });
+        }
         break;
       case 'tool_use':
         responseMessage.toolCalls.push({
@@ -426,20 +449,22 @@ export function parseAnthropicResponse(
         });
         break;
       case 'thinking':
-        responseMessage.content.push({
-          type: 'anthropic_thinking',
-          text: message.thinking ?? '',
-          signature: message.signature ?? '',
-        });
+        if (message.thinking) {
+          responseMessage.content.push({
+            type: 'anthropic_thinking',
+            text: message.thinking,
+            signature: message.signature,
+          });
+        }
         break;
       case 'redacted_thinking':
-        responseMessage.content.push({
-          type: 'anthropic_redacted_thinking',
-          text: message.data ?? '',
-        });
+        if (message.data) {
+          responseMessage.content.push({
+            type: 'anthropic_redacted_thinking',
+            text: message.data,
+          });
+        }
         break;
-      default:
-        console.error(`Invalid AI response: ${JSON.stringify(message)}`);
     }
   });
 

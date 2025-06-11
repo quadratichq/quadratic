@@ -18,19 +18,18 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Direction,
   Format,
   FormatUpdate,
   JsBordersSheet,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
-  JsCoordinate,
   JsDataTableColumnHeader,
   JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
   JsRenderFill,
+  JsResponse,
   JsSelectionContext,
   JsSheetFill,
   JsSummarizeSelectionResult,
@@ -45,9 +44,9 @@ import type {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
+import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
-  ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
   ClientCoreGetDisplayCell,
@@ -68,13 +67,13 @@ import type {
   CoreClientGetJwt,
   CoreClientGetValidationList,
   CoreClientHasRenderCells,
-  CoreClientJumpCursor,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
   CoreClientMoveCodeCellVertically,
   CoreClientNeighborText,
   CoreClientSearch,
+  CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
@@ -147,9 +146,6 @@ class QuadraticCore {
     } else if (e.data.type === 'coreClientTransactionStart') {
       events.emit('transactionStart', e.data);
       return;
-    } else if (e.data.type === 'coreClientTransactionProgress') {
-      events.emit('transactionProgress', e.data);
-      return;
     } else if (e.data.type === 'coreClientTransactionEnd') {
       events.emit('transactionEnd', e.data);
       return;
@@ -208,10 +204,14 @@ class QuadraticCore {
       events.emit('a1Context', e.data.context);
       return;
     } else if (e.data.type === 'coreClientCoreError') {
+      if (debug) console.error('[quadraticCore] core error', e.data.from, e.data.error);
       events.emit('coreError', e.data.from, e.data.error);
-      if (debug) {
-        console.error('[quadraticCore] core error', e.data.from, e.data.error);
-      }
+      return;
+    } else if (e.data.type === 'coreClientContentCache') {
+      events.emit('contentCache', e.data.sheetId, new SheetContentCache(e.data.contentCache));
+      return;
+    } else if (e.data.type === 'coreClientDataTablesCache') {
+      events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
       return;
     }
 
@@ -314,23 +314,6 @@ class QuadraticCore {
       };
       this.waitingForResponse[id] = (message: CoreClientGetCodeCell) => {
         resolve(message.cell);
-      };
-      this.send(message);
-    });
-  }
-
-  cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { hasContent: boolean }) => {
-        resolve(message.hasContent);
-      };
-      const message: ClientCoreCellHasContent = {
-        type: 'clientCoreCellHasContent',
-        sheetId,
-        x,
-        y,
-        id,
       };
       this.send(message);
     });
@@ -953,15 +936,22 @@ class QuadraticCore {
 
   //#region Misc.
 
-  setChartSize(sheetId: string, x: number, y: number, width: number, height: number) {
-    this.send({
-      type: 'clientCoreSetCellRenderResize',
-      sheetId,
-      x,
-      y,
-      width,
-      height,
-      cursor: sheets.getCursorPosition(),
+  setChartSize(sheetId: string, x: number, y: number, width: number, height: number): Promise<JsResponse | undefined> {
+    return new Promise((resolve) => {
+      const id = this.id++;
+      this.waitingForResponse[id] = (message: CoreClientSetCellRenderResize) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreSetCellRenderResize',
+        sheetId,
+        x,
+        y,
+        width,
+        height,
+        cursor: sheets.getCursorPosition(),
+        id,
+      });
     });
   }
 
@@ -1097,28 +1087,6 @@ class QuadraticCore {
   //#endregion
 
   //#region Bounds
-
-  jumpCursor(
-    sheetId: string,
-    current: JsCoordinate,
-    jump: boolean,
-    direction: Direction
-  ): Promise<JsCoordinate | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
-        resolve(message.coordinate);
-      };
-      this.send({
-        type: 'clientCoreJumpCursor',
-        sheetId,
-        current,
-        direction,
-        id,
-        jump,
-      });
-    });
-  }
 
   commitTransientResize(sheetId: string, transientResize: string) {
     this.send({

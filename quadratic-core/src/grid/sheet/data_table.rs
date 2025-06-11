@@ -37,17 +37,12 @@ impl Sheet {
     }
 
     /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_that_contains(&self, pos: &Pos) -> Option<(Pos, &DataTable)> {
+    pub fn data_table_that_contains(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
         self.data_tables.get_contains(pos)
     }
 
-    /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_mut_that_contains(&mut self, pos: &Pos) -> Option<(Pos, &mut DataTable)> {
-        self.data_tables.get_mut_contains(pos)
-    }
-
     /// Returns the data table pos of the data table that contains a position
-    pub fn data_table_pos_that_contains(&self, pos: &Pos) -> Result<Pos> {
+    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
             Ok(data_table_pos)
         } else {
@@ -61,6 +56,13 @@ impl Sheet {
     /// Returns anchor positions of data tables that intersect a rect
     pub fn data_tables_pos_intersect_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
         self.data_tables.iter_pos_in_rect(rect, false)
+    }
+
+    /// Returns anchor positions of data tables that intersect a rect sorted by index
+    pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.data_tables
+            .get_in_rect_sorted(rect, false)
+            .map(|(_, pos, _)| pos)
     }
 
     /// Returns data tables that intersect a rect
@@ -171,7 +173,7 @@ impl Sheet {
         exclude_x: Option<i64>,
         exclude_y: Option<i64>,
     ) -> bool {
-        self.data_table_that_contains(&Pos { x, y })
+        self.data_table_that_contains(Pos { x, y })
             .is_some_and(|(data_table_pos, data_table)| {
                 // we only care about html or image tables
                 if !data_table.is_html_or_image() {
@@ -325,18 +327,34 @@ impl Sheet {
         ))
     }
 
+    /// Returns true if the data table should expand to the right.
+    /// Will return false if the rectangle touches the table heading.
+    pub fn should_expand_data_table(data_tables: &[Rect], rect: Rect) -> bool {
+        let rect_moved_left = Rect::new(rect.min.x - 1, rect.min.y, rect.max.x - 1, rect.max.y);
+
+        let data_table_immediate_left = data_tables
+            .iter()
+            .find(|rect| rect.intersects(rect_moved_left));
+
+        let should_not_expand = data_table_immediate_left
+            .map(|rect| rect_moved_left.min.y <= rect.min.y)
+            .unwrap_or(false);
+
+        !should_not_expand
+    }
+
     /// Returns columns and rows to data tables when the cells to add are touching the data table
     #[allow(clippy::type_complexity)]
     pub fn expand_columns_and_rows(
         &self,
         data_tables: &[Rect],
         sheet_pos: SheetPos,
-        value: String,
+        value_is_empty: bool,
     ) -> (Option<(SheetPos, u32)>, Option<(SheetPos, u32)>) {
         let mut columns = None;
         let mut rows = None;
 
-        if !value.is_empty() {
+        if !value_is_empty {
             columns = self.expand_columns(data_tables, sheet_pos);
             rows = self.expand_rows(data_tables, sheet_pos);
         }
@@ -356,26 +374,21 @@ impl Sheet {
             let pos_to_check = Pos::new(pos.x - 1, pos.y);
             let data_table_left = data_tables.iter().find(|rect| rect.contains(pos_to_check));
 
+            // there is a data table to the immediate left
             if let Some(data_table_left) = data_table_left {
                 // don't expand if we're not at the end of the data table
                 if data_table_left.max.x != pos_to_check.x {
                     return None;
                 }
 
-                if self
-                    .data_table_at(&data_table_left.min)
-                    .filter(|data_table| {
-                        // don't expand if the data table is readonly
-                        if data_table.is_code() {
-                            return false;
-                        }
+                if let Ok(data_table) = self.data_table_result(&data_table_left.min) {
+                    // don't expand if the position is at the data table's name
+                    if data_table.get_show_name() && data_table_left.min.y == pos.y {
+                        return None;
+                    }
 
-                        // don't expand if the position is at the data table's name
-                        if data_table.get_show_name() && data_table_left.min.y == pos.y {
-                            return false;
-                        }
-
-                        // don't expand if next column is not blank
+                    let is_code = data_table.is_code();
+                    let next_is_not_blank = || {
                         for y in 0..data_table_left.height() {
                             let pos = Pos::new(pos.x, data_table_left.min.y + y as i64);
 
@@ -385,19 +398,20 @@ impl Sheet {
                         }
 
                         true
-                    })
-                    .is_some()
-                {
-                    let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
-                    let mut column_index = data_table_left.width();
+                    };
 
-                    // the column index is the display index, not the actual index, we need to convert it to the actual index
-                    if let Ok(data_table) = self.data_table_result(&data_table_left.min) {
-                        column_index =
-                            data_table.get_column_index_from_display_index(column_index, true);
+                    if !is_code && next_is_not_blank() {
+                        let sheet_pos = (data_table_left.min, sheet_pos.sheet_id).into();
+                        let mut column_index = data_table_left.width();
+
+                        // the column index is the display index, not the actual index, we need to convert it to the actual index
+                        if let Ok(data_table) = self.data_table_result(&data_table_left.min) {
+                            column_index =
+                                data_table.get_column_index_from_display_index(column_index, true);
+                        }
+
+                        return Some((sheet_pos, column_index));
                     }
-
-                    return Some((sheet_pos, column_index));
                 }
             }
         }
@@ -423,15 +437,9 @@ impl Sheet {
                     return None;
                 }
 
-                if self
-                    .data_table_at(&data_table_above.min)
-                    .filter(|data_table| {
-                        // don't expand if the data table is readonly
-                        if data_table.is_code() {
-                            return false;
-                        }
-
-                        // don't expand if next row is not blank
+                if let Ok(data_table) = self.data_table_result(&data_table_above.min) {
+                    let is_code = data_table.is_code();
+                    let next_is_not_blank = || {
                         for x in 0..data_table_above.width() {
                             let pos = Pos::new(data_table_above.min.x + x as i64, pos.y);
                             if self.has_content(pos) {
@@ -440,13 +448,14 @@ impl Sheet {
                         }
 
                         true
-                    })
-                    .is_some()
-                {
-                    let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
-                    let row_index = data_table_above.height();
+                    };
 
-                    return Some((sheet_pos, row_index));
+                    if !is_code && next_is_not_blank() {
+                        let sheet_pos = (data_table_above.min, sheet_pos.sheet_id).into();
+                        let row_index = data_table_above.height();
+
+                        return Some((sheet_pos, row_index));
+                    }
                 }
             }
         }
@@ -640,7 +649,7 @@ mod test {
         let _ = code_data_table(sheet, pos![A1]);
 
         // Test position within the data table
-        let result = sheet.data_table_that_contains(&pos![A1]);
+        let result = sheet.data_table_that_contains(pos![A1]);
         assert!(result.is_some());
 
         let (pos, dt) = result.unwrap();
@@ -648,7 +657,7 @@ mod test {
         assert_eq!(dt.name().to_owned(), "Table 1");
 
         // Test position outside the data table
-        assert!(sheet.data_table_that_contains(&pos![D4]).is_none());
+        assert!(sheet.data_table_that_contains(pos![D4]).is_none());
     }
 
     #[test]

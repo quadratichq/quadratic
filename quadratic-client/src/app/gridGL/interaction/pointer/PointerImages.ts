@@ -125,7 +125,7 @@ export class PointerImages {
     if (!hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions)) return false;
     const search = this.findImage(point);
     if (search && search.side) {
-      const table = pixiApp.cellsSheet().tables.getTableFromTableCell(search.image.column, search.image.row);
+      const table = pixiApp.cellsSheet().tables.getTableIntersects(search.image.pos);
       if (!table) {
         console.error('Table not found in PointerImages.pointerDown');
         return false;
@@ -145,20 +145,30 @@ export class PointerImages {
     return false;
   }
 
-  pointerUp(): boolean {
+  pointerUp = (): boolean => {
     if (this.resizing) {
-      quadraticCore.setChartSize(
-        this.resizing.image.sheetId,
-        this.resizing.image.column,
-        this.resizing.image.row,
-        this.resizing.end.column - this.resizing.image.column + 1,
-        this.resizing.end.row - this.resizing.image.row
-      );
-      this.resizing = undefined;
+      quadraticCore
+        .setChartSize(
+          this.resizing.image.sheetId,
+          this.resizing.image.column,
+          this.resizing.image.row,
+          this.resizing.end.column - this.resizing.image.column + 1,
+          this.resizing.end.row - this.resizing.image.row
+        )
+        .then((response) => {
+          if (!response || !response.result) {
+            this.handleEscape();
+          }
+          if (response?.error) {
+            pixiAppSettings.addGlobalSnackbar?.(response.error, { severity: 'error' });
+          }
+          this.resizing = undefined;
+        });
+
       return true;
     }
     return false;
-  }
+  };
 
   handleEscape(): boolean {
     if (this.resizing) {

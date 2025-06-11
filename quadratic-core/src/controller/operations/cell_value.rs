@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
+use crate::grid::DataTableKind;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::sheet::validations::validation::Validation;
-use crate::grid::{CodeCellLanguage, DataTableKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
@@ -30,12 +30,20 @@ impl GridController {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
+
+        // move the cell values rect left and up by 1 to make adjacent tables intersect
+        let cell_value_rect = Rect::from_numbers(
+            sheet_pos.x - 1,
+            sheet_pos.y - 1,
+            values[0].len() as i64 + 1,
+            values.len() as i64 + 1,
+        );
         let existing_data_tables = self
-            .a1_context()
-            .iter_tables_in_sheet(sheet_pos.sheet_id)
-            .filter(|table| table.language == CodeCellLanguage::Import)
-            .map(|table| table.bounds)
+            .a1_context_sheet_table_bounds(sheet_pos.sheet_id)
+            .into_iter()
+            .filter(|rect| rect.intersects(cell_value_rect))
             .collect::<Vec<_>>();
+
         let mut growing_data_tables = existing_data_tables.clone();
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
@@ -99,63 +107,16 @@ impl GridController {
                     else {
                         cell_values[x][y] = Some(cell_value);
 
-                        // expand the data table to the right if the cell
-                        // value is touching the right edge
-                        let (col, row) = sheet.expand_columns_and_rows(
-                            &growing_data_tables,
+                        // expand the data table to the right or bottom if the
+                        // cell value is touching the right or bottom edge
+                        GridController::grow_data_table(
+                            sheet,
+                            &mut growing_data_tables,
+                            &mut data_table_columns,
+                            &mut data_table_rows,
                             current_sheet_pos,
-                            value,
+                            value.is_empty(),
                         );
-
-                        // if an expansion happened, adjust the size of the
-                        // data table rect so that successive iterations
-                        // continue to expand the data table.
-                        if let Some((sheet_pos, col)) = col {
-                            let entry = data_table_columns.entry(sheet_pos).or_default();
-
-                            if !entry.contains(&col) {
-                                // add the column to data_table_columns
-                                entry.push(col);
-
-                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
-
-                                // adjust the size of the data table rect so that
-                                // successive iterations continue to expand the data
-                                // table.
-                                growing_data_tables
-                                    .iter_mut()
-                                    .filter(|rect| rect.contains(pos_to_check))
-                                    .for_each(|rect| {
-                                        rect.max.x += 1;
-                                    });
-                            }
-                        }
-
-                        // expand the data table to the bottom if the cell
-                        // value is touching the bottom edge
-                        if let Some((sheet_pos, row)) = row {
-                            let entry = data_table_rows.entry(sheet_pos).or_default();
-
-                            // if an expansion happened, adjust the size of the
-                            // data table rect so that successive iterations
-                            // continue to expand the data table.
-                            if !entry.contains(&row) {
-                                // add the row to data_table_rows
-                                entry.push(row);
-
-                                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
-
-                                // adjust the size of the data table rect so that
-                                // successive iterations continue to expand the data
-                                // table.
-                                growing_data_tables
-                                    .iter_mut()
-                                    .filter(|rect| rect.contains(pos_to_check))
-                                    .for_each(|rect| {
-                                        rect.max.y += 1;
-                                    });
-                            }
-                        }
                     }
 
                     if !format_update.is_default() {
@@ -191,31 +152,10 @@ impl GridController {
                 });
             }
 
-            if !data_table_columns.is_empty() {
-                for (sheet_pos, columns) in data_table_columns {
-                    data_table_ops.push(Operation::InsertDataTableColumns {
-                        sheet_pos,
-                        columns: columns.into_iter().map(|c| (c, None, None)).collect(),
-                        swallow: true,
-                        select_table: false,
-                        copy_formats_from: None,
-                        copy_formats: None,
-                    });
-                }
-            }
-
-            if !data_table_rows.is_empty() {
-                for (sheet_pos, rows) in data_table_rows {
-                    data_table_ops.push(Operation::InsertDataTableRows {
-                        sheet_pos,
-                        rows: rows.into_iter().map(|r| (r, None)).collect(),
-                        swallow: true,
-                        select_table: false,
-                        copy_formats_from: None,
-                        copy_formats: None,
-                    });
-                }
-            }
+            data_table_ops.extend(GridController::grow_data_table_operations(
+                data_table_columns,
+                data_table_rows,
+            ));
 
             ops.extend(compute_code_ops);
         }
@@ -564,11 +504,9 @@ mod test {
 
     use bigdecimal::BigDecimal;
 
-    use crate::Rect;
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
-    use crate::controller::user_actions::import::tests::simple_csv;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
     use crate::test_util::*;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
@@ -934,22 +872,29 @@ mod test {
     }
 
     #[test]
-    fn test_set_cell_values_operations() {
-        // let mut gc = GridController::test();
-        let (mut gc, _, _, _) = simple_csv();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 13,
-            sheet_id,
-        };
+    fn test_set_cell_values_next_to_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
 
-        let values = vec![vec!["a".to_string()]];
-        let (ops, data_table_ops) = gc.set_cell_values_operations(sheet_pos, values).unwrap();
-        println!("{:?}", ops);
-        println!("{:?}", data_table_ops);
-        let sheet = gc.try_sheet(sheet_id).unwrap();
-        print_table_sheet(sheet, Rect::from_numbers(1, 1, 4, 14), true);
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        print_sheet(gc.sheet(sheet_id));
+        assert_eq!(data_table.width(), 3);
+        assert_eq!(data_table.height(false), 5);
+
+        // add a cell to the right of the data table
+        let sheet_pos = SheetPos::new(sheet_id, 4, 3);
+        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        print_sheet(gc.sheet(sheet_id));
+        assert_eq!(data_table.width(), 4);
+
+        // add a cell to the bottom of the data table
+        let sheet_pos = SheetPos::new(sheet_id, 1, 6);
+        gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        print_sheet(gc.sheet(sheet_id));
+        assert_eq!(data_table.height(false), 6);
     }
 
     #[test]

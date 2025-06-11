@@ -13,6 +13,7 @@ import {
   getSystemPromptMessages,
   isContentImage,
   isContentText,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -64,7 +65,9 @@ export function getOpenAIApiArgs(
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const messages: ChatCompletionMessageParam[] = promptMessages.reduce<ChatCompletionMessageParam[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content
@@ -241,8 +244,6 @@ export async function parseOpenAIStream(
           responseMessage.toolCalls.forEach((toolCall) => {
             toolCall.loading = false;
           });
-        } else if (chunk.choices[0].delta.refusal) {
-          console.warn('Invalid AI response: ', chunk.choices[0].delta.refusal);
         }
       }
 
@@ -291,30 +292,22 @@ export function parseOpenAIResponse(
 
   const message = result.choices[0].message;
 
-  if (message.refusal) {
-    throw new Error(`Invalid AI response: ${message.refusal}`);
-  }
-
   if (message.content) {
     responseMessage.content.push({
       type: 'text',
-      text: message.content ?? '',
+      text: message.content,
     });
   }
 
   if (message.tool_calls) {
     message.tool_calls.forEach((toolCall) => {
-      switch (toolCall.type) {
-        case 'function':
-          responseMessage.toolCalls.push({
-            id: toolCall.id,
-            name: toolCall.function.name,
-            arguments: toolCall.function.arguments,
-            loading: false,
-          });
-          break;
-        default:
-          throw new Error(`Invalid AI response: ${toolCall}`);
+      if (toolCall.type === 'function') {
+        responseMessage.toolCalls.push({
+          id: toolCall.id,
+          name: toolCall.function.name,
+          arguments: toolCall.function.arguments,
+          loading: false,
+        });
       }
     });
   }

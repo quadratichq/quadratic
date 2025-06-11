@@ -17,6 +17,7 @@ import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
+import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
@@ -77,6 +78,7 @@ export class PixiApp {
   cellImages!: UICellImages;
   validations: UIValidations;
   copy: UICopy;
+  singleCellOutlines: UISingleCellOutlines;
 
   renderer: Renderer;
   momentumDetector: MomentumScrollDetector;
@@ -102,6 +104,7 @@ export class PixiApp {
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
     this.hoverTableColumnsSelection = new Graphics();
+    this.singleCellOutlines = new UISingleCellOutlines();
 
     this.canvas = document.createElement('canvas');
     this.renderer = new Renderer({
@@ -125,9 +128,9 @@ export class PixiApp {
         return;
       }
       if (!this.initialized) {
-        renderWebWorker.sendBitmapFonts();
         this.initCanvas();
         this.rebuild();
+        renderWebWorker.sendBitmapFonts();
         urlParams.init();
         this.waitingForFirstRender = resolve;
         if (this.alreadyRendered) {
@@ -187,6 +190,7 @@ export class PixiApp {
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
+    this.singleCellOutlines = this.viewportContents.addChild(this.singleCellOutlines);
     this.viewportContents.addChild(this.hoverTableHeaders);
     this.viewportContents.addChild(this.hoverTableColumnsSelection);
     this.headings = this.viewportContents.addChild(gridHeadings);
@@ -303,6 +307,7 @@ export class PixiApp {
 
   // called before and after a render
   prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+    await this.htmlPlaceholders.prepare(options?.cull);
     this.copying = true;
     this.gridLines.visible = options?.gridLines ?? false;
     this.cursor.visible = options?.ai ?? false;
@@ -310,7 +315,6 @@ export class PixiApp {
     this.multiplayerCursor.visible = false;
     this.headings.visible = options?.ai ?? false;
     this.boxCells.visible = false;
-    await this.htmlPlaceholders.prepare(options?.cull);
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
     if (options?.cull) {

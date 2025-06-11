@@ -118,3 +118,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     return replace(getFailUrl());
   }
 };
+
+export const Component = () => {
+  return null;
+};

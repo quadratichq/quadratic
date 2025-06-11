@@ -730,3 +730,7 @@ export const RadioButtonUncheckedIcon: IconComponent = (props) => {
 export const RadioButtonCheckedIcon: IconComponent = (props) => {
   return <Icon {...props}>radio_button_checked</Icon>;
 };
+
+export const WebBrowserIcon: IconComponent = (props) => {
+  return <Icon {...props}>captive_portal</Icon>;
+};

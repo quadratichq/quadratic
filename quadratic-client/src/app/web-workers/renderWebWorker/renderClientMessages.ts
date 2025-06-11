@@ -41,7 +41,6 @@ export interface RenderClientCellsTextHashClear {
   hashY: number;
   viewRectangle: { x: number; y: number; width: number; height: number };
   overflowGridLines: JsCoordinate[];
-  content: Uint32Array;
   links: Link[];
   drawRects: DrawRects[];
 }
