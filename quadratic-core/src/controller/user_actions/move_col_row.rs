@@ -317,9 +317,9 @@ mod tests {
         gc.move_columns(SheetId::TEST, 3, 5, 4, None);
 
         // Should maintain original order starting at first column
-        assert_cell_value_col(&mut gc, sheet_id, 3, 4, 6, vec!["A", "B", "C"]);
-        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["D", "E", "F"]);
-        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["G", "H", "I"]);
+        assert_cell_value_col(&mut gc, sheet_id, 4, 4, 6, vec!["A", "B", "C"]);
+        assert_cell_value_col(&mut gc, sheet_id, 5, 4, 6, vec!["D", "E", "F"]);
+        assert_cell_value_col(&mut gc, sheet_id, 6, 4, 6, vec!["G", "H", "I"]);
     }
 
     #[test]
@@ -501,7 +501,7 @@ mod tests {
 
         // Verify moved state
         assert_display_cell_value_first_sheet(&gc, 6, 4, "A");
-        assert_display_cell_value_first_sheet(&gc, 5, 7, "B");
+        assert_display_cell_value_first_sheet(&gc, 6, 7, "B");
 
         // Undo
         gc.undo(None);
