@@ -21,8 +21,8 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
-import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import mixpanel from 'mixpanel-browser';
+import { ToggleGroup } from 'radix-ui';
 import type { ReactNode } from 'react';
 
 export const FormattingBar = () => {
