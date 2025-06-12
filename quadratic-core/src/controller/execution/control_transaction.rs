@@ -6,9 +6,9 @@ use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
 use crate::controller::transaction::Transaction;
 use crate::controller::transaction_types::JsCodeResult;
-use crate::error_core::{CoreError, Result};
+use crate::error_core::Result;
 use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
-use crate::parquet::parquet_to_vec;
+use crate::parquet::parquet_to_array;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
 use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
 
@@ -191,76 +191,87 @@ impl GridController {
     ) -> Result<()> {
         let transaction_id = Uuid::parse_str(&transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-        let array = parquet_to_vec(data)?;
 
         if let Some(current_sheet_pos) = transaction.current_sheet_pos {
-            let mut return_type = if array.is_empty() {
-                "0×0 Array".to_string()
-            } else {
-                // subtract 1 from the length to account for the header row
-                format!("{}×{} Array", array[0].len(), 0.max(array.len() - 1))
-            };
+            // if sheet exists, proceed with processing the connection result
+            // sheet may not exist if deleted by user or multiplayer during the async call
+            if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
+                // if code cell exists, proceed with processing the connection result
+                // code cell may not exist if deleted by user or multiplayer during the async call
+                if let Some(CellValue::Code(code)) = sheet.cell_value_ref(current_sheet_pos.into())
+                {
+                    let name = match code.language {
+                        CodeCellLanguage::Connection { kind, .. } => match kind {
+                            ConnectionKind::Postgres => "Postgres1",
+                            ConnectionKind::Mysql => "MySQL1",
+                            ConnectionKind::Mssql => "MSSQL1",
+                            ConnectionKind::Snowflake => "Snowflake1",
+                        },
+                        // this should not happen
+                        _ => "Connection 1",
+                    };
 
-            if let Some(extra) = extra {
-                return_type = format!("{return_type}\n{extra}");
+                    let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
+                    let parse_error = |e: &String| {
+                        dbgjs!(format!("Error parsing Parquet file {}: {}", name, e));
+                        ("0x0 Array".to_string(), Value::default())
+                    };
+
+                    let (mut return_type, value) = match (array, &std_err) {
+                        (Ok(array), None) => {
+                            // subtract 1 from the length to account for the header row
+                            let return_type =
+                                format!("{}×{} Array", array.width(), array.height() - 1);
+
+                            (return_type, Value::Array(array))
+                        }
+                        (Err(e), None) => parse_error(&e.to_string()),
+                        (_, Some(std_err)) => parse_error(std_err),
+                    };
+
+                    if let Some(extra) = extra {
+                        return_type = format!("{return_type}\n{extra}");
+                    }
+
+                    let error = std_err.to_owned().map(|msg| RunError {
+                        span: None,
+                        msg: RunErrorMsg::CodeRunError(msg.into()),
+                    });
+
+                    let code_run = CodeRun {
+                        language: code.language.to_owned(),
+                        code: code.code.to_owned(),
+                        error,
+                        return_type: Some(return_type.to_owned()),
+                        line_number: Some(1),
+                        output_type: Some(return_type),
+                        std_out,
+                        std_err,
+                        cells_accessed: std::mem::take(&mut transaction.cells_accessed),
+                    };
+
+                    let data_table = DataTable::new(
+                        DataTableKind::CodeRun(code_run),
+                        name,
+                        value,
+                        true,
+                        None,
+                        None,
+                        None,
+                    );
+
+                    self.finalize_data_table(
+                        &mut transaction,
+                        current_sheet_pos,
+                        Some(data_table),
+                        None,
+                    );
+                }
             }
-
-            let error = std_err.to_owned().map(|msg| RunError {
-                span: None,
-                msg: RunErrorMsg::CodeRunError(msg.into()),
-            });
-
-            let value = if std_err.is_some() {
-                Value::default() // TODO(ddimaria): this will be an empty vec
-            } else {
-                Value::Array(array.into())
-            };
-
-            let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) else {
-                return Err(CoreError::CodeCellSheetError("Sheet not found".to_string()));
-            };
-            let Some(CellValue::Code(code)) = sheet.cell_value_ref(current_sheet_pos.into()) else {
-                return Err(CoreError::CodeCellSheetError(
-                    "Code cell not found".to_string(),
-                ));
-            };
-
-            let code_run = CodeRun {
-                language: code.language.to_owned(),
-                code: code.code.to_owned(),
-                error,
-                return_type: Some(return_type.to_owned()),
-                line_number: Some(1),
-                output_type: Some(return_type),
-                std_out,
-                std_err: std_err.to_owned(),
-                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
-            };
-
-            let name = match code.language {
-                CodeCellLanguage::Connection { kind, .. } => match kind {
-                    ConnectionKind::Postgres => "Postgres1",
-                    ConnectionKind::Mysql => "MySQL1",
-                    ConnectionKind::Mssql => "MSSQL1",
-                    ConnectionKind::Snowflake => "Snowflake1",
-                },
-                // this should not happen
-                _ => "Connection 1",
-            };
-            let data_table = DataTable::new(
-                DataTableKind::CodeRun(code_run),
-                name,
-                value,
-                true,
-                None,
-                None,
-                None,
-            );
-
-            self.finalize_data_table(&mut transaction, current_sheet_pos, Some(data_table), None);
-            self.start_transaction(&mut transaction);
-            self.finalize_transaction(transaction);
         }
+
+        self.start_transaction(&mut transaction);
+        self.finalize_transaction(transaction);
 
         Ok(())
     }
