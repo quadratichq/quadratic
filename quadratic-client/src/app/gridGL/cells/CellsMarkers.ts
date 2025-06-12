@@ -17,11 +17,6 @@ interface Marker {
   symbol?: Sprite;
 }
 
-const connectionSymbol = (symbol: Sprite, icon: string, isError: boolean) => {
-  symbol.texture = Assets.get(icon);
-  symbol.tint = isError ? colors.cellColorError : 0xffffff;
-  return symbol;
-};
 export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean): Sprite | undefined => {
   const symbol = new Sprite();
   if (language === 'Python') {
@@ -37,37 +32,9 @@ export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean):
     symbol.tint = 0xffffff;
     return symbol;
   } else if (typeof language === 'object') {
-    switch (language.Connection?.kind) {
-      case 'MSSQL':
-        return connectionSymbol(symbol, 'icon-mssql', isError);
-
-      case 'POSTGRES':
-        return connectionSymbol(symbol, 'icon-postgres', isError);
-
-      case 'MYSQL':
-        return connectionSymbol(symbol, 'icon-mysql', isError);
-
-      case 'SNOWFLAKE':
-        return connectionSymbol(symbol, 'icon-snowflake', isError);
-
-      case 'COCKROACHDB':
-        return connectionSymbol(symbol, 'icon-cockroachdb', isError);
-
-      case 'BIGQUERY':
-        return connectionSymbol(symbol, 'icon-bigquery', isError);
-
-      case 'MARIADB':
-        return connectionSymbol(symbol, 'icon-mariadb', isError);
-
-      case 'SUPABASE':
-        return connectionSymbol(symbol, 'icon-supabase', isError);
-
-      case 'NEON':
-        return connectionSymbol(symbol, 'icon-neon', isError);
-
-      default:
-        console.log(`Unknown connection kind: ${language.Connection?.kind} in getLanguageSymbol`);
-    }
+    symbol.texture = Assets.get('icon-connection');
+    symbol.tint = 0xffffff;
+    return symbol;
   }
 };
 

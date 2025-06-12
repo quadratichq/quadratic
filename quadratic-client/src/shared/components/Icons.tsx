@@ -691,6 +691,10 @@ export const ArrowRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
 };
 
+export const ArrowBackIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_back</Icon>;
+};
+
 export const ArrowDoubleRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_right</Icon>;
 };
