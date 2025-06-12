@@ -73,9 +73,6 @@ pub trait Connection {
     /// This should work over any row/column SQLx vec
     fn to_parquet(data: Vec<Self::Row>) -> Result<(Bytes, usize)> {
         if data.is_empty() {
-            // return Err(SharedError::Sql(Sql::ParquetConversion(
-            //     "No data to convert".to_string(),
-            // )));
             return Ok((Bytes::new(), 0));
         }
 

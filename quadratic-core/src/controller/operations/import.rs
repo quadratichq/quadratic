@@ -5,7 +5,6 @@ use chrono::{NaiveDate, NaiveTime};
 
 use crate::{
     Array, ArraySize, CellValue, Pos, SheetPos,
-    arrow::arrow_col_to_cell_value_vec,
     cellvalue::Import,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -15,10 +14,9 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
         unique_data_table_name,
     },
+    parquet::parquet_to_array,
 };
-use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
-use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use super::{
     csv::{clean_csv_file, find_csv_info},
@@ -113,15 +111,7 @@ impl GridController {
             let should_update = y % IMPORT_LINES_PER_OPERATION == 0;
 
             if should_update && (cfg!(target_family = "wasm") || cfg!(test)) {
-                crate::wasm_bindings::js::jsImportProgress(
-                    file_name,
-                    y,
-                    height,
-                    insert_at.x,
-                    insert_at.y,
-                    width,
-                    height,
-                );
+                crate::wasm_bindings::js::jsImportProgress(file_name, y, height);
             }
         }
 
@@ -273,14 +263,9 @@ impl GridController {
                 if (cfg!(target_family = "wasm") || cfg!(test))
                     && current_y_values % IMPORT_LINES_PER_OPERATION == 0
                 {
-                    let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y_values + current_y_formula,
-                        total_rows as u32,
-                        0,
-                        1,
-                        width,
                         total_rows as u32,
                     );
                 }
@@ -327,14 +312,9 @@ impl GridController {
                 if (cfg!(target_family = "wasm") || cfg!(test))
                     && current_y_formula % IMPORT_LINES_PER_OPERATION == 0
                 {
-                    let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y_values + current_y_formula,
-                        total_rows as u32,
-                        0,
-                        1,
-                        width,
                         total_rows as u32,
                     );
                 }
@@ -362,73 +342,9 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
+        updater: Option<impl Fn(&str, u32, u32)>,
     ) -> Result<Vec<Operation>> {
-        let error =
-            |message: String| anyhow!("Error parsing Parquet file {}: {}", file_name, message);
-
-        // this is not expensive
-        let bytes = Bytes::from(file);
-        let builder = ParquetRecordBatchReaderBuilder::try_new(bytes)?;
-
-        // headers
-        let metadata = builder.metadata();
-        let total_size = metadata.file_metadata().num_rows() as u32;
-        let fields = metadata.file_metadata().schema().get_fields();
-        let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
-        let mut width = headers.len() as u32;
-
-        // add 1 to the height for the headers
-        let array_size =
-            ArraySize::new_or_err(width, total_size + 1).map_err(|e| error(e.to_string()))?;
-        let mut cell_values = Array::new_empty(array_size);
-
-        // add the headers to the first row
-        for (x, header) in headers.into_iter().enumerate() {
-            cell_values
-                .set(x as u32, 0, header, false)
-                .map_err(|e| error(e.to_string()))?;
-        }
-
-        let reader = builder.build()?;
-        let mut height = 0;
-        let mut current_size = 0;
-
-        for (row_index, batch) in reader.enumerate() {
-            let batch = batch?;
-            let num_rows = batch.num_rows();
-            let num_cols = batch.num_columns();
-
-            current_size += num_rows;
-            width = width.max(num_cols as u32);
-            height = height.max(num_rows as u32);
-
-            for col_index in 0..num_cols {
-                let col = batch.column(col_index);
-                let values = arrow_col_to_cell_value_vec(col)?;
-                let x = col_index as u32;
-                let y = (row_index * num_rows) as u32 + 1;
-
-                for (index, value) in values.into_iter().enumerate() {
-                    cell_values
-                        .set(x, y + index as u32, value, false)
-                        .map_err(|e| error(e.to_string()))?;
-                }
-
-                // update the progress bar every time there's a new operation
-                if cfg!(target_family = "wasm") || cfg!(test) {
-                    crate::wasm_bindings::js::jsImportProgress(
-                        file_name,
-                        current_size as u32,
-                        total_size,
-                        insert_at.x,
-                        insert_at.y,
-                        width,
-                        height,
-                    );
-                }
-            }
-        }
-
+        let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
         let import = Import::new(file_name.into());
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
@@ -625,8 +541,15 @@ mod test {
         let sheet_id = gc.grid.sheets()[0].id;
         let file = include_bytes!("../../../test-files/date_time_formats_arrow.parquet");
         let pos = pos![A1];
-        gc.import_parquet(sheet_id, file.to_vec(), "parquet", pos, None)
-            .unwrap();
+        gc.import_parquet(
+            sheet_id,
+            file.to_vec(),
+            "parquet",
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
