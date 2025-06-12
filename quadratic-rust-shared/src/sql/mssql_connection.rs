@@ -197,6 +197,16 @@ impl<'a> Connection<'a> for MsSqlConnection {
     }
 
     /// Query rows from a SQL Server
+    async fn raw_query(
+        &self,
+        client: &mut Self::Conn,
+        sql: &str,
+        max_bytes: Option<u64>,
+    ) -> Result<(Vec<Self::Row>, bool, usize)> {
+        unimplemented!()
+    }
+
+    /// Query rows from a SQL Server
     async fn query(
         &self,
         client: &mut Self::Conn,

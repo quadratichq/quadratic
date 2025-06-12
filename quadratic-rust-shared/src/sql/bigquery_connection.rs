@@ -30,16 +30,18 @@ use super::connect_error;
 pub struct BigqueryConfig {
     pub project_id: String,
     pub service_account_configuration: String,
+    pub dataset: String,
 }
 
 /// Bigquery connection
 pub struct BigqueryConnection {
     pub project_id: String,
     pub client: Client,
+    pub dataset: String,
 }
 
 impl BigqueryConnection {
-    pub async fn new(credentials: String, project_id: String) -> Result<Self> {
+    pub async fn new(credentials: String, project_id: String, dataset: String) -> Result<Self> {
         let credentials = CredentialsFile::new_from_str(&credentials)
             .await
             .map_err(|e| connect_error(format!("Unable to parse credentials file: {}", e)))?;
@@ -53,7 +55,11 @@ impl BigqueryConnection {
             .await
             .map_err(|e| connect_error(format!("Unable to create client: {}", e)))?;
 
-        Ok(Self { project_id, client })
+        Ok(Self {
+            project_id,
+            client,
+            dataset,
+        })
     }
 }
 
@@ -124,6 +130,15 @@ impl<'a> Connection<'a> for BigqueryConnection {
         Ok(None)
     }
 
+    async fn raw_query(
+        &self,
+        _pool: &mut Self::Conn,
+        _sql: &str,
+        _max_bytes: Option<u64>,
+    ) -> Result<(Vec<Self::Row>, bool, usize)> {
+        unimplemented!()
+    }
+
     async fn query(
         &self,
         _: &mut Self::Conn,
@@ -175,6 +190,8 @@ impl<'a> Connection<'a> for BigqueryConnection {
 
     async fn schema(&self, _pool: &mut Self::Conn) -> Result<DatabaseSchema> {
         let project_id = self.project_id.to_owned();
+        let dataset = self.dataset.to_owned();
+
         let dataset_id = "all_native_data_types".to_owned();
         let sql = format!(
             "
@@ -185,9 +202,9 @@ impl<'a> Connection<'a> for BigqueryConnection {
                 c.is_nullable,
                 c.column_default,
             FROM 
-                {project_id}.{dataset_id}.INFORMATION_SCHEMA.TABLES t
+                {project_id}.{dataset}.INFORMATION_SCHEMA.TABLES t
             LEFT JOIN 
-                {project_id}.{dataset_id}.INFORMATION_SCHEMA.COLUMNS c
+                {project_id}.{dataset}.INFORMATION_SCHEMA.COLUMNS c
                 ON t.table_name = c.table_name
                     AND t.table_schema = c.table_schema
                     AND t.table_catalog = c.table_catalog
@@ -405,6 +422,22 @@ mod tests {
 
     use super::*;
 
+    async fn new_connection() -> BigqueryConnection {
+        let credentials = r#"
+            {
+                
+            }
+        "#;
+
+        BigqueryConnection::new(
+            credentials.to_string(),
+            "quadratic-development".to_string(),
+            "all_native_data_types".to_string(),
+        )
+        .await
+        .unwrap()
+    }
+
     #[tokio::test]
     async fn test_bigquery_connection() {
         // let config = ClientConfig::new_with_emulator("0.0.0.0:9060", "http://0.0.0.0:9050");
@@ -415,14 +448,7 @@ mod tests {
         // let config = ClientConfig::new_with_emulator("0.0.0.0:9060", "http://0.0.0.0:9050");
         // let mut client = Client::new(config).await.unwrap();
 
-        let credentials = r#"
-            {
-            }
-        "#;
-        let connection =
-            BigqueryConnection::new(credentials.to_string(), "quadratic-development".to_string())
-                .await
-                .unwrap();
+        let connection = new_connection().await;
 
         let sql = format!(
             "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10"
@@ -489,5 +515,13 @@ mod tests {
         //     )
         //     .await
         //     .unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_bigquery_schema() {
+        let connection = new_connection().await;
+        let schema = connection.schema(&mut None).await.unwrap();
+
+        println!("{:?}", schema);
     }
 }

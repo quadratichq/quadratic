@@ -171,6 +171,16 @@ impl<'a> Connection<'a> for MySqlConnection {
         Ok(pool)
     }
 
+    /// Query rows from a SQL Server
+    async fn raw_query(
+        &self,
+        _pool: &mut Self::Conn,
+        _sql: &str,
+        _max_bytes: Option<u64>,
+    ) -> Result<(Vec<Self::Row>, bool, usize)> {
+        unimplemented!()
+    }
+
     /// Query rows from a MySQL database
     async fn query(
         &self,

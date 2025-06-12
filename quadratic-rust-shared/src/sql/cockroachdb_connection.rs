@@ -1,9 +1,8 @@
-//! PostgreSQL
+//! CockroachDB
 //!
-//! Functions to interact with PostgreSQL
+//! Functions to interact with CockroachDB
 
 use crate::sql::postgres_connection::PostgresConnection;
-
 pub type CockroachDbConnection = PostgresConnection;
 
 #[cfg(test)]
@@ -11,14 +10,9 @@ mod tests {
 
     use super::*;
 
-    use crate::sql::schema::{DatabaseSchema, SchemaColumn, SchemaTable};
-    use crate::sql::{ArrowType, Connection};
-    use sqlx::{
-        Column, ConnectOptions, PgConnection, Row, TypeInfo,
-        postgres::{PgColumn, PgConnectOptions, PgRow, PgTypeKind, types::PgTimeTz},
-    };
-
-    use crate::sql::error::Sql as SqlError;
+    use crate::sql::Connection;
+    use crate::sql::schema::SchemaColumn;
+    use sqlx::{Column, Row, TypeInfo};
 
     fn new_cockroach_connection() -> CockroachDbConnection {
         CockroachDbConnection::new(

@@ -112,6 +112,7 @@ export const ConnectionTypeDetailsSnowflakeSchema = z.object({
 
 export const ConnectionTypeDetailsBigquerySchema = z.object({
   project_id: z.string().min(1, { message: 'Required' }),
+  dataset: z.string().min(1, { message: 'Required' }),
   service_account_configuration: z.string().min(1, { message: 'Required' }),
 });
 

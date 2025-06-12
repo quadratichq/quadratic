@@ -109,6 +109,14 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
         .route("/postgres/schema/:id", get(schema_postgres))
+        // cockroachdb
+        .route("/cockroachdb/test", post(test_postgres))
+        .route("/cockroachdb/query", post(query_postgres))
+        .route("/cockroachdb/schema/:id", get(schema_postgres))
+        // supabase
+        .route("/supabase/test", post(test_postgres))
+        .route("/supabase/query", post(query_postgres))
+        .route("/supabase/schema/:id", get(schema_postgres))
         // mysql
         .route("/mysql/test", post(test_mysql))
         .route("/mysql/query", post(query_mysql))

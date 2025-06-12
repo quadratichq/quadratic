@@ -23,6 +23,7 @@ export const useConnectionForm: UseConnectionForm<FormValues> = (connection) => 
     name: connection ? connection.name : '',
     type: 'BIGQUERY',
     project_id: connection?.typeDetails?.project_id || '',
+    dataset: connection?.typeDetails?.dataset || '',
     service_account_configuration: String(connection?.typeDetails?.service_account_configuration || ''),
   };
 
@@ -52,13 +53,26 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
           )}
         />
 
-        <div className="grid gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <FormField
             control={form.control}
             name="project_id"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="col-span-2">
                 <FormLabel>Project ID</FormLabel>
+                <FormControl>
+                  <Input autoComplete="off" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="dataset"
+            render={({ field }) => (
+              <FormItem className="col-span-2">
+                <FormLabel>Dataset</FormLabel>
                 <FormControl>
                   <Input autoComplete="off" {...field} />
                 </FormControl>

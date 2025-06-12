@@ -59,6 +59,16 @@ pub trait Connection<'a> {
 
     /// Generically query a database
     ///
+    /// Returns: (rows, is over the limit, number of records)
+    async fn raw_query(
+        &self,
+        pool: &mut Self::Conn,
+        sql: &str,
+        max_bytes: Option<u64>,
+    ) -> Result<(Vec<Self::Row>, bool, usize)>;
+
+    /// Generically query a database
+    ///
     /// Returns: (Parquet bytes, is over the limit, number of records)
     async fn query(
         &self,
