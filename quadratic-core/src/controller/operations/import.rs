@@ -17,6 +17,7 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
         unique_data_table_name,
     },
+    parquet::parquet_to_array,
 };
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
 
