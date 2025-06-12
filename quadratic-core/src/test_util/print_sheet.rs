@@ -71,7 +71,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
             let cell_value = match display_cell_values {
                 true => sheet.cell_value(pos),
                 false => sheet
-                    .data_table(rect.min)
+                    .data_table_at(&rect.min)
                     .unwrap_or_else(|| panic!("Data table not found at {:?}", rect.min))
                     .cell_value_at(x as u32, y as u32),
             };

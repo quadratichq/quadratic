@@ -379,7 +379,11 @@ export const ApiSchemas = {
     .object({
       name: TeamSchema.shape.name.optional(),
       clientDataKv: TeamClientDataKvSchema.optional(),
-      settings: TeamSettingsSchema.partial().optional(),
+      settings: TeamSettingsSchema.extend({
+        showConnectionDemo: z.boolean().optional(),
+      })
+        .partial()
+        .optional(),
     })
     .refine(
       (data) => {
@@ -394,7 +398,7 @@ export const ApiSchemas = {
   '/v0/teams/:uuid.PATCH.response': z.object({
     name: TeamSchema.shape.name,
     clientDataKv: TeamClientDataKvSchema,
-    settings: TeamSettingsSchema,
+    settings: TeamSettingsSchema.extend({ showConnectionDemo: z.boolean() }),
   }),
   '/v0/teams/:uuid/invites.POST.request': TeamUserSchema.pick({ email: true, role: true }),
   '/v0/teams/:uuid/invites.POST.response': z
@@ -430,10 +434,18 @@ export const ApiSchemas = {
 
   /**
    * ===========================================================================
-   * Users
+   * User
    * ===========================================================================
    */
-  '/v0/users/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
+  '/v0/user/acknowledge.GET.response': z.object({ message: z.string(), userCreated: z.boolean() }),
+  '/v0/user.POST.request': z.object({
+    onboardingResponses: z
+      .object({
+        __version: z.number(),
+      })
+      .catchall(z.any()),
+  }),
+  '/v0/user.POST.response': z.object({ message: z.string() }),
 
   /**
    *

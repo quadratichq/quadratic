@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::controller::GridController;
 use crate::controller::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::operations::operation::Operation;
@@ -37,6 +39,8 @@ impl GridController {
         transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
 
+        self.update_cells_accessed_cache(sheet_pos, &new_data_table);
+
         let sheet_id = sheet_pos.sheet_id;
         let pos: Pos = sheet_pos.into();
         let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
@@ -44,9 +48,10 @@ impl GridController {
             return;
         };
 
+        let old_data_table = sheet.data_table_at(&pos);
+
         // preserve some settings from the previous code run
-        if let (Some(old_data_table), Some(new_data_table)) =
-            (sheet.data_table(pos), &mut new_data_table)
+        if let (Some(old_data_table), Some(new_data_table)) = (old_data_table, &mut new_data_table)
         {
             // for python dataframes, we don't want preserve the show_columns setting
             // for other data tables types, we want to preserve most settings
@@ -71,6 +76,7 @@ impl GridController {
             // then we can preserve other user-selected properties
             if old_data_table.output_size().w == new_data_table.output_size().w {
                 new_data_table.formats = old_data_table.formats.to_owned();
+                new_data_table.borders = old_data_table.borders.to_owned();
 
                 // actually apply the sort if it's set
                 if let Some(sort) = old_data_table.sort.to_owned() {
@@ -86,22 +92,10 @@ impl GridController {
             // chart_output setting since it may have been set by the user.
             // TODO (DF): we should be tracking whether a user set this, and
             // if not, we should use the pixel output.
-            if new_data_table.is_html_or_image() {
-                new_data_table.chart_output = old_data_table.chart_output.to_owned();
-            }
-        }
-
-        // calculate the chart_output if it is an image or html data table based on the pixel output
-        if let Some(new_data_table) = &mut new_data_table {
-            if new_data_table.is_html_or_image() && new_data_table.chart_output.is_none() {
-                let (pixel_width, pixel_height) = new_data_table
-                    .chart_pixel_output
-                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
-                let chart_output =
-                    sheet
-                        .offsets
-                        .calculate_grid_size(pos, pixel_width, pixel_height);
-                new_data_table.chart_output = Some(chart_output);
+            if let Some((w, h)) = old_data_table.chart_output {
+                if w > 0 && h > 0 {
+                    new_data_table.chart_output = old_data_table.chart_output.to_owned();
+                }
             }
         }
 
@@ -114,28 +108,6 @@ impl GridController {
                 &self.a1_context,
             );
             new_data_table.update_table_name(&unique_name);
-        }
-
-        // index for SetCodeRun is either set by execute_set_code_run or calculated
-        let index = index.unwrap_or(
-            sheet
-                .data_tables
-                .get_index_of(&pos)
-                .unwrap_or(sheet.data_tables.len()),
-        );
-
-        let old_data_table = if let Some(new_data_table) = &new_data_table {
-            let index = index.min(sheet.data_tables.len());
-            sheet
-                .data_tables
-                .insert_before(index, pos, new_data_table.to_owned())
-                .1
-        } else {
-            sheet.data_tables.shift_remove(&pos)
-        };
-
-        if old_data_table == new_data_table {
-            return;
         }
 
         let sheet_rect = match (&old_data_table, &new_data_table) {
@@ -158,26 +130,32 @@ impl GridController {
             }
         };
 
-        // update fills if needed in either old or new data table
-        if new_data_table
-            .as_ref()
-            .is_some_and(|dt| dt.formats.has_fills())
-            || old_data_table
-                .as_ref()
-                .is_some_and(|dt| dt.formats.has_fills())
-        {
-            transaction.add_fill_cells(sheet_id);
-        }
+        if !transaction.is_server() {
+            // update fills if needed in either old or new data table
+            if new_data_table.as_ref().is_some_and(|dt| {
+                dt.formats
+                    .as_ref()
+                    .is_some_and(|formats| formats.has_fills())
+            }) || old_data_table.as_ref().is_some_and(|dt| {
+                dt.formats
+                    .as_ref()
+                    .is_some_and(|formats| formats.has_fills())
+            }) {
+                transaction.add_fill_cells(sheet_id);
+            }
 
-        // update borders if needed old or new data table
-        if new_data_table
-            .as_ref()
-            .is_some_and(|dt| !dt.borders.is_default())
-            || old_data_table
-                .as_ref()
-                .is_some_and(|dt| !dt.borders.is_default())
-        {
-            transaction.add_borders(sheet_id);
+            // update borders if needed old or new data table
+            if new_data_table.as_ref().is_some_and(|dt| {
+                !dt.borders
+                    .as_ref()
+                    .is_none_or(|borders| borders.is_default())
+            }) || old_data_table.as_ref().is_some_and(|dt| {
+                !dt.borders
+                    .as_ref()
+                    .is_none_or(|borders| borders.is_default())
+            }) {
+                transaction.add_borders(sheet_id);
+            }
         }
 
         transaction.add_from_code_run(
@@ -194,19 +172,36 @@ impl GridController {
         );
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
-        self.send_updated_bounds(transaction, sheet_id);
-
-        if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
-                if !rows.is_empty() {
-                    let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                    resize_rows.extend(rows);
-                }
-            }
-        }
+        // index for SetCodeRun is either set by execute_set_code_run or calculated
+        let index = index.unwrap_or(sheet.data_tables.get_index_of(&pos).unwrap_or(usize::MAX));
 
         if transaction.is_user_undo_redo() {
+            let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
+            {
+                sheet.data_table_insert_before(index, &pos, new_data_table.to_owned())
+            } else {
+                sheet.data_table_shift_remove_full(&pos).map_or(
+                    (index, None, HashSet::new()),
+                    |(index, _, data_table, dirty_rects)| (index, Some(data_table), dirty_rects),
+                )
+            };
+
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+            self.send_updated_bounds(transaction, sheet_id);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+
+            if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
+                if let Some(sheet) = self.try_sheet(sheet_id) {
+                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
+                    if !rows.is_empty() {
+                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                        resize_rows.extend(rows);
+                    }
+                }
+            }
+
+            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+
             transaction
                 .forward_operations
                 .push(Operation::SetDataTable {
@@ -222,13 +217,19 @@ impl GridController {
                     data_table: old_data_table,
                     index,
                 });
+        } else {
+            let dirty_rects = if let Some(new_data_table) = new_data_table {
+                sheet
+                    .data_table_insert_before(index, &pos, new_data_table)
+                    .2
+            } else {
+                sheet
+                    .data_table_shift_remove(&pos)
+                    .map_or(HashSet::new(), |(_, dirty_rects)| dirty_rects)
+            };
 
-            if transaction.is_user() {
-                self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
-                self.check_all_spills(transaction, sheet_pos.sheet_id);
-            }
-
-            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+            self.send_updated_bounds(transaction, sheet_id);
         }
     }
 
@@ -318,7 +319,7 @@ impl GridController {
         };
 
         let code_run = sheet
-            .data_table(pos)
+            .data_table_at(&pos)
             .and_then(|data_table| data_table.code_run());
 
         let new_code_run = match code_run {
@@ -348,7 +349,7 @@ impl GridController {
                 output_type: None,
                 std_out: None,
                 std_err: Some(error.msg.to_string()),
-                cells_accessed: transaction.cells_accessed.clone(),
+                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
             },
         };
         let table_name = match code_cell_value.language {
@@ -361,7 +362,6 @@ impl GridController {
             DataTableKind::CodeRun(new_code_run),
             table_name,
             Value::Single(CellValue::Blank),
-            false,
             false,
             None,
             None,
@@ -407,14 +407,13 @@ impl GridController {
                 output_type: js_code_result.output_display_type,
                 std_out: None,
                 std_err: None,
-                cells_accessed: transaction.cells_accessed.clone(),
+                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
             };
 
             return DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 table_name,
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
-                false,
                 false,
                 None,
                 None,
@@ -479,15 +478,28 @@ impl GridController {
             cells_accessed: std::mem::take(&mut transaction.cells_accessed),
         };
 
+        let chart_output = match value {
+            Value::Single(CellValue::Html(_) | CellValue::Image(_)) => {
+                let (pixel_width, pixel_height) = js_code_result
+                    .chart_pixel_output
+                    .unwrap_or((DEFAULT_HTML_WIDTH, DEFAULT_HTML_HEIGHT));
+                Some(
+                    sheet
+                        .offsets
+                        .calculate_grid_size(start.into(), pixel_width, pixel_height),
+                )
+            }
+            _ => None,
+        };
+
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             table_name,
             value,
-            false,
             js_code_result.has_headers,
             None,
             None,
-            js_code_result.chart_pixel_output,
+            chart_output,
         );
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
@@ -555,7 +567,6 @@ mod test {
             "Table_1",
             Value::Single(CellValue::Text("delete me".to_string())),
             false,
-            false,
             Some(true),
             Some(true),
             None,
@@ -564,7 +575,10 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_data_table));
+        assert_eq!(
+            sheet.data_table_at(&sheet_pos.into()),
+            Some(&new_data_table)
+        );
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -593,7 +607,6 @@ mod test {
             "Table_1",
             Value::Single(CellValue::Text("replace me".to_string())),
             false,
-            false,
             Some(true),
             Some(true),
             None,
@@ -604,7 +617,10 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), Some(&new_data_table));
+        assert_eq!(
+            sheet.data_table_at(&sheet_pos.into()),
+            Some(&new_data_table)
+        );
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -618,7 +634,7 @@ mod test {
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table(sheet_pos.into()), None);
+        assert_eq!(sheet.data_table_at(&sheet_pos.into()), None);
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -642,6 +658,7 @@ mod test {
             sheet_pos,
             CodeCellLanguage::Javascript,
             "code".to_string(),
+            None,
             None,
         );
         let transaction = gc.last_transaction().unwrap();
@@ -668,7 +685,7 @@ mod test {
         let languages = vec![CodeCellLanguage::Javascript, CodeCellLanguage::Python];
 
         for language in languages {
-            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None);
+            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -679,11 +696,11 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table(sheet_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
-            gc.set_code_cell(sheet_pos, language, "code".to_string(), None);
+            gc.set_code_cell(sheet_pos, language, "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -694,7 +711,7 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table(sheet_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
         }
     }

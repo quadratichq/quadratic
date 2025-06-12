@@ -23,10 +23,10 @@ impl GridController {
         }
 
         let bounds = sheet
-            .selection_bounds(selection, false, false, &self.a1_context)
+            .selection_bounds(selection, false, false, true, &self.a1_context)
             .context("No values")?;
 
-        let values = sheet.selection_sorted_vec(selection, false, &self.a1_context);
+        let values = sheet.selection_sorted_vec(selection, false, true, &self.a1_context);
         let mut writer = Writer::from_writer(vec![]);
         let mut iter = values.iter();
         let context = self.a1_context();
@@ -73,7 +73,7 @@ mod tests {
         ];
 
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.set_cell_values(crate::Rect::new(1, 1, 4, 4), &Array::from(vals));
+        sheet.set_cell_values(crate::Rect::new(1, 1, 4, 4), Array::from(vals));
 
         let result = gc.export_csv_selection(&mut selected).unwrap();
         let expected = "1,2,3,4\n5,6,7,8\n9,10,11,12\n13,14,15,16\n";
@@ -85,9 +85,12 @@ mod tests {
     fn exports_a_csv_with_a_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
-        data_table.apply_first_row_as_header();
-
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.apply_first_row_as_header();
+                Ok(())
+            })
+            .unwrap();
         let mut selected = A1Selection::test_a1("A1:D13");
         let result = gc.export_csv_selection(&mut selected).unwrap();
         println!("{}", result);

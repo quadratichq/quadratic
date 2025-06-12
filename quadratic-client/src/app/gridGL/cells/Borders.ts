@@ -129,18 +129,16 @@ export class Borders extends Container {
     }
   };
 
-  private drawSheetCells = (sheetId: string, borders?: JsBordersSheet): void => {
+  private drawSheetCells = (sheetId: string, borders: JsBordersSheet): void => {
     if (sheetId === this.cellsSheet.sheetId) {
-      if (borders) {
-        this.bordersFinite = {
-          horizontal: borders.horizontal?.filter((border) => border.width !== null && !border.unbounded) || null,
-          vertical: borders.vertical?.filter((border) => border.height !== null && !border.unbounded) || null,
-        };
-        this.bordersInfinite = {
-          horizontal: borders.horizontal?.filter((border) => border.width === null || border.unbounded) || null,
-          vertical: borders.vertical?.filter((border) => border.height === null || border.unbounded) || null,
-        };
-      }
+      this.bordersFinite = {
+        horizontal: borders.horizontal?.filter((border) => border.width !== null && !border.unbounded) || null,
+        vertical: borders.vertical?.filter((border) => border.height !== null && !border.unbounded) || null,
+      };
+      this.bordersInfinite = {
+        horizontal: borders.horizontal?.filter((border) => border.width === null || border.unbounded) || null,
+        vertical: borders.vertical?.filter((border) => border.height === null || border.unbounded) || null,
+      };
       this.draw();
       this.dirty = true;
     }

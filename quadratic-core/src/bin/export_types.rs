@@ -21,13 +21,18 @@ use quadratic_core::controller::transaction_types::JsCodeResult;
 use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
+use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsColumnWidth;
 use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsHashRenderCells;
+use quadratic_core::grid::js_types::JsHashValidationWarnings;
+use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
 use quadratic_core::grid::js_types::JsTablesContext;
+use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
     CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosContext, JsClipboard, JsCodeCell,
     JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
@@ -45,9 +50,6 @@ use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
 use quadratic_core::grid::sheet::keyboard::Direction;
 use quadratic_core::grid::sheet::search::SearchOptions;
-use quadratic_core::grid::sheet::validations::validation::{
-    Validation, ValidationError, ValidationMessage, ValidationStyle,
-};
 use quadratic_core::grid::sheet::validations::rules::ValidationRule;
 use quadratic_core::grid::sheet::validations::rules::validation_date_time::{
     DateTimeRange, ValidationDateTime,
@@ -61,6 +63,9 @@ use quadratic_core::grid::sheet::validations::rules::validation_number::{
 };
 use quadratic_core::grid::sheet::validations::rules::validation_text::{
     TextCase, TextMatch, ValidationText,
+};
+use quadratic_core::grid::sheet::validations::validation::{
+    Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
 use quadratic_core::grid::sort::DataTableSort;
 use quadratic_core::grid::sort::SortDirection;
@@ -122,6 +127,7 @@ fn main() {
         DateTimeRange,
         Direction,
         Format,
+        FormatUpdate,
         GridBounds,
         JsBorderHorizontal,
         JsBorderVertical,
@@ -140,7 +146,9 @@ fn main() {
         JsDataTableColumnHeader,
         JsDataTableContext,
         JsFormulaParseResult,
-        JsCellsA1Value,
+        JsHashesDirty,
+        JsHashRenderCells,
+        JsHashValidationWarnings,
         JsHtmlOutput,
         JsNumber,
         JsOffset,
@@ -158,6 +166,7 @@ fn main() {
         JsSummarizeSelectionResult,
         JsTableInfo,
         JsTablesContext,
+        JsUpdateCodeCell,
         JsValidationWarning,
         MinMax,
         NumberRange,

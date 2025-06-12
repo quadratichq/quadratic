@@ -467,8 +467,8 @@ mod tests {
         let sheet_id_init = SheetId::new();
         let sheet_id_11 = SheetId::new();
         let mut a1_context = A1Context::default();
-        a1_context.sheet_map.insert_test("Sheet1", sheet_id_init);
-        a1_context.sheet_map.insert_test("Sheet1 (1)", sheet_id_11);
+        a1_context.sheet_map.insert_parts("Sheet1", sheet_id_init);
+        a1_context.sheet_map.insert_parts("Sheet1 (1)", sheet_id_11);
         let pos = SheetPos {
             x: 100,
             y: 100,

@@ -1,10 +1,12 @@
+use std::collections::HashMap;
+
 use super::operation::Operation;
 use crate::{
-    Array, ArraySize, CellValue, CopyFormats, Pos, SheetPos, SheetRect,
+    Array, ArraySize, CellValue, CopyFormats, Pos, Rect, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
-        DataTable, DataTableKind,
+        DataTable, DataTableKind, Sheet,
         data_table::{column_header::DataTableColumnHeader, sort::DataTableSort},
         formats::SheetFormatUpdates,
         unique_data_table_name,
@@ -35,7 +37,12 @@ impl GridController {
 
     /// Collects all operations that would be needed to convert a grid to a data table.
     /// If a data table is found within the sheet_rect, it will not be added to the operations.
-    pub fn grid_to_data_table_operations(&self, sheet_rect: SheetRect) -> Vec<Operation> {
+    pub fn grid_to_data_table_operations(
+        &self,
+        sheet_rect: SheetRect,
+        table_name: Option<String>,
+        first_row_is_header: bool,
+    ) -> Vec<Operation> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
@@ -43,6 +50,25 @@ impl GridController {
 
             if no_data_table {
                 ops.push(Operation::GridToDataTable { sheet_rect });
+
+                if first_row_is_header {
+                    ops.push(Operation::DataTableFirstRowAsHeader {
+                        sheet_pos: sheet_rect.into(),
+                        first_row_is_header: true,
+                    });
+                }
+                if let Some(table_name) = table_name {
+                    ops.push(Operation::DataTableMeta {
+                        sheet_pos: sheet_rect.into(),
+                        name: Some(table_name),
+                        alternating_colors: None,
+                        columns: None,
+                        show_name: None,
+                        show_columns: None,
+                        show_ui: None,
+                        readonly: None,
+                    });
+                }
             }
         }
 
@@ -274,13 +300,15 @@ impl GridController {
             DataTableKind::Import(import.to_owned()),
             &name,
             cell_values.into(),
-            false,
             first_row_is_header,
             Some(true),
             Some(true),
             None,
         );
-        data_table.formats.apply_updates(&sheet_format_updates);
+        data_table
+            .formats
+            .get_or_insert_default()
+            .apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
 
         ops.push(Operation::AddDataTable {
@@ -289,6 +317,105 @@ impl GridController {
             cell_value: CellValue::Import(import),
             index: None,
         });
+
+        ops
+    }
+
+    /// Expands a data table to the right or bottom if the cell value is
+    /// touching the right or bottom edge.
+    pub fn grow_data_table(
+        sheet: &Sheet,
+        data_tables: &mut [Rect],
+        data_table_columns: &mut HashMap<SheetPos, Vec<u32>>,
+        data_table_rows: &mut HashMap<SheetPos, Vec<u32>>,
+        current_sheet_pos: SheetPos,
+        value_is_empty: bool,
+    ) {
+        // expand the data table to the right or bottom if the cell value is
+        // touching the right or bottom edge
+        let (col, row) =
+            sheet.expand_columns_and_rows(data_tables, current_sheet_pos, value_is_empty);
+
+        // if an expansion happened, adjust the size of the data table rect
+        // so that successive iterations continue to expand the data table.
+        if let Some((sheet_pos, col)) = col {
+            let entry = data_table_columns.entry(sheet_pos).or_default();
+
+            if !entry.contains(&col) {
+                // add the column to data_table_columns
+                entry.push(col);
+
+                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                // adjust the size of the data table rect so that successive
+                // iterations continue to expand the data table.
+                data_tables
+                    .iter_mut()
+                    .filter(|rect| rect.contains(pos_to_check))
+                    .for_each(|rect| {
+                        rect.max.x += 1;
+                    });
+            }
+        }
+
+        // expand the data table to the bottom if the cell value is touching
+        // the bottom edge
+        if let Some((sheet_pos, row)) = row {
+            let entry = data_table_rows.entry(sheet_pos).or_default();
+
+            // if an expansion happened, adjust the size of the data table rect
+            // so that successive iterations continue to expand the data table.
+            if !entry.contains(&row) {
+                // add the row to data_table_rows
+                entry.push(row);
+
+                let pos_to_check = Pos::new(sheet_pos.x, sheet_pos.y);
+
+                // adjust the size of the data table rect so that successive
+                // iterations continue to expand the data table.
+                data_tables
+                    .iter_mut()
+                    .filter(|rect| rect.contains(pos_to_check))
+                    .for_each(|rect| {
+                        rect.max.y += 1;
+                    });
+            }
+        }
+    }
+
+    /// Returns operations to grow a data table to the right or bottom if the
+    /// cell value is touching the right or bottom edge.
+    pub fn grow_data_table_operations(
+        data_table_columns: HashMap<SheetPos, Vec<u32>>,
+        data_table_rows: HashMap<SheetPos, Vec<u32>>,
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        if !data_table_columns.is_empty() {
+            for (sheet_pos, columns) in data_table_columns {
+                ops.push(Operation::InsertDataTableColumns {
+                    sheet_pos,
+                    columns: columns.into_iter().map(|c| (c, None, None)).collect(),
+                    swallow: true,
+                    select_table: false,
+                    copy_formats_from: None,
+                    copy_formats: None,
+                });
+            }
+        }
+
+        if !data_table_rows.is_empty() {
+            for (sheet_pos, rows) in data_table_rows {
+                ops.push(Operation::InsertDataTableRows {
+                    sheet_pos,
+                    rows: rows.into_iter().map(|r| (r, None)).collect(),
+                    swallow: true,
+                    select_table: false,
+                    copy_formats_from: None,
+                    copy_formats: None,
+                });
+            }
+        }
 
         ops
     }
@@ -361,14 +488,24 @@ mod test {
                 );
                 // formats are 1 based
                 assert_eq!(
-                    data_table.formats.numeric_format.get((1, 2).into()),
+                    data_table
+                        .formats
+                        .as_ref()
+                        .unwrap()
+                        .numeric_format
+                        .get((1, 2).into()),
                     Some(NumericFormat {
                         kind: NumericFormatKind::Currency,
                         symbol: Some("$".into()),
                     })
                 );
                 assert_eq!(
-                    data_table.formats.numeric_commas.get((2, 2).into()),
+                    data_table
+                        .formats
+                        .as_ref()
+                        .unwrap()
+                        .numeric_commas
+                        .get((2, 2).into()),
                     Some(true)
                 );
             }
@@ -391,7 +528,7 @@ mod test {
         gc.set_cell_values(sheet_pos, values, None);
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
-        let ops = gc.grid_to_data_table_operations(sheet_rect);
+        let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
         gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
 
         let import = Import::new("Table1".into());
@@ -408,12 +545,18 @@ mod test {
 
         // convert one of the cells to a formula
         let formula_pos = SheetPos::new(sheet_id, 1, 2);
-        gc.set_code_cell(formula_pos, CodeCellLanguage::Formula, "=1+1".into(), None);
+        gc.set_code_cell(
+            formula_pos,
+            CodeCellLanguage::Formula,
+            "=1+1".into(),
+            None,
+            None,
+        );
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
-        let ops = gc.grid_to_data_table_operations(sheet_rect);
+        let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
 
         // no operations should be needed since the formula data table is in
         // the selection

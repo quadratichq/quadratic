@@ -10,17 +10,12 @@ use crate::{
 impl Sheet {
     /// checks columns for any column that has data that might render
     pub fn has_render_cells(&self, rect: Rect) -> bool {
-        self.columns.range(rect.x_range()).any(|(_, column)| {
-            column
-                .values
-                .iter()
-                .any(|(y, _)| rect.y_range().contains(y))
-        }) || self.iter_code_output_in_rect(rect).count() > 0
+        self.contains_value_within_rect(rect, None)
+            || self.contains_data_table_within_rect(rect, None)
     }
 
     /// creates a render for a single cell
     fn get_render_cell(
-        &self,
         x: i64,
         y: i64,
         value: &CellValue,
@@ -103,7 +98,7 @@ impl Sheet {
     }
 
     // Converts a CodeValue::Code and CodeRun into a vector of JsRenderCell.
-    pub(crate) fn get_code_cells(
+    pub(crate) fn get_render_code_cells(
         &self,
         code: &CellValue,
         data_table: &DataTable,
@@ -114,8 +109,8 @@ impl Sheet {
         let mut cells = vec![];
 
         if let Some(code_cell_value) = code.code_cell_value() {
-            if data_table.spill_error {
-                cells.push(self.get_render_cell(
+            if data_table.has_spill() {
+                cells.push(Self::get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
                     &CellValue::Error(Box::new(RunError {
@@ -127,7 +122,7 @@ impl Sheet {
                     None,
                 ));
             } else if let Some(error) = data_table.get_error() {
-                cells.push(self.get_render_cell(
+                cells.push(Self::get_render_cell(
                     code_rect.min.x,
                     code_rect.min.y,
                     &CellValue::Error(Box::new(error)),
@@ -135,64 +130,62 @@ impl Sheet {
                     Some(code_cell_value.language),
                     None,
                 ));
-            } else {
+            } else if let Some(intersection) = code_rect.intersection(render_rect) {
                 let code_rect_start_y = code_rect.min.y + data_table.y_adjustment(false);
-                if let Some(intersection) = code_rect.intersection(render_rect) {
+
+                for y in intersection.y_range() {
+                    let is_header = data_table.get_show_columns() && y == code_rect_start_y - 1;
+
+                    // We skip rendering the header rows because we render it separately.
+                    if y < code_rect_start_y && !is_header {
+                        continue;
+                    }
+
                     for x in intersection.x_range() {
-                        for y in intersection.y_range() {
-                            let is_header =
-                                data_table.get_show_columns() && y == code_rect_start_y - 1;
+                        let pos = Pos {
+                            x: x - code_rect.min.x,
+                            y: y - code_rect.min.y,
+                        };
 
-                            // We skip rendering the header rows because we render it separately.
-                            if y < code_rect_start_y && !is_header {
-                                continue;
-                            }
+                        let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
-                            let pos = Pos {
-                                x: x - code_rect.min.x,
-                                y: y - code_rect.min.y,
+                        if let Some(value) = value {
+                            let mut format = if is_header {
+                                // column headers are always clipped and bold
+                                Format {
+                                    wrap: Some(CellWrap::Clip),
+                                    bold: Some(true),
+                                    ..Default::default()
+                                }
+                            } else {
+                                let table_format = data_table.get_format(pos);
+                                let sheet_format =
+                                    self.formats.try_format(Pos { x, y }).unwrap_or_default();
+                                table_format.combine(&sheet_format)
                             };
 
-                            let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
+                            let language = if x == code_rect.min.x && y == code_rect.min.y {
+                                Some(code_cell_value.language.to_owned())
+                            } else {
+                                None
+                            };
 
-                            if let Some(value) = value {
-                                let mut format = if is_header {
-                                    // column headers are always clipped and bold
-                                    Format {
-                                        wrap: Some(CellWrap::Clip),
-                                        bold: Some(true),
-                                        ..Default::default()
-                                    }
-                                } else {
-                                    let table_format = data_table.get_format(pos);
-                                    let sheet_format =
-                                        self.formats.try_format(Pos { x, y }).unwrap_or_default();
-                                    table_format.combine(&sheet_format)
-                                };
+                            let special = self
+                                .validations
+                                .render_special_pos(Pos { x, y }, context)
+                                .or(match value {
+                                    CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
+                                    _ => None,
+                                });
 
-                                let language = if x == code_rect.min.x && y == code_rect.min.y {
-                                    Some(code_cell_value.language.to_owned())
-                                } else {
-                                    None
-                                };
+                            Self::ensure_lists_are_clipped(&mut format, &special);
 
-                                let special = self
-                                    .validations
-                                    .render_special_pos(Pos { x, y }, context)
-                                    .or(match value {
-                                        CellValue::Logical(_) => Some(JsRenderCellSpecial::Logical),
-                                        _ => None,
-                                    });
-
-                                Self::ensure_lists_are_clipped(&mut format, &special);
-
-                                let mut render_cell =
-                                    self.get_render_cell(x, y, &value, format, language, special);
-                                if is_header {
-                                    render_cell.column_header = Some(true);
-                                }
-                                cells.push(render_cell);
+                            let mut render_cell =
+                                Self::get_render_cell(x, y, &value, format, language, special);
+                            if is_header {
+                                render_cell.column_header = Some(true);
                             }
+                            cells.push(render_cell);
                         }
                     }
                 }
@@ -240,7 +233,8 @@ impl Sheet {
 
                         Self::ensure_lists_are_clipped(&mut format, &special);
 
-                        render_cells.push(self.get_render_cell(x, y, value, format, None, special));
+                        render_cells
+                            .push(Self::get_render_cell(x, y, value, format, None, special));
                     }
                 });
             });
@@ -253,7 +247,7 @@ impl Sheet {
                     x: data_table_rect.min.x,
                     y: data_table_rect.min.y,
                 }) {
-                    render_cells.extend(self.get_code_cells(
+                    render_cells.extend(self.get_render_code_cells(
                         &cell_value,
                         data_table,
                         &rect,
@@ -305,6 +299,7 @@ impl Sheet {
 mod tests {
     use uuid::Uuid;
 
+    use crate::grid::js_types::JsHashRenderCells;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::sheet::validations::validation::Validation;
     use crate::test_util::*;
@@ -313,7 +308,7 @@ mod tests {
         a1::A1Selection,
         controller::GridController,
         grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
-        wasm_bindings::js::{clear_js_calls, expect_js_call, hash_test},
+        wasm_bindings::js::{clear_js_calls, expect_js_call},
     };
 
     use super::*;
@@ -333,7 +328,9 @@ mod tests {
         let _ = sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("test".to_string()));
         assert!(sheet.has_render_cells(rect));
 
-        sheet.delete_cell_values(Rect::single_pos(Pos { x: 1, y: 2 }));
+        sheet
+            .columns
+            .delete_values(Rect::single_pos(Pos { x: 1, y: 2 }));
         assert!(!sheet.has_render_cells(rect));
 
         sheet.set_cell_value(
@@ -360,7 +357,6 @@ mod tests {
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
                 Value::Single(CellValue::Text("hello".to_string())),
-                false,
                 false,
                 Some(true),
                 Some(true),
@@ -508,6 +504,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id)
@@ -589,6 +586,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,
+            None,
         );
         let expected = vec![
             JsRenderCell {
@@ -620,16 +618,17 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let cells = sheet.get_render_cells(Rect::new(1, 1, 3, 1), gc.a1_context());
 
-        println!("{:?}", cells);
-        println!("{:?}", expected);
-
         assert_eq!(cells.len(), expected.len());
         assert!(expected.iter().all(|cell| cells.contains(cell)));
 
-        let cells_string = serde_json::to_string(&expected).unwrap();
+        let render_cells = vec![JsHashRenderCells {
+            sheet_id,
+            hash: (Pos { x: 0, y: 0 }).quadrant().into(),
+            cells: expected,
+        }];
         expect_js_call(
-            "jsRenderCellSheets",
-            format!("{},{},{},{}", sheet_id, 0, 0, hash_test(&cells_string)),
+            "jsHashesRenderCells",
+            format!("{:?}", serde_json::to_vec(&render_cells).unwrap()),
             true,
         );
     }
@@ -651,10 +650,6 @@ mod tests {
             },
             None,
         );
-
-        let sheet = gc.sheet(sheet_id);
-        let code_cell = sheet.get_render_cells(Rect::test_a1("b2:b7"), gc.a1_context());
-        dbg!(&code_cell);
     }
 
     #[test]

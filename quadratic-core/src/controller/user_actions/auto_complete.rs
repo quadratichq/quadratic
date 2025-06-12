@@ -109,6 +109,7 @@ mod tests {
                         code_cell.language.clone(),
                         code_cell.code.clone(),
                         None,
+                        None,
                     );
                 }
 
@@ -773,6 +774,7 @@ mod tests {
             pos![C4].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
+            None,
             None,
         );
 

@@ -258,10 +258,11 @@ mod tests {
                 },
                 code.to_string(),
                 None,
+                None,
             );
 
             let sheet = gc.sheet(sheet_id);
-            let code_cell = sheet.data_table(Pos { x: 10, y: 10 });
+            let code_cell = sheet.data_table_at(&Pos { x: 10, y: 10 });
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {

@@ -1,14 +1,16 @@
-import {
-  type ConverseResponse,
-  type ConverseStreamOutput,
-  type DocumentBlock,
-  type DocumentFormat,
-  type ImageBlock,
-  type ImageFormat,
-  type Message,
-  type SystemContentBlock,
-  type Tool,
-  type ToolChoice,
+import type {
+  ContentBlock,
+  ConverseResponse,
+  ConverseStreamOutput,
+  DocumentBlock,
+  DocumentFormat,
+  ImageBlock,
+  ImageFormat,
+  Message,
+  SystemContentBlock,
+  Tool,
+  ToolChoice,
+  ToolResultContentBlock,
 } from '@aws-sdk/client-bedrock-runtime';
 import type { Response } from 'express';
 import {
@@ -16,9 +18,9 @@ import {
   isContentImage,
   isContentPdfFile,
   isContentTextFile,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type {
@@ -27,8 +29,49 @@ import type {
   AISource,
   AIUsage,
   BedrockModelKey,
+  Content,
   ParsedAIResponse,
+  ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
+
+function convertContent(content: Content): ContentBlock[] {
+  return content.map((content) => {
+    if (isContentImage(content)) {
+      const image: ImageBlock = {
+        format: content.mimeType.split('/')[1] as ImageFormat,
+        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+      };
+      return { image };
+    } else if (isContentPdfFile(content) || isContentTextFile(content)) {
+      const document: DocumentBlock = {
+        format: content.mimeType.split('/')[1] as DocumentFormat,
+        name: content.fileName,
+        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+      };
+      return { document };
+    } else {
+      return {
+        text: content.text,
+      };
+    }
+  });
+}
+
+function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
+  return content.map((content) => {
+    if (isContentImage(content)) {
+      const image: ImageBlock = {
+        format: content.mimeType.split('/')[1] as ImageFormat,
+        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+      };
+      return { image };
+    } else {
+      return {
+        text: content.text,
+      };
+    }
+  });
+}
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   system: SystemContentBlock[] | undefined;
@@ -41,7 +84,9 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
   const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
@@ -67,11 +112,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
           ...message.content.map((toolResult) => ({
             toolResult: {
               toolUseId: toolResult.id,
-              content: [
-                {
-                  text: toolResult.text,
-                },
-              ],
+              content: convertToolResultContent(toolResult.content),
               status: 'success' as const,
             },
           })),
@@ -81,26 +122,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     } else if (message.content) {
       const bedrockMessage: Message = {
         role: message.role,
-        content: message.content.map((content) => {
-          if (isContentImage(content)) {
-            const image: ImageBlock = {
-              format: content.mimeType.split('/')[1] as ImageFormat,
-              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-            };
-            return { image };
-          } else if (isContentPdfFile(content) || isContentTextFile(content)) {
-            const document: DocumentBlock = {
-              format: content.mimeType.split('/')[1] as DocumentFormat,
-              name: content.fileName,
-              source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-            };
-            return { document };
-          } else {
-            return {
-              text: content.text,
-            };
-          }
-        }),
+        content: convertContent(message.content),
       };
       return [...acc, bedrockMessage];
     } else {
@@ -147,18 +169,18 @@ function getBedrockToolChoice(toolName?: AITool): ToolChoice {
 
 export async function parseBedrockStream(
   chunks: AsyncIterable<ConverseStreamOutput> | never[],
-  response: Response,
-  modelKey: BedrockModelKey
+  modelKey: BedrockModelKey,
+  response?: Response
 ): Promise<ParsedAIResponse> {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
 
   const usage: AIUsage = {
     inputTokens: 0,
@@ -173,7 +195,7 @@ export async function parseBedrockStream(
       usage.outputTokens = Math.max(usage.outputTokens, chunk.metadata.usage?.outputTokens ?? 0);
     }
 
-    if (!response.writableEnded) {
+    if (!response?.writableEnded) {
       if (chunk.contentBlockStart) {
         // tool use start
         if (chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
@@ -196,18 +218,19 @@ export async function parseBedrockStream(
       } else if (chunk.contentBlockDelta) {
         if (chunk.contentBlockDelta.delta) {
           // text delta
-          if ('text' in chunk.contentBlockDelta.delta) {
+          if ('text' in chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.text) {
             const currentContent = {
               ...(responseMessage.content.pop() ?? {
                 type: 'text',
                 text: '',
               }),
             };
-            currentContent.text += chunk.contentBlockDelta.delta.text ?? '';
+            currentContent.text += chunk.contentBlockDelta.delta.text;
             responseMessage.content.push(currentContent);
           }
+
           // tool use delta
-          if ('toolUse' in chunk.contentBlockDelta.delta) {
+          if ('toolUse' in chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.toolUse) {
             const toolCall = {
               ...(responseMessage.toolCalls.pop() ?? {
                 id: '',
@@ -216,13 +239,13 @@ export async function parseBedrockStream(
                 loading: true,
               }),
             };
-            toolCall.arguments += chunk.contentBlockDelta.delta.toolUse?.input ?? '';
+            toolCall.arguments += chunk.contentBlockDelta.delta.toolUse.input ?? '';
             responseMessage.toolCalls.push(toolCall);
           }
         }
       }
 
-      response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+      response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
     } else {
       break;
     }
@@ -244,10 +267,9 @@ export async function parseBedrockStream(
     }));
   }
 
-  response.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
-
-  if (!response.writableEnded) {
-    response.end();
+  response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+  if (!response?.writableEnded) {
+    response?.end();
   }
 
   return { responseMessage, usage };
@@ -255,36 +277,32 @@ export async function parseBedrockStream(
 
 export function parseBedrockResponse(
   result: ConverseResponse,
-  response: Response,
-  modelKey: BedrockModelKey
+  modelKey: BedrockModelKey,
+  response?: Response
 ): ParsedAIResponse {
   const responseMessage: AIMessagePrompt = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
-    model: getModelFromModelKey(modelKey),
+    modelKey,
   };
 
   result.output?.message?.content?.forEach((contentBlock) => {
-    if ('text' in contentBlock) {
+    if ('text' in contentBlock && contentBlock.text) {
       responseMessage.content.push({
         type: 'text',
-        text: contentBlock.text ?? '',
+        text: contentBlock.text,
       });
     }
 
-    if ('toolUse' in contentBlock) {
+    if ('toolUse' in contentBlock && contentBlock.toolUse) {
       responseMessage.toolCalls.push({
-        id: contentBlock.toolUse?.toolUseId ?? '',
-        name: contentBlock.toolUse?.name ?? '',
-        arguments: JSON.stringify(contentBlock.toolUse?.input ?? ''),
+        id: contentBlock.toolUse.toolUseId ?? '',
+        name: contentBlock.toolUse.name ?? '',
+        arguments: JSON.stringify(contentBlock.toolUse.input),
         loading: false,
       });
-    }
-
-    if (!('text' in contentBlock) && !('toolUse' in contentBlock)) {
-      console.error(`Invalid AI response: ${JSON.stringify(contentBlock)}`);
     }
   });
 
@@ -295,7 +313,7 @@ export function parseBedrockResponse(
     });
   }
 
-  response.json(responseMessage);
+  response?.json(responseMessage);
 
   const usage: AIUsage = {
     inputTokens: result.usage?.inputTokens ?? 0,

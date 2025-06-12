@@ -13,7 +13,8 @@ import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandl
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsCodeCell, JsCoordinate, JsHtmlOutput, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
+import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point } from 'pixi.js';
 import { Container, Rectangle } from 'pixi.js';
@@ -52,7 +53,7 @@ export class Tables extends Container<Table> {
     this.hoverTableHeaders = new Container();
 
     events.on('renderCodeCells', this.renderCodeCells);
-    events.on('updateCodeCell', this.updateCodeCell);
+    events.on('updateCodeCells', this.updateCodeCells);
 
     events.on('cursorPosition', this.cursorPosition);
     events.on('sheetOffsets', this.sheetOffsets);
@@ -66,7 +67,7 @@ export class Tables extends Container<Table> {
 
   destroy() {
     events.off('renderCodeCells', this.renderCodeCells);
-    events.off('updateCodeCell', this.updateCodeCell);
+    events.off('updateCodeCells', this.updateCodeCells);
 
     events.off('cursorPosition', this.cursorPosition);
     events.off('sheetOffsets', this.sheetOffsets);
@@ -118,38 +119,37 @@ export class Tables extends Container<Table> {
     return sheet;
   }
 
-  private updateCodeCell = (args: {
-    sheetId: string;
-    x: number;
-    y: number;
-    codeCell?: JsCodeCell;
-    renderCodeCell?: JsRenderCodeCell;
-  }) => {
-    const { sheetId, x, y, renderCodeCell } = args;
-    if (sheetId === this.cellsSheet.sheetId) {
-      const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
-      if (table) {
-        if (!renderCodeCell) {
-          pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
-          this.removeChild(table);
-          table.destroy();
-        } else {
-          table.updateCodeCell(renderCodeCell);
-          if (this.isActive(table)) {
-            table.showActive();
+  private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
+    updateCodeCells
+      .filter((updateCodeCell) => updateCodeCell.sheet_id.id === this.cellsSheet.sheetId)
+      .forEach((updateCodeCell) => {
+        const { pos, render_code_cell } = updateCodeCell;
+        const x = Number(pos.x);
+        const y = Number(pos.y);
+        const table = this.children.find((table) => table.codeCell.x === x && table.codeCell.y === y);
+        if (table) {
+          if (!render_code_cell) {
+            pixiApp.cellsSheet().cellsFills.updateAlternatingColors(x, y);
+            this.removeChild(table);
+            table.destroy();
+          } else {
+            table.updateCodeCell(render_code_cell);
+            if (this.isActive(table)) {
+              table.showActive();
+            }
           }
+        } else if (render_code_cell) {
+          this.addChild(new Table(this.sheet, render_code_cell));
         }
-      } else if (renderCodeCell) {
-        this.addChild(new Table(this.sheet, renderCodeCell));
-      }
-      pixiApp.setViewportDirty();
-    }
+        pixiApp.setViewportDirty();
+      });
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
   // listen for the bitmapFontsLoaded event and then render the code cells.
-  private renderCodeCells = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
+  private renderCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
     if (sheetId === this.cellsSheet.sheetId) {
+      const codeCells = fromUint8Array<JsRenderCodeCell[]>(renderCodeCells);
       this.removeChildren();
       if (!isBitmapFontLoaded()) {
         console.log('bitmapFontsLoaded event not received');
@@ -361,14 +361,15 @@ export class Tables extends Container<Table> {
     }
   }
 
-  isHtmlOrImage(cell: JsCoordinate): boolean {
+  isHtmlOrImage = (sheetId: string, cell: JsCoordinate): boolean => {
     if (this.htmlOrImage.has(`${cell.x},${cell.y}`)) {
       return true;
     }
     return (
-      !!htmlCellsHandler.findCodeCell(cell.x, cell.y) || pixiApp.cellsSheet().cellsImages.isImageCell(cell.x, cell.y)
+      !!htmlCellsHandler.findCodeCell(sheetId, cell.x, cell.y) ||
+      !!pixiApp.cellsSheets.getById(sheetId)?.cellsImages.isImageCell(cell.x, cell.y)
     );
-  }
+  };
 
   /// Returns true if the cell is inside a table's UI (column, table name, or html/image).
   getTableFromCell(cell: JsCoordinate): Table | undefined {
@@ -442,7 +443,7 @@ export class Tables extends Container<Table> {
       (table) =>
         table.codeCell.show_name &&
         cell.x >= table.codeCell.x &&
-        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        cell.x < table.codeCell.x + table.codeCell.w &&
         cell.y === table.codeCell.y
     );
   }
@@ -453,7 +454,7 @@ export class Tables extends Container<Table> {
       (table) =>
         table.codeCell.show_columns &&
         cell.x >= table.codeCell.x &&
-        cell.x <= table.codeCell.x + table.codeCell.w - 1 &&
+        cell.x < table.codeCell.x + table.codeCell.w &&
         table.codeCell.y + (table.codeCell.show_name ? 1 : 0) === cell.y
     );
   }

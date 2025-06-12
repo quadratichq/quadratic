@@ -1,11 +1,17 @@
 import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
+import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
+import { GetCellData } from '@/app/ai/toolCards/GetCellData';
+import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
+import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
+import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
+import { WebSearch } from '@/app/ai/toolCards/WebSearch';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo } from 'react';
 
@@ -27,6 +33,8 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <SetCellValues args={args} loading={loading} />;
     case AITool.SetCodeCellValue:
       return <SetCodeCellValue args={args} loading={loading} />;
+    case AITool.SetFormulaCellValue:
+      return <SetFormulaCellValue args={args} loading={loading} />;
     case AITool.MoveCells:
       return <MoveCells args={args} loading={loading} />;
     case AITool.DeleteCells:
@@ -37,6 +45,16 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <UserPromptSuggestionsSkeleton args={args} loading={loading} />;
     case AITool.PDFImport:
       return <PDFImport args={args} loading={loading} />;
+    case AITool.GetCellData:
+      return <GetCellData args={args} loading={loading} />;
+    case AITool.SetTextFormats:
+      return <SetTextFormats args={args} loading={loading} />;
+    case AITool.GetTextFormats:
+      return <GetTextFormats args={args} loading={loading} />;
+    case AITool.ConvertToTable:
+      return <ConvertToTable args={args} loading={loading} />;
+    case AITool.WebSearch:
+      return <WebSearch args={args} loading={loading} />;
     default:
       console.error(`Unknown tool: ${name}`);
       return null;

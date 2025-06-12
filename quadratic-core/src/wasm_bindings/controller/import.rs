@@ -7,22 +7,10 @@ use crate::Pos;
 use crate::controller::GridController;
 use crate::grid::js_types::JsResponse;
 use crate::grid::{Grid, SheetId};
+use crate::wasm_bindings::js::jsImportProgress;
 
 #[wasm_bindgen]
 impl GridController {
-    #[wasm_bindgen(js_name = "getCsvPreview")]
-    pub fn js_get_csv_preview(
-        file: Vec<u8>,
-        max_rows: u32,
-        delimiter: Option<u8>,
-    ) -> Result<JsValue, JsValue> {
-        let preview = GridController::get_csv_preview(file, max_rows, delimiter);
-        match preview {
-            Ok(preview) => Ok(serde_wasm_bindgen::to_value(&preview)?),
-            Err(e) => Err(JsValue::from_str(&e.to_string())),
-        }
-    }
-
     #[wasm_bindgen(js_name = "importCsv")]
     pub fn js_import_csv(
         file: Vec<u8>,
@@ -132,10 +120,11 @@ impl GridController {
         let mut grid = Grid::new_blank();
         let sheet_id = grid.add_sheet(None);
         let insert_at = pos![A1];
-
         let mut grid_controller = GridController::from_grid(grid, 0);
+        let updater = Some(jsImportProgress);
+
         grid_controller
-            .import_parquet(sheet_id, file, file_name, insert_at, None)
+            .import_parquet(sheet_id, file, file_name, insert_at, None, updater)
             .map_err(|e| e.to_string())?;
 
         Ok(grid_controller)
@@ -155,7 +144,9 @@ impl GridController {
     ) -> Result<(), JsValue> {
         let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
         let insert_at = serde_json::from_str::<Pos>(insert_at).map_err(|e| e.to_string())?;
-        self.import_parquet(sheet_id, file, file_name, insert_at, cursor)
+        let updater = Some(jsImportProgress);
+
+        self.import_parquet(sheet_id, file, file_name, insert_at, cursor, updater)
             .map_err(|e| e.to_string())?;
 
         Ok(())

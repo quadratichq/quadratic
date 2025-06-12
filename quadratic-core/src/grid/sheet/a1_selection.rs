@@ -30,6 +30,7 @@ impl Sheet {
         max_count: Option<i64>,
         skip_code_runs: bool,
         include_blanks: bool,
+        ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Option<IndexMap<Pos, &CellValue>> {
         let mut count = 0u64;
@@ -48,7 +49,9 @@ impl Sheet {
 
         for range in selection.ranges.iter() {
             let rect = match range {
-                CellRefRange::Sheet { range } => Some(self.ref_range_bounds_to_rect(range)),
+                CellRefRange::Sheet { range } => {
+                    Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
+                }
                 CellRefRange::Table { range } => {
                     self.table_ref_to_rect(range, false, false, a1_context)
                 }
@@ -75,30 +78,30 @@ impl Sheet {
                         }
                     }
                 }
-            };
 
-            if !skip_code_runs {
-                for (pos, code_run) in self.data_tables.iter() {
-                    let code_rect = code_run.output_rect(*pos, false);
-                    for x in code_rect.x_range() {
-                        for y in code_rect.y_range() {
-                            if rect.is_some_and(|rect| rect.contains(Pos { x, y })) {
-                                if let Some(entry) = code_run
-                                    .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                {
-                                    if !matches!(entry, &CellValue::Blank) {
-                                        count += 1;
-                                        if count >= max_count {
-                                            return None;
+                if !skip_code_runs {
+                    for (_, pos, data_table) in self.data_tables.get_in_rect(rect, false) {
+                        let data_table_rect = data_table.output_rect(pos, false);
+                        if let Some(intersection) = data_table_rect.intersection(&rect) {
+                            for x in intersection.x_range() {
+                                for y in intersection.y_range() {
+                                    if let Some(entry) = data_table
+                                        .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
+                                    {
+                                        if !matches!(entry, &CellValue::Blank) {
+                                            count += 1;
+                                            if count >= max_count {
+                                                return None;
+                                            }
+                                            cells.insert(Pos { x, y }, entry);
                                         }
-                                        cells.insert(Pos { x, y }, entry);
                                     }
                                 }
                             }
                         }
                     }
                 }
-            }
+            };
         }
 
         if cells.is_empty() { None } else { Some(cells) }
@@ -110,10 +113,17 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         skip_code_runs: bool,
+        ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Vec<(Pos, &CellValue)> {
-        if let Some(map) = self.selection_values(selection, None, skip_code_runs, false, a1_context)
-        {
+        if let Some(map) = self.selection_values(
+            selection,
+            None,
+            skip_code_runs,
+            false,
+            ignore_formatting,
+            a1_context,
+        ) {
             let mut vec: Vec<_> = map.iter().map(|(pos, value)| (*pos, *value)).collect();
             vec.sort_by(|(a, _), (b, _)| {
                 if a.y < b.y {
@@ -150,7 +160,11 @@ impl Sheet {
 
     /// Converts a cell reference range to a minimal rectangle covering the data
     /// on the sheet.
-    pub fn ref_range_bounds_to_rect(&self, range: &RefRangeBounds) -> Rect {
+    pub fn ref_range_bounds_to_rect(
+        &self,
+        range: &RefRangeBounds,
+        ignore_formatting: bool,
+    ) -> Rect {
         let start = range.start;
         let end = range.end;
         // ensure start is not unbounded (it shouldn't be)
@@ -167,7 +181,6 @@ impl Sheet {
             },
         };
 
-        let ignore_formatting = false;
         let rect_end = if end.is_unbounded() {
             if end.col.is_unbounded() && end.row.is_unbounded() {
                 match self.bounds(ignore_formatting) {
@@ -214,12 +227,15 @@ impl Sheet {
         selection: &A1Selection,
         force_columns: bool,
         auto_detect_table_bounds: bool,
+        ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Vec<Rect> {
         let mut rects = Vec::new();
         for range in selection.ranges.iter() {
             match range {
-                CellRefRange::Sheet { range } => rects.push(self.ref_range_bounds_to_rect(range)),
+                CellRefRange::Sheet { range } => {
+                    rects.push(self.ref_range_bounds_to_rect(range, ignore_formatting));
+                }
                 CellRefRange::Table { range } => {
                     if let Some(rect) = self.table_ref_to_rect(
                         range,
@@ -242,12 +258,14 @@ impl Sheet {
         selection: &A1Selection,
         auto_detect_table_bounds: bool,
         force_columns: bool,
+        ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Option<Rect> {
         let rects = self.selection_to_rects(
             selection,
             force_columns,
             auto_detect_table_bounds,
+            ignore_formatting,
             a1_context,
         );
         if rects.is_empty() {
@@ -264,6 +282,7 @@ impl Sheet {
         selection: &A1Selection,
         force_columns: bool,
         force_table_bounds: bool,
+        ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> A1Selection {
         A1Selection {
@@ -274,7 +293,7 @@ impl Sheet {
                 .iter()
                 .filter_map(|range| match range {
                     CellRefRange::Sheet { range } => Some(CellRefRange::new_relative_rect(
-                        self.ref_range_bounds_to_rect(range),
+                        self.ref_range_bounds_to_rect(range, ignore_formatting),
                     )),
                     CellRefRange::Table { range } => self
                         .table_ref_to_rect(range, force_columns, force_table_bounds, a1_context)
@@ -302,17 +321,17 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Test fully specified range
         let range = RefRangeBounds::test_a1("A1:E5");
-        let rect = sheet.ref_range_bounds_to_rect(&range);
+        let rect = sheet.ref_range_bounds_to_rect(&range, false);
         assert_eq!(rect, Rect::new(1, 1, 5, 5));
 
         // Test unbounded end
         let range = RefRangeBounds::test_a1("B2:");
-        let rect = sheet.ref_range_bounds_to_rect(&range);
+        let rect = sheet.ref_range_bounds_to_rect(&range, false);
         assert_eq!(rect, Rect::new(2, 2, 5, 5)); // Should extend to sheet bounds
     }
 
@@ -321,8 +340,8 @@ mod tests {
         let sheet = Sheet::test();
         let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
-        let a1_context = sheet.make_a1_context();
-        let rects = sheet.selection_to_rects(&selection, false, false, &a1_context);
+        let a1_context = sheet.expensive_make_a1_context();
+        let rects = sheet.selection_to_rects(&selection, false, false, false, &a1_context);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
     }
 
@@ -332,22 +351,22 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Test unbounded range
         let range = RefRangeBounds::test_a1("B2:");
-        let finite_range = sheet.ref_range_bounds_to_rect(&range);
+        let finite_range = sheet.ref_range_bounds_to_rect(&range, false);
         assert_eq!(finite_range, Rect::test_a1("B2:J10"));
 
         // Test already bounded range (should remain unchanged)
         let range = RefRangeBounds::test_a1("C3:E5");
-        let finite_range = sheet.ref_range_bounds_to_rect(&range);
+        let finite_range = sheet.ref_range_bounds_to_rect(&range, false);
         assert_eq!(finite_range, Rect::test_a1("C3:E5"));
 
         // Test select all
         let range = RefRangeBounds::test_a1("*");
-        let finite_range = sheet.ref_range_bounds_to_rect(&range);
+        let finite_range = sheet.ref_range_bounds_to_rect(&range, false);
         assert_eq!(finite_range, Rect::test_a1("A1:J10"));
     }
 
@@ -357,11 +376,12 @@ mod tests {
         // Add some data to create bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![J10], CellValue::Text("J10".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         let selection = A1Selection::test_a1("A1:C3,E5:");
-        let finite_selection = sheet.finitize_selection(&selection, false, false, &a1_context);
+        let finite_selection =
+            sheet.finitize_selection(&selection, false, false, false, &a1_context);
         assert_eq!(
             finite_selection.ranges,
             vec![
@@ -372,7 +392,8 @@ mod tests {
 
         // Test select all
         let selection = A1Selection::test_a1("*");
-        let finite_selection = sheet.finitize_selection(&selection, false, false, &a1_context);
+        let finite_selection =
+            sheet.finitize_selection(&selection, false, false, false, &a1_context);
         assert_eq!(
             finite_selection.ranges,
             vec![CellRefRange::test_a1("A1:J10")]
@@ -386,69 +407,69 @@ mod tests {
         // Setup some data to establish sheet bounds
         sheet.set_cell_value(pos![A1], CellValue::Text("A1".into()));
         sheet.set_cell_value(pos![E5], CellValue::Text("E5".into()));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         // Single cell selection
         let single_cell = A1Selection::test_a1("B2");
         assert_eq!(
-            sheet.selection_bounds(&single_cell, false, false, &a1_context),
+            sheet.selection_bounds(&single_cell, false, false, false, &a1_context),
             Some(Rect::new(2, 2, 2, 2))
         );
 
         // Regular rectangular selection
         let rect_selection = A1Selection::test_a1("B2:D4");
         assert_eq!(
-            sheet.selection_bounds(&rect_selection, false, false, &a1_context),
+            sheet.selection_bounds(&rect_selection, false, false, false, &a1_context),
             Some(Rect::new(2, 2, 4, 4))
         );
 
         // Multiple disjoint rectangles
         let multi_rect = A1Selection::test_a1("A1:B2,D4:E5");
         assert_eq!(
-            sheet.selection_bounds(&multi_rect, false, false, &a1_context),
+            sheet.selection_bounds(&multi_rect, false, false, false, &a1_context),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Overlapping rectangles
         let overlapping = A1Selection::test_a1("B2:D4,C3:E5");
         assert_eq!(
-            sheet.selection_bounds(&overlapping, false, false, &a1_context),
+            sheet.selection_bounds(&overlapping, false, false, false, &a1_context),
             Some(Rect::new(2, 2, 5, 5))
         );
 
         // Infinite column selection (should be clamped to sheet bounds)
         let infinite_col = A1Selection::test_a1("C:C");
         assert_eq!(
-            sheet.selection_bounds(&infinite_col, false, false, &a1_context),
+            sheet.selection_bounds(&infinite_col, false, false, false, &a1_context),
             Some(Rect::new(3, 1, 3, 1))
         );
 
         // Infinite row selection (should be clamped to sheet bounds)
         let infinite_row = A1Selection::test_a1("3:3");
         assert_eq!(
-            sheet.selection_bounds(&infinite_row, false, false, &a1_context),
+            sheet.selection_bounds(&infinite_row, false, false, false, &a1_context),
             Some(Rect::new(1, 3, 1, 3))
         );
 
         // Select all (should be clamped to sheet bounds)
         let select_all = A1Selection::test_a1("*");
         assert_eq!(
-            sheet.selection_bounds(&select_all, false, false, &a1_context),
+            sheet.selection_bounds(&select_all, false, false, false, &a1_context),
             Some(Rect::new(1, 1, 5, 5))
         );
 
         // Multiple infinite selections (should be clamped to sheet bounds)
         let multi_infinite = A1Selection::test_a1("A:B,2:3");
         assert_eq!(
-            sheet.selection_bounds(&multi_infinite, false, false, &a1_context),
+            sheet.selection_bounds(&multi_infinite, false, false, false, &a1_context),
             Some(Rect::new(1, 1, 2, 3))
         );
 
         // Mixed finite and infinite selections
         let mixed = A1Selection::test_a1("B2:C3,D:D,4:4");
         assert_eq!(
-            sheet.selection_bounds(&mixed, false, false, &a1_context),
+            sheet.selection_bounds(&mixed, false, false, false, &a1_context),
             Some(Rect::new(1, 1, 4, 4))
         );
     }

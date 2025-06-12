@@ -9,6 +9,11 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
 
+    pub fn server_set_sheet_name(&mut self, sheet_id: SheetId, name: String) {
+        let ops = self.set_sheet_name_operations(sheet_id, name);
+        self.server_apply_transaction(ops, None);
+    }
+
     pub fn set_sheet_color(
         &mut self,
         sheet_id: SheetId,
@@ -27,6 +32,11 @@ impl GridController {
     pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>) {
         let ops = self.add_sheet_operations(Some(name));
         self.start_user_transaction(ops, cursor, TransactionName::SheetAdd);
+    }
+
+    pub fn server_add_sheet_with_name(&mut self, name: String) {
+        let ops = self.add_sheet_operations(Some(name));
+        self.server_apply_transaction(ops, None);
     }
 
     pub fn delete_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
@@ -57,6 +67,7 @@ mod test {
         controller::GridController,
         grid::{
             CodeCellLanguage, SheetId,
+            js_types::JsUpdateCodeCell,
             sheet::borders::{BorderSelection, BorderStyle},
         },
         wasm_bindings::{
@@ -238,6 +249,7 @@ mod test {
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,
+            None,
         );
         gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
             .unwrap();
@@ -259,24 +271,26 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             false,
         );
         // should send sheet fills for the duplicated sheet
+        let fills = gc.sheet(duplicated_sheet_id).get_all_render_fills();
         expect_js_call(
             "jsSheetFills",
             format!(
-                "{},{}",
-                duplicated_sheet_id, r#"[{"x":1,"y":1,"w":1,"h":1,"color":"red"}]"#
+                "{},{:?}",
+                duplicated_sheet_id,
+                serde_json::to_vec(&fills).unwrap()
             ),
             false,
         );
         // should send borders for the duplicated sheet
-        let borders = gc.sheet(duplicated_sheet_id).borders_in_sheet().unwrap();
-        let borders_str = serde_json::to_string(&borders).unwrap();
+        let borders = gc.sheet(duplicated_sheet_id).borders_in_sheet();
+        let borders_str = serde_json::to_vec(&borders).unwrap();
         expect_js_call(
             "jsBordersSheet",
-            format!("{},{}", duplicated_sheet_id, borders_str),
+            format!("{},{:?}", duplicated_sheet_id, borders_str),
             false,
         );
         // code cells should rerun and send updated code cell
@@ -285,24 +299,18 @@ mod test {
             x: 1,
             y: 1,
         };
-        let code_cell = gc
-            .sheet(duplicated_sheet_id)
-            .edit_code_value(sheet_pos.into(), gc.a1_context())
-            .unwrap();
-        let render_code_cell = gc
-            .sheet(duplicated_sheet_id)
-            .get_render_code_cell(sheet_pos.into())
-            .unwrap();
+
+        let sheet = gc.sheet(duplicated_sheet_id);
+
+        let update_code_cell = JsUpdateCodeCell {
+            sheet_id: duplicated_sheet_id,
+            pos: sheet_pos.into(),
+            render_code_cell: sheet.get_render_code_cell(sheet_pos.into()),
+        };
+
         expect_js_call(
-            "jsUpdateCodeCell",
-            format!(
-                "{},{},{},{:?},{:?}",
-                duplicated_sheet_id,
-                sheet_pos.x,
-                sheet_pos.y,
-                Some(serde_json::to_string(&code_cell).unwrap()),
-                Some(serde_json::to_string(&render_code_cell).unwrap())
-            ),
+            "jsUpdateCodeCells",
+            format!("{:?}", serde_json::to_vec(&vec![update_code_cell]).unwrap()),
             true,
         );
 
@@ -320,7 +328,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -332,7 +340,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 
@@ -351,7 +359,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id3));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
     }
@@ -390,6 +398,7 @@ mod test {
             CodeCellLanguage::Formula,
             "A1 + A2".to_string(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
@@ -403,7 +412,7 @@ mod test {
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id));
         expect_js_call(
             "jsAddSheet",
-            format!("{},{}", serde_json::to_string(&sheet_info).unwrap(), true),
+            format!("{:?},{}", serde_json::to_vec(&sheet_info).unwrap(), true),
             true,
         );
 

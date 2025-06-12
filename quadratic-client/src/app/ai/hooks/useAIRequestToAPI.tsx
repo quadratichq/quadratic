@@ -1,7 +1,7 @@
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   AIMessagePromptSchema,
   type AIMessagePrompt,
@@ -35,7 +35,7 @@ export function useAIRequestToAPI() {
           content: [],
           contextType: 'userPrompt',
           toolCalls: [],
-          model: getModelFromModelKey(args.modelKey),
+          modelKey: args.modelKey,
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
         const { source, modelKey, useStream } = args;
@@ -54,7 +54,13 @@ export function useAIRequestToAPI() {
           });
 
           if (!response.ok) {
-            const data = await response.json();
+            let data;
+            try {
+              data = await response.json();
+            } catch (error) {
+              data = '';
+            }
+
             let text = '';
             switch (response.status) {
               case 429:
@@ -67,13 +73,14 @@ export function useAIRequestToAPI() {
                 text = `Looks like there was a problem. Error: ${JSON.stringify(data.error)}`;
                 break;
             }
+
             setMessages?.((prev) => [
               ...prev.slice(0, -1),
               {
                 role: 'assistant',
                 content: [{ type: 'text', text }],
                 contextType: 'userPrompt',
-                model: getModelFromModelKey(args.modelKey),
+                modelKey,
                 toolCalls: [],
               },
             ]);

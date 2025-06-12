@@ -13,8 +13,8 @@ import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { ModelConfig, ModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useMemo } from 'react';
+import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import { memo, useCallback, useMemo } from 'react';
 
 interface SelectAIModelMenuProps {
   loading: boolean;
@@ -25,7 +25,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const [selectedModel, setSelectedModel, selectedModelConfig, thinkingToggle, setThinkingToggle] = useAIModel();
 
   const modelConfigs = useMemo(() => {
-    const configs = Object.entries(MODELS_CONFIGURATION) as [ModelKey, ModelConfig][];
+    const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
 
     // enable all models in debug mode
     if (debug) {
@@ -43,18 +43,23 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
 
-  const handleThinkingToggle = (nextThinking: boolean) => {
-    const nextModel = modelConfigs.find(
-      ([_, modelConfig]) =>
-        modelConfig.provider === selectedModelConfig.provider &&
-        modelConfig.displayName === selectedModelConfig.displayName &&
-        modelConfig.thinkingToggle === nextThinking
-    );
-    if (nextModel) {
-      setSelectedModel(nextModel[0]);
-      setThinkingToggle(nextThinking);
-    }
-  };
+  const handleThinkingToggle = useCallback(
+    (thinkingToggle: boolean) => {
+      const nextModelKey = thinkingToggle
+        ? selectedModel.replace(':thinking-toggle-off', ':thinking-toggle-on')
+        : selectedModel.replace(':thinking-toggle-on', ':thinking-toggle-off');
+
+      const nextModel = modelConfigs.find(
+        ([modelKey, modelConfig]) => modelKey === nextModelKey && modelConfig.thinkingToggle === thinkingToggle
+      );
+
+      if (nextModel) {
+        setSelectedModel(nextModel[0]);
+        setThinkingToggle(thinkingToggle);
+      }
+    },
+    [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
+  );
 
   return (
     <>
@@ -114,7 +119,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             aria-label="Extended thinking"
             size="sm"
             disabled={loading}
-            onClick={() => handleThinkingToggle(!thinking)}
+            onClick={() => handleThinkingToggle(!thinkingToggle)}
             className={cn(
               thinking && '!bg-border !text-primary',
               !thinking && 'text-muted-foreground hover:text-foreground',

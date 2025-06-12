@@ -1,7 +1,7 @@
 import { getRowColSentence, ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { TableIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type AddDataTableResponse = z.infer<(typeof aiToolsSpec)[AITool.AddDataTable]['responseSchema']>;
@@ -11,7 +11,7 @@ type AddDataTableProps = {
   loading: boolean;
 };
 
-export const AddDataTable = ({ args, loading }: AddDataTableProps) => {
+export const AddDataTable = memo(({ args, loading }: AddDataTableProps) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<AddDataTableResponse, AddDataTableResponse>>();
 
   useEffect(() => {
@@ -49,10 +49,10 @@ export const AddDataTable = ({ args, loading }: AddDataTableProps) => {
       icon={icon}
       label={
         <span>
-          {label} <span className="text-muted-foreground">| {table_name}</span>
+          {label} <span className="ml-1 font-normal text-muted-foreground">{table_name}</span>
         </span>
       }
       description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}
     />
   );
-};
+});
