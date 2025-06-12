@@ -284,7 +284,7 @@ impl MultiCellTablesCache {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::*;
+    use crate::{a1::A1Selection, test_util::*};
 
     #[test]
     fn test_has_content_ignore_blank_table() {
@@ -327,5 +327,41 @@ mod tests {
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![6, 2]));
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![7, 2]));
         assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![8, 2]));
+    }
+
+    #[test]
+    fn test_code_in_selection() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create a single-cell code table
+        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 1, 1);
+
+        // Create a multi-cell code table
+        test_create_code_table(&mut gc, sheet_id, pos![4, 2], 3, 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context();
+
+        // Test selection containing single-cell code table
+        let selection = A1Selection::test_a1("B2");
+        assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test selection containing multi-cell code table
+        let selection = A1Selection::test_a1("D2:F2");
+        assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test selection containing both tables
+        let selection = A1Selection::test_a1("B2:F2");
+        assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test empty selection
+        let selection = A1Selection::test_a1("J10");
+        assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test selection with no code tables
+        let selection = A1Selection::test_a1("A1");
+        assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
     }
 }

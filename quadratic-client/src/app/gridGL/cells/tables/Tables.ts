@@ -634,7 +634,7 @@ export class Tables extends Container<Table> {
 
   hasCodeCellInCurrentSelection = () => {
     if (!this.dataTablesCache) return false;
-    return this.dataTablesCache.hasTableInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
+    return this.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
   };
 
   //#endregion

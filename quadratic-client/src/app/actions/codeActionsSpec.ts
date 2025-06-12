@@ -4,6 +4,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { SaveAndRunIcon } from '@/shared/components/Icons';
 
 type CodeActionSpec = Pick<
   ActionSpecRecord,
@@ -34,7 +35,8 @@ export const codeActionsSpec: CodeActionSpec = {
     run: cancelExecution,
   },
   [Action.ExecuteCode]: {
-    label: () => 'Execute code',
+    label: () => 'Rerun code cells',
+    Icon: SaveAndRunIcon,
     run: executeCode,
   },
   [Action.RerunSheetCode]: {

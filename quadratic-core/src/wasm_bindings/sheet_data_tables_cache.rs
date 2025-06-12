@@ -57,7 +57,7 @@ impl SheetDataTablesCache {
             && !self.single_cell_tables.is_all_default_in_rect(rect)
     }
 
-    #[wasm_bindgen(js_name = "hasTableInSelection")]
+    #[wasm_bindgen(js_name = "hasCodeCellInSelection")]
     pub fn has_table_in_selection(
         &self,
         js_selection: &JsSelection,
