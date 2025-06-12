@@ -621,11 +621,6 @@ export class Tables extends Container<Table> {
     return !!this.getTable(x, y) || !!this.getSingleCodeCell(x, y);
   };
 
-  isWithinCodeCell = (x: number, y: number): boolean => {
-    const codeCell = this.getCodeCellIntersects({ x, y });
-    return codeCell?.language !== 'Import';
-  };
-
   /// Returns whether there are any code cells with the cell-based rectangle
   hasCodeCellInRect = (r: Rectangle): boolean => {
     if (!this.dataTablesCache) return false;
