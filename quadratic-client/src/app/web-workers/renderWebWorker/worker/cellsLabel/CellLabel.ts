@@ -165,7 +165,7 @@ export class CellLabel {
         }
     }
     if (text.length > MAX_CHAR_LENGTH) {
-        text = text.substring(0, MAX_CHAR_LENGTH - 1) + '…';
+      text = text.substring(0, MAX_CHAR_LENGTH - 1) + '…';
     }
     return text;
   };
