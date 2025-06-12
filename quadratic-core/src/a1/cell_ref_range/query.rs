@@ -131,7 +131,7 @@ impl CellRefRange {
     /// Returns the largest finite rectangle that contains the range.
     pub fn to_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         match self {
-            Self::Sheet { range } => range.to_rect(),
+            Self::Sheet { range } => Some(range.to_rect_unbounded()),
             Self::Table { range } => range.to_largest_rect(a1_context),
         }
     }
