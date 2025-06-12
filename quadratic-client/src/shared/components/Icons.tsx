@@ -431,6 +431,10 @@ export const HistoryIcon: IconComponent = (props) => {
   return <Icon {...props}>history</Icon>;
 };
 
+export const InfoIcon: IconComponent = (props) => {
+  return <Icon {...props}>info</Icon>;
+};
+
 export const ImportIcon: IconComponent = (props) => {
   return <Icon {...props}>login</Icon>;
 };

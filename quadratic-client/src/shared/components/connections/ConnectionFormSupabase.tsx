@@ -1,6 +1,8 @@
 import { ConnectionFormMessageHost } from '@/shared/components/connections/ConnectionFormMessageHost';
 import { ConnectionInputPassword } from '@/shared/components/connections/ConnectionInputPassword';
 import type { ConnectionFormComponent, UseConnectionForm } from '@/shared/components/connections/connectionsByType';
+import { InfoIcon } from '@/shared/components/Icons';
+import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -62,6 +64,13 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             </FormItem>
           )}
         />
+        <div>
+          <Alert className="my-4">
+            <InfoIcon className="!text-primary" />
+            <AlertTitle className="text-primary">Heads up</AlertTitle>
+            <AlertDescription>Use connection information for the Session Pooler.</AlertDescription>
+          </Alert>
+        </div>
         <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}
