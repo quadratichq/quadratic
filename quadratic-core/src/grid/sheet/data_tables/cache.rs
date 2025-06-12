@@ -120,14 +120,12 @@ impl SheetDataTablesCache {
                 }
                 let tables = self.multi_cell_tables.unique_values_in_rect(rect);
                 if !tables.is_empty() {
-                    for table_pos in tables.iter() {
-                        if let Some(table_pos) = table_pos {
-                            if let Some(table) =
-                                context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                            {
-                                if table.language != CodeCellLanguage::Import {
-                                    return true;
-                                }
+                    for table_pos in tables.iter().flatten() {
+                        if let Some(table) =
+                            context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                        {
+                            if table.language != CodeCellLanguage::Import {
+                                return true;
                             }
                         }
                     }

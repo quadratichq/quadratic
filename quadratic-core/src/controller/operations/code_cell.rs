@@ -67,7 +67,7 @@ impl GridController {
                         ops.push(Operation::ComputeCode {
                             sheet_pos: pos.to_sheet_pos(sheet_id),
                         });
-                    })
+                    });
             });
         }
 
