@@ -66,7 +66,7 @@ async fn get_connection(
         }
     };
 
-    let snowflake_connection = BigqueryConnection::new(
+    let bigquery_connection = BigqueryConnection::new(
         connection
             .type_details
             .service_account_configuration
@@ -75,7 +75,7 @@ async fn get_connection(
     )
     .await?;
 
-    Ok((snowflake_connection, connection))
+    Ok((bigquery_connection, connection))
 }
 
 /// Query the database and return the results as a parquet file.
@@ -123,28 +123,28 @@ mod tests {
     use http::StatusCode;
     use quadratic_rust_shared::parquet::utils::compare_parquet_file_with_bytes;
     use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
-    use quadratic_rust_shared::test::get_snowflake_parquet_path;
+    use quadratic_rust_shared::test::get_bigquery_parquet_path;
     use tracing_test::traced_test;
     use uuid::Uuid;
 
     // TODO(ddimaria): removing this test for now until we can record different queries (only single for now)
     // #[tokio::test]
     // #[traced_test]
-    // async fn snowflake_test_connection() {
+    // async fn bigquery_test_connection() {
     //     let state = Extension(new_state().await);
     //     let connection_id = Uuid::new_v4();
     //     let claims = get_claims();
-    //     let (snowflake_connection, _) = get_connection(&state, &claims, &connection_id)
+    //     let (bigquery_connection, _) = get_connection(&state, &claims, &connection_id)
     //         .await
     //         .unwrap();
-    //     let response = test(state, axum::Json(snowflake_connection)).await;
+    //     let response = test(state, axum::Json(bigquery_connection)).await;
 
     //     assert!(response.0.connected);
     // }
 
     #[tokio::test]
     #[traced_test]
-    async fn snowflake_schema() {
+    async fn bigquery_schema() {
         let connection_id = Uuid::new_v4();
         let (_, headers) = new_team_id_with_header().await;
         let state = Extension(new_state().await);
@@ -260,7 +260,7 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn snowflake_query_all_data_types() {
+    async fn bigquery_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
             query: "select * from all_native_data_types;".into(),
@@ -274,7 +274,7 @@ mod tests {
         let response = data.into_response();
 
         assert!(compare_parquet_file_with_bytes(
-            &get_snowflake_parquet_path(),
+            &get_bigquery_parquet_path(),
             response_bytes(response).await
         ));
         // assert_eq!(response.status(), 200);
@@ -282,7 +282,7 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
-    async fn snowflake_query_max_response_bytes() {
+    async fn bigquery_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
             query: "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id".into(),
