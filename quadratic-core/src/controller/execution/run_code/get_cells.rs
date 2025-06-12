@@ -111,8 +111,13 @@ impl GridController {
             CodeCellLanguage::Python | CodeCellLanguage::Javascript
         );
 
-        let rects =
-            selection_sheet.selection_to_rects(&selection, force_columns, false, &self.a1_context);
+        let rects = selection_sheet.selection_to_rects(
+            &selection,
+            force_columns,
+            false,
+            true,
+            &self.a1_context,
+        );
         if rects.len() > 1 {
             return map_error(CoreError::A1Error(
                 "Multiple rects not supported".to_string(),
@@ -219,6 +224,7 @@ mod test {
             CodeCellLanguage::Python,
             "".to_string(),
             None,
+            None,
         );
 
         let transactions = gc.transactions.async_transactions_mut();
@@ -241,6 +247,7 @@ mod test {
             CodeCellLanguage::Python,
             "".to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -258,7 +265,7 @@ mod test {
         .unwrap();
         let sheet = gc.sheet(sheet_id);
         let error = sheet
-            .data_table(Pos { x: 1, y: 1 })
+            .data_table_at(&Pos { x: 1, y: 1 })
             .unwrap()
             .code_run()
             .unwrap()
@@ -293,6 +300,7 @@ mod test {
             },
             crate::grid::CodeCellLanguage::Python,
             "".to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -337,6 +345,7 @@ mod test {
             },
             CodeCellLanguage::Python,
             "".to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -417,6 +426,7 @@ mod test {
             CodeCellLanguage::Python,
             "".to_string(),
             None,
+            None,
         );
 
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -490,6 +500,7 @@ mod test {
             CodeCellLanguage::Javascript,
             "".to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
@@ -536,6 +547,7 @@ mod test {
             CodeCellLanguage::Python,
             "".to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string());
@@ -579,6 +591,7 @@ mod test {
             SheetPos::new(sheet_id, 1, 10),
             CodeCellLanguage::Python,
             "".to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -637,6 +650,7 @@ mod test {
             SheetPos::new(sheet_id, 1, 10),
             CodeCellLanguage::Python,
             "".to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -697,6 +711,7 @@ mod test {
             CodeCellLanguage::Python,
             "".to_string(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string());
@@ -721,6 +736,7 @@ mod test {
             },
             CodeCellLanguage::Python,
             "".to_string(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;

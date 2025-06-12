@@ -51,7 +51,13 @@ mod tests {
 
         let sheet_pos = pos![A1].to_sheet_pos(sheet_id);
         let code = "print('test')".to_string();
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Python,
+            code.clone(),
+            None,
+            None,
+        );
 
         let transaction = gc.async_transactions().first().unwrap();
         let transaction_id = transaction.id;
@@ -73,15 +79,21 @@ mod tests {
             }
             _ => panic!("expected code cell"),
         }
-        let data_table = sheet.data_tables.get_mut(&pos).unwrap();
-        data_table.show_name = Some(false);
-        data_table.show_columns = Some(false);
+        sheet
+            .data_tables
+            .modify_data_table_at(&pos, |dt| {
+                dt.show_name = Some(false);
+                dt.show_columns = Some(false);
+                Ok(())
+            })
+            .unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
             data_table.cell_value_at(0, 1),
             Some(CellValue::Text("test".to_string()))
         );
-        assert!(!data_table.spill_error);
+        assert!(!data_table.has_spill());
 
         // transaction should be completed
         let async_transaction = gc.transactions.get_async_transaction(transaction_id);
@@ -96,6 +108,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('hello world')".into(),
+            None,
             None,
         );
 
@@ -133,6 +146,7 @@ mod tests {
             pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
+            None,
             None,
         );
 
@@ -199,6 +213,7 @@ mod tests {
             pos![A2].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
+            None,
             None,
         );
 
@@ -284,6 +299,7 @@ mod tests {
             CodeCellLanguage::Python,
             "create an array output".into(),
             None,
+            None,
         );
 
         // get the transaction id for the awaiting python async calculation
@@ -333,6 +349,7 @@ mod tests {
             CodeCellLanguage::Python,
             "dummy calculation".into(),
             None,
+            None,
         );
         let transaction_id = gc.async_transactions()[0].id;
         // mock the python result
@@ -369,6 +386,7 @@ mod tests {
             CodeCellLanguage::Python,
             "print('original output')".into(),
             None,
+            None,
         );
 
         // get the transaction id for the awaiting python async calculation
@@ -395,6 +413,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output')".into(),
+            None,
             None,
         );
 
@@ -428,6 +447,7 @@ mod tests {
             pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('new output second time')".into(),
+            None,
             None,
         );
 
@@ -474,6 +494,7 @@ mod tests {
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
+            None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -503,6 +524,7 @@ mod tests {
             pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells('B2') + 1".into(),
+            None,
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;

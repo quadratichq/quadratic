@@ -43,7 +43,7 @@ export class BoxCells extends Graphics {
 
   private drawRectangle(): void {
     if (!this.gridRectangle) return;
-    const screenRectangle = sheets.sheet.getScreenRectangleFromRect(this.gridRectangle);
+    const screenRectangle = sheets.sheet.getScreenRectangleFromRectangle(this.gridRectangle);
     this.dirty = false;
     this.clear();
     this.lineStyle({
@@ -70,7 +70,7 @@ export class BoxCells extends Graphics {
     this.lineStyle(0);
     this.deleteRectangles?.forEach((rectangle) => {
       this.beginFill(colors.boxCellsDeleteColor, colors.boxCellsAlpha);
-      const screenRectangle = sheets.sheet.getScreenRectangleFromRect(rectangle);
+      const screenRectangle = sheets.sheet.getScreenRectangleFromRectangle(rectangle);
       screenRectangle.height++;
       this.drawShape(screenRectangle);
       this.endFill();

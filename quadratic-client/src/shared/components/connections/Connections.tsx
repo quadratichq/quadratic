@@ -1,20 +1,21 @@
-import type { CodeCellLanguage } from '@/app/quadratic-core-types';
-import type { CreateConnectionAction, DeleteConnectionAction, UpdateConnectionAction } from '@/routes/api.connections';
+import {
+  getToggleShowConnectionDemoAction,
+  type CreateConnectionAction,
+  type DeleteConnectionAction,
+  type ToggleShowConnectionDemoAction,
+  type UpdateConnectionAction,
+} from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
-import { useFetchers, useSearchParams } from 'react-router';
+import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
+import { useCallback, useMemo, useState } from 'react';
+import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
-export type ConnectionsListConnection = {
-  uuid: string;
-  name: string;
-  createdDate: string;
-  type: ConnectionType;
+export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
 };
 type Props = {
@@ -23,25 +24,17 @@ type Props = {
   staticIps: string[] | null;
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
-  // If this is present, we're in the app and we'll do stuff slightly differently
-  handleNavigateToDetailsViewOverride?: (language: CodeCellLanguage) => void;
 };
 export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
-export const Connections = ({
-  connections,
-  connectionsAreLoading,
-  teamUuid,
-  staticIps,
-  handleNavigateToDetailsViewOverride,
-  sshPublicKey,
-}: Props) => {
+export const Connections = ({ connections, connectionsAreLoading, teamUuid, staticIps, sshPublicKey }: Props) => {
+  const submit = useSubmit();
   // Allow pre-loading the connection type via url params, e.g. /connections?initial-connection-type=MYSQL
   // Delete it from the url after we store it in local state
   const [searchParams] = useSearchParams();
-  const initialConnectionType = searchParams.get('initial-connection-type');
-  const initialConnectionUuid = searchParams.get('initial-connection-uuid');
+  const initialConnectionType = useMemo(() => searchParams.get('initial-connection-type'), [searchParams]);
+  const initialConnectionUuid = useMemo(() => searchParams.get('initial-connection-uuid'), [searchParams]);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-type', null);
   useUpdateQueryStringValueWithoutNavigation('initial-connection-uuid', null);
 
@@ -116,31 +109,54 @@ export const Connections = ({
     });
   }
 
+  // Connection hidden? Remove it from the list
+  const demoConnectionToggling = fetchers.filter(
+    (fetcher) =>
+      isJsonObject(fetcher.json) && fetcher.json.action === 'toggle-show-connection-demo' && fetcher.state !== 'idle'
+  );
+  if (demoConnectionToggling.length) {
+    const activeFetcher = demoConnectionToggling.slice(-1)[0];
+    if ((activeFetcher.json as ToggleShowConnectionDemoAction).showConnectionDemo === false) {
+      connections = connections.filter((c) => c.isDemo !== true);
+    } else {
+      connections = [
+        ...connections,
+        // We don't know the name of the demo connection, so we just use the [Demo] prefix as a placeholder
+        { name: '[Demo]', type: 'POSTGRES', uuid: 'xxx', createdDate: new Date().toISOString(), isDemo: true },
+      ];
+    }
+  }
+
   /**
    * Navigation
    */
-  const handleNavigateToListView = () => {
+  const handleNavigateToListView = useCallback(() => {
     setActiveConnectionState(undefined);
     setActiveConnectionType(undefined);
-  };
-  const handleNavigateToCreateView: NavigateToCreateView = (connectionType) => {
+  }, []);
+
+  const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType) => {
     setActiveConnectionType(connectionType);
     setActiveConnectionState(undefined);
-  };
-  const handleNavigateToEditView: NavigateToView = ({ connectionType, connectionUuid }) => {
+  }, []);
+
+  const handleNavigateToEditView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ uuid: connectionUuid, view: 'edit' });
     setActiveConnectionType(connectionType);
-  };
-  const handleNavigateToDetailsView: NavigateToView = ({ connectionType, connectionUuid }) => {
-    // If we're in the app, insert a query on the sheet.
-    if (handleNavigateToDetailsViewOverride) {
-      handleNavigateToDetailsViewOverride({ Connection: { kind: connectionType, id: connectionUuid } });
-      return;
-    }
-    // Otherwise we're on the dashboard, so navigate to the connection details
+  }, []);
+
+  const handleNavigateToDetailsView: NavigateToView = useCallback(({ connectionType, connectionUuid }) => {
     setActiveConnectionState({ uuid: connectionUuid, view: 'details' });
     setActiveConnectionType(connectionType);
-  };
+  }, []);
+
+  const handleShowConnectionDemo = useCallback(
+    (showConnectionDemo: boolean) => {
+      const { json, options } = getToggleShowConnectionDemoAction(teamUuid, showConnectionDemo);
+      submit(json, { ...options, navigate: false });
+    },
+    [submit, teamUuid]
+  );
 
   return (
     <div className={'grid-cols-12 gap-12 md:grid'}>
@@ -174,6 +190,7 @@ export const Connections = ({
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToEditView={handleNavigateToEditView}
             handleNavigateToDetailsView={handleNavigateToDetailsView}
+            handleShowConnectionDemo={handleShowConnectionDemo}
           />
         )}
       </div>

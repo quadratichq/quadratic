@@ -9,7 +9,6 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -32,23 +31,14 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const currentUserMessages = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
-  const [numberOfTimesHistoryHasBeenClicked, setNumberOfTimesHistoryHasBeenClicked] = useLocalStorage(
-    'aiAnalystHistoryClicksCount',
-    0
-  );
 
   const showStartFreshMsg = useMemo(
     () => currentUserMessages >= THRESHOLD && !showChatHistory,
     [currentUserMessages, showChatHistory]
   );
   const showHistoryMsg = useMemo(
-    () =>
-      numberOfTimesHistoryHasBeenClicked < 15 &&
-      currentUserMessages === 0 &&
-      !showChatHistory &&
-      !loading &&
-      chatsCount > 0,
-    [numberOfTimesHistoryHasBeenClicked, currentUserMessages, showChatHistory, loading, chatsCount]
+    () => currentUserMessages === 0 && !showChatHistory && !loading && chatsCount > 0,
+    [currentUserMessages, showChatHistory, loading, chatsCount]
   );
 
   return (
@@ -65,7 +55,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               variant={showStartFreshMsg ? 'outline' : 'ghost'}
               size="icon-sm"
               className="text-muted-foreground hover:text-foreground"
-              disabled={loading || currentUserMessages === 0}
+              disabled={loading || (currentUserMessages === 0 && !showChatHistory)}
               onClick={() => {
                 mixpanel.track('[AIAnalyst].startNewChat', { messageCount: currentUserMessages });
                 setCurrentChat({
@@ -89,7 +79,6 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               disabled={!showChatHistory && (loading || chatsCount === 0)}
               onClick={() => {
                 setShowChatHistory((prev) => !prev);
-                setNumberOfTimesHistoryHasBeenClicked((prev) => prev + 1);
               }}
             >
               <HistoryIcon />

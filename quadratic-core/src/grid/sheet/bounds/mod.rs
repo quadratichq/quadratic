@@ -1,11 +1,7 @@
 //! Calculates all bounds for the sheet: data, formatting, and borders. We cache
 //! this value and only recalculate when necessary.
 
-use crate::{
-    CellValue, Pos, Rect,
-    a1::A1Context,
-    grid::{Column, GridBounds},
-};
+use crate::{CellValue, Pos, Rect, a1::A1Context, grid::GridBounds};
 use std::cmp::Reverse;
 
 use super::Sheet;
@@ -22,34 +18,30 @@ impl Sheet {
         self.data_bounds.clear();
         self.format_bounds.clear();
 
-        for (&x, column) in &self.columns {
-            if let Some(data_range) = column.range() {
-                let y = data_range.start;
-                self.data_bounds.add(Pos { x, y });
-                let y = data_range.end - 1;
-                self.data_bounds.add(Pos { x, y });
-            }
-        }
+        if let Some(rect) = self.columns.finite_bounds() {
+            self.data_bounds.add_rect(rect);
+        };
 
-        if let Some(rect) = self.formats.finite_bounds() {
-            self.format_bounds.add_rect(rect);
-        }
-
-        self.data_tables.iter().for_each(|(pos, code_cell_value)| {
-            let output_rect = code_cell_value.output_rect(*pos, false);
-            self.data_bounds.add(output_rect.min);
-            self.data_bounds.add(output_rect.max);
-        });
+        if let Some(rect) = self.data_tables.finite_bounds() {
+            self.data_bounds.add_rect(rect);
+        };
 
         for validation in self.validations.validations.iter() {
             if validation.render_special().is_some() {
                 if let Some(rect) =
-                    self.selection_bounds(&validation.selection, false, false, a1_context)
+                    self.selection_bounds(&validation.selection, false, false, true, a1_context)
                 {
                     self.data_bounds.add(rect.min);
                     self.data_bounds.add(rect.max);
                 }
             }
+        }
+        for (&pos, _) in self.validations.warnings.iter() {
+            self.data_bounds.add(pos);
+        }
+
+        if let Some(rect) = self.formats.finite_bounds() {
+            self.format_bounds.add_rect(rect);
         }
 
         old_data_bounds != self.data_bounds.to_bounds_rect()
@@ -74,11 +66,8 @@ impl Sheet {
         }
     }
 
-    pub fn format_bounds(&self) -> Option<Rect> {
-        match self.format_bounds {
-            GridBounds::Empty => None,
-            GridBounds::NonEmpty(rect) => Some(rect),
-        }
+    pub fn format_bounds(&self) -> GridBounds {
+        self.format_bounds
     }
 
     /// Returns the lower and upper bounds of a column, or `None` if the column
@@ -88,14 +77,16 @@ impl Sheet {
     /// `false`, then data and formatting are both considered.
     pub fn column_bounds(&self, column: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         // Get bounds from data columns
-        let data_range = self.columns.get(&column).and_then(|col| col.range());
+        let data_range = self.columns.get_column(column).and_then(|col| col.range());
 
         // Get bounds from code columns
         let code_range = self.code_columns_bounds(column, column);
 
         // Get bounds from formatting if needed
         let format_range = if !ignore_formatting {
-            self.formats.col_max(column).map(|max| (1i64, max))
+            self.formats
+                .col_max(column)
+                .map(|max| (self.formats.col_min(column).unwrap_or(1i64), max))
         } else {
             None
         };
@@ -168,19 +159,12 @@ impl Sheet {
     /// is `false`, then data and formatting are both considered.
     ///
     pub fn row_bounds(&self, row: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
-        let column_has_row = |(_x, column): &(&i64, &Column)| match ignore_formatting {
-            true => column.has_data_in_row(row),
-            false => column.has_data_in_row(row) || self.formats.has_format_in_row(row),
-        };
-        let mut min = if let Some((index, _)) = self.columns.iter().find(column_has_row) {
-            Some(*index)
-        } else {
-            None
-        };
-        let mut max = if let Some((index, _)) = self.columns.iter().rfind(column_has_row) {
-            Some(*index)
-        } else {
-            None
+        let (mut min, mut max) = match self.columns.row_bounds(row) {
+            Some((min, max)) => (
+                if min > 0 { Some(min) } else { None },
+                if max > 0 { Some(max) } else { None },
+            ),
+            None => (None, None),
         };
 
         if !ignore_formatting {
@@ -397,7 +381,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.first_data_table_within(pos).is_ok();
+                    let is_table_cell = self.data_table_pos_that_contains(&pos).is_ok();
                     if is_table_cell {
                         continue;
                     }
@@ -461,8 +445,8 @@ mod test {
             sheet::{
                 borders::{BorderSelection, BorderStyle},
                 validations::{
-                    validation::Validation,
                     rules::{ValidationRule, validation_logical::ValidationLogical},
+                    validation::Validation,
                 },
             },
         },
@@ -474,16 +458,16 @@ mod test {
     #[test]
     fn test_is_empty() {
         let mut sheet = Sheet::test();
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         assert!(!sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
         assert!(sheet.recalculate_bounds(&a1_context));
         assert!(!sheet.is_empty());
 
-        let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Blank);
-        sheet.recalculate_bounds(&a1_context);
+        let _ = sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Blank);
+        assert!(sheet.recalculate_bounds(&a1_context));
         assert!(sheet.is_empty());
     }
 
@@ -493,27 +477,27 @@ mod test {
         assert_eq!(sheet.bounds(true), GridBounds::Empty);
         assert_eq!(sheet.bounds(false), GridBounds::Empty);
 
-        sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Text(String::from("test")));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text(String::from("test")));
         sheet
             .formats
             .align
-            .set(Pos { x: 1, y: 1 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+            .set(Pos { x: 2, y: 2 }, Some(CellAlign::Center));
+        let a1_context = sheet.expensive_make_a1_context();
         assert!(sheet.recalculate_bounds(&a1_context));
 
         assert_eq!(
             sheet.bounds(true),
             GridBounds::from(Rect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 0, y: 0 }
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 1, y: 1 }
             })
         );
 
         assert_eq!(
             sheet.bounds(false),
             GridBounds::from(Rect {
-                min: Pos { x: 0, y: 0 },
-                max: Pos { x: 1, y: 1 }
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 2, y: 2 }
             })
         );
     }
@@ -530,7 +514,7 @@ mod test {
             .formats
             .wrap
             .set(Pos { x: 100, y: 200 }, Some(CellWrap::Wrap));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         assert!(sheet.recalculate_bounds(&a1_context));
 
         assert_eq!(sheet.column_bounds(100, true), Some((-50, 80)));
@@ -540,9 +524,9 @@ mod test {
     #[test]
     fn column_bounds_code() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
-        assert_eq!(sheet.column_bounds(0, true), Some((0, 1)));
-        assert_eq!(sheet.column_bounds(1, true), Some((0, 1)));
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(sheet.column_bounds(1, true), Some((1, 2)));
+        assert_eq!(sheet.column_bounds(2, true), Some((1, 2)));
     }
 
     #[test]
@@ -554,7 +538,7 @@ mod test {
             .formats
             .align
             .set(Pos { x: 200, y: 100 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.row_bounds(100, true), Some((1, 80)));
@@ -564,9 +548,9 @@ mod test {
     #[test]
     fn row_bounds_code() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_array_2d(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
-        assert_eq!(sheet.row_bounds(0, true), Some((0, 1)));
-        assert_eq!(sheet.row_bounds(1, true), Some((0, 1)));
+        sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
+        assert_eq!(sheet.row_bounds(1, true), Some((1, 2)));
+        assert_eq!(sheet.row_bounds(2, true), Some((1, 2)));
     }
 
     #[test]
@@ -584,18 +568,12 @@ mod test {
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
 
-        assert_eq!(sheet.columns_bounds(1, 100, false), Some((1, 200)));
-
-        // this should be 50, 200, but formats do not have col_min, row_min fns
-        // yet
-        assert_eq!(sheet.columns_bounds(1, 100, true), Some((50, 80)));
-
-        assert_eq!(sheet.columns_bounds(1, 100, false), Some((1, 200)));
+        assert_eq!(sheet.columns_bounds(1, 100, false), Some((50, 200)));
 
         assert_eq!(sheet.columns_bounds(1000, 2000, true), None);
         assert_eq!(sheet.columns_bounds(1000, 2000, false), None);
@@ -619,7 +597,7 @@ mod test {
             .formats
             .align
             .set(Pos { x: 100, y: 200 }, Some(CellAlign::Center));
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
 
         assert_eq!(sheet.rows_bounds(1, 100, true), Some((1, 80)));
@@ -638,11 +616,11 @@ mod test {
     #[test]
     fn test_read_write() {
         let rect = Rect {
-            min: Pos::ORIGIN,
+            min: Pos { x: 1, y: 1 },
             max: Pos { x: 49, y: 49 },
         };
         let mut sheet = Sheet::test();
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.random_numbers(&rect, &a1_context);
         assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(true));
         assert_eq!(GridBounds::NonEmpty(rect), sheet.bounds(false));
@@ -691,7 +669,7 @@ mod test {
             }
         }
 
-        let a1_context = sheet.make_a1_context();
+        let a1_context = sheet.expensive_make_a1_context();
         sheet.recalculate_bounds(&a1_context);
         assert_eq!(expected_bounds, sheet.bounds(false));
         assert_eq!(expected_bounds, sheet.bounds(true));
@@ -709,6 +687,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -729,6 +708,7 @@ mod test {
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.rows_bounds(0, 2, true), Some((1, 3)));
@@ -748,6 +728,7 @@ mod test {
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
+            None,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.column_bounds(1, true), Some((2, 3)));
@@ -766,6 +747,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -801,6 +783,7 @@ mod test {
             CodeCellLanguage::Formula,
             "[['c','d']]".into(),
             None,
+            None,
         );
         gc.set_cell_value((3, 1, sheet_id).into(), "d".into(), None);
         gc.set_bold(&A1Selection::test_a1("D1"), Some(true), None)
@@ -814,21 +797,21 @@ mod test {
     fn find_last_data_row() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value((0, 0, sheet_id).into(), "a".to_string(), None);
-        gc.set_cell_value((0, 1, sheet_id).into(), "b".to_string(), None);
-        gc.set_cell_value((0, 2, sheet_id).into(), "c".to_string(), None);
-        gc.set_cell_value((0, 4, sheet_id).into(), "e".to_string(), None);
+        gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
+        gc.set_cell_value((1, 2, sheet_id).into(), "b".to_string(), None);
+        gc.set_cell_value((1, 3, sheet_id).into(), "c".to_string(), None);
+        gc.set_cell_value((1, 5, sheet_id).into(), "e".to_string(), None);
 
         let sheet = gc.sheet(sheet_id);
 
-        // height should be 3 (0,0 - 0.2)
-        assert_eq!(sheet.find_last_data_row(0, 0, 1), 3);
+        // height should be 3 (1,1 - 1,3)
+        assert_eq!(sheet.find_last_data_row(1, 1, 1), 3);
 
-        // height should be 1 (0,4)
-        assert_eq!(sheet.find_last_data_row(0, 4, 1), 1);
+        // height should be 1 (1,5)
+        assert_eq!(sheet.find_last_data_row(1, 5, 1), 1);
 
         // height should be 0 since there is no data
-        assert_eq!(sheet.find_last_data_row(0, 10, 1), 0);
+        assert_eq!(sheet.find_last_data_row(1, 11, 1), 0);
     }
 
     #[test]
@@ -1012,7 +995,7 @@ mod test {
                 min: Pos { x: 6, y: 2 },
                 max: Pos { x: 15, y: 101 },
             },
-            &Array::from(
+            Array::from(
                 (2..=101)
                     .map(|row| {
                         (6..=15)
@@ -1034,7 +1017,7 @@ mod test {
                 min: Pos { x: 31, y: 101 },
                 max: Pos { x: 35, y: 303 },
             },
-            &Array::from(
+            Array::from(
                 (101..=303)
                     .map(|row| {
                         (31..=35)

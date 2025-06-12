@@ -99,7 +99,7 @@ export function Search() {
       if (option === 'sheet') {
         if (searchOptions.sheet_id) {
           setSearchOptions((prev) => {
-            updatedSearchOptions = { ...prev, sheet_id: undefined };
+            updatedSearchOptions = { ...prev, sheet_id: null };
             return updatedSearchOptions;
           });
         } else {
@@ -183,8 +183,8 @@ export function Search() {
             if (e.shiftKey) {
               setSearchOptions((prev) => {
                 if (!prev.sheet_id) return prev;
-                const updatedSearchOptions = { ...prev, sheet_id: undefined };
-                onChange(inputEl?.value, { ...searchOptions, sheet_id: undefined });
+                const updatedSearchOptions = { ...prev, sheet_id: null };
+                onChange(inputEl?.value, { ...searchOptions, sheet_id: null });
                 return updatedSearchOptions;
               });
             }
@@ -247,19 +247,19 @@ export function Search() {
                 Search all sheets
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={searchOptions.case_sensitive}
+                checked={!!searchOptions.case_sensitive}
                 onCheckedChange={() => changeOptions('case_sensitive')}
               >
                 Case sensitive search
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={searchOptions.whole_cell}
+                checked={!!searchOptions.whole_cell}
                 onCheckedChange={() => changeOptions('whole_cell')}
               >
                 Match entire cell contents
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem
-                checked={searchOptions.search_code}
+                checked={!!searchOptions.search_code}
                 onCheckedChange={() => changeOptions('search_code')}
               >
                 Search within code

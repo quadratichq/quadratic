@@ -27,6 +27,9 @@ export class HtmlCell {
   private hoverSide: 'right' | 'bottom' | 'corner' | undefined;
   private offset: Rectangle;
 
+  // cache for the thumbnail image
+  private thumbnailImage: string | undefined;
+
   // whether the cell is active
   active = false;
 
@@ -79,8 +82,6 @@ export class HtmlCell {
     this.iframe.height = `${this.height}px`;
     this.iframe.setAttribute('border', '0');
     this.iframe.setAttribute('scrolling', 'no');
-    this.iframe.style.minWidth = `${CELL_WIDTH}px`;
-    this.iframe.style.minHeight = `${CELL_HEIGHT}px`;
     // Hard-coded for now, since we invert this color
     this.iframe.style.backgroundColor = '#fff';
 
@@ -96,9 +97,8 @@ export class HtmlCell {
 
     if (this.iframe.contentWindow?.document.readyState === 'complete') {
       this.afterLoad();
-    } else {
-      this.iframe.addEventListener('load', this.afterLoad);
     }
+    this.iframe.addEventListener('load', this.afterLoad);
 
     if (this.sheet.id !== sheets.current) {
       this.div.style.visibility = 'hidden';
@@ -123,7 +123,7 @@ export class HtmlCell {
   get width(): number {
     return this.offset.width;
   }
-  private get height(): number {
+  get height(): number {
     return this.offset.height;
   }
 
@@ -135,32 +135,29 @@ export class HtmlCell {
 
   private afterLoad = () => {
     if (this.iframe.contentWindow) {
-      // turn off zooming within the iframe
-
       // forward the wheel event to the pixi viewport and adjust its position
-      this.iframe.contentWindow.document.addEventListener(
-        'wheel',
-        (event) => {
-          event.stopPropagation();
-          event.preventDefault();
-          const viewport = pixiApp.viewport;
-          const wheel = viewport.plugins.get('wheel') as Wheel | null;
-          if (!wheel) {
-            throw new Error('Expected wheel plugin to be defined on viewport');
-          }
-          const bounding = this.div.getBoundingClientRect();
-          wheel.wheel(event, {
-            x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
-            y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
-          });
-        },
-        { passive: false }
-      );
-      this.iframe.contentWindow.document.body.style.margin = '';
+      this.iframe.contentWindow.document.removeEventListener('wheel', this.handleWheel);
+      this.iframe.contentWindow.document.addEventListener('wheel', this.handleWheel, { passive: false });
+      this.iframe.contentWindow.document.body.style = 'margin: 0';
       this.recalculateBounds();
     } else {
       throw new Error('Expected content window to be defined on iframe');
     }
+  };
+
+  private handleWheel = (event: WheelEvent) => {
+    event.stopPropagation();
+    event.preventDefault();
+    const viewport = pixiApp.viewport;
+    const wheel = viewport.plugins.get('wheel') as Wheel | null;
+    if (!wheel) {
+      throw new Error('Expected wheel plugin to be defined on viewport');
+    }
+    const bounding = this.div.getBoundingClientRect();
+    wheel.wheel(event, {
+      x: bounding.left + event.clientX * viewport.scale.x - event.clientX,
+      y: bounding.top + event.clientY * viewport.scale.y - event.clientY,
+    });
   };
 
   update(htmlCell: JsHtmlOutput) {
@@ -175,6 +172,7 @@ export class HtmlCell {
     this.border.style.width = `${this.width}px`;
     this.border.style.height = `${this.height}px`;
     this.gridBounds = new Rectangle(this.x, this.y, this.htmlCell.w - 1, this.htmlCell.h - 1);
+    this.thumbnailImage = undefined;
     this.recalculateBounds();
   }
 
@@ -305,10 +303,14 @@ export class HtmlCell {
     this.div.style.top = `${this.offset.y}px`;
     this.iframe.width = this.width.toString();
     this.iframe.height = this.height.toString();
+    this.border.style.width = `${this.width}px`;
+    this.border.style.height = `${this.height}px`;
 
     const topHeight = this.sheet.offsets.getRowHeight(this.y);
     this.right.style.top = `-${topHeight}px`;
     this.right.style.height = `calc(100% + ${topHeight}px)`;
+
+    this.autoResize();
   }
 
   updateOffsets() {
@@ -345,4 +347,69 @@ export class HtmlCell {
       this.activate();
     }
   }
+
+  private autoResize = () => {
+    if (this.iframe.contentWindow) {
+      const plotly = (this.iframe.contentWindow as any).Plotly;
+      const plotElement = this.iframe.contentWindow.document.querySelector('.js-plotly-plot');
+      if (plotly && plotElement) {
+        plotly.relayout(plotElement, {
+          width: this.width,
+          height: this.height,
+        });
+      }
+    } else {
+      setTimeout(this.autoResize, 100);
+    }
+  };
+
+  getImageDataUrl = (): Promise<string | undefined> => {
+    if (this.iframe.contentWindow?.document.readyState === 'complete') {
+      return this.getImageDataUrlAfterLoaded();
+    } else {
+      return new Promise((resolve) => {
+        this.iframe.addEventListener(
+          'load',
+          () => {
+            this.getImageDataUrlAfterLoaded()
+              .then(resolve)
+              .catch((error) => {
+                console.error('[HtmlCell.ts] getImageDataUrlAfterLoaded:', error);
+                resolve(undefined);
+              });
+          },
+          { once: true }
+        );
+      });
+    }
+  };
+
+  private getImageDataUrlAfterLoaded = (): Promise<string | undefined> => {
+    return new Promise((resolve) => {
+      if (this.thumbnailImage) {
+        resolve(this.thumbnailImage);
+        return;
+      }
+      const plotly = (this.iframe.contentWindow as any)?.Plotly;
+      const plotElement = this.iframe.contentWindow?.document.querySelector('.js-plotly-plot');
+      if (!plotly || !plotElement) {
+        resolve(undefined);
+      } else {
+        plotly
+          .toImage(plotElement, {
+            format: 'png',
+            width: this.width,
+            height: this.height,
+          })
+          .then((dataUrl: string) => {
+            this.thumbnailImage = dataUrl;
+            resolve(dataUrl);
+          })
+          .catch((error: any) => {
+            console.error('[HtmlCell.ts] getImageDataUrlAfterLoaded:', error);
+            resolve(undefined);
+          });
+      }
+    });
+  };
 }

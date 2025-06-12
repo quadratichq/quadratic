@@ -28,6 +28,7 @@ export class Sheet {
   offsets: SheetOffsets;
   bounds: GridBounds;
   boundsWithoutFormatting: GridBounds;
+  formatBounds: GridBounds;
 
   // tracks which Grid lines should not be drawn b/c of overflow
   gridOverflowLines: GridOverflowLines;
@@ -47,6 +48,7 @@ export class Sheet {
     this.cursor = new SheetCursor(this);
     this.bounds = info.bounds;
     this.boundsWithoutFormatting = info.bounds_without_formatting;
+    this.formatBounds = info.format_bounds;
     this.gridOverflowLines = new GridOverflowLines(this);
 
     // this will be imported via SheetInfo in the future
@@ -56,9 +58,9 @@ export class Sheet {
     events.on('sheetValidations', this.sheetValidations);
   }
 
-  private sheetValidations = (sheetId: string, validations: Validation[]) => {
+  private sheetValidations = (sheetId: string, sheetValidations: Validation[]) => {
     if (sheetId === this.id) {
-      this.validations = validations;
+      this.validations = sheetValidations;
     }
   };
 
@@ -157,7 +159,7 @@ export class Sheet {
   }
 
   // @returns screen rectangle from a selection rectangle
-  getScreenRectangleFromRect(rect: Rectangle): Rectangle {
+  getScreenRectangleFromRectangle(rect: Rectangle): Rectangle {
     return this.getScreenRectangle(rect.x, rect.y, rect.width, rect.height);
   }
 
@@ -180,6 +182,13 @@ export class Sheet {
   getColumnRowFromScreen(x: number, y: number): ColumnRow {
     const columnRowStringified = this.offsets.getColumnRowFromScreen(x, y);
     return JSON.parse(columnRowStringified);
+  }
+
+  // @returns the rectangle in cell coordinates from screen coordinates
+  getRectangleFromScreen(rectangle: Rectangle): Rectangle {
+    const start = this.getColumnRowFromScreen(rectangle.x, rectangle.y);
+    const end = this.getColumnRowFromScreen(rectangle.right + 1, rectangle.bottom + 1);
+    return new Rectangle(start.column, start.row, end.column - start.column + 1, end.row - start.row + 1);
   }
 
   //#endregion

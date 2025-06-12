@@ -58,7 +58,6 @@ export class PointerHeading {
     start: number;
     place: number;
     offset: number;
-    lastMouse: Point;
   };
 
   // tracks changes to viewport caused by resizing negative column/row headings
@@ -150,7 +149,6 @@ export class PointerHeading {
         start,
         place: isColumn ? intersects.column! : intersects.row!,
         offset: (isColumn ? intersects.column! : intersects.row!) - start,
-        lastMouse: e.global.clone(),
       };
       pixiApp.viewport.enableMouseEdges(world, isColumn ? 'horizontal' : 'vertical');
       pixiApp.cellMoving.dirty = true;
@@ -209,9 +207,6 @@ export class PointerHeading {
     // if the pointer is in a different column, we need to update the movingColRows
     this.movingColRows.place = isColumn ? current.column : current.row;
     pixiApp.cellMoving.dirty = true;
-    if (e) {
-      this.movingColRows.lastMouse = e.global.clone();
-    }
     return true;
   }
 
@@ -368,17 +363,16 @@ export class PointerHeading {
     if (this.active) {
       this.active = false;
       if (this.resizing) {
-        // if multiple columns or rows are selected, we need to resize all of them
-        const columns = sheets.sheet.cursor.getSelectedColumns();
+        let columns = sheets.sheet.cursor.getSelectedColumns();
         if (this.resizing.column !== null) {
           if (!columns.includes(this.resizing.column)) {
-            columns.push(this.resizing.column);
+            columns = [this.resizing.column];
           }
         }
-        const rows = sheets.sheet.cursor.getSelectedRows();
+        let rows = sheets.sheet.cursor.getSelectedRows();
         if (this.resizing.row !== null) {
           if (!rows.includes(this.resizing.row)) {
-            rows.push(this.resizing.row);
+            rows = [this.resizing.row];
           }
         }
         if (sheets.sheet.cursor.isAllSelected()) {
@@ -466,14 +460,5 @@ export class PointerHeading {
       const sheetId = sheets.current;
       quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
     }
-  }
-
-  // Handles mouse edges if we're moving columns or rows. Returns true if moving
-  // col/rows is active.
-  handleMouseEdges(): boolean {
-    if (!this.movingColRows) return false;
-    const world = pixiApp.viewport.toWorld(this.movingColRows.lastMouse.x, this.movingColRows.lastMouse.y);
-    this.pointerMoveColRows(world);
-    return true;
   }
 }

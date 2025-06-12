@@ -54,10 +54,6 @@ impl GridController {
             self.server_apply_transaction(ops, Some(TransactionName::Import));
         }
 
-        // Rerun all code cells after importing Excel file
-        // This is required to run compute cells in order
-        let code_rerun_ops = self.rerun_all_code_cells_operations();
-        self.server_apply_transaction(code_rerun_ops, None);
         Ok(())
     }
 
@@ -71,8 +67,9 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
+        updater: Option<impl Fn(&str, u32, u32)>,
     ) -> Result<()> {
-        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
+        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
@@ -91,7 +88,7 @@ pub(crate) mod tests {
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
-        test_util::{assert_cell_value_row, print_table_at, print_table_in_rect},
+        test_util::*,
         wasm_bindings::js::clear_js_calls,
     };
 
@@ -149,7 +146,9 @@ pub(crate) mod tests {
     ) -> (&'a GridController, SheetId, Pos, &'a str) {
         // data table should be at `pos`
         assert_eq!(
-            gc.sheet(sheet_id).first_data_table_within(pos).unwrap(),
+            gc.sheet(sheet_id)
+                .data_table_pos_that_contains(&pos)
+                .unwrap(),
             pos
         );
 
@@ -311,8 +310,8 @@ pub(crate) mod tests {
             CellValue::Text("Hello Red".into())
         );
 
-        expect_js_call_count("jsTransactionStart", 2, false);
-        expect_js_call_count("jsTransactionEnd", 2, false);
+        expect_js_call_count("jsTransactionStart", 4, false);
+        expect_js_call_count("jsTransactionEnd", 4, false);
 
         // doesn't appear to import the bold or red formatting yet
         // assert_eq!(
@@ -357,7 +356,7 @@ pub(crate) mod tests {
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet
-            let code_run = sheet.data_table(pos).unwrap().code_run().unwrap();
+            let code_run = sheet.data_table_at(&pos).unwrap().code_run().unwrap();
             if let Some(error) = &code_run.error {
                 if error.msg == RunErrorMsg::BadFunctionName {
                     panic!("expected valid function name")
@@ -373,7 +372,14 @@ pub(crate) mod tests {
         let pos = pos![A1];
         let file_name = "alltypes_plain.parquet";
         let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
-        let _result = grid_controller.import_parquet(sheet_id, file, file_name, pos, None);
+        let _result = grid_controller.import_parquet(
+            sheet_id,
+            file,
+            file_name,
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        );
 
         assert_cell_value_row(
             &grid_controller,
@@ -461,7 +467,7 @@ pub(crate) mod tests {
     //          Rect::new_span(Pos { x: 8, y: 0 }, Pos { x: 15, y: 10 }),
     //      );
 
-    //     expect_js_call_count("jsRenderCellSheets", 33026, true);
+    //     expect_js_call_count("jsHashesRenderCells", 33026, true);
     // }
 
     #[test]
@@ -525,7 +531,7 @@ pub(crate) mod tests {
 
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
 
         gc.import_csv(
             sheet_id,
@@ -534,15 +540,29 @@ pub(crate) mod tests {
             pos,
             None,
             Some(b','),
-            Some(false),
+            None,
         )
         .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 2, y: 3 }));
+        print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["issue", " test", " value"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 3, vec!["0", "1", " Invalid"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["0", "2", " Valid"]);
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            2,
+            vec!["issue", " test", " value\u{feff}"],
+        );
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            3,
+            vec!["0", "1", " Inv\u{feff}alid\u{feff}"],
+        );
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {
@@ -562,4 +582,45 @@ pub(crate) mod tests {
     //         Rect::new_span(pos, Pos { x: 6, y: 10 }),
     //     );
     // }
+
+    #[test]
+    fn test_import_kaggle_csv() {
+        let file_name = "kaggle_top_100_dataset.csv";
+        let csv_file = read_test_csv_file(file_name);
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
+        assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
+    }
+
+    #[test]
+    fn imports_a_parquet_with_multiple_batches() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = pos![A1];
+        let file_name = "luke-1027.parquet";
+        let parquet_file: &str = "../quadratic-rust-shared/data/parquet/luke-1027.parquet";
+        let file: Vec<u8> = std::fs::read(parquet_file).expect("Failed to read file");
+        let _result = gc.import_parquet(
+            sheet_id,
+            file,
+            file_name,
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        );
+
+        print_table_from_grid(
+            &gc,
+            sheet_id,
+            Rect::new_span(Pos { x: 1, y: 2 }, Pos { x: 5, y: 7 }),
+        );
+
+        assert_display_cell_value(&gc, sheet_id, 1, 6, "82");
+        assert_display_cell_value(&gc, sheet_id, 1, 1029, "8140");
+    }
 }

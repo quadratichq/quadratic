@@ -437,6 +437,7 @@ mod tests {
             CodeCellLanguage::Formula,
             "1+1".to_string(),
             None,
+            None,
         );
         clear_js_calls();
 
@@ -490,7 +491,8 @@ mod tests {
             None,
         );
         let code = "c(1, 1) + 1".to_string();
-        let ops = gc.set_code_cell_operations(sheet_pos, CodeCellLanguage::Python, code.clone());
+        let ops =
+            gc.set_code_cell_operations(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
 
         // resize rows
         let row_heights = vec![JsRowHeight {
@@ -696,7 +698,7 @@ mod tests {
 
         // should not trigger auto resize row heights for multiplayer transactions
         let mut other_gc = GridController::test();
-        other_gc.grid_mut().sheets_mut()[0].id = sheet_id;
+        other_gc.grid_mut().set_first_sheet_id(sheet_id);
         other_gc.received_transaction(transaction_id, 1, ops.0);
         let sheet = other_gc.sheet(sheet_id);
         assert_eq!(

@@ -23,7 +23,7 @@ const sizes = {
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
-  // lg: '40',
+  lg: '40',
   // xl: '48',
   '2xl': '64',
 } as const;
@@ -117,6 +117,10 @@ export const AttachFileIcon: IconComponent = (props) => {
 
 export const BackspaceIcon: IconComponent = (props) => {
   return <Icon {...props}>backspace</Icon>;
+};
+
+export const BlockIcon: IconComponent = (props) => {
+  return <Icon {...props}>block</Icon>;
 };
 
 export const BorderAllIcon: IconComponent = (props) => {
@@ -305,6 +309,10 @@ export const ExamplesIcon: IconComponent = (props) => {
 
 export const ExpandIcon: IconComponent = (props) => {
   return <Icon {...props}>unfold_less</Icon>;
+};
+
+export const ExploreSchemaIcon: IconComponent = (props) => {
+  return <Icon {...props}>database_search</Icon>;
 };
 
 export const CollapseIcon: IconComponent = (props) => {
@@ -534,6 +542,10 @@ export const ScientificIcon: IconComponent = (props) => {
   return <Icon {...props}>functions</Icon>;
 };
 
+export const SearchIcon: IconComponent = (props) => {
+  return <Icon {...props}>search</Icon>;
+};
+
 export const SettingsIcon: IconComponent = (props) => {
   return <Icon {...props}>settings</Icon>;
 };
@@ -556,6 +568,10 @@ export const SpinnerIcon: IconComponent = (props) => {
       progress_activity
     </Icon>
   );
+};
+
+export const StarShineIcon: IconComponent = (props) => {
+  return <Icon {...props}>star_shine</Icon>;
 };
 
 export const StopIcon: IconComponent = (props) => {
@@ -697,4 +713,24 @@ export const SheetGoToIcon: IconComponent = (props) => {
 
 export const GenericLanguageIcon: IconComponent = (props) => {
   return <Icon {...props}>subject</Icon>;
+};
+
+export const WorkIcon: IconComponent = (props) => {
+  return <Icon {...props}>domain</Icon>;
+};
+
+export const PersonalIcon: IconComponent = (props) => {
+  return <Icon {...props}>cottage</Icon>;
+};
+
+export const RadioButtonUncheckedIcon: IconComponent = (props) => {
+  return <Icon {...props}>radio_button_unchecked</Icon>;
+};
+
+export const RadioButtonCheckedIcon: IconComponent = (props) => {
+  return <Icon {...props}>radio_button_checked</Icon>;
+};
+
+export const WebBrowserIcon: IconComponent = (props) => {
+  return <Icon {...props}>captive_portal</Icon>;
 };

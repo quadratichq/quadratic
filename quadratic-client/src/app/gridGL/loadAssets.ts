@@ -17,16 +17,16 @@ export function isBitmapFontLoaded(): boolean {
   return bitmapFonts.every((font) => BitmapFont.available[font]);
 }
 
-export function loadAssets() {
+export async function loadAssets() {
   if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
   // Load HTML fonts for Input
-  loadFont('OpenSans');
-  loadFont('OpenSans-Bold');
-  loadFont('OpenSans-Italic');
-  loadFont('OpenSans-BoldItalic');
+  const font1Promise = loadFont('OpenSans');
+  const font2Promise = loadFont('OpenSans-Bold');
+  const font3Promise = loadFont('OpenSans-Italic');
+  const font4Promise = loadFont('OpenSans-BoldItalic');
 
   // Load PixiJS fonts for canvas
   const bundle = {
@@ -58,8 +58,10 @@ export function loadAssets() {
 
   // Add bundles to Assets
   Assets.addBundle('bundle', bundle);
-  Assets.loadBundle('bundle').then(() => {
-    if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
-    events.emit('bitmapFontsLoaded');
-  });
+  const bundlePromise = Assets.loadBundle('bundle');
+
+  await Promise.all([font1Promise, font2Promise, font3Promise, font4Promise, bundlePromise]);
+
+  if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+  events.emit('bitmapFontsLoaded');
 }

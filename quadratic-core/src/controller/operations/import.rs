@@ -1,25 +1,27 @@
-use std::{borrow::Cow, io::Cursor};
+use std::io::Cursor;
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
-use csv_sniffer::Sniffer;
 
 use crate::{
     Array, ArraySize, CellValue, Pos, SheetPos,
-    arrow::arrow_col_to_cell_value_vec,
     cellvalue::Import,
-    controller::GridController,
-    grid::{
-        CodeCellLanguage, CodeCellValue, DataTable, Sheet, SheetId,
-        file::sheet_schema::export_sheet, formats::SheetFormatUpdates,
+    controller::{
+        GridController, active_transactions::pending_transaction::PendingTransaction,
+        execution::TransactionSource,
     },
+    grid::{
+        CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
+        unique_data_table_name,
+    },
+    parquet::parquet_to_array,
 };
-use bytes::Bytes;
 use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
-use lexicon_fractional_index::key_between;
-use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
-use super::operation::Operation;
+use super::{
+    csv::{clean_csv_file, find_csv_info},
+    operation::Operation,
+};
 
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 
@@ -50,53 +52,6 @@ impl GridController {
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
 
-    pub fn get_csv_preview(
-        file: Vec<u8>,
-        max_rows: u32,
-        delimiter: Option<u8>,
-    ) -> Result<Vec<Vec<String>>> {
-        let error = |message: String| anyhow!("Error parsing CSV file for preview: {}", message);
-        let file: &[u8] = match String::from_utf8_lossy(&file) {
-            std::borrow::Cow::Borrowed(_) => &file,
-            std::borrow::Cow::Owned(_) => {
-                if let Some(utf) = read_utf16(&file) {
-                    return Self::get_csv_preview(utf.as_bytes().to_vec(), max_rows, delimiter);
-                }
-                &file
-            }
-        };
-
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
-
-        let mut reader = csv::ReaderBuilder::new()
-            .delimiter(delimiter)
-            .has_headers(false)
-            .flexible(true)
-            .from_reader(file);
-
-        let mut preview = vec![];
-        for (i, entry) in reader.records().enumerate() {
-            if i >= max_rows as usize {
-                break;
-            }
-            match entry {
-                Err(e) => return Err(error(format!("line {}: {}", i + 1, e))),
-                Ok(record) => preview.push(record.iter().map(|s| s.to_string()).collect()),
-            }
-        }
-
-        Ok(preview)
-    }
-
     /// Imports a CSV file into the grid.
     pub fn import_csv_operations(
         &mut self,
@@ -110,57 +65,19 @@ impl GridController {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
-        let file: &[u8] = match String::from_utf8_lossy(&file) {
-            Cow::Borrowed(_) => &file,
-            Cow::Owned(_) => {
-                if let Some(utf) = read_utf16(&file) {
-                    return self.import_csv_operations(
-                        sheet_id,
-                        utf.as_bytes().to_vec(),
-                        file_name,
-                        insert_at,
-                        delimiter,
-                        header_is_first_row,
-                    );
-                }
-                &file
-            }
-        };
+        let converted_file = clean_csv_file(&file)?;
+        drop(file); // free the memory of the original file
 
-        let delimiter = match delimiter {
-            Some(d) => d,
-            None => {
-                // auto detect the delimiter, default to ',' if it fails
-                let cursor = Cursor::new(&file);
-                Sniffer::new()
-                    .sniff_reader(cursor)
-                    .map_or_else(|_| b',', |metadata| metadata.dialect.delimiter)
-            }
-        };
+        let (d, width, height) = find_csv_info(&converted_file);
+        let delimiter = delimiter.unwrap_or(d);
 
         let reader = |flexible| {
             csv::ReaderBuilder::new()
                 .delimiter(delimiter)
                 .has_headers(false)
                 .flexible(flexible)
-                .from_reader(file)
+                .from_reader(converted_file.as_slice())
         };
-
-        let height = reader(false).records().count() as u32;
-
-        // since the first row or more can be headers, look at the width of the last row
-        let width = reader(true)
-            .records()
-            .last()
-            .iter()
-            .flatten()
-            .next()
-            .map(|s| s.len())
-            .unwrap_or(0) as u32;
-
-        if width == 0 {
-            bail!("empty files cannot be processed");
-        }
 
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
         let mut cell_values = Array::new_empty(array_size);
@@ -173,7 +90,6 @@ impl GridController {
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
                         let (cell_value, format_update) = self.string_to_cell_value(value, false);
-
                         cell_values
                             .set(u32::try_from(x)?, y, cell_value)
                             .map_err(|e| error(e.to_string()))?;
@@ -195,15 +111,7 @@ impl GridController {
             let should_update = y % IMPORT_LINES_PER_OPERATION == 0;
 
             if should_update && (cfg!(target_family = "wasm") || cfg!(test)) {
-                crate::wasm_bindings::js::jsImportProgress(
-                    file_name,
-                    y,
-                    height,
-                    insert_at.x,
-                    insert_at.y,
-                    width,
-                    height,
-                );
+                crate::wasm_bindings::js::jsImportProgress(file_name, y, height);
             }
         }
 
@@ -219,7 +127,12 @@ impl GridController {
         };
 
         data_table.value = cell_values.into();
-        data_table.formats.apply_updates(&sheet_format_updates);
+        if !sheet_format_updates.is_default() {
+            data_table
+                .formats
+                .get_or_insert_default()
+                .apply_updates(&sheet_format_updates);
+        }
 
         if apply_first_row_as_header {
             data_table.apply_first_row_as_header();
@@ -243,17 +156,16 @@ impl GridController {
         file: &[u8],
         file_name: &str,
     ) -> Result<Vec<Operation>> {
-        let mut ops = vec![] as Vec<Operation>;
+        let mut ops: Vec<Operation> = vec![];
         let error = |e: XlsxError| anyhow!("Error parsing Excel file {file_name}: {e}");
 
         let cursor = Cursor::new(file);
         let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
         let sheets = workbook.sheet_names().to_owned();
 
-        let existing_sheet_names = self.sheet_names();
-        for sheet_name in sheets.iter() {
-            if existing_sheet_names.contains(&sheet_name.as_str()) {
-                bail!("Sheet with name {} already exists", sheet_name);
+        for new_sheet_name in sheets.iter() {
+            if self.try_sheet_from_name(new_sheet_name).is_some() {
+                bail!("Sheet with name \"{new_sheet_name}\" already exists");
             }
         }
 
@@ -274,11 +186,21 @@ impl GridController {
         let mut current_y_values = 0;
         let mut current_y_formula = 0;
 
-        let mut order = key_between(None, None).unwrap_or("A0".to_string());
+        let mut gc = GridController::new_blank();
+
+        // add all sheets to the grid, this is required for sheet name parsing in cell ref
+        for sheet_name in sheets.iter() {
+            gc.server_add_sheet_with_name(sheet_name.to_owned());
+        }
+
+        let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
+
+        // add data from excel file to grid
         for sheet_name in sheets {
-            // add the sheet
-            let mut sheet = Sheet::new(SheetId::new(), sheet_name.to_owned(), order.clone());
-            order = key_between(Some(&order), None).unwrap_or("A0".to_string());
+            let sheet = gc
+                .try_sheet_from_name(&sheet_name)
+                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+            let sheet_id = sheet.id;
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
@@ -327,27 +249,23 @@ impl GridController {
                         ExcelData::Bool(value) => CellValue::Logical(*value),
                     };
 
-                    sheet.set_cell_value(
-                        Pos {
-                            x: insert_at.x + x as i64,
-                            y: insert_at.y + y as i64,
-                        },
-                        cell_value,
-                    );
+                    let pos = Pos {
+                        x: insert_at.x + x as i64,
+                        y: insert_at.y + y as i64,
+                    };
+                    let sheet = gc
+                        .try_sheet_mut(sheet_id)
+                        .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                    sheet.columns.set_value(&pos, cell_value);
                 }
 
                 // send progress to the client, every IMPORT_LINES_PER_OPERATION
                 if (cfg!(target_family = "wasm") || cfg!(test))
                     && current_y_values % IMPORT_LINES_PER_OPERATION == 0
                 {
-                    let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y_values + current_y_formula,
-                        total_rows as u32,
-                        0,
-                        1,
-                        width,
                         total_rows as u32,
                     );
                 }
@@ -357,7 +275,6 @@ impl GridController {
             // formulas
             let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
             let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
-            let mut formula_compute_ops = vec![];
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
@@ -365,15 +282,26 @@ impl GridController {
                             x: insert_at.x + x as i64,
                             y: insert_at.y + y as i64,
                         };
+                        let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let cell_value = CellValue::Code(CodeCellValue {
                             language: CodeCellLanguage::Formula,
                             code: cell.to_string(),
                         });
-                        sheet.set_cell_value(pos, cell_value);
-                        // add code compute operation, to generate code runs
-                        formula_compute_ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet.id),
-                        });
+                        let sheet = gc
+                            .try_sheet_mut(sheet_id)
+                            .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                        sheet.columns.set_value(&pos, cell_value);
+                        let mut transaction = PendingTransaction {
+                            source: TransactionSource::Server,
+                            ..Default::default()
+                        };
+                        gc.add_formula_without_eval(
+                            &mut transaction,
+                            sheet_pos,
+                            cell,
+                            formula_start_name.as_str(),
+                        );
+                        gc.send_client_updates_during_transaction(&mut transaction, false);
                     }
                 }
 
@@ -381,25 +309,24 @@ impl GridController {
                 if (cfg!(target_family = "wasm") || cfg!(test))
                     && current_y_formula % IMPORT_LINES_PER_OPERATION == 0
                 {
-                    let width = row.len() as u32;
                     crate::wasm_bindings::js::jsImportProgress(
                         file_name,
                         current_y_values + current_y_formula,
-                        total_rows as u32,
-                        0,
-                        1,
-                        width,
                         total_rows as u32,
                     );
                 }
                 current_y_formula += 1;
             }
+        }
 
-            // add new sheets
-            ops.push(Operation::AddSheetSchema {
-                schema: Box::new(export_sheet(sheet)),
+        // rerun all formulas in-order
+        let compute_ops = gc.rerun_all_code_cells_operations();
+        gc.server_apply_transaction(compute_ops, None);
+
+        for sheet in gc.grid.sheets.into_values() {
+            ops.push(Operation::AddSheet {
+                sheet: Box::new(sheet),
             });
-            ops.extend(formula_compute_ops);
         }
 
         Ok(ops)
@@ -412,73 +339,9 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         insert_at: Pos,
+        updater: Option<impl Fn(&str, u32, u32)>,
     ) -> Result<Vec<Operation>> {
-        let error =
-            |message: String| anyhow!("Error parsing Parquet file {}: {}", file_name, message);
-
-        // this is not expensive
-        let bytes = Bytes::from(file);
-        let builder = ParquetRecordBatchReaderBuilder::try_new(bytes)?;
-
-        // headers
-        let metadata = builder.metadata();
-        let total_size = metadata.file_metadata().num_rows() as u32;
-        let fields = metadata.file_metadata().schema().get_fields();
-        let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
-        let mut width = headers.len() as u32;
-
-        // add 1 to the height for the headers
-        let array_size =
-            ArraySize::new_or_err(width, total_size + 1).map_err(|e| error(e.to_string()))?;
-        let mut cell_values = Array::new_empty(array_size);
-
-        // add the headers to the first row
-        for (x, header) in headers.into_iter().enumerate() {
-            cell_values
-                .set(x as u32, 0, header)
-                .map_err(|e| error(e.to_string()))?;
-        }
-
-        let reader = builder.build()?;
-        let mut height = 0;
-        let mut current_size = 0;
-
-        for (row_index, batch) in reader.enumerate() {
-            let batch = batch?;
-            let num_rows = batch.num_rows();
-            let num_cols = batch.num_columns();
-
-            current_size += num_rows;
-            width = width.max(num_cols as u32);
-            height = height.max(num_rows as u32);
-
-            for col_index in 0..num_cols {
-                let col = batch.column(col_index);
-                let values = arrow_col_to_cell_value_vec(col)?;
-                let x = col_index as u32;
-                let y = (row_index * num_rows) as u32 + 1;
-
-                for (index, value) in values.into_iter().enumerate() {
-                    cell_values
-                        .set(x, y + index as u32, value)
-                        .map_err(|e| error(e.to_string()))?;
-                }
-
-                // update the progress bar every time there's a new operation
-                if cfg!(target_family = "wasm") || cfg!(test) {
-                    crate::wasm_bindings::js::jsImportProgress(
-                        file_name,
-                        current_size as u32,
-                        total_size,
-                        insert_at.x,
-                        insert_at.y,
-                        width,
-                        height,
-                    );
-                }
-            }
-        }
-
+        let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
         let import = Import::new(file_name.into());
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
@@ -495,96 +358,18 @@ impl GridController {
     }
 }
 
-fn read_utf16(bytes: &[u8]) -> Option<String> {
-    if bytes.is_empty() && bytes.len() % 2 == 0 {
-        return None;
-    }
-
-    // convert u8 to u16
-    let mut utf16vec: Vec<u16> = Vec::with_capacity(bytes.len() / 2);
-    for chunk in bytes.to_owned().chunks_exact(2) {
-        let Ok(vec2) = <[u8; 2]>::try_from(chunk) else {
-            return None;
-        };
-        utf16vec.push(u16::from_ne_bytes(vec2));
-    }
-
-    // convert to string
-    let Ok(str) = String::from_utf16(utf16vec.as_slice()) else {
-        return None;
-    };
-
-    // strip invalid characters
-    let result: String = str.chars().filter(|&c| c.len_utf8() <= 2).collect();
-
-    Some(result)
-}
-
 #[cfg(test)]
 mod test {
-    use super::{read_utf16, *};
-    use crate::{
-        CellValue, controller::user_actions::import::tests::simple_csv_at,
-        test_util::assert_display_cell_value,
-    };
+    use super::*;
+    use crate::{CellValue, controller::user_actions::import::tests::simple_csv_at, test_util::*};
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-
-    const INVALID_ENCODING_FILE: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/csv/encoding_issue.csv");
 
     #[test]
     fn guesses_the_csv_header() {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
         let sheet = gc.sheet(sheet_id);
-        let values = sheet.data_table(pos).unwrap().value_as_array().unwrap();
+        let values = sheet.data_table_at(&pos).unwrap().value_as_array().unwrap();
         assert!(gc.guess_csv_first_row_is_header(values));
-    }
-
-    #[test]
-    fn test_get_csv_preview_with_valid_csv() {
-        let csv_data = b"header1,header2\nvalue1,value2\nvalue3,value4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, Some(b','));
-        assert!(result.is_ok());
-        let preview = result.unwrap();
-        assert_eq!(preview.len(), 3);
-        assert_eq!(preview[0], vec!["header1", "header2"]);
-        assert_eq!(preview[1], vec!["value1", "value2"]);
-        assert_eq!(preview[2], vec!["value3", "value4"]);
-    }
-
-    #[test]
-    fn test_get_csv_preview_with_auto_delimiter() {
-        let csv_data = b"header1\theader2\nvalue1\tvalue2\nvalue3\tvalue4";
-        let result = GridController::get_csv_preview(csv_data.to_vec(), 6, None);
-        assert!(result.is_ok());
-        let preview = result.unwrap();
-        assert_eq!(preview.len(), 3);
-        assert_eq!(preview[0], vec!["header1", "header2"]);
-        assert_eq!(preview[1], vec!["value1", "value2"]);
-        assert_eq!(preview[2], vec!["value3", "value4"]);
-    }
-
-    #[test]
-    fn test_get_csv_preview_with_utf16() {
-        let utf16_data: Vec<u8> = vec![
-            0xFF, 0xFE, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00, 0x72, 0x00,
-            0x31, 0x00, 0x2C, 0x00, 0x68, 0x00, 0x65, 0x00, 0x61, 0x00, 0x64, 0x00, 0x65, 0x00,
-            0x72, 0x00, 0x32, 0x00, 0x0A, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x31, 0x00, 0x2C, 0x00, 0x76, 0x00, 0x61, 0x00, 0x6C, 0x00, 0x75, 0x00,
-            0x65, 0x00, 0x32, 0x00,
-        ];
-        let result = GridController::get_csv_preview(utf16_data, 6, Some(b','));
-        assert!(result.is_ok());
-        let preview = result.unwrap();
-        assert_eq!(preview.len(), 2);
-        assert_eq!(preview[0], vec!["header1", "header2"]);
-        assert_eq!(preview[1], vec!["value1", "value2"]);
-    }
-
-    #[test]
-    fn transmute_u8_to_u16() {
-        let result = read_utf16(INVALID_ENCODING_FILE).unwrap();
-        assert_eq!("issue, test, value\r\n0, 1, Invalid\r\n0, 2, Valid", result);
     }
 
     #[test]
@@ -753,11 +538,18 @@ mod test {
         let sheet_id = gc.grid.sheets()[0].id;
         let file = include_bytes!("../../../test-files/date_time_formats_arrow.parquet");
         let pos = pos![A1];
-        gc.import_parquet(sheet_id, file.to_vec(), "parquet", pos, None)
-            .unwrap();
+        gc.import_parquet(
+            sheet_id,
+            file.to_vec(),
+            "parquet",
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         // date
         assert_eq!(
@@ -895,6 +687,138 @@ mod test {
             sheet.cell_value((3, 4).into()),
             Some(CellValue::Time(
                 NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
+            ))
+        );
+    }
+
+    #[test]
+    fn test_import_utf16() {
+        let utf16_data: Vec<u8> = vec![
+            0xFF, 0xFE, // BOM
+            0x68, 0x00, // h
+            0x65, 0x00, // e
+            0x61, 0x00, // a
+            0x64, 0x00, // d
+            0x65, 0x00, // e
+            0x72, 0x00, // r
+            0x31, 0x00, // 1
+            0x2C, 0x00, // ,
+            0x68, 0x00, // h
+            0x65, 0x00, // e
+            0x61, 0x00, // a
+            0x64, 0x00, // d
+            0x65, 0x00, // e
+            0x72, 0x00, // r
+            0x32, 0x00, // 2
+            0x0A, 0x00, // \n
+            0x76, 0x00, // v
+            0x61, 0x00, // a
+            0x6C, 0x00, // l
+            0x75, 0x00, // u
+            0x65, 0x00, // e
+            0x31, 0x00, // 1
+            0x2C, 0x00, // ,
+            0x76, 0x00, // v
+            0x61, 0x00, // a
+            0x6C, 0x00, // l
+            0x75, 0x00, // u
+            0x65, 0x00, // e
+            0x32, 0x00, // 2
+        ];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        gc.import_csv(
+            sheet_id,
+            utf16_data,
+            "utf16.csv",
+            pos![A1],
+            None,
+            Some(b','),
+            Some(true),
+        )
+        .unwrap();
+
+        print_first_sheet(&gc);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value((1, 2).into()),
+            Some(CellValue::Text("header1".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value((2, 2).into()),
+            Some(CellValue::Text("header2".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value((1, 3).into()),
+            Some(CellValue::Text("value1".to_string()))
+        );
+        assert_eq!(
+            sheet.display_value((2, 3).into()),
+            Some(CellValue::Text("value2".to_string()))
+        );
+    }
+
+    #[test]
+    fn import_excel_dependent_formulas() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/income_statement.xlsx");
+        gc.import_excel(file.as_ref(), "excel", None).unwrap();
+
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.cell_value((4, 3).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E3,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 3).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 12).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "D5-D10".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 12).into()),
+            Some(CellValue::Number(3831163.into()))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 29).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E29,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 29).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+            ))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 67).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "EOMONTH(E67,-1)".into()
+            }))
+        );
+        assert_eq!(
+            sheet.display_value((4, 67).into()),
+            Some(CellValue::Date(
+                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
             ))
         );
     }

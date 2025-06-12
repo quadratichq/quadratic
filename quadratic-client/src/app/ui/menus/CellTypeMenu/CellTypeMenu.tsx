@@ -3,11 +3,13 @@ import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
-import { DatabaseIcon } from '@/shared/components/Icons';
+import { SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -19,8 +21,8 @@ import {
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
 import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect } from 'react';
-import { useSetRecoilState } from 'recoil';
+import React, { useCallback, useEffect, useMemo } from 'react';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export interface CellTypeOption {
   name: string;
@@ -53,12 +55,15 @@ let CELL_TYPE_OPTIONS: CellTypeOption[] = [
 ];
 
 export default function CellTypeMenu() {
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+  const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const fetcher = useConnectionsFetcher();
-
-  const searchLabel = 'Choose a cell type…';
+  const { connections } = useConnectionsFetcher();
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
+  const includeLanguages = useMemo(() => showCellTypeMenu !== 'connections', [showCellTypeMenu]);
+  const searchLabel = useMemo(() => `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`, [includeLanguages]);
 
   useEffect(() => {
     mixpanel.track('[CellTypeMenu].opened');
@@ -71,14 +76,25 @@ export default function CellTypeMenu() {
   const openEditor = useCallback(
     (language: CodeCellLanguage) => {
       mixpanel.track('[CellTypeMenu].selected', { language });
+
       setShowCellTypeMenu(false);
+
+      const sheetId = sheets.current;
+      const { x, y } = sheets.sheet.cursor.position;
+
       setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        initialCode: '',
-        codeCell: {
-          ...prev.codeCell,
-          language,
+        diffEditorContent: undefined,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId,
+            pos: { x, y },
+            language,
+            lastModified: 0,
+          },
+          showCellTypeMenu: false,
+          initialCode: '',
+          inlineEditor: false,
         },
       }));
     },
@@ -97,36 +113,43 @@ export default function CellTypeMenu() {
       overlayProps={{ onPointerDown: (e) => e.preventDefault() }}
     >
       <CommandInput placeholder={searchLabel} id="CellTypeMenuInputID" />
+
       <CommandList id="CellTypeMenuID">
         <CommandEmpty>No results found.</CommandEmpty>
-        <CommandGroup heading="Languages">
-          {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
-            <CommandItemWrapper
-              key={name}
-              disabled={disabled}
-              icon={icon}
-              name={name}
-              experimental={experimental}
-              onSelect={() => openEditor(mode)}
-            />
-          ))}
-        </CommandGroup>
 
-        <CommandSeparator />
-        {fetcher.data?.connections && (
+        {includeLanguages && (
+          <>
+            <CommandGroup heading="Languages">
+              {CELL_TYPE_OPTIONS.map(({ name, disabled, experimental, icon, mode }, i) => (
+                <CommandItemWrapper
+                  key={name}
+                  disabled={disabled}
+                  icon={icon}
+                  name={name}
+                  badge={experimental ? 'Experimental' : ''}
+                  onSelect={() => openEditor(mode)}
+                />
+              ))}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
+
+        {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
-            {fetcher.data.connections.map(({ name, type, uuid }) => (
+            {connections.map(({ name, type, uuid }, i) => (
               <CommandItemWrapper
                 key={uuid}
-                uuid={uuid}
                 name={name}
+                value={`${name}__${i}`}
                 icon={<LanguageIcon language={type} />}
                 onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
               />
             ))}
+
             <CommandItemWrapper
-              name="Manage connections"
-              icon={<DatabaseIcon className="text-muted-foreground opacity-80" />}
+              name="Add or manage…"
+              icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
               onSelect={manageConnections}
             />
           </CommandGroup>
@@ -140,34 +163,34 @@ function CommandItemWrapper({
   disabled,
   icon,
   name,
-  experimental,
+  badge,
+  value,
   onSelect,
-  uuid,
 }: {
   disabled?: boolean;
   icon: React.ReactNode;
   name: string;
-  experimental?: boolean;
+  badge?: React.ReactNode;
+  value?: string;
   onSelect: () => void;
-  uuid?: string;
 }) {
   return (
     <CommandItem
       disabled={disabled}
       onSelect={onSelect}
-      value={name + (uuid ? uuid : '')}
+      value={value ? value : name}
       onPointerDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
       }}
     >
       <div className="mr-4 flex h-5 w-5 items-center">{icon}</div>
-      <div className="flex flex-col">
+      <div className="flex flex-col truncate">
         <span className="flex items-center">
           {name}{' '}
-          {experimental && (
-            <Badge variant="secondary" className="ml-2">
-              Experimental
+          {badge && (
+            <Badge variant="outline" className="ml-2">
+              {badge}
             </Badge>
           )}
         </span>

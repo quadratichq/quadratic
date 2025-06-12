@@ -561,7 +561,7 @@ services:
       PGUSER: user
       POSTGRES_PASSWORD: password
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d ssh-postgres-connection" ]
+      test: ["CMD-SHELL", "pg_isready -U user -d ssh-postgres-connection"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -611,8 +611,8 @@ services:
       MYSQL_PASSWORD: password
       MYSQL_ROOT_PASSWORD: password
     volumes:
-      - ./docker/mssql-connection/data:/var/opt/mssql
-      - ./docker/mssql-connection/scripts:/docker-entrypoint-initdb.d/
+      - ./docker/ssh-mysql-connection/data:/var/opt/mssql
+      - ./docker/ssh-mysql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
       - quadratic-connection-db
@@ -659,13 +659,13 @@ services:
       MSSQL_SA_PASSWORD: yourStrong(!)Password
       # MSSQL_PID: Evaluation
     volumes:
-      - ssh-mssql-connection-data:/var/opt/mssql
+      - ./docker/ssh-mssql-connection/data:/var/opt/mssql
       - ./docker/ssh-mssql-connection/scripts:/docker-entrypoint-initdb.d/
     profiles:
       - quadratic-connection
       - quadratic-connection-db
-      - quadratic-connection-db-mssql  
-      - quadratic-connection-db-mssql-ssh  
+      - quadratic-connection-db-mssql
+      - quadratic-connection-db-mssql-ssh
 
   bigquery-connection:
     image: ghcr.io/goccy/bigquery-emulator:latest

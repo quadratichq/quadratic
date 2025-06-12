@@ -1,3 +1,4 @@
+import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -7,8 +8,9 @@ import {
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
+  aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -17,13 +19,20 @@ import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUser
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { getLastAIPromptMessageIndex, getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  getLastAIPromptMessageIndex,
+  getUserPromptMessages,
+  isContentGoogleSearchInternal,
+  isInternalMessage,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -155,37 +164,49 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
           return null;
         }
 
         const isCurrentMessage = index === messagesCount - 1;
+        const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
         return (
           <div
             key={`${index}-${message.role}-${message.contextType}-${message.content}`}
             className={cn(
               'flex flex-col gap-3',
-              message.role === 'user' && message.contextType === 'userPrompt' ? '' : 'px-2',
+              message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              message.contextType === 'userPrompt' ? '' : 'bg-accent'
+              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {message.role === 'user' ? (
-              message.contextType === 'userPrompt' ? (
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+
+            {isInternalMessage(message) ? (
+              isContentGoogleSearchInternal(message.content) ? (
+                <GoogleSearchSources content={message.content} />
+              ) : null
+            ) : message.role === 'user' && message.contextType === 'userPrompt' ? (
+              <AIAnalystUserMessageForm
+                initialContent={message.content}
+                initialContext={message.context}
+                textareaRef={textareaRef}
+                messageIndex={index}
+              />
+            ) : isToolResultMessage(message) ? (
+              message.content.map((result) => (
                 <AIAnalystUserMessageForm
-                  initialContent={message.content}
-                  initialContext={message.context}
+                  key={`${index}-${result.id}`}
+                  initialContent={result.content}
                   textareaRef={textareaRef}
                   messageIndex={index}
                 />
-              ) : (
-                message.content.map(({ text }) => <Markdown key={text}>{text}</Markdown>)
-              )
+              ))
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' ? (
+                  item.type === 'anthropic_thinking' && !!item.text ? (
                     <ThinkingBlock
                       key={item.text}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
@@ -193,7 +214,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
                       thinkingContent={item}
                       expandedDefault={true}
                     />
-                  ) : item.type === 'text' ? (
+                  ) : item.type === 'text' && !!item.text ? (
                     <Markdown key={item.text}>{item.text}</Markdown>
                   ) : null
                 )}
@@ -218,6 +239,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
 
       <PDFImportLoading />
+
+      <WebSearchLoading />
 
       <AILoading loading={loading} />
     </div>
@@ -344,5 +367,21 @@ const PDFImportLoading = memo(() => {
     return null;
   }
 
-  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
+  return (
+    <ToolCardQuery
+      className="px-2"
+      label="Reading file. Large files may take a few minutes."
+      isLoading={pdfImportLoading}
+    />
+  );
+});
+
+const WebSearchLoading = memo(() => {
+  const webSearchLoading = useRecoilValue(aiAnalystWebSearchLoadingAtom);
+
+  if (!webSearchLoading) {
+    return null;
+  }
+
+  return <ToolCardQuery className="px-2" label="Searching the web." isLoading={webSearchLoading} />;
 });

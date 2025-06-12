@@ -6,6 +6,9 @@ use crate::Pos;
 use crate::SheetPos;
 use crate::a1::A1Selection;
 use crate::controller::GridController;
+use crate::grid::Format;
+use crate::grid::formats::FormatUpdate;
+use crate::grid::js_types::JsResponse;
 
 use super::CellFormatSummary;
 use super::NumericFormatKind;
@@ -22,7 +25,7 @@ impl GridController {
         pos: String,
     ) -> Result<JsValue, JsValue> {
         let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
-        let Some(sheet) = self.try_sheet_from_string_id(sheet_id) else {
+        let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return Result::Err("Sheet not found".into());
         };
         let output: CellFormatSummary = sheet.cell_format_summary(pos);
@@ -202,14 +205,23 @@ impl GridController {
         columns: i32,
         rows: i32,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
+    ) -> Result<JsValue, JsValue> {
         if columns <= 0 || rows <= 0 {
-            return Result::Err("Invalid chart size".into());
+            return Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                result: false,
+                error: Some("Invalid chart size".to_string()),
+            })?);
         }
+
         let sheet_pos =
             serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
+
         self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
-        Ok(())
+
+        Ok(serde_wasm_bindgen::to_value(&JsResponse {
+            result: true,
+            error: None,
+        })?)
     }
 
     #[wasm_bindgen(js_name = "setDateTimeFormat")]
@@ -286,5 +298,40 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
         serde_wasm_bindgen::to_value(&sheet.cell_format((x, y).into()))
             .map_err(|_| JsValue::UNDEFINED)
+    }
+
+    #[wasm_bindgen(js_name = "setFormats")]
+    pub fn js_set_formats(
+        &mut self,
+        sheet_id: String,
+        selection: String,
+        formats: String,
+    ) -> Result<(), JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
+        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            .map_err(|_| "Unable to parse A1Selection")?;
+        let format = serde_json::from_str::<Format>(&formats).map_err(|e| {
+            dbgjs!(&e);
+            "Invalid formats"
+        })?;
+        let mut format_update = FormatUpdate::from(format);
+
+        // handle clear text and fill color properly
+        if format_update
+            .text_color
+            .as_ref()
+            .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+        {
+            format_update.text_color = Some(None);
+        }
+        if format_update
+            .fill_color
+            .as_ref()
+            .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+        {
+            format_update.fill_color = Some(None);
+        }
+        self.set_formats(&selection, format_update);
+        Ok(())
     }
 }

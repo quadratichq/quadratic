@@ -7,22 +7,7 @@
 
 import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import type {
-  JsBordersSheet,
-  JsCodeCell,
-  JsHtmlOutput,
-  JsOffset,
-  JsRenderCell,
-  JsRenderCodeCell,
-  JsRenderFill,
-  JsSheetFill,
-  JsSnackbarSeverity,
-  JsValidationWarning,
-  SheetBounds,
-  SheetInfo,
-  TransactionName,
-  Validation,
-} from '@/app/quadratic-core-types';
+import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type {
   ClientCoreGetJwt,
@@ -38,41 +23,26 @@ import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendImportProgress: (
-      filename: string,
-      current: number,
-      total: number,
-      x: number,
-      y: number,
-      width: number,
-      height: number
-    ) => void;
-    sendAddSheetClient: (sheetInfo: SheetInfo, user: boolean) => void;
+    sendImportProgress: (filename: string, current: number, total: number) => void;
+    sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
-    sendSheetInfoClient: (sheetInfo: SheetInfo[]) => void;
-    sendSheetInfoUpdateClient: (sheetInfo: SheetInfo) => void;
-    sendA1Context: (tableMap: string) => void;
-    sendSheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
-    sendSheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
+    sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
+    sendSheetInfoUpdateClient: (sheetInfo: Uint8Array) => void;
+    sendA1Context: (context: Uint8Array) => void;
+    sendSheetFills: (sheetId: string, fills: Uint8Array) => void;
+    sendSheetMetaFills: (sheetId: string, fills: Uint8Array) => void;
     sendSetCursor: (cursor: string) => void;
-    sendSheetOffsetsClient: (sheetId: string, offsets: JsOffset[]) => void;
-    sendSheetHtml: (html: JsHtmlOutput[]) => void;
-    sendUpdateHtml: (html: JsHtmlOutput) => void;
+    sendSheetOffsetsClient: (sheetId: string, offsets: Uint8Array) => void;
+    sendSheetHtml: (html: Uint8Array) => void;
+    sendUpdateHtml: (html: Uint8Array) => void;
     sendGenerateThumbnail: () => void;
-    sendBordersSheet: (sheetId: string, borders: JsBordersSheet) => void;
-    sendSheetRenderCells: (sheetId: string, renderCells: JsRenderCell[]) => void;
-    sendSheetCodeCell: (sheetId: string, codeCells: JsRenderCodeCell[]) => void;
-    sendSheetBoundsUpdateClient: (sheetBounds: SheetInfo) => void;
+    sendBordersSheet: (sheetId: string, borders: Uint8Array) => void;
+    sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
+    sendSheetBoundsUpdateClient: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
-    sendUpdateCodeCell: (
-      sheetId: string,
-      x: number,
-      y: number,
-      codeCell?: JsCodeCell,
-      renderCodeCell?: JsRenderCodeCell
-    ) => void;
+    sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
     sendImage: (
       sheetId: string,
@@ -84,13 +54,8 @@ declare var self: WorkerGlobalScope &
       pixel_width?: number,
       pixel_height?: number
     ) => void;
-    sendSheetValidations: (sheetId: string, validations: Validation[]) => void;
-    sendRenderValidationWarnings: (
-      sheetId: string,
-      hashX: number,
-      hashY: number,
-      validationWarnings: JsValidationWarning[]
-    ) => void;
+    sendSheetValidations: (sheetId: string, sheetValidations: Uint8Array) => void;
+    sendValidationWarnings: (warnings: Uint8Array) => void;
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
   };
@@ -105,7 +70,7 @@ class CoreClient {
     self.sendImportProgress = coreClient.sendImportProgress;
     self.sendAddSheetClient = coreClient.sendAddSheet;
     self.sendDeleteSheetClient = coreClient.sendDeleteSheet;
-    self.sendSheetInfoClient = coreClient.sendSheetInfoClient;
+    self.sendSheetsInfoClient = coreClient.sendSheetsInfoClient;
     self.sendSheetFills = coreClient.sendSheetFills;
     self.sendSheetMetaFills = coreClient.sendSheetMetaFills;
     self.sendSheetInfoUpdateClient = coreClient.sendSheetInfoUpdate;
@@ -116,17 +81,16 @@ class CoreClient {
     self.sendUpdateHtml = coreClient.sendUpdateHtml;
     self.sendGenerateThumbnail = coreClient.sendGenerateThumbnail;
     self.sendBordersSheet = coreClient.sendBordersSheet;
-    self.sendSheetRenderCells = coreClient.sendSheetRenderCells;
-    self.sendSheetCodeCell = coreClient.sendSheetCodeCell;
+    self.sendSheetCodeCells = coreClient.sendSheetCodeCells;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     self.sendTransactionStartClient = coreClient.sendTransactionStart;
     self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendTransactionEndClient = coreClient.sendTransactionEnd;
-    self.sendUpdateCodeCell = coreClient.sendUpdateCodeCell;
+    self.sendUpdateCodeCells = coreClient.sendUpdateCodeCells;
     self.sendUndoRedo = coreClient.sendUndoRedo;
     self.sendImage = coreClient.sendImage;
     self.sendSheetValidations = coreClient.sendSheetValidations;
-    self.sendRenderValidationWarnings = coreClient.sendRenderValidationWarnings;
+    self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
     if (debugWebWorkers) console.log('[coreClient] initialized.');
@@ -159,14 +123,6 @@ class CoreClient {
           type: 'coreClientGetCodeCell',
           id: e.data.id,
           cell: await core.getCodeCell(e.data.sheetId, e.data.x, e.data.y),
-        });
-        return;
-
-      case 'clientCoreGetRenderCell':
-        this.send({
-          type: 'coreClientGetRenderCell',
-          id: e.data.id,
-          cell: await core.getRenderCell(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
@@ -272,11 +228,6 @@ class CoreClient {
         this.send({ type: 'coreClientImportFile', id: e.data.id, ...fileResult }, fileResult.contents);
         return;
 
-      case 'clientCoreGetCsvPreview':
-        const preview = await core.getCsvPreview(e.data);
-        this.send({ type: 'coreClientGetCsvPreview', id: e.data.id, preview });
-        return;
-
       case 'clientCoreDeleteCellValues':
         await core.deleteCellValues(e.data.selection, e.data.cursor);
         this.send({
@@ -292,6 +243,7 @@ class CoreClient {
           e.data.y,
           e.data.language,
           e.data.codeString,
+          e.data.codeCellName,
           e.data.cursor
         );
         this.send({
@@ -376,20 +328,26 @@ class CoreClient {
 
       case 'clientCoreCopyToClipboard':
         const copyResult = await core.copyToClipboard(e.data.selection);
-        this.send({
-          type: 'coreClientCopyToClipboard',
-          id: e.data.id,
-          ...copyResult,
-        });
+        this.send(
+          {
+            type: 'coreClientCopyToClipboard',
+            id: e.data.id,
+            data: copyResult,
+          },
+          copyResult?.buffer
+        );
         return;
 
       case 'clientCoreCutToClipboard':
         const cutResult = await core.cutToClipboard(e.data.selection, e.data.cursor);
-        this.send({
-          type: 'coreClientCutToClipboard',
-          id: e.data.id,
-          ...cutResult,
-        });
+        this.send(
+          {
+            type: 'coreClientCutToClipboard',
+            id: e.data.id,
+            data: cutResult,
+          },
+          cutResult?.buffer
+        );
         return;
 
       case 'clientCorePasteFromClipboard':
@@ -401,7 +359,19 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setChartSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        const response = core.setChartSize(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.cursor
+        );
+        this.send({
+          type: 'coreClientSetCellRenderResize',
+          id: e.data.id,
+          response,
+        });
         return;
 
       case 'clientCoreAutocomplete':
@@ -424,43 +394,11 @@ class CoreClient {
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         return;
 
-      case 'clientCoreGetColumnsBounds':
-        this.send({
-          type: 'coreClientGetColumnsBounds',
-          id: e.data.id,
-          bounds: await core.getColumnsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
-        });
-        return;
-
-      case 'clientCoreGetRowsBounds':
-        this.send({
-          type: 'coreClientGetRowsBounds',
-          id: e.data.id,
-          bounds: await core.getRowsBounds(e.data.sheetId, e.data.start, e.data.end, e.data.ignoreFormatting),
-        });
-        return;
-
       case 'clientCoreJumpCursor':
         this.send({
           type: 'coreClientJumpCursor',
           id: e.data.id,
           coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
-        });
-        return;
-
-      case 'clientCoreFindNextColumnForRect':
-        this.send({
-          type: 'coreClientFindNextColumnForRect',
-          id: e.data.id,
-          column: await core.findNextColumnForRect(e.data),
-        });
-        return;
-
-      case 'clientCoreFindNextRowForRect':
-        this.send({
-          type: 'coreClientFindNextRowForRect',
-          id: e.data.id,
-          row: await core.findNextRowForRect(e.data),
         });
         return;
 
@@ -633,12 +571,12 @@ class CoreClient {
         core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
         return;
 
-      case 'clientCoreInsertColumn':
-        core.insertColumn(e.data.sheetId, e.data.column, e.data.right, e.data.cursor);
+      case 'clientCoreInsertColumns':
+        core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor);
         return;
 
-      case 'clientCoreInsertRow':
-        core.insertRow(e.data.sheetId, e.data.row, e.data.below, e.data.cursor);
+      case 'clientCoreInsertRows':
+        core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor);
         return;
 
       case 'clientCoreFlattenDataTable':
@@ -650,7 +588,11 @@ class CoreClient {
         return;
 
       case 'clientCoreGridToDataTable':
-        core.gridToDataTable(e.data.sheetRect, e.data.cursor);
+        core.gridToDataTable(e.data.sheetRect, e.data.tableName, e.data.firstRowIsHeader, e.data.cursor);
+        this.send({
+          type: 'coreClientGridToDataTable',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreDataTableMeta':
@@ -703,20 +645,36 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreFiniteRectFromSelection':
-        this.send({
-          type: 'coreClientFiniteRectFromSelection',
-          id: e.data.id,
-          rect: core.finiteRectFromSelection(e.data.selection),
-        });
-        return;
-
       case 'clientCoreMoveColumns':
         core.moveColumns(e.data.sheetId, e.data.colStart, e.data.colEnd, e.data.to, e.data.cursor);
         return;
 
       case 'clientCoreMoveRows':
         core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
+        return;
+
+      case 'clientCoreGetAICells':
+        this.send({
+          type: 'coreClientGetAICells',
+          id: e.data.id,
+          aiCells: core.getAICells(e.data.selection, e.data.sheetId, e.data.page),
+        });
+        return;
+
+      case 'clientCoreGetAIFormats':
+        this.send({
+          type: 'coreClientGetAIFormats',
+          id: e.data.id,
+          formats: core.getAICellFormats(e.data.sheetId, e.data.selection, e.data.page),
+        });
+        return;
+
+      case 'clientCoreSetFormats':
+        core.setFormats(e.data.sheetId, e.data.selection, e.data.formats);
+        this.send({
+          type: 'coreClientSetFormats',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreResizeColumns':
@@ -750,80 +708,71 @@ class CoreClient {
     }
   };
 
-  sendImportProgress = (
-    filename: string,
-    current: number,
-    total: number,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    this.send({ type: 'coreClientImportProgress', filename, current, total, x, y, width, height });
+  sendImportProgress = (filename: string, current: number, total: number) => {
+    this.send({ type: 'coreClientImportProgress', filename, current, total });
   };
 
-  sendAddSheet = (sheetInfo: SheetInfo, user: boolean) => {
-    this.send({ type: 'coreClientAddSheet', sheetInfo, user });
+  sendAddSheet = (sheetInfo: Uint8Array, user: boolean) => {
+    this.send({ type: 'coreClientAddSheet', sheetInfo, user }, sheetInfo.buffer);
   };
 
   sendDeleteSheet = (sheetId: string, user: boolean) => {
     this.send({ type: 'coreClientDeleteSheet', sheetId, user });
   };
 
-  sendSheetInfoClient = (sheetInfo: SheetInfo[]) => {
-    this.send({ type: 'coreClientSheetInfo', sheetInfo });
+  sendSheetsInfoClient = (sheetsInfo: Uint8Array) => {
+    this.send({ type: 'coreClientSheetsInfo', sheetsInfo }, sheetsInfo.buffer);
   };
 
-  sendSheetFills = (sheetId: string, fills: JsRenderFill[]) => {
-    this.send({ type: 'coreClientSheetFills', sheetId, fills });
+  sendSheetInfoUpdate = (sheetInfo: Uint8Array) => {
+    this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo }, sheetInfo.buffer);
   };
 
-  sendSheetMetaFills = (sheetId: string, fills: JsSheetFill[]) => {
-    this.send({ type: 'coreClientSheetMetaFills', sheetId, fills });
+  sendSheetFills = (sheetId: string, fills: Uint8Array) => {
+    this.send({ type: 'coreClientSheetFills', sheetId, fills }, fills.buffer);
   };
 
-  sendSheetInfoUpdate = (sheetInfo: SheetInfo) => {
-    this.send({ type: 'coreClientSheetInfoUpdate', sheetInfo });
+  sendSheetMetaFills = (sheetId: string, fills: Uint8Array) => {
+    this.send({ type: 'coreClientSheetMetaFills', sheetId, fills }, fills.buffer);
   };
 
   sendSetCursor = (cursor: string) => {
     this.send({ type: 'coreClientSetCursor', cursor });
   };
 
-  sendSheetOffsets = (sheetId: string, offsets: JsOffset[]) => {
-    this.send({
-      type: 'coreClientSheetOffsets',
-      sheetId,
-      offsets,
-    });
+  sendSheetOffsets = (sheetId: string, offsets: Uint8Array) => {
+    this.send(
+      {
+        type: 'coreClientSheetOffsets',
+        sheetId,
+        offsets,
+      },
+      offsets.buffer
+    );
   };
 
-  sendSheetHtml = (html: JsHtmlOutput[]) => {
-    this.send({ type: 'coreClientHtmlOutput', html });
+  sendSheetHtml = (html: Uint8Array) => {
+    this.send({ type: 'coreClientHtmlOutput', html }, html.buffer);
   };
 
-  sendUpdateHtml = (html: JsHtmlOutput) => {
-    this.send({ type: 'coreClientUpdateHtml', html });
+  sendUpdateHtml = (html: Uint8Array) => {
+    this.send({ type: 'coreClientUpdateHtml', html }, html.buffer);
   };
 
   sendGenerateThumbnail = () => {
     this.send({ type: 'coreClientGenerateThumbnail' });
   };
 
-  sendBordersSheet = (sheetId: string, borders: JsBordersSheet) => {
-    this.send({ type: 'coreClientBordersSheet', sheetId, borders });
+  sendBordersSheet = (sheetId: string, borders: Uint8Array) => {
+    this.send({ type: 'coreClientBordersSheet', sheetId, borders }, borders.buffer);
   };
 
-  sendSheetRenderCells = (sheetId: string, renderCells: JsRenderCell[]) => {
-    this.send({ type: 'coreClientSheetRenderCells', sheetId, renderCells });
+  sendSheetCodeCells = (sheetId: string, renderCodeCells: Uint8Array) => {
+    this.send({ type: 'coreClientSheetCodeCells', sheetId, renderCodeCells }, renderCodeCells.buffer);
   };
 
-  sendSheetCodeCell = (sheetId: string, codeCells: JsRenderCodeCell[]) => {
-    this.send({ type: 'coreClientSheetCodeCellRender', sheetId, codeCells });
-  };
-
-  sendSheetBoundsUpdate = (bounds: SheetBounds) => {
-    this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds });
+  sendSheetBoundsUpdate = (bounds: Uint8Array) => {
+    this.send({ type: 'coreClientSheetBoundsUpdate', sheetBounds: bounds }, bounds.buffer);
   };
 
   sendTransactionStart = (transactionId: string, transactionName: TransactionName) => {
@@ -842,14 +791,8 @@ class CoreClient {
     this.send({ type: 'coreClientTransactionEnd', transactionId, transactionName });
   };
 
-  sendUpdateCodeCell = (
-    sheetId: string,
-    x: number,
-    y: number,
-    codeCell?: JsCodeCell,
-    renderCodeCell?: JsRenderCodeCell
-  ) => {
-    this.send({ type: 'coreClientUpdateCodeCell', sheetId, x, y, codeCell, renderCodeCell });
+  sendUpdateCodeCells = (updateCodeCells: Uint8Array) => {
+    this.send({ type: 'coreClientUpdateCodeCells', updateCodeCells }, updateCodeCells.buffer);
   };
 
   sendMultiplayerState(state: MultiplayerState) {
@@ -895,17 +838,12 @@ class CoreClient {
     this.send({ type: 'coreClientImage', sheetId, x, y, image, w, h, pixel_width, pixel_height });
   };
 
-  sendSheetValidations = (sheetId: string, validations: Validation[]) => {
-    this.send({ type: 'coreClientSheetValidations', sheetId, validations });
+  sendSheetValidations = (sheetId: string, sheetValidations: Uint8Array) => {
+    this.send({ type: 'coreClientSheetValidations', sheetId, sheetValidations }, sheetValidations.buffer);
   };
 
-  sendRenderValidationWarnings = (
-    sheetId: string,
-    hashX: number | undefined,
-    hashY: number | undefined,
-    validationWarnings: JsValidationWarning[]
-  ) => {
-    this.send({ type: 'coreClientRenderValidationWarnings', sheetId, hashX, hashY, validationWarnings });
+  sendValidationWarnings = (warnings: Uint8Array) => {
+    this.send({ type: 'coreClientValidationWarnings', warnings }, warnings.buffer);
   };
 
   sendMultiplayerSynced = () => {
@@ -916,8 +854,8 @@ class CoreClient {
     this.send({ type: 'coreClientClientMessage', message, severity });
   };
 
-  sendA1Context = (context: string) => {
-    this.send({ type: 'coreClientA1Context', context });
+  sendA1Context = (context: Uint8Array) => {
+    this.send({ type: 'coreClientA1Context', context }, context.buffer);
   };
 
   sendCoreError = (from: string, error: Error | unknown) => {

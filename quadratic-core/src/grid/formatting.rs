@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
+use ts_rs::TS;
 
 use crate::RunLengthEncoding;
 
@@ -17,7 +18,7 @@ pub struct Underline;
 pub struct StrikeThrough;
 
 // TODO(ddimaria): deprecated, can be removed once SetCellFormatsSelection is removed 12/2024
-#[derive(Default, Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct RenderSize {
     pub w: String,

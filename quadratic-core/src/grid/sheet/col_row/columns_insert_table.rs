@@ -19,43 +19,73 @@ impl Sheet {
         column: i64,
         copy_formats: CopyFormats,
     ) {
+        let sheet_id = self.id;
+
         let source_column = match copy_formats {
             CopyFormats::After => column - 1,
             _ => column,
         };
-        for (pos, dt) in self.data_tables.iter_mut() {
-            let output_rect = dt.output_rect(*pos, false);
-            // if html or image, then we need to change the width
-            if dt.is_html_or_image() {
-                if let Some((width, height)) = dt.chart_output {
-                    if source_column >= pos.x && source_column < pos.x + output_rect.width() as i64
+
+        let all_pos_intersecting_columns = self
+            .data_tables
+            .get_pos_after_column_sorted(column - 1, false);
+
+        for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+                let output_rect = dt.output_rect(pos, false);
+                // if html or image, then we need to change the width
+                if dt.is_html_or_image() {
+                    if let Some((width, height)) = dt.chart_output {
+                        if column >= pos.x && column < pos.x + output_rect.width() as i64 {
+                            dt.chart_output = Some((width + 1, height));
+                            transaction.add_from_code_run(
+                                sheet_id,
+                                pos,
+                                dt.is_image(),
+                                dt.is_html(),
+                            );
+                        }
+                    }
+                } else {
+                    // Adds columns to data tables if the column is inserted inside the
+                    // table. Code is not impacted by this change.
+                    if !dt.is_code()
+                        && source_column >= pos.x
+                        && (column < pos.x + output_rect.width() as i64
+                            || (CopyFormats::Before == copy_formats
+                                && column < pos.x + output_rect.width() as i64 + 1))
                     {
-                        dt.chart_output = Some((width + 1, height));
-                        transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
+                        if let Ok(display_column_index) = u32::try_from(column - pos.x) {
+                            let column_index =
+                                dt.get_column_index_from_display_index(display_column_index, true);
+                            let _ = dt.insert_column_sorted(column_index as usize, None, None);
+                            transaction.add_from_code_run(
+                                sheet_id,
+                                pos,
+                                dt.is_image(),
+                                dt.is_html(),
+                            );
+                            if dt
+                                .formats
+                                .as_ref()
+                                .is_some_and(|formats| formats.has_fills())
+                            {
+                                transaction.add_fill_cells(sheet_id);
+                            }
+                            if !dt
+                                .borders
+                                .as_ref()
+                                .is_none_or(|borders| borders.is_default())
+                            {
+                                transaction.add_borders(sheet_id);
+                            }
+                        }
                     }
                 }
-            } else {
-                // Adds columns to data tables if the column is inserted inside the
-                // table. Code is not impacted by this change.
-                if !dt.is_code()
-                    && source_column >= pos.x
-                    && (column < pos.x + output_rect.width() as i64
-                        || (CopyFormats::Before == copy_formats
-                            && column < pos.x + output_rect.width() as i64 + 1))
-                {
-                    if let Ok(display_column_index) = u32::try_from(column - pos.x) {
-                        let column_index =
-                            dt.get_column_index_from_display_index(display_column_index, true);
-                        let _ = dt.insert_column_sorted(column_index as usize, None, None);
-                        transaction.add_from_code_run(self.id, *pos, dt.is_image(), dt.is_html());
-                        if dt.formats.has_fills() {
-                            transaction.add_fill_cells(self.id);
-                        }
-                        if !dt.borders.is_default() {
-                            transaction.add_borders(self.id);
-                        }
-                    }
-                }
+
+                Ok(())
+            }) {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
     }
@@ -68,59 +98,66 @@ impl Sheet {
         copy_formats: CopyFormats,
     ) {
         // these are tables that were moved to the right by the insertion
-        let mut data_tables_to_move_right = Vec::new();
+        // Catch all cases where the dt needs to be pushed to the right b/c of an insert.
+        let mut data_tables_to_move_right = self
+            .data_tables
+            .get_pos_after_column_sorted(column, false)
+            .into_iter()
+            .filter(|(_, pos)| {
+                self.data_table_at(pos).is_some_and(|dt| {
+                    (copy_formats == CopyFormats::Before && pos.x > column)
+                        || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
+                        || (copy_formats != CopyFormats::Before && pos.x >= column)
+                })
+            })
+            .collect::<Vec<_>>();
 
         // these are tables that were moved but should have stayed in place (ie,
         // a column was inserted instead of moving the table over)
-        let mut data_tables_to_move_back = Vec::new();
+        let mut data_tables_to_move_back = self
+            .data_tables
+            .get_pos_in_columns_sorted(&[column], false)
+            .into_iter()
+            .filter(|(_, pos)| {
+                self.data_table_at(pos).is_some_and(|dt| {
+                    (!dt.is_code() || dt.is_html_or_image())
+                        && copy_formats == CopyFormats::Before
+                        && pos.x == column
+                })
+            })
+            .collect::<Vec<_>>();
 
-        for (pos, dt) in self.data_tables.iter() {
-            // Catch all cases where the dt needs to be pushed to the right b/c of an insert.
-            if (copy_formats == CopyFormats::Before && pos.x > column)
-                || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
-                || (copy_formats != CopyFormats::Before && pos.x >= column)
-            {
-                data_tables_to_move_right.push(*pos);
-            }
-            // We need to catch the special case of inserting before at the
-            // first column. That should insert a table column and not push the
-            // table over. data_tables_to_move_left handles this case. Note: we
-            // treat charts differently and they are moved over.
-            if (!dt.is_code() || dt.is_html_or_image())
-                && copy_formats == CopyFormats::Before
-                && pos.x == column
-            {
-                data_tables_to_move_back.push(*pos);
-            }
-        }
         // move the data tables to the right to match with their new anchor positions
-        data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
-        for old_pos in data_tables_to_move_right {
-            if let Some((index, old_pos, data_table)) = self.data_tables.shift_remove_full(&old_pos)
+        data_tables_to_move_right.sort_by(|(_, a), (_, b)| b.x.cmp(&a.x));
+        for (_, old_pos) in data_tables_to_move_right {
+            if let Some((index, old_pos, data_table, dirty_rects)) =
+                self.data_table_shift_remove_full(&old_pos)
             {
-                let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
-
-                // signal the client to updates to the code cells (to draw the code arrays)
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction.add_from_code_run(
                     self.id,
                     old_pos,
                     data_table.is_image(),
                     data_table.is_html(),
                 );
+
+                let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
                 transaction.add_from_code_run(
                     self.id,
                     new_pos,
                     data_table.is_image(),
                     data_table.is_html(),
                 );
-                self.data_tables.insert_before(index, new_pos, data_table);
+                let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
         // In the special case of CopyFormats::Before and column == pos.x, we
         // need to move it back.
-        for to in data_tables_to_move_back {
+        data_tables_to_move_back.sort_by(|(_, a), (_, b)| a.x.cmp(&b.x));
+        for (_, to) in data_tables_to_move_back {
             let from = to.translate(1, 0, i64::MIN, i64::MIN);
-            self.move_cell_value(from, to);
+            self.columns.move_cell_value(&from, &to);
             transaction.add_code_cell(self.id, to);
         }
     }
@@ -138,7 +175,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
 
-        gc.insert_column(sheet_id, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 3, "0");
 
@@ -146,7 +183,7 @@ mod tests {
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 3, "0");
-        expect_js_call_count("jsUpdateCodeCell", 2, true);
+        expect_js_call_count("jsUpdateCodeCells", 1, true);
 
         gc.redo(None);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
@@ -161,7 +198,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_column(sheet_id, 1, false, None);
+        gc.insert_columns(sheet_id, 1, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![D1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![D7], 3, 3, false);
 
@@ -186,7 +223,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
         test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
 
-        gc.insert_column(sheet_id, 10, false, None);
+        gc.insert_columns(sheet_id, 10, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![C1], 3, 3, false);
         assert_data_table_size(&gc, sheet_id, pos![C7], 3, 3, false);
 
@@ -206,7 +243,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         // insert column before the table (which should shift the table over by 1)
-        gc.insert_column(sheet_id, 2, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
         assert_data_table_size(&gc, sheet_id, pos![C2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
@@ -216,7 +253,7 @@ mod tests {
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
-        gc.insert_column(sheet_id, 2, false, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
@@ -237,7 +274,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_column(sheet_id, 3, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "");
@@ -255,7 +292,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
-        gc.insert_column(sheet_id, 5, false, None);
+        gc.insert_columns(sheet_id, 5, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 4, 4, "2");
         assert_display_cell_value(&gc, sheet_id, 5, 4, "");
@@ -280,7 +317,7 @@ mod tests {
         test_create_html_chart(&mut gc, sheet_id, pos![B5], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![A1], 3, 3, false);
 
-        gc.insert_column(sheet_id, 3, true, None);
+        gc.insert_columns(sheet_id, 3, 1, true, None);
         assert_chart_size(&gc, sheet_id, pos![A1], 4, 3, false);
         assert_chart_size(&gc, sheet_id, pos![B5], 4, 3, false);
 
@@ -299,7 +336,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        gc.insert_column(sheet_id, 3, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![A1], 4, 3, false);
 
         gc.undo(None);
@@ -313,9 +350,9 @@ mod tests {
         test_create_js_chart(&mut gc, sheet_id, pos![B2], 2, 2);
 
         clear_js_calls();
-        gc.insert_column(sheet_id, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None);
         assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
-        expect_js_call_count("jsUpdateCodeCell", 2, false);
+        expect_js_call_count("jsUpdateCodeCells", 1, false);
         expect_js_call_count("jsSendImage", 2, true);
     }
 }

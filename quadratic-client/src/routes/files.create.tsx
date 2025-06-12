@@ -37,3 +37,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   });
   return redirect(redirectUrl);
 };
+
+export const Component = () => {
+  return null;
+};

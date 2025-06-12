@@ -3,8 +3,8 @@ use itertools::Itertools;
 use crate::{
     SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    formulas::{Ctx, parse_formula},
-    grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind},
+    formulas::{Ctx, find_cell_references, parse_formula},
+    grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
 };
 
 impl GridController {
@@ -39,7 +39,6 @@ impl GridController {
                     "Formula1",
                     output.inner,
                     false,
-                    false,
                     None,
                     None,
                     None,
@@ -50,6 +49,42 @@ impl GridController {
                 let _ = self.code_cell_sheet_error(transaction, &error);
             }
         }
+    }
+
+    pub(crate) fn add_formula_without_eval(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        sheet_pos: SheetPos,
+        code: &str,
+        name: &str,
+    ) {
+        let parse_ctx = self.a1_context();
+        transaction.current_sheet_pos = Some(sheet_pos);
+
+        let mut cells_accessed = CellsAccessed::default();
+        let cell_references = find_cell_references(code, parse_ctx, sheet_pos);
+        for cell_ref in cell_references {
+            if let Ok(cell_ref) = cell_ref.inner {
+                cells_accessed.add(cell_ref.sheet_id, cell_ref.cells);
+            }
+        }
+
+        let new_code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: code.to_string(),
+            cells_accessed,
+            ..CodeRun::default()
+        };
+        let new_data_table = DataTable::new(
+            DataTableKind::CodeRun(new_code_run),
+            name,
+            "".into(),
+            false,
+            None,
+            None,
+            None,
+        );
+        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
     }
 }
 
@@ -129,6 +164,7 @@ mod test {
             CodeCellLanguage::Formula,
             "A1 + 1".to_string(),
             None,
+            None,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -145,6 +181,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "B1 + 1".to_string(),
+            None,
             None,
         );
 
@@ -201,6 +238,7 @@ mod test {
             },
             CodeCellLanguage::Formula,
             "A1 + 1".into(),
+            None,
             None,
         );
 
@@ -266,7 +304,6 @@ mod test {
                 DataTableKind::CodeRun(code_run),
                 "JavaScript1",
                 Value::Single(CellValue::Number(12.into())),
-                false,
                 false,
                 None,
                 None,
@@ -345,7 +382,6 @@ mod test {
             "JavaScript1",
             Value::Array(array),
             false,
-            false,
             None,
             None,
             None,
@@ -386,6 +422,7 @@ mod test {
             CodeCellLanguage::Formula,
             "A1:A4".into(),
             None,
+            None,
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
@@ -404,9 +441,9 @@ mod test {
         );
         assert!(
             gc.sheet(sheet_id)
-                .data_table(Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
         assert!(
             gc.sheet(sheet_id)
@@ -426,9 +463,9 @@ mod test {
         gc.redo(None);
         assert!(
             gc.sheet(sheet_id)
-                .data_table(Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 })
                 .unwrap()
-                .spill_error
+                .has_spill()
         );
 
         // undo the spill error
@@ -450,7 +487,7 @@ mod test {
         };
         let pos: Pos = sheet_pos.into();
 
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None);
+        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(pos),
@@ -459,14 +496,15 @@ mod test {
                 code: "☺".into(),
             }))
         );
-        let result = sheet.data_table(pos).unwrap();
-        assert!(!result.spill_error);
+        let result = sheet.data_table_at(&pos).unwrap();
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
 
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,
             "{0,1/0;2/0,0}".into(),
+            None,
             None,
         );
         let sheet = gc.sheet(sheet_id);
@@ -477,8 +515,8 @@ mod test {
                 code: "{0,1/0;2/0,0}".into(),
             }))
         );
-        let result = sheet.data_table(pos).unwrap();
-        assert!(!result.spill_error);
+        let result = sheet.data_table_at(&pos).unwrap();
+        assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
     }
 }
