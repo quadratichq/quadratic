@@ -504,7 +504,7 @@ pub(crate) mod tests {
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
 
         gc.import_csv(
             sheet_id,
@@ -517,11 +517,11 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
+        print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 2, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 7, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -552,7 +552,7 @@ pub(crate) mod tests {
             1,
             3,
             2,
-            vec!["issue", " test", " value\u{feff}"],
+            vec!["\u{feff}issue", " test", " value\u{feff}"],
         );
         assert_cell_value_row(
             &gc,

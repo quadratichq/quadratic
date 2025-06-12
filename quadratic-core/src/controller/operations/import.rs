@@ -70,7 +70,7 @@ impl GridController {
 
         let mut ops = vec![];
 
-        let (d, width, height, is_table) = find_csv_info(&converted_file);
+        let (d, width, height, mut is_table) = find_csv_info(&converted_file);
         let delimiter = delimiter.unwrap_or(d);
 
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
@@ -79,20 +79,35 @@ impl GridController {
 
         let reader = BufReader::new(converted_file.as_slice());
         for (y, line) in reader.lines().enumerate() {
-            let line = line?;
-            let entries = parse_csv_line(&line, delimiter as char);
-            for (x, value) in entries.iter().enumerate() {
-                let (cell_value, format_update) = self.string_to_cell_value(value, false);
-                cell_values
-                    .set(u32::try_from(x)?, y as u32, cell_value)
-                    .map_err(|e| error(e.to_string()))?;
+            match line {
+                Ok(line) => {
+                    if line.trim().is_empty() && y != height as usize - 1 {
+                        // if there are blank lines (except for the last one), then likely not a table
+                        is_table = false;
+                    } else {
+                        let entries = parse_csv_line(&line, delimiter as char);
+                        for (x, value) in entries.iter().enumerate() {
+                            let (cell_value, format_update) =
+                                self.string_to_cell_value(value, false);
+                            cell_values
+                                .set(u32::try_from(x)?, y as u32, cell_value)
+                                .map_err(|e| error(e.to_string()))?;
 
-                if !format_update.is_default() {
-                    let pos = Pos {
-                        x: x as i64 + 1,
-                        y: y as i64 + 1,
-                    };
-                    sheet_format_updates.set_format_cell(pos, format_update);
+                            if !format_update.is_default() {
+                                let pos = Pos {
+                                    x: x as i64 + 1,
+                                    y: y as i64 + 1,
+                                };
+                                sheet_format_updates.set_format_cell(pos, format_update);
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    // if there are blank lines (except for the last one), then likely not a table
+                    if y != height as usize - 1 {
+                        is_table = false;
+                    }
                 }
             }
 
