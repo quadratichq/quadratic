@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::io::{BufRead, BufReader, Cursor};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
@@ -8,7 +8,7 @@ use crate::{
     cellvalue::Import,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
-        execution::TransactionSource,
+        execution::TransactionSource, operations::csv::parse_csv_line,
     },
     grid::{
         CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
@@ -68,84 +68,83 @@ impl GridController {
         let converted_file = clean_csv_file(&file)?;
         drop(file); // free the memory of the original file
 
-        let (d, width, height) = find_csv_info(&converted_file);
-        let delimiter = delimiter.unwrap_or(d);
+        let mut ops = vec![];
 
-        let reader = |flexible| {
-            csv::ReaderBuilder::new()
-                .delimiter(delimiter)
-                .has_headers(false)
-                .flexible(flexible)
-                .from_reader(converted_file.as_slice())
-        };
+        let (d, width, height, is_table) = find_csv_info(&converted_file);
+        let delimiter = delimiter.unwrap_or(d);
 
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
         let mut cell_values = Array::new_empty(array_size);
         let mut sheet_format_updates = SheetFormatUpdates::default();
-        let mut y: u32 = 0;
 
-        for entry in reader(true).records() {
-            match entry {
-                Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
-                Ok(record) => {
-                    for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
-                        cell_values
-                            .set(u32::try_from(x)?, y, cell_value)
-                            .map_err(|e| error(e.to_string()))?;
+        let reader = BufReader::new(converted_file.as_slice());
+        for (y, line) in reader.lines().enumerate() {
+            let line = line?;
+            let entries = parse_csv_line(&line, delimiter as char);
+            for (x, value) in entries.iter().enumerate() {
+                let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                cell_values
+                    .set(u32::try_from(x)?, y as u32, cell_value)
+                    .map_err(|e| error(e.to_string()))?;
 
-                        if !format_update.is_default() {
-                            let pos = Pos {
-                                x: x as i64 + 1,
-                                y: y as i64 + 1,
-                            };
-                            sheet_format_updates.set_format_cell(pos, format_update);
-                        }
-                    }
+                if !format_update.is_default() {
+                    let pos = Pos {
+                        x: x as i64 + 1,
+                        y: y as i64 + 1,
+                    };
+                    sheet_format_updates.set_format_cell(pos, format_update);
                 }
             }
 
-            y += 1;
-
             // update the progress bar every time there's a new batch
-            let should_update = y % IMPORT_LINES_PER_OPERATION == 0;
+            let should_update = y % IMPORT_LINES_PER_OPERATION as usize == 0;
 
             if should_update && (cfg!(target_family = "wasm") || cfg!(test)) {
-                crate::wasm_bindings::js::jsImportProgress(file_name, y, height);
+                crate::wasm_bindings::js::jsImportProgress(file_name, y as u32, height);
             }
         }
 
-        let context = self.a1_context();
-        let import = Import::new(file_name.into());
-        let mut data_table =
-            DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
+        if is_table {
+            let context = self.a1_context();
+            let import = Import::new(file_name.into());
+            let mut data_table =
+                DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
 
-        let apply_first_row_as_header = match header_is_first_row {
-            Some(true) => true,
-            Some(false) => false,
-            None => self.guess_csv_first_row_is_header(&cell_values),
-        };
+            let apply_first_row_as_header = match header_is_first_row {
+                Some(true) => true,
+                Some(false) => false,
+                None => self.guess_csv_first_row_is_header(&cell_values),
+            };
 
-        data_table.value = cell_values.into();
-        if !sheet_format_updates.is_default() {
-            data_table
-                .formats
-                .get_or_insert_default()
-                .apply_updates(&sheet_format_updates);
+            data_table.value = cell_values.into();
+            if !sheet_format_updates.is_default() {
+                data_table
+                    .formats
+                    .get_or_insert_default()
+                    .apply_updates(&sheet_format_updates);
+            }
+
+            if apply_first_row_as_header {
+                data_table.apply_first_row_as_header();
+            }
+            ops.push(Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+                cell_value: CellValue::Import(import),
+                index: None,
+            });
+            drop(sheet_format_updates);
+        } else {
+            ops.push(Operation::SetCellValues {
+                sheet_pos,
+                values: cell_values.into(),
+            });
+            sheet_format_updates.translate_in_place(sheet_pos.x, sheet_pos.y);
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id,
+                formats: sheet_format_updates,
+            });
         }
-
-        if apply_first_row_as_header {
-            data_table.apply_first_row_as_header();
-        }
-
-        drop(sheet_format_updates);
-
-        let ops = vec![Operation::AddDataTable {
-            sheet_pos,
-            data_table,
-            cell_value: CellValue::Import(import),
-            index: None,
-        }];
 
         Ok(ops)
     }
@@ -821,5 +820,39 @@ mod test {
                 NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
             ))
         );
+    }
+
+    #[test]
+    fn test_csv_error_1() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-1.csv");
+        gc.import_csv(
+            sheet_id,
+            file.to_vec(),
+            "csv-error-1.csv",
+            pos![A1],
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn test_csv_error_2() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-2.csv");
+        gc.import_csv(
+            sheet_id,
+            file.to_vec(),
+            "csv-error-2.csv",
+            pos![A1],
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
     }
 }
