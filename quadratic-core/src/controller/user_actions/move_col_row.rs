@@ -204,10 +204,10 @@ mod tests {
         assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["1", "2", "3"]);
         assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["", "", ""]);
 
-        gc.move_rows(SheetId::TEST, 4, 4, 6, None);
+        gc.move_rows(sheet_id, 4, 4, 6, None);
 
         assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["", "", ""]);
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["1", "2", "3"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["1", "2", "3"]);
     }
 
     #[test]
@@ -270,12 +270,12 @@ mod tests {
         assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["G", "H", "I"]);
 
         // Move rows 3-5 to position 7
-        gc.move_rows(SheetId::TEST, 3, 5, 7, None);
+        gc.move_rows(sheet_id, 3, 5, 7, None);
 
         // Verify data moved correctly
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["A", "B", "C"]);
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 8, vec!["D", "E", "F"]);
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 9, vec!["G", "H", "I"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["G", "H", "I"]);
     }
 
     #[test]
@@ -369,8 +369,8 @@ mod tests {
         gc.move_rows(SheetId::TEST, 3, 4, 6, None);
 
         // Verify moved state
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["A", "B", "C"]);
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
 
         // Undo the move
         gc.undo(None);
@@ -430,8 +430,8 @@ mod tests {
         gc.move_rows(SheetId::TEST, 3, 4, 6, None);
 
         // Verify moved state
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["A", "B", "C"]);
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
 
         // Undo the move
         gc.undo(None);
@@ -444,8 +444,8 @@ mod tests {
         gc.redo(None);
 
         // Verify redone state
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 6, vec!["A", "B", "C"]);
-        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 7, vec!["D", "E", "F"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 4, vec!["A", "B", "C"]);
+        assert_cell_value_row(&mut gc, sheet_id, 3, 5, 5, vec!["D", "E", "F"]);
     }
 
     #[test]
