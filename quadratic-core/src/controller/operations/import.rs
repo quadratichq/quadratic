@@ -1,10 +1,13 @@
 use std::io::Cursor;
 
 use anyhow::{Result, anyhow, bail};
+use bytes::Bytes;
 use chrono::{NaiveDate, NaiveTime};
+use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use crate::{
     Array, ArraySize, CellValue, Pos, SheetPos,
+    arrow::arrow_col_to_cell_value_vec,
     cellvalue::Import,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -91,7 +94,7 @@ impl GridController {
                     for (x, value) in record.iter().enumerate() {
                         let (cell_value, format_update) = self.string_to_cell_value(value, false);
                         cell_values
-                            .set(u32::try_from(x)?, y, cell_value)
+                            .set(u32::try_from(x)?, y, cell_value, false)
                             .map_err(|e| error(e.to_string()))?;
 
                         if !format_update.is_default() {
@@ -301,7 +304,10 @@ impl GridController {
                             cell,
                             formula_start_name.as_str(),
                         );
-                        gc.send_client_updates_during_transaction(&mut transaction, false);
+                        gc.update_a1_context_table_map(
+                            std::mem::take(&mut transaction.code_cells_a1_context),
+                            false,
+                        );
                     }
                 }
 
@@ -341,7 +347,68 @@ impl GridController {
         insert_at: Pos,
         updater: Option<impl Fn(&str, u32, u32)>,
     ) -> Result<Vec<Operation>> {
-        let cell_values = parquet_to_array(file, file_name, updater)?;
+        let error =
+            |message: String| anyhow!("Error parsing Parquet file {}: {}", file_name, message);
+
+        // this is not expensive
+        let bytes = Bytes::from(file);
+        let builder = ParquetRecordBatchReaderBuilder::try_new(bytes)?;
+
+        // headers
+        let metadata = builder.metadata();
+        let total_size = metadata.file_metadata().num_rows() as u32;
+        let fields = metadata.file_metadata().schema().get_fields();
+        let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
+        let mut width = headers.len() as u32;
+
+        // add 1 to the height for the headers
+        let array_size =
+            ArraySize::new_or_err(width, total_size + 1).map_err(|e| error(e.to_string()))?;
+        let mut cell_values = Array::new_empty(array_size);
+
+        // add the headers to the first row
+        for (x, header) in headers.into_iter().enumerate() {
+            cell_values
+                .set(x as u32, 0, header, false)
+                .map_err(|e| error(e.to_string()))?;
+        }
+
+        let reader = builder.build()?;
+        let mut height = 0;
+        let mut current_size = 0;
+
+        for (row_index, batch) in reader.enumerate() {
+            let batch = batch?;
+            let num_rows = batch.num_rows();
+            let num_cols = batch.num_columns();
+
+            current_size += num_rows;
+            width = width.max(num_cols as u32);
+            height = height.max(num_rows as u32);
+
+            for col_index in 0..num_cols {
+                let col = batch.column(col_index);
+                let values = arrow_col_to_cell_value_vec(col)?;
+                let x = col_index as u32;
+                let y = (row_index * num_rows) as u32 + 1;
+
+                for (index, value) in values.into_iter().enumerate() {
+                    cell_values
+                        .set(x, y + index as u32, value, false)
+                        .map_err(|e| error(e.to_string()))?;
+                }
+
+                // update the progress bar every time there's a new operation
+                if cfg!(target_family = "wasm") || cfg!(test) {
+                    crate::wasm_bindings::js::jsImportProgress(
+                        file_name,
+                        current_size as u32,
+                        total_size,
+                    );
+                }
+            }
+        }
+
         let context = self.a1_context();
         let import = Import::new(file_name.into());
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));

@@ -138,7 +138,7 @@ export function ensureRectVisible(sheetId: string, min: JsCoordinate, max?: JsCo
 }
 
 // function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectangle): boolean {
-//   const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
+//   const table = pixiApp.cellsSheet().tables.getTableIntersects(coordinate);
 //   if (!table) return false;
 //   const code = table.codeCell;
 //   if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {
@@ -188,11 +188,10 @@ export function ensureSelectionVisible() {
 //   const sheet = sheets.sheet;
 //   const headingSize = headings.headingSize;
 
-//   // todo...
-//   // check if the cell is part of a table header that is visible b/c it is
-//   // hovering over the table
-//   // const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
-//   // if (tableName) return true;
+// // check if the cell is part of a table header that is visible b/c it is
+// // hovering over the table
+// const tableName = pixiApp.cellsSheet().tables.getTableNameInNameOrColumn(coordinate.x, coordinate.y);
+// if (tableName) return true;
 
 //   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
 //   let is_off_screen = false;

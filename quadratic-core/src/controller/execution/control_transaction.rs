@@ -37,21 +37,17 @@ impl GridController {
         }
 
         loop {
-            if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
-                transaction.complete = true;
-                break;
-            }
-
-            self.execute_operation(transaction);
-
-            self.send_client_updates_during_transaction(transaction, false);
+            self.update_a1_context_table_map(
+                std::mem::take(&mut transaction.code_cells_a1_context),
+                false,
+            );
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
-            }
-
-            if transaction.operations.is_empty() {
+            } else if !transaction.operations.is_empty() {
+                self.execute_operation(transaction);
+            } else if !transaction.resize_rows.is_empty() {
                 if let Some((sheet_id, rows)) = transaction
                     .resize_rows
                     .iter()
@@ -59,22 +55,17 @@ impl GridController {
                     .map(|(&k, v)| (k, v.clone()))
                 {
                     transaction.resize_rows.remove(&sheet_id);
-
-                    self.send_offsets_modified(transaction);
-                    let resizing = self.start_auto_resize_row_heights(
+                    self.start_auto_resize_row_heights(
                         transaction,
                         sheet_id,
                         rows.into_iter().collect(),
                     );
-                    // break only if async resize operation is being executed
-                    if resizing {
-                        break;
-                    }
                 }
+            } else {
+                transaction.complete = true;
+                break;
             }
         }
-
-        self.send_client_updates_during_transaction(transaction, true);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
@@ -121,7 +112,7 @@ impl GridController {
             TransactionSource::Unset => panic!("Expected a transaction type"),
         }
 
-        self.send_client_updates_after_transaction(&mut transaction);
+        self.send_client_render_updates(&mut transaction);
 
         transaction.send_transaction();
 
