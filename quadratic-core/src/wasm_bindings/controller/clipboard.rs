@@ -3,6 +3,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
 use crate::controller::operations::clipboard::ClipboardOperation;
+use crate::grid::js_types::JsClipboard;
 use crate::{
     SheetPos, SheetRect,
     controller::{GridController, operations::clipboard::PasteSpecial},
@@ -19,12 +20,9 @@ impl GridController {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        let js_clipboard = sheet.copy_to_clipboard(
-            &selection,
-            self.a1_context(),
-            ClipboardOperation::Copy,
-            true,
-        )?;
+        let clipboard =
+            sheet.copy_to_clipboard(&selection, self.a1_context(), ClipboardOperation::Copy);
+        let js_clipboard: JsClipboard = clipboard.into();
         Ok(serde_json::to_vec(&js_clipboard).map_err(|e| e.to_string())?)
     }
 

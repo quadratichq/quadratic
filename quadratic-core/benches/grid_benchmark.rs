@@ -77,9 +77,8 @@ fn criterion_benchmark(c: &mut Criterion) {
                     &A1Selection::from_rect(sheet_rect),
                     gc.a1_context(),
                     ClipboardOperation::Copy,
-                    true,
                 )
-                .unwrap();
+                .into();
 
             let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(
@@ -108,9 +107,8 @@ fn criterion_benchmark(c: &mut Criterion) {
                     &A1Selection::from_rect(sheet_rect),
                     gc.a1_context(),
                     ClipboardOperation::Copy,
-                    true,
                 )
-                .unwrap();
+                .into();
 
             let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(

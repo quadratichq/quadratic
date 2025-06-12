@@ -619,8 +619,8 @@ mod test {
 
         let JsClipboard { html, .. } = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy)
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(10, 10, sheet_id),
