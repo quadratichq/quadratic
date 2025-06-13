@@ -209,7 +209,7 @@ export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
   claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
-  '4.1': 'openai:gpt-4.1-2025-04-14',
+  '4.1': 'azure-openai:gpt-4.1',
 };
 
 export const aiToolsSpec: AIToolSpecRecord = {

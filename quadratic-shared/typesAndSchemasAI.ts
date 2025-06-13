@@ -11,6 +11,7 @@ const AIProvidersSchema = z.enum([
   'anthropic',
   'openai',
   'xai',
+  'azure-openai',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
@@ -47,6 +48,7 @@ const OpenAIModelSchema = z.enum([
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
+const AzureOpenAIModelSchema = z.enum(['gpt-4.1']);
 const XAIModelSchema = z.enum(['grok-3-beta']);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
@@ -57,6 +59,7 @@ const AIModelSchema = z.union([
   BedrockModelSchema,
   AnthropicModelSchema,
   OpenAIModelSchema,
+  AzureOpenAIModelSchema,
   XAIModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
@@ -132,6 +135,9 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
+const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1']);
+export type AzureOpenAIModelKey = z.infer<typeof AzureOpenAIModelKeySchema>;
+
 const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
@@ -144,6 +150,7 @@ const AIModelKeySchema = z.union([
   BedrockModelKeySchema,
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
+  AzureOpenAIModelKeySchema,
   XAIModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;

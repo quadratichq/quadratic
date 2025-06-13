@@ -21,8 +21,10 @@ import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
 import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { isAzureOpenAIModel } from '../../ai/helpers/openai.helper';
 import {
   anthropic,
+  azureOpenAI,
   bedrock,
   bedrock_anthropic,
   geminiai,
@@ -68,6 +70,8 @@ export const handleAIRequest = async (
       parsedResponse = await handleAnthropicRequest(modelKey, args, anthropic, response);
     } else if (isOpenAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, openai, response);
+    } else if (isAzureOpenAIModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(modelKey, args, azureOpenAI, response);
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, xai, response);
     } else if (isVertexAIModel(modelKey)) {
