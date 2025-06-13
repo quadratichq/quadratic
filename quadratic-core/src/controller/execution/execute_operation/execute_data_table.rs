@@ -100,7 +100,7 @@ impl GridController {
                 // only delete when there's not another code cell in the same position
                 // (this maintains the original output until a run completes)
                 sheet
-                    .cell_value(*pos)
+                    .cell_value_ref(*pos)
                     .is_none_or(|value| !(value.is_code() || value.is_import()))
             })
             .collect();

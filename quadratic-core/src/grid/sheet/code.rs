@@ -170,12 +170,12 @@ impl Sheet {
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         let mut code_pos = pos;
-        let cell_value = if let Some(cell_value) = self.cell_value(pos) {
+        let cell_value = if let Some(cell_value) = self.cell_value_ref(pos) {
             Some(cell_value)
         } else {
             match self.data_table_pos_that_contains(pos) {
                 Ok(data_table_pos) => {
-                    if let Some(code_value) = self.cell_value(data_table_pos) {
+                    if let Some(code_value) = self.cell_value_ref(data_table_pos) {
                         code_pos = data_table_pos;
                         Some(code_value)
                     } else {

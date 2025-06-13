@@ -228,12 +228,8 @@ impl Sheet {
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
-        let cell_value = self
-            .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y));
-
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
-        if let Some(cell_value) = cell_value {
+        if let Some(cell_value) = self.cell_value_ref(pos) {
             if !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
@@ -289,17 +285,16 @@ impl Sheet {
         rect_values
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
-    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y).cloned()
-    }
-
     /// Returns the ref of the cell_value at the Pos in column.values. This does
     /// not check or return results within data_tables.
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y)
+        self.get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+    }
+
+    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
+        self.cell_value_ref(pos).cloned()
     }
 
     /// Returns the cell value at a position, or an error if the cell value is not found.

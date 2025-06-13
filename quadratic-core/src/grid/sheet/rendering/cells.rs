@@ -243,7 +243,7 @@ impl Sheet {
         self.iter_code_output_in_rect(rect)
             .for_each(|(data_table_rect, data_table)| {
                 // sanity check that there is a CellValue::Code for this CodeRun
-                if let Some(cell_value) = self.cell_value(Pos {
+                if let Some(cell_value) = self.cell_value_ref(Pos {
                     x: data_table_rect.min.x,
                     y: data_table_rect.min.y,
                 }) {

@@ -58,7 +58,7 @@ impl Sheet {
 
     // Returns data for rendering a code cell.
     fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
-        let code = self.cell_value(pos)?;
+        let code = self.cell_value_ref(pos)?;
         let output_size = data_table.output_size();
         let (state, w, h, spill_error) = if data_table.has_spill() {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
@@ -89,7 +89,7 @@ impl Sheet {
             && data_table.alternating_colors;
 
         let language = match code {
-            CellValue::Code(code) => code.language,
+            CellValue::Code(code) => code.language.to_owned(),
             CellValue::Import(_) => CodeCellLanguage::Import,
             _ => return None,
         };
