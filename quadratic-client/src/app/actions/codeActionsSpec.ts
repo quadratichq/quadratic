@@ -35,16 +35,16 @@ export const codeActionsSpec: CodeActionSpec = {
     run: cancelExecution,
   },
   [Action.ExecuteCode]: {
-    label: () => 'Rerun code cells',
+    label: () => 'Run code cells',
     Icon: SaveAndRunIcon,
     run: executeCode,
   },
   [Action.RerunSheetCode]: {
-    label: () => 'Rerun sheet code',
+    label: () => 'Run sheet code',
     run: rerunSheetCode,
   },
   [Action.RerunAllCode]: {
-    label: () => 'Rerun all code',
+    label: () => 'Run all code',
     run: rerunAllCode,
   },
 };
