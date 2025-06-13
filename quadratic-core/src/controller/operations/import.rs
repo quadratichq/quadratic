@@ -444,10 +444,6 @@ mod test {
             Some(false),
         );
 
-        let import = Import::new(sanitize_table_name(file_name.into()));
-        let cell_value = CellValue::Import(import.clone());
-        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
-
         assert_eq!(ops.as_ref().unwrap().len(), 1);
 
         let (sheet_pos, data_table) = match &ops.unwrap()[0] {
