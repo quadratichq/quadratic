@@ -62,7 +62,7 @@ impl Sheet {
                 &mut cells,
                 &mut values,
                 a1_context,
-                &selection,
+                selection,
                 include_code_table_values,
             );
             data_tables.extend(data_tables_in_rect);
@@ -106,14 +106,13 @@ mod tests {
 
         let selection = A1Selection::test_a1("A1,C1:C2");
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet
+        let js_clipboard = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy)
             .into();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(0, 5, sheet_id),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -135,7 +134,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet
+        let js_clipboard = sheet
             .copy_to_clipboard(
                 &A1Selection::test_a1("A1"),
                 gc.a1_context(),
@@ -145,8 +144,7 @@ mod tests {
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1("B2"),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );

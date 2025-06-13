@@ -43,8 +43,7 @@ impl GridController {
     pub fn js_paste_from_clipboard(
         &mut self,
         selection: String,
-        plain_text: Option<String>,
-        html: Option<String>,
+        js_clipboard: Vec<u8>,
         special: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
@@ -59,7 +58,9 @@ impl GridController {
         };
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.paste_from_clipboard(&selection, plain_text, html, special, cursor);
+        let js_clipboard =
+            serde_json::from_slice(&js_clipboard).map_err(|_| "Unable to parse js_clipboard")?;
+        self.paste_from_clipboard(&selection, js_clipboard, special, cursor);
         Ok(())
     }
 

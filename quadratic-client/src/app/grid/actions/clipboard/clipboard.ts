@@ -4,7 +4,8 @@ import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerfor
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
-import type { PasteSpecial } from '@/app/quadratic-core-types';
+import type { JsClipboard, PasteSpecial } from '@/app/quadratic-core-types';
+import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import * as Sentry from '@sentry/react';
@@ -45,6 +46,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
+  console.log('pasteFromClipboardEvent');
   if (!canvasIsTarget()) return;
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
@@ -53,21 +55,29 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
     return;
   }
   e.preventDefault();
-  let html: string | undefined;
-  let plainText: string | undefined;
 
-  if (e.clipboardData.types.includes('text/html')) {
-    html = e.clipboardData.getData('text/html');
-  }
+  let plainText = '';
   if (e.clipboardData.types.includes('text/plain')) {
     plainText = e.clipboardData.getData('text/plain');
   }
 
+  let html = '';
+  if (e.clipboardData.types.includes('text/html')) {
+    html = e.clipboardData.getData('text/html');
+  }
+
   if (plainText || html) {
-    quadraticCore.pasteFromClipboard({
-      selection: sheets.sheet.cursor.save(),
+    const jsClipboard: JsClipboard = {
       plainText,
       html,
+    };
+    const jsClipboardUint8Array = toUint8Array(jsClipboard);
+    plainText = '';
+    html = '';
+
+    quadraticCore.pasteFromClipboard({
+      selection: sheets.sheet.cursor.save(),
+      jsClipboard: jsClipboardUint8Array,
       special: 'None',
       cursor: sheets.getCursorPosition(),
     });
@@ -207,37 +217,53 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
     const clipboardData = await navigator.clipboard.read();
 
     // get text/plain if available
+    let plainText = '';
     const plainTextItem = clipboardData.find((item) => item.types.includes('text/plain'));
-    let plainText: string | undefined;
     if (plainTextItem) {
       const item = await plainTextItem.getType('text/plain');
       plainText = await item.text();
     }
 
     // gets text/html if available
-    let html: string | undefined;
+    let html = '';
     const htmlItem = clipboardData.find((item) => item.types.includes('text/html'));
     if (htmlItem) {
       const item = await htmlItem.getType('text/html');
       html = await item.text();
     }
-    quadraticCore.pasteFromClipboard({
-      selection: sheets.sheet.cursor.save(),
-      plainText,
-      html,
-      special,
-      cursor: sheets.getCursorPosition(),
-    });
+
+    if (plainText || html) {
+      const jsClipboard: JsClipboard = {
+        plainText,
+        html,
+      };
+      const jsClipboardUint8Array = toUint8Array(jsClipboard);
+      plainText = '';
+      html = '';
+
+      quadraticCore.pasteFromClipboard({
+        selection: sheets.sheet.cursor.save(),
+        jsClipboard: jsClipboardUint8Array,
+        special,
+        cursor: sheets.getCursorPosition(),
+      });
+    }
   }
 
   // handles firefox using localStorage :(
   else {
-    const html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
+    let html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
     if (html) {
+      const jsClipboard: JsClipboard = {
+        plainText: '',
+        html,
+      };
+      const jsClipboardUint8Array = toUint8Array(jsClipboard);
+      html = '';
+
       quadraticCore.pasteFromClipboard({
         selection: sheets.sheet.cursor.save(),
-        plainText: undefined,
-        html,
+        jsClipboard: jsClipboardUint8Array,
         special,
         cursor: sheets.getCursorPosition(),
       });

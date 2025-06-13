@@ -528,7 +528,7 @@ mod test {
             user_actions::import::tests::simple_csv,
         },
         first_sheet_id,
-        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
+        grid::{CodeRun, DataTableKind, SheetId},
         test_create_code_table, test_create_data_table, test_create_html_chart,
         test_create_js_chart,
     };
@@ -617,15 +617,14 @@ mod test {
         let selection =
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy)
             .into();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(10, 10, sheet_id),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
