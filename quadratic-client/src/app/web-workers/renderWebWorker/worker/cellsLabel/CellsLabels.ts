@@ -317,22 +317,30 @@ export class CellsLabels {
     const visibleDirtyHashes: CellsTextHash[] = [];
     const notVisibleDirtyHashes: { hash: CellsTextHash; distance: number }[] = [];
 
-    const bounds = renderText.viewport;
+    const visibleSheetId = renderText.sheetId;
+    const visibleBounds = renderText.viewport;
     const neighborRect = this.getViewportNeighborBounds();
-    if (!bounds || !neighborRect) return;
+    if (!visibleSheetId || !visibleBounds || !neighborRect) return;
+
+    const isCurrentSheet = this.sheetId === visibleSheetId;
 
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       const dirty = hash.dirty || hash.dirtyText || hash.dirtyBuffers;
-      if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+      if (isCurrentSheet && intersects.rectangleRectangle(hash.viewRectangle, visibleBounds)) {
         if (!hash.loaded || !hash.clientLoaded || dirty) {
           visibleDirtyHashes.push(hash);
         }
-      } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
+      } else if (
+        isCurrentSheet &&
+        intersects.rectangleRectangle(hash.viewRectangle, neighborRect) &&
+        !findHashToDelete
+      ) {
         if (!hash.loaded || !hash.clientLoaded || dirty) {
           if (hash.clientLoaded && dirty) hash.unloadClient();
-          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
+
+          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, visibleBounds) });
         }
       } else {
         hash.unloadClient();
