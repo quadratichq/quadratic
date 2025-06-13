@@ -254,7 +254,7 @@ impl Sheet {
                     y: data_table_rect.min.y,
                 }) {
                     render_cells.extend(self.get_render_code_cells(
-                        &cell_value,
+                        cell_value,
                         data_table,
                         &rect,
                         &data_table_rect,

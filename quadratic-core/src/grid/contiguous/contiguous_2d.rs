@@ -725,11 +725,11 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
                     column.update_range(y_block.start, y_block.end, |old_value| {
                         match y_block.value {
                             Some(_) => {
-                                *old_value = Some(crate::ClearOption::from(y_block.value.clone()))
+                                *old_value = Some(crate::ClearOption::from(y_block.value.clone()));
                             }
                             None => {
                                 if clear_on_none {
-                                    *old_value = Some(crate::ClearOption::Clear)
+                                    *old_value = Some(crate::ClearOption::Clear);
                                 }
                             }
                         }

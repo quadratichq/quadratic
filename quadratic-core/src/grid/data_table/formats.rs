@@ -77,9 +77,7 @@ impl DataTable {
     //
     // This is expensive for single cell queries, used for rect queries only
     fn get_display_formats_for_data_table(&self, data_table_pos: Pos) -> Option<SheetFormatting> {
-        let Some(mut formats) = self.formats.clone() else {
-            return None;
-        };
+        let mut formats = self.formats.clone()?;
 
         // handle hidden columns
         if let Some(column_headers) = &self.column_headers {
