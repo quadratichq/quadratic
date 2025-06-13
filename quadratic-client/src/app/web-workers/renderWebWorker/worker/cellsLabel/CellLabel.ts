@@ -138,6 +138,7 @@ export class CellLabel {
   private textTop: number;
   private textBottom: number;
 
+  private tableName: boolean;
   private columnHeader: boolean;
 
   private getText = (cell: JsRenderCell) => {
@@ -216,6 +217,7 @@ export class CellLabel {
     this.wrap = cell.wrap === undefined && this.isNumber() ? 'clip' : (cell.wrap ?? 'overflow');
     this.underline = cell.underline ?? this.link;
     this.strikeThrough = !!cell.strikeThrough;
+    this.tableName = !!cell.tableName;
     this.columnHeader = !!cell.columnHeader;
     this.updateCellLimits();
   }
@@ -363,7 +365,14 @@ export class CellLabel {
 
     this.calculatePosition();
 
-    if (this.columnHeader) return;
+    if (this.tableName) {
+      this.unwrappedTextWidth = 0;
+      return;
+    }
+
+    if (this.columnHeader) {
+      return;
+    }
 
     if (this.checkNumberClip()) {
       const clippedNumber = this.getClippedNumber(this.originalText, this.text, this.number);
