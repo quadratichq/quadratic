@@ -27,7 +27,6 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
-  const { getFlag } = useDebugFlags();
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
     setDiv(node);
