@@ -93,6 +93,7 @@ impl Sheet {
             number,
             underline: format.underline,
             strike_through: format.strike_through,
+            table_name: None,
             column_header: None,
         }
     }
@@ -131,15 +132,14 @@ impl Sheet {
                     None,
                 ));
             } else if let Some(intersection) = code_rect.intersection(render_rect) {
-                let code_rect_start_y = code_rect.min.y + data_table.y_adjustment(false);
-
+                let y_adjustment = data_table.y_adjustment(false);
                 for y in intersection.y_range() {
-                    let is_header = data_table.get_show_columns() && y == code_rect_start_y - 1;
-
-                    // We skip rendering the header rows because we render it separately.
-                    if y < code_rect_start_y && !is_header {
-                        continue;
-                    }
+                    // We now render the header row to ensure clipping works
+                    // properly to the left of the header since we rely on the
+                    // renderer for clipping purposes
+                    let is_header = y < code_rect.min.y + y_adjustment;
+                    let is_table_name = data_table.get_show_name() && y == code_rect.min.y;
+                    let is_column_headers = is_header && !is_table_name;
 
                     for x in intersection.x_range() {
                         let pos = Pos {
@@ -182,9 +182,15 @@ impl Sheet {
 
                             let mut render_cell =
                                 Self::get_render_cell(x, y, &value, format, language, special);
-                            if is_header {
+
+                            if is_table_name {
+                                render_cell.table_name = Some(true);
+                            }
+
+                            if is_column_headers {
                                 render_cell.column_header = Some(true);
                             }
+
                             cells.push(render_cell);
                         }
                     }

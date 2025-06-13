@@ -529,12 +529,12 @@ Formulas placement instructions:\n
 
 When to use set_formula_cell_value:\n
 Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals, counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
-Examples: 
+Examples:
 - Finding the mean of a column of numbers
 - Counting the number of instances of a value in a column
-- Finding the max/min value 
-- Basic arithmetic operations 
-- Joining strings 
+- Finding the max/min value
+- Basic arithmetic operations
+- Joining strings
 `,
   },
   [AITool.MoveCells]: {
