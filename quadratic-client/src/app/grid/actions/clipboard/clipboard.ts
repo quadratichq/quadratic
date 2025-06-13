@@ -46,7 +46,6 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
-  console.log('pasteFromClipboardEvent');
   if (!canvasIsTarget()) return;
   if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 

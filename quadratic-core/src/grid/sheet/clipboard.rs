@@ -35,22 +35,16 @@ impl Sheet {
                         continue;
                     }
 
-                    // the CellValue at the cell that would be displayed in the cell (ie, including code_runs)
-                    let simple_value = self.display_value(pos);
-
-                    // the CellValue at the cell (ignoring code_runs)
-                    let real_value = self.cell_value(pos);
-
                     let new_x = (x - bounds.min.x) as u32;
                     let new_y = (y - bounds.min.y) as u32;
 
                     // create quadratic clipboard values
-                    if let Some(real_value) = real_value {
+                    if let Some(real_value) = self.cell_value(pos) {
                         cells.set(new_x, new_y, real_value);
                     }
 
                     // create quadratic clipboard value-only
-                    if let Some(simple_value) = simple_value {
+                    if let Some(simple_value) = self.display_value(pos) {
                         values.set(new_x, new_y, simple_value);
                     }
                 }
