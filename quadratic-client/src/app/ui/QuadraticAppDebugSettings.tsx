@@ -50,8 +50,9 @@ export const QuadraticAppDebugSettings = () => {
         <SheetHeader>
           <SheetTitle>Debugging flags</SheetTitle>
           <SheetDescription>
-            This menu is always available in development. In production or PR previews, debug flags are only available
-            by adding <span className="rounded bg-muted px-1 font-mono">?debug</span> to the url.
+            This menu is always available in development (DEBUG=1 in quadratic-client/.env). In production or PR
+            previews, debug flags are only available by adding{' '}
+            <span className="rounded bg-muted px-1 font-mono">?debug</span> to the url.
           </SheetDescription>
         </SheetHeader>
         <div className="h-full w-full overflow-y-auto pt-2">

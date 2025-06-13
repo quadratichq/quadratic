@@ -16,7 +16,6 @@ export class Update {
 
   constructor() {
     if (debugFlag('debugShowFPS')) {
-      console.log('new fps');
       this.fps = new FPS();
     }
     events.on('scrollBarsHandler', this.setScrollBarsHandler);

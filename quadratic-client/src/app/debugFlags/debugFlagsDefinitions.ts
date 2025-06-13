@@ -139,13 +139,13 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
   debugWebWorkers: {
     initial: false,
     title: 'Show Web Workers',
-    description: 'Show web workers information',
+    description: "Show web workers' information",
     group: 'WebWorkers',
   },
   debugWebWorkersMessages: {
     initial: false,
     title: 'Show Web Workers Messages',
-    description: 'Show web workers messages',
+    description: "Show web workers' messages",
     group: 'WebWorkers',
   },
 

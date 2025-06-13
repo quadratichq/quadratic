@@ -2,7 +2,7 @@ import { debugFlagDefaults, type DebugFlag, type DebugFlagOptions } from '@/app/
 import { events } from '@/app/events/events';
 import localforage from 'localforage';
 
-const CHECK_CHANGE_INTERVAL = 1000;
+const CHECK_CHANGE_INTERVAL_MS = 1000;
 const KEY = 'debugFlags';
 
 class DebugFlags {
@@ -21,7 +21,7 @@ class DebugFlags {
     this.loadFlags();
 
     // the as unknown is a hack to fix the type error
-    this.intervalId = setInterval(this.loadFlags, CHECK_CHANGE_INTERVAL) as unknown as number;
+    this.intervalId = setInterval(this.loadFlags, CHECK_CHANGE_INTERVAL_MS) as unknown as number;
   }
 
   destroy() {
