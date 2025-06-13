@@ -1,18 +1,15 @@
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import type { FederatedPointerEvent } from 'pixi.js';
 import { useEffect, useState } from 'react';
 
 export const Coordinates = () => {
   const [coordinates, setCoordinates] = useState('');
 
   useEffect(() => {
-    const updateCoordinates = (e: FederatedPointerEvent) => {
-      const world = pixiApp.viewport.toWorld(e.global);
-      setCoordinates(`${Math.round(world.x)},${Math.round(world.y)}`);
+    const updateCoordinates = (e: PointerEvent) => {
+      setCoordinates(`${Math.round(e.clientX)},${Math.round(e.clientY)}`);
     };
-    pixiApp.viewport.on('pointermove', updateCoordinates);
+    window.addEventListener('pointermove', updateCoordinates);
     return () => {
-      pixiApp.viewport.off('pointermove', updateCoordinates);
+      window.removeEventListener('pointermove', updateCoordinates);
     };
   });
   return <div>{coordinates}</div>;
