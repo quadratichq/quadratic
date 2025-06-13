@@ -1,5 +1,6 @@
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { VERSION } from '@/shared/constants/appConstants';
 import { useRecoilValue } from 'recoil';
 import BottomBarItem from './BottomBarItem';
@@ -45,6 +46,11 @@ export const BottomBar = () => {
               &nbsp;
             </div>
             <span className="debug-show-FPS">--</span> FPS
+          </BottomBarItem>
+        )}
+        {getFlag('debugShowCoordinates') && (
+          <BottomBarItem>
+            <Coordinates />
           </BottomBarItem>
         )}
       </div>
