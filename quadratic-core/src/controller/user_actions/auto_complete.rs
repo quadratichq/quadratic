@@ -218,7 +218,7 @@ mod tests {
         let expected_bold = vec![true, false, false, true];
         assert_cell_value_row(&grid, sheet_id, 12, 15, 3, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 3, expected_bold.clone());
-        assert_cell_value_row(&grid, sheet_id, 12, 15, 13, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 5, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 5, expected_bold.clone());
         assert_cell_value_row(&grid, sheet_id, 12, 15, 11, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 11, expected_bold.clone());
