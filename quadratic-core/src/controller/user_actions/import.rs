@@ -489,13 +489,13 @@ pub(crate) mod tests {
         )
         .unwrap();
 
+        print_first_sheet(&gc);
+
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "title_row.csv");
-        assert_eq!(sheet.rendered_value(pos![A2]).unwrap(), "Column 1");
-        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "Sample report");
-        assert_eq!(sheet.rendered_value(pos![A5]).unwrap(), "c1");
-        assert_eq!(sheet.rendered_value(pos![B5]).unwrap(), " c2");
-        assert_eq!(sheet.rendered_value(pos![C5]).unwrap(), " Sample column3");
+        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "Sample report");
+        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "c1");
+        assert_eq!(sheet.rendered_value(pos![B3]).unwrap(), " c2");
+        assert_eq!(sheet.rendered_value(pos![C3]).unwrap(), " Sample column3");
     }
 
     #[test]
@@ -519,9 +519,9 @@ pub(crate) mod tests {
 
         print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 2, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 7, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 6, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -552,7 +552,7 @@ pub(crate) mod tests {
             1,
             3,
             2,
-            vec!["\u{feff}issue", " test", " value\u{feff}"],
+            vec!["issue", " test", " value\u{feff}"],
         );
         assert_cell_value_row(
             &gc,

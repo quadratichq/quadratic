@@ -4,13 +4,12 @@
 // possible CSV delimiters
 const CSV_POSSIBLE_DELIMITERS: [u8; 5] = [b',', b';', b'\t', b'|', b' '];
 
-use std::{
-    collections::HashMap,
-    io::{BufRead, BufReader, Read},
-};
+use std::{collections::HashMap, io::Read};
 
 use anyhow::{Result, anyhow};
 use encoding_rs_io::DecodeReaderBytes;
+
+const CSV_SAMPLE_LINES: usize = 10;
 
 /// Converts a CSV file to utf8 using encoding_rs_io.
 pub(crate) fn clean_csv_file(file: &[u8]) -> Result<Vec<u8>> {
@@ -26,47 +25,47 @@ pub(crate) fn clean_csv_file(file: &[u8]) -> Result<Vec<u8>> {
     Ok(filtered)
 }
 
-/// Parses a CSV line and returns a vector of strings. Deals with basic quoting.
-pub(crate) fn parse_csv_line(line: &str, delimiter: char) -> Vec<String> {
-    let mut fields = Vec::new();
-    let mut field = String::new();
-    let mut in_quotes = false;
-    let mut chars = line.chars().peekable();
-
-    while let Some(c) = chars.next() {
-        match c {
-            '"' => {
-                if in_quotes {
-                    if chars.peek() == Some(&'"') {
-                        // Escaped quote
-                        field.push('"');
-                        chars.next();
-                    } else {
-                        // Closing quote
-                        in_quotes = false;
-                    }
-                } else {
-                    in_quotes = true;
-                }
-            }
-            c if c == delimiter && !in_quotes => {
-                fields.push(field);
-                field = String::new();
-            }
-            _ => {
-                field.push(c);
-            }
-        }
-    }
-    fields.push(field);
-    fields
-}
-
 #[derive(Debug)]
 struct DelimiterStats {
     delimiter: char,
-    width: u32,
+    max_width: u32,
     column_counts: HashMap<usize, usize>,
+}
+
+/// Computes the score for a delimiter based on the column counts and sample size.
+/// The score is a combination of consistency and coverage.
+/// Consistency is a measure of how consistent the column counts are, and coverage is a measure of how many lines are covered by the delimiter.
+/// The score is a value between 0 and 1, where 1 is the best score.
+/// The max width is the maximum number of columns in a line.
+/// The score is computed as the product of consistency and coverage.
+fn compute_score(column_counts: &HashMap<usize, usize>, sample_size: usize) -> (f32, u32) {
+    let mut total_lines = 0;
+    let mut sum = 0.0;
+    let mut sum_sq = 0.0;
+    let mut max_width = 1;
+
+    for (&count, &freq) in column_counts {
+        if count != 1 {
+            total_lines += freq;
+            let f = count as f32;
+            sum += f * freq as f32;
+            sum_sq += f * f * freq as f32;
+            if count as u32 > max_width {
+                max_width = count as u32;
+            }
+        }
+    }
+
+    if total_lines == 0 {
+        return (0.0, max_width);
+    }
+
+    let mean = sum / total_lines as f32;
+    let variance = (sum_sq / total_lines as f32) - (mean * mean);
+    let std_dev = variance.sqrt();
+    let consistency = 1.0 / (1.0 + std_dev);
+    let coverage = total_lines as f32 / sample_size as f32;
+    (consistency * coverage, max_width)
 }
 
 /// Finds the likely delimiter of a CSV file and the likely width and height.
@@ -75,58 +74,47 @@ struct DelimiterStats {
 ///
 /// Returns (delimiter, width, height, is_table)
 pub(crate) fn find_csv_info(text: &[u8]) -> (u8, u32, u32, bool) {
-    let mut reader = BufReader::new(text);
-    let mut line = String::new();
-    let mut height = 0;
     let mut is_table = true;
 
     let mut delimiter_stats: Vec<DelimiterStats> = CSV_POSSIBLE_DELIMITERS
         .iter()
         .map(|&delim| DelimiterStats {
             delimiter: delim as char,
-            width: 0,
+            max_width: 0,
             column_counts: HashMap::new(),
         })
         .collect();
 
-    while reader.read_line(&mut line).unwrap_or(0) > 0 {
-        height += 1;
+    let create_reader = |delim: u8| {
+        csv::ReaderBuilder::new()
+            .delimiter(delim)
+            .has_headers(false)
+            .flexible(true)
+            .from_reader(text)
+    };
 
-        for stats in delimiter_stats.iter_mut() {
-            let mut columns = 0;
-            let mut in_quotes = None;
-            let mut last_char = ' ';
-
-            for c in line.chars() {
-                if c == '"' || c == '\'' {
-                    if in_quotes.is_none() {
-                        in_quotes = Some(c);
-                    } else if in_quotes == Some(c) {
-                        in_quotes = None;
-                    }
-                } else if c == stats.delimiter && in_quotes.is_none() {
-                    columns += 1;
-                }
-                last_char = c;
+    let mut sample_size = 0;
+    for stats in delimiter_stats.iter_mut() {
+        sample_size = 0;
+        let mut reader = create_reader(stats.delimiter as u8);
+        for (i, result) in reader.records().enumerate() {
+            if i >= CSV_SAMPLE_LINES {
+                break;
             }
 
-            if last_char != stats.delimiter {
-                columns += 1;
+            if let Ok(record) = result {
+                let len = record.len();
+                *stats.column_counts.entry(len).or_insert(0) += 1;
+                stats.max_width = (len as u32).max(stats.max_width);
             }
-
-            if columns > 1 {
-                // Only consider if it actually splits the line
-                *stats.column_counts.entry(columns).or_insert(0) += 1;
-                stats.width = (columns as u32).max(stats.width);
-            }
+            sample_size += 1;
         }
-
-        line.clear();
     }
 
     let mut best_delimiter = b',';
     let mut best_score = 0.0;
     let mut best_width = 1;
+    let mut best_column_counts = 0;
     let mut comma_width = 1;
 
     for stats in &delimiter_stats {
@@ -134,55 +122,40 @@ pub(crate) fn find_csv_info(text: &[u8]) -> (u8, u32, u32, bool) {
             continue;
         }
 
-        let mut total_lines = 0;
-        let mut sum = 0.0;
-        let mut sum_sq = 0.0;
+        let (consistency, width) = compute_score(&stats.column_counts, sample_size);
 
-        for (&count, &freq) in &stats.column_counts {
-            total_lines += freq;
-            let f = count as f32;
-            sum += f * freq as f32;
-            sum_sq += f * f * freq as f32;
-        }
-
-        if total_lines == 0 {
-            continue;
-        }
-
-        // Calculate the standard deviation of the column counts
-        let mean = sum / total_lines as f32;
-        let variance = (sum_sq / total_lines as f32) - (mean * mean);
-        let std_dev = variance.sqrt();
-
-        let consistency = 1.0 / (1.0 + std_dev); // lower stddev = higher score
-        let coverage = total_lines as f32 / height.max(1) as f32;
-
-        // Combine the consistency and coverage scores
-        let combined_score = consistency * coverage;
-
-        // The comma is the fallback if we don't have a table; we need to track
-        // this separately
         if stats.delimiter == ',' {
-            comma_width = stats.width;
+            comma_width = width;
         }
 
-        if combined_score > best_score {
-            best_score = combined_score;
+        if consistency > best_score {
+            best_score = consistency;
             best_delimiter = stats.delimiter as u8;
-            best_width = stats.width;
+            best_width = width;
+            best_column_counts = stats.column_counts.len();
         }
     }
 
-    if best_score < 0.4 || best_width <= 1 {
+    if best_width <= 1 || best_column_counts != 1 || best_score < 0.4 {
         is_table = false;
         best_delimiter = b',';
         best_width = comma_width;
     }
 
+    // calculate height of the CSV file
+    let reader = |flexible| {
+        csv::ReaderBuilder::new()
+            .delimiter(b',') // delimiter doesn't matter here, we just need to count the lines
+            .has_headers(false)
+            .flexible(flexible)
+            .from_reader(text)
+    };
+    let height = reader(true).records().filter(|r| r.is_ok()).count();
+
     (
         best_delimiter,
         best_width,
-        height,
+        height as u32,
         best_width > 1 && is_table,
     )
 }
@@ -225,8 +198,8 @@ mod tests {
         assert_eq!(info("encoding_issue.csv"), (b',', 3, 3, true));
         assert_eq!(info("simple_space_separator.csv"), (b' ', 4, 3, true));
         assert_eq!(info("simple.csv"), (b',', 4, 11, true));
-        assert_eq!(info("title_row_empty_first.csv"), (b',', 3, 7, true));
-        assert_eq!(info("title_row.csv"), (b',', 3, 6, true));
+        assert_eq!(info("title_row_empty_first.csv"), (b',', 3, 6, false));
+        assert_eq!(info("title_row.csv"), (b',', 3, 6, false));
     }
 
     #[test]
@@ -241,7 +214,7 @@ mod tests {
         let file = read_test_csv_file("csv-error-1.csv");
         let converted_file = clean_csv_file(&file).unwrap();
         let info = find_csv_info(&converted_file);
-        assert_eq!(info, (b',', 18, 32, false));
+        assert_eq!(info, (b',', 18, 5, true));
     }
 
     #[test]
@@ -249,6 +222,6 @@ mod tests {
         let file = read_test_csv_file("csv-error-2.csv");
         let converted_file = clean_csv_file(&file).unwrap();
         let info = find_csv_info(&converted_file);
-        assert_eq!(info, (b',', 18, 52, false));
+        assert_eq!(info, (b',', 18, 7, true));
     }
 }
