@@ -142,8 +142,8 @@ impl<'a> Connection<'a> for PostgresConnection {
     }
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str {
-        col.name()
+    fn column_name(&self, col: &Self::Column, _index: usize) -> String {
+        col.name().to_string()
     }
 
     /// Connect to a PostgreSQL database
@@ -171,19 +171,9 @@ impl<'a> Connection<'a> for PostgresConnection {
         Ok(pool)
     }
 
-    /// Query rows from a SQL Server
-    async fn raw_query(
-        &self,
-        _pool: &mut Self::Conn,
-        _sql: &str,
-        _max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool, usize)> {
-        unimplemented!()
-    }
-
     /// Query rows from a PostgreSQL database
     async fn query(
-        &self,
+        &mut self,
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -214,7 +204,7 @@ impl<'a> Connection<'a> for PostgresConnection {
                 .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
         }
 
-        let (bytes, num_records) = Self::to_parquet(rows)?;
+        let (bytes, num_records) = self.to_parquet(rows)?;
         Ok((bytes, over_the_limit, num_records))
     }
 
@@ -265,7 +255,7 @@ impl<'a> Connection<'a> for PostgresConnection {
     }
 
     /// Convert a row to an Arrow type
-    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
+    fn to_arrow(&self, row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR" | "CHAR(N)" | "NAME" | "CITEXT" => {
@@ -386,12 +376,12 @@ mod tests {
 
         for row in &rows {
             for (index, col) in row.columns().iter().enumerate() {
-                let value = PostgresConnection::to_arrow(row, col, index);
+                let value = connection.to_arrow(row, col, index);
                 println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
             }
         }
 
-        let _data = PostgresConnection::to_parquet(rows);
+        let _data = connection.to_parquet(rows);
 
         // println!("{:?}", _data);
     }

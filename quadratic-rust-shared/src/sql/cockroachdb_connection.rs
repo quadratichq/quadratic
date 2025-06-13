@@ -40,12 +40,12 @@ mod tests {
 
         for row in &rows {
             for (index, col) in row.columns().iter().enumerate() {
-                let value = CockroachDbConnection::to_arrow(row, col, index);
+                let value = connection.to_arrow(row, col, index);
                 println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
             }
         }
 
-        let _data = CockroachDbConnection::to_parquet(rows);
+        let _data = connection.to_parquet(rows);
     }
 
     #[tokio::test]
@@ -53,8 +53,6 @@ mod tests {
         let connection = new_cockroach_connection();
         let mut pool = connection.connect().await.unwrap();
         let schema = connection.schema(&mut pool).await.unwrap();
-
-        // println!("{:?}", schema);
 
         let expected = vec![
             SchemaColumn {

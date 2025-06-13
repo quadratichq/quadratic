@@ -11,6 +11,7 @@ use bytes::Bytes;
 use chrono::{DateTime, NaiveDateTime, NaiveTime, Utc};
 use google_cloud_bigquery::client::google_cloud_auth::credentials::CredentialsFile;
 use google_cloud_bigquery::client::{Client, ClientConfig};
+use google_cloud_bigquery::http::error::Error as BigqueryError;
 use google_cloud_bigquery::http::job::query::QueryRequest;
 use google_cloud_bigquery::http::table::{TableFieldSchema, TableFieldType};
 use google_cloud_bigquery::http::tabledata::list::{Cell, Tuple, Value};
@@ -38,6 +39,13 @@ pub struct BigqueryConnection {
     pub project_id: String,
     pub client: Client,
     pub dataset: String,
+    pub columns: Vec<ColumnSchema>,
+}
+
+pub struct ColumnSchema {
+    pub field_type: TableFieldType,
+    pub field_name: String,
+    pub field_struct: Option<Vec<String>>,
 }
 
 impl BigqueryConnection {
@@ -59,18 +67,97 @@ impl BigqueryConnection {
             project_id,
             client,
             dataset,
+            columns: Vec::new(),
         })
+    }
+
+    pub async fn raw_query(
+        &mut self,
+        sql: &str,
+        max_bytes: Option<u64>,
+    ) -> Result<(Vec<Tuple>, bool, usize)> {
+        let request = QueryRequest {
+            query: sql.to_string(),
+            maximum_bytes_billed: max_bytes.map(|b| b as i64),
+            ..Default::default()
+        };
+
+        let response = match self.client.job().query(&self.project_id, &request).await {
+            Ok(response) => response,
+            Err(e) => {
+                // Check if the error is due to bytes billed limit exceeded
+                match &e {
+                    BigqueryError::Response(error) => {
+                        if error
+                            .errors
+                            .as_ref()
+                            .and_then(|e| e.get(0).map(|e| e.reason.to_owned()))
+                            .unwrap_or_default()
+                            == "bytesBilledLimitExceeded"
+                        {
+                            return Ok((Vec::new(), true, 0));
+                        }
+                    }
+                    _ => {}
+                };
+                return Err(query_error(e));
+            }
+        };
+
+        let schema = response
+            .schema
+            .ok_or_else(|| query_error("No schema returned from query"))?;
+        let fields = map_schema(schema.fields);
+        let mut columns = Vec::new();
+
+        for column in 0..fields.len() {
+            let column = ColumnSchema {
+                field_type: fields[column].0.to_owned(),
+                field_name: fields[column].1.to_owned(),
+                field_struct: fields[column].2.to_owned(),
+            };
+
+            columns.push(column);
+        }
+
+        self.columns = columns;
+
+        let response_rows = response
+            .rows
+            .ok_or_else(|| query_error("No rows returned from query"))?;
+
+        let mut rows = Vec::new();
+
+        for row in response_rows.into_iter() {
+            rows.push(row);
+        }
+
+        let num_records = rows.len();
+
+        Ok((rows, false, num_records))
+    }
+
+    pub fn get_column_schema(&self, index: usize) -> Result<&ColumnSchema> {
+        self.columns
+            .get(index)
+            .ok_or_else(|| query_error(format!("Column not found at {}", index)))
+    }
+
+    pub fn get_column_field_type(&self, index: usize) -> TableFieldType {
+        self.get_column_schema(index)
+            .map(|c| c.field_type.to_owned())
+            .unwrap_or_else(|_| TableFieldType::String)
+    }
+
+    pub fn get_column_field_name(&self, index: usize) -> String {
+        self.get_column_schema(index)
+            .map(|c| c.field_name.to_owned())
+            .unwrap_or_else(|_| format!("Column {}", index))
     }
 }
 
-#[derive(Debug)]
-pub struct BigqueryColumn<'a> {
-    pub field_type: TableFieldType,
-    pub field_name: &'a str,
-    pub field_struct: Option<Vec<String>>,
-}
-
-pub type BigqueryRow<'a> = (Tuple, Vec<BigqueryColumn<'a>>);
+pub type BigqueryColumn = Cell;
+pub type BigqueryRow = Tuple;
 
 /// Implement the Connection trait for Bigquery
 ///
@@ -79,37 +166,39 @@ pub type BigqueryRow<'a> = (Tuple, Vec<BigqueryColumn<'a>>);
 #[async_trait]
 impl<'a> Connection<'a> for BigqueryConnection {
     type Conn = Option<Client>;
-    type Row = BigqueryRow<'a>;
-    type Column = BigqueryColumn<'a>;
+    type Row = BigqueryRow;
+    type Column = BigqueryColumn;
 
     /// Get the length of a row
     fn row_len(row: &Self::Row) -> usize {
-        row.1.len()
+        row.f.len()
     }
 
     /// Get the columns of a row
     fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_> {
-        Box::new(row.1.iter())
+        Box::new(row.f.iter())
     }
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str {
-        &col.field_name
+    fn column_name(&self, _col: &Self::Column, index: usize) -> String {
+        self.get_column_field_name(index)
     }
 
     /// Convert a row to an Arrow type
     /// TODO(ddimaria): Make to_arrow() take ownership of the row
-    fn to_arrow(row: &Self::Row, column: &BigqueryColumn, index: usize) -> ArrowType {
-        match column.field_type {
+    fn to_arrow(&self, row: &Self::Row, _column: &BigqueryColumn, index: usize) -> ArrowType {
+        let field_type = self.get_column_field_type(index);
+
+        match field_type {
             TableFieldType::String => ArrowType::Utf8(string_column_value(row, index)),
             TableFieldType::Int64 | TableFieldType::Integer => {
-                bigquery_type!(ArrowType::Int64, i64, row, index, repeats)
+                bigquery_type!(self, ArrowType::Int64, i64, row, index, repeats)
             }
             TableFieldType::Float64 | TableFieldType::Float => {
-                bigquery_type!(ArrowType::Float64, f64, row, index, repeats)
+                bigquery_type!(self, ArrowType::Float64, f64, row, index, repeats)
             }
             TableFieldType::Boolean | TableFieldType::Bool => {
-                bigquery_type!(ArrowType::Boolean, bool, row, index, repeats)
+                bigquery_type!(self, ArrowType::Boolean, bool, row, index, repeats)
             }
             TableFieldType::Numeric
             | TableFieldType::Bignumeric
@@ -120,7 +209,9 @@ impl<'a> Connection<'a> for BigqueryConnection {
             TableFieldType::Datetime => sql_unwrap_or_null!(bigquery_datetime(row, index)),
             TableFieldType::Timestamp => sql_unwrap_or_null!(bigquery_timestamp(row, index)),
             TableFieldType::Json => sql_unwrap_or_null!(bigquery_json(row, index)),
-            TableFieldType::Record => bigquery_type!(ArrowType::Utf8, String, row, index, repeats),
+            TableFieldType::Record => {
+                bigquery_type!(self, ArrowType::Utf8, String, row, index, repeats)
+            }
             _ => ArrowType::Utf8(string_column_value(row, index)),
         }
     }
@@ -130,61 +221,15 @@ impl<'a> Connection<'a> for BigqueryConnection {
         Ok(None)
     }
 
-    async fn raw_query(
-        &self,
-        _pool: &mut Self::Conn,
-        _sql: &str,
-        _max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool, usize)> {
-        unimplemented!()
-    }
-
     async fn query(
-        &self,
+        &mut self,
         _: &mut Self::Conn,
         sql: &str,
         _max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
-        let over_the_limit = false;
-        let request = QueryRequest {
-            query: sql.to_string(),
-            ..Default::default()
-        };
+        let (rows, over_the_limit, num_records) = self.raw_query(sql, _max_bytes).await?;
 
-        let response = self
-            .client
-            .job()
-            .query(&self.project_id, &request)
-            .await
-            .map_err(query_error)?;
-
-        let schema = response
-            .schema
-            .ok_or_else(|| query_error("No schema returned from query"))?;
-        let fields = map_schema(schema.fields);
-
-        let response_rows = response
-            .rows
-            .ok_or_else(|| query_error("No rows returned from query"))?;
-
-        let mut rows = Vec::new();
-
-        for row in response_rows.into_iter() {
-            let mut iter_row = (row, vec![]);
-            for column in 0..fields.len() {
-                let column = BigqueryColumn {
-                    field_type: fields[column].0.to_owned(),
-                    field_name: &fields[column].1,
-                    field_struct: fields[column].2.to_owned(),
-                };
-
-                iter_row.1.push(column);
-            }
-
-            rows.push(iter_row);
-        }
-
-        let (bytes, num_records) = Self::to_parquet(rows)?;
+        let (bytes, _) = self.to_parquet(rows)?;
         Ok((bytes, over_the_limit, num_records))
     }
 
@@ -287,7 +332,7 @@ fn map_schema(schema: Vec<TableFieldSchema>) -> Vec<(TableFieldType, String, Opt
 }
 
 fn column_value(row: &BigqueryRow, index: usize) -> Cell {
-    match row.0.f.get(index) {
+    match row.f.get(index) {
         Some(cell) => cell.to_owned(),
         None => Cell { v: Value::Null },
     }
@@ -300,13 +345,10 @@ fn string_value(cell: Cell) -> String {
     }
 }
 
-fn column_struct<'a>(row: &BigqueryRow<'a>, index: usize) -> Result<Option<Vec<String>>> {
-    let meta = row
-        .1
-        .get(index)
-        .ok_or_else(|| query_error(format!("Column not found at {}", index)))?;
+fn column_struct(conn: &BigqueryConnection, index: usize) -> Result<Option<Vec<String>>> {
+    let column_schema = conn.get_column_schema(index)?;
 
-    Ok(meta.field_struct.clone())
+    Ok(column_schema.field_struct.to_owned())
 }
 
 fn string_column_value(row: &BigqueryRow, index: usize) -> String {
@@ -374,7 +416,7 @@ fn bigquery_json(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
 
 #[macro_export]
 macro_rules! bigquery_type {
-    ( $arrow_type:expr, $typecast:ty, $row:ident, $index:ident, $repeats:expr ) => {{
+    ( $self:ident, $arrow_type:expr, $typecast:ty, $row:ident, $index:ident, $repeats:expr ) => {{
         let value = column_value($row, $index);
 
 
@@ -394,7 +436,7 @@ macro_rules! bigquery_type {
                 ArrowType::Utf8(values)
             }
             Value::Struct(tuple) => {
-                let value = match column_struct($row, $index) {
+                let value = match column_struct($self, $index) {
                     Ok(Some(struct_names)) => {
                         let values = tuple
                             .f
@@ -425,7 +467,6 @@ mod tests {
     async fn new_connection() -> BigqueryConnection {
         let credentials = r#"
             {
-                
             }
         "#;
 
@@ -438,6 +479,91 @@ mod tests {
         .unwrap()
     }
 
+    pub fn bigquery_schema() -> Vec<SchemaColumn> {
+        vec![
+            SchemaColumn {
+                name: "id".into(),
+                r#type: "INT64".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "string_col".into(),
+                r#type: "STRING".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "bytes_col".into(),
+                r#type: "BYTES".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "int_col".into(),
+                r#type: "INT64".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "float_col".into(),
+                r#type: "FLOAT64".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "numeric_col".into(),
+                r#type: "NUMERIC".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "bignumeric_col".into(),
+                r#type: "BIGNUMERIC".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "bool_col".into(),
+                r#type: "BOOL".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "timestamp_col".into(),
+                r#type: "TIMESTAMP".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "date_col".into(),
+                r#type: "DATE".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "time_col".into(),
+                r#type: "TIME".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "datetime_col".into(),
+                r#type: "DATETIME".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "json_col".into(),
+                r#type: "JSON".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "array_int_col".into(),
+                r#type: "ARRAY<INT64>".into(),
+                is_nullable: false,
+            },
+            SchemaColumn {
+                name: "struct_col".into(),
+                r#type: "STRUCT<name STRING, value INT64>".into(),
+                is_nullable: true,
+            },
+            SchemaColumn {
+                name: "interval_col".into(),
+                r#type: "INTERVAL".into(),
+                is_nullable: true,
+            },
+        ]
+    }
+
     #[tokio::test]
     async fn test_bigquery_connection() {
         // let config = ClientConfig::new_with_emulator("0.0.0.0:9060", "http://0.0.0.0:9050");
@@ -448,80 +574,30 @@ mod tests {
         // let config = ClientConfig::new_with_emulator("0.0.0.0:9060", "http://0.0.0.0:9050");
         // let mut client = Client::new(config).await.unwrap();
 
-        let connection = new_connection().await;
+        let mut connection = new_connection().await;
 
         let sql = format!(
             "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10"
         );
-        let _results = connection.query(&mut None, &sql, None).await.unwrap();
-        // println!("{:?}", results);
-
-        // let query = format!(
-        //     "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` LIMIT 10"
-        // );
-
-        // // 3.  Execute the query.
-        // let mut query_result = client.query(&query, QueryParameters::default()).await?;
-
-        // // 4. Process the results.
-        // while let Some(row) = query_result.nextrow().await? {
-        //     for (column_name, cell) in row.columns() {
-        //         match cell.value() {
-        //             Value::String(s) => println!("{}: String({})", column_name, s),
-        //             Value::Int64(i) => println!("{}: Int64({})", column_name, i),
-        //             // ... (Handle other data types)
-        //             _ => println!("{}: Other type", column_name),
-        //         }
-        //     }
-        //     println!("---");
-        // }
-
-        // let now = SystemTime::now()
-        //     .duration_since(SystemTime::UNIX_EPOCH)
-        //     .unwrap()
-        //     .as_secs();
-        // let mut table1 = Table::default();
-        // let table_id = format!("table{now}");
-        // table1.table_reference.dataset_id = "dataset1".to_string();
-        // table1.table_reference.project_id = "test".to_string();
-        // table1.table_reference.table_id = table_id.clone();
-        // table1.schema = Some(TableSchema {
-        //     fields: vec![TableFieldSchema {
-        //         name: "col_string".to_string(),
-        //         data_type: TableFieldType::String,
-        //         ..Default::default()
-        //     }],
-        // });
-        // client.table().create(&table1).await.unwrap();
-
-        // Insert data
-        // let mut req = InsertAllRequest::<serde_json::Value>::default();
-        // req.rows.push(Row {
-        //     insert_id: None,
-        //     json: serde_json::from_str(
-        //         r#"
-        //         {"col_string": "test1"}
-        //     "#,
-        //     )
-        //     .unwrap(),
-        // });
-        // client
-        //     .tabledata_client
-        //     .insert(
-        //         &table1.table_reference.project_id,
-        //         &table1.table_reference.dataset_id,
-        //         &table1.table_reference.table_id,
-        //         &req,
-        //     )
-        //     .await
-        //     .unwrap();
+        let results = connection.raw_query(&sql, None).await.unwrap();
+        println!("{:?}", results);
     }
 
     #[tokio::test]
     async fn test_bigquery_schema() {
         let connection = new_connection().await;
         let schema = connection.schema(&mut None).await.unwrap();
+        let columns = &schema.tables.get("all_data_types").unwrap().columns;
 
-        println!("{:?}", schema);
+        assert_eq!(columns, &bigquery_schema());
+    }
+
+    #[tokio::test]
+    async fn test_bigquery_query_over_limit() {
+        let mut connection = new_connection().await;
+        let sql = "select * from `quadratic-development.all_native_data_types.all_data_types`";
+        let results = connection.raw_query(&sql, Some(1)).await.unwrap();
+
+        assert_eq!(results, (Vec::new(), true, 0));
     }
 }

@@ -64,7 +64,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             </FormItem>
           )}
         />
-<<<<<<< HEAD
         <div>
           <Alert className="my-4">
             <InfoIcon className="!text-primary" />
@@ -72,9 +71,6 @@ export const ConnectionForm: ConnectionFormComponent<FormValues> = ({ form, chil
             <AlertDescription>Use connection information for the Session Pooler.</AlertDescription>
           </Alert>
         </div>
-=======
-        <div className="text-md pb-2 pt-2 font-bold">Use connection information for the Session Pooler</div>
->>>>>>> 979698724 (Work on bigquery and supabase)
         <div className="grid grid-cols-3 gap-4">
           <FormField
             control={form.control}

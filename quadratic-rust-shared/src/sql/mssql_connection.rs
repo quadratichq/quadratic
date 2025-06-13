@@ -155,8 +155,8 @@ impl<'a> Connection<'a> for MsSqlConnection {
     }
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str {
-        col.name()
+    fn column_name(&self, col: &Self::Column, _index: usize) -> String {
+        col.name().to_string()
     }
 
     /// Connect to a SQL Server
@@ -197,18 +197,8 @@ impl<'a> Connection<'a> for MsSqlConnection {
     }
 
     /// Query rows from a SQL Server
-    async fn raw_query(
-        &self,
-        client: &mut Self::Conn,
-        sql: &str,
-        max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool, usize)> {
-        unimplemented!()
-    }
-
-    /// Query rows from a SQL Server
     async fn query(
-        &self,
+        &mut self,
         client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -244,7 +234,7 @@ impl<'a> Connection<'a> for MsSqlConnection {
             rows = Self::query_all(client, sql).await?;
         }
 
-        let (bytes, num_records) = Self::to_parquet(rows)?;
+        let (bytes, num_records) = self.to_parquet(rows)?;
 
         Ok((bytes, over_the_limit, num_records))
     }
@@ -314,7 +304,7 @@ ORDER BY
     }
 
     /// Convert a row to an Arrow type
-    fn to_arrow(row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
+    fn to_arrow(&self, row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
         if let Some((_, column_data)) = row.cells().nth(index) {
             match column_data {
                 ColumnData::Bit(_) => {
@@ -466,7 +456,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mssql_query_to_arrow() {
-        let (_, client) = setup().await;
+        let (connection, client) = setup().await;
         let sql = "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id";
         let rows = MsSqlConnection::query_all(&mut client.unwrap(), sql)
             .await
@@ -481,7 +471,7 @@ mod tests {
 
         let row = &rows[0];
         let columns = row.columns();
-        let to_arrow = |index: usize| MsSqlConnection::to_arrow(row, &columns[index], index);
+        let to_arrow = |index: usize| connection.to_arrow(row, &columns[index], index);
 
         assert_eq!(to_arrow(0), ArrowType::Int32(1));
         assert_eq!(to_arrow(1), ArrowType::UInt8(255));

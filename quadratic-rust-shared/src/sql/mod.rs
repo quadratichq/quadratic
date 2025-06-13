@@ -59,19 +59,9 @@ pub trait Connection<'a> {
 
     /// Generically query a database
     ///
-    /// Returns: (rows, is over the limit, number of records)
-    async fn raw_query(
-        &self,
-        pool: &mut Self::Conn,
-        sql: &str,
-        max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool, usize)>;
-
-    /// Generically query a database
-    ///
     /// Returns: (Parquet bytes, is over the limit, number of records)
     async fn query(
-        &self,
+        &mut self,
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -84,19 +74,18 @@ pub trait Connection<'a> {
     fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_>;
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str;
+    fn column_name(&self, col: &Self::Column, index: usize) -> String;
 
     /// Generically query a database
     async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema>;
 
     /// Convert a database-specific column to an Arrow type
-    fn to_arrow(row: &Self::Row, col: &Self::Column, col_index: usize) -> ArrowType;
+    fn to_arrow(&self, row: &Self::Row, col: &Self::Column, col_index: usize) -> ArrowType;
 
     /// Default implementation of converting a vec of rows to a Parquet byte array
     ///
     /// Returns: (Parquet bytes, number of records)
-    /// This should work over any row/column SQLx vec
-    fn to_parquet(data: Vec<Self::Row>) -> Result<(Bytes, usize)> {
+    fn to_parquet(&'a self, data: Vec<Self::Row>) -> Result<(Bytes, usize)> {
         if data.is_empty() {
             return Ok((Bytes::new(), 0));
         }
@@ -108,7 +97,7 @@ pub trait Connection<'a> {
 
         for row in &data {
             for (col_index, col) in Self::row_columns(row).enumerate() {
-                let value = Self::to_arrow(row, col, col_index);
+                let value = self.to_arrow(row, col, col_index);
                 transposed[col_index].push(value);
             }
         }
@@ -124,7 +113,7 @@ pub trait Connection<'a> {
             .enumerate()
             .map(|(index, col)| {
                 Field::new(
-                    Self::column_name(col).to_string(),
+                    self.column_name(col, index).to_string(),
                     cols[index].data_type().to_owned(),
                     true,
                 )

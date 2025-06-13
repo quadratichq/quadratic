@@ -142,8 +142,8 @@ impl<'a> Connection<'a> for MySqlConnection {
     }
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str {
-        col.name()
+    fn column_name(&self, col: &Self::Column, _index: usize) -> String {
+        col.name().to_string()
     }
 
     /// Connect to a MySQL database
@@ -171,19 +171,9 @@ impl<'a> Connection<'a> for MySqlConnection {
         Ok(pool)
     }
 
-    /// Query rows from a SQL Server
-    async fn raw_query(
-        &self,
-        _pool: &mut Self::Conn,
-        _sql: &str,
-        _max_bytes: Option<u64>,
-    ) -> Result<(Vec<Self::Row>, bool, usize)> {
-        unimplemented!()
-    }
-
     /// Query rows from a MySQL database
     async fn query(
-        &self,
+        &mut self,
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -210,7 +200,7 @@ impl<'a> Connection<'a> for MySqlConnection {
             rows = MySqlConnection::query_all(pool, sql).await?;
         }
 
-        let (bytes, num_records) = Self::to_parquet(rows)?;
+        let (bytes, num_records) = self.to_parquet(rows)?;
 
         Ok((bytes, over_the_limit, num_records))
     }
@@ -260,7 +250,7 @@ impl<'a> Connection<'a> for MySqlConnection {
     }
 
     /// Convert a row to an Arrow type
-    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
+    fn to_arrow(&self, row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
         // println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
             "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
@@ -360,7 +350,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mysql_query_to_arrow() {
-        let (_, pool) = setup().await;
+        let (connection, pool) = setup().await;
         let mut pool = pool.unwrap();
         let sql = "select * from all_native_data_types order by id limit 1";
         let rows = MySqlConnection::query_all(&mut pool, sql).await.unwrap();
@@ -374,7 +364,7 @@ mod tests {
 
         let row = &rows[0];
         let columns = row.columns();
-        let to_arrow = |index: usize| MySqlConnection::to_arrow(row, &columns[index], index);
+        let to_arrow = |index: usize| connection.to_arrow(row, &columns[index], index);
 
         assert_eq!(to_arrow(0), ArrowType::Int32(1));
         assert_eq!(to_arrow(1), ArrowType::Int8(127));
