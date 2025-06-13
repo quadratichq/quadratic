@@ -1,7 +1,6 @@
-import * as TabsPrimitive from '@radix-ui/react-tabs';
-import * as React from 'react';
-
 import { cn } from '@/shared/shadcn/utils';
+import { Tabs as TabsPrimitive } from 'radix-ui';
+import * as React from 'react';
 
 const Tabs = TabsPrimitive.Root;
 
