@@ -67,8 +67,9 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
+        updater: Option<impl Fn(&str, u32, u32)>,
     ) -> Result<()> {
-        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
+        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
@@ -85,7 +86,7 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CellValue, Rect, RunError, RunErrorMsg, Span,
+        CellValue, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
         test_util::*,
         wasm_bindings::js::clear_js_calls,
@@ -155,7 +156,7 @@ pub(crate) mod tests {
         assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 1, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 12, last_row);
+        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 11, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
@@ -371,7 +372,14 @@ pub(crate) mod tests {
         let pos = pos![A1];
         let file_name = "alltypes_plain.parquet";
         let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
-        let _result = grid_controller.import_parquet(sheet_id, file, file_name, pos, None);
+        let _result = grid_controller.import_parquet(
+            sheet_id,
+            file,
+            file_name,
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        );
 
         assert_cell_value_row(
             &grid_controller,
@@ -496,7 +504,7 @@ pub(crate) mod tests {
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 2, y: 2 };
 
         gc.import_csv(
             sheet_id,
@@ -509,11 +517,11 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
+        print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 9, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -608,5 +616,32 @@ pub(crate) mod tests {
             2,
             vec!["test-1", "$HERE!", "now--this!"],
         );
+    }
+
+    #[test]
+    fn imports_a_parquet_with_multiple_batches() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = pos![A1];
+        let file_name = "luke-1027.parquet";
+        let parquet_file: &str = "../quadratic-rust-shared/data/parquet/luke-1027.parquet";
+        let file: Vec<u8> = std::fs::read(parquet_file).expect("Failed to read file");
+        let _result = gc.import_parquet(
+            sheet_id,
+            file,
+            file_name,
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        );
+
+        print_table_from_grid(
+            &gc,
+            sheet_id,
+            Rect::new_span(Pos { x: 1, y: 2 }, Pos { x: 5, y: 7 }),
+        );
+
+        assert_display_cell_value(&gc, sheet_id, 1, 6, "82");
+        assert_display_cell_value(&gc, sheet_id, 1, 1029, "8140");
     }
 }
