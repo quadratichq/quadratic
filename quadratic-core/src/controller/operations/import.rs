@@ -79,7 +79,7 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         delimiter: Option<u8>,
-        header_is_first_row: Option<bool>,
+        create_table: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
@@ -97,7 +97,6 @@ impl GridController {
                 .flexible(flexible)
                 .from_reader(converted_file.as_slice())
         };
-
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
         let mut cell_values = Array::new_empty(array_size);
         let mut sheet_format_updates = SheetFormatUpdates::default();
@@ -136,17 +135,17 @@ impl GridController {
 
         let mut ops = vec![];
 
-        if is_table {
+        let apply_first_row_as_header = match create_table {
+            Some(true) => true,
+            Some(false) => false,
+            None => GridController::guess_csv_first_row_is_header(&cell_values),
+        };
+
+        if is_table && apply_first_row_as_header {
             let context = self.a1_context();
             let import = Import::new(file_name.into());
             let mut data_table =
                 DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
-
-            let apply_first_row_as_header = match header_is_first_row {
-                Some(true) => true,
-                Some(false) => false,
-                None => GridController::guess_csv_first_row_is_header(&cell_values),
-            };
 
             data_table.value = cell_values.into();
             if !sheet_format_updates.is_default() {
@@ -156,9 +155,7 @@ impl GridController {
                     .apply_updates(&sheet_format_updates);
             }
 
-            if apply_first_row_as_header {
-                data_table.apply_first_row_as_header();
-            }
+            data_table.apply_first_row_as_header();
             ops.push(Operation::AddDataTable {
                 sheet_pos,
                 data_table,
@@ -420,7 +417,7 @@ mod test {
                 file_name,
                 pos,
                 Some(b','),
-                Some(false),
+                Some(true),
             )
             .unwrap();
 
@@ -432,6 +429,7 @@ mod test {
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
+        expected_data_table.apply_first_row_as_header();
         assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
         let data_table = match ops[0].clone() {
@@ -464,22 +462,23 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc.import_csv_operations(
-            sheet_id,
-            csv.as_bytes().to_vec(),
-            file_name,
-            pos,
-            Some(b','),
-            Some(false),
-        );
+        let ops = gc
+            .import_csv_operations(
+                sheet_id,
+                csv.as_bytes().to_vec(),
+                file_name,
+                pos,
+                Some(b','),
+                Some(true),
+            )
+            .unwrap();
 
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
         assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
-        assert_eq!(ops.as_ref().unwrap().len(), 1);
-
-        let (sheet_pos, data_table) = match &ops.unwrap()[0] {
+        assert_eq!(ops.len(), 1);
+        let (sheet_pos, data_table) = match &ops[0] {
             Operation::AddDataTable {
                 sheet_pos,
                 data_table,
@@ -489,7 +488,7 @@ mod test {
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(
-            data_table.cell_value_ref_at(0, 2),
+            data_table.cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))
         );
     }
