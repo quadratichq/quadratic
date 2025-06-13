@@ -162,6 +162,7 @@ pub(crate) fn find_csv_info(text: &[u8]) -> (u8, u32, u32, bool) {
 
 #[cfg(test)]
 mod tests {
+    use crate::test_util::*;
     use std::path::Path;
 
     use super::*;
@@ -223,5 +224,17 @@ mod tests {
         let converted_file = clean_csv_file(&file).unwrap();
         let info = find_csv_info(&converted_file);
         assert_eq!(info, (b',', 18, 7, true));
+    }
+
+    #[test]
+    fn test_first_row_as_header() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let file = read_test_csv_file("csv-error-1.csv");
+        gc.import_csv(sheet_id, file, "file_name", pos![A1], None, None, None)
+            .unwrap();
+
+        assert_display_cell_value(&gc, sheet_id, 1, 2, "Database");
     }
 }
