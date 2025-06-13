@@ -3,9 +3,9 @@ import { newAllSelection, newRectSelection, newSingleSelection } from '@/app/qua
 
 export const getSingleSelection = (sheetId: string, x: number, y: number): string => {
   try {
-    const a1Selection = newSingleSelection(sheetId, x, y);
-    const a1String = a1Selection.save();
-    a1Selection.free();
+    const jsSelection = newSingleSelection(sheetId, x, y);
+    const a1String = jsSelection.save();
+    jsSelection.free();
     return a1String;
   } catch (e) {
     console.error('Failed to get single selection', e);
