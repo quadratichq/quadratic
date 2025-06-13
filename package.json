@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.10.1",
+  "version": "0.11.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -10,15 +10,14 @@
   "private": true,
   "workspaces": [
     "quadratic-api",
-    "quadratic-shared",
     "quadratic-client",
-    "quadratic-files",
-    "quadratic-multiplayer",
+    "quadratic-connection",
     "quadratic-core",
-    "quadratic-client",
+    "quadratic-files",
     "quadratic-kernels/python-wasm",
+    "quadratic-multiplayer",
     "quadratic-rust-shared",
-    "quadratic-connection"
+    "quadratic-shared"
   ],
   "type": "module",
   "scripts": {
@@ -71,7 +70,12 @@
     "docker:build:dev": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose --profile all --env-file .env.docker up",
     "docker:ecr": "ECR_OR_BUILD=ecr CLIENT_DEV=false docker compose --profile all --env-file .env.docker up",
     "docker:down": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile all --env-file .env.docker down",
-    "docker:clean": "docker system prune -af && docker builder prune -af && docker volume prune -af"
+    "docker:clean": "docker system prune -af && docker builder prune -af && docker volume prune -af",
+    "e2e:test": "cd test/e2e && npm run docker:test",
+    "e2e:update": "cd test/e2e && npm run docker:update",
+    "e2e:ui": "cd test/e2e && npm run test:ui",
+    "e2e:headed": "cd test/e2e && npm run test:headed",
+    "e2e:report": "cd test/e2e && npm run test:report"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",

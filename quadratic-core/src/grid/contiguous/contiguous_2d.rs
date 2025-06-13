@@ -167,6 +167,14 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
             .all(move |columns_block| columns_block.value.is_all_default_in_range(y1, y2))
     }
 
+    /// Returns a set of unique values in a rect.
+    pub fn unique_values_in_rect(&self, rect: Rect) -> HashSet<T>
+    where
+        T: Eq + Hash,
+    {
+        self.unique_values_in_range(RefRangeBounds::new_relative_rect(rect))
+    }
+
     /// Returns a set of unique values in a range.
     pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<T>
     where
@@ -329,6 +337,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     ) -> Contiguous2D<Option<T>> {
         self.set_from(&Contiguous2D::from_rect(x1, y1, x2, y2, Some(value)))
     }
+
     /// Returns the upper bound on the finite regions in the given column.
     /// Returns 0 if there are no values.
     pub fn col_max(&self, column: i64) -> i64 {
@@ -1196,6 +1205,14 @@ mod tests {
         assert_eq!(
             HashSet::from_iter([99]),
             c.unique_values_in_range(RefRangeBounds::new_relative(8, 3, 8, 3)),
+        );
+        assert_eq!(
+            HashSet::from_iter([0]),
+            c.unique_values_in_rect(Rect::new(5, 4, 5, 4)),
+        );
+        assert_eq!(
+            HashSet::from_iter([99]),
+            c.unique_values_in_rect(Rect::new(8, 3, 8, 3)),
         );
     }
 

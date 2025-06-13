@@ -11,26 +11,18 @@ import type {
   Direction,
   Format,
   FormatUpdate,
-  JsBordersSheet,
   JsCellValue,
   JsCodeCell,
   JsCoordinate,
   JsDataTableColumnHeader,
-  JsHtmlOutput,
-  JsOffset,
   JsRenderCell,
-  JsRenderCodeCell,
-  JsRenderFill,
+  JsResponse,
   JsSelectionContext,
-  JsSheetFill,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsTablesContext,
-  JsValidationWarning,
   Pos,
   SearchOptions,
-  SheetBounds,
-  SheetInfo,
   SheetPos,
   SheetRect,
   TransactionName,
@@ -251,14 +243,6 @@ export interface ClientCoreGetTeamUuid {
 
 //#region Render
 
-export interface ClientCoreGetRenderCell {
-  type: 'clientCoreGetRenderCell';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
-}
-
 export interface CoreClientGetRenderCell {
   type: 'coreClientGetRenderCell';
   cell: JsRenderCell | undefined;
@@ -267,12 +251,12 @@ export interface CoreClientGetRenderCell {
 
 export interface CoreClientHtmlOutput {
   type: 'coreClientHtmlOutput';
-  html: JsHtmlOutput[];
+  html: Uint8Array;
 }
 
 export interface CoreClientUpdateHtml {
   type: 'coreClientUpdateHtml';
-  html: JsHtmlOutput;
+  html: Uint8Array;
 }
 
 //#endregion
@@ -480,13 +464,13 @@ export interface CoreClientSetCodeCellValue {
 export interface CoreClientSheetFills {
   type: 'coreClientSheetFills';
   sheetId: string;
-  fills: JsRenderFill[];
+  fills: Uint8Array;
 }
 
 export interface CoreClientSheetMetaFills {
   type: 'coreClientSheetMetaFills';
   sheetId: string;
-  fills: JsSheetFill[];
+  fills: Uint8Array;
 }
 
 export interface ClientCoreRerunCodeCells {
@@ -513,6 +497,13 @@ export interface ClientCoreSetCellRenderResize {
   width: number;
   height: number;
   cursor: string;
+  id: number;
+}
+
+export interface CoreClientSetCellRenderResize {
+  type: 'coreClientSetCellRenderResize';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreAutocomplete {
@@ -560,14 +551,14 @@ export interface ClientCoreGetValidationFromPos {
 
 //#region Sheets
 
-export interface CoreClientSheetInfo {
-  type: 'coreClientSheetInfo';
-  sheetInfo: SheetInfo[];
+export interface CoreClientSheetsInfo {
+  type: 'coreClientSheetsInfo';
+  sheetsInfo: Uint8Array;
 }
 
 export interface CoreClientSheetBoundsUpdate {
   type: 'coreClientSheetBoundsUpdate';
-  sheetBounds: SheetBounds;
+  sheetBounds: Uint8Array;
 }
 
 export interface ClientCoreAddSheet {
@@ -577,7 +568,7 @@ export interface ClientCoreAddSheet {
 
 export interface CoreClientAddSheet {
   type: 'coreClientAddSheet';
-  sheetInfo: SheetInfo;
+  sheetInfo: Uint8Array;
   user: boolean;
 }
 
@@ -602,7 +593,7 @@ export interface ClientCoreMoveSheet {
 
 export interface CoreClientSheetInfoUpdate {
   type: 'coreClientSheetInfoUpdate';
-  sheetInfo: SheetInfo;
+  sheetInfo: Uint8Array;
 }
 
 export interface ClientCoreSetSheetName {
@@ -633,7 +624,7 @@ export interface CoreClientSetCursor {
 export interface CoreClientSheetOffsets {
   type: 'coreClientSheetOffsets';
   sheetId: string;
-  offsets: JsOffset[];
+  offsets: Uint8Array;
 }
 
 export interface CoreClientGenerateThumbnail {
@@ -643,19 +634,13 @@ export interface CoreClientGenerateThumbnail {
 export interface CoreClientBordersSheet {
   type: 'coreClientBordersSheet';
   sheetId: string;
-  borders: JsBordersSheet;
-}
-
-export interface CoreClientSheetRenderCells {
-  type: 'coreClientSheetRenderCells';
-  sheetId: string;
-  renderCells: JsRenderCell[];
+  borders: Uint8Array;
 }
 
 export interface CoreClientSheetCodeCellRender {
-  type: 'coreClientSheetCodeCellRender';
+  type: 'coreClientSheetCodeCells';
   sheetId: string;
-  codeCells: JsRenderCodeCell[];
+  renderCodeCells: Uint8Array;
 }
 
 //#endregion
@@ -685,8 +670,7 @@ export interface ClientCoreCopyToClipboard {
 export interface CoreClientCopyToClipboard {
   type: 'coreClientCopyToClipboard';
   id: number;
-  plainText: string;
-  html: string;
+  data: Uint8Array | undefined;
 }
 
 export interface ClientCoreCutToClipboard {
@@ -699,8 +683,7 @@ export interface ClientCoreCutToClipboard {
 export interface CoreClientCutToClipboard {
   type: 'coreClientCutToClipboard';
   id: number;
-  plainText: string;
-  html: string;
+  data: Uint8Array | undefined;
 }
 
 export interface ClientCorePasteFromClipboard {
@@ -768,10 +751,6 @@ export interface CoreClientImportProgress {
   filename: string;
   current: number;
   total: number;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
 }
 
 export interface CoreClientTransactionStart {
@@ -792,13 +771,9 @@ export interface CoreClientTransactionEnd {
   transactionName: TransactionName;
 }
 
-export interface CoreClientUpdateCodeCell {
-  type: 'coreClientUpdateCodeCell';
-  sheetId: string;
-  x: number;
-  y: number;
-  codeCell?: JsCodeCell;
-  renderCodeCell?: JsRenderCodeCell;
+export interface CoreClientUpdateCodeCells {
+  type: 'coreClientUpdateCodeCells';
+  updateCodeCells: Uint8Array;
 }
 
 export interface ClientCoreCancelExecution {
@@ -903,7 +878,7 @@ export interface CoreClientGetValidations {
 export interface CoreClientSheetValidations {
   type: 'coreClientSheetValidations';
   sheetId: string;
-  validations: Validation[];
+  sheetValidations: Uint8Array;
 }
 
 export interface CoreClientGetValidationFromPos {
@@ -940,12 +915,9 @@ export interface CoreClientGetDisplayCell {
   id: number;
 }
 
-export interface CoreClientRenderValidationWarnings {
-  type: 'coreClientRenderValidationWarnings';
-  sheetId: string;
-  hashX: number | undefined;
-  hashY: number | undefined;
-  validationWarnings: JsValidationWarning[];
+export interface CoreClientValidationWarnings {
+  type: 'coreClientValidationWarnings';
+  warnings: Uint8Array;
 }
 
 export interface CoreClientMultiplayerSynced {
@@ -1151,7 +1123,7 @@ export interface CoreClientClientMessage {
 
 export interface CoreClientA1Context {
   type: 'coreClientA1Context';
-  context: string;
+  context: Uint8Array;
 }
 
 export interface ClientCoreAddDataTable {
@@ -1289,7 +1261,6 @@ export type ClientCoreMessage =
   | ClientCoreRemoveCellNumericFormat
   | ClientCoreChangeDecimals
   | ClientCoreClearFormatting
-  | ClientCoreGetRenderCell
   | ClientCoreSetCommas
   | ClientCoreImportFile
   | ClientCoreDeleteCellValues
@@ -1372,7 +1343,7 @@ export type CoreClientMessage =
   | CoreClientGetRenderCell
   | CoreClientImportFile
   | CoreClientAddSheet
-  | CoreClientSheetInfo
+  | CoreClientSheetsInfo
   | CoreClientSheetFills
   | CoreClientDeleteSheet
   | CoreClientSheetInfoUpdate
@@ -1390,14 +1361,13 @@ export type CoreClientMessage =
   | CoreClientJumpCursor
   | CoreClientGenerateThumbnail
   | CoreClientLoad
-  | CoreClientSheetRenderCells
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
   | CoreClientImportProgress
   | CoreClientTransactionStart
   | CoreClientTransactionProgress
   | CoreClientTransactionEnd
-  | CoreClientUpdateCodeCell
+  | CoreClientUpdateCodeCells
   | CoreClientMultiplayerState
   | CoreClientConnectionState
   | CoreClientOfflineTransactions
@@ -1412,7 +1382,7 @@ export type CoreClientMessage =
   | CoreClientGetValidationFromPos
   | CoreClientGetValidationList
   | CoreClientGetDisplayCell
-  | CoreClientRenderValidationWarnings
+  | CoreClientValidationWarnings
   | CoreClientMultiplayerSynced
   | CoreClientValidateInput
   | CoreClientGetCellValue
@@ -1435,4 +1405,5 @@ export type CoreClientMessage =
   | CoreClientGetAICells
   | CoreClientSetFormats
   | CoreClientGetAIFormats
-  | CoreClientGridToDataTable;
+  | CoreClientGridToDataTable
+  | CoreClientSetCellRenderResize;

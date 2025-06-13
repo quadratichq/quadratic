@@ -124,16 +124,16 @@ export class PixiApp {
         events.once('bitmapFontsLoaded', () => this.init().then(resolve));
         return;
       }
-      renderWebWorker.sendBitmapFonts();
-      this.initialized = true;
-      this.initCanvas();
-      this.rebuild();
-
-      urlParams.init();
-
-      this.waitingForFirstRender = resolve;
-      if (this.alreadyRendered) {
-        this.firstRenderComplete();
+      if (!this.initialized) {
+        renderWebWorker.sendBitmapFonts();
+        this.initCanvas();
+        this.rebuild();
+        urlParams.init();
+        this.waitingForFirstRender = resolve;
+        if (this.alreadyRendered) {
+          this.firstRenderComplete();
+        }
+        this.initialized = true;
       }
     });
   };
@@ -303,6 +303,7 @@ export class PixiApp {
 
   // called before and after a render
   prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+    await this.htmlPlaceholders.prepare(options?.cull);
     this.copying = true;
     this.gridLines.visible = options?.gridLines ?? false;
     this.cursor.visible = options?.ai ?? false;
@@ -310,7 +311,6 @@ export class PixiApp {
     this.multiplayerCursor.visible = false;
     this.headings.visible = options?.ai ?? false;
     this.boxCells.visible = false;
-    await this.htmlPlaceholders.prepare(options?.cull);
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
     if (options?.cull) {

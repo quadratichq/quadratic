@@ -27,6 +27,10 @@ export interface AIAnalystState {
     abortController: AbortController | undefined;
     loading: boolean;
   };
+  webSearch: {
+    abortController: AbortController | undefined;
+    loading: boolean;
+  };
   waitingOnMessageIndex?: number;
   delaySeconds: number;
 }
@@ -48,6 +52,10 @@ export const defaultAIAnalystState: AIAnalystState = {
     suggestions: [],
   },
   pdfImport: {
+    abortController: undefined,
+    loading: false,
+  },
+  webSearch: {
     abortController: undefined,
     loading: false,
   },
@@ -333,6 +341,12 @@ export const aiAnalystPDFImportAtom = createSelector('pdfImport');
 export const aiAnalystPDFImportLoadingAtom = selector<boolean>({
   key: 'aiAnalystPDFImportLoadingAtom',
   get: ({ get }) => get(aiAnalystPDFImportAtom).loading,
+});
+
+export const aiAnalystWebSearchAtom = createSelector('webSearch');
+export const aiAnalystWebSearchLoadingAtom = selector<boolean>({
+  key: 'aiAnalystWebSearchLoadingAtom',
+  get: ({ get }) => get(aiAnalystWebSearchAtom).loading,
 });
 
 export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({

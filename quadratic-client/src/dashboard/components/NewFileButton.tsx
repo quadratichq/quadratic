@@ -33,6 +33,7 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const navigate = useNavigate();
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const moreConnectionsCount = connections.length - CONNECTIONS_DISPLAY_LIMIT;
 
   return (
     <div className="flex flex-row-reverse gap-2">
@@ -117,14 +118,12 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
                 </DropdownMenuItem>
               );
             })}
-            {connections.length > CONNECTIONS_DISPLAY_LIMIT && (
+            {moreConnectionsCount > 0 && (
               <DropdownMenuItem onClick={() => navigate(ROUTES.TEAM_CONNECTIONS(teamUuid))}>
                 <DatabaseIcon className="mr-3 text-muted-foreground" />
                 <span className="flex flex-col">
                   View all connections
-                  <span className="text-xs text-muted-foreground">
-                    {connections.length - CONNECTIONS_DISPLAY_LIMIT} more
-                  </span>
+                  <span className="text-xs text-muted-foreground">{moreConnectionsCount} more</span>
                 </span>
               </DropdownMenuItem>
             )}

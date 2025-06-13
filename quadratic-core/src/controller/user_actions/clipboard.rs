@@ -64,10 +64,19 @@ impl GridController {
 
         // first try html
         if let Some(html) = html {
-            if let Ok(ops) =
+            if let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at_pos, end_pos, selection, html, special)
             {
-                self.start_user_transaction(ops, cursor, TransactionName::PasteClipboard);
+                self.start_user_transaction(ops, cursor.clone(), TransactionName::PasteClipboard);
+
+                if !data_table_ops.is_empty() {
+                    self.start_user_transaction(
+                        data_table_ops,
+                        cursor,
+                        TransactionName::PasteClipboard,
+                    );
+                }
+
                 return;
             }
         }
@@ -617,7 +626,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id_1);
-        let borders = sheet.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 
@@ -658,7 +667,7 @@ mod test {
         );
 
         let sheet = gc.sheet(sheet_id_2);
-        let borders = sheet.borders_in_sheet().unwrap();
+        let borders = sheet.borders_in_sheet();
         let mut horizontal_borders = borders.horizontal.as_ref().unwrap().iter();
         let mut vertical_borders = borders.vertical.as_ref().unwrap().iter();
 
@@ -1376,7 +1385,7 @@ mod test {
 
         let sheet = gc.sheet_mut(sheet_id);
         let values = vec![vec!["value".to_string(); 2]; 2];
-        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let sheet = gc.sheet(sheet_id);
@@ -1393,7 +1402,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1412,8 +1421,12 @@ mod test {
         );
 
         // first row is not header
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.header_is_first_row = false;
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                dt.header_is_first_row = false;
+                Ok(())
+            })
+            .unwrap();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1_sheet_id("G10", sheet_id),
@@ -1424,7 +1437,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             sheet.display_value(pos![G10]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1443,9 +1456,13 @@ mod test {
         );
 
         // first row is not header
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        data_table.show_name = Some(false);
-        data_table.show_columns = Some(false);
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                dt.show_name = Some(false);
+                dt.show_columns = Some(false);
+                Ok(())
+            })
+            .unwrap();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1_sheet_id("E11", sheet_id),
@@ -1456,7 +1473,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
             sheet.display_value(pos![E11]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1481,14 +1498,16 @@ mod test {
 
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_mut(pos).unwrap();
-        data_table
-            .sort_column(3, SortDirection::Descending)
+        sheet
+            .modify_data_table_at(&pos, |dt| {
+                dt.sort_column(3, SortDirection::Descending).unwrap();
+                Ok(())
+            })
             .unwrap();
 
         let sheet = gc.sheet_mut(sheet_id);
         let values = vec![vec!["value".to_string(); 2]; 2];
-        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let sheet = gc.sheet(sheet_id);
@@ -1505,7 +1524,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
@@ -1530,13 +1549,17 @@ mod test {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         // hide first column
-        let data_table = gc.sheet_mut(sheet_id).data_table_mut(pos).unwrap();
-        let column_headers = data_table.column_headers.as_mut().unwrap();
-        column_headers[2].display = false;
+        gc.sheet_mut(sheet_id)
+            .modify_data_table_at(&pos, |dt| {
+                let column_headers = dt.column_headers.as_mut().unwrap();
+                column_headers[2].display = false;
+                Ok(())
+            })
+            .unwrap();
 
         let sheet = gc.sheet_mut(sheet_id);
         let values = vec![vec!["value".to_string(); 2]; 2];
-        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), &Array::from(values));
+        sheet.set_cell_values(Rect::from_numbers(1, 1, 2, 2), Array::from(values));
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
         let sheet = gc.sheet(sheet_id);
@@ -1553,7 +1576,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table(pos).unwrap();
+        let data_table = sheet.data_table_at(&pos).unwrap();
 
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
