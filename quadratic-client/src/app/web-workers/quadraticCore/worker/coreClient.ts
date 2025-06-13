@@ -23,15 +23,7 @@ import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendImportProgress: (
-      filename: string,
-      current: number,
-      total: number,
-      x: number,
-      y: number,
-      width: number,
-      height: number
-    ) => void;
+    sendImportProgress: (filename: string, current: number, total: number) => void;
     sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
@@ -716,16 +708,8 @@ class CoreClient {
     }
   };
 
-  sendImportProgress = (
-    filename: string,
-    current: number,
-    total: number,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    this.send({ type: 'coreClientImportProgress', filename, current, total, x, y, width, height });
+  sendImportProgress = (filename: string, current: number, total: number) => {
+    this.send({ type: 'coreClientImportProgress', filename, current, total });
   };
 
   sendAddSheet = (sheetInfo: Uint8Array, user: boolean) => {

@@ -6,15 +6,7 @@ declare var self: WorkerGlobalScope &
   typeof globalThis & {
     addUnsentTransaction: (transactionId: string, transaction: string, operations: number) => void;
     sendTransaction: (transactionId: string, operations: ArrayBufferLike) => void;
-    sendImportProgress: (
-      filename: string,
-      current: number,
-      total: number,
-      x: number,
-      y: number,
-      width: number,
-      height: number
-    ) => void;
+    sendImportProgress: (filename: string, current: number, total: number) => void;
     sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
     sendAddSheetRender: (sheetInfo: Uint8Array) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
@@ -77,16 +69,8 @@ export const jsSendTransaction = (transactionId: string, operations: Uint8Array)
 export const jsTime = (name: string) => console.time(name);
 export const jsTimeEnd = (name: string) => console.timeEnd(name);
 
-export const jsImportProgress = (
-  filename: string,
-  current: number,
-  total: number,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-) => {
-  return self.sendImportProgress(filename, current, total, x, y, width, height);
+export const jsImportProgress = (filename: string, current: number, total: number) => {
+  return self.sendImportProgress(filename, current, total);
 };
 
 export const jsAddSheet = (sheetInfo: Uint8Array, user: boolean) => {

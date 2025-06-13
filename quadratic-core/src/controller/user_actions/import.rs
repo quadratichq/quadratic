@@ -67,8 +67,9 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
+        updater: Option<impl Fn(&str, u32, u32)>,
     ) -> Result<()> {
-        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at)?;
+        let ops = self.import_parquet_operations(sheet_id, file, file_name, insert_at, updater)?;
         if cursor.is_some() {
             self.start_user_transaction(ops, cursor, TransactionName::Import);
         } else {
@@ -371,7 +372,14 @@ pub(crate) mod tests {
         let pos = pos![A1];
         let file_name = "alltypes_plain.parquet";
         let file: Vec<u8> = std::fs::read(PARQUET_FILE).expect("Failed to read file");
-        let _result = grid_controller.import_parquet(sheet_id, file, file_name, pos, None);
+        let _result = grid_controller.import_parquet(
+            sheet_id,
+            file,
+            file_name,
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        );
 
         assert_cell_value_row(
             &grid_controller,
@@ -587,5 +595,32 @@ pub(crate) mod tests {
             .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
         assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
+    }
+
+    #[test]
+    fn imports_a_parquet_with_multiple_batches() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.grid.sheets()[0].id;
+        let pos = pos![A1];
+        let file_name = "luke-1027.parquet";
+        let parquet_file: &str = "../quadratic-rust-shared/data/parquet/luke-1027.parquet";
+        let file: Vec<u8> = std::fs::read(parquet_file).expect("Failed to read file");
+        let _result = gc.import_parquet(
+            sheet_id,
+            file,
+            file_name,
+            pos,
+            None,
+            None::<fn(&str, u32, u32)>,
+        );
+
+        print_table_from_grid(
+            &gc,
+            sheet_id,
+            Rect::new_span(Pos { x: 1, y: 2 }, Pos { x: 5, y: 7 }),
+        );
+
+        assert_display_cell_value(&gc, sheet_id, 1, 6, "82");
+        assert_display_cell_value(&gc, sheet_id, 1, 1029, "8140");
     }
 }

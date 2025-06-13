@@ -1,3 +1,4 @@
+import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -7,6 +8,7 @@ import {
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
   aiAnalystWaitingOnMessageIndexAtom,
+  aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
@@ -31,7 +33,6 @@ import {
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -183,9 +184,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {debugFlag('debug') && !!modelKey && (
-              <span className="text-xs text-muted-foreground">{getModelFromModelKey(modelKey)}</span>
-            )}
+            {debugFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
@@ -243,6 +242,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       {messagesCount > 1 && !loading && waitingOnMessageIndex === undefined && <PromptSuggestions />}
 
       <PDFImportLoading />
+
+      <WebSearchLoading />
 
       <AILoading loading={loading} />
     </div>
@@ -369,5 +370,21 @@ const PDFImportLoading = memo(() => {
     return null;
   }
 
-  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
+  return (
+    <ToolCardQuery
+      className="px-2"
+      label="Reading file. Large files may take a few minutes."
+      isLoading={pdfImportLoading}
+    />
+  );
+});
+
+const WebSearchLoading = memo(() => {
+  const webSearchLoading = useRecoilValue(aiAnalystWebSearchLoadingAtom);
+
+  if (!webSearchLoading) {
+    return null;
+  }
+
+  return <ToolCardQuery className="px-2" label="Searching the web." isLoading={webSearchLoading} />;
 });

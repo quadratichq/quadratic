@@ -5,7 +5,7 @@ const AIProvidersSchema = z.enum([
   'quadratic',
   'vertexai-anthropic',
   'vertexai',
-  'genai',
+  'geminiai',
   'bedrock-anthropic',
   'bedrock',
   'anthropic',
@@ -87,8 +87,11 @@ const VertexAIModelKeySchema = z.enum([
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
-const GenAIModelKeySchema = z.enum(['genai:gemini-2.5-pro-preview-06-05', 'genai:gemini-2.5-flash-preview-05-20']);
-export type GenAIModelKey = z.infer<typeof GenAIModelKeySchema>;
+const GeminiAIModelKeySchema = z.enum([
+  'geminiai:gemini-2.5-pro-preview-06-05',
+  'geminiai:gemini-2.5-flash-preview-05-20',
+]);
+export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:claude-opus-4:thinking-toggle-off',
@@ -136,7 +139,7 @@ const AIModelKeySchema = z.union([
   QuadraticModelKeySchema,
   VertexAIAnthropicModelKeySchema,
   VertexAIModelKeySchema,
-  GenAIModelKeySchema,
+  GeminiAIModelKeySchema,
   BedrockAnthropicModelKeySchema,
   BedrockModelKeySchema,
   AnthropicModelKeySchema,

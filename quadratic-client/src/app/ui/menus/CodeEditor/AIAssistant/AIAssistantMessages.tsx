@@ -36,6 +36,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       behavior: 'smooth',
     });
   }, []);
+  const { getFlag } = useDebugFlags();
 
   const shouldAutoScroll = useRef(true);
   const handleScrollEnd = useCallback((e: Event) => {
@@ -110,6 +111,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
         }
 
         const isCurrentMessage = index === messages.length - 1;
+        const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
         return (
           <div
@@ -121,6 +123,8 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
+            {getFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
                 <GoogleSearchSources content={message.content} />
