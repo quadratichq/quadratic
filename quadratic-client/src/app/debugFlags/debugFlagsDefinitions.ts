@@ -26,6 +26,12 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     description: 'Shows FPS meter & renderer light in bottom bar',
     group: 'Rendering',
   },
+  debugShowCoordinates: {
+    initial: false,
+    title: 'Show viewport coordinates in the bottom bar',
+    description: 'Use coordinates to create E2E tests',
+    group: 'Rendering',
+  },
   debugShowWhyRendering: {
     initial: false,
     title: 'Show cause of rendering',
