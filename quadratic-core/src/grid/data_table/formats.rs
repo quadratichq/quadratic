@@ -2,7 +2,7 @@ use anyhow::Result;
 
 use crate::{
     Pos, Rect,
-    grid::{CellWrap, Format, Sheet, formats::SheetFormatUpdates},
+    grid::{CellWrap, Format, Sheet, SheetFormatting, formats::SheetFormatUpdates},
 };
 
 use super::DataTable;
@@ -10,8 +10,10 @@ use super::DataTable;
 impl DataTable {
     /// Returns the cell format for a relative position within the data table.
     /// 0,0 is the top left.
+    ///
+    /// This is expensive for multiple cell queries, used for single cell queries only.
     pub fn get_format(&self, pos: Pos) -> Format {
-        let pos = self.get_format_pos_from_display_buffer(pos);
+        let pos = self.get_format_pos_from_display_pos(pos);
         let mut format = self
             .formats
             .as_ref()
@@ -21,9 +23,8 @@ impl DataTable {
         format
     }
 
-    /// Get the position of the format in the display buffer for a relative
-    /// position within the data table. 0,0 is the top left.
-    pub(crate) fn get_format_pos_from_display_buffer(&self, mut pos: Pos) -> Pos {
+    /// Get the position of the format for the input display position within the data table.
+    fn get_format_pos_from_display_pos(&self, mut pos: Pos) -> Pos {
         // adjust for hidden columns
         pos.x = self.get_column_index_from_display_index(pos.x as u32, true) as i64;
 
@@ -55,39 +56,57 @@ impl DataTable {
         formats_rect: Rect,
         sheet_format_updates: &mut SheetFormatUpdates,
     ) -> Result<()> {
-        for x in formats_rect.x_range() {
-            let relative_x = x - data_table_pos.x;
+        let data_table_display_formats = self.get_display_formats_for_data_table(data_table_pos);
+        let Some(data_table_display_formats) = data_table_display_formats else {
+            return Ok(());
+        };
 
-            // ignore non-overlapping areas
-            if relative_x < 0 {
-                continue;
-            }
+        let data_table_format_updates = SheetFormatUpdates::from_sheet_formatting_rect(
+            formats_rect,
+            &data_table_display_formats,
+            false,
+        );
 
-            let format_display_x = u32::try_from(relative_x)?;
-            let format_actual_x = self.get_column_index_from_display_index(format_display_x, true);
+        sheet_format_updates.merge(&data_table_format_updates);
 
-            for y in formats_rect.y_range() {
-                let relative_y = y - data_table_pos.y - self.y_adjustment(true);
+        Ok(())
+    }
 
-                // ignore non-overlapping areas
-                if relative_y < 0 {
-                    continue;
-                }
+    // Factors in hidden columns and sorted rows and return SheetFormatting
+    // for the actual displayed formats in sheet coordinates system
+    //
+    // This is expensive for single cell queries, used for rect queries only
+    fn get_display_formats_for_data_table(&self, data_table_pos: Pos) -> Option<SheetFormatting> {
+        let Some(mut formats) = self.formats.clone() else {
+            return None;
+        };
 
-                let format_display_y = u64::try_from(relative_y)?;
-                let format_actual_y = self.get_row_index_from_display_index(format_display_y);
-                if let Some(formats) = self.formats.as_ref() {
-                    let format = formats
-                        .format((format_actual_x as i64 + 1, format_actual_y as i64 + 1).into());
-
-                    if !format.is_default() {
-                        sheet_format_updates.set_format_cell((x, y).into(), format.into());
-                    }
+        // handle hidden columns
+        if let Some(column_headers) = &self.column_headers {
+            for column_header in column_headers.iter() {
+                if !column_header.display {
+                    formats.remove_column(column_header.value_index as i64 + 1);
                 }
             }
         }
 
-        Ok(())
+        // handle sorted rows
+        if let Some(display_buffer) = &self.display_buffer {
+            let mut sorted_formats = SheetFormatting::default();
+            for (display_row, &actual_row) in display_buffer.iter().enumerate() {
+                if let Some(mut row_formats) = formats.copy_row(actual_row as i64 + 1) {
+                    row_formats.translate_in_place(0, display_row as i64 - actual_row as i64);
+                    sorted_formats.apply_updates(&row_formats);
+                }
+            }
+            std::mem::swap(&mut formats, &mut sorted_formats);
+        }
+
+        // convert to sheet coordinates
+        let y_adjustment = self.y_adjustment(true);
+        formats.translate_in_place(data_table_pos.x - 1, data_table_pos.y - 1 + y_adjustment);
+
+        Some(formats)
     }
 
     /// Create a SheetFormatUpdates object that transfers the formats from the Sheet to the DataTable.

@@ -708,6 +708,51 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
         c
     }
 
+    /// Constructs an update for a range, taking values from `self` at every
+    /// location in the range.
+    ///
+    /// `clear_on_none` controls whether to clear the value if it is `None`.
+    /// If `false`, the value will be left as is.
+    pub fn get_update_for_range(
+        &self,
+        range: RefRangeBounds,
+        clear_on_none: bool,
+    ) -> Contiguous2D<Option<crate::ClearOption<T>>> {
+        let mut c: Contiguous2D<Option<crate::ClearOption<T>>> = Contiguous2D::new();
+        for xy_block in self.xy_blocks_in_range(range) {
+            c.0.update_range(xy_block.start, xy_block.end, |column| {
+                for y_block in &xy_block.value {
+                    column.update_range(y_block.start, y_block.end, |old_value| {
+                        match y_block.value {
+                            Some(_) => {
+                                *old_value = Some(crate::ClearOption::from(y_block.value.clone()))
+                            }
+                            None => {
+                                if clear_on_none {
+                                    *old_value = Some(crate::ClearOption::Clear)
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        c
+    }
+
+    /// Constructs an update for a rect, taking values from `self` at every
+    /// location in the rect.
+    ///
+    /// `clear_on_none` controls whether to clear the value if it is `None`.
+    /// If `false`, the value will be left as is.
+    pub fn get_update_for_rect(
+        &self,
+        rect: Rect,
+        clear_on_none: bool,
+    ) -> Contiguous2D<Option<crate::ClearOption<T>>> {
+        self.get_update_for_range(RefRangeBounds::new_relative_rect(rect), clear_on_none)
+    }
+
     /// Returns an iterator over the blocks in the contiguous 2d.
     pub fn into_iter(&self) -> impl '_ + Iterator<Item = (u64, u64, Option<u64>, Option<u64>, T)> {
         self.0.iter().flat_map(|x_block| {

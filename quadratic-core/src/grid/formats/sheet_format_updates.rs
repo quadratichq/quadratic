@@ -88,6 +88,49 @@ impl SheetFormatUpdates {
         }
     }
 
+    /// Constructs a format update that uses formats from every cell in the rect.
+    pub fn from_sheet_formatting_rect(
+        rect: Rect,
+        formats: &SheetFormatting,
+        clear_on_none: bool,
+    ) -> Self {
+        SheetFormatUpdates {
+            align: Some(formats.align.get_update_for_rect(rect, clear_on_none)),
+            vertical_align: Some(
+                formats
+                    .vertical_align
+                    .get_update_for_rect(rect, clear_on_none),
+            ),
+            wrap: Some(formats.wrap.get_update_for_rect(rect, clear_on_none)),
+            numeric_format: Some(
+                formats
+                    .numeric_format
+                    .get_update_for_rect(rect, clear_on_none),
+            ),
+            numeric_decimals: Some(
+                formats
+                    .numeric_decimals
+                    .get_update_for_rect(rect, clear_on_none),
+            ),
+            numeric_commas: Some(
+                formats
+                    .numeric_commas
+                    .get_update_for_rect(rect, clear_on_none),
+            ),
+            bold: Some(formats.bold.get_update_for_rect(rect, clear_on_none)),
+            italic: Some(formats.italic.get_update_for_rect(rect, clear_on_none)),
+            text_color: Some(formats.text_color.get_update_for_rect(rect, clear_on_none)),
+            fill_color: Some(formats.fill_color.get_update_for_rect(rect, clear_on_none)),
+            date_time: Some(formats.date_time.get_update_for_rect(rect, clear_on_none)),
+            underline: Some(formats.underline.get_update_for_rect(rect, clear_on_none)),
+            strike_through: Some(
+                formats
+                    .strike_through
+                    .get_update_for_rect(rect, clear_on_none),
+            ),
+        }
+    }
+
     /// Returns whether the format update intersects with the given rect.
     fn item_intersects<T>(item: &SheetFormatUpdatesType<T>, rect: Rect) -> bool
     where
@@ -287,8 +330,14 @@ impl SheetFormatUpdates {
     where
         T: Clone + Debug + PartialEq,
     {
-        if let (Some(item), Some(other)) = (item, other) {
-            item.update_from(other, |value, new_value| value.replace(new_value.clone()));
+        match (item.as_mut(), other.as_ref()) {
+            (Some(item), Some(other)) => {
+                item.update_from(other, |value, new_value| value.replace(new_value.clone()));
+            }
+            (None, Some(other)) => {
+                *item = Some(other.clone());
+            }
+            _ => {}
         }
     }
 
