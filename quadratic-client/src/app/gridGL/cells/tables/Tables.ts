@@ -562,6 +562,12 @@ export class Tables extends Container<Table> {
     }
   };
 
+  /// Returns the table that the pointer intersects (excludes single cell tables).
+  getTableIntersectsWorld = (world: Point): Table | undefined => {
+    const cell = this.sheet.getColumnRow(world.x, world.y);
+    return this.getTableIntersects(cell);
+  };
+
   /// Returns a code cell from either a Table or a single code cell.
   getCodeCellIntersects = (cell: JsCoordinate): JsRenderCodeCell | undefined => {
     const codeCell = this.getSingleCodeCell(cell.x, cell.y);
