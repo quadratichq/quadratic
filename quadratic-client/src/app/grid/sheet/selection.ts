@@ -3,7 +3,10 @@ import { newAllSelection, newRectSelection, newSingleSelection } from '@/app/qua
 
 export const getSingleSelection = (sheetId: string, x: number, y: number): string => {
   try {
-    return newSingleSelection(sheetId, x, y).save();
+    const a1Selection = newSingleSelection(sheetId, x, y);
+    const a1String = a1Selection.save();
+    a1Selection.free();
+    return a1String;
   } catch (e) {
     console.error('Failed to get single selection', e);
     throw new Error(`Failed to get single selection`);
