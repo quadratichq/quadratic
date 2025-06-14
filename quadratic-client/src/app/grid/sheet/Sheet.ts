@@ -90,8 +90,10 @@ export class Sheet {
   // Returns all validations that intersect with the given point.
   getValidation = (x: number, y: number): Validation[] | undefined => {
     return this.validations.filter((v) => {
-      const selection = this.sheets.A1SelectionToJsSelection(v.selection);
-      return selection.contains(x, y, this.sheets.jsA1Context);
+      const jsSelection = this.sheets.A1SelectionToJsSelection(v.selection);
+      const contains = jsSelection.contains(x, y, this.sheets.jsA1Context);
+      jsSelection.free();
+      return contains;
     });
   };
 

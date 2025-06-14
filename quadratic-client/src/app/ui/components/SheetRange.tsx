@@ -97,7 +97,14 @@ export const SheetRange = (props: Props) => {
   );
 
   useEffect(() => {
-    setInput(initial ? sheets.A1SelectionToJsSelection(initial).toA1String(a1SheetId, sheets.jsA1Context) : '');
+    if (!initial) {
+      setInput('');
+      return;
+    }
+
+    const jsSelection = sheets.A1SelectionToJsSelection(initial);
+    setInput(jsSelection.toA1String(a1SheetId, sheets.jsA1Context));
+    jsSelection.free();
   }, [changeCursor, a1SheetId, initial]);
 
   const onFocus = useCallback(() => {
