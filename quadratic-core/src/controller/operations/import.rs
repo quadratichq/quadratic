@@ -11,8 +11,8 @@ use crate::{
         execution::TransactionSource,
     },
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
-        unique_data_table_name,
+        CodeCellLanguage, CodeCellValue, DataTable, SheetId, fix_names::sanitize_table_name,
+        formats::SheetFormatUpdates, unique_data_table_name,
     },
     parquet::parquet_to_array,
 };
@@ -116,7 +116,7 @@ impl GridController {
         }
 
         let context = self.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(sanitize_table_name(file_name.into()));
         let mut data_table =
             DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
 
@@ -346,7 +346,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(sanitize_table_name(file_name.into()));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
 
@@ -401,7 +401,7 @@ mod test {
             vec!["Southborough", "MA", "United States", "a lot of people"],
         ];
         let context = gc.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(sanitize_table_name(file_name.into()));
         let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
 
