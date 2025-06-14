@@ -5,9 +5,9 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { SheetBounds } from '@/app/quadratic-core-types';
-import { type JsOffset, type JsRenderCell, type SheetInfo } from '@/app/quadratic-core-types';
+import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
+import type { JsRenderCell, SheetBounds } from '@/app/quadratic-core-types';
+import { type JsOffset, type SheetInfo } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
@@ -22,14 +22,14 @@ class RenderCore {
   private waitingForResponse: Map<number, Function> = new Map();
   private id = 0;
 
-  clientInit(renderPort: MessagePort) {
+  async clientInit(renderPort: MessagePort) {
     this.renderCorePort = renderPort;
     this.renderCorePort.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[renderCore] initialized');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[renderCore] initialized');
   }
 
   private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[renderCore] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[renderCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'coreRenderSheetsInfo':

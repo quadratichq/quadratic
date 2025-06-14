@@ -1,5 +1,5 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { debug } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
@@ -25,7 +25,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import type { SetterOrUpdater } from 'recoil';
+import { type SetterOrUpdater } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -398,7 +398,7 @@ const AIUserMessageFormFooter = memo(
           <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {!debug && (
+            {!debugFlag('debug') && (
               <>
                 <span>
                   {KeyboardSymbols.Shift}

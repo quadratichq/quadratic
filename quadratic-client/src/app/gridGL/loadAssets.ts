@@ -1,4 +1,4 @@
-import { debugShowFileIO, debugStartupTime } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import FontFaceObserver from 'fontfaceobserver';
 import { Assets, BitmapFont } from 'pixi.js';
@@ -18,8 +18,8 @@ export function isBitmapFontLoaded(): boolean {
 }
 
 export async function loadAssets() {
-  if (debugStartupTime) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
-  if (debugShowFileIO) console.log('[loadAssets] Loading assets...');
+  if (debugFlag('debugStartupTime')) console.time('[loadAssets] Loading Bitmap fonts and icons (parallel)');
+  if (debugFlag('debugShowFileIO')) console.log('[loadAssets] Loading assets...');
   createBorderTypes();
 
   // Load HTML fonts for Input
@@ -56,7 +56,6 @@ export async function loadAssets() {
   const bundlePromise = Assets.loadBundle('bundle');
 
   await Promise.all([font1Promise, font2Promise, font3Promise, font4Promise, bundlePromise]);
-
-  if (debugStartupTime) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
   events.emit('bitmapFontsLoaded');
+  if (debugFlag('debugStartupTime')) console.timeEnd('[loadAssets] Loading Bitmap fonts and icons (parallel)');
 }

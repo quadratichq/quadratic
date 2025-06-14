@@ -5,7 +5,7 @@
 //! geometries sent to the GPU.
 //!
 
-import { debugShowLoadingHashes } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
@@ -365,19 +365,19 @@ export class CellsLabels {
     // hash has render cells if core has sent render cells for rerendering, process them first
     if (hashesWithRenderCells.length) {
       const hash = hashesWithRenderCells[0];
-      if (debugShowLoadingHashes) {
+      if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering hash with render cells: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
     } else if (!isTransactionRunning && visibleDirtyHashes.length) {
       const hash = visibleDirtyHashes[0];
-      if (debugShowLoadingHashes) {
+      if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering visible: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
     } else if (!isTransactionRunning && notVisibleDirtyHashes.length) {
       const hash = notVisibleDirtyHashes[0].hash;
-      if (debugShowLoadingHashes) {
+      if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering offscreen: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: false };
@@ -403,7 +403,9 @@ export class CellsLabels {
       if (neighborRect && !intersects.rectangleRectangle(next.hash.viewRectangle, neighborRect)) {
         next.hash.unload();
       }
-      if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
+      if (debugFlag('debugShowLoadingHashes')) {
+        console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
+      }
       return next.visible ? 'visible' : true;
     }
     return false;

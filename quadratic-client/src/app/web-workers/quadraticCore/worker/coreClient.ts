@@ -5,7 +5,7 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -93,7 +93,7 @@ class CoreClient {
     self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
-    if (debugWebWorkers) console.log('[coreClient] initialized.');
+    if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
   private send(message: CoreClientMessage, transfer?: Transferable) {
@@ -105,7 +105,7 @@ class CoreClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[coreClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'clientCoreLoad':

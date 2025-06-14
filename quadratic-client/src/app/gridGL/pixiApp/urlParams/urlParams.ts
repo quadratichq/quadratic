@@ -5,7 +5,7 @@
 //! save the entire state of the app. User-focused ones are limited to x, y,
 //! sheet, and code editor only.
 
-import { debugSaveURLState } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { UrlParamsDev } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
 import { UrlParamsUser } from '@/app/gridGL/pixiApp/urlParams/UrlParamsUser';
 
@@ -19,7 +19,7 @@ class UrlParams {
 
   show() {
     const params = new URLSearchParams(window.location.search);
-    if (debugSaveURLState || params.has('state')) {
+    if (debugFlag('debugSaveURLState') || params.has('state')) {
       this.urlParamsDev = new UrlParamsDev(params);
       if (this.urlParamsDev.noUpdates) return;
     } else {
@@ -29,9 +29,9 @@ class UrlParams {
   }
 
   update = () => {
-    if (debugSaveURLState && this.urlParamsDev) {
+    if (debugFlag('debugSaveURLState') && this.urlParamsDev) {
       this.urlParamsDev.updateParams();
-    } else if (!debugSaveURLState && this.urlParamsUser) {
+    } else if (!debugFlag('debugSaveURLState') && this.urlParamsUser) {
       // Removed by design. Uncomment this to start including user-focused URL params.
       // this.urlParamsUser.updateParams();
     }

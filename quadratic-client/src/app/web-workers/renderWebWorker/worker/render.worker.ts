@@ -7,7 +7,11 @@
  * - renderClient.ts: the interface between this web worker and the main thread
  * - renderCore.ts: the interface between this web worker and the core web worker
  */
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import './renderClient';
 
-if (debugWebWorkers) console.log('[render.worker] created');
+const report = async () => {
+  if (await debugFlagWait('debugWebWorkers')) console.log('[render.worker] created');
+};
+
+report();

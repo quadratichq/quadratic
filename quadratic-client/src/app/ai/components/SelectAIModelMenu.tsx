@@ -1,5 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { debug } from '@/app/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { LightbulbIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
@@ -23,18 +23,18 @@ interface SelectAIModelMenuProps {
 
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const [selectedModel, setSelectedModel, selectedModelConfig, thinkingToggle, setThinkingToggle] = useAIModel();
-
+  const { getFlag } = useDebugFlags();
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
 
     // enable all models in debug mode
-    if (debug) {
+    if (getFlag('debug')) {
       return configs;
     }
 
     // only show enabled models in production
     return configs.filter(([_, config]) => config.enabled);
-  }, []);
+  }, [getFlag]);
 
   const canToggleThinking = useMemo(
     () => selectedModelConfig.thinkingToggle !== undefined,
@@ -63,7 +63,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   return (
     <>
-      {debug && (
+      {getFlag('debug') && (
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
@@ -103,7 +103,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                   >
                     <div className="flex w-full items-center justify-between text-xs">
                       <span className="pr-4">
-                        {(debug ? `${modelConfig.enabled ? '' : '(debug) '}${provider} - ` : '') + displayName}
+                        {(getFlag('debug') ? `${modelConfig.enabled ? '' : '(debug) '}${provider} - ` : '') +
+                          displayName}
                       </span>
                     </div>
                   </DropdownMenuCheckboxItem>
