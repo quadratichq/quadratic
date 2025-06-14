@@ -381,7 +381,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.data_table_pos_that_contains(pos).is_ok();
+                    let is_table_cell = self.data_table_pos_that_contains_result(pos).is_ok();
                     if is_table_cell {
                         continue;
                     }

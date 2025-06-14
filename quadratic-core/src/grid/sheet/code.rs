@@ -173,7 +173,7 @@ impl Sheet {
         let cell_value = if let Some(cell_value) = self.cell_value_ref(pos) {
             Some(cell_value)
         } else {
-            match self.data_table_pos_that_contains(pos) {
+            match self.data_table_pos_that_contains_result(pos) {
                 Ok(data_table_pos) => {
                     if let Some(code_value) = self.cell_value_ref(data_table_pos) {
                         code_pos = data_table_pos;

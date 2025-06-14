@@ -41,13 +41,18 @@ impl Sheet {
         self.data_tables.get_contains(pos)
     }
 
+    /// Returns the data table pos if the data table intersects a position
+    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
+        self.data_tables.get_pos_contains(pos)
+    }
+
     /// Returns the data table pos of the data table that contains a position
-    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Result<Pos> {
+    pub fn data_table_pos_that_contains_result(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
             Ok(data_table_pos)
         } else {
             bail!(
-                "No data tables found within {:?} in data_table_pos_that_contains()",
+                "No data tables found within {:?} in data_table_pos_that_contains_result()",
                 pos
             )
         }
@@ -71,6 +76,18 @@ impl Sheet {
         rect: Rect,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
         self.data_tables.get_in_rect_sorted(rect, false)
+    }
+
+    /// Returns data tables that intersect a rect, sorted by index
+    pub fn data_tables_rects_intersect_rect(
+        &self,
+        rect: Rect,
+        filter: impl Fn(&DataTable) -> bool,
+    ) -> impl Iterator<Item = Rect> {
+        self.data_tables
+            .get_in_rect(rect, false)
+            .filter(move |(_, _, data_table)| filter(data_table))
+            .map(|(_, data_table_pos, data_table)| data_table.output_rect(data_table_pos, false))
     }
 
     /// Returns true if there is a data table intersecting a rect, excluding a specific position

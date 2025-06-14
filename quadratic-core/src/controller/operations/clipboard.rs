@@ -1,13 +1,18 @@
-use std::collections::HashMap;
-
 use anyhow::{Error, Result};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use indexmap::IndexMap;
+use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::operation::Operation;
 use crate::cell_values::CellValues;
+use crate::compression::CompressionFormat;
+use crate::compression::SerializationFormat;
+use crate::compression::decompress_and_deserialize;
+use crate::compression::serialize_and_compress;
 use crate::controller::GridController;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
@@ -22,7 +27,10 @@ use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::unique_data_table_name;
 use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
 
-// todo: this probably belongs in sheet and not controller
+lazy_static! {
+    static ref CLIPBOARD_REGEX: Regex = Regex::new(r#"data-quadratic="(.*?)".*><tbody"#)
+        .expect("Failed to compile CLIPBOARD_REGEX");
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
@@ -114,25 +122,29 @@ impl Clipboard {
     pub fn decode(html: &str) -> Result<Self> {
         let error = |e, msg| Error::msg(format!("Clipboard decode {:?}: {:?}", msg, e));
 
-        match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
-            Err(e) => Err(error(e.to_string(), "Regex creation error")),
-            Ok(re) => {
-                // pull out the sub string
-                let sub_string = re
-                    .captures(html)
-                    .ok_or_else(|| error("".into(), "Regex capture error"))?
-                    .get(1)
-                    .map_or("", |m| m.as_str());
+        // pull out the sub string
+        let sub_string = CLIPBOARD_REGEX
+            .captures(html)
+            .ok_or_else(|| error("".into(), "Regex capture error"))?
+            .get(1)
+            .map_or("", |m| m.as_str());
 
-                // decode html in attribute
-                let decoded = htmlescape::decode_html(sub_string)
-                    .map_err(|_| error("".into(), "Html decode error"))?;
+        // decode html in attribute
+        let decoded = htmlescape::decode_html(sub_string)
+            .map_err(|_| error("".into(), "Html decode error"))?;
 
-                // parse into Clipboard
-                serde_json::from_str::<Clipboard>(&decoded)
-                    .map_err(|e| error(e.to_string(), "Serialization error"))
-            }
-        }
+        // decode base64
+        let bytes = STANDARD
+            .decode(&decoded)
+            .map_err(|e| error(e.to_string(), "Base64 decode error"))?;
+
+        // decompress and deserialize
+        decompress_and_deserialize::<Clipboard>(
+            &SerializationFormat::Json,
+            &CompressionFormat::Zlib,
+            &bytes,
+        )
+        .map_err(|e| error(e.to_string(), "Decompression/deserialization error"))
     }
 
     /// Return the largest rect that contains the clipboard, with `insert_at` as the top left corner
@@ -145,11 +157,28 @@ impl From<Clipboard> for JsClipboard {
     fn from(clipboard: Clipboard) -> Self {
         let plain_text = String::new();
 
+        // add starting table tag with data-quadratic attribute
         let mut html = String::from("<table data-quadratic=\"");
-        let data = serde_json::to_string(&clipboard).unwrap_or_default();
-        let encoded = htmlescape::encode_attribute(&data);
-        html.push_str(&encoded);
-        drop(encoded);
+
+        // compress and serialize
+        let data = serialize_and_compress(
+            &SerializationFormat::Json,
+            &CompressionFormat::Zlib,
+            clipboard,
+        )
+        .unwrap_or_default();
+
+        // encode to base64 string
+        let data = STANDARD.encode(&data);
+
+        // encode to html attribute
+        let data = htmlescape::encode_attribute(&data);
+
+        // add closing table tag
+        html.push_str(&data);
+        drop(data);
+
+        // add starting tbody tag
         html.push_str(&String::from("\"><tbody>"));
 
         // if y != bounds.min.y {
@@ -810,31 +839,27 @@ impl GridController {
             clipboard.w as i64 + 1,
             clipboard.h as i64 + 1,
         );
-        let existing_data_tables = self
-            .a1_context_sheet_table_bounds(sheet_id)
-            .into_iter()
-            .filter(|rect| rect.intersects(moved_left_up_rect))
-            .collect::<Vec<_>>();
+        let mut data_tables_rects = vec![];
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            data_tables_rects = sheet
+                .data_tables_rects_intersect_rect(moved_left_up_rect, |data_table| {
+                    !data_table.is_code()
+                })
+                .collect();
+        }
 
-        let mut growing_data_tables = existing_data_tables.clone();
+        let should_expand_data_table =
+            Sheet::should_expand_data_table(&data_tables_rects, clipboard_rect);
 
-        let bypass_growing =
-            !Sheet::should_expand_data_table(&existing_data_tables, clipboard_rect);
+        let sheet = self.try_sheet(selection.sheet_id);
 
         // loop through the clipboard and replace cell references in formulas
         // and other languages.  Also grow data tables if the cell value is touching
         // the right or bottom edge of the clipboard.
-        for (start_x, x) in (insert_at.x..=max_x)
-            .enumerate()
-            .step_by(clipboard.w as usize)
-        {
-            for (start_y, y) in (insert_at.y..=max_y)
-                .enumerate()
-                .step_by(clipboard.h as usize)
-            {
-                let pos: Pos = Pos { x, y };
-                let dx = insert_at.x - clipboard.origin.x + start_x as i64;
-                let dy = insert_at.y - clipboard.origin.y + start_y as i64;
+        for tile_start_x in (insert_at.x..=max_x).step_by(clipboard.w as usize) {
+            for tile_start_y in (insert_at.y..=max_y).step_by(clipboard.h as usize) {
+                let dx = tile_start_x - clipboard.origin.x;
+                let dy = tile_start_y - clipboard.origin.y;
                 let adjust = match clipboard.operation {
                     ClipboardOperation::Cut => RefAdjust::NO_OP,
                     ClipboardOperation::Copy => RefAdjust {
@@ -852,11 +877,11 @@ impl GridController {
 
                 if !(adjust.is_no_op() && sheet_id == clipboard.origin.sheet_id) {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                        for (cols_y, cell) in col {
+                        for (&cols_y, cell) in col {
                             if let CellValue::Code(code_cell) = cell {
                                 let original_pos = SheetPos {
                                     x: clipboard.origin.x + cols_x as i64,
-                                    y: clipboard.origin.y + *cols_y as i64,
+                                    y: clipboard.origin.y + cols_y as i64,
                                     sheet_id: clipboard.origin.sheet_id,
                                 };
 
@@ -866,28 +891,29 @@ impl GridController {
                                     original_pos,
                                     adjust,
                                 );
-                            } else {
-                                let new_x = x + cols_x as i64;
-                                let new_y = y + *cols_y as i64;
-                                let current_pos = Pos::new(new_x, new_y);
-                                let within_data_table = existing_data_tables
-                                    .iter()
-                                    .any(|rect| rect.contains(current_pos));
+                            }
+                            // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
+                            else if should_expand_data_table {
+                                if let Some(sheet) = sheet {
+                                    let new_x = tile_start_x + cols_x as i64;
+                                    let new_y = tile_start_y + cols_y as i64;
+                                    let current_pos = Pos::new(new_x, new_y);
+                                    let within_data_table =
+                                        sheet.data_table_pos_that_contains(current_pos).is_some();
 
-                                // we're not within a data table
-                                // expand the data table to the right or bottom if the
-                                // cell value is touching the right or bottom edge
-                                if let (false, false, Some(sheet)) =
-                                    (within_data_table, bypass_growing, self.try_sheet(sheet_id))
-                                {
-                                    GridController::grow_data_table(
-                                        sheet,
-                                        &mut growing_data_tables,
-                                        &mut data_table_columns,
-                                        &mut data_table_rows,
-                                        SheetPos::new(sheet_id, new_x, new_y),
-                                        cell.to_display().is_empty(),
-                                    );
+                                    // we're not within a data table
+                                    // expand the data table to the right or bottom if the
+                                    // cell value is touching the right or bottom edge
+                                    if !within_data_table {
+                                        GridController::grow_data_table(
+                                            sheet,
+                                            &mut data_tables_rects,
+                                            &mut data_table_columns,
+                                            &mut data_table_rows,
+                                            SheetPos::new(sheet_id, new_x, new_y),
+                                            cell.to_display().is_empty(),
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -895,8 +921,8 @@ impl GridController {
                 }
 
                 compute_code_ops.extend(self.get_clipboard_ops(
-                    pos,
-                    Pos::new(start_x as i64, start_y as i64),
+                    Pos::new(tile_start_x, tile_start_y),
+                    Pos::new(tile_start_x - insert_at.x, tile_start_y - insert_at.y),
                     &mut cell_values,
                     &mut formats,
                     &mut borders,

@@ -351,7 +351,7 @@ impl Sheet {
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
-        if let Ok(data_table_pos) = self.data_table_pos_that_contains(pos) {
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos) {
             if let Some(data_table) = self.data_table_at(&data_table_pos) {
                 if !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)

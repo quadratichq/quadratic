@@ -223,7 +223,7 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(pos)?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(pos)?;
 
             // mark the data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
@@ -277,7 +277,7 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let mut pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(pos)?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(pos)?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
 
             if data_table.is_code() {
@@ -453,7 +453,7 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(pos)?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(pos)?;
 
             // mark old data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
@@ -590,7 +590,7 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let pos = Pos::from(sheet_pos);
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(pos)?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(pos)?;
             let old_cell_value = sheet.cell_value_result(data_table_pos)?.to_owned();
 
             let old_data_table_kind = sheet.data_table_result(&data_table_pos)?.kind.to_owned();
@@ -784,7 +784,7 @@ impl GridController {
             // do grid mutations first to keep the borrow checker happy
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.grid.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let data_table_sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
             let data_table = sheet.data_table_result(&data_table_pos)?;
             let old_name = data_table.name().to_string();
@@ -951,7 +951,7 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
             let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
@@ -1020,7 +1020,7 @@ impl GridController {
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let mut reverse_operations: Vec<Operation> = vec![];
             let reverse_columns = columns
                 .iter()
@@ -1221,7 +1221,7 @@ impl GridController {
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
 
             let min_column = columns.first().map_or(0, |col| col.to_owned());
@@ -1473,7 +1473,7 @@ impl GridController {
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
 
             for (index, mut values) in rows {
                 let sheet = self.try_sheet_result(sheet_id)?;
@@ -1624,7 +1624,7 @@ impl GridController {
 
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
             let data_table_rect = data_table
                 .output_rect(data_table_pos, true)
@@ -1820,7 +1820,7 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
 
             let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
             if data_table.header_is_first_row == first_row_is_header {
                 return Ok(());
@@ -2003,7 +2003,7 @@ mod tests {
 
         assert!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(pos)
+                .data_table_pos_that_contains_result(pos)
                 .is_err()
         );
 
@@ -2022,7 +2022,7 @@ mod tests {
         // there should be no data tables
         assert!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(pos)
+                .data_table_pos_that_contains_result(pos)
                 .is_err()
         );
 
@@ -2237,7 +2237,7 @@ mod tests {
             code: "return [1,2,3]".into(),
         };
         sheet.set_cell_value(pos, CellValue::Code(code_cell_value.clone()));
-        let data_table_pos = sheet.data_table_pos_that_contains(pos).unwrap();
+        let data_table_pos = sheet.data_table_pos_that_contains_result(pos).unwrap();
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let expected = vec!["1", "2", "3"];
 
