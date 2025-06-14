@@ -41,7 +41,16 @@ type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 export const connectionClient = {
   schemas: {
     get: async (
-      connectionType: 'postgres' | 'mysql' | 'mssql' | 'snowflake',
+      connectionType:
+        | 'postgres'
+        | 'mysql'
+        | 'mssql'
+        | 'snowflake'
+        | 'cockroachdb'
+        | 'bigquery'
+        | 'mariadb'
+        | 'supabase'
+        | 'neon',
       connectionId: string,
       teamUuid: string
     ): Promise<SqlSchemaResponse | null> => {
