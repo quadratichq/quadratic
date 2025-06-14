@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { A1SelectionStringToSelection, xyToA1 } from '@/app/quadratic-core/quadratic_core';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -11,8 +11,8 @@ export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
     const visibleRect = sheets.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
-    const jsSelection = A1SelectionStringToSelection(visibleRectSelection, sheets.a1Context);
-    const visibleA1String = jsSelection.toA1String(sheets.current);
+    const jsSelection = sheets.A1SelectionStringToSelection(visibleRectSelection);
+    const visibleA1String = jsSelection.toA1String(sheets.current, sheets.jsA1Context);
     jsSelection.free();
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
@@ -37,7 +37,7 @@ export function useVisibleContextMessages() {
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 I have an open sheet with the following part of the sheet visible: ${visibleA1String}\n\n
 The cursor is located at ${sheets.sheet.cursor.a1String()}\n\n
-The user's selection is ${sheets.getA1String(sheets.sheet.id)}\n\n
+The user's selection is ${sheets.getA1String(sheets.current)}\n\n
 ${
   !!visibleContext && visibleContext.length === 1
     ? `

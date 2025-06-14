@@ -8,7 +8,6 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Direction,
   Format,
   FormatUpdate,
   JsCellValue,
@@ -121,20 +120,6 @@ export interface ClientCoreGetCodeCell {
 export interface CoreClientGetCodeCell {
   type: 'coreClientGetCodeCell';
   cell: JsCodeCell | undefined;
-  id: number;
-}
-
-export interface ClientCoreCellHasContent {
-  type: 'clientCoreCellHasContent';
-  sheetId: string;
-  x: number;
-  y: number;
-  id: number;
-}
-
-export interface CoreClientCellHasContent {
-  type: 'coreClientCellHasContent';
-  hasContent: boolean;
   id: number;
 }
 
@@ -699,27 +684,6 @@ export interface ClientCorePasteFromClipboard {
 
 //#region Bounds
 
-export interface ClientCoreJumpCursor {
-  type: 'clientCoreJumpCursor';
-  id: number;
-  sheetId: string;
-  current: JsCoordinate;
-  direction: Direction;
-  jump: boolean;
-}
-
-export interface CoreClientJumpCursor {
-  type: 'coreClientJumpCursor';
-  id: number;
-  coordinate?: JsCoordinate;
-}
-
-export interface CoreClientJumpCursor {
-  type: 'coreClientJumpCursor';
-  id: number;
-  coordinate?: JsCoordinate;
-}
-
 export interface CoreClientFindNextRow {
   type: 'coreClientFindNextRow';
   id: number;
@@ -757,12 +721,6 @@ export interface CoreClientTransactionStart {
   type: 'coreClientTransactionStart';
   transactionId: string;
   transactionName: TransactionName;
-}
-
-export interface CoreClientTransactionProgress {
-  type: 'coreClientTransactionProgress';
-  transactionId: string;
-  remainingOperations: number;
 }
 
 export interface CoreClientTransactionEnd {
@@ -1236,10 +1194,21 @@ export interface ClientCoreResizeAllRows {
   cursor: string;
 }
 
+export interface CoreClientDataTablesCache {
+  type: 'coreClientDataTablesCache';
+  sheetId: string;
+  dataTablesCache: Uint8Array;
+}
+
+export interface CoreClientContentCache {
+  type: 'coreClientContentCache';
+  sheetId: string;
+  contentCache: Uint8Array;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
-  | ClientCoreCellHasContent
   | ClientCoreGetEditCell
   | ClientCoreSetCellValue
   | ClientCoreSetCellValues
@@ -1285,7 +1254,6 @@ export type ClientCoreMessage =
   | ClientCoreSetCellRenderResize
   | ClientCoreAutocomplete
   | ClientCoreExportCsvSelection
-  | ClientCoreJumpCursor
   | ClientCoreCommitTransientResize
   | ClientCoreCommitSingleResize
   | ClientCoreInit
@@ -1337,7 +1305,6 @@ export type ClientCoreMessage =
 export type CoreClientMessage =
   | CoreClientGetCodeCell
   | CoreClientGetEditCell
-  | CoreClientCellHasContent
   | CoreClientGetCellFormatSummary
   | CoreClientSummarizeSelection
   | CoreClientGetRenderCell
@@ -1358,14 +1325,12 @@ export type CoreClientMessage =
   | CoreClientHtmlOutput
   | CoreClientUpdateHtml
   | CoreClientExportCsvSelection
-  | CoreClientJumpCursor
   | CoreClientGenerateThumbnail
   | CoreClientLoad
   | CoreClientSheetCodeCellRender
   | CoreClientSheetBoundsUpdate
   | CoreClientImportProgress
   | CoreClientTransactionStart
-  | CoreClientTransactionProgress
   | CoreClientTransactionEnd
   | CoreClientUpdateCodeCells
   | CoreClientMultiplayerState
@@ -1406,4 +1371,6 @@ export type CoreClientMessage =
   | CoreClientSetFormats
   | CoreClientGetAIFormats
   | CoreClientGridToDataTable
+  | CoreClientDataTablesCache
+  | CoreClientContentCache
   | CoreClientSetCellRenderResize;

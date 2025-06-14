@@ -538,7 +538,7 @@ jobs:
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 156
+      matrix_runner: 157
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
@@ -698,9 +698,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           # Upload entire build directory to S3
-          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} \
-            --delete \
-            --cache-control "public, max-age=30"
+          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} --delete
 
       - name: Find Build & Deploy Images Comment
         if: always()
@@ -721,7 +719,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
-            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }})
           edit-mode: replace
 
       - name: Update comment on E2E tests end

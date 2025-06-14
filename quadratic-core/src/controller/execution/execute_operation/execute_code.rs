@@ -1,5 +1,6 @@
 use crate::{
     CellValue, Pos, SheetPos, SheetRect,
+    a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -56,12 +57,14 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_pixel_output;
             let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                 dt.chart_pixel_output = Some((pixel_width, pixel_height));
                 Ok(())
             })?;
+
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
             transaction.forward_operations.push(op);
             transaction
@@ -98,12 +101,14 @@ impl GridController {
         if let Operation::SetChartCellSize { sheet_pos, w, h } = op {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_output;
             let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                 dt.chart_output = Some((w, h));
                 Ok(())
             })?;
+
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
             transaction.forward_operations.push(op);
             transaction

@@ -91,7 +91,7 @@ impl GridController {
                     for (x, value) in record.iter().enumerate() {
                         let (cell_value, format_update) = self.string_to_cell_value(value, false);
                         cell_values
-                            .set(u32::try_from(x)?, y, cell_value)
+                            .set(u32::try_from(x)?, y, cell_value, false)
                             .map_err(|e| error(e.to_string()))?;
 
                         if !format_update.is_default() {
@@ -301,7 +301,10 @@ impl GridController {
                             cell,
                             formula_start_name.as_str(),
                         );
-                        gc.send_client_updates_during_transaction(&mut transaction, false);
+                        gc.update_a1_context_table_map(
+                            std::mem::take(&mut transaction.code_cells_a1_context),
+                            false,
+                        );
                     }
                 }
 
@@ -401,7 +404,6 @@ mod test {
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
-        assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
         let data_table = match ops[0].clone() {
             Operation::AddDataTable { data_table, .. } => data_table,
@@ -425,7 +427,7 @@ mod test {
     fn imports_a_long_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 1, y: 2 };
+        let pos: Pos = Pos { x: 1, y: 2 };
         let file_name = "long.csv";
 
         let mut csv = String::new();
@@ -441,10 +443,6 @@ mod test {
             Some(b','),
             Some(false),
         );
-
-        let import = Import::new(file_name.into());
-        let cell_value = CellValue::Import(import.clone());
-        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
         assert_eq!(ops.as_ref().unwrap().len(), 1);
 

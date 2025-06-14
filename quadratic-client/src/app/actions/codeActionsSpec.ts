@@ -17,10 +17,10 @@ export const cancelExecution = () => {
 };
 
 export const executeCode = () => {
-  const { x, y } = sheets.sheet.cursor.position;
-  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
-  if (table?.isCodeCell()) {
-    quadraticCore.rerunCodeCells(sheets.current, table.codeCell.x, table.codeCell.y, sheets.getCursorPosition());
+  const cursor = sheets.sheet.cursor.position;
+  const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
+  if (codeCell?.is_code) {
+    quadraticCore.rerunCodeCells(sheets.current, codeCell.x, codeCell.y, sheets.getCursorPosition());
   }
 };
 

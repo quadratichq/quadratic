@@ -60,7 +60,8 @@ type DataTableSpec = Pick<
 >;
 
 export const getTable = (): JsRenderCodeCell | undefined => {
-  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().cursorOnDataTable();
+  const cursor = sheets.sheet.cursor.position;
+  return pixiAppSettings.contextMenu?.table ?? pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
 };
 
 const getRow = (): number | undefined => {
@@ -201,7 +202,7 @@ export const flattenDataTable = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.flattenDataTable(sheets.sheet.id, table.x, table.y, sheets.getCursorPosition());
+    quadraticCore.flattenDataTable(sheets.current, table.x, table.y, sheets.getCursorPosition());
   }
 };
 
@@ -366,7 +367,6 @@ export const hideTableColumn = () => {
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
     quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, sheets.getCursorPosition());
-    sheets.sheet.cursor.hideColumn(table.name, columns[column].name);
   }
 };
 

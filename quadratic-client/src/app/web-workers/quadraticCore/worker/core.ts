@@ -17,14 +17,12 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Direction,
   Format,
   FormatUpdate,
   JsCellValue,
   JsCodeCell,
   JsCodeResult,
   JsColumnWidth,
-  JsCoordinate,
   JsDataTableColumnHeader,
   JsResponse,
   JsRowHeight,
@@ -58,7 +56,6 @@ import {
   numbersToRectStringified,
   pointsToRect,
   posToPos,
-  posToRect,
   toSheetPos,
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import * as Sentry from '@sentry/react';
@@ -189,18 +186,6 @@ class Core {
       } catch (e) {
         this.handleCoreError('getCodeCell', e);
         resolve(undefined);
-      }
-    });
-  }
-
-  cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined in Core.cellHasContent');
-      try {
-        resolve(this.gridController.hasRenderCells(sheetId, posToRect(x, y)));
-      } catch (e) {
-        this.handleCoreError('cellHasContent', e);
-        resolve(false);
       }
     });
   }
@@ -888,29 +873,6 @@ class Core {
       } catch (e) {
         this.handleCoreError('exportCsvSelection', e);
         resolve('');
-      }
-    });
-  }
-
-  jumpCursor(
-    sheetId: string,
-    current: JsCoordinate,
-    jump: boolean,
-    direction: Direction
-  ): Promise<JsCoordinate | undefined> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const pos = this.gridController.jumpCursor(
-          sheetId,
-          posToPos(current.x, current.y),
-          jump,
-          JSON.stringify(direction)
-        );
-        resolve({ x: Number(pos.x), y: Number(pos.y) });
-      } catch (e) {
-        this.handleCoreError('jumpCursor', e);
-        resolve(undefined);
       }
     });
   }
