@@ -20,19 +20,15 @@ impl A1Selection {
     // Returns whether the selection is one cell or multiple cells (either a
     // rect, column, row, or all)
     pub fn is_multi_cursor(&self, a1_context: &A1Context) -> bool {
-        if self.ranges.len() > 1 {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        if expanded_ranges.len() > 1 {
             return true;
         }
-        if let Some(last_range) = self.ranges.last() {
+        if let Some(last_range) = expanded_ranges.last() {
             match last_range {
                 CellRefRange::Sheet { range } => range.is_multi_cursor(),
                 CellRefRange::Table { range } => range.is_multi_cursor(a1_context),
-                CellRefRange::Named { range } => {
-                    if let Some(range) = a1_context.try_named(range) {
-                    } else {
-                        false
-                    }
-                }
+                CellRefRange::Named { range } => false,
             }
         } else {
             false
@@ -85,8 +81,8 @@ impl A1Selection {
     /// ignoring any ranges that extend infinitely.
     pub fn largest_rect_finite(&self, a1_context: &A1Context) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
-        let expanded_ranges = expand_named_ranges(self.ranges, context);
-        self.ranges.iter().for_each(|range| match range {
+        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        expanded_ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 if !range.end.is_unbounded() {
                     rect = rect.union(&Rect::new(
@@ -354,9 +350,10 @@ impl A1Selection {
     }
 
     /// Returns a list of fully selected rows.
-    pub fn selected_rows(&self) -> Vec<i64> {
+    pub fn selected_rows(&self, context: &A1Context) -> Vec<i64> {
         let mut rows = HashSet::new();
-        self.ranges.iter().for_each(|range| match range {
+        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        expanded_ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 if self.is_all_selected() {
                     return;
@@ -369,7 +366,7 @@ impl A1Selection {
                     }
                 }
             }
-            CellRefRange::Table { .. } => (),
+            CellRefRange::Table { .. } | CellRefRange::Named { .. } => (),
         });
 
         let mut rows = rows.into_iter().collect::<Vec<_>>();
@@ -439,11 +436,12 @@ impl A1Selection {
     /// The selection is a single range AND
     /// 1. is a column or row selection OR
     /// 2. is a rect selection
-    pub fn can_insert_column_row(&self) -> bool {
-        if self.ranges.len() != 1 {
+    pub fn can_insert_column_row(&self, context: &A1Context) -> bool {
+        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        if expanded_ranges.len() != 1 {
             return false;
         }
-        let Some(range) = self.ranges.first() else {
+        let Some(range) = expanded_ranges.first() else {
             return false;
         };
         match range {
@@ -451,6 +449,7 @@ impl A1Selection {
                 range.end.col() != UNBOUNDED || range.end.row() != UNBOUNDED
             }
             CellRefRange::Table { .. } => true,
+            CellRefRange::Named { .. } => true,
         }
     }
 
@@ -491,13 +490,23 @@ impl A1Selection {
         match last_range {
             CellRefRange::Sheet { range } => range.cursor_pos_from_last_range(),
             CellRefRange::Table { range } => range.cursor_pos_from_last_range(a1_context),
+            CellRefRange::Named { range } => {
+                if let Some(named_range) = a1_context.try_named(range) {
+                    if let Some(last_range) = named_range.selection().ranges.last() {
+                        return A1Selection::cursor_pos_from_last_range(last_range, a1_context);
+                    }
+                }
+                // fallback in the event that named doesn't exist
+                Pos { x: 1, y: 1 }
+            }
         }
     }
 
-    /// Returns all finite RefRangeBounds for the selection, converting table selections to
+    /// Returns all finite RefRangeBounds for the selection, converting table and named ranges to
     /// RefRangeBounds.
-    pub fn finite_ref_range_bounds(&self, a1_context: &A1Context) -> Vec<RefRangeBounds> {
-        self.ranges
+    pub fn finite_ref_range_bounds(&self, context: &A1Context) -> Vec<RefRangeBounds> {
+        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        expanded_ranges
             .iter()
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => {
@@ -508,8 +517,9 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, context, false, false)
                 }
+                CellRefRange::Named { .. } => None,
             })
             .collect()
     }
@@ -554,7 +564,8 @@ impl A1Selection {
         context: &A1Context,
     ) -> Vec<String> {
         let mut names = Vec::new();
-        self.ranges.iter().for_each(|range| match range {
+        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        expanded_ranges.iter().for_each(|range| match range {
             CellRefRange::Table { range } => {
                 if range.data && range.col_range == ColRange::All {
                     names.push(range.table_name.clone());
@@ -583,6 +594,7 @@ impl A1Selection {
                     }
                 });
             }
+            CellRefRange::Named { .. } => (),
         });
         names.sort();
         names.dedup();
@@ -596,7 +608,7 @@ impl A1Selection {
             CellRefRange::Table { range } => {
                 names.insert(range.table_name.clone());
             }
-            CellRefRange::Sheet { .. } => (),
+            CellRefRange::Sheet { .. } | CellRefRange::Named { .. } => (),
         });
         names.into_iter().collect::<Vec<_>>()
     }
@@ -1822,66 +1834,70 @@ mod tests {
 
     #[test]
     fn test_selected_rows() {
+        let context = A1Context::default();
+
         // Test single row selection
         let selection = A1Selection::test_a1("1");
-        assert_eq!(selection.selected_rows(), vec![1]);
+        assert_eq!(selection.selected_rows(&context), vec![1]);
 
         // Test multiple row selections
         let selection = A1Selection::test_a1("1,3,5");
-        assert_eq!(selection.selected_rows(), vec![1, 3, 5]);
+        assert_eq!(selection.selected_rows(&context), vec![1, 3, 5]);
 
         // Test row range
         let selection = A1Selection::test_a1("1:3");
-        assert_eq!(selection.selected_rows(), vec![1, 2, 3]);
+        assert_eq!(selection.selected_rows(&context), vec![1, 2, 3]);
 
         // Test reverse row range
         let selection = A1Selection::test_a1("3:1");
-        assert_eq!(selection.selected_rows(), vec![1, 2, 3]);
+        assert_eq!(selection.selected_rows(&context), vec![1, 2, 3]);
 
         // Test multiple row ranges
         let selection = A1Selection::test_a1("1:3,5:7");
-        assert_eq!(selection.selected_rows(), vec![1, 2, 3, 5, 6, 7]);
+        assert_eq!(selection.selected_rows(&context), vec![1, 2, 3, 5, 6, 7]);
 
         // Test mixed selections with cells and rows
         let selection = A1Selection::test_a1("A1,2,3:4");
-        assert_eq!(selection.selected_rows(), vec![2, 3, 4]);
+        assert_eq!(selection.selected_rows(&context), vec![2, 3, 4]);
 
         // Test all cells selected
         let selection = A1Selection::test_a1("*");
-        assert!(selection.selected_rows().is_empty());
+        assert!(selection.selected_rows(&context).is_empty());
 
         // Test cell selections (should not return any rows)
         let selection = A1Selection::test_a1("A1:B2");
-        assert!(selection.selected_rows().is_empty());
+        assert!(selection.selected_rows(&context).is_empty());
 
         // Test column selections (should not return any rows)
         let selection = A1Selection::test_a1("A:C");
-        assert!(selection.selected_rows().is_empty());
+        assert!(selection.selected_rows(&context).is_empty());
     }
 
     #[test]
     fn test_can_insert_column_row() {
+        let context = A1Context::default();
+
         // Test single column selection
-        assert!(A1Selection::test_a1("A").can_insert_column_row());
-        assert!(A1Selection::test_a1("A:C").can_insert_column_row());
+        assert!(A1Selection::test_a1("A").can_insert_column_row(&context));
+        assert!(A1Selection::test_a1("A:C").can_insert_column_row(&context));
 
         // Test single row selection
-        assert!(A1Selection::test_a1("1").can_insert_column_row());
-        assert!(A1Selection::test_a1("1:3").can_insert_column_row());
+        assert!(A1Selection::test_a1("1").can_insert_column_row(&context));
+        assert!(A1Selection::test_a1("1:3").can_insert_column_row(&context));
 
         // Test single finite range
-        assert!(A1Selection::test_a1("A1:B2").can_insert_column_row());
-        assert!(A1Selection::test_a1("A1").can_insert_column_row());
+        assert!(A1Selection::test_a1("A1:B2").can_insert_column_row(&context));
+        assert!(A1Selection::test_a1("A1").can_insert_column_row(&context));
 
         // Test multiple ranges (should be false)
-        assert!(!A1Selection::test_a1("A1,B2").can_insert_column_row());
-        assert!(!A1Selection::test_a1("A,B").can_insert_column_row());
-        assert!(!A1Selection::test_a1("1,2").can_insert_column_row());
+        assert!(!A1Selection::test_a1("A1,B2").can_insert_column_row(&context));
+        assert!(!A1Selection::test_a1("A,B").can_insert_column_row(&context));
+        assert!(!A1Selection::test_a1("1,2").can_insert_column_row(&context));
 
         // Test infinite ranges (should be false)
-        assert!(!A1Selection::test_a1("A:").can_insert_column_row());
-        assert!(!A1Selection::test_a1("1:").can_insert_column_row());
-        assert!(!A1Selection::test_a1("B2:").can_insert_column_row());
-        assert!(!A1Selection::test_a1("*").can_insert_column_row());
+        assert!(!A1Selection::test_a1("A:").can_insert_column_row(&context));
+        assert!(!A1Selection::test_a1("1:").can_insert_column_row(&context));
+        assert!(!A1Selection::test_a1("B2:").can_insert_column_row(&context));
+        assert!(!A1Selection::test_a1("*").can_insert_column_row(&context));
     }
 }
