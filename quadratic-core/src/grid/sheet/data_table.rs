@@ -41,13 +41,18 @@ impl Sheet {
         self.data_tables.get_contains(pos)
     }
 
+    /// Returns the data table pos if the data table intersects a position
+    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
+        self.data_tables.get_pos_contains(pos)
+    }
+
     /// Returns the data table pos of the data table that contains a position
-    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Result<Pos> {
+    pub fn data_table_pos_that_contains_result(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
             Ok(data_table_pos)
         } else {
             bail!(
-                "No data tables found within {:?} in data_table_pos_that_contains()",
+                "No data tables found within {:?} in data_table_pos_that_contains_result()",
                 pos
             )
         }
@@ -58,19 +63,31 @@ impl Sheet {
         self.data_tables.iter_pos_in_rect(rect, false)
     }
 
-    /// Returns anchor positions of data tables that intersect a rect sorted by index
+    /// Returns anchor positions of data tables that intersect a rect, sorted by index
     pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
         self.data_tables
             .get_in_rect_sorted(rect, false)
             .map(|(_, pos, _)| pos)
     }
 
-    /// Returns data tables that intersect a rect
-    pub fn data_tables_intersect_rect(
+    /// Returns data tables that intersect a rect, sorted by index
+    pub fn data_tables_intersect_rect_sorted(
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
-        self.data_tables.get_in_rect(rect, false)
+        self.data_tables.get_in_rect_sorted(rect, false)
+    }
+
+    /// Returns data tables that intersect a rect, sorted by index
+    pub fn data_tables_rects_intersect_rect(
+        &self,
+        rect: Rect,
+        filter: impl Fn(&DataTable) -> bool,
+    ) -> impl Iterator<Item = Rect> {
+        self.data_tables
+            .get_in_rect(rect, false)
+            .filter(move |(_, _, data_table)| filter(data_table))
+            .map(|(_, data_table_pos, data_table)| data_table.output_rect(data_table_pos, false))
     }
 
     /// Returns true if there is a data table intersecting a rect, excluding a specific position
@@ -243,7 +260,7 @@ impl Sheet {
         &self,
         rect: &Rect,
         cells: &mut CellValues,
-        values: &mut CellValues,
+        values: &mut Option<CellValues>,
         a1_context: &A1Context,
         selection: &A1Selection,
         include_code_table_values: bool,
@@ -258,11 +275,10 @@ impl Sheet {
                     y: output_rect.min.y,
                 };
 
-                // add the CellValue to cells if the code is not included in the rect
-                let include_in_cells = !rect.contains(data_table_pos);
+                let rect_contains_anchor_pos = rect.contains(data_table_pos);
 
                 // if the source cell is included in the rect, add the data_table to data_tables
-                if !include_in_cells {
+                if rect_contains_anchor_pos {
                     if matches!(data_table.kind, DataTableKind::Import(_))
                         || include_code_table_values
                     {
@@ -270,9 +286,13 @@ impl Sheet {
                     } else {
                         data_tables.insert(data_table_pos, data_table.clone_without_values());
                     }
+
+                    if values.is_none() {
+                        return;
+                    }
                 }
 
-                if data_table.has_spill() {
+                if output_rect.len() <= 1 {
                     return;
                 }
 
@@ -284,7 +304,7 @@ impl Sheet {
                 // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
-                        if let Some(value) = data_table.cell_value_at(
+                        if let Some(value) = data_table.cell_value_ref_at(
                             (x - data_table_pos.x) as u32,
                             (y - data_table_pos.y) as u32,
                         ) {
@@ -294,11 +314,15 @@ impl Sheet {
                             };
 
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
-                                if include_in_cells {
+                                // add the CellValue to cells if the code is not included in the rect
+                                if !rect_contains_anchor_pos {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
 
-                                values.set(pos.x as u32, pos.y as u32, value);
+                                // add the display value to values if values is Some
+                                if let Some(values) = values.as_mut() {
+                                    values.set(pos.x as u32, pos.y as u32, value.clone());
+                                }
                             }
                         }
                     }
@@ -528,7 +552,7 @@ mod test {
             user_actions::import::tests::simple_csv,
         },
         first_sheet_id,
-        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
+        grid::{CodeRun, DataTableKind, SheetId},
         test_create_code_table, test_create_data_table, test_create_html_chart,
         test_create_js_chart,
     };
@@ -617,15 +641,14 @@ mod test {
         let selection =
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(10, 10, sheet_id),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );

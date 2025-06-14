@@ -49,7 +49,11 @@ impl GridController {
     /// Removes the first operation from a transaction and executes it.
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
         if let Some(op) = transaction.operations.pop_front() {
-            #[cfg(feature = "show-operations")]
+            if cfg!(target_family = "wasm") {
+                crate::wasm_bindings::js::time("execute_operation");
+            }
+
+            // #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {:?}", &op));
 
             #[cfg(feature = "show-first-sheet-operations")]
@@ -207,6 +211,10 @@ impl GridController {
         }
         #[cfg(feature = "show-first-sheet-operations")]
         print_first_sheet!(&self);
+
+        if cfg!(target_family = "wasm") {
+            crate::wasm_bindings::js::timeEnd("execute_operation");
+        }
     }
 }
 

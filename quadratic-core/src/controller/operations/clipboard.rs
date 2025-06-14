@@ -1,13 +1,18 @@
-use std::collections::HashMap;
-
 use anyhow::{Error, Result};
+use base64::{Engine, engine::general_purpose::STANDARD};
 use indexmap::IndexMap;
+use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::operation::Operation;
 use crate::cell_values::CellValues;
+use crate::compression::CompressionFormat;
+use crate::compression::SerializationFormat;
+use crate::compression::decompress_and_deserialize;
+use crate::compression::serialize_and_compress;
 use crate::controller::GridController;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
@@ -22,7 +27,10 @@ use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::unique_data_table_name;
 use crate::{CellValue, Pos, Rect, RefAdjust, RefError, SheetPos, SheetRect, a1::A1Selection};
 
-// todo: this probably belongs in sheet and not controller
+lazy_static! {
+    static ref CLIPBOARD_REGEX: Regex = Regex::new(r#"data-quadratic="(.*?)".*><tbody"#)
+        .expect("Failed to compile CLIPBOARD_REGEX");
+}
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
 pub enum PasteSpecial {
@@ -114,25 +122,29 @@ impl Clipboard {
     pub fn decode(html: &str) -> Result<Self> {
         let error = |e, msg| Error::msg(format!("Clipboard decode {:?}: {:?}", msg, e));
 
-        match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
-            Err(e) => Err(error(e.to_string(), "Regex creation error")),
-            Ok(re) => {
-                // pull out the sub string
-                let sub_string = re
-                    .captures(html)
-                    .ok_or_else(|| error("".into(), "Regex capture error"))?
-                    .get(1)
-                    .map_or("", |m| m.as_str());
+        // pull out the sub string
+        let sub_string = CLIPBOARD_REGEX
+            .captures(html)
+            .ok_or_else(|| error("".into(), "Regex capture error"))?
+            .get(1)
+            .map_or("", |m| m.as_str());
 
-                // decode html in attribute
-                let decoded = htmlescape::decode_html(sub_string)
-                    .map_err(|_| error("".into(), "Html decode error"))?;
+        // decode html in attribute
+        let decoded = htmlescape::decode_html(sub_string)
+            .map_err(|_| error("".into(), "Html decode error"))?;
 
-                // parse into Clipboard
-                serde_json::from_str::<Clipboard>(&decoded)
-                    .map_err(|e| error(e.to_string(), "Serialization error"))
-            }
-        }
+        // decode base64
+        let bytes = STANDARD
+            .decode(&decoded)
+            .map_err(|e| error(e.to_string(), "Base64 decode error"))?;
+
+        // decompress and deserialize
+        decompress_and_deserialize::<Clipboard>(
+            &SerializationFormat::Json,
+            &CompressionFormat::Zstd,
+            &bytes,
+        )
+        .map_err(|e| error(e.to_string(), "Decompression/deserialization error"))
     }
 
     /// Return the largest rect that contains the clipboard, with `insert_at` as the top left corner
@@ -141,40 +153,199 @@ impl Clipboard {
     }
 }
 
+impl From<Clipboard> for JsClipboard {
+    fn from(clipboard: Clipboard) -> Self {
+        let plain_text = String::new();
+
+        // add starting table tag with data-quadratic attribute
+        let mut html = String::from("<table data-quadratic=\"");
+
+        // compress and serialize
+        let data = serialize_and_compress(
+            &SerializationFormat::Json,
+            &CompressionFormat::Zstd,
+            clipboard,
+        )
+        .unwrap_or_default();
+
+        // encode to base64 string
+        let data = STANDARD.encode(&data);
+
+        // encode to html attribute
+        let data = htmlescape::encode_attribute(&data);
+
+        // add closing table tag
+        html.push_str(&data);
+        drop(data);
+
+        // add starting tbody tag
+        html.push_str(&String::from("\"><tbody>"));
+
+        // if y != bounds.min.y {
+        //     plain_text.push('\n');
+        //     html_body.push_str("</tr>");
+        // }
+        // html_body.push_str("<tr>");
+
+        // // add styling for html (only used for pasting to other spreadsheets)
+        // if x != bounds.min.x {
+        //     plain_text.push('\t');
+        //     html_body.push_str("</td>");
+        // }
+
+        // let mut style = String::new();
+
+        // let summary = self.cell_format_summary(pos);
+        // let bold = summary.bold.unwrap_or(false);
+        // let italic = summary.italic.unwrap_or(false);
+        // let text_color = summary.text_color;
+        // let fill_color = summary.fill_color;
+        // let cell_align = summary.align;
+        // let cell_vertical_align = summary.vertical_align;
+        // let cell_wrap = summary.wrap;
+        // let underline = summary.underline.unwrap_or(false);
+        // let strike_through = summary.strike_through.unwrap_or(false);
+
+        // let cell_border = self.borders.get_style_cell(pos);
+
+        // if bold
+        //     || italic
+        //     || underline
+        //     || strike_through
+        //     || text_color.is_some()
+        //     || fill_color.is_some()
+        //     || cell_align.is_some()
+        //     || cell_vertical_align.is_some()
+        //     || cell_wrap.is_some()
+        //     || !cell_border.is_empty()
+        // {
+        //     style.push_str("style=\"");
+
+        //     if bold {
+        //         style.push_str("font-weight:bold;");
+        //     }
+        //     if italic {
+        //         style.push_str("font-style:italic;");
+        //     }
+        //     if underline && !strike_through {
+        //         style.push_str("text-decoration:underline;");
+        //     } else if !underline && strike_through {
+        //         style.push_str("text-decoration:line-through;");
+        //     } else if underline && strike_through {
+        //         style.push_str("text-decoration:underline line-through;");
+        //     }
+        //     if let Some(text_color) = text_color {
+        //         if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
+        //             style.push_str(format!("color:{};", text_color.as_rgb_hex()).as_str());
+        //         }
+        //     }
+        //     if let Some(fill_color) = fill_color {
+        //         if let Ok(fill_color) = Rgba::from_css_str(fill_color.as_str()) {
+        //             style.push_str(
+        //                 format!("background-color:{};", fill_color.as_rgb_hex()).as_str(),
+        //             );
+        //         }
+        //     }
+        //     if let Some(cell_align) = cell_align {
+        //         style.push_str(cell_align.as_css_string());
+        //     }
+        //     if let Some(cell_vertical_align) = cell_vertical_align {
+        //         style.push_str(cell_vertical_align.as_css_string());
+        //     }
+        //     if let Some(cell_wrap) = cell_wrap {
+        //         style.push_str(cell_wrap.as_css_string());
+        //     }
+        //     if underline && !strike_through {
+        //         style.push_str("text-decoration:underline;");
+        //     } else if !underline && strike_through {
+        //         style.push_str("text-decoration:line-through;");
+        //     } else if underline && strike_through {
+        //         style.push_str("text-decoration:underline line-through;");
+        //     }
+        //     if cell_border.left.is_some() {
+        //         style.push_str(
+        //             format!(
+        //                 "border-left: {} {};",
+        //                 cell_border.left.unwrap().line.as_css_string(),
+        //                 cell_border.left.unwrap().color.as_rgb_hex()
+        //             )
+        //             .as_str(),
+        //         );
+        //     }
+        //     if cell_border.top.is_some() {
+        //         style.push_str(
+        //             format!(
+        //                 "border-top: {} {};",
+        //                 cell_border.top.unwrap().line.as_css_string(),
+        //                 cell_border.top.unwrap().color.as_rgb_hex()
+        //             )
+        //             .as_str(),
+        //         );
+        //     }
+        //     if cell_border.right.is_some() {
+        //         style.push_str(
+        //             format!(
+        //                 "border-right: {} {};",
+        //                 cell_border.right.unwrap().line.as_css_string(),
+        //                 cell_border.right.unwrap().color.as_rgb_hex()
+        //             )
+        //             .as_str(),
+        //         );
+        //     }
+        //     if cell_border.bottom.is_some() {
+        //         style.push_str(
+        //             format!(
+        //                 "border-bottom: {} {};",
+        //                 cell_border.bottom.unwrap().line.as_css_string(),
+        //                 cell_border.bottom.unwrap().color.as_rgb_hex()
+        //             )
+        //             .as_str(),
+        //         );
+        //     }
+        //     style.push('"');
+        // }
+        // html_body.push_str(format!("<td {}>", style).as_str());
+        // if let Some(value) = &simple_value {
+        //     plain_text.push_str(&value.to_string());
+        //     html_body.push_str(&value.to_string());
+        // }
+
+        // html.push_str("</td></tr>");
+
+        html.push_str("</tbody></table>");
+
+        JsClipboard { plain_text, html }
+    }
+}
+
 impl GridController {
     pub fn cut_to_clipboard_operations(
         &mut self,
         selection: &A1Selection,
-        include_plain_text: bool,
-    ) -> Result<(Vec<Operation>, JsClipboard), String> {
+        include_display_values: bool,
+    ) -> Result<(Clipboard, Vec<Operation>), String> {
         let sheet = self
             .try_sheet(selection.sheet_id)
             .ok_or("Unable to find Sheet")?;
 
-        let js_clipboard = sheet.copy_to_clipboard(
+        let clipboard = sheet.copy_to_clipboard(
             selection,
             self.a1_context(),
             ClipboardOperation::Cut,
-            include_plain_text,
-        )?;
+            include_display_values,
+        );
 
         let operations = self.delete_values_and_formatting_operations(selection, true);
 
-        Ok((operations, js_clipboard))
+        Ok((clipboard, operations))
     }
 
     /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
     fn cell_values_from_clipboard_cells(
-        w: u32,
-        h: u32,
         cells: &CellValues,
         values: &CellValues,
         special: PasteSpecial,
     ) -> (Option<CellValues>, Vec<(u32, u32)>) {
-        if w == 0 && h == 0 {
-            return (None, vec![]);
-        }
-
         match special {
             PasteSpecial::Values => (Some(values.to_owned()), vec![]),
             PasteSpecial::None => {
@@ -434,8 +605,6 @@ impl GridController {
         match special {
             PasteSpecial::None => {
                 let (values, tables) = GridController::cell_values_from_clipboard_cells(
-                    clipboard.w,
-                    clipboard.h,
                     &clipboard.cells,
                     &clipboard.values,
                     special,
@@ -472,8 +641,6 @@ impl GridController {
             }
             PasteSpecial::Values => {
                 let (values, _) = GridController::cell_values_from_clipboard_cells(
-                    clipboard.w,
-                    clipboard.h,
                     &clipboard.cells,
                     &clipboard.values,
                     special,
@@ -491,7 +658,7 @@ impl GridController {
                     ops.extend(cell_value_ops);
                 }
             }
-            _ => (),
+            PasteSpecial::Formats => (),
         }
 
         if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
@@ -637,13 +804,12 @@ impl GridController {
         insert_at: Pos,
         end_pos: Pos,
         selection: &A1Selection,
-        html: String,
+        mut clipboard: Clipboard,
         special: PasteSpecial,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
-        let mut clipboard = Clipboard::decode(&html)?;
         let clipboard_rect = clipboard.to_rect(insert_at);
 
         let sheet_id = match clipboard.operation {
@@ -673,31 +839,27 @@ impl GridController {
             clipboard.w as i64 + 1,
             clipboard.h as i64 + 1,
         );
-        let existing_data_tables = self
-            .a1_context_sheet_table_bounds(sheet_id)
-            .into_iter()
-            .filter(|rect| rect.intersects(moved_left_up_rect))
-            .collect::<Vec<_>>();
+        let mut data_tables_rects = vec![];
+        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
+            data_tables_rects = sheet
+                .data_tables_rects_intersect_rect(moved_left_up_rect, |data_table| {
+                    !data_table.is_code()
+                })
+                .collect();
+        }
 
-        let mut growing_data_tables = existing_data_tables.clone();
+        let should_expand_data_table =
+            Sheet::should_expand_data_table(&data_tables_rects, clipboard_rect);
 
-        let bypass_growing =
-            !Sheet::should_expand_data_table(&existing_data_tables, clipboard_rect);
+        let sheet = self.try_sheet(selection.sheet_id);
 
         // loop through the clipboard and replace cell references in formulas
         // and other languages.  Also grow data tables if the cell value is touching
         // the right or bottom edge of the clipboard.
-        for (start_x, x) in (insert_at.x..=max_x)
-            .enumerate()
-            .step_by(clipboard.w as usize)
-        {
-            for (start_y, y) in (insert_at.y..=max_y)
-                .enumerate()
-                .step_by(clipboard.h as usize)
-            {
-                let pos: Pos = Pos { x, y };
-                let dx = insert_at.x - clipboard.origin.x + start_x as i64;
-                let dy = insert_at.y - clipboard.origin.y + start_y as i64;
+        for tile_start_x in (insert_at.x..=max_x).step_by(clipboard.w as usize) {
+            for tile_start_y in (insert_at.y..=max_y).step_by(clipboard.h as usize) {
+                let dx = tile_start_x - clipboard.origin.x;
+                let dy = tile_start_y - clipboard.origin.y;
                 let adjust = match clipboard.operation {
                     ClipboardOperation::Cut => RefAdjust::NO_OP,
                     ClipboardOperation::Copy => RefAdjust {
@@ -715,11 +877,11 @@ impl GridController {
 
                 if !(adjust.is_no_op() && sheet_id == clipboard.origin.sheet_id) {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
-                        for (cols_y, cell) in col {
+                        for (&cols_y, cell) in col {
                             if let CellValue::Code(code_cell) = cell {
                                 let original_pos = SheetPos {
                                     x: clipboard.origin.x + cols_x as i64,
-                                    y: clipboard.origin.y + *cols_y as i64,
+                                    y: clipboard.origin.y + cols_y as i64,
                                     sheet_id: clipboard.origin.sheet_id,
                                 };
 
@@ -729,28 +891,29 @@ impl GridController {
                                     original_pos,
                                     adjust,
                                 );
-                            } else {
-                                let new_x = x + cols_x as i64;
-                                let new_y = y + *cols_y as i64;
-                                let current_pos = Pos::new(new_x, new_y);
-                                let within_data_table = existing_data_tables
-                                    .iter()
-                                    .any(|rect| rect.contains(current_pos));
+                            }
+                            // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
+                            else if should_expand_data_table {
+                                if let Some(sheet) = sheet {
+                                    let new_x = tile_start_x + cols_x as i64;
+                                    let new_y = tile_start_y + cols_y as i64;
+                                    let current_pos = Pos::new(new_x, new_y);
+                                    let within_data_table =
+                                        sheet.data_table_pos_that_contains(current_pos).is_some();
 
-                                // we're not within a data table
-                                // expand the data table to the right or bottom if the
-                                // cell value is touching the right or bottom edge
-                                if let (false, false, Some(sheet)) =
-                                    (within_data_table, bypass_growing, self.try_sheet(sheet_id))
-                                {
-                                    GridController::grow_data_table(
-                                        sheet,
-                                        &mut growing_data_tables,
-                                        &mut data_table_columns,
-                                        &mut data_table_rows,
-                                        SheetPos::new(sheet_id, new_x, new_y),
-                                        cell.to_display().is_empty(),
-                                    );
+                                    // we're not within a data table
+                                    // expand the data table to the right or bottom if the
+                                    // cell value is touching the right or bottom edge
+                                    if !within_data_table {
+                                        GridController::grow_data_table(
+                                            sheet,
+                                            &mut data_tables_rects,
+                                            &mut data_table_columns,
+                                            &mut data_table_rows,
+                                            SheetPos::new(sheet_id, new_x, new_y),
+                                            cell.to_display().is_empty(),
+                                        );
+                                    }
                                 }
                             }
                         }
@@ -758,8 +921,8 @@ impl GridController {
                 }
 
                 compute_code_ops.extend(self.get_clipboard_ops(
-                    pos,
-                    Pos::new(start_x as i64, start_y as i64),
+                    Pos::new(tile_start_x, tile_start_y),
+                    Pos::new(tile_start_x - insert_at.x, tile_start_y - insert_at.y),
                     &mut cell_values,
                     &mut formats,
                     &mut borders,
@@ -866,11 +1029,16 @@ mod test {
     use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
 
-    fn paste(gc: &mut GridController, sheet_id: SheetId, x: i64, y: i64, html: String) {
+    fn paste(
+        gc: &mut GridController,
+        sheet_id: SheetId,
+        x: i64,
+        y: i64,
+        js_clipboard: JsClipboard,
+    ) {
         gc.paste_from_clipboard(
             &A1Selection::from_xy(x, y, sheet_id),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -922,13 +1090,18 @@ mod test {
         sheet.test_set_values(1, 5, 1, 5, vec!["1", "2", "3", "4", "5"]);
         let selection = A1Selection::test_a1("A");
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+        let clipboard =
+            sheet.copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true);
         let selection = A1Selection::test_a1("E");
         let insert_at = selection.cursor;
         let operations = gc
-            .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
+            .paste_html_operations(
+                insert_at,
+                insert_at,
+                &selection,
+                clipboard,
+                PasteSpecial::None,
+            )
             .unwrap()
             .0;
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
@@ -948,13 +1121,18 @@ mod test {
         sheet.test_set_values(5, 2, 5, 1, vec!["1", "2", "3", "4", "5"]);
         let selection: A1Selection = A1Selection::test_a1("2");
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+        let clipboard =
+            sheet.copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true);
         let selection = A1Selection::test_a1("5");
         let insert_at = selection.cursor;
         let operations = gc
-            .paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
+            .paste_html_operations(
+                insert_at,
+                insert_at,
+                &selection,
+                clipboard,
+                PasteSpecial::None,
+            )
             .unwrap()
             .0;
         gc.start_user_transaction(operations, None, TransactionName::PasteClipboard);
@@ -977,9 +1155,8 @@ mod test {
         gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);
         let selection = A1Selection::all(sheet_id);
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+        let clipboard =
+            sheet.copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true);
         gc.add_sheet(None);
 
         let sheet_id = gc.sheet_ids()[1];
@@ -989,7 +1166,7 @@ mod test {
                 insert_at,
                 insert_at,
                 &A1Selection::all(sheet_id),
-                html,
+                clipboard,
                 PasteSpecial::None,
             )
             .unwrap()
@@ -1016,14 +1193,13 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let selection = A1Selection::test_a1("A:B,3:4,A3");
-        let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+        let js_clipboard = sheet
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(3, 3, sheet_id),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1101,15 +1277,14 @@ mod test {
         );
 
         let selection = A1Selection::test_a1("A1:B5");
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1("E6"),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1173,11 +1348,11 @@ mod test {
         let a3_sel = A1Selection::from_single_cell(pos![sheet1!A3]);
 
         // copy within sheet
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet1)
-            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
-        gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
+            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
+        gc.paste_from_clipboard(&a3_sel, js_clipboard, PasteSpecial::None, None);
         // all references should have updated
         assert_eq!(
             format!("SUM(#REF!, B3:B5, '{s1}'!C3, '{s2}'!C3)"),
@@ -1190,11 +1365,11 @@ mod test {
         );
 
         // cut within sheet
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet1)
-            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Cut, false)
-            .unwrap();
-        gc.paste_from_clipboard(&a3_sel, None, Some(html), PasteSpecial::None, None);
+            .copy_to_clipboard(&a4_sel, gc.a1_context(), ClipboardOperation::Cut, true)
+            .into();
+        gc.paste_from_clipboard(&a3_sel, js_clipboard, PasteSpecial::None, None);
         // all references should have stayed the same
         assert_eq!(
             format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
@@ -1204,14 +1379,13 @@ mod test {
         assert_eq!("1121", get_code_cell_value_str(&gc, pos![sheet1!A3]));
 
         // copy to other sheet
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet1)
-            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
         gc.paste_from_clipboard(
             &A1Selection::from_single_cell(pos![sheet2!A4]),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1224,14 +1398,13 @@ mod test {
         assert_eq!("50", get_code_cell_value_str(&gc, pos![sheet2!A4]));
 
         // cut to other sheet
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet1)
-            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Cut, false)
-            .unwrap();
+            .copy_to_clipboard(&a3_sel, gc.a1_context(), ClipboardOperation::Cut, true)
+            .into();
         gc.paste_from_clipboard(
             &A1Selection::from_single_cell(pos![sheet2!A4]),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1249,24 +1422,24 @@ mod test {
         clear_js_calls();
 
         let (mut gc, sheet_id, _, _) = simple_csv();
-        let paste = |gc: &mut GridController, x, y, html| {
+        let paste = |gc: &mut GridController, x, y, js_clipboard| {
             let selection = A1Selection::from_xy(x, y, sheet_id);
-            gc.paste_from_clipboard(&selection, None, Some(html), PasteSpecial::None, None);
+            gc.paste_from_clipboard(&selection, js_clipboard, PasteSpecial::None, None);
         };
 
         let table_ref = TableRef::new("simple.csv");
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, true)
+            .into();
 
         let expected_row1 = vec!["city", "region", "country", "population"];
 
         // paste side by side
-        paste(&mut gc, 10, 1, html.clone());
+        paste(&mut gc, 10, 1, js_clipboard);
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_row1);
 
@@ -1280,13 +1453,14 @@ mod test {
         let table_ref = TableRef::new("simple.csv");
         let (selection, _) = simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:BV11"));
 
-        let (ops, js_clipboard) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
+        let (clipboard, ops) = gc.cut_to_clipboard_operations(&selection, true).unwrap();
         gc.start_user_transaction(ops, None, TransactionName::CutClipboard);
 
         let expected_row1 = vec!["city", "region", "country", "population"];
 
         // paste side by side
-        paste(&mut gc, sheet_id, 10, 1, js_clipboard.html.clone());
+        let js_clipboard = clipboard.into();
+        paste(&mut gc, sheet_id, 10, 1, js_clipboard);
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_row1);
     }
@@ -1307,16 +1481,16 @@ mod test {
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, true)
+            .into();
 
         let expected_header_row = vec!["city", "", "", ""];
         let expected_first_data = vec!["Southborough", "", "", ""];
 
         // paste side by side
-        paste(&mut gc, sheet_id, 10, 1, html.clone());
+        paste(&mut gc, sheet_id, 10, 1, js_clipboard);
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
@@ -1341,16 +1515,16 @@ mod test {
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, true)
+            .into();
 
         let expected_header_row = vec!["city", "region", "", ""];
         let expected_first_data = vec!["Southborough", "MA", "", ""];
 
         // paste side by side
-        paste(&mut gc, sheet_id, 10, 1, html.clone());
+        paste(&mut gc, sheet_id, 10, 1, js_clipboard);
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
@@ -1375,16 +1549,16 @@ mod test {
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, &context, ClipboardOperation::Copy, true)
+            .into();
 
         let expected_header_row = vec!["country", "population", "", ""];
         let expected_first_data = vec!["United States", "9686", "", ""];
 
         // paste side by side
-        paste(&mut gc, sheet_id, 10, 1, html.clone());
+        paste(&mut gc, sheet_id, 10, 1, js_clipboard);
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(10, 1, 4, 11));
         assert_cell_value_row(&gc, sheet_id, 10, 13, 1, expected_header_row);
         assert_cell_value_row(&gc, sheet_id, 10, 13, 2, expected_first_data);
@@ -1458,15 +1632,14 @@ mod test {
         );
 
         let selection = A1Selection::test_a1("A1:E5");
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1("E6"),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1488,20 +1661,19 @@ mod test {
 
         sheet.test_set_values(10, 0, 2, 2, vec!["1", "2", "3", "4"]);
         let sheet = gc.sheet(sheet_id);
-        let JsClipboard { html, .. } = sheet
+        let js_clipboard: JsClipboard = sheet
             .copy_to_clipboard(
                 &A1Selection::from_rect(rect),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
-                false,
+                true,
             )
-            .unwrap();
+            .into();
 
-        let paste = |gc: &mut GridController, x, y, html| {
+        let paste = |gc: &mut GridController, x, y, js_clipboard| {
             gc.paste_from_clipboard(
                 &A1Selection::from_xy(x, y, sheet_id),
-                None,
-                Some(html),
+                js_clipboard,
                 PasteSpecial::None,
                 None,
             );
@@ -1511,28 +1683,28 @@ mod test {
         let expected_row2 = vec!["3", "4"];
 
         // paste overlap inner
-        paste(&mut gc, 4, 2, html.clone());
+        paste(&mut gc, 4, 2, js_clipboard.clone());
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
         assert_cell_value_row(&gc, sheet_id, 4, 5, 2, expected_row1.clone());
         assert_cell_value_row(&gc, sheet_id, 4, 5, 3, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with right grid
-        paste(&mut gc, 5, 2, html.clone());
+        paste(&mut gc, 5, 2, js_clipboard.clone());
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
         assert_cell_value_row(&gc, sheet_id, 5, 6, 2, expected_row1.clone());
         assert_cell_value_row(&gc, sheet_id, 5, 6, 3, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with bottom grid
-        paste(&mut gc, 4, 10, html.clone());
+        paste(&mut gc, 4, 10, js_clipboard.clone());
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
         assert_cell_value_row(&gc, sheet_id, 4, 5, 10, expected_row1.clone());
         assert_cell_value_row(&gc, sheet_id, 4, 5, 11, expected_row2.clone());
         gc.undo(None);
 
         // paste overlap with bottom left grid
-        paste(&mut gc, 1, 10, html.clone());
+        paste(&mut gc, 1, 10, js_clipboard.clone());
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 12));
         // print_table(&gc, sheet_id, Rect::from_numbers(1, 10, 2, 2));
         assert_cell_value_row(&gc, sheet_id, 1, 2, 10, expected_row1.clone());
@@ -1540,7 +1712,7 @@ mod test {
         gc.undo(None);
 
         // paste overlap with top left grid
-        paste(&mut gc, 3, 0, html.clone());
+        paste(&mut gc, 3, 0, js_clipboard);
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
         // print_table(&gc, sheet_id, Rect::from_numbers(2, 0, 4, 4));
         // assert_cell_value_row(&gc, sheet_id, 1, 2, 10, expected_row1.clone());
@@ -1562,15 +1734,14 @@ mod test {
         );
 
         let selection = A1Selection::test_a1("A1:E5");
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1("E6"),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1600,20 +1771,24 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let rect = SheetRect::single_pos(pos![J1], sheet_id);
-        let JsClipboard { html, .. } = sheet
-            .copy_to_clipboard(
-                &A1Selection::from_rect(rect),
-                gc.a1_context(),
-                ClipboardOperation::Copy,
-                false,
-            )
-            .unwrap();
+        let clipboard = sheet.copy_to_clipboard(
+            &A1Selection::from_rect(rect),
+            gc.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
         let selection = A1Selection::test_a1_sheet_id("B2", sheet_id);
         let insert_at = selection.cursor;
 
         assert!(
-            gc.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
-                .is_err()
+            gc.paste_html_operations(
+                insert_at,
+                insert_at,
+                &selection,
+                clipboard,
+                PasteSpecial::None
+            )
+            .is_err()
         );
 
         expect_js_call(
@@ -1662,20 +1837,19 @@ mod test {
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
                 &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
-                false,
+                true,
             )
-            .unwrap();
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1_sheet_id("E13", sheet_id),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1801,7 +1975,7 @@ mod test {
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
 
-        let JsClipboard { plain_text, .. } = gc
+        let mut js_clipboard: JsClipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
                 &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
@@ -1809,12 +1983,12 @@ mod test {
                 ClipboardOperation::Copy,
                 true,
             )
-            .unwrap();
+            .into();
+        js_clipboard.html = "".to_string();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1_sheet_id("E13", sheet_id),
-            Some(plain_text),
-            None,
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -1889,17 +2063,11 @@ mod test {
         let mut selection = A1Selection::table(pos![sheet_id!A1], dt.name());
         selection.cursor = pos![A1];
         let sheet = gc.sheet(sheet_id);
-        let clipboard = sheet
+        let js_clipboard = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
-            .unwrap();
+            .into();
 
-        gc.paste_from_clipboard(
-            &selection,
-            None,
-            Some(clipboard.html),
-            PasteSpecial::None,
-            None,
-        );
+        gc.paste_from_clipboard(&selection, js_clipboard, PasteSpecial::None, None);
 
         // ensures we're pasting over the chart (there was a bug where it would
         // paste under the chart and cause a spill)
@@ -1918,24 +2086,24 @@ mod test {
         assert_eq!(data_table.height(false), 5);
 
         let rect = SheetRect::single_pos(pos![A3], sheet_id);
-        let JsClipboard { html, .. } = gc
+        let js_clipboard: JsClipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
                 &A1Selection::from_rect(rect),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
-                false,
+                true,
             )
-            .unwrap();
+            .into();
 
         // paste cell to the right of the data table
-        paste(&mut gc, sheet_id, 4, 3, html.clone());
+        paste(&mut gc, sheet_id, 4, 3, js_clipboard.clone());
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // paste cell to the bottom of the data table
-        paste(&mut gc, sheet_id, 1, 6, html.clone());
+        paste(&mut gc, sheet_id, 1, 6, js_clipboard);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
@@ -1966,7 +2134,7 @@ mod test {
         assert_cell_value_row(&gc, sheet_id, 2, 4, 1, vec!["1", "2", "3"]);
         assert_cell_format_bold_row(&gc, sheet_id, 2, 4, 1, vec![true, false, false]);
 
-        let clipboard = gc
+        let js_clipboard: JsClipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
                 &A1Selection::from_rect(rect![B1:D1].to_sheet_rect(sheet_id)),
@@ -1974,13 +2142,12 @@ mod test {
                 ClipboardOperation::Copy,
                 true,
             )
-            .unwrap();
+            .into();
 
         // paste values only
         gc.paste_from_clipboard(
             &A1Selection::from_single_cell(pos![sheet_id!B2]),
-            Some(clipboard.plain_text.clone()),
-            Some(clipboard.html.clone()),
+            js_clipboard.clone(),
             PasteSpecial::Values,
             None,
         );
@@ -1992,8 +2159,7 @@ mod test {
         // paste formats only, offset by 1 column to check for values getting overwritten
         gc.paste_from_clipboard(
             &A1Selection::from_single_cell(pos![sheet_id!C2]),
-            Some(clipboard.plain_text),
-            Some(clipboard.html),
+            js_clipboard,
             PasteSpecial::Formats,
             None,
         );

@@ -32,19 +32,20 @@ impl GridController {
         let mut data_table_ops = vec![];
 
         // move the cell values rect left and up by 1 to make adjacent tables intersect
-        let cell_value_rect = Rect::from_numbers(
+        let moved_left_up_rect = Rect::from_numbers(
             sheet_pos.x - 1,
             sheet_pos.y - 1,
             values[0].len() as i64 + 1,
             values.len() as i64 + 1,
         );
-        let existing_data_tables = self
-            .a1_context_sheet_table_bounds(sheet_pos.sheet_id)
-            .into_iter()
-            .filter(|rect| rect.intersects(cell_value_rect))
-            .collect::<Vec<_>>();
-
-        let mut growing_data_tables = existing_data_tables.clone();
+        let mut data_tables_rects = vec![];
+        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+            data_tables_rects = sheet
+                .data_tables_rects_intersect_rect(moved_left_up_rect, |data_table| {
+                    !data_table.is_code()
+                })
+                .collect();
+        }
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
@@ -75,10 +76,7 @@ impl GridController {
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
-                    let data_table_pos = existing_data_tables
-                        .iter()
-                        .find(|rect| rect.contains(pos))
-                        .map(|rect| rect.min);
+                    let data_table_pos = sheet.data_table_pos_that_contains(pos);
 
                     // (x,y) is within a data table
                     if let Some(data_table_pos) = data_table_pos {
@@ -111,7 +109,7 @@ impl GridController {
                         // cell value is touching the right or bottom edge
                         GridController::grow_data_table(
                             sheet,
-                            &mut growing_data_tables,
+                            &mut data_tables_rects,
                             &mut data_table_columns,
                             &mut data_table_rows,
                             current_sheet_pos,
@@ -190,7 +188,8 @@ impl GridController {
                 let mut delete_data_tables = vec![];
                 let mut data_tables_automatically_deleted = vec![];
 
-                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect(rect) {
+                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect_sorted(rect)
+                {
                     let data_table_full_rect =
                         data_table.output_rect(data_table_pos.to_owned(), false);
                     let mut data_table_rect = data_table_full_rect;
@@ -362,8 +361,8 @@ impl GridController {
         selection: &A1Selection,
         force_table_bounds: bool,
     ) -> Vec<Operation> {
-        let mut ops = self.clear_format_borders_operations(selection);
-        ops.extend(self.delete_cells_operations(selection, force_table_bounds));
+        let mut ops = self.delete_cells_operations(selection, force_table_bounds);
+        ops.extend(self.clear_format_borders_operations(selection));
         ops
     }
 

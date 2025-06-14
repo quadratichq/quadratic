@@ -309,7 +309,7 @@ impl GridController {
         };
 
         // ensure the code_cell still exists
-        let Some(code_cell) = sheet.cell_value(pos) else {
+        let Some(code_cell) = sheet.cell_value_ref(pos) else {
             // cell may have been deleted before the async operation completed
             return Ok(());
         };

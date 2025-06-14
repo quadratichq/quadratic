@@ -345,7 +345,7 @@ class CoreClient {
         return;
 
       case 'clientCorePasteFromClipboard':
-        await core.pasteFromClipboard(e.data);
+        core.pasteFromClipboard(e.data);
         return;
 
       case 'clientCoreSetBorders':

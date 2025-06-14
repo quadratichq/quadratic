@@ -7,9 +7,6 @@ use super::SheetFormatting;
 
 use anyhow::Result;
 
-// todo: this is wrong. it does not properly handle infinite selections (it cuts
-// them off at the bounds of the sheet)
-
 impl SheetFormatting {
     /// Returns a format update that applies the formatting from the cells in
     /// the selection.
@@ -24,7 +21,7 @@ impl SheetFormatting {
             SheetFormatUpdates::from_sheet_formatting_selection(selection, self);
 
         // get the largest rect that is finite of the selection
-        let rect = selection.largest_rect_finite(a1_context);
+        let rect = selection.largest_rect_unbounded(a1_context);
 
         // get the formats from the data table and merge them with the sheet formats
         for data_table_pos in sheet.data_tables_pos_intersect_rect(rect) {

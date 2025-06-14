@@ -30,28 +30,34 @@ impl GridController {
                 A1Selection::from_rect(source)
             };
 
-            let mut ops = vec![];
-
-            if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection, false)
-            {
-                ops.extend(cut_ops);
-
+            if cfg!(target_family = "wasm") {
+                crate::wasm_bindings::js::time("cut_to_clipboard_operations");
+            }
+            if let Ok((clipboard, mut ops)) = self.cut_to_clipboard_operations(&selection, false) {
+                if cfg!(target_family = "wasm") {
+                    crate::wasm_bindings::js::timeEnd("cut_to_clipboard_operations");
+                }
+                if cfg!(target_family = "wasm") {
+                    crate::wasm_bindings::js::time("paste_html_operations");
+                }
                 match self.paste_html_operations(
                     dest.into(),
                     dest.into(),
                     &A1Selection::from_single_cell(dest),
-                    js_clipboard.html,
+                    clipboard,
                     PasteSpecial::None,
                 ) {
                     Ok((paste_ops, data_table_ops)) => {
+                        if cfg!(target_family = "wasm") {
+                            crate::wasm_bindings::js::timeEnd("paste_html_operations");
+                        }
                         ops.extend(paste_ops);
                         ops.extend(data_table_ops);
                     }
                     Err(_) => return,
                 }
+                transaction.operations.extend(ops);
             }
-
-            transaction.operations.extend(ops);
         }
     }
 }
