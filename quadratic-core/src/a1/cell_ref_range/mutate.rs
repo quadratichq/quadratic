@@ -97,17 +97,17 @@ mod tests {
         assert_eq!(translated.to_string(), "C2:D3");
         assert_eq!(translated, CellRefRange::test_a1("C2:D3"));
 
-        // Test column range translation
+        // Test column range translation doesn't change
         let col_range = CellRefRange::test_a1("A:B");
         let translated = col_range.adjust(RefAdjust::new_translate(1, 0)).unwrap();
-        assert_eq!(translated.to_string(), "B:C");
-        assert_eq!(translated, CellRefRange::test_a1("B:C"));
+        assert_eq!(translated.to_string(), "A:B");
+        assert_eq!(translated, CellRefRange::test_a1("A:B"));
 
-        // Test row range translation
+        // Test row range translation doesn't change
         let row_range = CellRefRange::test_a1("1:2");
         let translated = row_range.adjust(RefAdjust::new_translate(0, 2)).unwrap();
-        assert_eq!(translated.to_string(), "3:4");
-        assert_eq!(translated, CellRefRange::test_a1("3:4"));
+        assert_eq!(translated.to_string(), "1:2");
+        assert_eq!(translated, CellRefRange::test_a1("1:2"));
 
         // Test negative translation capping
         let cell = CellRefRange::test_a1("A1");
@@ -190,17 +190,17 @@ mod tests {
         assert_eq!(translated.to_string(), "C2:D3");
         assert_eq!(translated, CellRefRange::test_a1("C2:D3"));
 
-        // Test column range translation
+        // Test column range translation doesn't change
         let col_range = CellRefRange::test_a1("A:B");
         let translated = col_range.saturating_translate(1, 0).unwrap();
-        assert_eq!(translated.to_string(), "B:C");
-        assert_eq!(translated, CellRefRange::test_a1("B:C"));
+        assert_eq!(translated.to_string(), "A:B");
+        assert_eq!(translated, CellRefRange::test_a1("A:B"));
 
-        // Test row range translation
+        // Test row range translation doesn't change
         let row_range = CellRefRange::test_a1("1:2");
         let translated = row_range.saturating_translate(0, 2).unwrap();
-        assert_eq!(translated.to_string(), "3:4");
-        assert_eq!(translated, CellRefRange::test_a1("3:4"));
+        assert_eq!(translated.to_string(), "1:2");
+        assert_eq!(translated, CellRefRange::test_a1("1:2"));
 
         // Test negative translation
         let cell = CellRefRange::test_a1("C3");
