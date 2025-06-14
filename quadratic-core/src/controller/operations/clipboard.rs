@@ -141,7 +141,7 @@ impl Clipboard {
         // decompress and deserialize
         decompress_and_deserialize::<Clipboard>(
             &SerializationFormat::Json,
-            &CompressionFormat::Zlib,
+            &CompressionFormat::Zstd,
             &bytes,
         )
         .map_err(|e| error(e.to_string(), "Decompression/deserialization error"))
@@ -163,7 +163,7 @@ impl From<Clipboard> for JsClipboard {
         // compress and serialize
         let data = serialize_and_compress(
             &SerializationFormat::Json,
-            &CompressionFormat::Zlib,
+            &CompressionFormat::Zstd,
             clipboard,
         )
         .unwrap_or_default();

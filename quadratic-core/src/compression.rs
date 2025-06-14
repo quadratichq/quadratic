@@ -22,6 +22,7 @@ const BINCODE_CONFIG: bincode::config::Configuration<
 pub enum CompressionFormat {
     None,
     Zlib,
+    Zstd,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -106,6 +107,7 @@ pub fn compress(compression_format: &CompressionFormat, data: Vec<u8>) -> Result
     match compression_format {
         CompressionFormat::None => Ok(data),
         CompressionFormat::Zlib => compress_zlib(data),
+        CompressionFormat::Zstd => compress_zstd(data),
     }
 }
 
@@ -119,10 +121,15 @@ pub fn compress_zlib(data: Vec<u8>) -> Result<Vec<u8>> {
     Ok(encoder.finish()?)
 }
 
+pub fn compress_zstd(data: Vec<u8>) -> Result<Vec<u8>> {
+    zstd::encode_all(&data[..], 0).map_err(|e| anyhow!(e))
+}
+
 pub fn decompress(compression_format: &CompressionFormat, data: &[u8]) -> Result<Vec<u8>> {
     match compression_format {
         CompressionFormat::None => Ok(data.to_vec()),
         CompressionFormat::Zlib => decompress_zlib(data),
+        CompressionFormat::Zstd => decompress_zstd(data),
     }
 }
 
@@ -135,6 +142,10 @@ pub fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>> {
     }
 
     Ok(decoder.finish()?)
+}
+
+pub fn decompress_zstd(data: &[u8]) -> Result<Vec<u8>> {
+    zstd::decode_all(data).map_err(|e| anyhow!(e))
 }
 
 // HEADER
