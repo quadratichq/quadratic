@@ -400,10 +400,6 @@ export class PixiApp {
     }
   }
 
-  isCursorOnCodeCell(): boolean {
-    return this.cellsSheets.isCursorOnCodeCell();
-  }
-
   isCursorOnCodeCellOutput(): boolean {
     return this.cellsSheets.isCursorOnCodeCellOutput();
   }

@@ -1,3 +1,5 @@
+use crate::a1::A1Selection;
+
 use super::*;
 
 #[wasm_bindgen]
@@ -108,12 +110,12 @@ impl GridController {
     pub fn js_rerun_code_cell(
         &mut self,
         sheet_id: String,
-        pos: String,
+        selection: String,
         cursor: Option<String>,
     ) -> Option<String> {
-        if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
-            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-                return Some(self.rerun_code_cell(pos.to_sheet_pos(sheet_id), cursor));
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
+            if let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context()) {
+                return Some(self.rerun_code_cell(selection, cursor));
             }
         }
         None

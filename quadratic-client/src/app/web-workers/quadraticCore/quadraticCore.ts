@@ -816,12 +816,11 @@ class QuadraticCore {
     });
   }
 
-  rerunCodeCells(sheetId: string | undefined, x: number | undefined, y: number | undefined, cursor: string) {
+  rerunCodeCells(sheetId: string | undefined, selection: string | undefined, cursor: string) {
     this.send({
       type: 'clientCoreRerunCodeCells',
       sheetId,
-      x,
-      y,
+      selection,
       cursor,
     });
   }

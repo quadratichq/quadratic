@@ -378,7 +378,7 @@ mod tests {
         let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
         let context = gc.a1_context().clone();
 
-        let new_pos = jump_left(current, &content_cache, &sheet_data_tables_cache, &context);
+        let new_pos = jump_left(current, &content_cache, sheet_data_tables_cache, &context);
         assert_eq!(new_pos, expected);
     }
 
@@ -389,7 +389,7 @@ mod tests {
         let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
         let context = gc.a1_context().clone();
 
-        let new_pos = jump_right(current, &content_cache, &sheet_data_tables_cache, &context);
+        let new_pos = jump_right(current, &content_cache, sheet_data_tables_cache, &context);
         assert_eq!(new_pos, expected);
     }
 
@@ -400,7 +400,7 @@ mod tests {
         let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
         let context = gc.a1_context().clone();
 
-        let new_pos = jump_up(current, &content_cache, &sheet_data_tables_cache, &context);
+        let new_pos = jump_up(current, &content_cache, sheet_data_tables_cache, &context);
         assert_eq!(new_pos, expected);
     }
 
@@ -411,7 +411,7 @@ mod tests {
         let sheet_data_tables_cache = gc.sheet(sheet_id).data_tables.cache_ref();
         let context = gc.a1_context().clone();
 
-        let new_pos = jump_down(current, &content_cache, &sheet_data_tables_cache, &context);
+        let new_pos = jump_down(current, &content_cache, sheet_data_tables_cache, &context);
         assert_eq!(new_pos, expected);
     }
 
@@ -755,7 +755,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let content_cache = sheet.content_cache();
         let table_cache = sheet.data_tables.cache_ref();
-        assert_eq!(row_bounds(3, &content_cache, &table_cache), Some((1, 5)));
+        assert_eq!(row_bounds(3, &content_cache, table_cache), Some((1, 5)));
 
         assert_jump_left(&gc, pos![sheet_id!F3], pos![E3]);
         assert_jump_left(&gc, pos![sheet_id!E3], pos![C3]);

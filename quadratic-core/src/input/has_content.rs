@@ -182,24 +182,24 @@ mod tests {
         assert!(has_content_ignore_blank_table(
             pos![1, 1],
             &sheet.content_cache(),
-            &sheet.data_tables.cache_ref()
+            sheet.data_tables.cache_ref()
         ));
         assert!(!has_content_ignore_blank_table(
             pos![2, 1],
             &sheet.content_cache(),
-            &sheet.data_tables.cache_ref()
+            sheet.data_tables.cache_ref()
         ));
 
         // table content
         assert!(has_content_ignore_blank_table(
             pos![2, 4],
             &sheet.content_cache(),
-            &sheet.data_tables.cache_ref()
+            sheet.data_tables.cache_ref()
         ));
         assert!(!has_content_ignore_blank_table(
             pos![3, 4],
             &sheet.content_cache(),
-            &sheet.data_tables.cache_ref()
+            sheet.data_tables.cache_ref()
         ));
     }
 
@@ -221,24 +221,24 @@ mod tests {
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();
 
         assert_eq!(
-            column_bounds(1, &sheet.content_cache(), &sheet_data_tables_cache),
+            column_bounds(1, &sheet.content_cache(), sheet_data_tables_cache),
             Some((1, 4))
         );
         assert_eq!(
-            column_bounds(4, &sheet.content_cache(), &sheet_data_tables_cache),
+            column_bounds(4, &sheet.content_cache(), sheet_data_tables_cache),
             Some((1, 1))
         );
         assert_eq!(
-            column_bounds(6, &sheet.content_cache(), &sheet_data_tables_cache),
+            column_bounds(6, &sheet.content_cache(), sheet_data_tables_cache),
             Some((1, 1))
         );
 
         assert_eq!(
-            row_bounds(1, &sheet.content_cache(), &sheet_data_tables_cache),
+            row_bounds(1, &sheet.content_cache(), sheet_data_tables_cache),
             Some((1, 6))
         );
         assert_eq!(
-            row_bounds(2, &sheet.content_cache(), &sheet_data_tables_cache),
+            row_bounds(2, &sheet.content_cache(), sheet_data_tables_cache),
             Some((1, 2))
         );
     }
