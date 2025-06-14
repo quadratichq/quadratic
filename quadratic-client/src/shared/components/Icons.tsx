@@ -20,11 +20,12 @@ if (document.fonts) {
 }
 
 const sizes = {
-  sm: '20',
+  xs: '16',
+  sm: '20', // Default
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
   lg: '40',
-  // xl: '48',
+  xl: '48',
   '2xl': '64',
 } as const;
 
