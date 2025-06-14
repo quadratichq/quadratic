@@ -1,4 +1,4 @@
-use crate::a1::{A1Context, RefRangeBounds, TableRef};
+use crate::a1::{A1Context, RefRangeBounds, TableRef, a1_selection::expand::expand_named_ranges};
 
 use super::*;
 
@@ -8,11 +8,12 @@ impl A1Selection {
         if self.sheet_id != other.sheet_id {
             return None;
         }
+        let other_expanded_ranges = expand_named_ranges(&other.ranges, a1_context);
         let mut ranges = vec![];
-        self.ranges.iter().for_each(|range| match range {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        expanded_ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
-                other
-                    .ranges
+                other_expanded_ranges
                     .iter()
                     .for_each(|other_range| match other_range {
                         CellRefRange::Sheet { range: other_range } => {
@@ -34,14 +35,15 @@ impl A1Selection {
                                 }
                             }
                         }
+                        // expanded above
+                        CellRefRange::Named { .. } => (),
                     });
             }
             CellRefRange::Table { range } => {
                 if let Some(range) =
                     range.convert_to_ref_range_bounds(false, a1_context, false, false)
                 {
-                    other
-                        .ranges
+                    other_expanded_ranges
                         .iter()
                         .for_each(|other_range| match other_range {
                             CellRefRange::Sheet { range: other_range } => {
@@ -51,11 +53,17 @@ impl A1Selection {
                                     });
                                 }
                             }
+
                             // two tables cannot overlap
                             CellRefRange::Table { .. } => (),
+
+                            // expanded above
+                            CellRefRange::Named { .. } => (),
                         });
                 }
             }
+            // expanded above
+            CellRefRange::Named { .. } => (),
         });
         if ranges.is_empty() {
             None
@@ -108,8 +116,9 @@ impl A1Selection {
         if self.sheet_id != other.sheet_id {
             return false;
         }
-
-        self.ranges.iter().any(|range| match range {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        let other_expanded_ranges = expand_named_ranges(&other.ranges, a1_context);
+        expanded_ranges.iter().any(|range| match range {
             CellRefRange::Sheet { range } => {
                 other.ranges.iter().any(|other_range| match other_range {
                     CellRefRange::Sheet { range: other_range } => {
@@ -122,6 +131,8 @@ impl A1Selection {
                             a1_context,
                         )
                     }
+                    // expanded above
+                    CellRefRange::Named { .. } => false,
                 })
             }
             CellRefRange::Table { range } => {
@@ -142,8 +153,12 @@ impl A1Selection {
                             false
                         }
                     }
+                    // expanded above
+                    CellRefRange::Named { .. } => false,
                 })
             }
+            // expanded above
+            CellRefRange::Named { .. } => false,
         })
     }
 }

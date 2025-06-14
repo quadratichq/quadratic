@@ -23,6 +23,7 @@ mod to_table_ref;
 pub enum CellRefRange {
     Sheet { range: RefRangeBounds },
     Table { range: TableRef },
+    Named { range: String },
 }
 
 impl CellRefRange {
@@ -51,6 +52,7 @@ impl CellRefRange {
         match self {
             CellRefRange::Sheet { range } => range.to_string(),
             CellRefRange::Table { range } => range.to_string(),
+            CellRefRange::Named { range } => range.clone(),
         }
     }
 
@@ -59,6 +61,7 @@ impl CellRefRange {
         match self {
             CellRefRange::Sheet { range } => range.to_rc_string(base_pos),
             CellRefRange::Table { range } => range.to_string(),
+            CellRefRange::Named { range } => range.clone(),
         }
     }
 

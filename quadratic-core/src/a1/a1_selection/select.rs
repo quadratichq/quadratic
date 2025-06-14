@@ -445,6 +445,9 @@ impl A1Selection {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
                     }
                 }
+                CellRefRange::Named { range } => {
+                    let selection =
+                }
             };
         }
     }

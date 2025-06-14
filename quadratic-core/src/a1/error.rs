@@ -21,6 +21,7 @@ pub enum A1Error {
     InvalidExclusion(String),
     TranslateInvalid(String),
     SheetNotFound,
+    CircularNamedRange,
 
     InvalidTableRef(String),
     TableNotFound(String),
@@ -74,6 +75,8 @@ impl std::fmt::Display for A1Error {
             A1Error::InvalidRowRange(msg) => write!(f, "Invalid row range: {msg}"),
 
             A1Error::OutOfBounds(RefError) => write!(f, "Out Of Bounds"),
+
+            A1Error::CircularNamedRange => write!(f, "Named range cannot contain a named range"),
         }
     }
 }

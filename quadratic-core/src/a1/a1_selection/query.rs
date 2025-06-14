@@ -2,13 +2,21 @@ use std::{cmp::Ordering, collections::HashSet};
 
 use crate::{
     Pos, Rect, SheetPos,
-    a1::{A1Context, ColRange, RefRangeBounds, UNBOUNDED},
+    a1::{
+        A1Context, ColRange, RefRangeBounds, UNBOUNDED, a1_selection::expand::expand_named_ranges,
+    },
     grid::{Sheet, SheetId, sheet::data_tables::cache::SheetDataTablesCache},
 };
 
 use super::{A1Selection, CellRefRange};
 
 impl A1Selection {
+    /// Returns whether the selection contains a named range
+    pub fn contains_named_range(&self) -> bool {
+        self.ranges
+            .iter()
+            .any(|range| matches!(range, CellRefRange::Named { .. }))
+    }
     // Returns whether the selection is one cell or multiple cells (either a
     // rect, column, row, or all)
     pub fn is_multi_cursor(&self, a1_context: &A1Context) -> bool {
@@ -19,6 +27,12 @@ impl A1Selection {
             match last_range {
                 CellRefRange::Sheet { range } => range.is_multi_cursor(),
                 CellRefRange::Table { range } => range.is_multi_cursor(a1_context),
+                CellRefRange::Named { range } => {
+                    if let Some(range) = a1_context.try_named(range) {
+                    } else {
+                        false
+                    }
+                }
             }
         } else {
             false
@@ -71,6 +85,7 @@ impl A1Selection {
     /// ignoring any ranges that extend infinitely.
     pub fn largest_rect_finite(&self, a1_context: &A1Context) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
+        let expanded_ranges = expand_named_ranges(self.ranges, context);
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 if !range.end.is_unbounded() {
@@ -87,6 +102,8 @@ impl A1Selection {
                     rect = rect.union(&table_rect);
                 }
             }
+            // should not happen b/c of expand above
+            CellRefRange::Named { .. } => (),
         });
         rect
     }

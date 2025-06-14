@@ -159,6 +159,7 @@ impl A1Selection {
         for range in self.ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => sheet_ranges.push(*range),
+                CellRefRange::Named { range } => todo!(),
                 CellRefRange::Table { range } => table_ranges.push(range.clone()),
             }
         }

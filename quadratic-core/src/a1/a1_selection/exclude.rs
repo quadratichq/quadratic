@@ -6,6 +6,7 @@
 //! excluded rect. The one range may turn into between 0 and 4 ranges: the
 //! remaining Top, Bottom, Left, and Right rects (calculated in that order).
 
+use crate::a1::a1_selection::expand::expand_named_ranges;
 use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, RefRangeBounds};
 use crate::{Pos, Rect};
 
@@ -113,6 +114,8 @@ impl A1Selection {
                     ranges.extend(A1Selection::find_excluded_rects(table_range, exclude_rect));
                 }
             }
+            // needs to be handled in the parent fn (since it expands to multiple CellRefRanges)
+            CellRefRange::Named { .. } => (),
         }
         ranges
     }
@@ -136,7 +139,8 @@ impl A1Selection {
         };
 
         let mut ranges = Vec::new();
-        for range in self.ranges.drain(..) {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        for range in expanded_ranges {
             // skip range if it's the entire range or the reverse of the entire range
             if !range.is_pos_range(p1, p2, a1_context)
                 && (p2.is_none()
@@ -179,7 +183,7 @@ impl A1Selection {
                     }
                     None
                 }
-                CellRefRange::Table { .. } => None,
+                CellRefRange::Table { .. } | CellRefRange::Named { .. } => None,
             }) {
                 self.cursor = cursor;
             } else {
