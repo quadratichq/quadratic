@@ -58,19 +58,19 @@ impl Sheet {
         self.data_tables.iter_pos_in_rect(rect, false)
     }
 
-    /// Returns anchor positions of data tables that intersect a rect sorted by index
+    /// Returns anchor positions of data tables that intersect a rect, sorted by index
     pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
         self.data_tables
             .get_in_rect_sorted(rect, false)
             .map(|(_, pos, _)| pos)
     }
 
-    /// Returns data tables that intersect a rect
-    pub fn data_tables_intersect_rect(
+    /// Returns data tables that intersect a rect, sorted by index
+    pub fn data_tables_intersect_rect_sorted(
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
-        self.data_tables.get_in_rect(rect, false)
+        self.data_tables.get_in_rect_sorted(rect, false)
     }
 
     /// Returns true if there is a data table intersecting a rect, excluding a specific position
@@ -243,7 +243,7 @@ impl Sheet {
         &self,
         rect: &Rect,
         cells: &mut CellValues,
-        values: &mut CellValues,
+        values: &mut Option<CellValues>,
         a1_context: &A1Context,
         selection: &A1Selection,
         include_code_table_values: bool,
@@ -276,6 +276,10 @@ impl Sheet {
                     return;
                 }
 
+                if !include_in_cells && values.is_none() {
+                    return;
+                }
+
                 let x_start = std::cmp::max(output_rect.min.x, rect.min.x);
                 let y_start = std::cmp::max(output_rect.min.y, rect.min.y);
                 let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
@@ -284,7 +288,7 @@ impl Sheet {
                 // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
-                        if let Some(value) = data_table.cell_value_at(
+                        if let Some(value) = data_table.cell_value_ref_at(
                             (x - data_table_pos.x) as u32,
                             (y - data_table_pos.y) as u32,
                         ) {
@@ -298,7 +302,9 @@ impl Sheet {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
 
-                                values.set(pos.x as u32, pos.y as u32, value);
+                                if let Some(values) = values.as_mut() {
+                                    values.set(pos.x as u32, pos.y as u32, value.clone());
+                                }
                             }
                         }
                     }
@@ -619,7 +625,7 @@ mod test {
 
         let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
 
         gc.paste_from_clipboard(

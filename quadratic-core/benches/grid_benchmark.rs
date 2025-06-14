@@ -76,6 +76,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     &A1Selection::from_rect(sheet_rect),
                     gc.a1_context(),
                     ClipboardOperation::Copy,
+                    true,
                 )
                 .into();
 
@@ -105,6 +106,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     &A1Selection::from_rect(sheet_rect),
                     gc.a1_context(),
                     ClipboardOperation::Copy,
+                    true,
                 )
                 .into();
 

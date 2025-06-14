@@ -30,7 +30,7 @@ impl GridController {
                 A1Selection::from_rect(source)
             };
 
-            if let Ok((clipboard, mut ops)) = self.cut_to_clipboard_operations(&selection) {
+            if let Ok((clipboard, mut ops)) = self.cut_to_clipboard_operations(&selection, false) {
                 match self.paste_html_operations(
                     dest.into(),
                     dest.into(),

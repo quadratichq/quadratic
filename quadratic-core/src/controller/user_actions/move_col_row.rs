@@ -25,7 +25,7 @@ impl GridController {
         // copy all data in the columns range
         let selection = A1Selection::cols(sheet_id, col_start, col_end);
         let clipboard =
-            sheet.copy_to_clipboard(&selection, &self.a1_context, ClipboardOperation::Cut);
+            sheet.copy_to_clipboard(&selection, &self.a1_context, ClipboardOperation::Cut, false);
 
         // delete existing columns
         let min_column = col_start.min(col_end);
@@ -96,7 +96,7 @@ impl GridController {
         // copy all data in the rows range
         let selection = A1Selection::rows(sheet_id, row_start, row_end);
         let clipboard =
-            sheet.copy_to_clipboard(&selection, &self.a1_context, ClipboardOperation::Cut);
+            sheet.copy_to_clipboard(&selection, &self.a1_context, ClipboardOperation::Cut, false);
 
         // delete existing rows
         let min_row = row_start.min(row_end);

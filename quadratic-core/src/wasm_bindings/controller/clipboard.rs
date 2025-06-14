@@ -20,8 +20,12 @@ impl GridController {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let sheet = self.try_sheet(selection.sheet_id).ok_or("No Sheet found")?;
-        let clipboard =
-            sheet.copy_to_clipboard(&selection, self.a1_context(), ClipboardOperation::Copy);
+        let clipboard = sheet.copy_to_clipboard(
+            &selection,
+            self.a1_context(),
+            ClipboardOperation::Copy,
+            true,
+        );
         let js_clipboard: JsClipboard = clipboard.into();
         Ok(serde_json::to_vec(&js_clipboard).map_err(|e| e.to_string())?)
     }
@@ -35,7 +39,7 @@ impl GridController {
     ) -> Result<Vec<u8>, JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        let js_clipboard = self.cut_to_clipboard(&selection, cursor)?;
+        let js_clipboard = self.cut_to_clipboard(&selection, true, cursor)?;
         Ok(serde_json::to_vec(&js_clipboard).map_err(|e| e.to_string())?)
     }
 

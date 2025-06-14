@@ -146,7 +146,7 @@ impl Sheet {
     }
 
     pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
-        self.data_tables_intersect_rect(rect)
+        self.data_tables_intersect_rect_sorted(rect)
             .map(|(_, pos, data_table)| {
                 let output_rect = data_table.output_rect(pos, false);
                 (output_rect, data_table)
@@ -157,7 +157,7 @@ impl Sheet {
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
-        self.data_tables_intersect_rect(rect)
+        self.data_tables_intersect_rect_sorted(rect)
             .filter_map(move |(_, pos, data_table)| {
                 let output_rect = data_table.output_rect(pos, false);
                 output_rect

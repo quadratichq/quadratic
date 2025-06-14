@@ -15,12 +15,22 @@ impl Sheet {
         selection: &A1Selection,
         a1_context: &A1Context,
         clipboard_operation: ClipboardOperation,
+        include_display_values: bool,
     ) -> Clipboard {
         let mut clipboard_origin = ClipboardOrigin::default(selection.sheet_id);
-        let mut cells = CellValues::default();
-        let mut values = CellValues::default();
-        let mut data_tables = IndexMap::new();
         let mut sheet_bounds: Option<Rect> = None;
+
+        // Cell values
+        let mut cells = CellValues::default();
+
+        // Display values
+        let mut values = if include_display_values {
+            Some(CellValues::default())
+        } else {
+            None
+        };
+
+        let mut data_tables = IndexMap::new();
 
         if let Some(bounds) = self.selection_bounds(selection, true, true, false, a1_context) {
             clipboard_origin.x = bounds.min.x;
@@ -43,9 +53,11 @@ impl Sheet {
                         cells.set(new_x, new_y, real_value);
                     }
 
-                    // create quadratic clipboard value-only
-                    if let Some(simple_value) = self.display_value(pos) {
-                        values.set(new_x, new_y, simple_value);
+                    // create quadratic clipboard value-only for PasteSpecial::Values
+                    if let Some(values) = values.as_mut() {
+                        if let Some(simple_value) = self.display_value(pos) {
+                            values.set(new_x, new_y, simple_value);
+                        }
                     }
                 }
             }
@@ -68,7 +80,7 @@ impl Sheet {
             w: sheet_bounds.map_or(0, |b| b.width()),
             h: sheet_bounds.map_or(0, |b| b.height()),
             cells,
-            values,
+            values: values.unwrap_or_default(),
             formats: self.formats.to_clipboard(selection, self, a1_context).ok(),
             borders: self.borders.to_clipboard(selection),
             validations: self
@@ -101,7 +113,7 @@ mod tests {
         let selection = A1Selection::test_a1("A1,C1:C2");
         let sheet = gc.sheet(sheet_id);
         let js_clipboard = sheet
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy)
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
 
         gc.paste_from_clipboard(
@@ -133,6 +145,7 @@ mod tests {
                 &A1Selection::test_a1("A1"),
                 gc.a1_context(),
                 ClipboardOperation::Copy,
+                true,
             )
             .into();
 
@@ -180,6 +193,7 @@ mod tests {
                     &A1Selection::test_a1(pos),
                     &context,
                     ClipboardOperation::Copy,
+                    true,
                 )
                 .into();
 

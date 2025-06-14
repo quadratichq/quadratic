@@ -190,7 +190,8 @@ impl GridController {
                 let mut delete_data_tables = vec![];
                 let mut data_tables_automatically_deleted = vec![];
 
-                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect(rect) {
+                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect_sorted(rect)
+                {
                     let data_table_full_rect =
                         data_table.output_rect(data_table_pos.to_owned(), false);
                     let mut data_table_rect = data_table_full_rect;
