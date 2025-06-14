@@ -86,7 +86,7 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CellValue, Rect, RunError, RunErrorMsg, Span,
+        CellValue, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
         test_util::*,
         wasm_bindings::js::clear_js_calls,
@@ -156,7 +156,7 @@ pub(crate) mod tests {
         assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 1, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 12, last_row);
+        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 11, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
@@ -504,7 +504,7 @@ pub(crate) mod tests {
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 2, y: 2 };
 
         gc.import_csv(
             sheet_id,
@@ -517,11 +517,11 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
+        print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 9, vec!["7", "8", "9"]);
     }
 
     #[test]
