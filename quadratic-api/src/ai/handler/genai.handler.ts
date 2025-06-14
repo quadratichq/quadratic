@@ -30,6 +30,10 @@ export const handleGenAIRequest = async (
       maxOutputTokens: options.max_tokens,
       tools,
       toolConfig: tool_choice,
+      thinkingConfig: {
+        includeThoughts: options.thinking,
+        thinkingBudget: options.thinkingBudget,
+      },
     },
   };
 

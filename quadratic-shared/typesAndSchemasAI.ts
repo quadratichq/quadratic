@@ -81,14 +81,15 @@ const VertexAIAnthropicModelKeySchema = z.enum([
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
 const VertexAIModelKeySchema = z.enum([
-  'vertexai:gemini-2.5-pro-preview-06-05',
+  'vertexai:gemini-2.5-pro-preview-06-05:thinking-toggle-off',
+  'vertexai:gemini-2.5-pro-preview-06-05:thinking-toggle-on',
   'vertexai:gemini-2.5-flash-preview-05-20',
-  'vertexai:gemini-2.0-flash-001',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
 const GeminiAIModelKeySchema = z.enum([
-  'geminiai:gemini-2.5-pro-preview-06-05',
+  'geminiai:gemini-2.5-pro-preview-06-05:thinking-toggle-off',
+  'geminiai:gemini-2.5-pro-preview-06-05:thinking-toggle-on',
   'geminiai:gemini-2.5-flash-preview-05-20',
 ]);
 export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
@@ -169,6 +170,7 @@ export const AIModelConfigSchema = z
     strictParams: z.boolean().optional(),
     thinking: z.boolean().optional(),
     thinkingToggle: z.boolean().optional(),
+    thinkingBudget: z.number().optional(),
   })
   .extend(AIRatesSchema.shape);
 export type AIModelConfig = z.infer<typeof AIModelConfigSchema>;
@@ -341,6 +343,12 @@ const AIResponseContentSchema = z.array(
       })
     )
     .or(GoogleSearchGroundingMetadataSchema)
+    .or(
+      z.object({
+        type: z.literal('google_thinking'),
+        text: z.string(),
+      })
+    )
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
