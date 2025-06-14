@@ -76,29 +76,20 @@ impl GridController {
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
-                    let data_table_pos = sheet.data_table_pos_that_contains(pos);
+                    let data_table_import_pos = sheet.data_table_import_pos_that_contains(pos);
 
-                    // (x,y) is within a data table
-                    if let Some(data_table_pos) = data_table_pos {
-                        let is_source_cell = sheet.is_source_cell(pos);
-                        let is_formula_cell = sheet.is_formula_cell(pos);
-
-                        // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
-                        if is_formula_cell && is_source_cell {
-                            cell_values[x][y] = Some(cell_value);
-                        } else {
-                            data_table_cell_values[x][y] = Some(cell_value);
-
-                            if !format_update.is_default() {
-                                ops.push(Operation::DataTableFormats {
-                                    sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                                    formats: sheet.to_sheet_format_updates(
-                                        sheet_pos,
-                                        data_table_pos,
-                                        format_update.to_owned(),
-                                    )?,
-                                });
-                            }
+                    // (x,y) is within a data table (import / editable)
+                    if let Some(data_table_pos) = data_table_import_pos {
+                        data_table_cell_values[x][y] = Some(cell_value);
+                        if !format_update.is_default() {
+                            ops.push(Operation::DataTableFormats {
+                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                formats: sheet.to_sheet_format_updates(
+                                    sheet_pos,
+                                    data_table_pos,
+                                    format_update.to_owned(),
+                                )?,
+                            });
                         }
                     }
                     // (x,y) is not within a data table

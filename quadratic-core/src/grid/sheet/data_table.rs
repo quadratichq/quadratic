@@ -46,6 +46,21 @@ impl Sheet {
         self.data_tables.get_pos_contains(pos)
     }
 
+    /// Returns the data table (import / editable) pos if the data table is an import
+    pub fn data_table_import_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
+        self.data_tables
+            .get_pos_contains(pos)
+            .and_then(|data_table_pos| {
+                self.data_tables.get_at(&data_table_pos).and_then(|dt| {
+                    if matches!(dt.kind, DataTableKind::Import(_)) {
+                        Some(data_table_pos)
+                    } else {
+                        None
+                    }
+                })
+            })
+    }
+
     /// Returns the data table pos of the data table that contains a position
     pub fn data_table_pos_that_contains_result(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
