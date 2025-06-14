@@ -36,44 +36,39 @@ impl Sheet {
         // add the values and return the old values
         for x in 0..cell_values.w {
             let grid_x = pos.x + x as i64;
-
             for y in 0..cell_values.h {
                 let grid_y = pos.y + y as i64;
-
-                let old_value = self.columns.set_value(
-                    &(grid_x, grid_y).into(),
-                    cell_values
-                        .get(x, y)
-                        .unwrap_or(&CellValue::Blank)
-                        .to_owned(),
-                );
-
-                if let Some(old_value) = old_value {
-                    old.set(x, y, old_value);
-                }
-            }
-        }
-
-        for x in 0..cell_values.w {
-            let grid_x = pos.x + x as i64;
-            for y in 0..cell_values.h {
-                let grid_y = pos.y + y as i64;
-                let pos = Pos {
+                let grid_pos = Pos {
                     x: grid_x,
                     y: grid_y,
                 };
-                let sheet_pos = pos.to_sheet_pos(self.id);
-                if let Some(validation) = self.validations.validate(self, pos, a1_context) {
-                    let warning = JsValidationWarning {
-                        pos,
-                        validation: Some(validation.id),
-                        style: Some(validation.error.style.clone()),
-                    };
-                    transaction.validation_warning_added(self.id, warning);
-                    self.validations.set_warning(sheet_pos, Some(validation.id));
-                } else if self.validations.has_warning(pos) {
-                    transaction.validation_warning_deleted(self.id, pos);
-                    self.validations.set_warning(sheet_pos, None);
+                let old_value = match (self.columns.get_value(&grid_pos), cell_values.get(x, y)) {
+                    // old is blank and new is blank
+                    (None | Some(CellValue::Blank), None | Some(CellValue::Blank)) => None,
+                    // old is/isn't black and new isn't blank
+                    (_, value) => self
+                        .columns
+                        .set_value(&grid_pos, value.unwrap_or(&CellValue::Blank).to_owned()),
+                };
+
+                if let Some(old_value) = old_value {
+                    old.set(x, y, old_value);
+
+                    // check for validation warnings
+                    let sheet_pos = grid_pos.to_sheet_pos(self.id);
+                    if let Some(validation) = self.validations.validate(self, grid_pos, a1_context)
+                    {
+                        let warning = JsValidationWarning {
+                            pos: grid_pos,
+                            validation: Some(validation.id),
+                            style: Some(validation.error.style.clone()),
+                        };
+                        transaction.validation_warning_added(self.id, warning);
+                        self.validations.set_warning(sheet_pos, Some(validation.id));
+                    } else if self.validations.has_warning(grid_pos) {
+                        transaction.validation_warning_deleted(self.id, grid_pos);
+                        self.validations.set_warning(sheet_pos, None);
+                    }
                 }
             }
         }

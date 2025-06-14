@@ -258,11 +258,10 @@ impl Sheet {
                     y: output_rect.min.y,
                 };
 
-                // add the CellValue to cells if the code is not included in the rect
-                let include_in_cells = !rect.contains(data_table_pos);
+                let rect_contains_anchor_pos = rect.contains(data_table_pos);
 
                 // if the source cell is included in the rect, add the data_table to data_tables
-                if !include_in_cells {
+                if rect_contains_anchor_pos {
                     if matches!(data_table.kind, DataTableKind::Import(_))
                         || include_code_table_values
                     {
@@ -270,13 +269,13 @@ impl Sheet {
                     } else {
                         data_tables.insert(data_table_pos, data_table.clone_without_values());
                     }
+
+                    if values.is_none() {
+                        return;
+                    }
                 }
 
-                if data_table.has_spill() {
-                    return;
-                }
-
-                if !include_in_cells && values.is_none() {
+                if output_rect.len() <= 1 {
                     return;
                 }
 
@@ -298,10 +297,12 @@ impl Sheet {
                             };
 
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
-                                if include_in_cells {
+                                // add the CellValue to cells if the code is not included in the rect
+                                if !rect_contains_anchor_pos {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
 
+                                // add the display value to values if values is Some
                                 if let Some(values) = values.as_mut() {
                                     values.set(pos.x as u32, pos.y as u32, value.clone());
                                 }

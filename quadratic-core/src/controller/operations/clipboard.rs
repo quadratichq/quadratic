@@ -313,16 +313,10 @@ impl GridController {
 
     /// Converts the clipboard to an (Array, Vec<(relative x, relative y) for a CellValue::Code>) tuple.
     fn cell_values_from_clipboard_cells(
-        w: u32,
-        h: u32,
         cells: &CellValues,
         values: &CellValues,
         special: PasteSpecial,
     ) -> (Option<CellValues>, Vec<(u32, u32)>) {
-        if w == 0 && h == 0 {
-            return (None, vec![]);
-        }
-
         match special {
             PasteSpecial::Values => (Some(values.to_owned()), vec![]),
             PasteSpecial::None => {
@@ -582,8 +576,6 @@ impl GridController {
         match special {
             PasteSpecial::None => {
                 let (values, tables) = GridController::cell_values_from_clipboard_cells(
-                    clipboard.w,
-                    clipboard.h,
                     &clipboard.cells,
                     &clipboard.values,
                     special,
@@ -620,8 +612,6 @@ impl GridController {
             }
             PasteSpecial::Values => {
                 let (values, _) = GridController::cell_values_from_clipboard_cells(
-                    clipboard.w,
-                    clipboard.h,
                     &clipboard.cells,
                     &clipboard.values,
                     special,
@@ -639,7 +629,7 @@ impl GridController {
                     ops.extend(cell_value_ops);
                 }
             }
-            _ => (),
+            PasteSpecial::Formats => (),
         }
 
         if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {

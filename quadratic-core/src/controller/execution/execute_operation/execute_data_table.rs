@@ -1876,6 +1876,10 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::DataTableFormats { sheet_pos, formats } = op.to_owned() {
+            if formats.is_default() {
+                return Ok(());
+            }
+
             let sheet_id = sheet_pos.sheet_id;
 
             transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
@@ -1888,6 +1892,14 @@ impl GridController {
 
             sheet.modify_data_table_at(&data_table_pos, |dt| {
                 let reverse_formats = dt.formats.get_or_insert_default().apply_updates(&formats);
+                if dt
+                    .formats
+                    .as_ref()
+                    .is_some_and(|formats| formats.is_all_default())
+                {
+                    dt.formats = None;
+                }
+
                 dt.mark_formats_dirty(
                     transaction,
                     data_table_pos.to_sheet_pos(sheet_id),

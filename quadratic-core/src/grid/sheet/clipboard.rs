@@ -37,26 +37,32 @@ impl Sheet {
             clipboard_origin.y = bounds.min.y;
             sheet_bounds = Some(bounds);
 
-            for y in bounds.y_range() {
-                for x in bounds.x_range() {
-                    let pos = Pos { x, y };
+            for (rect, value) in self.columns.get_nondefault_rects_in_rect(bounds) {
+                if value != Some(true) {
+                    continue;
+                }
 
-                    if !selection.might_contain_pos(pos, a1_context) {
-                        continue;
-                    }
+                for y in rect.y_range() {
+                    for x in rect.x_range() {
+                        let pos = Pos { x, y };
 
-                    let new_x = (x - bounds.min.x) as u32;
-                    let new_y = (y - bounds.min.y) as u32;
+                        if !selection.might_contain_pos(pos, a1_context) {
+                            continue;
+                        }
 
-                    // create quadratic clipboard values
-                    if let Some(real_value) = self.cell_value(pos) {
-                        cells.set(new_x, new_y, real_value);
-                    }
+                        let new_x = (x - clipboard_origin.x) as u32;
+                        let new_y = (y - clipboard_origin.y) as u32;
 
-                    // create quadratic clipboard value-only for PasteSpecial::Values
-                    if let Some(values) = values.as_mut() {
-                        if let Some(simple_value) = self.display_value(pos) {
-                            values.set(new_x, new_y, simple_value);
+                        // create quadratic clipboard values
+                        if let Some(real_value) = self.cell_value(pos) {
+                            cells.set(new_x, new_y, real_value);
+                        }
+
+                        // create quadratic clipboard value-only for PasteSpecial::Values
+                        if let Some(values) = values.as_mut() {
+                            if let Some(simple_value) = self.display_value(pos) {
+                                values.set(new_x, new_y, simple_value);
+                            }
                         }
                     }
                 }
