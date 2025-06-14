@@ -1,10 +1,9 @@
-import { CheckIcon, ChevronRightIcon, DotFilledIcon } from '@radix-ui/react-icons';
-import * as MenubarPrimitive from '@radix-ui/react-menubar';
-import * as React from 'react';
-
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { cn } from '@/shared/shadcn/utils';
+import { CheckIcon, ChevronRightIcon, DotFilledIcon } from '@radix-ui/react-icons';
+import { Menubar as MenubarPrimitive } from 'radix-ui';
+import * as React from 'react';
 
 const MenubarMenu = MenubarPrimitive.Menu;
 

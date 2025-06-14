@@ -88,6 +88,7 @@ export class SheetCursor {
   }
 
   loadFromSelection(jsSelection: JsSelection, skipMultiplayer = false) {
+    this.jsSelection.free();
     this.jsSelection = jsSelection;
     if (!skipMultiplayer) {
       multiplayer.sendSelection(this.save());

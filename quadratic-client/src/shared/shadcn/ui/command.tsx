@@ -1,9 +1,8 @@
-import { Dialog, DialogContent, DialogTitle } from '@/shared/shadcn/ui/dialog';
+import { Dialog, DialogContent, DialogTitle, type DialogOverlay, type DialogProps } from '@/shared/shadcn/ui/dialog';
 import { cn } from '@/shared/shadcn/utils';
-import type { DialogOverlay, DialogProps } from '@radix-ui/react-dialog';
 import { MagnifyingGlassIcon } from '@radix-ui/react-icons';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { Command as CommandPrimitive } from 'cmdk';
+import { VisuallyHidden } from 'radix-ui';
 import * as React from 'react';
 
 const Command = React.forwardRef<
@@ -36,9 +35,9 @@ const CommandDialog = ({ children, dialogProps, commandProps, overlayProps }: Co
         className="max-w-md overflow-hidden p-0"
         aria-describedby={undefined}
       >
-        <VisuallyHidden>
+        <VisuallyHidden.Root>
           <DialogTitle>Command Menu</DialogTitle>
-        </VisuallyHidden>
+        </VisuallyHidden.Root>
         <Command
           {...commandProps}
           className="[&_[cmdk-group-heading]]:px-2 [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:text-muted-foreground [&_[cmdk-group]:not([hidden])_~[cmdk-group]]:pt-0 [&_[cmdk-group]]:px-2 [&_[cmdk-input-wrapper]_svg]:h-5 [&_[cmdk-input-wrapper]_svg]:w-5 [&_[cmdk-input]]:h-12 [&_[cmdk-item]]:px-2 [&_[cmdk-item]]:py-3 [&_[cmdk-item]_button_svg]:h-4 [&_[cmdk-item]_button_svg]:w-4"

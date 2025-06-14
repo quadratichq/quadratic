@@ -184,7 +184,8 @@ export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessa
 // Cleans up old get_ tool messages to avoid expensive contexts.
 export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessage[] => {
   const CLEAN_UP_MESSAGE =
-    'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST call the tool again.';
+    'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST use Python.';
+  const CLEAN_UP_AFTER = 3;
 
   const getToolIds = new Set();
   messages.forEach((message) => {
@@ -197,9 +198,10 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
     }
   });
 
-  // If we have multiple get_cell_data messages, keep only the tool call if it's the last one
-  return messages.map((message) => {
-    if (message.role === 'user' && message.contextType === 'toolResult') {
+  // If we have multiple get_cell_data messages, keep only the tool call after a
+  // certain number of calls
+  return messages.map((message, i) => {
+    if (i < messages.length - CLEAN_UP_AFTER && message.role === 'user' && message.contextType === 'toolResult') {
       return {
         ...message,
         content: message.content.map((content) => {

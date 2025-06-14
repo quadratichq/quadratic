@@ -187,6 +187,8 @@ pub struct JsRenderCell {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub strike_through: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub column_header: Option<bool>,
 }
 
