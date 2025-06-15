@@ -86,7 +86,7 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CellValue, RunError, RunErrorMsg, Span,
+        CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
         test_util::*,
         wasm_bindings::js::clear_js_calls,
@@ -147,7 +147,7 @@ pub(crate) mod tests {
         // data table should be at `pos`
         assert_eq!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(pos)
+                .data_table_pos_that_contains_result(pos)
                 .unwrap(),
             pos
         );
