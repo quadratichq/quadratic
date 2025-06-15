@@ -130,7 +130,7 @@ impl Clipboard {
 
         // decode base64
         let data = STANDARD
-            .decode(&data)
+            .decode(data)
             .map_err(|e| error(e.to_string(), "Base64 decode error"))?;
 
         // decompress and deserialize

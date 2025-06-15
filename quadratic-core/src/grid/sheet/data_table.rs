@@ -317,31 +317,28 @@ impl Sheet {
                 let code_cell_value = self.cell_value(data_table_pos);
 
                 // if the source cell is included in the rect, add the data_table to data_tables
-                match (rect_contains_anchor_pos, code_cell_value) {
-                    (true, Some(value)) => {
-                        // add the source cell to cells
-                        cells.set(
-                            (data_table_pos.x - bounds.min.x) as u32,
-                            (data_table_pos.y - bounds.min.y) as u32,
-                            value,
-                        );
+                if let (true, Some(value)) = (rect_contains_anchor_pos, code_cell_value) {
+                    // add the source cell to cells
+                    cells.set(
+                        (data_table_pos.x - bounds.min.x) as u32,
+                        (data_table_pos.y - bounds.min.y) as u32,
+                        value,
+                    );
 
-                        // add the data_table to data_tables
-                        if matches!(data_table.kind, DataTableKind::Import(_))
-                            || include_code_table_values
-                        {
-                            // include values for imports
-                            data_tables.insert(data_table_pos, data_table.clone());
-                        } else {
-                            // don't include values for code tables
-                            data_tables.insert(data_table_pos, data_table.clone_without_values());
-                        }
-
-                        if values.is_none() {
-                            return;
-                        }
+                    // add the data_table to data_tables
+                    if matches!(data_table.kind, DataTableKind::Import(_))
+                        || include_code_table_values
+                    {
+                        // include values for imports
+                        data_tables.insert(data_table_pos, data_table.clone());
+                    } else {
+                        // don't include values for code tables
+                        data_tables.insert(data_table_pos, data_table.clone_without_values());
                     }
-                    _ => (),
+
+                    if values.is_none() {
+                        return;
+                    }
                 }
 
                 if output_rect.len() <= 1 {
