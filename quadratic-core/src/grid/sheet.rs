@@ -16,7 +16,7 @@ use super::ids::SheetId;
 use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
-use crate::a1::{A1Context, A1Selection, CellRefRange};
+use crate::a1::{A1Context, A1Selection, CellRefRange, UNBOUNDED};
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
 
@@ -515,41 +515,32 @@ impl Sheet {
         })
     }
 
-    pub fn get_rows_with_wrap_in_column(&self, x: i64) -> Vec<i64> {
-        let mut rows = vec![];
-        if let Some((start, end)) = self.column_bounds(x, true) {
-            for y in start..=end {
-                if self.has_content(Pos { x, y })
-                    && self
-                        .formats
-                        .wrap
-                        .get(Pos { x, y })
-                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
-                    rows.push(y);
-                }
-            }
-        }
-        rows
+    pub fn get_rows_with_wrap_in_column(&self, x: i64, include_blanks: bool) -> Vec<i64> {
+        self.get_rows_with_wrap_in_rect(Rect::new(x, 1, x, UNBOUNDED), include_blanks)
     }
 
-    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect, include_blanks: bool) -> Vec<i64> {
-        let mut rows = vec![];
-        for y in rect.y_range() {
-            for x in rect.x_range() {
-                if (include_blanks || self.has_content(Pos { x, y }))
-                    && self
-                        .formats
-                        .wrap
-                        .get((x, y).into())
-                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
-                    rows.push(y);
-                    break;
+    pub fn get_rows_with_wrap_in_rect(&self, rect: Rect, include_blanks: bool) -> Vec<i64> {
+        self.formats
+            .wrap
+            .nondefault_rects_in_rect(rect)
+            .filter(|(_, wrap)| wrap == &Some(CellWrap::Wrap))
+            .flat_map(|(rect, _)| {
+                if include_blanks {
+                    rect.y_range().collect()
+                } else {
+                    self.columns
+                        .get_nondefault_rects_in_rect(rect)
+                        .map(|(rect, _)| rect.y_range())
+                        .chain(
+                            self.data_tables
+                                .get_nondefault_rects_in_rect(rect)
+                                .map(|rect| rect.y_range()),
+                        )
+                        .flatten()
+                        .collect::<Vec<i64>>()
                 }
-            }
-        }
-        rows
+            })
+            .collect()
     }
 
     pub fn get_rows_with_wrap_in_selection(
@@ -569,7 +560,7 @@ impl Sheet {
                     self.table_ref_to_rect(range, false, false, a1_context)
                 }
             } {
-                let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
+                let rows = self.get_rows_with_wrap_in_rect(rect, include_blanks);
                 rows_set.extend(rows);
             }
         });
@@ -970,12 +961,15 @@ mod test {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(pos![A1], "test");
         sheet.set_cell_value(pos![A3], "test");
-        assert_eq!(sheet.get_rows_with_wrap_in_column(1), Vec::<i64>::new());
+        assert_eq!(
+            sheet.get_rows_with_wrap_in_column(1, false),
+            Vec::<i64>::new()
+        );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        assert_eq!(sheet.get_rows_with_wrap_in_column(1), vec![1, 3]);
+        assert_eq!(sheet.get_rows_with_wrap_in_column(1, false), vec![1, 3]);
     }
 
     #[test]
@@ -988,14 +982,14 @@ mod test {
             max: pos![A4],
         };
         assert_eq!(
-            sheet.get_rows_with_wrap_in_rect(&rect, false),
+            sheet.get_rows_with_wrap_in_rect(rect, false),
             Vec::<i64>::new()
         );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect, false), vec![1, 3]);
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(rect, false), vec![1, 3]);
     }
 
     #[test]

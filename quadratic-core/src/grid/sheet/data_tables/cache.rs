@@ -109,6 +109,18 @@ impl SheetDataTablesCache {
     pub fn has_empty_value(&self, pos: Pos) -> bool {
         self.multi_cell_tables.has_empty_value(pos)
     }
+
+    /// Returns the rectangles that have some value in the given rectangle.
+    pub fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
+        self.single_cell_tables
+            .nondefault_rects_in_rect(rect)
+            .map(|(rect, _)| rect)
+            .chain(
+                self.multi_cell_tables
+                    .nondefault_rects_in_rect(rect)
+                    .map(|(rect, _)| rect),
+            )
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]

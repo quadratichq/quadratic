@@ -32,7 +32,7 @@ impl DataTable {
         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
 
         if transaction.is_user() {
-            let sheet_rows = sheet.get_rows_with_wrap_in_rect(&data_table_rect.into(), true);
+            let sheet_rows = sheet.get_rows_with_wrap_in_rect(data_table_rect.into(), true);
             let table_rows =
                 self.get_rows_with_wrap_in_rect(&data_table_pos, &data_table_rect.into(), true);
             if !sheet_rows.is_empty() || !table_rows.is_empty() {
