@@ -11,6 +11,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.start.col() == column && range.end.col() == column,
             Self::Table { .. } => false,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -19,6 +22,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.start.row() == row && range.end.row() == row,
             Self::Table { .. } => false,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -35,6 +41,9 @@ impl CellRefRange {
                 }
             }
             Self::Table { .. } => return false,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
         true
     }
@@ -52,6 +61,9 @@ impl CellRefRange {
                 }
             }
             Self::Table { .. } => return false,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
         true
     }
@@ -77,6 +89,8 @@ impl CellRefRange {
                         range.start.is_pos(p1) && range.end.is_pos(p1)
                     }
                 }),
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -85,6 +99,8 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.is_col_range(),
             Self::Table { .. } => false,
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -93,6 +109,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.has_col_range(col),
             Self::Table { .. } => false,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -101,6 +120,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.is_row_range(),
             Self::Table { .. } => false,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -109,6 +131,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.has_row_range(row),
             Self::Table { .. } => false,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -117,6 +142,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.col_range(),
             Self::Table { .. } => 0,
+
+            // need to handle this in the parent
+            Self::Named { .. } => 0,
         }
     }
 
@@ -125,6 +153,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.is_finite(),
             Self::Table { .. } => true,
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -133,6 +164,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.to_rect(),
             Self::Table { range } => range.to_largest_rect(a1_context),
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -141,6 +175,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => Some(range.to_rect_unbounded()),
             Self::Table { range } => range.to_largest_rect(a1_context),
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 

@@ -1,4 +1,5 @@
 use crate::Pos;
+use crate::a1::a1_selection::expand::expand_named_ranges;
 use crate::a1::{A1Context, CellRefCoord, CellRefRangeEnd, ColRange, RefRangeBounds, UNBOUNDED};
 
 use super::{A1Selection, CellRefRange};
@@ -18,16 +19,17 @@ impl A1Selection {
 
     /// Removes a column if it is in any column ranges, or adds it if it is not.
     fn add_or_remove_column(&mut self, col: i64, top: i64, a1_context: &A1Context) {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
         // If the full column is in any range, then we'll remove it from all
         // ranges. Otherwise we'll add it.
-        if self.ranges.iter().any(|range| range.has_col_range(col)) {
+        if expanded_ranges.iter().any(|range| range.has_col_range(col)) {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_col_range(col) {
                     ranges.push(range.clone());
                 } else {
                     match range {
-                        CellRefRange::Table { .. } => (),
+                        CellRefRange::Table { .. } | CellRefRange::Named { .. } => (),
                         &CellRefRange::Sheet { mut range } => {
                             if range.start.col() == range.end.col() {
                                 // if the range is a single column, then we
@@ -124,9 +126,10 @@ impl A1Selection {
 
     /// Removes a row if it is in any row ranges, or adds it if it is not.
     fn add_or_remove_row(&mut self, row: i64, left: i64, a1_context: &A1Context) {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
         // If the full row is in any range, then we'll remove it from all
         // ranges. Otherwise we'll add it.
-        if self.ranges.iter().any(|range| range.has_row_range(row)) {
+        if expanded_ranges.iter().any(|range| range.has_row_range(row)) {
             let mut ranges = vec![];
             self.ranges.iter().for_each(|range| {
                 if !range.has_row_range(row) {
@@ -134,6 +137,7 @@ impl A1Selection {
                 } else {
                     match range {
                         CellRefRange::Table { .. } => (),
+                        CellRefRange::Named { .. } => (),
                         &CellRefRange::Sheet { mut range } => {
                             if range.start.row() == range.end.row() {
                                 // if the range is a single row, then we
@@ -356,6 +360,10 @@ impl A1Selection {
         append: bool,
         a1_context: &A1Context,
     ) {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        if expanded_ranges != self.ranges {
+            self.ranges = expanded_ranges;
+        }
         // if the selection is empty, then we use the cursor as the starting point
         if self.ranges.is_empty() {
             self.ranges
@@ -363,6 +371,7 @@ impl A1Selection {
         };
         if let Some(last) = self.ranges.last_mut() {
             match last {
+                // todo...
                 CellRefRange::Table { range } => {
                     if let Some(table) = a1_context.try_table(&range.table_name) {
                         let mut start: Option<(i64, i64)> = None;
@@ -445,9 +454,7 @@ impl A1Selection {
                         self.ranges = self.ranges.split_off(self.ranges.len().saturating_sub(1));
                     }
                 }
-                CellRefRange::Named { range } => {
-                    let selection =
-                }
+                CellRefRange::Named { .. } => (),
             };
         }
     }
@@ -455,7 +462,8 @@ impl A1Selection {
     /// Changes the selection to select all columns that have a selection (used by cmd+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_columns_selected(&mut self, a1_context: &A1Context) {
-        let Some(last) = self.ranges.last() else {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        let Some(last) = expanded_ranges.last() else {
             return;
         };
         let last = match last {
@@ -469,6 +477,7 @@ impl A1Selection {
                     return;
                 }
             }
+            CellRefRange::Named { .. } => return,
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {
@@ -482,7 +491,8 @@ impl A1Selection {
     /// Changes the selection to select all rows that have a selection (used by shift+space). It only
     /// checks the last range (the same as Excel and Sheets)
     pub fn set_rows_selected(&mut self, a1_context: &A1Context) {
-        let Some(last) = self.ranges.last() else {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        let Some(last) = expanded_ranges.last() else {
             return;
         };
         let last = match last {
@@ -496,6 +506,7 @@ impl A1Selection {
                     return;
                 }
             }
+            CellRefRange::Named { .. } => return,
         };
         self.ranges.clear();
         self.ranges.push(CellRefRange::Sheet {

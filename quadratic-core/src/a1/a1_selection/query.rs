@@ -81,7 +81,7 @@ impl A1Selection {
     /// ignoring any ranges that extend infinitely.
     pub fn largest_rect_finite(&self, a1_context: &A1Context) -> Rect {
         let mut rect = Rect::single_pos(self.cursor);
-        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
         expanded_ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 if !range.end.is_unbounded() {
@@ -106,8 +106,9 @@ impl A1Selection {
 
     /// Returns the largest rectangle that can be formed by the selection, including unbounded ranges.
     pub fn largest_rect_unbounded(&self, a1_context: &A1Context) -> Rect {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
         let mut rect = Rect::single_pos(self.cursor);
-        self.ranges.iter().for_each(|range| match range {
+        expanded_ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 rect = rect.union(&Rect::new(
                     range.start.col(),
@@ -121,6 +122,8 @@ impl A1Selection {
                     rect = rect.union(&table_rect);
                 }
             }
+            // should not reach: expanded above
+            CellRefRange::Named { .. } => (),
         });
         rect
     }
@@ -173,8 +176,9 @@ impl A1Selection {
 
     /// Returns the bottom-right cell for the selection. It defaults to the cursor if it's
     /// a non-finite range.
-    pub fn bottom_right_cell(&self) -> Pos {
-        if let Some(range) = self.ranges.last() {
+    pub fn bottom_right_cell(&self, context: &A1Context) -> Pos {
+        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        if let Some(range) = expanded_ranges.last() {
             match range {
                 CellRefRange::Sheet { range } => {
                     let x = if range.end.is_unbounded() {
@@ -190,7 +194,7 @@ impl A1Selection {
                     Pos { x, y }
                 }
                 // todo: not sure how autofill in tables will work
-                CellRefRange::Table { .. } => self.cursor,
+                CellRefRange::Table { .. } | CellRefRange::Named { .. } => self.cursor,
             }
         } else {
             self.cursor
@@ -201,7 +205,8 @@ impl A1Selection {
     /// non-finite range. Note, for tables, we need to use the end of the
     /// selection if the cursor is at the end of the table.
     pub fn last_selection_end(&self, a1_context: &A1Context) -> Pos {
-        if let Some(range) = self.ranges.last() {
+        let expanded_ranges = expand_named_ranges(&self.ranges, a1_context);
+        if let Some(range) = expanded_ranges.last() {
             match range {
                 CellRefRange::Sheet { range } => {
                     if range.end.is_unbounded() {
@@ -240,6 +245,8 @@ impl A1Selection {
                         self.cursor
                     }
                 }
+                // expanded above
+                CellRefRange::Named { .. } => self.cursor,
             }
         } else {
             self.cursor
@@ -262,9 +269,10 @@ impl A1Selection {
     }
 
     /// Returns a list of fully selected columns.
-    pub fn selected_columns(&self) -> Vec<i64> {
+    pub fn selected_columns(&self, context: &A1Context) -> Vec<i64> {
         let mut columns = HashSet::new();
-        self.ranges.iter().for_each(|range| match range {
+        let expanded_ranges = expand_named_ranges(&self.ranges, context);
+        expanded_ranges.iter().for_each(|range| match range {
             CellRefRange::Sheet { range } => {
                 // break the loop if this is a * selection
                 if self.is_all_selected() {
@@ -279,6 +287,7 @@ impl A1Selection {
                 }
             }
             CellRefRange::Table { .. } => (),
+            CellRefRange::Named { .. } => (),
         });
 
         let mut columns = columns.into_iter().collect::<Vec<_>>();
@@ -907,14 +916,16 @@ mod tests {
 
     #[test]
     fn test_bottom_right_cell() {
+        let context = A1Context::default();
+
         let selection = A1Selection::test_a1("A1,B2,C3");
-        assert_eq!(selection.bottom_right_cell(), pos![C3]);
+        assert_eq!(selection.bottom_right_cell(&context), pos![C3]);
 
         let selection = A1Selection::test_a1("A1,B1:C2");
-        assert_eq!(selection.bottom_right_cell(), pos![C2]);
+        assert_eq!(selection.bottom_right_cell(&context), pos![C2]);
 
         let selection = A1Selection::test_a1("C2:B1");
-        assert_eq!(selection.bottom_right_cell(), pos![C2]);
+        assert_eq!(selection.bottom_right_cell(&context), pos![C2]);
     }
 
     #[test]
@@ -1796,40 +1807,42 @@ mod tests {
 
     #[test]
     fn test_selected_columns() {
+        let context = A1Context::default();
+
         // Test single column selection
         let selection = A1Selection::test_a1("A");
-        assert_eq!(selection.selected_columns(), vec![1]);
+        assert_eq!(selection.selected_columns(&context), vec![1]);
 
         // Test multiple column selections
         let selection = A1Selection::test_a1("A,C,E");
-        assert_eq!(selection.selected_columns(), vec![1, 3, 5]);
+        assert_eq!(selection.selected_columns(&context), vec![1, 3, 5]);
 
         // Test column range
         let selection = A1Selection::test_a1("A:C");
-        assert_eq!(selection.selected_columns(), vec![1, 2, 3]);
+        assert_eq!(selection.selected_columns(&context), vec![1, 2, 3]);
 
         let selection = A1Selection::test_a1("C:A");
-        assert_eq!(selection.selected_columns(), vec![1, 2, 3]);
+        assert_eq!(selection.selected_columns(&context), vec![1, 2, 3]);
 
         // Test multiple column ranges
         let selection = A1Selection::test_a1("A:C,E:G");
-        assert_eq!(selection.selected_columns(), vec![1, 2, 3, 5, 6, 7]);
+        assert_eq!(selection.selected_columns(&context), vec![1, 2, 3, 5, 6, 7]);
 
         // Test mixed selections with cells and columns
         let selection = A1Selection::test_a1("A1,B,C:D");
-        assert_eq!(selection.selected_columns(), vec![2, 3, 4]);
+        assert_eq!(selection.selected_columns(&context), vec![2, 3, 4]);
 
         // Test all cells selected
         let selection = A1Selection::test_a1("*");
-        assert!(selection.selected_columns().is_empty());
+        assert!(selection.selected_columns(&context).is_empty());
 
         // Test cell selections (should not return any columns)
         let selection = A1Selection::test_a1("A1:B2");
-        assert!(selection.selected_columns().is_empty());
+        assert!(selection.selected_columns(&context).is_empty());
 
         // Test row selections (should not return any columns)
         let selection = A1Selection::test_a1("1:3");
-        assert!(selection.selected_columns().is_empty());
+        assert!(selection.selected_columns(&context).is_empty());
     }
 
     #[test]

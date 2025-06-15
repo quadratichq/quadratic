@@ -1,6 +1,9 @@
 use wasm_bindgen::prelude::*;
 
-use crate::{a1::CellRefRange, grid::sheet::data_tables::cache::SheetDataTablesCache};
+use crate::{
+    a1::{CellRefRange, expand::expand_named_ranges},
+    grid::sheet::data_tables::cache::SheetDataTablesCache,
+};
 
 use super::*;
 
@@ -32,8 +35,10 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getBottomRightCell")]
-    pub fn get_bottom_right_cell(&self) -> JsCoordinate {
-        self.selection.bottom_right_cell().into()
+    pub fn get_bottom_right_cell(&self, context: &JsA1Context) -> JsCoordinate {
+        self.selection
+            .bottom_right_cell(context.get_context())
+            .into()
     }
 
     #[wasm_bindgen(js_name = "getLargestRectangle")]
@@ -81,15 +86,15 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getSheetRefRangeBounds")]
-    pub fn sheet_ref_range_bounds(&self) -> Result<JsValue, String> {
-        let ranges = self
-            .selection
-            .ranges
+    pub fn sheet_ref_range_bounds(&self, context: &JsA1Context) -> Result<JsValue, String> {
+        let expanded_ranges = expand_named_ranges(&self.selection.ranges, context.get_context());
+        let ranges = expanded_ranges
             .iter()
             .filter(|r| r.is_finite())
             .filter_map(|range| match range {
                 CellRefRange::Sheet { range } => Some(*range),
                 CellRefRange::Table { .. } => None,
+                CellRefRange::Named { .. } => None,
             })
             .collect::<Vec<_>>();
         serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
@@ -97,9 +102,8 @@ impl JsSelection {
 
     #[wasm_bindgen(js_name = "getFiniteRefRangeBounds")]
     pub fn finite_ref_range_bounds(&self, context: &JsA1Context) -> Result<JsValue, String> {
-        let ranges = self
-            .selection
-            .ranges
+        let expanded_ranges = expand_named_ranges(&self.selection.ranges, context.get_context());
+        let ranges = expanded_ranges
             .iter()
             .filter(|r| r.is_finite())
             .filter_map(|range| match range {
@@ -116,16 +120,16 @@ impl JsSelection {
                     }
                     range.convert_to_ref_range_bounds(false, context.get_context(), false, true)
                 }
+                CellRefRange::Named { .. } => None,
             })
             .collect::<Vec<_>>();
         serde_wasm_bindgen::to_value(&ranges).map_err(|e| e.to_string())
     }
 
     #[wasm_bindgen(js_name = "getInfiniteRefRangeBounds")]
-    pub fn get_infinite_ref_range_bounds(&self) -> Result<JsValue, String> {
-        let ranges = self
-            .selection
-            .ranges
+    pub fn get_infinite_ref_range_bounds(&self, context: &JsA1Context) -> Result<JsValue, String> {
+        let expanded_ranges = expand_named_ranges(&self.selection.ranges, context.get_context());
+        let ranges = expanded_ranges
             .iter()
             .filter_map(|r| {
                 if r.is_finite() {
@@ -136,6 +140,8 @@ impl JsSelection {
 
                         // tables cannot have infinite bounds
                         CellRefRange::Table { .. } => None,
+
+                        CellRefRange::Named { .. } => None,
                     }
                 }
             })
@@ -238,8 +244,8 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "canInsertColumnRow")]
-    pub fn can_insert_column_row(&self) -> bool {
-        self.selection.can_insert_column_row()
+    pub fn can_insert_column_row(&self, context: &JsA1Context) -> bool {
+        self.selection.can_insert_column_row(context.get_context())
     }
 
     #[wasm_bindgen(js_name = "hasOneColumnRowSelection")]
@@ -332,18 +338,18 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "getSelectedColumns")]
-    pub fn get_selected_columns(&self) -> Vec<u32> {
+    pub fn get_selected_columns(&self, context: &JsA1Context) -> Vec<u32> {
         self.selection
-            .selected_columns()
+            .selected_columns(context.get_context())
             .iter()
             .map(|c| *c as u32)
             .collect()
     }
 
     #[wasm_bindgen(js_name = "getSelectedRows")]
-    pub fn get_selected_rows(&self) -> Vec<u32> {
+    pub fn get_selected_rows(&self, context: &JsA1Context) -> Vec<u32> {
         self.selection
-            .selected_rows()
+            .selected_rows(context.get_context())
             .iter()
             .map(|c| *c as u32)
             .collect()
