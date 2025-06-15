@@ -512,7 +512,7 @@ impl GridController {
                 data_table_pos,
                 formats_rect,
                 &mut sheet_format_updates,
-            )?;
+            );
             if !sheet_format_updates.is_default() {
                 sheet.formats.apply_updates(&sheet_format_updates);
                 reverse_operations.push(Operation::SetCellFormatsA1 {
@@ -653,15 +653,17 @@ impl GridController {
             // show_name & show_columns false is required for correct mapping of formats, values will shift when show_ui is true
             data_table.show_name = Some(false);
             data_table.show_columns = Some(false);
-            let format_update = data_table.transfer_formats_from_sheet(rect.min, sheet, rect)?;
+            let format_update = data_table.transfer_formats_from_sheet(rect.min, rect, sheet);
             data_table.show_name = Some(true);
             data_table.show_columns = Some(true);
 
-            if !format_update.is_default() {
-                data_table
-                    .formats
-                    .get_or_insert_default()
-                    .apply_updates(&format_update);
+            if let Some(format_update) = format_update {
+                if !format_update.is_default() {
+                    data_table
+                        .formats
+                        .get_or_insert_default()
+                        .apply_updates(&format_update);
+                }
             }
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
             let cell_value = CellValue::Import(import);
@@ -1039,7 +1041,7 @@ impl GridController {
                     .output_rect(data_table_pos, true)
                     .to_sheet_rect(sheet_id);
 
-                let mut format_update = SheetFormatUpdates::default();
+                let mut format_update = None;
 
                 if swallow && column_header.is_none() && values.is_none() {
                     let display_index = data_table.get_display_index_from_column_index(index, true);
@@ -1098,11 +1100,8 @@ impl GridController {
                         data_table_rect.height() as i64 - data_table.y_adjustment(true),
                     );
 
-                    format_update = data_table.transfer_formats_from_sheet(
-                        data_table_pos,
-                        sheet,
-                        formats_rect,
-                    )?;
+                    format_update =
+                        data_table.transfer_formats_from_sheet(data_table_pos, formats_rect, sheet);
 
                     let sheet = self.try_sheet_mut_result(sheet_id)?;
 
@@ -1144,10 +1143,12 @@ impl GridController {
 
                     dt.insert_column_sorted(index as usize, column_header, values)?;
 
-                    if !format_update.is_default() {
-                        dt.formats
-                            .get_or_insert_default()
-                            .apply_updates(&format_update);
+                    if let Some(format_update) = format_update {
+                        if !format_update.is_default() {
+                            dt.formats
+                                .get_or_insert_default()
+                                .apply_updates(&format_update);
+                        }
                     }
 
                     Ok(())
@@ -1312,7 +1313,7 @@ impl GridController {
                         data_table_pos,
                         formats_rect,
                         &mut sheet_format_updates,
-                    )?;
+                    );
                 }
 
                 let formats_rect =
@@ -1489,7 +1490,7 @@ impl GridController {
                     1,
                 );
 
-                let mut format_update = SheetFormatUpdates::default();
+                let mut format_update = None;
 
                 if swallow && values.is_none() {
                     // check for code cells in neighboring cells
@@ -1520,11 +1521,8 @@ impl GridController {
                     }
 
                     // swallow sheet formatting
-                    format_update = data_table.transfer_formats_from_sheet(
-                        data_table_pos,
-                        sheet,
-                        values_rect,
-                    )?;
+                    format_update =
+                        data_table.transfer_formats_from_sheet(data_table_pos, values_rect, sheet);
 
                     let sheet = self.try_sheet_mut_result(sheet_id)?;
 
@@ -1547,10 +1545,12 @@ impl GridController {
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                     dt.insert_row(index as usize, values)?;
 
-                    if !format_update.is_default() {
-                        dt.formats
-                            .get_or_insert_default()
-                            .apply_updates(&format_update);
+                    if let Some(format_update) = format_update {
+                        if !format_update.is_default() {
+                            dt.formats
+                                .get_or_insert_default()
+                                .apply_updates(&format_update);
+                        }
                     }
 
                     Ok(())
@@ -1686,7 +1686,7 @@ impl GridController {
                         data_table_pos,
                         values_rect,
                         &mut sheet_format_updates,
-                    )?;
+                    );
                 }
 
                 let actual_row_index = get_unsorted_row_index(data_table, index);

@@ -246,7 +246,7 @@ impl Sheet {
             });
 
         // Fetch values from code cells
-        self.iter_code_output_in_rect(rect)
+        self.iter_data_tables_in_rect(rect)
             .for_each(|(data_table_rect, data_table)| {
                 // sanity check that there is a CellValue::Code for this CodeRun
                 if let Some(cell_value) = self.cell_value_ref(Pos {

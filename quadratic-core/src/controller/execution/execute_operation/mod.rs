@@ -53,7 +53,7 @@ impl GridController {
                 crate::wasm_bindings::js::time("execute_operation");
             }
 
-            // #[cfg(feature = "show-operations")]
+            #[cfg(feature = "show-operations")]
             dbgjs!(&format!("[Operation] {:?}", &op));
 
             #[cfg(feature = "show-first-sheet-operations")]

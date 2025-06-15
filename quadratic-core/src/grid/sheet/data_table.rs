@@ -196,6 +196,29 @@ impl Sheet {
         dirty_rects
     }
 
+    /// Returns data tables that intersect a rect
+    pub fn iter_data_tables_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
+        self.data_tables_intersect_rect_sorted(rect)
+            .map(|(_, pos, data_table)| {
+                let output_rect = data_table.output_rect(pos, false);
+                (output_rect, data_table)
+            })
+    }
+
+    /// Returns data tables that intersect a rect and their intersection with the rect
+    pub fn iter_data_tables_intersects_rect(
+        &self,
+        rect: Rect,
+    ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
+        self.data_tables_intersect_rect_sorted(rect)
+            .filter_map(move |(_, pos, data_table)| {
+                let output_rect = data_table.output_rect(pos, false);
+                output_rect
+                    .intersection(&rect)
+                    .map(|intersection_rect| (output_rect, intersection_rect, data_table))
+            })
+    }
+
     /// Checks whether a chart intersects a position. We ignore the chart if it
     /// includes either exclude_x or exclude_y.
     pub fn chart_intersects(
@@ -282,7 +305,7 @@ impl Sheet {
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
-        self.iter_code_output_in_rect(rect.to_owned())
+        self.iter_data_tables_in_rect(rect.to_owned())
             .for_each(|(output_rect, data_table)| {
                 // only change the cells if the CellValue::Code is not in the selection box
                 let data_table_pos = Pos {

@@ -30,11 +30,7 @@ impl SheetFormatting {
             // update the sheet format updates with the formats from the data
             // table we send in the full rect, and the function just looks at
             // the overlapping area
-            data_table.transfer_formats_to_sheet(
-                data_table_pos,
-                rect,
-                &mut sheet_format_updates,
-            )?;
+            data_table.transfer_formats_to_sheet(data_table_pos, rect, &mut sheet_format_updates);
         }
 
         Ok(sheet_format_updates)

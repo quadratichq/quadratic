@@ -378,7 +378,7 @@ impl GridController {
                 Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
 
             for (output_rect, intersection_rect, data_table) in
-                sheet.iter_code_output_intersects_rect(rect)
+                sheet.iter_data_tables_intersects_rect(rect)
             {
                 let contains_source_cell = intersection_rect.contains(output_rect.min);
 

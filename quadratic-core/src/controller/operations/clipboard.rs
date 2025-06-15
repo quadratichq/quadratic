@@ -19,7 +19,6 @@ use crate::grid::DataTableKind;
 use crate::grid::Sheet;
 use crate::grid::SheetId;
 use crate::grid::formats::Format;
-use crate::grid::formats::FormatUpdate;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
 use crate::grid::sheet::borders::BordersUpdates;
@@ -418,7 +417,7 @@ impl GridController {
                 };
 
                 let paste_in_import = sheet
-                    .iter_code_output_in_rect(Rect::single_pos(Pos::from(target_pos)))
+                    .iter_data_tables_in_rect(Rect::single_pos(Pos::from(target_pos)))
                     .any(|(output_rect, data_table)| {
                         // this table is being moved in the same transaction
                         if matches!(clipboard_operation, ClipboardOperation::Cut)
@@ -481,53 +480,32 @@ impl GridController {
     fn clipboard_formats_operations(
         &self,
         sheet_id: SheetId,
-        sheet_format_updates: &mut SheetFormatUpdates,
         formats_rect: Rect,
+        sheet_format_updates: &mut SheetFormatUpdates,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.try_sheet(sheet_id) {
             for (output_rect, intersection_rect, data_table) in
-                sheet.iter_code_output_intersects_rect(formats_rect)
+                sheet.iter_data_tables_intersects_rect(formats_rect)
             {
-                let mut table_format_updates = SheetFormatUpdates::default();
                 let data_table_pos = output_rect.min;
 
-                for x in intersection_rect.x_range() {
-                    for y in intersection_rect.y_range() {
-                        let mut pos = Pos { x, y };
-                        let update = sheet_format_updates.format_update(pos);
-                        sheet_format_updates.set_format_cell(pos, FormatUpdate::cleared());
+                let table_format_updates = data_table.transfer_formats_from_sheet_format_updates(
+                    data_table_pos,
+                    intersection_rect,
+                    sheet_format_updates,
+                    true,
+                );
 
-                        // handle show_variable, 0-based
-                        pos.translate_in_place(
-                            -data_table_pos.x,
-                            -data_table_pos.y - data_table.y_adjustment(true),
-                            -1,
-                            -1,
-                        );
-
-                        if pos.x < 0 || pos.y < 0 {
-                            continue;
-                        }
-                        // handle hide columns
-                        pos.x = data_table.get_column_index_from_display_index(pos.x as u32, true)
-                            as i64;
-
-                        // handle sort
-                        pos.y = data_table.get_row_index_from_display_index(pos.y as u64) as i64;
-
-                        // 1-based
-                        pos.translate_in_place(1, 1, 1, 1);
-
-                        table_format_updates.set_format_cell(pos, update);
+                if let Some(table_format_updates) = table_format_updates {
+                    if !table_format_updates.is_default() {
+                        ops.push(Operation::DataTableFormats {
+                            sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+                            formats: table_format_updates,
+                        });
                     }
                 }
-
-                ops.push(Operation::DataTableFormats {
-                    sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-                    formats: table_format_updates,
-                });
             }
         }
 
@@ -670,13 +648,13 @@ impl GridController {
                 formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
                 let formats_ops = self.clipboard_formats_operations(
                     selection.sheet_id,
-                    formats,
                     Rect::from_numbers(
                         start_pos.x,
                         start_pos.y,
                         clipboard.w as i64,
                         clipboard.h as i64,
                     ),
+                    formats,
                 );
                 ops.extend(formats_ops);
             }
@@ -779,8 +757,8 @@ impl GridController {
 
             ops.extend(self.clipboard_formats_operations(
                 start_pos.sheet_id,
-                &mut sheet_format_updates,
                 formats_rect,
+                &mut sheet_format_updates,
             ));
 
             ops.push(Operation::SetCellFormatsA1 {

@@ -121,7 +121,7 @@ impl Sheet {
 
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_values(&self, rect: Rect) -> CellValues {
-        self.iter_code_output_in_rect(rect)
+        self.iter_data_tables_in_rect(rect)
             .flat_map(|(data_table_rect, data_table)| match &data_table.value {
                 Value::Single(v) => vec![vec![v.to_owned()]],
                 Value::Array(_) => rect
@@ -143,27 +143,6 @@ impl Sheet {
             })
             .collect::<Vec<Vec<CellValue>>>()
             .into()
-    }
-
-    pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
-        self.data_tables_intersect_rect_sorted(rect)
-            .map(|(_, pos, data_table)| {
-                let output_rect = data_table.output_rect(pos, false);
-                (output_rect, data_table)
-            })
-    }
-
-    pub fn iter_code_output_intersects_rect(
-        &self,
-        rect: Rect,
-    ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
-        self.data_tables_intersect_rect_sorted(rect)
-            .filter_map(move |(_, pos, data_table)| {
-                let output_rect = data_table.output_rect(pos, false);
-                output_rect
-                    .intersection(&rect)
-                    .map(|intersection_rect| (output_rect, intersection_rect, data_table))
-            })
     }
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
