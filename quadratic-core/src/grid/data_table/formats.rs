@@ -148,7 +148,6 @@ impl DataTable {
         data_table_pos: Pos,
         formats_rect: Rect,
         sheet_format_updates: &mut SheetFormatUpdates,
-        clear_in_other: bool,
     ) -> Option<SheetFormatUpdates> {
         if sheet_format_updates.is_default() {
             return None;
@@ -156,11 +155,7 @@ impl DataTable {
 
         let mut format_update = SheetFormatUpdates::default();
 
-        format_update.transfer_format_rect_from_other(
-            formats_rect,
-            sheet_format_updates,
-            clear_in_other,
-        );
+        format_update.transfer_format_rect_from_other(formats_rect, sheet_format_updates);
 
         if format_update.is_default() {
             return None;

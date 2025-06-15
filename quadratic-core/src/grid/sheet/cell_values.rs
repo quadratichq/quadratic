@@ -42,17 +42,16 @@ impl Sheet {
                 let grid_pos = (grid_x, grid_y).into();
 
                 // set value in columns
-                let old_value = match (self.columns.get_value(&grid_pos), cell_values.get(x, y)) {
+                match (self.columns.get_value(&grid_pos), cell_values.get(x, y)) {
                     // old is blank and new is blank
-                    (None | Some(CellValue::Blank), None | Some(CellValue::Blank)) => None,
+                    (None | Some(CellValue::Blank), None | Some(CellValue::Blank)) => (),
                     // old is/isn't black and new isn't blank
-                    (_, value) => self
-                        .columns
-                        .set_value(&grid_pos, value.unwrap_or(&CellValue::Blank).to_owned()),
+                    (_, Some(value)) => {
+                        let old_value = self.columns.set_value(&grid_pos, value.to_owned());
+                        old.set(x, y, old_value.unwrap_or(CellValue::Blank));
+                    }
+                    _ => (),
                 };
-                if let Some(old_value) = old_value {
-                    old.set(x, y, old_value);
-                }
 
                 // check for validation warnings
                 let sheet_pos = grid_pos.to_sheet_pos(self.id);

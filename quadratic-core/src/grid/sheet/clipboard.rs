@@ -4,7 +4,7 @@ use crate::a1::{A1Context, A1Selection};
 use crate::cell_values::CellValues;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
 use crate::grid::Sheet;
-use crate::{Pos, Rect};
+use crate::{CellValue, Pos};
 
 impl Sheet {
     /// Copies the selection to the clipboard.
@@ -17,8 +17,17 @@ impl Sheet {
         clipboard_operation: ClipboardOperation,
         include_display_values: bool,
     ) -> Clipboard {
-        let mut clipboard_origin = ClipboardOrigin::default(selection.sheet_id);
-        let mut sheet_bounds: Option<Rect> = None;
+        let mut origin = ClipboardOrigin::default(selection.sheet_id);
+        let mut w = 0;
+        let mut h = 0;
+
+        let sheet_bounds = self.selection_bounds(selection, true, true, false, a1_context);
+        if let Some(bounds) = sheet_bounds {
+            origin.x = bounds.min.x;
+            origin.y = bounds.min.y;
+            w = bounds.width();
+            h = bounds.height();
+        }
 
         // Cell values
         let mut cells = CellValues::default();
@@ -30,44 +39,31 @@ impl Sheet {
             None
         };
 
-        let mut data_tables = IndexMap::new();
+        let (sheet_ranges, _) = selection.separate_table_ranges();
+        for sheet_range in sheet_ranges.iter() {
+            let rect = self.ref_range_bounds_to_rect(sheet_range, true);
+            for y in rect.y_range() {
+                for x in rect.x_range() {
+                    let pos = Pos { x, y };
 
-        if let Some(bounds) = self.selection_bounds(selection, true, true, false, a1_context) {
-            clipboard_origin.x = bounds.min.x;
-            clipboard_origin.y = bounds.min.y;
-            sheet_bounds = Some(bounds);
+                    let new_x = (x - origin.x) as u32;
+                    let new_y = (y - origin.y) as u32;
 
-            for (rect, value) in self.columns.get_nondefault_rects_in_rect(bounds) {
-                if value != Some(true) {
-                    continue;
-                }
+                    // create quadratic clipboard values
+                    let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
+                    cells.set(new_x, new_y, cell_value);
 
-                for y in rect.y_range() {
-                    for x in rect.x_range() {
-                        let pos = Pos { x, y };
-
-                        if !selection.might_contain_pos(pos, a1_context) {
-                            continue;
-                        }
-
-                        let new_x = (x - clipboard_origin.x) as u32;
-                        let new_y = (y - clipboard_origin.y) as u32;
-
-                        // create quadratic clipboard values
-                        if let Some(real_value) = self.cell_value(pos) {
-                            cells.set(new_x, new_y, real_value);
-                        }
-
-                        // create quadratic clipboard value-only for PasteSpecial::Values
-                        if let Some(values) = values.as_mut() {
-                            if let Some(simple_value) = self.display_value(pos) {
-                                values.set(new_x, new_y, simple_value);
-                            }
-                        }
+                    // create quadratic clipboard value-only for PasteSpecial::Values
+                    if let Some(values) = values.as_mut() {
+                        let display_value = self.display_value(pos).unwrap_or(CellValue::Blank);
+                        values.set(new_x, new_y, display_value);
                     }
                 }
             }
+        }
 
+        let mut data_tables = IndexMap::new();
+        if let Some(bounds) = sheet_bounds {
             let include_code_table_values = matches!(clipboard_operation, ClipboardOperation::Cut);
             let data_tables_in_rect = self.data_tables_and_cell_values_in_rect(
                 &bounds,
@@ -81,17 +77,17 @@ impl Sheet {
         }
 
         Clipboard {
-            origin: clipboard_origin,
+            origin,
             selection: selection.clone(),
-            w: sheet_bounds.map_or(0, |b| b.width()),
-            h: sheet_bounds.map_or(0, |b| b.height()),
+            w,
+            h,
             cells,
             values: values.unwrap_or_default(),
             formats: self.formats.to_clipboard(selection, self, a1_context).ok(),
             borders: self.borders.to_clipboard(selection),
             validations: self
                 .validations
-                .to_clipboard(selection, &clipboard_origin, a1_context),
+                .to_clipboard(selection, &origin, a1_context),
             data_tables,
             operation: clipboard_operation,
         }

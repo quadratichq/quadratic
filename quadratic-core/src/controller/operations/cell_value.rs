@@ -267,7 +267,7 @@ impl GridController {
                     if save_data_table_anchors.is_empty() {
                         ops.push(Operation::SetCellValues {
                             sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
-                            values: CellValues::new(rect.width(), rect.height()),
+                            values: CellValues::new_blank(rect.width(), rect.height()),
                         });
                     } else {
                         // remove all saved_data_table_anchors from the rect
@@ -290,7 +290,7 @@ impl GridController {
                                     rect.min.x,
                                     rect.min.y,
                                 ),
-                                values: CellValues::new(rect.width(), rect.height()),
+                                values: CellValues::new_blank(rect.width(), rect.height()),
                             });
                         }
                     }
@@ -404,12 +404,14 @@ impl GridController {
                     let data_table_cell_values = values.get_rect(adjusted_rect);
 
                     let paste_table_in_import =
-                        data_table_cell_values.iter().flatten().find(|cell_value| {
-                            cell_value.is_code()
-                                || cell_value.is_import()
-                                || cell_value.is_image()
-                                || cell_value.is_html()
-                        });
+                        data_table_cell_values
+                            .iter()
+                            .flatten()
+                            .find_map(|cell_value| {
+                                cell_value.as_ref().filter(|cv| {
+                                    cv.is_code() || cv.is_import() || cv.is_image() || cv.is_html()
+                                })
+                            });
 
                     if let Some(paste_table_in_import) = paste_table_in_import {
                         let cell_type = match paste_table_in_import {

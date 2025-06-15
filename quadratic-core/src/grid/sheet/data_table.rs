@@ -296,7 +296,7 @@ impl Sheet {
 
     pub fn data_tables_and_cell_values_in_rect(
         &self,
-        rect: &Rect,
+        bounds: &Rect,
         cells: &mut CellValues,
         values: &mut Option<CellValues>,
         a1_context: &A1Context,
@@ -305,7 +305,7 @@ impl Sheet {
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
-        self.iter_data_tables_in_rect(rect.to_owned())
+        self.iter_data_tables_in_rect(bounds.to_owned())
             .for_each(|(output_rect, data_table)| {
                 // only change the cells if the CellValue::Code is not in the selection box
                 let data_table_pos = Pos {
@@ -313,31 +313,45 @@ impl Sheet {
                     y: output_rect.min.y,
                 };
 
-                let rect_contains_anchor_pos = rect.contains(data_table_pos);
+                let rect_contains_anchor_pos = bounds.contains(data_table_pos);
+                let code_cell_value = self.cell_value(data_table_pos);
 
                 // if the source cell is included in the rect, add the data_table to data_tables
-                if rect_contains_anchor_pos {
-                    if matches!(data_table.kind, DataTableKind::Import(_))
-                        || include_code_table_values
-                    {
-                        data_tables.insert(data_table_pos, data_table.clone());
-                    } else {
-                        data_tables.insert(data_table_pos, data_table.clone_without_values());
-                    }
+                match (rect_contains_anchor_pos, code_cell_value) {
+                    (true, Some(value)) => {
+                        // add the source cell to cells
+                        cells.set(
+                            (data_table_pos.x - bounds.min.x) as u32,
+                            (data_table_pos.y - bounds.min.y) as u32,
+                            value,
+                        );
 
-                    if values.is_none() {
-                        return;
+                        // add the data_table to data_tables
+                        if matches!(data_table.kind, DataTableKind::Import(_))
+                            || include_code_table_values
+                        {
+                            // include values for imports
+                            data_tables.insert(data_table_pos, data_table.clone());
+                        } else {
+                            // don't include values for code tables
+                            data_tables.insert(data_table_pos, data_table.clone_without_values());
+                        }
+
+                        if values.is_none() {
+                            return;
+                        }
                     }
+                    _ => (),
                 }
 
                 if output_rect.len() <= 1 {
                     return;
                 }
 
-                let x_start = std::cmp::max(output_rect.min.x, rect.min.x);
-                let y_start = std::cmp::max(output_rect.min.y, rect.min.y);
-                let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
-                let y_end = std::cmp::min(output_rect.max.y, rect.max.y);
+                let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
+                let y_start = std::cmp::max(output_rect.min.y, bounds.min.y);
+                let x_end = std::cmp::min(output_rect.max.x, bounds.max.x);
+                let y_end = std::cmp::min(output_rect.max.y, bounds.max.y);
 
                 // add the code_run output to cells and values
                 for y in y_start..=y_end {
@@ -347,8 +361,8 @@ impl Sheet {
                             (y - data_table_pos.y) as u32,
                         ) {
                             let pos = Pos {
-                                x: x - rect.min.x,
-                                y: y - rect.min.y,
+                                x: x - bounds.min.x,
+                                y: y - bounds.min.y,
                             };
 
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {

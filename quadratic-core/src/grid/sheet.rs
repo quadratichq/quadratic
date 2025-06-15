@@ -230,10 +230,7 @@ impl Sheet {
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = self.cell_value_ref(pos) {
-            if !matches!(
-                cell_value,
-                CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
-            ) {
+            if !matches!(cell_value, CellValue::Code(_) | CellValue::Import(_)) {
                 return Some(cell_value.clone());
             }
         }

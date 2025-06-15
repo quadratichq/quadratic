@@ -353,7 +353,6 @@ impl SheetFormatUpdates {
         item: &mut SheetFormatUpdatesType<T>,
         rect: Rect,
         other_item: &mut SheetFormatUpdatesType<T>,
-        clear_in_other: bool,
     ) where
         T: Clone + Debug + PartialEq,
     {
@@ -363,80 +362,30 @@ impl SheetFormatUpdates {
                 rect.min.y,
                 Some(rect.max.x),
                 Some(rect.max.y),
-                if clear_in_other {
-                    Some(ClearOption::Clear)
-                } else {
-                    None
-                },
+                None,
             ),
         );
     }
 
     /// Transfers a rect from another SheetFormatUpdates into this one, clearing the other.
-    pub fn transfer_format_rect_from_other(
-        &mut self,
-        rect: Rect,
-        other: &mut SheetFormatUpdates,
-        clear_in_other: bool,
-    ) {
-        Self::transfer_format_rect_item(&mut self.align, rect, &mut other.align, clear_in_other);
-        Self::transfer_format_rect_item(
-            &mut self.vertical_align,
-            rect,
-            &mut other.vertical_align,
-            clear_in_other,
-        );
-        Self::transfer_format_rect_item(&mut self.wrap, rect, &mut other.wrap, clear_in_other);
-        Self::transfer_format_rect_item(
-            &mut self.numeric_format,
-            rect,
-            &mut other.numeric_format,
-            clear_in_other,
-        );
+    pub fn transfer_format_rect_from_other(&mut self, rect: Rect, other: &mut SheetFormatUpdates) {
+        Self::transfer_format_rect_item(&mut self.align, rect, &mut other.align);
+        Self::transfer_format_rect_item(&mut self.vertical_align, rect, &mut other.vertical_align);
+        Self::transfer_format_rect_item(&mut self.wrap, rect, &mut other.wrap);
+        Self::transfer_format_rect_item(&mut self.numeric_format, rect, &mut other.numeric_format);
         Self::transfer_format_rect_item(
             &mut self.numeric_decimals,
             rect,
             &mut other.numeric_decimals,
-            clear_in_other,
         );
-        Self::transfer_format_rect_item(
-            &mut self.numeric_commas,
-            rect,
-            &mut other.numeric_commas,
-            clear_in_other,
-        );
-        Self::transfer_format_rect_item(&mut self.bold, rect, &mut other.bold, clear_in_other);
-        Self::transfer_format_rect_item(&mut self.italic, rect, &mut other.italic, clear_in_other);
-        Self::transfer_format_rect_item(
-            &mut self.text_color,
-            rect,
-            &mut other.text_color,
-            clear_in_other,
-        );
-        Self::transfer_format_rect_item(
-            &mut self.fill_color,
-            rect,
-            &mut other.fill_color,
-            clear_in_other,
-        );
-        Self::transfer_format_rect_item(
-            &mut self.date_time,
-            rect,
-            &mut other.date_time,
-            clear_in_other,
-        );
-        Self::transfer_format_rect_item(
-            &mut self.underline,
-            rect,
-            &mut other.underline,
-            clear_in_other,
-        );
-        Self::transfer_format_rect_item(
-            &mut self.strike_through,
-            rect,
-            &mut other.strike_through,
-            clear_in_other,
-        );
+        Self::transfer_format_rect_item(&mut self.numeric_commas, rect, &mut other.numeric_commas);
+        Self::transfer_format_rect_item(&mut self.bold, rect, &mut other.bold);
+        Self::transfer_format_rect_item(&mut self.italic, rect, &mut other.italic);
+        Self::transfer_format_rect_item(&mut self.text_color, rect, &mut other.text_color);
+        Self::transfer_format_rect_item(&mut self.fill_color, rect, &mut other.fill_color);
+        Self::transfer_format_rect_item(&mut self.date_time, rect, &mut other.date_time);
+        Self::transfer_format_rect_item(&mut self.underline, rect, &mut other.underline);
+        Self::transfer_format_rect_item(&mut self.strike_through, rect, &mut other.strike_through);
     }
 
     fn translate_rect_item<T>(item: &mut SheetFormatUpdatesType<T>, x: i64, y: i64)

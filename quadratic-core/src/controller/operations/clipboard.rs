@@ -122,26 +122,22 @@ impl Clipboard {
         let error = |e, msg| Error::msg(format!("Clipboard decode {:?}: {:?}", msg, e));
 
         // pull out the sub string
-        let sub_string = CLIPBOARD_REGEX
+        let data = CLIPBOARD_REGEX
             .captures(html)
             .ok_or_else(|| error("".into(), "Regex capture error"))?
             .get(1)
             .map_or("", |m| m.as_str());
 
-        // decode html in attribute
-        let decoded = htmlescape::decode_html(sub_string)
-            .map_err(|_| error("".into(), "Html decode error"))?;
-
         // decode base64
-        let bytes = STANDARD
-            .decode(&decoded)
+        let data = STANDARD
+            .decode(&data)
             .map_err(|e| error(e.to_string(), "Base64 decode error"))?;
 
         // decompress and deserialize
         decompress_and_deserialize::<Clipboard>(
             &SerializationFormat::Json,
             &CompressionFormat::Zstd,
-            &bytes,
+            &data,
         )
         .map_err(|e| error(e.to_string(), "Decompression/deserialization error"))
     }
@@ -169,9 +165,6 @@ impl From<Clipboard> for JsClipboard {
 
         // encode to base64 string
         let data = STANDARD.encode(&data);
-
-        // encode to html attribute
-        let data = htmlescape::encode_attribute(&data);
 
         // add closing table tag
         html.push_str(&data);
@@ -495,7 +488,6 @@ impl GridController {
                     data_table_pos,
                     intersection_rect,
                     sheet_format_updates,
-                    true,
                 );
 
                 if let Some(table_format_updates) = table_format_updates {
