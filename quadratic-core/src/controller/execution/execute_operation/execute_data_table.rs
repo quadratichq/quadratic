@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
-    a1::{A1Context, A1Selection},
+    a1::A1Selection,
     cell_values::CellValues,
     cellvalue::Import,
     controller::{
@@ -503,7 +503,8 @@ impl GridController {
                 values.width() as i64,
                 values.height() as i64,
             );
-            sheet.set_cell_values(values_rect, values);
+            let values_sheet_rect = values_rect.to_sheet_rect(sheet_id);
+            let old_values = sheet.set_cell_values(values_rect, values);
 
             let mut sheet_format_updates = SheetFormatUpdates::default();
             let formats_rect = Rect::from_numbers(
@@ -528,7 +529,17 @@ impl GridController {
                 });
             }
 
-            let values_sheet_rect = values_rect.to_sheet_rect(sheet_id);
+            // Move any validations that were tied to the table to the sheet
+            let sheet = self.grid.try_sheet_mut_result(sheet_id)?;
+            let validations_reverse_operations = sheet
+                .validations
+                .transfer_to_sheet(&table_name, &self.a1_context);
+            if !validations_reverse_operations.is_empty() {
+                transaction
+                    .reverse_operations
+                    .extend(validations_reverse_operations);
+                transaction.validations.insert(sheet_id);
+            }
 
             self.send_updated_bounds(transaction, sheet_id);
 
@@ -545,10 +556,7 @@ impl GridController {
             });
             reverse_operations.push(Operation::SetCellValues {
                 sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-                values: CellValues::new(
-                    data_table_rect.width() as u32,
-                    data_table_rect.height() as u32,
-                ),
+                values: old_values.into(),
             });
             self.data_table_operations(
                 transaction,
@@ -556,23 +564,8 @@ impl GridController {
                 reverse_operations,
                 Some(&values_sheet_rect.union(&data_table_rect)),
             );
-            self.check_deleted_data_tables(transaction, &values_sheet_rect);
 
-            // Move any validations that were tied to the table to the sheet
-            let mut a1_context = A1Context::default();
-            if let Some(table) = self.a1_context.try_table(&table_name) {
-                // we only need the table in a separate a1_context (this is
-                // done to avoid borrow issues below)
-                a1_context.table_map.insert(table.clone());
-                let sheet = self.try_sheet_mut_result(sheet_id)?;
-                let reverse_operations = sheet
-                    .validations
-                    .transfer_to_sheet(&table_name, &a1_context);
-                if !reverse_operations.is_empty() {
-                    transaction.reverse_operations.extend(reverse_operations);
-                    transaction.validations.insert(sheet_id);
-                }
-            }
+            self.check_deleted_data_tables(transaction, &values_sheet_rect);
 
             return Ok(());
         };
