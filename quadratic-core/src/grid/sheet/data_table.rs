@@ -97,11 +97,11 @@ impl Sheet {
     pub fn data_tables_rects_intersect_rect(
         &self,
         rect: Rect,
-        filter: impl Fn(&DataTable) -> bool,
+        filter: impl Fn(&Pos, &DataTable) -> bool,
     ) -> impl Iterator<Item = Rect> {
         self.data_tables
             .get_in_rect(rect, false)
-            .filter(move |(_, _, data_table)| filter(data_table))
+            .filter(move |(_, pos, data_table)| filter(pos, data_table))
             .map(|(_, data_table_pos, data_table)| data_table.output_rect(data_table_pos, false))
     }
 

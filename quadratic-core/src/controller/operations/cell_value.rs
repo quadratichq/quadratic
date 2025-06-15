@@ -41,7 +41,7 @@ impl GridController {
         let mut data_tables_rects = vec![];
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             data_tables_rects = sheet
-                .data_tables_rects_intersect_rect(moved_left_up_rect, |data_table| {
+                .data_tables_rects_intersect_rect(moved_left_up_rect, |_, data_table| {
                     !data_table.is_code()
                 })
                 .collect();
@@ -380,101 +380,111 @@ impl GridController {
             for (output_rect, intersection_rect, data_table) in
                 sheet.iter_data_tables_intersects_rect(rect)
             {
-                let contains_source_cell = intersection_rect.contains(output_rect.min);
+                // there is no pasting on top of code cell output
+                if data_table.is_code() {
+                    continue;
+                }
+
+                let data_table_pos = output_rect.min;
+
+                let contains_source_cell = intersection_rect.contains(data_table_pos);
+                if contains_source_cell {
+                    continue;
+                }
 
                 let is_table_being_deleted = match (delete_value, selection) {
                     (true, Some(selection)) => {
                         start_pos.sheet_id == selection.sheet_id
-                            && selection.contains_pos(output_rect.min, self.a1_context())
+                            && selection.contains_pos(data_table_pos, self.a1_context())
                     }
                     _ => false,
                 };
+                if is_table_being_deleted {
+                    continue;
+                }
 
-                // there is no pasting on top of code cell output
-                if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
-                    let adjusted_rect = Rect::from_numbers(
-                        intersection_rect.min.x - start_pos.x,
-                        intersection_rect.min.y - start_pos.y,
-                        intersection_rect.width() as i64,
-                        intersection_rect.height() as i64,
-                    );
+                let adjusted_rect = Rect::from_numbers(
+                    intersection_rect.min.x - start_pos.x,
+                    intersection_rect.min.y - start_pos.y,
+                    intersection_rect.width() as i64,
+                    intersection_rect.height() as i64,
+                );
 
-                    // pull the values from `values`, replacing
-                    // the values in `values` with CellValue::Blank
-                    let data_table_cell_values = values.get_rect(adjusted_rect);
+                // pull the values from `values`, replacing
+                // the values in `values` with CellValue::Blank
+                let data_table_cell_values = values.get_rect(adjusted_rect);
 
-                    let paste_table_in_import =
-                        data_table_cell_values
-                            .iter()
-                            .flatten()
-                            .find_map(|cell_value| {
-                                cell_value.as_ref().filter(|cv| {
-                                    cv.is_code() || cv.is_import() || cv.is_image() || cv.is_html()
-                                })
-                            });
-
-                    if let Some(paste_table_in_import) = paste_table_in_import {
-                        let cell_type = match paste_table_in_import {
-                            CellValue::Code(_) => "code",
-                            CellValue::Import(_) => "table",
-                            CellValue::Image(_) => "chart",
-                            CellValue::Html(_) => "chart",
-                            _ => "unknown",
-                        };
-                        let message = format!("Cannot place {} within a table", cell_type);
-
-                        #[cfg(any(target_family = "wasm", test))]
-                        {
-                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
-                            crate::wasm_bindings::js::jsClientMessage(
-                                message.to_owned(),
-                                severity.to_string(),
-                            );
-                        }
-
-                        return Err(Error::msg(message));
-                    }
-
-                    let contains_header = data_table.get_show_columns()
-                        && intersection_rect.y_range().contains(&output_rect.min.y);
-                    let headers = data_table.column_headers.to_owned();
-
-                    if let (Some(mut headers), true) = (headers, contains_header) {
-                        let y = output_rect.min.y - start_pos.y;
-
-                        for x in intersection_rect.x_range() {
-                            let new_x = x - output_rect.min.x;
-
-                            if let Some(header) = headers.get_mut(new_x as usize) {
-                                let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
-                                let safe_y = u32::try_from(y).unwrap_or(0);
-
-                                let cell_value =
-                                    values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
-
-                                header.name = cell_value;
-                            }
-                        }
-
-                        let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
-                        ops.push(Operation::DataTableMeta {
-                            sheet_pos,
-                            name: None,
-                            alternating_colors: None,
-                            columns: Some(headers.to_vec()),
-                            show_ui: None,
-                            show_name: None,
-                            show_columns: None,
-                            readonly: None,
+                let paste_table_in_import =
+                    data_table_cell_values
+                        .iter()
+                        .flatten()
+                        .find_map(|cell_value| {
+                            cell_value.as_ref().filter(|cv| {
+                                cv.is_code() || cv.is_import() || cv.is_image() || cv.is_html()
+                            })
                         });
+
+                if let Some(paste_table_in_import) = paste_table_in_import {
+                    let cell_type = match paste_table_in_import {
+                        CellValue::Code(_) => "code",
+                        CellValue::Import(_) => "table",
+                        CellValue::Image(_) => "chart",
+                        CellValue::Html(_) => "chart",
+                        _ => "unknown",
+                    };
+                    let message = format!("Cannot place {} within a table", cell_type);
+
+                    #[cfg(any(target_family = "wasm", test))]
+                    {
+                        let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                        crate::wasm_bindings::js::jsClientMessage(
+                            message.to_owned(),
+                            severity.to_string(),
+                        );
                     }
 
-                    let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
-                    ops.push(Operation::SetDataTableAt {
+                    return Err(Error::msg(message));
+                }
+
+                let contains_header = data_table.get_show_columns()
+                    && intersection_rect.y_range().contains(&data_table_pos.y);
+                let headers = data_table.column_headers.to_owned();
+
+                if let (Some(mut headers), true) = (headers, contains_header) {
+                    let y = data_table_pos.y - start_pos.y;
+
+                    for x in intersection_rect.x_range() {
+                        let new_x = x - data_table_pos.x;
+
+                        if let Some(header) = headers.get_mut(new_x as usize) {
+                            let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
+                            let safe_y = u32::try_from(y).unwrap_or(0);
+
+                            let cell_value =
+                                values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
+
+                            header.name = cell_value;
+                        }
+                    }
+
+                    let sheet_pos = data_table_pos.to_sheet_pos(start_pos.sheet_id);
+                    ops.push(Operation::DataTableMeta {
                         sheet_pos,
-                        values: CellValues::from(data_table_cell_values),
+                        name: None,
+                        alternating_colors: None,
+                        columns: Some(headers.to_vec()),
+                        show_ui: None,
+                        show_name: None,
+                        show_columns: None,
+                        readonly: None,
                     });
                 }
+
+                let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
+                ops.push(Operation::SetDataTableAt {
+                    sheet_pos,
+                    values: CellValues::from(data_table_cell_values),
+                });
             }
         }
 

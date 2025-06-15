@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
@@ -290,13 +292,15 @@ impl GridController {
 
             transaction.add_code_cell(sheet_id, data_table_pos);
             transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
-            let rows = data_table.get_rows_with_wrap_in_rect(&data_table_pos, &rect, true);
-            if !rows.is_empty() {
+
+            let mut table_rows = HashSet::new();
+            data_table.get_rows_with_wrap_in_rect(&data_table_pos, &rect, true, &mut table_rows);
+            if !table_rows.is_empty() {
                 let resize_rows = transaction
                     .resize_rows
                     .entry(sheet_pos.sheet_id)
                     .or_default();
-                resize_rows.extend(rows);
+                resize_rows.extend(table_rows);
             }
 
             pos.y -= data_table.y_adjustment(true);

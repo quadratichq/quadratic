@@ -362,27 +362,6 @@ impl GridController {
         }
     }
 
-    fn clipboard_cell_values_operations(
-        &self,
-        cell_values: &mut CellValues,
-        cell_value_pos: Pos,
-        start_pos: SheetPos,
-        values: CellValues,
-        clipboard_selection: Option<&A1Selection>,
-        clipboard_operation: Option<&ClipboardOperation>,
-    ) -> Result<Vec<Operation>> {
-        let delete_value = matches!(clipboard_operation, Some(ClipboardOperation::Cut));
-
-        self.cell_values_operations(
-            clipboard_selection,
-            start_pos,
-            cell_value_pos,
-            cell_values,
-            values,
-            delete_value,
-        )
-    }
-
     #[allow(clippy::too_many_arguments)]
     fn clipboard_code_operations(
         &self,
@@ -475,6 +454,8 @@ impl GridController {
         sheet_id: SheetId,
         formats_rect: Rect,
         sheet_format_updates: &mut SheetFormatUpdates,
+        selection: Option<&A1Selection>,
+        delete_value: bool,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
@@ -483,6 +464,22 @@ impl GridController {
                 sheet.iter_data_tables_intersects_rect(formats_rect)
             {
                 let data_table_pos = output_rect.min;
+
+                let contains_source_cell = intersection_rect.contains(data_table_pos);
+                if contains_source_cell {
+                    continue;
+                }
+
+                let is_table_being_deleted = match (delete_value, selection) {
+                    (true, Some(selection)) => {
+                        sheet_id == selection.sheet_id
+                            && selection.contains_pos(output_rect.min, self.a1_context())
+                    }
+                    _ => false,
+                };
+                if is_table_being_deleted {
+                    continue;
+                }
 
                 let table_format_updates = data_table.transfer_formats_from_sheet_format_updates(
                     data_table_pos,
@@ -572,6 +569,8 @@ impl GridController {
 
         cursor.sheet_id = selection.sheet_id;
 
+        let delete_value = matches!(clipboard.operation, ClipboardOperation::Cut);
+
         match special {
             PasteSpecial::None => {
                 let (values, tables) = GridController::cell_values_from_clipboard_cells(
@@ -581,13 +580,13 @@ impl GridController {
                 );
 
                 if let Some(values) = values {
-                    let cell_value_ops = self.clipboard_cell_values_operations(
-                        cell_values,
-                        cell_value_pos,
-                        start_pos.to_sheet_pos(selection.sheet_id),
-                        values,
+                    let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
-                        Some(&clipboard.operation),
+                        start_pos.to_sheet_pos(selection.sheet_id),
+                        cell_value_pos,
+                        cell_values,
+                        values,
+                        delete_value,
                     )?;
                     ops.extend(cell_value_ops);
                 }
@@ -617,13 +616,13 @@ impl GridController {
                 );
 
                 if let Some(values) = values {
-                    let cell_value_ops = self.clipboard_cell_values_operations(
-                        cell_values,
-                        cell_value_pos,
-                        start_pos.to_sheet_pos(selection.sheet_id),
-                        values,
+                    let cell_value_ops = self.cell_values_operations(
                         Some(&clipboard.selection),
-                        Some(&clipboard.operation),
+                        start_pos.to_sheet_pos(selection.sheet_id),
+                        cell_value_pos,
+                        cell_values,
+                        values,
+                        delete_value,
                     )?;
                     ops.extend(cell_value_ops);
                 }
@@ -638,15 +637,19 @@ impl GridController {
 
             if !formats.is_default() {
                 formats.translate_in_place(contiguous_2d_translate_x, contiguous_2d_translate_y);
+
+                let formats_rect = Rect::from_numbers(
+                    start_pos.x,
+                    start_pos.y,
+                    clipboard.w as i64,
+                    clipboard.h as i64,
+                );
                 let formats_ops = self.clipboard_formats_operations(
                     selection.sheet_id,
-                    Rect::from_numbers(
-                        start_pos.x,
-                        start_pos.y,
-                        clipboard.w as i64,
-                        clipboard.h as i64,
-                    ),
+                    formats_rect,
                     formats,
+                    Some(&clipboard.selection),
+                    delete_value,
                 );
                 ops.extend(formats_ops);
             }
@@ -727,13 +730,13 @@ impl GridController {
                 let cell_value_pos = Pos::from((start_x, start_y));
                 let sheet_pos = SheetPos::new(start_pos.sheet_id, x, y);
 
-                ops.extend(self.clipboard_cell_values_operations(
-                    &mut cell_values,
-                    cell_value_pos,
+                ops.extend(self.cell_values_operations(
+                    None,
                     sheet_pos,
+                    cell_value_pos,
+                    &mut cell_values,
                     values.to_owned(), // we need to copy the values for each paste block
-                    None,
-                    None,
+                    false,             // we don't delete values for plain text
                 )?);
             }
         }
@@ -751,6 +754,8 @@ impl GridController {
                 start_pos.sheet_id,
                 formats_rect,
                 &mut sheet_format_updates,
+                Some(selection),
+                false, // we don't delete values for plain text
             ));
 
             ops.push(Operation::SetCellFormatsA1 {
@@ -787,6 +792,8 @@ impl GridController {
             ClipboardOperation::Copy => clipboard.origin.sheet_id,
         };
 
+        let delete_value = matches!(clipboard.operation, ClipboardOperation::Cut);
+
         // If the clipboard is larger than the selection, we need to paste multiple times.
         // We don't want the paste to exceed the bounds of the selection (e.g. end_pos).
         let (max_x, max_y, cell_value_width, cell_value_height) =
@@ -809,14 +816,23 @@ impl GridController {
             clipboard.w as i64 + 1,
             clipboard.h as i64 + 1,
         );
-        let mut data_tables_rects = vec![];
-        if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-            data_tables_rects = sheet
-                .data_tables_rects_intersect_rect(moved_left_up_rect, |data_table| {
-                    !data_table.is_code()
-                })
-                .collect();
-        }
+        let mut data_tables_rects = self
+            .try_sheet(selection.sheet_id)
+            .map(|sheet| {
+                sheet
+                    .data_tables_rects_intersect_rect(
+                        moved_left_up_rect,
+                        |&data_table_pos, data_table| {
+                            !(data_table.is_code()
+                                || (delete_value
+                                    && clipboard
+                                        .selection
+                                        .contains_pos(data_table_pos, self.a1_context())))
+                        },
+                    )
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
 
         let should_expand_data_table =
             Sheet::should_expand_data_table(&data_tables_rects, clipboard_rect);
@@ -1756,7 +1772,7 @@ mod test {
                 insert_at,
                 &selection,
                 clipboard,
-                PasteSpecial::None
+                PasteSpecial::None,
             )
             .is_err()
         );
