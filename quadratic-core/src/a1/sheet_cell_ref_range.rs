@@ -64,6 +64,7 @@ impl SheetCellRefRange {
 
             // table names are unique per file; only include sheet name if explicit
             CellRefRange::Table { .. } => self.explicit_sheet_name,
+            CellRefRange::Named { .. } => true,
         }
     }
 

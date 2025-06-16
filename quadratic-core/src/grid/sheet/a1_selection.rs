@@ -2,7 +2,10 @@ use indexmap::IndexMap;
 
 use crate::{
     CellValue, Pos, Rect,
-    a1::{A1Context, A1Selection, CellRefRange, ColRange, RefRangeBounds, TableRef},
+    a1::{
+        A1Context, A1Selection, CellRefRange, ColRange, RefRangeBounds, TableRef,
+        expand::expand_named_ranges,
+    },
     grid::GridBounds,
 };
 
@@ -31,7 +34,7 @@ impl Sheet {
         skip_code_runs: bool,
         include_blanks: bool,
         ignore_formatting: bool,
-        a1_context: &A1Context,
+        context: &A1Context,
     ) -> Option<IndexMap<Pos, &CellValue>> {
         let mut count = 0u64;
         let max_count = max_count.unwrap_or(i64::MAX) as u64;
@@ -47,14 +50,16 @@ impl Sheet {
         let check_code =
             |entry: &CellValue| skip_code_runs || !matches!(entry, &CellValue::Code(_));
 
-        for range in selection.ranges.iter() {
+        let expanded_ranges = expand_named_ranges(selection.ranges.as_slice(), context);
+        for range in expanded_ranges.iter() {
             let rect = match range {
                 CellRefRange::Sheet { range } => {
                     Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
                 }
                 CellRefRange::Table { range } => {
-                    self.table_ref_to_rect(range, false, false, a1_context)
+                    self.table_ref_to_rect(range, false, false, context)
                 }
+                CellRefRange::Named { .. } => None,
             };
             if let Some(rect) = rect {
                 for x in rect.x_range() {
@@ -228,10 +233,11 @@ impl Sheet {
         force_columns: bool,
         auto_detect_table_bounds: bool,
         ignore_formatting: bool,
-        a1_context: &A1Context,
+        context: &A1Context,
     ) -> Vec<Rect> {
         let mut rects = Vec::new();
-        for range in selection.ranges.iter() {
+        let expanded_ranges = expand_named_ranges(selection.ranges.as_slice(), context);
+        for range in expanded_ranges.iter() {
             match range {
                 CellRefRange::Sheet { range } => {
                     rects.push(self.ref_range_bounds_to_rect(range, ignore_formatting));
@@ -241,11 +247,12 @@ impl Sheet {
                         range,
                         force_columns,
                         auto_detect_table_bounds,
-                        a1_context,
+                        context,
                     ) {
                         rects.push(rect);
                     }
                 }
+                CellRefRange::Named { .. } => (),
             }
         }
         rects
@@ -283,21 +290,22 @@ impl Sheet {
         force_columns: bool,
         force_table_bounds: bool,
         ignore_formatting: bool,
-        a1_context: &A1Context,
+        context: &A1Context,
     ) -> A1Selection {
+        let expanded_ranges = expand_named_ranges(selection.ranges.as_slice(), context);
         A1Selection {
             sheet_id: selection.sheet_id,
             cursor: selection.cursor,
-            ranges: selection
-                .ranges
+            ranges: expanded_ranges
                 .iter()
                 .filter_map(|range| match range {
                     CellRefRange::Sheet { range } => Some(CellRefRange::new_relative_rect(
                         self.ref_range_bounds_to_rect(range, ignore_formatting),
                     )),
                     CellRefRange::Table { range } => self
-                        .table_ref_to_rect(range, force_columns, force_table_bounds, a1_context)
+                        .table_ref_to_rect(range, force_columns, force_table_bounds, context)
                         .map(CellRefRange::new_relative_rect),
+                    CellRefRange::Named { .. } => None,
                 })
                 .collect(),
         }

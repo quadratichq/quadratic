@@ -9,6 +9,7 @@ mod create;
 mod delete;
 mod display;
 mod exclude;
+pub mod expand;
 mod intersects;
 mod mutate;
 mod parse;

@@ -7,7 +7,6 @@ impl CellRefRange {
     /// as self's column(s). That has to be handled one step above this call.
     pub fn removed_column(&mut self, column: i64) -> bool {
         let mut changed = false;
-
         match self {
             Self::Sheet { range } => {
                 // do nothing if the column range is unbounded
@@ -27,8 +26,12 @@ impl CellRefRange {
                     }
                 }
             }
-            // todo: handle table ranges--for now it ignores them
+            // table ranges are not changed
             Self::Table { .. } => (),
+
+            // we have to handle named ranges in the parent, since we can't
+            // expand to multiple RefRangeBounds here
+            Self::Named { .. } => (),
         }
         changed
     }
@@ -60,6 +63,10 @@ impl CellRefRange {
             }
             // todo: handle table ranges--for now it ignores them
             Self::Table { .. } => (),
+
+            // we have to handle named ranges in the parent, since we can't
+            // expand to multiple RefRangeBounds here
+            Self::Named { .. } => (),
         }
         changed
     }
@@ -83,6 +90,10 @@ impl CellRefRange {
             }
             // todo: handle table ranges--for now it ignores them
             Self::Table { .. } => (),
+
+            // we have to handle named ranges in the parent, since we can't
+            // expand to multiple RefRangeBounds here
+            Self::Named { .. } => (),
         }
         changed
     }
@@ -106,6 +117,10 @@ impl CellRefRange {
             }
             // todo: handle table ranges--for now it ignores them
             Self::Table { .. } => (),
+
+            // we have to handle named ranges in the parent, since we can't
+            // expand to multiple RefRangeBounds here
+            Self::Named { .. } => (),
         }
         changed
     }

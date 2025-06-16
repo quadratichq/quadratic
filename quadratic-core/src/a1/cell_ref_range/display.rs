@@ -9,6 +9,9 @@ impl fmt::Debug for CellRefRange {
             CellRefRange::Table { range } => {
                 f.debug_tuple("CellRefRange::Table").field(range).finish()
             }
+            CellRefRange::Named { range } => {
+                f.debug_tuple("CellRefRange::Named").field(range).finish()
+            }
         }
     }
 }
@@ -18,6 +21,7 @@ impl fmt::Display for CellRefRange {
         match self {
             Self::Sheet { range } => fmt::Display::fmt(range, f),
             Self::Table { range } => fmt::Display::fmt(range, f),
+            Self::Named { range } => fmt::Display::fmt(range, f),
         }
     }
 }

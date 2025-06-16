@@ -5,6 +5,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.might_intersect_rect(rect),
             Self::Table { range } => range.intersect_rect(rect, a1_context),
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -12,6 +15,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.might_contain_pos(pos),
             Self::Table { range } => range.contains(pos, a1_context),
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -19,6 +25,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.contains_pos(pos),
             Self::Table { range } => range.contains(pos, a1_context),
+
+            // need to handle this in the parent
+            Self::Named { .. } => false,
         }
     }
 
@@ -32,6 +41,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.delete(range_to_delete, a1_context),
             Self::Table { range } => range.delete(range_to_delete, a1_context),
+
+            // need to handle this in the parent
+            Self::Named { .. } => vec![],
         }
     }
 }

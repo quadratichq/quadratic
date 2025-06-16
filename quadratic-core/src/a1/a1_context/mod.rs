@@ -6,6 +6,7 @@
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
+mod named_map;
 mod sheet_map;
 mod table_map;
 mod table_map_entry;
@@ -14,6 +15,7 @@ use crate::{
     SheetPos,
     grid::{CodeCellLanguage, SheetId},
 };
+pub use named_map::*;
 pub use sheet_map::*;
 pub use table_map::*;
 pub use table_map_entry::*;
@@ -24,6 +26,7 @@ use super::{CellRefRange, RefRangeBounds};
 pub struct A1Context {
     pub sheet_map: SheetMap,
     pub table_map: TableMap,
+    pub named_map: NamedMap,
 }
 
 // Used by the client to get table information.
@@ -61,6 +64,11 @@ impl A1Context {
     /// Finds a sheetId using a sheet name.
     pub fn try_sheet_id(&self, sheet_id: SheetId) -> Option<&String> {
         self.sheet_map.try_sheet_id(sheet_id)
+    }
+
+    /// Finds a named entry using a name.
+    pub fn try_named(&self, name: &str) -> Option<&NamedMapEntry> {
+        self.named_map.try_named(name)
     }
 
     /// Returns an iterator over all the tables in the context.
@@ -134,6 +142,7 @@ impl A1Context {
         Self {
             sheet_map,
             table_map,
+            named_map: NamedMap::default(),
         }
     }
 
@@ -147,6 +156,12 @@ impl A1Context {
         let mut ret = Self::default();
         ret.sheet_map.insert_parts(sheet_name, sheet_id);
         ret
+    }
+
+    /// Allows tests to directly change the named map
+    #[cfg(test)]
+    pub fn named_mut(&mut self) -> &mut NamedMap {
+        &mut self.named_map
     }
 }
 
