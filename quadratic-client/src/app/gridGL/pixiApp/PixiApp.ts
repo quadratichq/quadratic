@@ -436,6 +436,10 @@ export class PixiApp {
   cellsSheetsCreate() {
     this.cellsSheets.create();
   }
+
+  setCursorDirty() {
+    if (this.cursor) this.cursor.dirty = true;
+  }
 }
 
 export const pixiApp = new PixiApp();
