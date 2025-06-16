@@ -2,7 +2,7 @@ use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    CellValue, a1::CellRefRange, controller::GridController, error_core::CoreError,
+    CellValue, Pos, a1::CellRefRange, controller::GridController, error_core::CoreError,
     grid::CodeCellLanguage,
 };
 use serde::{Deserialize, Serialize};
@@ -44,6 +44,9 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
+
+        // used by #this row selections
+        source_cell: Option<Pos>,
     ) -> JsCellsA1Response {
         let map_error = |e: CoreError| JsCellsA1Response {
             values: None,
@@ -117,6 +120,7 @@ impl GridController {
             false,
             true,
             &self.a1_context,
+            source_cell,
         );
         if rects.len() > 1 {
             return map_error(CoreError::A1Error(
@@ -199,7 +203,7 @@ mod test {
         let mut gc = GridController::test();
 
         let result =
-            gc.calculation_get_cells_a1("bad transaction id".to_string(), "A1".to_string());
+            gc.calculation_get_cells_a1("bad transaction id".to_string(), "A1".to_string(), None);
         assert!(result.error.is_some());
     }
 
@@ -207,7 +211,8 @@ mod test {
     fn test_calculation_get_cells_no_transaction() {
         let mut gc = GridController::test();
 
-        let result = gc.calculation_get_cells_a1(Uuid::new_v4().to_string(), "A1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(Uuid::new_v4().to_string(), "A1".to_string(), None);
         assert!(result.error.is_some());
     }
 
@@ -230,7 +235,7 @@ mod test {
         let transactions = gc.transactions.async_transactions_mut();
         transactions[0].current_sheet_pos = None;
         let transaction_id = transactions[0].id.to_string();
-        let result = gc.calculation_get_cells_a1(transaction_id, "A1".to_string());
+        let result = gc.calculation_get_cells_a1(transaction_id, "A1".to_string(), None);
         assert!(result.error.is_some());
     }
 
@@ -254,6 +259,7 @@ mod test {
         let result = gc.calculation_get_cells_a1(
             transaction_id.to_string(),
             "'bad sheet name'!A1".to_string(),
+            None,
         );
         assert!(result.error.is_some());
         gc.calculation_complete(JsCodeResult {
@@ -305,7 +311,8 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert!(result.error.is_none());
 
         let sheet = gc.sheet(sheet_id);
@@ -350,7 +357,8 @@ mod test {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert_eq!(
             result,
             JsCellsA1Response {
@@ -430,7 +438,8 @@ mod test {
         );
 
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1:A".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "A1:A".to_string(), None);
         assert_eq!(
             result,
             JsCellsA1Response {
@@ -503,7 +512,8 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert_eq!(
             result,
             JsCellsA1Response {
@@ -550,22 +560,26 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "B:".to_string(), None);
         assert!(result.values.unwrap().two_dimensional);
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B".to_string());
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B".to_string(), None);
         assert!(!result.values.unwrap().two_dimensional);
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "2:".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "2:".to_string(), None);
         assert!(result.values.unwrap().two_dimensional);
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "2".to_string());
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "2".to_string(), None);
         assert!(!result.values.unwrap().two_dimensional);
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "D5:E5".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "D5:E5".to_string(), None);
         assert!(!result.values.unwrap().two_dimensional);
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "D5:".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "D5:".to_string(), None);
         assert!(result.values.unwrap().two_dimensional);
     }
 
@@ -595,8 +609,11 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc
-            .calculation_get_cells_a1(transaction_id.to_string(), "Table1[[#HEADERS]]".to_string());
+        let result = gc.calculation_get_cells_a1(
+            transaction_id.to_string(),
+            "Table1[[#HEADERS]]".to_string(),
+            None,
+        );
         assert_eq!(
             result,
             JsCellsA1Response {
@@ -654,8 +671,11 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result =
-            gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1[[#ALL]]".to_string());
+        let result = gc.calculation_get_cells_a1(
+            transaction_id.to_string(),
+            "Table1[[#ALL]]".to_string(),
+            None,
+        );
         assert_eq!(
             result,
             JsCellsA1Response {
@@ -714,7 +734,8 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string(), None);
         assert!(result.values.is_some());
     }
 
@@ -740,7 +761,8 @@ mod test {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "Table1".to_string(), None);
         assert!(result.values.is_some());
     }
 }

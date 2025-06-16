@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
+    Pos,
     a1::{A1Selection, CellRefRange, RefRangeBounds, js_selection::JsSelection},
     grid::SheetId,
 };
@@ -73,15 +74,26 @@ pub fn cell_ref_range_to_ref_range_bounds(
     cell_ref_range: String,
     show_table_headers_for_python: bool,
     context: &JsA1Context,
+    source_cell_x: Option<i32>,
+    source_cell_y: Option<i32>,
 ) -> Result<JsValue, String> {
     let cell_ref_range =
         serde_json::from_str::<CellRefRange>(&cell_ref_range).map_err(|e| e.to_string())?;
     let ref_range_bounds = match cell_ref_range {
         CellRefRange::Sheet { range } => range,
         CellRefRange::Table { range } => {
+            let source_cell = if let (Some(x), Some(y)) = (source_cell_x, source_cell_y) {
+                Some(Pos {
+                    x: x as i64,
+                    y: y as i64,
+                })
+            } else {
+                None
+            };
             match range.convert_cells_accessed_to_ref_range_bounds(
                 show_table_headers_for_python,
                 context.get_context(),
+                source_cell,
             ) {
                 Some(ref_range_bounds) => ref_range_bounds,
                 None => {

@@ -154,7 +154,7 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells request from python
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert_eq!(
             cells,
             JsCellsA1Response {
@@ -221,7 +221,7 @@ mod tests {
         let transaction_id = gc.async_transactions()[0].id;
 
         // mock the get_cells to populate dependencies
-        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         // mock the calculation_complete
         gc.calculation_complete(JsCodeResult {
             transaction_id: transaction_id.to_string(),
@@ -237,7 +237,7 @@ mod tests {
 
         let transaction_id = gc.async_transactions()[0].id;
 
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert_eq!(
             cells,
             JsCellsA1Response {
@@ -498,7 +498,8 @@ mod tests {
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
         assert_eq!(result.values.as_ref().unwrap().cells.len(), 1);
         assert_eq!(
             result.values.unwrap().cells[0],
@@ -528,7 +529,8 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string());
+        let result =
+            gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string(), None);
         assert_eq!(result.values.as_ref().unwrap().cells.len(), 1);
         assert_eq!(
             result.values.unwrap().cells[0],

@@ -173,7 +173,7 @@ impl GridController {
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
                 if let Some(range) =
-                    table_ref.convert_to_ref_range_bounds(true, context, false, true)
+                    table_ref.convert_to_ref_range_bounds(true, context, false, true, None)
                 {
                     add_table_ops(range, table, &mut ops);
                 }
@@ -491,8 +491,8 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::grid::CellWrap;
     use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-    use crate::{Pos, a1::A1Selection};
     use crate::test_util::*;
+    use crate::{Pos, a1::A1Selection};
 
     #[test]
     fn test_set_align_selection() {

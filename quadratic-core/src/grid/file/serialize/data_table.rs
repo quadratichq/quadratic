@@ -52,6 +52,7 @@ fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
         headers: table_ref.headers,
         totals: table_ref.totals,
         col_range: import_col_range(table_ref.col_range),
+        this_row: table_ref.this_row,
     }
 }
 
@@ -216,6 +217,7 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
                 headers: range.headers,
                 totals: range.totals,
                 col_range: export_col_range(range.col_range),
+                this_row: range.this_row,
             })
         }
     }

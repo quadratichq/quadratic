@@ -23,6 +23,7 @@ pub(super) fn is_table_ref(mut p: Parser<'_>) -> Option<bool> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TableRefToken {
+    ThisRow(String),
     Column(String),
     Special(String),
     Comma,
@@ -32,6 +33,7 @@ enum TableRefToken {
 fn parse_segment_contents(chars: &mut Peekable<Chars<'_>>) -> Result<TableRefToken, RunErrorMsg> {
     let mut ret = String::new();
     let is_special = chars.peek() == Some(&'#');
+    let is_this_row = chars.peek() == Some(&'@');
     while let Some(c) = chars.peeking_next(|c| !matches!(c, '[' | ']')) {
         if !is_special && c == '\'' {
             // escaped char
@@ -40,6 +42,10 @@ fn parse_segment_contents(chars: &mut Peekable<Chars<'_>>) -> Result<TableRefTok
             // normal char
             ret.push(c);
         }
+    }
+
+    if is_this_row {
+        return Ok(TableRefToken::ThisRow(ret));
     }
     Ok(match is_special {
         true => TableRefToken::Special(ret),
@@ -113,14 +119,17 @@ impl SyntaxRule for TableReference {
                     let mut headers = false;
                     let mut totals = false;
                     let mut col_range = None;
+                    let mut this_row = false;
 
                     let mut chars = brackets_inner_str.chars().peekable();
                     let mut special_segments = vec![];
                     if brackets_inner_str.starts_with('[') {
                         let mut tokens = std::iter::from_fn(|| parse_token(&mut chars)).peekable();
                         while let Some(token) = tokens.next() {
+                            let is_this_row = matches!(&token, &Ok(TableRefToken::ThisRow(_)));
                             match token? {
-                                TableRefToken::Column(start_col) => {
+                                TableRefToken::Column(start_col)
+                                | TableRefToken::ThisRow(start_col) => {
                                     if col_range.is_some() {
                                         return Err(RunErrorMsg::BadCellReference);
                                     }
@@ -139,6 +148,9 @@ impl SyntaxRule for TableReference {
                                     } else {
                                         col_range = Some(ColRange::Col(start_col));
                                     }
+                                    if is_this_row {
+                                        this_row = true;
+                                    }
                                 }
                                 TableRefToken::Special(s) => special_segments.push(s),
                                 TableRefToken::Comma | TableRefToken::Colon => {
@@ -152,6 +164,10 @@ impl SyntaxRule for TableReference {
                     } else {
                         // single segment
                         match parse_segment_contents(&mut chars)? {
+                            TableRefToken::ThisRow(c) => {
+                                this_row = true;
+                                col_range = Some(ColRange::Col(c))
+                            }
                             TableRefToken::Column(c) => col_range = Some(ColRange::Col(c)),
                             TableRefToken::Special(s) => special_segments.push(s),
                             TableRefToken::Comma | TableRefToken::Colon => {
@@ -171,6 +187,9 @@ impl SyntaxRule for TableReference {
                                 data = true;
                                 headers = true;
                             }
+                            "#this row" => {
+                                this_row = true;
+                            }
                             _ => return Err(RunErrorMsg::BadCellReference),
                         }
                     }
@@ -181,6 +200,7 @@ impl SyntaxRule for TableReference {
                         headers,
                         totals,
                         col_range: col_range.unwrap_or(ColRange::All),
+                        this_row,
                     })
                 })()
             }

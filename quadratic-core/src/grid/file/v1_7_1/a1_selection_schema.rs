@@ -57,4 +57,7 @@ pub struct TableRefSchema {
     pub headers: bool,
     pub totals: bool,
     pub col_range: ColRangeSchema,
+
+    #[serde(default)]
+    pub this_row: bool,
 }

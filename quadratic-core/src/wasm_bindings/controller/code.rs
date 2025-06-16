@@ -23,8 +23,17 @@ impl GridController {
         &mut self,
         transaction_id: String,
         a1: String,
+        source_x: i32,
+        source_y: i32,
     ) -> Result<Vec<u8>, String> {
-        let response = self.calculation_get_cells_a1(transaction_id, a1);
+        let response = self.calculation_get_cells_a1(
+            transaction_id,
+            a1,
+            Some(Pos {
+                x: source_x as i64,
+                y: source_y as i64,
+            }),
+        );
         match serde_json::to_vec(&response) {
             Ok(vec) => Ok(vec),
             Err(e) => {

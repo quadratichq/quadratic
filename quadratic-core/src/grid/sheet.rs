@@ -571,7 +571,7 @@ impl Sheet {
                     Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
                 }
                 CellRefRange::Table { range } => {
-                    self.table_ref_to_rect(range, false, false, a1_context)
+                    self.table_ref_to_rect(range, false, false, a1_context, None)
                 }
             } {
                 let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);

@@ -41,6 +41,7 @@ impl TableRef {
                 headers: false,
                 totals: false,
                 col_range: ColRange::All,
+                this_row: false,
             });
         }
 
@@ -48,6 +49,7 @@ impl TableRef {
         let mut data = None;
         let mut headers = false;
         let mut totals = false;
+        let mut this_row = false;
 
         for token in Self::tokenize(remaining)? {
             match token {
@@ -118,6 +120,7 @@ impl TableRef {
             headers,
             totals,
             col_range: col_range.unwrap_or(ColRange::All),
+            this_row: false,
         })
     }
 }

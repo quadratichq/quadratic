@@ -88,6 +88,7 @@ impl A1Selection {
                     headers: false,
                     totals: false,
                     col_range: ColRange::All,
+                    this_row: false,
                 },
             }],
         }
@@ -151,6 +152,7 @@ impl A1Selection {
                             headers: false,
                             totals: false,
                             col_range: range,
+                            this_row: false,
                         },
                     })
                     .collect(),

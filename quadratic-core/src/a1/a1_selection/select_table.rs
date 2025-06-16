@@ -39,6 +39,7 @@ impl A1Selection {
                                     headers: false,
                                     totals: false,
                                     col_range: ColRange::ColRange(start.clone(), col.clone()),
+                                    this_row: false,
                                 };
                                 self.ranges.push(CellRefRange::Table { range: table_ref });
                                 return;
@@ -69,6 +70,7 @@ impl A1Selection {
                                     } else {
                                         ColRange::ColRange(existing_col.clone(), col.clone())
                                     },
+                                    this_row: false,
                                 };
                                 self.ranges.push(CellRefRange::Table { range: table_ref });
                                 return;
@@ -84,6 +86,7 @@ impl A1Selection {
                                         headers: false,
                                         totals: false,
                                         col_range: ColRange::Col(col.clone()),
+                                        this_row: false,
                                     };
                                     self.ranges.push(CellRefRange::Table { range: table_ref });
                                     return;
@@ -97,6 +100,7 @@ impl A1Selection {
                                             existing_col.clone(),
                                             col.clone(),
                                         ),
+                                        this_row: false,
                                     };
                                     self.ranges.push(CellRefRange::Table { range: table_ref });
                                     return;
@@ -190,6 +194,7 @@ impl A1Selection {
             headers,
             totals: false,
             col_range,
+            this_row: false,
         };
         let table_ref = CellRefRange::Table { range: table_ref };
 
@@ -260,6 +265,7 @@ mod tests {
             headers: false,
             totals: false,
             col_range: ColRange::Col("Col1".to_string()),
+            this_row: false,
         };
         assert_eq!(
             selection.ranges[0],
@@ -332,6 +338,7 @@ mod tests {
             headers: false,
             totals: false,
             col_range: ColRange::All,
+            this_row: false,
         };
         assert_eq!(selection.ranges.len(), 2);
         assert_eq!(

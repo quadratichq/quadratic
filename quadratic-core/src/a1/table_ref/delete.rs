@@ -10,7 +10,9 @@ impl TableRef {
     ) -> Vec<CellRefRange> {
         // first return self if there is no overlap (or we can't calculate the
         // rect)
-        if let Some(bounds) = self.convert_to_ref_range_bounds(false, a1_context, false, false) {
+        if let Some(bounds) =
+            self.convert_to_ref_range_bounds(false, a1_context, false, false, None)
+        {
             if bounds.intersection(to_delete).is_some() {
                 let remaining =
                     A1Selection::find_excluded_rects(bounds, to_delete.to_rect_unbounded());
@@ -48,7 +50,7 @@ impl TableRef {
             CellRefRange::Sheet { range } => self.delete_ref_range_bounds(range, a1_context),
             CellRefRange::Table { range } => {
                 if let Some(range) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false, None)
                 {
                     self.delete_ref_range_bounds(&range, a1_context)
                 } else {
@@ -120,6 +122,7 @@ mod tests {
                 data: true,
                 headers: false,
                 totals: false,
+                this_row: false,
             }
         );
     }
@@ -140,6 +143,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 }
             }
         );
@@ -152,6 +156,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 }
             }
         );
@@ -191,6 +196,7 @@ mod tests {
                 data: true,
                 headers: false,
                 totals: false,
+                this_row: false,
             }
         );
     }

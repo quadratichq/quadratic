@@ -1303,6 +1303,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::Col("city".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
@@ -1337,6 +1338,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::ColRange("city".to_string(), "region".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
@@ -1371,6 +1373,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::ColRange("country".to_string(), "population".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));

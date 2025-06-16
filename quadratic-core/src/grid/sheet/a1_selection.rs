@@ -53,7 +53,7 @@ impl Sheet {
                     Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
                 }
                 CellRefRange::Table { range } => {
-                    self.table_ref_to_rect(range, false, false, a1_context)
+                    self.table_ref_to_rect(range, false, false, a1_context, None)
                 }
             };
             if let Some(rect) = rect {
@@ -150,11 +150,18 @@ impl Sheet {
         force_columns: bool,
         auto_detect_table_bounds: bool,
         a1_context: &A1Context,
+        source_cell: Option<Pos>,
     ) -> Option<Rect> {
         let force_table_bounds = auto_detect_table_bounds && range.col_range == ColRange::All;
 
         range
-            .convert_to_ref_range_bounds(false, a1_context, force_columns, force_table_bounds)
+            .convert_to_ref_range_bounds(
+                false,
+                a1_context,
+                force_columns,
+                force_table_bounds,
+                source_cell,
+            )
             .and_then(|range| range.to_rect())
     }
 
@@ -229,6 +236,9 @@ impl Sheet {
         auto_detect_table_bounds: bool,
         ignore_formatting: bool,
         a1_context: &A1Context,
+
+        // used by #this row selections
+        source_cell: Option<Pos>,
     ) -> Vec<Rect> {
         let mut rects = Vec::new();
         for range in selection.ranges.iter() {
@@ -242,6 +252,7 @@ impl Sheet {
                         force_columns,
                         auto_detect_table_bounds,
                         a1_context,
+                        source_cell,
                     ) {
                         rects.push(rect);
                     }
@@ -267,6 +278,7 @@ impl Sheet {
             auto_detect_table_bounds,
             ignore_formatting,
             a1_context,
+            None,
         );
         if rects.is_empty() {
             None
@@ -296,7 +308,13 @@ impl Sheet {
                         self.ref_range_bounds_to_rect(range, ignore_formatting),
                     )),
                     CellRefRange::Table { range } => self
-                        .table_ref_to_rect(range, force_columns, force_table_bounds, a1_context)
+                        .table_ref_to_rect(
+                            range,
+                            force_columns,
+                            force_table_bounds,
+                            a1_context,
+                            None,
+                        )
                         .map(CellRefRange::new_relative_rect),
                 })
                 .collect(),
@@ -341,7 +359,7 @@ mod tests {
         let selection = A1Selection::test_a1("A1:C3,E5:G7");
 
         let a1_context = sheet.expensive_make_a1_context();
-        let rects = sheet.selection_to_rects(&selection, false, false, false, &a1_context);
+        let rects = sheet.selection_to_rects(&selection, false, false, false, &a1_context, None);
         assert_eq!(rects, vec![Rect::new(1, 1, 3, 3), Rect::new(5, 5, 7, 7)]);
     }
 
@@ -488,24 +506,24 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let table_ref = TableRef::parse("Table1", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context()),
+            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context(), None),
             Some(Rect::test_a1("A3:B4"))
         );
 
         let table_ref = TableRef::parse("Table1[#HEADERS]", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context()),
+            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context(), None),
             Some(Rect::test_a1("A2:B2"))
         );
 
         let table_ref = TableRef::parse("Table1[#All]", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context()),
+            sheet.table_ref_to_rect(&table_ref, false, false, gc.a1_context(), None),
             Some(Rect::test_a1("A2:B4"))
         );
         let table_ref = TableRef::parse("Table1", gc.a1_context()).unwrap();
         assert_eq!(
-            sheet.table_ref_to_rect(&table_ref, true, false, gc.a1_context()),
+            sheet.table_ref_to_rect(&table_ref, true, false, gc.a1_context(), None),
             Some(Rect::test_a1("A2:B4"))
         );
     }

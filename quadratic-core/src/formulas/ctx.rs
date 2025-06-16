@@ -65,7 +65,7 @@ impl<'ctx> Ctx<'ctx> {
                 sheet.ref_range_bounds_to_rect(range, ignore_formatting)
             }
             CellRefRange::Table { range } => sheet
-                .table_ref_to_rect(range, false, false, a1_context)
+                .table_ref_to_rect(range, false, false, a1_context, Some(self.sheet_pos.into()))
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
         };
 

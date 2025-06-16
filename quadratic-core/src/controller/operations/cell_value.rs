@@ -181,6 +181,7 @@ impl GridController {
                 force_table_bounds,
                 true,
                 &self.a1_context,
+                None,
             );
 
             // reverse the order to delete from right to left
