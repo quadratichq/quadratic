@@ -53,7 +53,10 @@ impl GridController {
             }
 
             for (t1, t2) in a.iter().zip(b.iter()) {
-                if ignore_empty && (*t1 == 8 || *t2 == 8) {
+                //
+                if ignore_empty
+                    && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
+                {
                     continue;
                 }
                 if t1 != t2 {

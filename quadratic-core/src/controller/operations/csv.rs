@@ -1,14 +1,13 @@
 //! CSV utilities to parse CSV files.
 //! Based on https://www.ietf.org/rfc/rfc4180.txt
 
-// possible CSV delimiters
-const CSV_POSSIBLE_DELIMITERS: [u8; 5] = [b',', b';', b'\t', b'|', b' '];
-
 use std::{collections::HashMap, io::Read};
 
 use anyhow::{Result, anyhow};
 use encoding_rs_io::DecodeReaderBytes;
 
+// possible CSV delimiters
+const CSV_POSSIBLE_DELIMITERS: [u8; 5] = [b',', b';', b'\t', b'|', b' '];
 const CSV_SAMPLE_LINES: usize = 10;
 
 /// Converts a CSV file to utf8 using encoding_rs_io.
@@ -39,6 +38,9 @@ struct DelimiterStats {
 /// The max width is the maximum number of columns in a line.
 /// The score is computed as the product of consistency and coverage.
 fn compute_score(column_counts: &HashMap<usize, usize>, sample_size: usize) -> (f32, u32) {
+    if sample_size == 0 {
+        return (0.0, 1);
+    }
     let mut total_lines = 0;
     let mut sum = 0.0;
     let mut sum_sq = 0.0;
