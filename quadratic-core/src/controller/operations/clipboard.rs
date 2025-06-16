@@ -34,7 +34,8 @@ lazy_static! {
         .expect("Failed to compile CLIPBOARD_REGEX");
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, ts_rs::TS)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum PasteSpecial {
     // paste normal
     None,
@@ -42,6 +43,16 @@ pub enum PasteSpecial {
     Values,
     // paste only formatting/borders
     Formats,
+}
+impl From<&str> for PasteSpecial {
+    fn from(s: &str) -> Self {
+        match s {
+            "None" => PasteSpecial::None,
+            "Values" => PasteSpecial::Values,
+            "Formats" => PasteSpecial::Formats,
+            _ => panic!("Invalid PasteSpecial: {}", s),
+        }
+    }
 }
 
 /// This is used to track the origin of copies from column, row, or all
@@ -1986,7 +1997,7 @@ mod test {
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
 
-        let js_clipboard: JsClipboard = gc
+        let mut js_clipboard: JsClipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
                 &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
@@ -1995,6 +2006,7 @@ mod test {
                 true,
             )
             .into();
+        js_clipboard.html = "".to_string();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1_sheet_id("E13", sheet_id),

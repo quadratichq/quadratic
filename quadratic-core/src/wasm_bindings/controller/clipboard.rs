@@ -48,18 +48,10 @@ impl GridController {
         &mut self,
         selection: String,
         js_clipboard: Vec<u8>,
-        special: String,
+        special: &str,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        let special = if &special == "None" {
-            PasteSpecial::None
-        } else if &special == "Values" {
-            PasteSpecial::Values
-        } else if &special == "Formats" {
-            PasteSpecial::Formats
-        } else {
-            return Err(JsValue::from_str("Invalid special"));
-        };
+        let special = PasteSpecial::from(special);
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let js_clipboard =
