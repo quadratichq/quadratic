@@ -115,7 +115,7 @@ impl MySqlConnection {
     }
 
     /// Query all rows from a MySQL database
-    async fn query_all(pool: &mut SqlxMySqlConnection, sql: &str) -> Result<Vec<MySqlRow>> {
+    pub async fn query_all(pool: &mut SqlxMySqlConnection, sql: &str) -> Result<Vec<MySqlRow>> {
         let rows = sqlx::query(sql)
             .fetch_all(pool)
             .await
@@ -251,9 +251,9 @@ impl<'a> Connection<'a> for MySqlConnection {
 
     /// Convert a row to an Arrow type
     fn to_arrow(&self, row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
-        // println!("Column: {} ({})", column.name(), column.type_info().name());
+        println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
+            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" | "LONGTEXT" => {
                 to_arrow_type!(ArrowType::Utf8, String, row, index)
             }
             "TINYINT" => to_arrow_type!(ArrowType::Int8, i8, row, index),
@@ -278,7 +278,7 @@ impl<'a> Connection<'a> for MySqlConnection {
             },
             "TIME" => to_arrow_type!(ArrowType::Time32, NaiveTime, row, index),
             "YEAR" => to_arrow_type!(ArrowType::UInt16, u16, row, index),
-            "JSON" => to_arrow_type!(ArrowType::Json, Value, row, index),
+            "JSON" | "BLOB" => to_arrow_type!(ArrowType::Json, Value, row, index),
             "UUID" => to_arrow_type!(ArrowType::Uuid, Uuid, row, index),
             "NULL" => ArrowType::Void,
             // try to convert others to a string
