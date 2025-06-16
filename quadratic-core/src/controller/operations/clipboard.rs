@@ -1,5 +1,5 @@
 use anyhow::{Error, Result};
-use base64::{Engine, engine::general_purpose::STANDARD};
+use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
 use indexmap::IndexMap;
 use lazy_static::lazy_static;
 use regex::Regex;
@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use super::operation::Operation;
 use crate::cell_values::CellValues;
+use crate::color::Rgba;
 use crate::compression::CompressionFormat;
 use crate::compression::SerializationFormat;
 use crate::compression::decompress_and_deserialize;
@@ -17,10 +18,12 @@ use crate::controller::GridController;
 use crate::grid::DataTable;
 use crate::grid::DataTableKind;
 use crate::grid::Sheet;
+use crate::grid::SheetFormatting;
 use crate::grid::SheetId;
 use crate::grid::formats::Format;
 use crate::grid::formats::SheetFormatUpdates;
 use crate::grid::js_types::JsClipboard;
+use crate::grid::sheet::borders::Borders;
 use crate::grid::sheet::borders::BordersUpdates;
 use crate::grid::sheet::validations::validation::Validation;
 use crate::grid::unique_data_table_name;
@@ -129,7 +132,7 @@ impl Clipboard {
             .map_or("", |m| m.as_str());
 
         // decode base64
-        let data = STANDARD
+        let data = URL_SAFE_NO_PAD
             .decode(data)
             .map_err(|e| error(e.to_string(), "Base64 decode error"))?;
 
@@ -150,7 +153,156 @@ impl Clipboard {
 
 impl From<Clipboard> for JsClipboard {
     fn from(clipboard: Clipboard) -> Self {
-        let plain_text = String::new();
+        let mut plain_text = String::new();
+        let mut html_body = String::new();
+
+        let mut clipboard_formats = SheetFormatting::default();
+        if let Some(formats) = &clipboard.formats {
+            clipboard_formats.apply_updates(formats);
+        }
+        let is_formats_empty = clipboard_formats.is_all_default();
+
+        let mut clipboard_borders = Borders::default();
+        if let Some(borders) = &clipboard.borders {
+            clipboard_borders.apply_updates(borders);
+        }
+        let is_borders_empty = clipboard_borders.is_default();
+
+        for y in 0..clipboard.h {
+            if y != 0 {
+                plain_text.push('\n');
+                html_body.push_str("</tr>");
+            }
+
+            html_body.push_str("<tr>");
+
+            for x in 0..clipboard.w {
+                if x != 0 {
+                    plain_text.push('\t');
+                    html_body.push_str("</td>");
+                }
+
+                let mut style = String::new();
+
+                let pos = (clipboard.origin.x + x as i64, clipboard.origin.y + y as i64).into();
+
+                if !is_formats_empty || !is_borders_empty {
+                    let format = clipboard_formats.try_format(pos);
+
+                    let border = clipboard_borders.get_style_cell(pos);
+
+                    let has_style = format.as_ref().is_some_and(|format| !format.is_default())
+                        || !border.is_empty();
+
+                    if has_style {
+                        style.push_str("style=\"");
+                    }
+
+                    if let Some(format) = format {
+                        if !format.is_default() {
+                            if let Some(align) = format.align {
+                                style.push_str(align.as_css_string());
+                            }
+                            if let Some(vertical_align) = format.vertical_align {
+                                style.push_str(vertical_align.as_css_string());
+                            }
+                            if let Some(wrap) = format.wrap {
+                                style.push_str(wrap.as_css_string());
+                            }
+                            if format.bold == Some(true) {
+                                style.push_str("font-weight:bold;");
+                            }
+                            if format.italic == Some(true) {
+                                style.push_str("font-style:italic;");
+                            }
+                            if let Some(text_color) = format.text_color {
+                                if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
+                                    style.push_str(
+                                        format!("color:{};", text_color.as_rgb_hex()).as_str(),
+                                    );
+                                }
+                            }
+                            if let Some(fill_color) = format.fill_color {
+                                if let Ok(fill_color) = Rgba::from_css_str(fill_color.as_str()) {
+                                    style.push_str(
+                                        format!("background-color:{};", fill_color.as_rgb_hex())
+                                            .as_str(),
+                                    );
+                                }
+                            }
+                            if format.underline == Some(true) && format.strike_through != Some(true)
+                            {
+                                style.push_str("text-decoration:underline;");
+                            } else if format.underline != Some(true)
+                                && format.strike_through == Some(true)
+                            {
+                                style.push_str("text-decoration:line-through;");
+                            } else if format.underline == Some(true)
+                                && format.strike_through == Some(true)
+                            {
+                                style.push_str("text-decoration:underline line-through;");
+                            }
+                        }
+                    }
+
+                    if !border.is_empty() {
+                        if border.left.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-left: {} {};",
+                                    border.left.unwrap().line.as_css_string(),
+                                    border.left.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if border.top.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-top: {} {};",
+                                    border.top.unwrap().line.as_css_string(),
+                                    border.top.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if border.right.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-right: {} {};",
+                                    border.right.unwrap().line.as_css_string(),
+                                    border.right.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                        if border.bottom.is_some() {
+                            style.push_str(
+                                format!(
+                                    "border-bottom: {} {};",
+                                    border.bottom.unwrap().line.as_css_string(),
+                                    border.bottom.unwrap().color.as_rgb_hex()
+                                )
+                                .as_str(),
+                            );
+                        }
+                    }
+
+                    if has_style {
+                        style.push('"');
+                    }
+                }
+
+                html_body.push_str(format!("<td {}>", style).as_str());
+
+                let display_value = clipboard.values.get(x, y);
+                if let Some(value) = display_value {
+                    plain_text.push_str(&value.to_string());
+                    html_body.push_str(&value.to_string());
+                }
+            }
+        }
+        html_body.push_str("</td></tr>");
 
         // add starting table tag with data-quadratic attribute
         let mut html = String::from("<table data-quadratic=\"");
@@ -164,7 +316,7 @@ impl From<Clipboard> for JsClipboard {
         .unwrap_or_default();
 
         // encode to base64 string
-        let data = STANDARD.encode(&data);
+        let data = URL_SAFE_NO_PAD.encode(&data);
 
         // add closing table tag
         html.push_str(&data);
@@ -173,137 +325,10 @@ impl From<Clipboard> for JsClipboard {
         // add starting tbody tag
         html.push_str(&String::from("\"><tbody>"));
 
-        // if y != bounds.min.y {
-        //     plain_text.push('\n');
-        //     html_body.push_str("</tr>");
-        // }
-        // html_body.push_str("<tr>");
+        // add html body
+        html.push_str(&html_body);
 
-        // // add styling for html (only used for pasting to other spreadsheets)
-        // if x != bounds.min.x {
-        //     plain_text.push('\t');
-        //     html_body.push_str("</td>");
-        // }
-
-        // let mut style = String::new();
-
-        // let summary = self.cell_format_summary(pos);
-        // let bold = summary.bold.unwrap_or(false);
-        // let italic = summary.italic.unwrap_or(false);
-        // let text_color = summary.text_color;
-        // let fill_color = summary.fill_color;
-        // let cell_align = summary.align;
-        // let cell_vertical_align = summary.vertical_align;
-        // let cell_wrap = summary.wrap;
-        // let underline = summary.underline.unwrap_or(false);
-        // let strike_through = summary.strike_through.unwrap_or(false);
-
-        // let cell_border = self.borders.get_style_cell(pos);
-
-        // if bold
-        //     || italic
-        //     || underline
-        //     || strike_through
-        //     || text_color.is_some()
-        //     || fill_color.is_some()
-        //     || cell_align.is_some()
-        //     || cell_vertical_align.is_some()
-        //     || cell_wrap.is_some()
-        //     || !cell_border.is_empty()
-        // {
-        //     style.push_str("style=\"");
-
-        //     if bold {
-        //         style.push_str("font-weight:bold;");
-        //     }
-        //     if italic {
-        //         style.push_str("font-style:italic;");
-        //     }
-        //     if underline && !strike_through {
-        //         style.push_str("text-decoration:underline;");
-        //     } else if !underline && strike_through {
-        //         style.push_str("text-decoration:line-through;");
-        //     } else if underline && strike_through {
-        //         style.push_str("text-decoration:underline line-through;");
-        //     }
-        //     if let Some(text_color) = text_color {
-        //         if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
-        //             style.push_str(format!("color:{};", text_color.as_rgb_hex()).as_str());
-        //         }
-        //     }
-        //     if let Some(fill_color) = fill_color {
-        //         if let Ok(fill_color) = Rgba::from_css_str(fill_color.as_str()) {
-        //             style.push_str(
-        //                 format!("background-color:{};", fill_color.as_rgb_hex()).as_str(),
-        //             );
-        //         }
-        //     }
-        //     if let Some(cell_align) = cell_align {
-        //         style.push_str(cell_align.as_css_string());
-        //     }
-        //     if let Some(cell_vertical_align) = cell_vertical_align {
-        //         style.push_str(cell_vertical_align.as_css_string());
-        //     }
-        //     if let Some(cell_wrap) = cell_wrap {
-        //         style.push_str(cell_wrap.as_css_string());
-        //     }
-        //     if underline && !strike_through {
-        //         style.push_str("text-decoration:underline;");
-        //     } else if !underline && strike_through {
-        //         style.push_str("text-decoration:line-through;");
-        //     } else if underline && strike_through {
-        //         style.push_str("text-decoration:underline line-through;");
-        //     }
-        //     if cell_border.left.is_some() {
-        //         style.push_str(
-        //             format!(
-        //                 "border-left: {} {};",
-        //                 cell_border.left.unwrap().line.as_css_string(),
-        //                 cell_border.left.unwrap().color.as_rgb_hex()
-        //             )
-        //             .as_str(),
-        //         );
-        //     }
-        //     if cell_border.top.is_some() {
-        //         style.push_str(
-        //             format!(
-        //                 "border-top: {} {};",
-        //                 cell_border.top.unwrap().line.as_css_string(),
-        //                 cell_border.top.unwrap().color.as_rgb_hex()
-        //             )
-        //             .as_str(),
-        //         );
-        //     }
-        //     if cell_border.right.is_some() {
-        //         style.push_str(
-        //             format!(
-        //                 "border-right: {} {};",
-        //                 cell_border.right.unwrap().line.as_css_string(),
-        //                 cell_border.right.unwrap().color.as_rgb_hex()
-        //             )
-        //             .as_str(),
-        //         );
-        //     }
-        //     if cell_border.bottom.is_some() {
-        //         style.push_str(
-        //             format!(
-        //                 "border-bottom: {} {};",
-        //                 cell_border.bottom.unwrap().line.as_css_string(),
-        //                 cell_border.bottom.unwrap().color.as_rgb_hex()
-        //             )
-        //             .as_str(),
-        //         );
-        //     }
-        //     style.push('"');
-        // }
-        // html_body.push_str(format!("<td {}>", style).as_str());
-        // if let Some(value) = &simple_value {
-        //     plain_text.push_str(&value.to_string());
-        //     html_body.push_str(&value.to_string());
-        // }
-
-        // html.push_str("</td></tr>");
-
+        // add closing tbody and table tags
         html.push_str("</tbody></table>");
 
         JsClipboard { plain_text, html }
@@ -1961,7 +1986,7 @@ mod test {
         assert!(sheet.cell_format(pos![E14]).is_default());
         assert!(sheet.cell_format(pos![F14]).is_default());
 
-        let mut js_clipboard: JsClipboard = gc
+        let js_clipboard: JsClipboard = gc
             .sheet(sheet_id)
             .copy_to_clipboard(
                 &A1Selection::test_a1_sheet_id("B2:C3", sheet_id),
@@ -1970,7 +1995,6 @@ mod test {
                 true,
             )
             .into();
-        js_clipboard.html = "".to_string();
 
         gc.paste_from_clipboard(
             &A1Selection::test_a1_sheet_id("E13", sheet_id),

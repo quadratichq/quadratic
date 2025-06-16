@@ -1,7 +1,4 @@
-use std::collections::HashSet;
-
 use crate::{
-    Pos,
     a1::{A1Context, A1Selection},
     grid::{Sheet, formats::SheetFormatUpdates},
 };
@@ -17,11 +14,10 @@ impl SheetFormatting {
         &self,
         selection: &A1Selection,
         sheet: &Sheet,
-        data_tables_to_ignore: &HashSet<Pos>,
         a1_context: &A1Context,
     ) -> Result<SheetFormatUpdates> {
         // first, get formats for the sheet of the selection
-        let mut sheet_format_updates =
+        let mut sheet_format_updates: SheetFormatUpdates =
             SheetFormatUpdates::from_sheet_formatting_selection(selection, self);
 
         // get the largest rect that is finite of the selection
@@ -29,10 +25,6 @@ impl SheetFormatting {
 
         // get the formats from the data table and merge them with the sheet formats
         for data_table_pos in sheet.data_tables_pos_intersect_rect(rect) {
-            if data_tables_to_ignore.contains(&data_table_pos) {
-                continue;
-            }
-
             let data_table = sheet.data_table_result(&data_table_pos)?;
 
             // update the sheet format updates with the formats from the data
@@ -62,12 +54,7 @@ mod tests {
         let a1_context = gc.a1_context();
         let clipboard = sheet
             .formats
-            .to_clipboard(
-                &A1Selection::test_a1("A1:C3"),
-                sheet,
-                &HashSet::new(),
-                a1_context,
-            )
+            .to_clipboard(&A1Selection::test_a1("A1:C3"), sheet, a1_context)
             .unwrap();
 
         assert_eq!(

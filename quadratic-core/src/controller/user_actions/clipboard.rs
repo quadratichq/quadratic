@@ -98,7 +98,6 @@ impl GridController {
 
     /// move cells from source to dest
     /// columns and rows are optional, if true, then the cells will be moved horizontally or vertically
-    #[function_timer::function_timer]
     pub fn move_cells(
         &mut self,
         source: SheetRect,
@@ -305,10 +304,9 @@ mod test {
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 8, 6, sheet_id));
-        let mut js_clipboard: JsClipboard = sheet
+        let js_clipboard: JsClipboard = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
             .into();
-        js_clipboard.html = "".to_string();
 
         print_table_in_rect(&gc, sheet_id, Rect::from_numbers(0, 0, 8, 11));
 

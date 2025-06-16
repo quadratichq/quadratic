@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use indexmap::IndexMap;
 
 use crate::a1::{A1Context, A1Selection};
@@ -78,9 +76,6 @@ impl Sheet {
             data_tables.extend(data_tables_in_rect);
         }
 
-        // ignore data tables that are in the selection and cloned completely, skip copying formats from them
-        let data_tables_to_ignore = data_tables.keys().cloned().collect::<HashSet<_>>();
-
         Clipboard {
             origin,
             selection: selection.clone(),
@@ -88,10 +83,7 @@ impl Sheet {
             h,
             cells,
             values: values.unwrap_or_default(),
-            formats: self
-                .formats
-                .to_clipboard(selection, self, &data_tables_to_ignore, a1_context)
-                .ok(),
+            formats: self.formats.to_clipboard(selection, self, a1_context).ok(),
             borders: self.borders.to_clipboard(selection),
             validations: self
                 .validations
