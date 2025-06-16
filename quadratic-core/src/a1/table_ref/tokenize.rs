@@ -126,6 +126,7 @@ impl TableRef {
                 "#TOTALS" => tokens.push(Token::Totals),
                 "#ALL" => tokens.push(Token::All),
                 "#THIS ROW" => tokens.push(Token::ThisRow),
+                // TODO: START HERE ***
                 ":" => return Err(A1Error::InvalidTableRef("Unexpected colon".into())),
                 _ => {
                     let s = entry.as_str();
