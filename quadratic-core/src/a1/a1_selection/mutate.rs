@@ -18,11 +18,11 @@ impl A1Selection {
 
     /// Potentially shrinks a selection after the removal of a column.
     /// A1Selection may have no ranges after the removal.
-    pub fn removed_column(&mut self, column: i64, a1_context: &A1Context) -> bool {
+    pub fn removed_column(&mut self, column: i64, context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
-            if range.contains_only_column(column) {
+            if range.contains_only_column(column, context) {
                 changed = true;
                 false
             } else {
@@ -33,18 +33,18 @@ impl A1Selection {
             }
         });
 
-        self.update_cursor(a1_context);
+        self.update_cursor(context);
 
         changed
     }
 
     /// Potentially shrinks a selection after the removal of a row.
     /// A1Selection may have no ranges after the removal.///
-    pub fn removed_row(&mut self, row: i64, a1_context: &A1Context) -> bool {
+    pub fn removed_row(&mut self, row: i64, context: &A1Context) -> bool {
         let mut changed = false;
 
         self.ranges.retain_mut(|range| {
-            if range.contains_only_row(row) {
+            if range.contains_only_row(row, context) {
                 changed = true;
                 false
             } else {
@@ -55,7 +55,7 @@ impl A1Selection {
             }
         });
 
-        self.update_cursor(a1_context);
+        self.update_cursor(context);
 
         changed
     }

@@ -150,8 +150,8 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "isColumnRow")]
-    pub fn is_column_row(&self) -> bool {
-        self.selection.is_column_row()
+    pub fn is_column_row(&self, context: &JsA1Context) -> bool {
+        self.selection.is_column_row(context.get_context())
     }
 
     #[wasm_bindgen(js_name = "overlapsA1Selection")]
@@ -176,13 +176,14 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "isAllSelected")]
-    pub fn is_all_selected(&self) -> bool {
-        self.selection.is_all_selected()
+    pub fn is_all_selected(&self, context: &JsA1Context) -> bool {
+        self.selection.is_all_selected(context.get_context())
     }
 
     #[wasm_bindgen(js_name = "isEntireColumnSelected")]
-    pub fn is_entire_column_selected(&self, column: u32) -> bool {
-        self.selection.is_entire_column_selected(column as i64)
+    pub fn is_entire_column_selected(&self, column: u32, context: &JsA1Context) -> bool {
+        self.selection
+            .is_entire_column_selected(column as i64, context.get_context())
     }
 
     #[wasm_bindgen(js_name = "isEntireRowSelected")]

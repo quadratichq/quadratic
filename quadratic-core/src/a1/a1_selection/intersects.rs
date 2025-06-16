@@ -120,42 +120,46 @@ impl A1Selection {
         let other_expanded_ranges = expand_named_ranges(&other.ranges, a1_context);
         expanded_ranges.iter().any(|range| match range {
             CellRefRange::Sheet { range } => {
-                other.ranges.iter().any(|other_range| match other_range {
-                    CellRefRange::Sheet { range: other_range } => {
-                        range.intersection(other_range).is_some()
-                    }
-                    CellRefRange::Table { range: other_range } => {
-                        A1Selection::overlap_ref_range_bounds_table_ref(
-                            range,
-                            other_range,
-                            a1_context,
-                        )
-                    }
-                    // expanded above
-                    CellRefRange::Named { .. } => false,
-                })
+                other_expanded_ranges
+                    .iter()
+                    .any(|other_range| match other_range {
+                        CellRefRange::Sheet { range: other_range } => {
+                            range.intersection(other_range).is_some()
+                        }
+                        CellRefRange::Table { range: other_range } => {
+                            A1Selection::overlap_ref_range_bounds_table_ref(
+                                range,
+                                other_range,
+                                a1_context,
+                            )
+                        }
+                        // expanded above
+                        CellRefRange::Named { .. } => false,
+                    })
             }
             CellRefRange::Table { range } => {
-                other.ranges.iter().any(|other_range| match other_range {
-                    CellRefRange::Sheet { range: other_range } => {
-                        A1Selection::overlap_ref_range_bounds_table_ref(
-                            other_range,
-                            range,
-                            a1_context,
-                        )
-                    }
-                    CellRefRange::Table { range: other_range } => {
-                        let rect = range.to_largest_rect(a1_context);
-                        let other = other_range.to_largest_rect(a1_context);
-                        if let (Some(rect), Some(other)) = (rect, other) {
-                            rect.intersects(other)
-                        } else {
-                            false
+                other_expanded_ranges
+                    .iter()
+                    .any(|other_range| match other_range {
+                        CellRefRange::Sheet { range: other_range } => {
+                            A1Selection::overlap_ref_range_bounds_table_ref(
+                                other_range,
+                                range,
+                                a1_context,
+                            )
                         }
-                    }
-                    // expanded above
-                    CellRefRange::Named { .. } => false,
-                })
+                        CellRefRange::Table { range: other_range } => {
+                            let rect = range.to_largest_rect(a1_context);
+                            let other = other_range.to_largest_rect(a1_context);
+                            if let (Some(rect), Some(other)) = (rect, other) {
+                                rect.intersects(other)
+                            } else {
+                                false
+                            }
+                        }
+                        // expanded above
+                        CellRefRange::Named { .. } => false,
+                    })
             }
             // expanded above
             CellRefRange::Named { .. } => false,

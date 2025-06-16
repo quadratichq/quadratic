@@ -1,6 +1,6 @@
 use crate::a1::{A1Context, CellRefRange};
 
-/// Expands CellRefRanges
+/// Expands CellRefRanges and returns a cloned version with Named ranges expanded.
 pub fn expand_named_ranges(ranges: &[CellRefRange], context: &A1Context) -> Vec<CellRefRange> {
     let mut new_ranges = Vec::new();
 
@@ -16,8 +16,11 @@ pub fn expand_named_ranges(ranges: &[CellRefRange], context: &A1Context) -> Vec<
     new_ranges
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn test_expand_named_ranges() {}
+/// Expands a named range and returns expanded ranges.
+pub fn expand_named_range(range: &String, context: &A1Context) -> Vec<CellRefRange> {
+    if let Some(entry) = context.try_named(range) {
+        entry.selection().ranges.clone()
+    } else {
+        vec![]
+    }
 }

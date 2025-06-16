@@ -1,35 +1,46 @@
 use crate::{
     Pos, Rect,
-    a1::{A1Context, UNBOUNDED},
+    a1::{
+        A1Context, UNBOUNDED,
+        expand::{expand_named_range, expand_named_ranges},
+    },
 };
 
 use super::CellRefRange;
 
 impl CellRefRange {
     /// Range only contains a selection within a single column
-    pub fn contains_only_column(&self, column: i64) -> bool {
+    pub fn contains_only_column(&self, column: i64, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.start.col() == column && range.end.col() == column,
             Self::Table { .. } => false,
 
-            // need to handle this in the parent
-            Self::Named { .. } => false,
+            Self::Named { range } => {
+                let expanded_ranges = expand_named_range(range, context);
+                expanded_ranges
+                    .iter()
+                    .all(|range| range.contains_only_column(column, context))
+            }
         }
     }
 
     /// Range only contains a selection within a single row
-    pub fn contains_only_row(&self, row: i64) -> bool {
+    pub fn contains_only_row(&self, row: i64, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => range.start.row() == row && range.end.row() == row,
             Self::Table { .. } => false,
 
-            // need to handle this in the parent
-            Self::Named { .. } => false,
+            Self::Named { .. } => {
+                let expanded_ranges = expand_named_ranges(&[self.clone()], context);
+                expanded_ranges
+                    .iter()
+                    .all(|range| range.contains_only_row(row, context))
+            }
         }
     }
 
     /// Returns true if the range is a single column range.
-    pub fn only_column(&self, column: i64) -> bool {
+    pub fn only_column(&self, column: i64, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => {
                 if range.start.col() != column || range.end.col() != column {
@@ -41,15 +52,22 @@ impl CellRefRange {
                 }
             }
             Self::Table { .. } => return false,
-
-            // need to handle this in the parent
-            Self::Named { .. } => false,
+            Self::Named { range } => {
+                let expanded_ranges = expand_named_range(range, context);
+                if expanded_ranges.len() != 1 {
+                    return false;
+                }
+                if let Some(first) = expanded_ranges.first() {
+                    return first.only_column(column, context);
+                }
+                return false;
+            }
         }
         true
     }
 
     /// Returns true if the range is a single row range.
-    pub fn only_row(&self, row: i64) -> bool {
+    pub fn only_row(&self, row: i64, context: &A1Context) -> bool {
         match self {
             Self::Sheet { range } => {
                 if range.start.row() != row || range.end.row() != row {
@@ -61,9 +79,16 @@ impl CellRefRange {
                 }
             }
             Self::Table { .. } => return false,
-
-            // need to handle this in the parent
-            Self::Named { .. } => false,
+            Self::Named { range } => {
+                let expanded_ranges = expand_named_range(range, context);
+                if expanded_ranges.len() != 1 {
+                    return false;
+                }
+                if let Some(first) = expanded_ranges.first() {
+                    return first.only_row(row, context);
+                }
+                return false;
+            }
         }
         true
     }
@@ -89,7 +114,7 @@ impl CellRefRange {
                         range.start.is_pos(p1) && range.end.is_pos(p1)
                     }
                 }),
-            // need to handle this in the parent
+            // handled in calling fns
             Self::Named { .. } => false,
         }
     }
@@ -165,8 +190,8 @@ impl CellRefRange {
             Self::Sheet { range } => range.to_rect(),
             Self::Table { range } => range.to_largest_rect(a1_context),
 
-            // need to handle this in the parent
-            Self::Named { .. } => false,
+            // handled in parent call
+            Self::Named { .. } => None,
         }
     }
 
@@ -176,8 +201,8 @@ impl CellRefRange {
             Self::Sheet { range } => Some(range.to_rect_unbounded()),
             Self::Table { range } => range.to_largest_rect(a1_context),
 
-            // need to handle this in the parent
-            Self::Named { .. } => false,
+            // handled in parent
+            Self::Named { .. } => None,
         }
     }
 
@@ -186,6 +211,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.selected_columns_finite(),
             Self::Table { range } => range.selected_cols_finite(a1_context),
+
+            // handled in calling fns
+            Self::Named { .. } => Vec::new(),
         }
     }
 
@@ -194,6 +222,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.selected_columns(from, to),
             Self::Table { range } => range.selected_cols(from, to, a1_context),
+
+            // handled in calling fns
+            Self::Named { .. } => Vec::new(),
         }
     }
 
@@ -202,22 +233,31 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.selected_rows_finite(),
             Self::Table { range } => range.selected_rows_finite(a1_context),
+
+            // handled in calling fns
+            Self::Named { .. } => Vec::new(),
         }
     }
 
     /// Returns the selected rows in the range that fall between `from` and `to`.
-    pub fn selected_rows(&self, from: i64, to: i64, a1_context: &A1Context) -> Vec<i64> {
+    pub fn selected_rows(&self, from: i64, to: i64, context: &A1Context) -> Vec<i64> {
         match self {
             Self::Sheet { range } => range.selected_rows(from, to),
-            Self::Table { range } => range.selected_rows(from, to, a1_context),
+            Self::Table { range } => range.selected_rows(from, to, context),
+
+            // handled in calling fns
+            Self::Named { .. } => Vec::new(),
         }
     }
 
     /// Returns the position if the range is a single cell.
-    pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
+    pub fn try_to_pos(&self, context: &A1Context) -> Option<Pos> {
         match self {
             Self::Sheet { range } => range.try_to_pos(),
-            Self::Table { range } => range.try_to_pos(a1_context),
+            Self::Table { range } => range.try_to_pos(context),
+
+            // handled in calling fns
+            Self::Named { .. } => None,
         }
     }
 
@@ -226,6 +266,9 @@ impl CellRefRange {
         match self {
             Self::Sheet { range } => range.is_single_cell(),
             Self::Table { range } => range.is_single_cell(a1_context),
+
+            // handled in calling fns
+            Self::Named { .. } => false,
         }
     }
 
@@ -248,24 +291,26 @@ mod tests {
 
     #[test]
     fn test_only_column() {
-        assert!(CellRefRange::test_a1("A").only_column(1));
-        assert!(CellRefRange::test_a1("B").only_column(2));
-        assert!(!CellRefRange::test_a1("A2:A5").only_column(1));
-        assert!(!CellRefRange::test_a1("A").only_column(2));
-        assert!(!CellRefRange::test_a1("A:B").only_column(2));
-        assert!(!CellRefRange::test_a1("A1").only_column(2));
-        assert!(!CellRefRange::test_a1("A1:D1").only_column(1));
+        let context = A1Context::default();
+        assert!(CellRefRange::test_a1("A").only_column(1, &context));
+        assert!(CellRefRange::test_a1("B").only_column(2, &context));
+        assert!(!CellRefRange::test_a1("A2:A5").only_column(1, &context));
+        assert!(!CellRefRange::test_a1("A").only_column(2, &context));
+        assert!(!CellRefRange::test_a1("A:B").only_column(2, &context));
+        assert!(!CellRefRange::test_a1("A1").only_column(2, &context));
+        assert!(!CellRefRange::test_a1("A1:D1").only_column(1, &context));
     }
 
     #[test]
     fn test_only_row() {
-        assert!(CellRefRange::test_a1("2").only_row(2));
-        assert!(CellRefRange::test_a1("5").only_row(5));
-        assert!(!CellRefRange::test_a1("A2:D2").only_row(2));
-        assert!(!CellRefRange::test_a1("2").only_row(1));
-        assert!(!CellRefRange::test_a1("1:2").only_row(1));
-        assert!(!CellRefRange::test_a1("A2").only_row(1));
-        assert!(!CellRefRange::test_a1("A2:D2").only_row(1));
+        let context = A1Context::default();
+        assert!(CellRefRange::test_a1("2").only_row(2, &context));
+        assert!(CellRefRange::test_a1("5").only_row(5, &context));
+        assert!(!CellRefRange::test_a1("A2:D2").only_row(2, &context));
+        assert!(!CellRefRange::test_a1("2").only_row(1, &context));
+        assert!(!CellRefRange::test_a1("1:2").only_row(1, &context));
+        assert!(!CellRefRange::test_a1("A2").only_row(1, &context));
+        assert!(!CellRefRange::test_a1("A2:D2").only_row(1, &context));
     }
 
     #[test]
@@ -293,16 +338,18 @@ mod tests {
 
     #[test]
     fn test_contains_only_column() {
-        assert!(CellRefRange::test_a1("A1").contains_only_column(1));
-        assert!(CellRefRange::test_a1("A1:A3").contains_only_column(1));
-        assert!(!CellRefRange::test_a1("A1").contains_only_column(2));
+        let context = A1Context::default();
+        assert!(CellRefRange::test_a1("A1").contains_only_column(1, &context));
+        assert!(CellRefRange::test_a1("A1:A3").contains_only_column(1, &context));
+        assert!(!CellRefRange::test_a1("A1").contains_only_column(2, &context));
     }
 
     #[test]
     fn test_contains_only_row() {
-        assert!(CellRefRange::test_a1("A1").contains_only_row(1));
-        assert!(CellRefRange::test_a1("A1:B1").contains_only_row(1));
-        assert!(!CellRefRange::test_a1("A1").contains_only_row(2));
+        let context = A1Context::default();
+        assert!(CellRefRange::test_a1("A1").contains_only_row(1, &context));
+        assert!(CellRefRange::test_a1("A1:B1").contains_only_row(1, &context));
+        assert!(!CellRefRange::test_a1("A1").contains_only_row(2, &context));
     }
 
     #[test]

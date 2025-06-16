@@ -18,17 +18,35 @@ impl RefRangeBounds {
 
     /// Deletes the given range from the current range. Returns the remaining
     /// range or None if the current range is completely deleted.
-    pub fn delete(&self, range: &CellRefRange, a1_context: &A1Context) -> Vec<CellRefRange> {
+    pub fn delete(&self, range: &CellRefRange, context: &A1Context) -> Vec<CellRefRange> {
         match range {
             CellRefRange::Sheet { range } => self.delete_ref_range_bounds(range),
             CellRefRange::Table { range } => {
                 if let Some(bounds) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, context, false, false)
                 {
                     self.delete_ref_range_bounds(&bounds)
                 } else {
                     vec![CellRefRange::Sheet { range: *self }]
                 }
+            }
+            CellRefRange::Named { range } => {
+                if let Some(entry) = context.try_named(range) {
+                    // check if there is an intersection (we don't expand since
+                    // we want to leave it a named range before breaking it
+                    // apart)
+                    if entry
+                        .selection().overlaps_a1_selection(A1Selection {
+                            sheet_id: entry.sheet_id
+                        .ranges
+                        .iter()
+                        .any(|named_range| named_range.intself.(named_range).is_some())
+                    {
+                        return entry.selection().ranges.clone();
+                    }
+                }
+                // otherwise, return original range
+                vec![CellRefRange::Named { range }]
             }
         }
     }
