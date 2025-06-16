@@ -121,6 +121,10 @@ pub(crate) fn app(state: State) -> Result<Router> {
         .route("/mysql/test", post(test_mysql))
         .route("/mysql/query", post(query_mysql))
         .route("/mysql/schema/:id", get(schema_mysql))
+        // mariadb
+        .route("/mariadb/test", post(test_mysql))
+        .route("/mariadb/query", post(query_mysql))
+        .route("/mariadb/schema/:id", get(schema_mysql))
         // mssql
         .route("/mssql/test", post(test_mssql))
         .route("/mssql/query", post(query_mssql))

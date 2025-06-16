@@ -28,7 +28,7 @@ pub struct Schema {
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query_generic<'a, T: Connection<'a>>(
-    connection: T,
+    mut connection: T,
     state: Extension<State>,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
