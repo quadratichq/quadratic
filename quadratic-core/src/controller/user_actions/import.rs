@@ -86,7 +86,7 @@ pub(crate) mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CellValue, RunError, RunErrorMsg, Span,
+        CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
         test_util::*,
         wasm_bindings::js::clear_js_calls,
