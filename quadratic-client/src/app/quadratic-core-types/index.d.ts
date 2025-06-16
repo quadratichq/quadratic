@@ -173,7 +173,7 @@ start: number,
  * The byte index after the last character.
  */
 end: number, };
-export type TableRef = { table_name: string, data: boolean, headers: boolean, totals: boolean, col_range: ColRange, };
+export type TableRef = { table_name: string, data: boolean, headers: boolean, totals: boolean, col_range: ColRange, this_row: boolean, };
 export type TextCase = { "CaseInsensitive": Array<string> } | { "CaseSensitive": Array<string> };
 export type TextMatch = { "Exactly": TextCase } | { "Contains": TextCase } | { "NotContains": TextCase } | { "TextLength": { min: number | null, max: number | null, } };
 export type TransactionName = "Unknown" | "ResizeColumn" | "ResizeRow" | "ResizeRows" | "ResizeColumns" | "Autocomplete" | "SetBorders" | "SetCells" | "SetFormats" | "SetDataTableAt" | "CutClipboard" | "PasteClipboard" | "SetCode" | "RunCode" | "FlattenDataTable" | "SwitchDataTableKind" | "GridToDataTable" | "DataTableMeta" | "DataTableMutations" | "DataTableFirstRowAsHeader" | "DataTableAddDataTable" | "Import" | "SetSheetMetadata" | "SheetAdd" | "SheetDelete" | "DuplicateSheet" | "MoveCells" | "Validation" | "ManipulateColumnRow";

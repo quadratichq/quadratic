@@ -53,7 +53,11 @@ impl TableRef {
 
         for token in Self::tokenize(remaining)? {
             match token {
-                Token::Column(name) => {
+                Token::Column(mut name) => {
+                    if name.starts_with('@') {
+                        this_row = true;
+                        name = name[1..].to_string();
+                    };
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
@@ -64,7 +68,11 @@ impl TableRef {
                         return Err(A1Error::InvalidColumn(name.clone()));
                     }
                 }
-                Token::ColumnRange(start, end) => {
+                Token::ColumnRange(mut start, end) => {
+                    if start.starts_with('@') {
+                        this_row = true;
+                        start = start[1..].to_string();
+                    };
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
@@ -79,7 +87,11 @@ impl TableRef {
                         table.visible_columns[end as usize].clone(),
                     ));
                 }
-                Token::ColumnToEnd(name) => {
+                Token::ColumnToEnd(mut name) => {
+                    if name.starts_with('@') {
+                        this_row = true;
+                        name = name[1..].to_string();
+                    };
                     if col_range.is_some() {
                         return Err(A1Error::MultipleColumnDefinitions);
                     }
@@ -111,16 +123,23 @@ impl TableRef {
                 Token::Data => {
                     data = Some(true);
                 }
+                Token::ThisRow => {
+                    this_row = true;
+                }
             }
         }
 
         Ok(TableRef {
             table_name: table.table_name.to_owned(),
-            data: data.unwrap_or(true),
+            data: if this_row {
+                false
+            } else {
+                data.unwrap_or(true)
+            },
             headers,
             totals,
             col_range: col_range.unwrap_or(ColRange::All),
-            this_row: false,
+            this_row,
         })
     }
 }
@@ -231,5 +250,41 @@ mod tests {
             assert!(!table_ref.totals);
             assert_eq!(table_ref.col_range, ColRange::All);
         }
+    }
+
+    #[test]
+    fn test_table_parameters_this_row() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[[#THIS ROW],[A]]", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.col_range, ColRange::Col("A".to_string()));
+        assert!(table_ref.this_row);
+        assert!(!table_ref.data);
+        assert!(!table_ref.headers);
+        assert!(!table_ref.totals);
+    }
+
+    #[test]
+    fn test_table_parameters_this_row_symbol() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[@A]", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.col_range, ColRange::Col("A".to_string()));
+        assert!(table_ref.this_row);
+        assert!(!table_ref.data);
+        assert!(!table_ref.headers);
+        assert!(!table_ref.totals);
+    }
+
+    #[test]
+    fn test_table_parameters_this_row_symbol_double_bracket() {
+        let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
+        let table_ref = TableRef::parse("Table1[[@A]]", &context).unwrap();
+        assert_eq!(table_ref.table_name, "Table1");
+        assert_eq!(table_ref.col_range, ColRange::Col("A".to_string()));
+        assert!(table_ref.this_row);
+        assert!(!table_ref.data);
+        assert!(!table_ref.headers);
+        assert!(!table_ref.totals);
     }
 }

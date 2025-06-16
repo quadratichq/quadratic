@@ -29,7 +29,7 @@ class InlineEditorFormula {
       this.clearDecorations();
       return;
     }
-    pixiApp.cellHighlights.fromCellsAccessed(parseResult.cells_accessed, false);
+    pixiApp.cellHighlights.fromCellsAccessed(location, parseResult.cells_accessed, false);
 
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
     const cellColorReferences = new Map<string, number>();

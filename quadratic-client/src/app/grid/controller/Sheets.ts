@@ -5,6 +5,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type {
   A1Selection,
   CellRefRange,
+  JsCoordinate,
   JsOffset,
   JsTableInfo,
   Rect,
