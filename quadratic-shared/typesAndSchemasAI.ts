@@ -135,7 +135,7 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
-const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1']);
+const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1', 'azure-openai:o4-mini']);
 export type AzureOpenAIModelKey = z.infer<typeof AzureOpenAIModelKeySchema>;
 
 const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
