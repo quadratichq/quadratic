@@ -25,6 +25,7 @@ pub mod error;
 pub mod mariadb_connection;
 pub mod mssql_connection;
 pub mod mysql_connection;
+pub mod neon_connection;
 pub mod postgres_connection;
 pub mod schema;
 pub mod snowflake_connection;

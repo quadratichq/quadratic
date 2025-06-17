@@ -17,6 +17,7 @@ bytes = "1.6.0"
 cbc = { version = "0.1.2", features = ["alloc"] }
 chrono = "=0.4.39"
 criterion = { version = "0.5", optional = true }
+dotenv = { version = "0.15.0", optional = true }
 futures-util = "0.3.30"
 google-cloud-bigquery = { version = "0.5.0", optional = true }
 hex = "0.4.3"
@@ -69,6 +70,7 @@ quadratic-api = ["reqwest"]
 record-request-mock = []
 sql = [
   "arrow",
+  "dotenv",
   "net",
   "quadratic-api",
   "google-cloud-bigquery",
@@ -90,7 +92,6 @@ aws-smithy-async = { version = "1.2.1", features = ["test-util"] }
 aws-smithy-runtime = {version = "1.6.2", features = ["test-util"] }
 aws-smithy-runtime-api = "1.7.1"
 criterion = { version = "0.5" }
-dotenv = "0.15.0"
 http = "1.1.0"
 httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = [
   "https",

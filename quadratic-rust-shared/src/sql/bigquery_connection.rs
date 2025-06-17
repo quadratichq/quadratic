@@ -457,8 +457,7 @@ macro_rules! bigquery_type {
     }};
 }
 
-#[cfg(test)]
-mod tests {
+pub mod tests {
 
     use super::*;
     use std::sync::{LazyLock, Mutex};
@@ -470,19 +469,29 @@ mod tests {
         Mutex::new(credentials)
     });
 
-    pub async fn new_connection() -> BigqueryConnection {
+    pub async fn new_config() -> BigqueryConfig {
         let credentials = BIGQUERY_CREDENTIALS.lock().unwrap();
 
+        BigqueryConfig {
+            service_account_configuration: credentials.to_string(),
+            project_id: "quadratic-development".to_string(),
+            dataset: "all_native_data_types".to_string(),
+        }
+    }
+
+    pub async fn new_connection() -> BigqueryConnection {
+        let config = new_config().await;
+
         BigqueryConnection::new(
-            credentials.to_string(),
-            "quadratic-development".to_string(),
-            "all_native_data_types".to_string(),
+            config.service_account_configuration,
+            config.project_id,
+            config.dataset,
         )
         .await
         .unwrap()
     }
 
-    pub fn bigquery_schema() -> Vec<SchemaColumn> {
+    pub fn expected_bigquery_schema() -> Vec<SchemaColumn> {
         vec![
             SchemaColumn {
                 name: "id".into(),
@@ -592,7 +601,7 @@ mod tests {
         let schema = connection.schema(&mut None).await.unwrap();
         let columns = &schema.tables.get("all_data_types").unwrap().columns;
 
-        assert_eq!(columns, &bigquery_schema());
+        assert_eq!(columns, &expected_bigquery_schema());
     }
 
     #[tokio::test]

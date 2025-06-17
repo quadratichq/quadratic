@@ -105,34 +105,38 @@ pub(crate) fn app(state: State) -> Result<Router> {
     let app = Router::new()
         // protected routes
         //
-        // postgres
+        // postgres and derivitives
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
         .route("/postgres/schema/:id", get(schema_postgres))
-        // cockroachdb
         .route("/cockroachdb/test", post(test_postgres))
         .route("/cockroachdb/query", post(query_postgres))
         .route("/cockroachdb/schema/:id", get(schema_postgres))
-        // supabase
         .route("/supabase/test", post(test_postgres))
         .route("/supabase/query", post(query_postgres))
         .route("/supabase/schema/:id", get(schema_postgres))
-        // mysql
+        .route("/neon/test", post(test_postgres))
+        .route("/neon/query", post(query_postgres))
+        .route("/neon/schema/:id", get(schema_postgres))
+        //
+        // mysql and derivitives
         .route("/mysql/test", post(test_mysql))
         .route("/mysql/query", post(query_mysql))
         .route("/mysql/schema/:id", get(schema_mysql))
-        // mariadb
         .route("/mariadb/test", post(test_mysql))
         .route("/mariadb/query", post(query_mysql))
         .route("/mariadb/schema/:id", get(schema_mysql))
+        //
         // mssql
         .route("/mssql/test", post(test_mssql))
         .route("/mssql/query", post(query_mssql))
         .route("/mssql/schema/:id", get(schema_mssql))
+        //
         // snowflake
         .route("/snowflake/test", post(test_snowflake))
         .route("/snowflake/query", post(query_snowflake))
         .route("/snowflake/schema/:id", get(schema_snowflake))
+        //
         // bigquery
         .route("/bigquery/test", post(test_bigquery))
         .route("/bigquery/query", post(query_bigquery))
