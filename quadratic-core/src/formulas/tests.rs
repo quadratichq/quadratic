@@ -557,7 +557,25 @@ fn test_table_this_row() {
     gc.set_code_cell(
         pos![sheet_id!E3],
         CodeCellLanguage::Formula,
-        "test_table[@B]".to_string(),
+        "test_table[[#this row],[Column 1]]".to_string(),
+        None,
+        None,
+    );
+
+    print_first_sheet(&gc);
+}
+
+#[test]
+fn test_table_this_row_short() {
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+
+    test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+    gc.set_code_cell(
+        pos![sheet_id!E3],
+        CodeCellLanguage::Formula,
+        "test_table[@Column 1]".to_string(),
         None,
         None,
     );

@@ -23,7 +23,6 @@ pub(super) fn is_table_ref(mut p: Parser<'_>) -> Option<bool> {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum TableRefToken {
-    ThisRow(String),
     Column(String),
     Special(String),
     Comma,
@@ -33,7 +32,6 @@ enum TableRefToken {
 fn parse_segment_contents(chars: &mut Peekable<Chars<'_>>) -> Result<TableRefToken, RunErrorMsg> {
     let mut ret = String::new();
     let is_special = chars.peek() == Some(&'#');
-    let is_this_row = chars.peek() == Some(&'@');
     while let Some(c) = chars.peeking_next(|c| !matches!(c, '[' | ']')) {
         if !is_special && c == '\'' {
             // escaped char
@@ -44,9 +42,6 @@ fn parse_segment_contents(chars: &mut Peekable<Chars<'_>>) -> Result<TableRefTok
         }
     }
 
-    if is_this_row {
-        return Ok(TableRefToken::ThisRow(ret));
-    }
     Ok(match is_special {
         true => TableRefToken::Special(ret),
         false => TableRefToken::Column(ret),
@@ -126,12 +121,14 @@ impl SyntaxRule for TableReference {
                     if brackets_inner_str.starts_with('[') {
                         let mut tokens = std::iter::from_fn(|| parse_token(&mut chars)).peekable();
                         while let Some(token) = tokens.next() {
-                            let is_this_row = matches!(&token, &Ok(TableRefToken::ThisRow(_)));
                             match token? {
-                                TableRefToken::Column(start_col)
-                                | TableRefToken::ThisRow(start_col) => {
+                                TableRefToken::Column(mut start_col) => {
                                     if col_range.is_some() {
                                         return Err(RunErrorMsg::BadCellReference);
+                                    }
+                                    if start_col.starts_with('@') {
+                                        start_col = start_col.chars().skip(1).collect();
+                                        this_row = true;
                                     }
                                     if tokens.next_if_eq(&Ok(TableRefToken::Colon)).is_some() {
                                         match tokens
@@ -148,9 +145,6 @@ impl SyntaxRule for TableReference {
                                     } else {
                                         col_range = Some(ColRange::Col(start_col));
                                     }
-                                    if is_this_row {
-                                        this_row = true;
-                                    }
                                 }
                                 TableRefToken::Special(s) => special_segments.push(s),
                                 TableRefToken::Comma | TableRefToken::Colon => {
@@ -164,11 +158,13 @@ impl SyntaxRule for TableReference {
                     } else {
                         // single segment
                         match parse_segment_contents(&mut chars)? {
-                            TableRefToken::ThisRow(c) => {
-                                this_row = true;
-                                col_range = Some(ColRange::Col(c.chars().skip(1).collect()))
+                            TableRefToken::Column(mut c) => {
+                                if c.starts_with('@') {
+                                    this_row = true;
+                                    c = c.chars().skip(1).collect();
+                                }
+                                col_range = Some(ColRange::Col(c));
                             }
-                            TableRefToken::Column(c) => col_range = Some(ColRange::Col(c)),
                             TableRefToken::Special(s) => special_segments.push(s),
                             TableRefToken::Comma | TableRefToken::Colon => {
                                 return Err(RunErrorMsg::BadCellReference);
@@ -193,14 +189,20 @@ impl SyntaxRule for TableReference {
                             _ => return Err(RunErrorMsg::BadCellReference),
                         }
                     }
-                    Ok(TableRef {
+                    let t = TableRef {
                         table_name: table_name.to_owned(),
-                        data: data || (!headers && !totals),
+                        data: if this_row {
+                            false
+                        } else {
+                            data || (!headers && !totals)
+                        },
                         headers,
                         totals,
                         col_range: col_range.unwrap_or(ColRange::All),
                         this_row,
-                    })
+                    };
+                    dbg!(&t);
+                    Ok(t)
                 })()
             }
         }
