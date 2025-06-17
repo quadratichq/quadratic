@@ -237,11 +237,17 @@ export class Multiplayer {
   };
 
   private sendOnline = () => {
-    this.send({ type: 'clientMultiplayerOnline' });
+    // don't send this event if we not in app, if not initialized yet
+    if (this.fileId) {
+      this.send({ type: 'clientMultiplayerOnline' });
+    }
   };
 
   private sendOffline = () => {
-    this.send({ type: 'clientMultiplayerOffline' });
+    // don't send this event if we not in app, if not initialized yet
+    if (this.fileId) {
+      this.send({ type: 'clientMultiplayerOffline' });
+    }
   };
 
   sendCellEdit(options: {

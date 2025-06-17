@@ -580,7 +580,7 @@ impl Array {
 
         Ok(())
     }
-    fn set_row(&mut self, index: usize, values: &[CellValue]) -> Result<(), RunErrorMsg> {
+    pub fn set_row(&mut self, index: usize, values: &[CellValue]) -> Result<(), RunErrorMsg> {
         let width = self.width() as usize;
         let start = index * width;
 

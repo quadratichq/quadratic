@@ -1,12 +1,20 @@
-use anyhow::Result;
+use anyhow::{Result, anyhow};
 use bytes::Bytes;
 use parquet::arrow::arrow_reader::ParquetRecordBatchReaderBuilder;
 
 use crate::{CellValue, arrow::arrow_col_to_cell_value_vec};
 
-pub fn parquet_to_vec(file: Vec<u8>) -> Result<Vec<Vec<CellValue>>> {
+use crate::{Array, ArraySize};
+
+pub fn parquet_to_array(
+    file: Vec<u8>,
+    file_name: &str,
+    updater: Option<impl Fn(&str, u32, u32)>,
+) -> Result<Array> {
+    let error = |message: String| anyhow!("Error parsing Parquet file {}: {}", file_name, message);
+
     if file.is_empty() {
-        return Ok(vec![]);
+        return Err(error("File is empty".to_string()));
     }
 
     // this is not expensive
@@ -21,27 +29,42 @@ pub fn parquet_to_vec(file: Vec<u8>) -> Result<Vec<Vec<CellValue>>> {
     let headers: Vec<CellValue> = fields.iter().map(|f| f.name().into()).collect();
     let width = headers.len();
 
-    let mut output = vec![vec![CellValue::Blank; width]; total_size + 1];
-    output[0] = headers;
+    // create that will hold the data
+    let array_size = ArraySize::new_or_err(width as u32, total_size as u32 + 1)
+        .map_err(|e| error(e.to_string()))?;
+    let mut cell_values = Array::new_empty(array_size);
+
+    // add the header
+    cell_values.set_row(0, &headers)?;
+
     let reader = builder.build()?;
+    let mut current_size = 0;
 
-    for (row_index, batch) in reader.enumerate() {
+    for batch in reader {
         let batch = batch?;
-        let num_cols = batch.num_columns();
-        let num_rows = batch.num_rows();
+        let num_rows_in_batch = batch.num_rows();
+        let num_cols_in_batch = batch.num_columns();
 
-        for col_index in 0..num_cols {
+        for col_index in 0..num_cols_in_batch {
             let col = batch.column(col_index);
             let values = arrow_col_to_cell_value_vec(col)?;
 
-            for (index, value) in values.into_iter().enumerate() {
-                let new_row_index = (row_index * num_rows) + index + 1;
-                output[new_row_index][col_index] = value;
+            for (row_index, value) in values.into_iter().enumerate() {
+                let y = row_index + current_size + 1;
+                cell_values.set(col_index as u32, y as u32, value, false)?;
             }
+        }
+
+        current_size += num_rows_in_batch;
+
+        // update the progress bar every time there's a new batch processed
+        // parquet batches sizes are usually 1024 or less
+        if let Some(updater) = &updater {
+            updater(file_name, current_size as u32, total_size as u32);
         }
     }
 
-    Ok(output)
+    Ok(cell_values)
 }
 #[cfg(test)]
 mod test {
@@ -53,13 +76,11 @@ mod test {
     const PARQUET_FILE: &str = "../quadratic-rust-shared/data/parquet/alltypes_plain.parquet";
 
     #[test]
-    fn test_parquet_to_vec() {
+    fn test_parquet_to_array() {
         let mut file = File::open(PARQUET_FILE).unwrap();
         let metadata = std::fs::metadata(PARQUET_FILE).expect("unable to read metadata");
         let mut buffer = vec![0; metadata.len() as usize];
         file.read_exact(&mut buffer).expect("buffer overflow");
-
-        let _results = parquet_to_vec(buffer);
-        // println!("{:?}", results);
+        parquet_to_array(buffer, PARQUET_FILE, None::<fn(&str, u32, u32)>).unwrap();
     }
 }

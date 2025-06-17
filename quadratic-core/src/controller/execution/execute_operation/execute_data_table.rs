@@ -2097,7 +2097,7 @@ mod tests {
         let op = Operation::SetDataTableAt { sheet_pos, values };
         let mut transaction = PendingTransaction::default();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 10));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         // the initial value from the csv
         assert_display_cell_value(&gc, sheet_id, x, y, "MA");
@@ -2105,10 +2105,10 @@ mod tests {
         gc.execute_set_data_table_at(&mut transaction, op.clone())
             .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(0, 1, 3, 10));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 11));
 
         // expect the value to be "1"
-        assert_display_cell_value(&gc, sheet_id, x - 2, y, "1");
+        assert_display_cell_value(&gc, sheet_id, x, y, "1");
 
         // undo, the value should be "MA" again
         execute_reverse_operations(&mut gc, &transaction);
@@ -2116,7 +2116,7 @@ mod tests {
 
         // redo, the value should be "1" again
         execute_forward_operations(&mut gc, &mut transaction);
-        assert_display_cell_value(&gc, sheet_id, x - 2, y, "1");
+        assert_display_cell_value(&gc, sheet_id, x, y, "1");
 
         // sort the data table and see if the value is still correct
         let sort = vec![DataTableSort {
@@ -2133,7 +2133,7 @@ mod tests {
 
         gc.execute_set_data_table_at(&mut transaction, op).unwrap();
         print_table_in_rect(&gc, sheet_id, Rect::new(0, 0, 3, 10));
-        assert_display_cell_value(&gc, sheet_id, x - 2, y, "1");
+        assert_display_cell_value(&gc, sheet_id, x, y, "1");
     }
 
     #[test]

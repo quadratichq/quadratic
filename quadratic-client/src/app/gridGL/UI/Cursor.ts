@@ -47,7 +47,7 @@ export class Cursor extends Container {
   }
 
   // redraws corners if there is an error
-  private drawError(cell: JsCoordinate, x: number, y: number, width: number, height: number) {
+  private drawError(cell: JsCoordinate) {
     const error = pixiApp.cellsSheets.current?.getErrorMarker(cell.x, cell.y);
     if (error) {
       if (error.triangle) {
@@ -153,7 +153,7 @@ export class Cursor extends Container {
       });
       this.graphics.drawRect(x, y, width, height);
     } else {
-      this.drawError(cell, x, y, width, height);
+      this.drawError(cell);
     }
   }
 

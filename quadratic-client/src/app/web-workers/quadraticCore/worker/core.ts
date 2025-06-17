@@ -975,7 +975,6 @@ class Core {
       output_array: null,
       line_number: null,
       output_display_type: null,
-      cancel_compute: true,
       chart_pixel_output: null,
       has_headers: false,
     };
