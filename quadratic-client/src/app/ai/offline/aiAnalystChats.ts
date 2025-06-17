@@ -1,4 +1,4 @@
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getPromptAndInternalMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { ChatSchema } from 'quadratic-shared/typesAndSchemasAI';
 
@@ -121,7 +121,7 @@ class AIAnalystOfflineChats {
           fileId,
           ...{
             ...chat,
-            messages: getPromptMessages(chat.messages),
+            messages: getPromptAndInternalMessages(chat.messages),
           },
         };
         store.put(chatEntry);

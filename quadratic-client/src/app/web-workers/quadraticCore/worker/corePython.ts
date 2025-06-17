@@ -29,10 +29,6 @@ class CorePython {
   private handleMessage = (e: MessageEvent<PythonCoreMessage>) => {
     switch (e.data.type) {
       case 'pythonCoreResults':
-        // todo: clean up the python completion message.
-        if (this.lastTransactionId === e.data.transactionId) {
-          this.lastTransactionId = undefined;
-        }
         core.calculationComplete(e.data.jsCodeResultBuffer);
         break;
 

@@ -30,14 +30,15 @@ export class PythonCore {
       case 'corePythonRun':
         python.runPython(e.data);
         return;
+      default:
+        console.warn('[pythonCore] Unhandled message type', e.data);
     }
   };
 
-  sendPythonResults(transactionId: string, jsCodeResultBuffer: ArrayBuffer) {
+  sendPythonResults(jsCodeResultBuffer: ArrayBuffer) {
     this.send(
       {
         type: 'pythonCoreResults',
-        transactionId,
         jsCodeResultBuffer,
       },
       [jsCodeResultBuffer]

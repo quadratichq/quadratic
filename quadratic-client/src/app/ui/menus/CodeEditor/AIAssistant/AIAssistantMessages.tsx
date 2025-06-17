@@ -3,14 +3,19 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
+import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { cn } from '@/shared/shadcn/utils';
-import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
+import {
+  isContentGoogleSearchInternal,
+  isInternalMessage,
+  isToolResultMessage,
+} from 'quadratic-shared/ai/helpers/message.helper';
 import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -97,11 +102,12 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
           return null;
         }
 
         const isCurrentMessage = index === messages.length - 1;
+        const modelKey = 'modelKey' in message ? message.modelKey : undefined;
 
         return (
           <div
@@ -110,10 +116,16 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               'flex flex-col gap-1',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              message.contextType === 'userPrompt' ? '' : 'rounded-lg bg-gray-500 p-2'
+              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {message.role === 'user' && message.contextType === 'userPrompt' ? (
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+
+            {isInternalMessage(message) ? (
+              isContentGoogleSearchInternal(message.content) ? (
+                <GoogleSearchSources content={message.content} />
+              ) : null
+            ) : message.role === 'user' && message.contextType === 'userPrompt' ? (
               <AIAssistantUserMessageForm
                 initialContent={message.content}
                 textareaRef={textareaRef}
@@ -131,7 +143,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' ? (
+                  item.type === 'anthropic_thinking' && !!item.text ? (
                     <ThinkingBlock
                       key={item.text}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
@@ -139,7 +151,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
                       thinkingContent={item}
                       expandedDefault={false}
                     />
-                  ) : item.type === 'text' ? (
+                  ) : item.type === 'text' && !!item.text ? (
                     <AICodeBlockParser key={item.text} input={item.text} />
                   ) : null
                 )}

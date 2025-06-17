@@ -77,7 +77,7 @@ export type JsCellValueResult = [string, number];
 export type JsChartContext = { sheet_name: string, chart_name: string, bounds: string, language: CodeCellLanguage, code_string: string, spill: boolean, };
 export type JsClipboard = { plainText: string, html: string, };
 export type JsCodeCell = { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, last_modified: bigint, };
-export type JsCodeResult = { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, cancel_compute: boolean | null, chart_pixel_output: [number, number] | null, has_headers: boolean, };
+export type JsCodeResult = { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, chart_pixel_output: [number, number] | null, has_headers: boolean, };
 export type JsCodeTableContext = { sheet_name: string, code_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_row_visible_values: Array<JsCellValuePos>, last_row_visible_values: Array<JsCellValuePos>, bounds: string, show_name: boolean, show_columns: boolean, language: CodeCellLanguage, code_string: string, std_err: string | null, error: boolean, spill: boolean, };
 export type JsColumnWidth = { column: bigint, width: number, };
 export type JsCoordinate = { x: number, y: number, };
@@ -94,7 +94,7 @@ export type JsRenderCell = { x: bigint, y: bigint, value: string,
 /**
  * Code language, set only for the top left cell of a code output.
  */
-language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, columnHeader: boolean | null, };
+language: CodeCellLanguage | null, align: CellAlign | null, verticalAlign: CellVerticalAlign | null, wrap: CellWrap | null, bold: boolean | null, italic: boolean | null, textColor: string | null, special: JsRenderCellSpecial | null, number: JsNumber | null, underline: boolean | null, strikeThrough: boolean | null, tableName: boolean | null, columnHeader: boolean | null, };
 export type JsRenderCellSpecial = "Chart" | "SpillError" | "RunError" | "Logical" | "Checkbox" | "List";
 export type JsRenderCodeCell = { x: number, y: number, w: number, h: number, language: CodeCellLanguage, state: JsRenderCodeCellState, spill_error: Array<Pos> | null, name: string, columns: Array<JsDataTableColumnHeader>, first_row_header: boolean, sort: Array<DataTableSort> | null, sort_dirty: boolean, alternating_colors: boolean, is_code: boolean, is_html: boolean, is_html_image: boolean, show_name: boolean, show_columns: boolean, last_modified: bigint, };
 export type JsRenderCodeCellState = "NotYetRun" | "RunError" | "SpillError" | "Success" | "HTML" | "Image";

@@ -6,6 +6,7 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
+  GeminiAIModelKey,
   OpenAIModelKey,
   QuadraticModelKey,
   VertexAIAnthropicModelKey,
@@ -40,6 +41,10 @@ export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey 
 
 export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'vertexai';
+}
+
+export function isGenAIModel(modelKey: AIModelKey): modelKey is GeminiAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'geminiai';
 }
 
 export function isBedrockModel(modelKey: AIModelKey): modelKey is BedrockModelKey {
