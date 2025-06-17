@@ -18,18 +18,20 @@ if (!WORKOS_CLIENT_ID) {
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
 let clientPromise: ReturnType<typeof createClient>;
-async function getClient() {
+function getClient(): ReturnType<typeof createClient> {
   if (!clientPromise) {
     clientPromise = createClient(WORKOS_CLIENT_ID, {
       onRedirectCallback: (redirectParams) => {
         const { state } = redirectParams;
-        if (typeof state === 'object' && state !== null && 'redirectTo' in state) {
-          window.location.href = state.redirectTo;
+        if (state !== null && typeof state === 'object' && 'redirectTo' in state) {
+          const redirectTo = state.redirectTo;
+          if (redirectTo) {
+            window.location.href = redirectTo;
+          }
         }
       },
     });
   }
-  await clientPromise;
   return clientPromise;
 }
 
@@ -117,7 +119,13 @@ export const workosClient: AuthClient = {
       return token;
     } catch (e) {
       const { pathname, search } = new URL(window.location.href);
-      await this.login(pathname + search);
+      const searchParams = new URLSearchParams(search);
+      const redirectTo = searchParams.get('redirectTo');
+      if (redirectTo) {
+        await this.login(redirectTo);
+      } else {
+        await this.login(pathname + search);
+      }
       return '';
     }
   },
