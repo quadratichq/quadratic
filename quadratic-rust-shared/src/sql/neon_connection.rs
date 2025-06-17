@@ -1,8 +1,8 @@
-//! Supabase
+//! Neon
 //!
-//! Functions to interact with Supabase
+//! Functions to interact with Neon
 //!
-//! Supabase is just Postgres, so it uses the same client
+//! Neon is just Postgres, so it uses the same client
 
 use crate::sql::postgres_connection::PostgresConnection;
-pub type SupabaseConnection = PostgresConnection;
+pub type NeonConnection = PostgresConnection;
