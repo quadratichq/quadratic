@@ -90,6 +90,7 @@ aws-smithy-async = { version = "1.2.1", features = ["test-util"] }
 aws-smithy-runtime = {version = "1.6.2", features = ["test-util"] }
 aws-smithy-runtime-api = "1.7.1"
 criterion = { version = "0.5" }
+dotenv = "0.15.0"
 http = "1.1.0"
 httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-alpha.1", features = [
   "https",

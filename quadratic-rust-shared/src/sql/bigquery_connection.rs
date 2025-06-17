@@ -460,15 +460,18 @@ macro_rules! bigquery_type {
 #[cfg(test)]
 mod tests {
 
-    // use google_cloud_bigquery::client::EmptyTokenSourceProvider;
-
     use super::*;
+    use std::sync::{LazyLock, Mutex};
 
-    async fn new_connection() -> BigqueryConnection {
-        let credentials = r#"
-            {
-            }
-        "#;
+    pub static BIGQUERY_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
+        dotenv::from_filename(".env.test").ok();
+        let credentials = std::env::var("BIGQUERY_CREDENTIALS").unwrap();
+
+        Mutex::new(credentials)
+    });
+
+    pub async fn new_connection() -> BigqueryConnection {
+        let credentials = BIGQUERY_CREDENTIALS.lock().unwrap();
 
         BigqueryConnection::new(
             credentials.to_string(),
