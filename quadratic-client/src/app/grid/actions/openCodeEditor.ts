@@ -1,8 +1,9 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 
-export const openCodeEditor = async () => {
+export const openCodeEditor = async (language?: CodeCellLanguage) => {
   const { codeEditorState, setCodeEditorState, setEditorInteractionState } = pixiAppSettings;
   if (!setCodeEditorState) {
     throw new Error('Expected setCodeEditorState to be defined in openCodeEditor');
@@ -94,6 +95,27 @@ export const openCodeEditor = async () => {
         initialCode: '',
       },
     });
+  } else if (language) {
+    // just open the code editor with the given language
+
+    const sheetId = sheets.current;
+    const { x, y } = sheets.sheet.cursor.position;
+
+    setCodeEditorState((prev) => ({
+      ...prev,
+      diffEditorContent: undefined,
+      waitingForEditorClose: {
+        codeCell: {
+          sheetId,
+          pos: { x, y },
+          language,
+          lastModified: 0,
+        },
+        showCellTypeMenu: false,
+        initialCode: '',
+        inlineEditor: false,
+      },
+    }));
   } else {
     // just open the code editor selection menu
     setEditorInteractionState((prev) => ({
