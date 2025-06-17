@@ -46,9 +46,7 @@ const getSession = async (): Promise<Session | false> => {
   }
 };
 
-type OryAuthClient = AuthClient;
-
-export const oryClient: OryAuthClient = {
+export const oryClient: AuthClient = {
   /**
    * Return whether the user is authenticated and the session is valid.
    */

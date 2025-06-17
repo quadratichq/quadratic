@@ -63,7 +63,7 @@ export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]):
         id,
         auth0Id,
         email,
-        name: `${name.first} ${name.last}`,
+        name: `${name.first} ${name.last}`.trim(),
         picture: undefined,
       },
     };
