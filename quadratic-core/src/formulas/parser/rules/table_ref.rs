@@ -166,7 +166,7 @@ impl SyntaxRule for TableReference {
                         match parse_segment_contents(&mut chars)? {
                             TableRefToken::ThisRow(c) => {
                                 this_row = true;
-                                col_range = Some(ColRange::Col(c))
+                                col_range = Some(ColRange::Col(c.chars().skip(1).collect()))
                             }
                             TableRefToken::Column(c) => col_range = Some(ColRange::Col(c)),
                             TableRefToken::Special(s) => special_segments.push(s),
@@ -193,7 +193,6 @@ impl SyntaxRule for TableReference {
                             _ => return Err(RunErrorMsg::BadCellReference),
                         }
                     }
-
                     Ok(TableRef {
                         table_name: table_name.to_owned(),
                         data: data || (!headers && !totals),

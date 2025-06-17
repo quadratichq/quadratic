@@ -65,7 +65,11 @@ export const useEditorCellHighlights = (
         codeCell.language === 'Javascript' ||
         codeCellIsAConnection(codeCell.language)
       ) {
-        pixiApp.cellHighlights.fromCellsAccessed(unsavedChanges ? null : cellsAccessed, codeCell.language === 'Python');
+        pixiApp.cellHighlights.fromCellsAccessed(
+          codeCell.pos,
+          unsavedChanges ? null : cellsAccessed,
+          codeCell.language === 'Python'
+        );
       } else if (codeCell.language === 'Formula') {
         let parsed: JsFormulaParseResult;
         try {
@@ -75,7 +79,7 @@ export const useEditorCellHighlights = (
           return;
         }
 
-        pixiApp.cellHighlights.fromCellsAccessed(parsed.cells_accessed, false);
+        pixiApp.cellHighlights.fromCellsAccessed(codeCell.pos, parsed.cells_accessed, false);
 
         parsed.spans.forEach((span, index) => {
           const cellRef = parsed.cells_accessed[index];
@@ -121,6 +125,7 @@ export const useEditorCellHighlights = (
   }, [
     cellsAccessed,
     codeCell.language,
+    codeCell.pos,
     codeCell.pos.x,
     codeCell.pos.y,
     codeCell.sheetId,

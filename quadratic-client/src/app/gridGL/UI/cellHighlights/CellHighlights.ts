@@ -7,7 +7,6 @@ import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/U
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import type { CellRefRange, JsCellsAccessed, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
-import type { SheetPosTS } from '@/app/shared/types/size';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
@@ -23,7 +22,7 @@ export class CellHighlights extends Container {
   private march = 0;
   private marchLastTime = 0;
   private isPython = false;
-  private location?: SheetPosTS;
+  private location?: JsCoordinate;
 
   dirty = false;
 
@@ -59,7 +58,7 @@ export class CellHighlights extends Container {
   private convertCellRefRangeToRefRangeBounds(
     cellRefRange: CellRefRange,
     isPython: boolean,
-    sourceCell: JsCoordinate
+    sourceCell?: JsCoordinate
   ): RefRangeBounds | undefined {
     try {
       return sheets.cellRefRangeToRefRangeBounds(cellRefRange, isPython, sourceCell);
@@ -160,7 +159,7 @@ export class CellHighlights extends Container {
     return this.dirty || inlineEditorHandler.cursorIsMoving;
   };
 
-  fromCellsAccessed = (location: SheetPosTS, cellsAccessed: JsCellsAccessed[] | null, isPython: boolean) => {
+  fromCellsAccessed = (location: JsCoordinate, cellsAccessed: JsCellsAccessed[] | null, isPython: boolean) => {
     this.location = location;
     this.cellsAccessed = cellsAccessed ?? [];
     this.isPython = isPython;

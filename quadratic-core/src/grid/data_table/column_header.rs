@@ -310,6 +310,7 @@ pub mod test {
             chart_pixel_output: None,
             spill_value: false,
             spill_data_table: false,
+            in_table: false,
         };
         sheet.set_cell_value(
             pos,
@@ -368,6 +369,7 @@ pub mod test {
             chart_pixel_output: None,
             spill_value: false,
             spill_data_table: false,
+            in_table: false,
         };
         t.apply_default_header();
         sheet.set_cell_value(

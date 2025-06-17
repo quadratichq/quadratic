@@ -512,7 +512,7 @@ mod tests {
         assert_eq!(transaction.has_async, 1);
         let transaction_id = transaction.id;
 
-        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        let cells = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert_eq!(
             cells,
             JsCellsA1Response {

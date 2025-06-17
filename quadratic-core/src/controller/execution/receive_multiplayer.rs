@@ -876,8 +876,7 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result =
-            gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string(), None);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "A1".to_string());
         assert!(result.values.is_some());
 
         let result = gc.calculation_complete(JsCodeResult {
@@ -903,8 +902,7 @@ mod tests {
             None,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
-        let result =
-            gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string(), None);
+        let result = gc.calculation_get_cells_a1(transaction_id.to_string(), "B1".to_string());
         assert!(result.values.is_some());
 
         let result = gc.calculation_complete(JsCodeResult {
