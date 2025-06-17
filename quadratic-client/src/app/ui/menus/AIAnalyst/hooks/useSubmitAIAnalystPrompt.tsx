@@ -311,6 +311,7 @@ export function useSubmitAIAnalystPrompt() {
               chatId,
               source: 'AIAnalyst',
               modelKey,
+              time: new Date().toString(),
               messages: messagesWithContext,
               useStream: USE_STREAM,
               toolName: undefined,
