@@ -23,9 +23,9 @@ function getClient(): ReturnType<typeof createClient> {
     clientPromise = createClient(WORKOS_CLIENT_ID, {
       onRedirectCallback: (redirectParams) => {
         const { state } = redirectParams;
-        if (state !== null && typeof state === 'object' && 'redirectTo' in state) {
+        if (!!state && typeof state === 'object' && 'redirectTo' in state) {
           const redirectTo = state.redirectTo;
-          if (redirectTo) {
+          if (typeof redirectTo === 'string' && !!redirectTo) {
             window.location.href = redirectTo;
           }
         }
