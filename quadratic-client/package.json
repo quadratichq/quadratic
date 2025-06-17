@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -58,7 +58,7 @@
     "@mui/icons-material": "^5.2.0",
     "@mui/material": "^5.2.2",
     "@ory/kratos-client": "^1.2.1",
-    "@protobuf-ts/plugin": "^2.9.6",
+    "@protobuf-ts/runtime": "^2.11.0",
     "@radix-ui/react-icons": "^1.3.2",
     "@sentry/react": "^9.6.1",
     "@szhsin/react-menu": "^4.0.2",
@@ -91,15 +91,14 @@
     "react-router": "^7.5.2",
     "recoil": "^0.7.7",
     "remark-gfm": "^4.0.0",
-    "semver": "^7.7.1",
     "tailwind-merge": "^3.2.0",
-    "ua-parser-js": "^2.0.3",
     "uuid": "^11.1.0",
     "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5",
     "zod": "^3.25.3"
   },
   "devDependencies": {
+    "@protobuf-ts/plugin": "^2.11.0",
     "@sentry/vite-plugin": "^3.3.1",
     "@tailwindcss/container-queries": "^0.1.1",
     "@tailwindcss/nesting": "^0.0.0-insiders.565cd3e",
