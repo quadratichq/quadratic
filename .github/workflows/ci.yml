@@ -78,6 +78,7 @@ jobs:
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
+          BIGQUERY_CREDENTIALS: ${{ secrets.BIGQUERY_CREDENTIALS }}
         run: |
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
