@@ -48,7 +48,7 @@ const OpenAIModelSchema = z.enum([
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
-const AzureOpenAIModelSchema = z.enum(['gpt-4.1']);
+const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'o4-mini']);
 const XAIModelSchema = z.enum(['grok-3-beta']);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
