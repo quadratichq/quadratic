@@ -30,6 +30,7 @@ function getClient(): ReturnType<typeof createClient> {
           }
         }
       },
+      devMode: true,
     });
   }
   return clientPromise;
