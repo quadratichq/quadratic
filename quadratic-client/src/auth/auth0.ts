@@ -41,9 +41,7 @@ async function getClient() {
   return auth0Client;
 }
 
-type Auth0AuthClient = AuthClient;
-
-export const auth0Client: Auth0AuthClient = {
+export const auth0Client: AuthClient = {
   async isAuthenticated() {
     const client = await getClient();
     const isAuthenticated = await client.isAuthenticated();

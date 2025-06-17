@@ -47,7 +47,7 @@ app.get('/health', (req, res) => {
 // Internal routes
 app.use('/v0/internal', internal_router);
 
-// Register all our dynamic routes, then regsiter the error middleware last of all
+// Register all our dynamic routes, then register the error middleware last of all
 registerRoutes().then(() => {
   // Error-logging middleware
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {

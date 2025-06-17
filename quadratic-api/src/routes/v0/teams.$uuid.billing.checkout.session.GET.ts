@@ -2,7 +2,7 @@ import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { getUsersFromAuth0 } from '../../auth/auth0';
+import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -44,8 +44,8 @@ async function handler(req: Request, res: Response) {
 
   // create a stripe customer if one doesn't exist
   if (!team?.stripeCustomerId) {
-    // Get user email from Auth0
-    const auth0Record = await getUsersFromAuth0([{ id: userId, auth0Id }]);
+    // Get user
+    const auth0Record = await getUsers([{ id: userId, auth0Id }]);
     const auth0User = auth0Record[userId];
 
     // create Stripe customer
