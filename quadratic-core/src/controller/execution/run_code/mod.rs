@@ -192,7 +192,7 @@ impl GridController {
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
+                    let rows = sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
                     if !rows.is_empty() {
                         let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                         resize_rows.extend(rows);
@@ -309,7 +309,7 @@ impl GridController {
         };
 
         // ensure the code_cell still exists
-        let Some(code_cell) = sheet.cell_value(pos) else {
+        let Some(code_cell) = sheet.cell_value_ref(pos) else {
             // cell may have been deleted before the async operation completed
             return Ok(());
         };

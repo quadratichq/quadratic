@@ -96,16 +96,13 @@ impl CellValues {
             .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))
     }
 
-    pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<CellValue>> {
-        let mut values =
-            vec![vec![CellValue::Blank; rect.width() as usize]; rect.height() as usize];
-
-        for (y_index, y) in rect.y_range().enumerate() {
-            for (x_index, x) in rect.x_range().enumerate() {
+    pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<Option<CellValue>>> {
+        let mut values = vec![vec![None; rect.height() as usize]; rect.width() as usize];
+        for (x_index, x) in rect.x_range().enumerate() {
+            for (y_index, y) in rect.y_range().enumerate() {
                 let new_x = u32::try_from(x).unwrap_or(0);
                 let new_y = u32::try_from(y).unwrap_or(0);
-
-                values[y_index][x_index] = self.remove(new_x, new_y).unwrap_or(CellValue::Blank);
+                values[x_index][y_index] = self.remove(new_x, new_y);
             }
         }
         values
@@ -173,13 +170,6 @@ impl CellValues {
             col.into_iter()
                 .map(move |(y, value)| (x as u32, y as u32, value))
         })
-    }
-
-    pub fn into_vec(&mut self) -> Vec<Vec<CellValue>> {
-        let width = self.w as i64;
-        let height = self.h as i64;
-
-        self.get_rect(Rect::new(0, 0, width, height))
     }
 
     pub fn into_owned_vec(self) -> Vec<Vec<CellValue>> {
@@ -292,12 +282,6 @@ impl From<Array> for CellValues {
         let cell_values_vec = array.into_cell_values_vec().into_vec();
 
         CellValues::from_flat_array(w.get(), h.get(), cell_values_vec)
-    }
-}
-
-impl From<CellValues> for Vec<Vec<CellValue>> {
-    fn from(mut cell_values: CellValues) -> Self {
-        cell_values.into_vec()
     }
 }
 
