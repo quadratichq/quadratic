@@ -186,13 +186,6 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  isCursorOnCodeCell(): boolean {
-    const cellsSheet = this.current;
-    if (!cellsSheet) return false;
-    const cursor = sheets.sheet.cursor.position;
-    return cellsSheet.tables.isWithinCodeCell(cursor.x, cursor.y);
-  }
-
   isCursorOnCodeCellOutput(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;

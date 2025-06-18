@@ -628,15 +628,15 @@ export class Tables extends Container<Table> {
     return !!this.getTable(x, y) || !!this.getSingleCodeCell(x, y);
   };
 
-  isWithinCodeCell = (x: number, y: number): boolean => {
-    const codeCell = this.getCodeCellIntersects({ x, y });
-    return codeCell?.language !== 'Import';
-  };
-
   /// Returns whether there are any code cells with the cell-based rectangle
   hasCodeCellInRect = (r: Rectangle): boolean => {
     if (!this.dataTablesCache) return false;
     return this.dataTablesCache.hasTableInRect(r.x, r.y, r.right - 1, r.bottom - 1);
+  };
+
+  hasCodeCellInCurrentSelection = () => {
+    if (!this.dataTablesCache) return false;
+    return this.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
   };
 
   //#endregion
