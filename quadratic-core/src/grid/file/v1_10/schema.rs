@@ -84,7 +84,7 @@ pub struct DataTableSchema {
     pub value: OutputValueSchema,
 
     #[serde(default)]
-    pub in_table: bool,
+    pub in_table: Option<PosSchema>,
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub last_modified: Option<DateTime<Utc>>,

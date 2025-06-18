@@ -143,7 +143,9 @@ pub struct DataTable {
     pub name: CellValue,
     pub value: Value,
     pub last_modified: DateTime<Utc>,
-    pub in_table: bool,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub in_table: Option<Pos>,
 
     #[serde(skip_serializing_if = "is_false", default)]
     pub header_is_first_row: bool,
@@ -240,7 +242,7 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
-            in_table: false,
+            in_table: None,
         };
 
         if header_is_first_row {

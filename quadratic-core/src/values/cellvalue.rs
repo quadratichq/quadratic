@@ -1444,7 +1444,5 @@ mod test {
             value,
             CellValue::Number(BigDecimal::from_str("-123.123").unwrap())
         );
-
-
     }
 }
