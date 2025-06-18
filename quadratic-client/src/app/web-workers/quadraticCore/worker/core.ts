@@ -456,12 +456,12 @@ class Core {
   async upgradeGridFile(
     file: ArrayBuffer,
     sequenceNum: number
-  ): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+  ): Promise<{ contents?: ArrayBufferLike; version?: string; error?: string }> {
     try {
       await initCore();
       const gc = GridController.newFromFile(new Uint8Array(file), sequenceNum, false);
       const version = gc.getVersion();
-      const contents = gc.exportGridToFile();
+      const contents = gc.exportGridToFile().buffer;
       return { contents, version };
     } catch (error: unknown) {
       this.sendAnalyticsError('upgradeGridFile', error);
@@ -478,7 +478,7 @@ class Core {
     cursor,
     csvDelimiter,
     hasHeading,
-  }: ClientCoreImportFile): Promise<{ contents?: ArrayBuffer; version?: string; error?: string }> {
+  }: ClientCoreImportFile): Promise<{ contents?: ArrayBufferLike; version?: string; error?: string }> {
     if (cursor === undefined) {
       try {
         await initCore();
@@ -497,7 +497,7 @@ class Core {
             throw new Error('Unsupported file type');
         }
         const version = gc.getVersion();
-        const contents = gc.exportGridToFile();
+        const contents = gc.exportGridToFile().buffer;
         return { contents, version };
       } catch (error: unknown) {
         this.sendAnalyticsError('importFile.Dashboard', error);
@@ -684,11 +684,11 @@ class Core {
     });
   }
 
-  export(): Promise<ArrayBuffer> {
+  export(): Promise<ArrayBufferLike> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
-        resolve(this.gridController.exportOpenGridToFile());
+        resolve(this.gridController.exportOpenGridToFile().buffer);
       } catch (e) {
         this.handleCoreError('export', e);
         resolve(new ArrayBuffer(0));
@@ -704,18 +704,6 @@ class Core {
       } catch (e) {
         this.handleCoreError('search', e);
         resolve([]);
-      }
-    });
-  }
-
-  hasRenderCells(sheetId: string, x: number, y: number, width: number, height: number): Promise<boolean> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        resolve(this.gridController.hasRenderCells(sheetId, numbersToRectStringified(x, y, width, height)));
-      } catch (e) {
-        this.handleCoreError('hasRenderCells', e);
-        resolve(false);
       }
     });
   }

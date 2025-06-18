@@ -297,17 +297,6 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreHasRenderCells':
-        const hasRenderCells = await core.hasRenderCells(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height
-        );
-        this.send({ type: 'coreClientHasRenderCells', id: e.data.id, hasRenderCells });
-        return;
-
       case 'clientCoreSetCellAlign':
         await core.setAlign(e.data.selection, e.data.align, e.data.cursor);
         return;
