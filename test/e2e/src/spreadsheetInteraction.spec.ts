@@ -298,7 +298,7 @@ test('Auto-Complete', async ({ page }) => {
   // Perform actions to test auto-complete functionality
 
   // Type "Auto" into cell A1
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: 'Auto' });
+  await typeInCell(page, { a1: 'A1', text: 'Auto' });
 
   // Select the first cell on the top left
   await selectCells(page, { startXY: [1, 1], endXY: [1, 1] });
@@ -1335,7 +1335,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // Navigate to an empty cell & insert formula to count # of rows
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000); // Wait before navigating on sheet
-  await typeInCell(page, { targetColumn: 18, targetRow: 1, text: '=COUNTA(A)' });
+  await typeInCell(page, { a1: 'R1', text: '=COUNTA(A)' });
 
   // Copy and save the number calculated on the sheet
   await page.keyboard.press('ArrowUp');
@@ -2179,7 +2179,7 @@ test('Key Actions', async ({ page }) => {
   const fileName = 'Key Actions';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_insert_delete_row` });
+  await logIn(page, { emailPrefix: `e2e_key_actions` });
 
   // // Create a new team
   // const teamName = `Key Actions - ${Date.now()}`;
@@ -2298,7 +2298,7 @@ test('Key Actions', async ({ page }) => {
   //--------------------------------
   // Assert:
   //--------------------------------
-  // Confirm we're Prompted to type and edting is allowed
+  // Confirm we're Prompted to type and editing is allowed
   await expect(page.locator(`#cell-edit`)).toBeVisible();
 
   // Enter fill the cell with text "Enter"
@@ -2308,7 +2308,7 @@ test('Key Actions', async ({ page }) => {
   // Use Enter Key while in edit mode
   await page.keyboard.press('Enter');
 
-  // Confirm edting is no longer allowed
+  // Confirm editing is no longer allowed
   await expect(page.locator(`#cell-edit`)).not.toBeVisible();
 
   // Confirm we're hovering over the expected cell
@@ -2441,7 +2441,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
   // Type sheet number into the first cell
   await page.waitForTimeout(500);
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet 1` });
+  await typeInCell(page, { a1: 'A1', text: `Sheet 1` });
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
@@ -2449,7 +2449,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
     // Type sheet number into the first cell
     await page.waitForTimeout(500);
-    await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet ${i + 1}` });
+    await typeInCell(page, { a1: 'A1', text: `Sheet ${i + 1}` });
   }
 
   // Focus on the first sheet
@@ -3449,7 +3449,7 @@ test('Scroll between sheets', async ({ page }) => {
 
   // Type sheet number into the first cell
   await page.waitForTimeout(500);
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet 1` });
+  await typeInCell(page, { a1: 'A1', text: `Sheet 1` });
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
@@ -3457,7 +3457,7 @@ test('Scroll between sheets', async ({ page }) => {
 
     // Type sheet number into the first cell
     await page.waitForTimeout(500);
-    await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet ${i + 1}` });
+    await typeInCell(page, { a1: 'A1', text: `Sheet ${i + 1}` });
   }
 
   // Focus on the first sheet
@@ -3465,6 +3465,11 @@ test('Scroll between sheets', async ({ page }) => {
 
   // Store sheet navigation toolbar
   const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+
+  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   // Store first and last sheet element
   const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet 1"]`);
@@ -3486,11 +3491,6 @@ test('Scroll between sheets', async ({ page }) => {
   // Get initial X position of the last sheet (Sheet 15)
   let lastSheetPosition = await lastSheetEl.boundingBox();
   let lastSheetPositionX = lastSheetPosition?.x;
-
-  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
 
   // Hover over the sheet navigation toolbar and scroll to the RIGHT
   await sheetNavigation.hover();
@@ -4371,7 +4371,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await navigateIntoFile(page, { fileName });
 
   // Type in a string in the first cell
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: 'Hello World' });
+  await typeInCell(page, { a1: 'A1', text: 'Hello World' });
 
   //--------------------------------
   // Act:

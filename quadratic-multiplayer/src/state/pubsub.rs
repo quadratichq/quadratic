@@ -160,6 +160,7 @@ impl State {
     }
 
     #[cfg(test)]
+    #[allow(unused)]
     pub(crate) async fn ack_message(&self, file_id: &Uuid, sequence_num: u64) -> Result<()> {
         let channel = file_id.to_string();
         let active_channels = "ACTIVE_CHANNELS";
@@ -177,6 +178,7 @@ impl State {
     }
 
     #[cfg(test)]
+    #[allow(unused)]
     pub(crate) async fn trim_message(&self, file_id: &Uuid, sequence_num: u64) -> Result<()> {
         let channel = file_id.to_string();
         let sequence_num = sequence_num.to_string();

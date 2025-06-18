@@ -1,58 +1,13 @@
 use std::str::FromStr;
 
-use crate::{Pos, a1::A1Selection, grid::SheetId};
-
-use crate::a1::{A1Context, RefRangeBounds};
+use crate::{
+    a1::{A1Selection, CellRefRange, RefRangeBounds},
+    grid::SheetId,
+    wasm_bindings::js_selection::JsSelection,
+};
 use wasm_bindgen::prelude::*;
 
-#[wasm_bindgen(js_name = "getTableInfo")]
-pub fn table_names(context: &[u8]) -> Result<JsValue, String> {
-    let context = serde_json::from_slice::<A1Context>(context).map_err(|e| e.to_string())?;
-    let table_info = context.table_info();
-    serde_wasm_bindgen::to_value(&table_info).map_err(|e| e.to_string())
-}
-
-#[wasm_bindgen(js_name = "getTableNameFromPos")]
-pub fn get_table_from_pos(context: &[u8], sheet_id: &str, col: u32, row: u32) -> Option<String> {
-    let Ok(sheet_id) = SheetId::from_str(sheet_id) else {
-        return None;
-    };
-    let pos = Pos::new(col as i64, row as i64);
-    let context = serde_json::from_slice::<A1Context>(context).unwrap();
-    let table = context.table_from_pos(pos.to_sheet_pos(sheet_id));
-    table.map(|t| t.table_name.to_string())
-}
-
-/// Converts a table reference to an A1 range.
-#[wasm_bindgen(js_name = "convertTableToRange")]
-pub fn convert_table_to_range(
-    context: &[u8],
-    table_name: &str,
-    current_sheet_id: &str,
-) -> Result<String, String> {
-    let context = serde_json::from_slice::<A1Context>(context).map_err(|e| e.to_string())?;
-    let sheet_id =
-        SheetId::from_str(current_sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
-    context
-        .convert_table_to_range(table_name, sheet_id)
-        .map_err(|e| e.to_string())
-}
-
-#[wasm_bindgen(js_name = "getTableNameInNameOrColumn")]
-pub fn get_table_name_in_name_or_column(
-    sheet_id: &str,
-    x: u32,
-    y: u32,
-    context: &[u8],
-) -> Option<String> {
-    let Ok(sheet_id) = SheetId::from_str(sheet_id) else {
-        return None;
-    };
-    let Ok(context) = serde_json::from_slice::<A1Context>(context) else {
-        return None;
-    };
-    context.table_in_name_or_column(sheet_id, x, y)
-}
+use super::js_a1_context::JsA1Context;
 
 #[wasm_bindgen(js_name = "toggleReferenceTypes")]
 pub fn toggle_reference_types(reference: &str) -> Result<String, String> {
@@ -71,23 +26,91 @@ pub fn toggle_reference_types(reference: &str) -> Result<String, String> {
 pub fn selection_to_sheet_rect(
     sheet_id: &str,
     selection: &str,
-    context: &[u8],
+    context: &JsA1Context,
 ) -> Result<String, String> {
-    // we don't need a real context since we're creating a table, so there should be no need for table info
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
-    let context = serde_json::from_slice::<A1Context>(context)
-        .map_err(|e| format!("Error parsing context: {e}"))?;
-    let selection = A1Selection::parse_a1(selection, sheet_id, &context)
+    let selection = A1Selection::parse_a1(selection, sheet_id, context.get_context())
         .map_err(|e| format!("Invalid selection: {e}"))?;
     let range = selection
         .ranges
         .first()
         .ok_or("Invalid selection: no ranges")?;
+
     // we don't really need the context here, but we need to pass something
-    let context = A1Context::default();
     let rect = range
-        .to_rect(&context)
+        .to_rect(context.get_context())
         .ok_or("Invalid selection: not a rectangle")?;
     let sheet_rect = rect.to_sheet_rect(sheet_id);
     serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())
+}
+
+#[wasm_bindgen(js_name = "stringToSelection")]
+pub fn to_selection(
+    a1: &str,
+    default_sheet_id: &str,
+    context: &JsA1Context,
+) -> Result<JsSelection, String> {
+    let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
+    let selection = A1Selection::parse_a1(a1, default_sheet_id, context.get_context())
+        .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
+    Ok(JsSelection::new_with_selection(selection))
+}
+
+#[wasm_bindgen(js_name = "A1SelectionStringToSelection")]
+pub fn a1_selection_string_to_selection(a1_selection: &str) -> Result<JsSelection, String> {
+    let selection = serde_json::from_str::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
+    Ok(JsSelection::new_with_selection(selection))
+}
+
+#[wasm_bindgen(js_name = "A1SelectionToJsSelection")]
+pub fn a1_selection_value_to_selection(a1_selection: JsValue) -> Result<JsSelection, String> {
+    let selection =
+        serde_wasm_bindgen::from_value::<A1Selection>(a1_selection).map_err(|e| e.to_string())?;
+    Ok(JsSelection::new_with_selection(selection))
+}
+
+#[wasm_bindgen(js_name = "cellRefRangeToRefRangeBounds")]
+pub fn cell_ref_range_to_ref_range_bounds(
+    cell_ref_range: String,
+    show_table_headers_for_python: bool,
+    context: &JsA1Context,
+) -> Result<JsValue, String> {
+    let cell_ref_range =
+        serde_json::from_str::<CellRefRange>(&cell_ref_range).map_err(|e| e.to_string())?;
+    let ref_range_bounds = match cell_ref_range {
+        CellRefRange::Sheet { range } => range,
+        CellRefRange::Table { range } => {
+            match range.convert_cells_accessed_to_ref_range_bounds(
+                show_table_headers_for_python,
+                context.get_context(),
+            ) {
+                Some(ref_range_bounds) => ref_range_bounds,
+                None => {
+                    return Err("Unable to convert table range to ref range bounds".to_string());
+                }
+            }
+        }
+    };
+    serde_wasm_bindgen::to_value(&ref_range_bounds).map_err(|e| e.to_string())
+}
+
+#[wasm_bindgen(js_name = "getTableInfo")]
+pub fn table_names(context: &JsA1Context) -> Result<JsValue, String> {
+    let table_info = context.get_context().table_info();
+    serde_wasm_bindgen::to_value(&table_info).map_err(|e| e.to_string())
+}
+
+/// Converts a table reference to an A1 range.
+#[wasm_bindgen(js_name = "convertTableToRange")]
+pub fn convert_table_to_range(
+    table_name: &str,
+    current_sheet_id: &str,
+    context: &JsA1Context,
+) -> Result<String, String> {
+    let sheet_id =
+        SheetId::from_str(current_sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
+    context
+        .get_context()
+        .convert_table_to_range(table_name, sheet_id)
+        .map_err(|e| e.to_string())
 }

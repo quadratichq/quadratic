@@ -49,6 +49,7 @@ class JavascriptWebWorker {
   };
 
   init() {
+    this.worker?.terminate();
     this.worker = new Worker(new URL('./worker/javascript.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
 
@@ -59,11 +60,8 @@ class JavascriptWebWorker {
 
   cancelExecution = () => {
     mixpanel.track('[JavascriptWebWorker].restartFromUser');
-
-    if (!this.worker) throw new Error('Expected worker to be defined in Javascript.ts');
-    this.worker.terminate();
-    quadraticCore.sendCancelExecution('Javascript');
     this.init();
+    quadraticCore.sendCancelExecution('Javascript');
     events.emit('javascriptState', 'ready');
   };
 }

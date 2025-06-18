@@ -336,7 +336,6 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             output_value: Some(JsCellValueResult("".into(), 0)),
-            cancel_compute: Some(true),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();

@@ -30,7 +30,6 @@ pub struct JsCodeResult {
     pub output_value: Option<JsCellValueResult>,
     pub output_array: Option<Vec<Vec<JsCellValueResult>>>,
     pub output_display_type: Option<String>,
-    pub cancel_compute: Option<bool>,
     pub chart_pixel_output: Option<(f32, f32)>,
     pub has_headers: bool,
 }

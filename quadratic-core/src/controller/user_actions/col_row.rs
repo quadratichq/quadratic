@@ -512,7 +512,7 @@ mod tests {
 
         // insert 3 columns before C
         gc.insert_columns(sheet_id, 3, 3, true, None);
-        assert_display_cell_value_first_sheet(&gc, 7, 1, "hello");
+        assert_display_cell_value_first_sheet(&gc, 6, 1, "hello");
         assert_cell_format_bold(&gc, sheet_id, 3, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 4, 5, true);
         assert_cell_format_bold(&gc, sheet_id, 5, 5, true);

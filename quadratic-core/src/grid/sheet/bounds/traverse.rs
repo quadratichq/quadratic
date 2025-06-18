@@ -50,7 +50,7 @@ impl Sheet {
             }
 
             // add edges of data tables to the search
-            at_table_edge = self.is_at_table_edge_col(&Pos { x, y: row });
+            at_table_edge = self.is_at_table_edge_col(Pos { x, y: row });
 
             if at_table_edge {
                 return Some(
@@ -129,7 +129,7 @@ impl Sheet {
             }
 
             // add edges of data tables to the search
-            at_table_edge = self.is_at_table_edge_row(&Pos { x: column, y });
+            at_table_edge = self.is_at_table_edge_row(Pos { x: column, y });
 
             if at_table_edge {
                 return Some(

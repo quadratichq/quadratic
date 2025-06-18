@@ -1,5 +1,6 @@
 use crate::{
     SheetPos,
+    a1::A1Selection,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::{CodeCellLanguage, SheetId},
 };
@@ -31,8 +32,8 @@ impl GridController {
     }
 
     /// Reruns one code cell
-    pub fn rerun_code_cell(&mut self, sheet_pos: SheetPos, cursor: Option<String>) -> String {
-        let ops = self.rerun_code_cell_operations(sheet_pos);
+    pub fn rerun_code_cell(&mut self, selection: A1Selection, cursor: Option<String>) -> String {
+        let ops = self.rerun_code_cell_operations(selection);
         self.start_user_transaction(ops, cursor, TransactionName::RunCode)
     }
 
