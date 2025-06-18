@@ -101,11 +101,14 @@ impl SheetDataTables {
         self.data_tables.get_full(pos)
     }
 
-    /// Updates mutual spill and cache for the data table at the given index and position.
+    /// Updates mutual spill and cache for the data table at the given index and
+    /// position.
     ///
-    /// This function only updates spill due to another data table, not due to cell values in columns.
+    /// This function only updates spill due to another data table, not due to
+    /// cell values in columns.
     ///
-    /// Returns set of dirty rectangle
+    /// Returns set of dirty rectangle, which are the rects that need to be
+    /// rendered due to the spill calculation.
     fn update_spill_and_cache(
         &mut self,
         index: usize,
@@ -149,7 +152,12 @@ impl SheetDataTables {
             // calculate self spill
             spill_current_data_table = self
                 .get_in_rect_sorted(current_un_spilled_output_rect, false)
-                .any(|other| other.0 < index);
+                .any(|other| {
+                    other.0 < index
+                        && data_table // ignore a spill if in_table is set to the conflicting table
+                            .in_table
+                            .is_some_and(|table_pos| table_pos != *pos)
+                });
 
             // if no self spill, check for other data table spill due to this table
             if !spill_current_data_table && !data_table.spill_value {
@@ -523,5 +531,28 @@ impl SheetDataTables {
     /// Exports the cache of data tables.
     pub fn cache_ref(&self) -> &SheetDataTablesCache {
         &self.cache
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{grid::CodeCellLanguage, test_util::*};
+
+    #[test]
+    fn test_spill_in_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        gc.set_code_cell(
+            pos![sheet_id!A3],
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+            None,
+        );
+
+        print_first_sheet(&gc);
     }
 }

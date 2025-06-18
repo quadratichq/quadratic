@@ -460,6 +460,7 @@ mod tests {
             Some(false),
             Some(false),
             None,
+            None,
         );
         let transaction = &mut PendingTransaction::default();
         gc.finalize_data_table(transaction, sheet_pos, Some(data_table), None);
@@ -544,6 +545,7 @@ mod tests {
             false,
             Some(false),
             Some(false),
+            None,
             None,
         );
         let transaction = &mut PendingTransaction::default();

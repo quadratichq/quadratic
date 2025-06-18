@@ -205,6 +205,7 @@ impl From<(Import, Array, &A1Context)> for DataTable {
             None,
             None,
             None,
+            None,
         )
     }
 }
@@ -222,6 +223,7 @@ impl DataTable {
         show_name: Option<bool>,
         show_columns: Option<bool>,
         chart_output: Option<(u32, u32)>,
+        in_table: Option<Pos>,
     ) -> Self {
         let mut data_table = DataTable {
             kind,
@@ -242,7 +244,7 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
-            in_table: None,
+            in_table,
         };
 
         if header_is_first_row {
@@ -295,6 +297,13 @@ impl DataTable {
     pub fn with_column_headers(mut self, column_headers: Vec<DataTableColumnHeader>) -> Self {
         self.column_headers = Some(column_headers);
         self
+    }
+
+    pub fn is_data_table(&self) -> bool {
+        match &self.kind {
+            DataTableKind::CodeRun(_) => false,
+            DataTableKind::Import(_) => true,
+        }
     }
 
     pub fn is_code(&self) -> bool {
@@ -843,6 +852,7 @@ pub mod test {
             None,
             None,
             None,
+            None,
         )
         .with_last_modified(data_table.last_modified);
 
@@ -880,6 +890,7 @@ pub mod test {
             Some(false),
             Some(false),
             None,
+            None,
         );
 
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
@@ -914,6 +925,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
 
@@ -953,6 +965,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
         data_table.spill_value = true;
@@ -999,6 +1012,7 @@ pub mod test {
             Some(true),
             Some(true),
             None,
+            None,
         );
         assert!(!data_table.is_single_column());
 
@@ -1011,6 +1025,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
         assert!(data_table.is_single_column());
@@ -1025,6 +1040,7 @@ pub mod test {
             Some(true),
             Some(true),
             None,
+            None,
         );
         assert!(!data_table.is_single_column());
 
@@ -1037,6 +1053,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
         assert!(data_table.is_single_column());
@@ -1052,6 +1069,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
 
@@ -1083,6 +1101,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
 
@@ -1122,6 +1141,7 @@ pub mod test {
             Some(false),
             Some(false),
             None,
+            None,
         );
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
 
@@ -1133,6 +1153,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
         // Height should be 3 (1 for value + 1 for name + 1 for columns)
@@ -1322,6 +1343,7 @@ pub mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
 

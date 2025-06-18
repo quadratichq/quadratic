@@ -236,6 +236,7 @@ pub mod test {
             Some(true),
             Some(true),
             None,
+            None,
         )
         .with_last_modified(data_table.last_modified);
 

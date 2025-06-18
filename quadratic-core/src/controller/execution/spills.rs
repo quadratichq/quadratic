@@ -382,6 +382,7 @@ mod tests {
             Some(true),
             Some(true),
             None,
+            None,
         );
         let pos = Pos { x: 0, y: 0 };
         let sheet = gc.sheet_mut(sheet_id);

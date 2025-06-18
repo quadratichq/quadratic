@@ -207,6 +207,7 @@ mod tests {
             Some(true),
             Some(true),
             None,
+            None,
         );
 
         let mut gc = GridController::test();

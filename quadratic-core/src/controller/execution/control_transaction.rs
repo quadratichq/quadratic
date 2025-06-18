@@ -249,6 +249,7 @@ impl GridController {
                         None,
                         None,
                         None,
+                        None,
                     );
 
                     self.finalize_data_table(

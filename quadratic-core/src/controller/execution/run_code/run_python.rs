@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    Pos, SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     grid::{CodeCellLanguage, CodeCellValue},
 };
@@ -10,6 +10,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
+        in_table: Option<Pos>,
     ) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsRunPython(
@@ -26,7 +27,7 @@ impl GridController {
             language: CodeCellLanguage::Python,
             code,
         };
-        transaction.waiting_for_async = Some(code_cell);
+        transaction.waiting_for_async = Some((code_cell, in_table));
         self.transactions.add_async_transaction(transaction);
     }
 }

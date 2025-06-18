@@ -158,20 +158,25 @@ impl GridController {
                 _ => return,
             };
 
+            dbg!(&sheet.data_tables);
+            dbg!(&sheet.data_table_that_contains(pos));
+            let in_table = sheet.check_in_data_table(pos);
+            dbg!(&in_table);
+
             match language {
                 CodeCellLanguage::Python => {
-                    self.run_python(transaction, sheet_pos, code);
+                    self.run_python(transaction, sheet_pos, code, in_table);
                 }
                 CodeCellLanguage::Formula => {
-                    self.run_formula(transaction, sheet_pos, code);
+                    self.run_formula(transaction, sheet_pos, code, in_table);
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     self.run_connection(transaction, sheet_pos, code, kind, id);
                 }
                 CodeCellLanguage::Javascript => {
-                    self.run_javascript(transaction, sheet_pos, code);
+                    self.run_javascript(transaction, sheet_pos, code, in_table);
                 }
-                CodeCellLanguage::Import => {} // no-op
+                CodeCellLanguage::Import => (), // no-op
             }
         }
     }

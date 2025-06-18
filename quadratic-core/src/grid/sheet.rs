@@ -1072,6 +1072,7 @@ mod test {
             Some(true),
             Some(true),
             None,
+            None,
         );
         sheet.data_table_insert_full(&pos, dt.clone());
         assert!(sheet.has_content(pos));
@@ -1319,6 +1320,7 @@ mod test {
             Some(true),
             Some(true),
             None,
+            None,
         );
         sheet.data_table_insert_full(&anchor_pos, dt);
 
@@ -1346,6 +1348,7 @@ mod test {
             false,
             Some(false),
             Some(false),
+            None,
             None,
         );
         dt_no_ui.show_name = Some(false);
@@ -1388,6 +1391,7 @@ mod test {
             false,
             Some(true),
             Some(true),
+            None,
             None,
         );
         sheet.data_table_insert_full(&pos, dt.clone());

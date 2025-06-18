@@ -78,6 +78,7 @@ impl GridController {
             Some(false),
             Some(false),
             None,
+            None,
         );
 
         let op = Operation::AddDataTable {
@@ -111,6 +112,7 @@ impl GridController {
             header_is_first_row,
             show_name,
             show_columns,
+            None,
             None,
         );
 
