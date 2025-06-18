@@ -55,7 +55,6 @@ pub fn find_cell_references(
     let tokens = lexer::tokenize(source)
         .filter(|t| !t.inner.is_skip())
         .collect_vec();
-
     let mut p = Parser::new(source, &tokens, ctx, pos);
 
     while !p.is_done() {

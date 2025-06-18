@@ -563,6 +563,9 @@ fn test_table_this_row() {
     );
 
     print_first_sheet(&gc);
+
+    assert_display_cell_value(&gc, sheet_id, 5, 3, "0");
+    assert_display_cell_value(&gc, sheet_id, 5, 4, "");
 }
 
 #[test]
@@ -581,4 +584,7 @@ fn test_table_this_row_short() {
     );
 
     print_first_sheet(&gc);
+
+    assert_display_cell_value(&gc, sheet_id, 5, 3, "0");
+    assert_display_cell_value(&gc, sheet_id, 5, 4, "");
 }

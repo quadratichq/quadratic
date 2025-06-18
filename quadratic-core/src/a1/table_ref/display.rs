@@ -33,6 +33,9 @@ impl fmt::Display for TableRef {
                 if self.totals {
                     entries.push("[#TOTALS]".to_string());
                 }
+                if self.this_row {
+                    entries.push("[#THIS ROW]".to_string());
+                }
             }
         }
         if entries.is_empty() && matches!(self.col_range, ColRange::Col(_)) {
@@ -80,6 +83,7 @@ mod tests {
             "Table1[[#HEADERS],[Column 3]:[Column 4]]",
             "Table1[[#HEADERS],[Column 3]:]",
             "Table1[[#DATA],[#HEADERS],[Column 1]]",
+            "Table1[[#THIS ROW],[Column 1]]",
         ];
 
         for test in tests {
@@ -87,5 +91,21 @@ mod tests {
                 .unwrap_or_else(|e| panic!("Failed to parse {}: {}", test, e));
             assert_eq!(table_ref.to_string(), test, "{}", test);
         }
+    }
+
+    #[test]
+    fn test_to_string_this_row() {
+        let context = A1Context::test(
+            &[],
+            &[(
+                "Table1",
+                &["Column 1", "Column 2", "Column 3", "Column 4"],
+                Rect::test_a1("A1"),
+            )],
+        );
+
+        let table_ref = TableRef::parse("Table1[@Column 1]", &context)
+            .unwrap_or_else(|e| panic!("Failed to parse Table1[@Column 1]: {}", e));
+        assert_eq!(table_ref.to_string(), "Table1[[#THIS ROW],[Column 1]]");
     }
 }

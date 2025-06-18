@@ -189,7 +189,7 @@ impl SyntaxRule for TableReference {
                             _ => return Err(RunErrorMsg::BadCellReference),
                         }
                     }
-                    let t = TableRef {
+                    Ok(TableRef {
                         table_name: table_name.to_owned(),
                         data: if this_row {
                             false
@@ -200,9 +200,7 @@ impl SyntaxRule for TableReference {
                         totals,
                         col_range: col_range.unwrap_or(ColRange::All),
                         this_row,
-                    };
-                    dbg!(&t);
-                    Ok(t)
+                    })
                 })()
             }
         }
