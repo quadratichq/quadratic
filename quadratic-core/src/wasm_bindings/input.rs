@@ -4,8 +4,8 @@ use wasm_bindgen::prelude::*;
 
 use crate::{
     Pos, SheetPos,
-    grid::{SheetId, sheet::data_tables::cache::SheetDataTablesCache},
-    input::{Direction, jump::jump_cursor, move_cursor::move_cursor},
+    grid::{SheetId, js_types::Direction, sheet::data_tables::cache::SheetDataTablesCache},
+    input::{jump::jump_cursor, move_cursor::move_cursor},
     wasm_bindings::{js_a1_context::JsA1Context, sheet_content_cache::SheetContentCache},
 };
 

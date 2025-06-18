@@ -15,9 +15,8 @@
 use crate::{
     Pos, SheetPos,
     a1::A1Context,
-    grid::sheet::data_tables::cache::SheetDataTablesCache,
+    grid::{js_types::Direction, sheet::data_tables::cache::SheetDataTablesCache},
     input::{
-        Direction,
         has_content::{chart_at, has_content_ignore_blank_table, table_header_at},
         traverse::{find_next_column, find_next_row},
     },

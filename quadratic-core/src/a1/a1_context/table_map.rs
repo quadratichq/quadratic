@@ -147,7 +147,7 @@ impl TableMap {
     }
 
     /// Returns JsTableInfo for all non-formula tables.
-    pub fn table_info(&self) -> Vec<JsTableInfo> {
+    pub fn expensive_table_info(&self) -> Vec<JsTableInfo> {
         self.iter_table_values()
             .filter_map(|table| {
                 if table.language != CodeCellLanguage::Formula && table.bounds.len() > 1 {
@@ -474,7 +474,7 @@ mod tests {
             CodeCellLanguage::Import,
         );
 
-        let info = map.table_info();
+        let info = map.expensive_table_info();
         assert_eq!(info.len(), 2); // Only non-formula tables should be included
 
         // Verify table1 info

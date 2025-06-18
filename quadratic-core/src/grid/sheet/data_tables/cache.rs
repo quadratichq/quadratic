@@ -113,14 +113,14 @@ impl SheetDataTablesCache {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MultiCellTablesCache {
-    // position map indicating presence of multi-cell data table at a position
-    // each position value is the root cell position of the data table
-    // this accounts for table spills hence values cannot overlap
+    /// position map indicating presence of multi-cell data table at a position
+    /// each position value is the root cell position of the data table
+    /// this accounts for table spills hence values cannot overlap
     multi_cell_tables: Contiguous2D<Option<Pos>>,
 
-    // position map indicating presence of empty cells within a multi-cell data table
-    // this is used to assist with finding the next cell with content
-    // NOTE: the bool cannot be false
+    /// position map indicating presence of empty cells within a multi-cell data table
+    /// this is used to assist with finding the next cell with content
+    /// NOTE: the bool cannot be false
     multi_cell_tables_empty: Contiguous2D<Option<bool>>,
 }
 
