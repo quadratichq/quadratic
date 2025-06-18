@@ -265,9 +265,8 @@ jobs:
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
 
-      - name: Run cargo clippy in quadratic-core
+      - name: Run cargo clippy
         run: |
-          cd quadratic-core
           cargo clippy -- -D warnings
 
   lint_typescript:
