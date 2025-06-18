@@ -5,16 +5,18 @@
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    Pos, Rect, a1::js_selection::JsSelection, compression::deserialize_from_bytes,
+    Pos, Rect,
+    compression::{SerializationFormat, deserialize},
     grid::sheet::data_tables::cache::SheetDataTablesCache,
-    wasm_bindings::js_a1_context::JsA1Context,
+    wasm_bindings::{js_a1_context::JsA1Context, js_selection::JsSelection},
 };
 
 #[wasm_bindgen]
 impl SheetDataTablesCache {
     #[wasm_bindgen(constructor)]
     pub fn new(bytes: Vec<u8>) -> Self {
-        deserialize_from_bytes::<SheetDataTablesCache>(&bytes).unwrap_or_default()
+        deserialize::<SheetDataTablesCache>(&SerializationFormat::Bincode, &bytes)
+            .unwrap_or_default()
     }
 
     /// Returns what table is the table Pos at the given position.

@@ -7,7 +7,11 @@ use wasm_bindgen::prelude::*;
 
 #[cfg(test)]
 use crate::grid::Sheet;
-use crate::{Pos, Rect, compression::deserialize_from_bytes, grid::Contiguous2D};
+use crate::{
+    Pos, Rect,
+    compression::{SerializationFormat, deserialize},
+    grid::Contiguous2D,
+};
 
 #[derive(Default, Debug, Serialize, Deserialize)]
 #[wasm_bindgen]
@@ -69,7 +73,7 @@ impl SheetContentCache {
 
     #[wasm_bindgen(constructor)]
     pub fn new(bytes: Vec<u8>) -> Self {
-        deserialize_from_bytes::<SheetContentCache>(&bytes).unwrap_or_default()
+        deserialize::<SheetContentCache>(&SerializationFormat::Bincode, &bytes).unwrap_or_default()
     }
 
     #[wasm_bindgen(js_name = "hasContent")]
