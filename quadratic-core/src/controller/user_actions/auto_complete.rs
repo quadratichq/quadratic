@@ -722,7 +722,13 @@ mod tests {
         let pos = pos![C3];
         let sheet_pos = pos.to_sheet_pos(sheet_id);
         let set_code_cell = |gc: &mut GridController, code: &str| {
-            gc.set_code_cell(sheet_pos, CodeCellLanguage::Python, code.to_string(), None);
+            gc.set_code_cell(
+                sheet_pos,
+                CodeCellLanguage::Python,
+                code.to_string(),
+                None,
+                None,
+            );
         };
         let autocomplete = |gc: &mut GridController| {
             gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
