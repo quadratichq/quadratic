@@ -38,7 +38,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   // Determine what kind of file creation we're doing:
   const { searchParams } = new URL(request.url);
   const isPrivate = searchParams.get('private') !== null;
-  searchParams.delete('example');
+  searchParams.delete('private');
 
   // 1.
   // Clone an example file by passing the file id, e.g.

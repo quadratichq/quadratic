@@ -43,7 +43,10 @@ export const ROUTES = {
     teamUuid: string;
     publicFileUrlInProduction: string;
     additionalParams: string;
-  }) => `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private${additionalParams}`,
+  }) =>
+    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private${
+      additionalParams ? `&${additionalParams}` : ''
+    }`,
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
