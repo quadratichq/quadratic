@@ -10,7 +10,7 @@ import {
   isVertexAIModel,
   isXAIModel,
 } from 'quadratic-shared/ai/helpers/model.helper';
-import { DEFAULT_BACKUP_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
+import { DEFAULT_BACKUP_MODEL, DEFAULT_BACKUP_MODEL_THINKING } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
   AIMessagePrompt,
   AIModelKey,
@@ -99,12 +99,17 @@ export const handleAIRequest = async (
   } catch (error) {
     console.error('Error in handleAIRequest: ', modelKey, error);
 
-    if (
-      ENVIRONMENT === 'production' &&
-      modelKey !== DEFAULT_BACKUP_MODEL &&
-      ['AIAnalyst', 'AIAssistant'].includes(args.source)
-    ) {
-      return handleAIRequest(DEFAULT_BACKUP_MODEL, args, response);
+    if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
+      const options = getModelOptions(modelKey, inputArgs);
+
+      // thinking backup model
+      if (options.thinking && modelKey !== DEFAULT_BACKUP_MODEL_THINKING) {
+        return handleAIRequest(DEFAULT_BACKUP_MODEL_THINKING, args, response);
+      }
+      // non-thinking backup model
+      else if (!options.thinking && modelKey !== DEFAULT_BACKUP_MODEL) {
+        return handleAIRequest(DEFAULT_BACKUP_MODEL, args, response);
+      }
     }
 
     const responseMessage: AIMessagePrompt = {

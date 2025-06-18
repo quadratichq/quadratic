@@ -36,6 +36,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
           try {
             const selection = stringToSelection(toolArgs.data.code_cell_position, sheets.current, sheets.a1Context);
             const { x, y } = selection.getCursor();
+            selection.free();
             setCodeCellPos({ x, y });
           } catch (e) {
             console.error('[SetCodeCellValue] Failed to parse args: ', e);

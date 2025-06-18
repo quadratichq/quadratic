@@ -61,10 +61,12 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </role>
 
  <models>
-  <model name="Claude">
+  <model name="Pro">
    <capabilities>
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
+    <capability>Creating new charts</capability>
+    <capability>Editing existing charts</capability>
     <capability>Requests that involve frustration</capability>
     <capability>Onboarding questions</capability>
     <capability>Data cleaning</capability>
@@ -77,10 +79,14 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Any capabilities not defined in these instructions</capability>
    </capabilities>
   </model>
+  <model name="Claude">
+   <capabilities>
+    <capability>Requests that involve frustration</capability>
+    <capability>Charts that have problems</capability>
+   </capabilities>
+  </model>
   <model name="4.1">
    <capabilities>
-    <capability>Creating new charts</capability>
-    <capability>Editing existing charts</capability>
     <capability>Simple/explicitly defined formatting</capability>
     <capability>Moving data to specific cell locations</capability>
     <capability>Simple calculations and formulas - sums, means, averages, filters, etc.</capability>
@@ -89,69 +95,65 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Pro", "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
   <example>
    <user>Insert some sample manufacturing data</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>create a dataset of sales data</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Create a debt snowball calculator</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Create a mortgage calculator</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
-   <user>try again</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
-   <user>Why do you keep failing?</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
-   <user>Chart is empty or missing data</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Hi, I'm new to Quadratic.</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Analyze my PDFs</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Highlight all the cells with value > 50</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Remove column B from the data</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>How much does each crop produce per year?</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Highlight all male entries orange</user>
-   <answer>Claude</answer>
+   <answer>Pro</answer>
   </example>
   <example>
-   <user>That chart has an issue</user>
-   <answer>Claude</answer>
+   <user>Add an extra axis to my chart</user>
+   <answer>Pro</answer>
+  </example>
+  <example>
+   <user>Change the line to blue</user>
+   <answer>Pro</answer>
+  </example>
+  <example>
+   <user>Create a chart</user>
+   <answer>Pro</answer>
   </example>
   <example>
    <user>Highlight column C blue</user>
@@ -174,16 +176,20 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>4.1</answer>
   </example>
   <example>
-   <user>Add an extra axis to my chart</user>
-   <answer>4.1</answer>
+   <user>That chart has an issue</user>
+   <answer>Claude</answer>
+  </example>
+    <example>
+   <user>try again</user>
+   <answer>Claude</answer>
   </example>
   <example>
-   <user>Change the line to blue</user>
-   <answer>4.1</answer>
+   <user>Why do you keep failing?</user>
+   <answer>Claude</answer>
   </example>
   <example>
-   <user>Create a chart</user>
-   <answer>4.1</answer>
+   <user>Chart is empty or missing data</user>
+   <answer>Claude</answer>
   </example>
  </examples>
 `,

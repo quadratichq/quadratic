@@ -101,7 +101,7 @@ const cellLanguageSchema = z
 const modelRouterModels = z
   .string()
   .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
-  .pipe(z.enum(['claude', '4.1']));
+  .pipe(z.enum(['claude', '4.1', 'pro']));
 
 export const AIToolsArgsSchema = {
   [AITool.SetAIModel]: z.object({
@@ -208,6 +208,7 @@ export type AIToolSpecRecord = {
 export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
+  pro: 'vertexai:gemini-2.5-pro:thinking-toggle-on',
   claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   '4.1': 'azure-openai:gpt-4.1',
 };
@@ -529,12 +530,12 @@ Formulas placement instructions:\n
 
 When to use set_formula_cell_value:\n
 Set formula cell value tool should be used for relatively simple tasks. Tasks like aggregations, finding means, totals, counting number of instances, etc. You can use this for calculations that reference values in and out of tables. For more complex tasks, use set_code_cell_value.\n
-Examples: 
+Examples:
 - Finding the mean of a column of numbers
 - Counting the number of instances of a value in a column
-- Finding the max/min value 
-- Basic arithmetic operations 
-- Joining strings 
+- Finding the max/min value
+- Basic arithmetic operations
+- Joining strings
 `,
   },
   [AITool.MoveCells]: {
