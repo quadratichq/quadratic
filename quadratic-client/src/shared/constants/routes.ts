@@ -34,8 +34,15 @@ export const ROUTES = {
 
     return url.toString();
   },
-  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string) =>
-    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private`,
+  CREATE_FILE_EXAMPLE: ({
+    teamUuid,
+    publicFileUrlInProduction,
+    additionalParams,
+  }: {
+    teamUuid: string;
+    publicFileUrlInProduction: string;
+    additionalParams: string;
+  }) => `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private${additionalParams}`,
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
