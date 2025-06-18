@@ -9,7 +9,8 @@ export const ROUTES = {
   SIGNUP_WITH_REDIRECT: () => '/login?signup&from=' + encodeURIComponent(window.location.pathname),
   LOGIN_RESULT: '/login-result',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
-  FILE: (uuid: string) => `/file/${uuid}`,
+  FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
+    `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   CREATE_FILE: (

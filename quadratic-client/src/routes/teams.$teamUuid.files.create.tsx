@@ -38,11 +38,13 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   // Determine what kind of file creation we're doing:
   const { searchParams } = new URL(request.url);
   const isPrivate = searchParams.get('private') !== null;
+  searchParams.delete('example');
 
   // 1.
   // Clone an example file by passing the file id, e.g.
   // /teams/:teamUuid/files/create?example=:publicFileUrlInProduction&{isPrivate?}
   const exampleUrl = searchParams.get('example');
+  searchParams.delete('example');
   if (exampleUrl) {
     try {
       const { uuid, name } = await apiClient.examples.duplicate({
@@ -51,7 +53,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
         isPrivate,
       });
       mixpanel.track('[Files].newExampleFile', { fileName: name });
-      return replace(ROUTES.FILE(uuid));
+      return replace(ROUTES.FILE({ uuid, searchParams: searchParams.toString() }));
     } catch (error) {
       Sentry.captureEvent({
         message: 'Client failed to load the selected example file.',
@@ -85,7 +87,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
       searchParamsToPass.set('prompt', prompt);
     }
 
-    return replace(ROUTES.FILE(uuid) + (searchParamsToPass ? '?' + searchParamsToPass.toString() : ''));
+    return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
   } catch (error) {
     return replace(getFailUrl(ROUTES.TEAM(teamUuid)));
   }
@@ -100,6 +102,7 @@ export type CreateActionRequest = {
 export const action = async ({ params, request }: ActionFunctionArgs) => {
   const { searchParams } = new URL(request.url);
   const isPrivate = searchParams.get('private') !== null;
+  searchParams.delete('example');
 
   const { teamUuid } = params;
   if (!teamUuid) {
@@ -113,7 +116,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
     const {
       file: { uuid },
     } = await apiClient.files.create({ file: { name, contents, version }, teamUuid, isPrivate });
-    return replace(ROUTES.FILE(uuid));
+    return replace(ROUTES.FILE({ uuid, searchParams: searchParams.toString() }));
   } catch (error) {
     return replace(getFailUrl());
   }
