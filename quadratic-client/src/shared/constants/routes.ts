@@ -73,6 +73,8 @@ export const ROUTES = {
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
     },
   },
+
+  IFRAME_INDEXEDDB: '/iframe-indexeddb',
 };
 
 export const ROUTE_LOADER_IDS = {

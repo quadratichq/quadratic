@@ -143,6 +143,7 @@ export const router = createBrowserRouter(
         Component={EmptyComponent}
         HydrateFallback={EmptyComponent}
       />
+      <Route path={ROUTES.IFRAME_INDEXEDDB} lazy={() => import('./routes/iframe-indexeddb')} />
     </>
   ),
   {}

@@ -1,6 +1,6 @@
 //! User-focused URL parameters (default behavior)
 
-import { filesFromIframe } from '@/app/ai/filesFromIframe/filesFromIframe';
+import { filesFromIframe } from '@/app/ai/iframeAiChatFiles/FilesFromIframe';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
