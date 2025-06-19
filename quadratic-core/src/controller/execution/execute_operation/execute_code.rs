@@ -151,17 +151,14 @@ impl GridController {
             let pos: Pos = sheet_pos.into();
 
             // We need to get the corresponding CellValue::Code
-            let (language, code) = match sheet.cell_value(pos) {
+            let (language, code) = match sheet.code_value(pos) {
                 Some(CellValue::Code(value)) => (value.language, value.code),
 
                 // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
                 _ => return,
             };
 
-            dbg!(&sheet.data_tables);
-            dbg!(&sheet.data_table_that_contains(pos));
             let in_table = sheet.check_in_data_table(pos);
-            dbg!(&in_table);
 
             match language {
                 CodeCellLanguage::Python => {

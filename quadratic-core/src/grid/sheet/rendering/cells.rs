@@ -150,6 +150,14 @@ impl Sheet {
                         let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
 
                         if let Some(value) = value {
+                            if value.is_code() {
+                                dbgjs!(&value);
+                                dbgjs!(&Pos { x, y });
+                                dbgjs!(&self.data_tables);
+                                if let Some(code_table) = self.data_table_at(&Pos { x, y }) {
+                                    dbgjs!(&code_table);
+                                }
+                            }
                             let mut format = if is_header {
                                 // column headers are always clipped and bold
                                 Format {

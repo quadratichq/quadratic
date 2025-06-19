@@ -14,7 +14,7 @@ use anyhow::{Result, anyhow};
 pub mod cache;
 use cache::SheetDataTablesCache;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct SheetDataTables {
     #[serde(with = "crate::util::indexmap_serde")]
     data_tables: IndexMap<Pos, DataTable>,
@@ -534,6 +534,18 @@ impl SheetDataTables {
     }
 }
 
+// Custom Debug implementation for SheetDataTables
+impl std::fmt::Debug for SheetDataTables {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "SheetDataTables {{")?;
+        writeln!(f, "  data_tables:")?;
+        for (pos, table) in &self.data_tables {
+            writeln!(f, "    {:?}: {:?}", pos, table)?;
+        }
+        writeln!(f, "}}")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{grid::CodeCellLanguage, test_util::*};
@@ -552,7 +564,5 @@ mod tests {
             None,
             None,
         );
-
-        print_first_sheet(&gc);
     }
 }

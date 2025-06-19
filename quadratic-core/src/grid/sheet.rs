@@ -289,10 +289,29 @@ impl Sheet {
         rect_values
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    /// Returns the cell_value at the Pos in column.values. This does not check
+    /// or return results within code_runs.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y).cloned()
+    }
+
+    /// Returns the code value at the Pos either in column.values or in a data
+    /// table.
+    pub fn code_value(&self, pos: Pos) -> Option<CellValue> {
+        if let Some(column) = self.get_column(pos.x) {
+            if let Some(cell_value) = column.values.get(&pos.y) {
+                if let CellValue::Code(_) = cell_value {
+                    return Some(cell_value.clone());
+                }
+            }
+        }
+        if let Some(cell_value) = self.get_code_cell_value(pos) {
+            if let CellValue::Code(_) = cell_value {
+                return Some(cell_value.clone());
+            }
+        }
+        None
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does

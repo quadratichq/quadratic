@@ -3,6 +3,7 @@
 //! This lives in sheet.data_tables. CodeRun is optional within sheet.data_tables for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
+use crate::grid::data_table::table_code_cache::TableCodeCache;
 use crate::util::is_false;
 
 pub mod column;
@@ -12,6 +13,7 @@ pub mod formats;
 pub mod row;
 pub mod send_render;
 pub mod sort;
+mod table_code_cache;
 
 use std::num::NonZeroU32;
 
@@ -144,8 +146,13 @@ pub struct DataTable {
     pub value: Value,
     pub last_modified: DateTime<Utc>,
 
+    // whether this is a code table that is in a data table
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub in_table: Option<Pos>,
+
+    // all code tables that may live in this (if it is a data table)
+    #[serde(skip)]
+    has_code: TableCodeCache,
 
     #[serde(skip_serializing_if = "is_false", default)]
     pub header_is_first_row: bool,
@@ -245,6 +252,7 @@ impl DataTable {
             chart_pixel_output: None,
             chart_output,
             in_table,
+            has_code: Default::default(),
         };
 
         if header_is_first_row {
@@ -277,6 +285,7 @@ impl DataTable {
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
             in_table: self.in_table,
+            has_code: Default::default(),
         }
     }
 
@@ -800,6 +809,20 @@ impl DataTable {
         }
 
         rows
+    }
+
+    // todo...
+    /// Returns the position of a a nested code cell within a data table.
+    pub fn inner_code_cell_value(&self, _data_table_pos: Pos, _cell_value_pos: Pos) -> Option<Pos> {
+        if !self.is_data_table() {
+            return None;
+        }
+
+        // has_code.get(Pos::new(
+        //     (cell_value_pos.x - data_table_pos.x + 1) as i64,
+        //     (cell_value_pos.y - data_table_pos.y + 1) as i64,
+        // ))
+        None
     }
 }
 

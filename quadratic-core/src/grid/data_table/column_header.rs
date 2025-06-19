@@ -312,6 +312,7 @@ pub mod test {
             spill_value: false,
             spill_data_table: false,
             in_table: None,
+            has_code: Default::default(),
         };
         sheet.set_cell_value(
             pos,
@@ -371,6 +372,7 @@ pub mod test {
             spill_value: false,
             spill_data_table: false,
             in_table: None,
+            has_code: Default::default(),
         };
         t.apply_default_header();
         sheet.set_cell_value(

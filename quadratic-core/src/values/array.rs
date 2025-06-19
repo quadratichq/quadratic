@@ -251,6 +251,10 @@ impl Array {
                 .collect()
         })
     }
+    /// Returns an iterator over the values in the array.
+    pub fn values_iter(&self) -> impl Iterator<Item = &CellValue> {
+        self.values.iter()
+    }
     /// Constructs an array from rows (if `axis` is `Axis::Y`) or columns (if
     /// `axis` is `Axis::X`). All rows/columns must have the same length, or
     /// else the result is undefined. Returns `None` if `slices` is empty or if
