@@ -739,8 +739,10 @@ mod test {
     }
 
     #[test]
-    fn search_data_tables() {
+    fn test_search_data_tables() {
         let (gc, sheet_id, _, _) = simple_csv_at(pos!(E2));
+
+        print_first_sheet!(&gc);
 
         let sheet = gc.sheet(sheet_id);
 
