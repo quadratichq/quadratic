@@ -18,10 +18,10 @@ export const AIAnalystGetFiles = memo(() => {
 
       console.log('event', event.data);
 
-      if (event.data.type !== 'get-chat-files-response') {
+      if (event.data.type !== 'get-files-response') {
         iframeRef.current?.contentWindow?.postMessage(
           {
-            type: 'get-chat-files',
+            type: 'get-files',
             chatId,
           },
           IFRAME_ORIGIN
@@ -54,6 +54,14 @@ export const AIAnalystGetFiles = memo(() => {
 
     document.body.appendChild(iframeRef.current);
     console.log('iframe', iframeRef.current);
+
+    // Return cleanup function
+    return () => {
+      if (iframeRef.current) {
+        document.body.removeChild(iframeRef.current);
+        iframeRef.current = null;
+      }
+    };
   }, []);
 
   return null;
