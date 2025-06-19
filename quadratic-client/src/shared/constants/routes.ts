@@ -19,6 +19,7 @@ export const ROUTES = {
       state?: UrlParamsDevState['insertAndRunCodeInNewSheet'];
       prompt?: string | null;
       private?: boolean;
+      chatId?: string | null;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -31,6 +32,9 @@ export const ROUTES = {
     }
     if (searchParams.private) {
       url.searchParams.set('private', 'true');
+    }
+    if (searchParams.chatId) {
+      url.searchParams.set('chatid', searchParams.chatId);
     }
 
     return url.toString();
