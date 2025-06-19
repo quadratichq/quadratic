@@ -311,7 +311,6 @@ mod tests {
             Some(false),
             Some(false),
             None,
-            None,
         );
 
         let context = A1Context::default();
@@ -375,7 +374,6 @@ mod tests {
             Some(false),
             Some(false),
             None,
-            None,
         );
         let code_cells = sheet.get_render_code_cells(
             &code_cell,
@@ -422,7 +420,6 @@ mod tests {
             "Table 1",
             Value::Single(CellValue::Number(2.into())),
             false,
-            None,
             None,
             None,
             None,
@@ -493,7 +490,6 @@ mod tests {
             Some(false),
             Some(false),
             None,
-            None,
         );
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
@@ -533,7 +529,6 @@ mod tests {
                 false,
                 Some(true),
                 Some(true),
-                None,
                 None,
             )),
         );

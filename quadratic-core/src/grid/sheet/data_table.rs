@@ -36,12 +36,6 @@ impl Sheet {
         })
     }
 
-    /// Returns position if a location is in a data table (for use in code cells).
-    pub fn check_in_data_table(&self, pos: Pos) -> Option<Pos> {
-        self.data_table_that_contains(pos)
-            .and_then(|(pos, table)| table.is_data_table().then_some(pos))
-    }
-
     /// Returns the (Pos, DataTable) that intersects a position
     pub fn data_table_that_contains(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
         self.data_tables.get_contains(pos)
@@ -558,7 +552,6 @@ mod test {
             "Table 1",
             Value::Single(CellValue::Number(BigDecimal::from(2))),
             false,
-            None,
             None,
             None,
             None,

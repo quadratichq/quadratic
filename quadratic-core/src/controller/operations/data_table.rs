@@ -304,7 +304,6 @@ impl GridController {
             Some(true),
             Some(true),
             None,
-            None,
         );
         data_table
             .formats

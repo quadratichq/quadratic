@@ -77,7 +77,6 @@ impl Sheet {
                 Some(false),
                 Some(false),
                 None,
-                None,
             )),
         );
     }
@@ -139,7 +138,6 @@ impl Sheet {
                 Some(false),
                 Some(false),
                 None,
-                None,
             )),
         );
         let a1_context = self.expensive_make_a1_context();
@@ -190,7 +188,6 @@ impl Sheet {
                 Some(false),
                 Some(false),
                 None,
-                None,
             )),
         );
     }
@@ -225,7 +222,6 @@ impl Sheet {
                 Some(true),
                 Some(true),
                 Some((w, h)),
-                None,
             )),
         );
     }
@@ -260,7 +256,6 @@ impl Sheet {
                 Some(true),
                 Some(true),
                 Some((w, h)),
-                None,
             )),
         );
     }
@@ -293,7 +288,6 @@ impl Sheet {
                 header_is_first_row,
                 show_name,
                 show_columns,
-                None,
                 None,
             )),
         );

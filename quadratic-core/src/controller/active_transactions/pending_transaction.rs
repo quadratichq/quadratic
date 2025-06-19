@@ -61,7 +61,7 @@ pub struct PendingTransaction {
 
     /// whether we are awaiting an async call -- storing the code cell value and
     /// the in_table Option<Pos>
-    pub waiting_for_async: Option<(CodeCellValue, Option<Pos>)>,
+    pub waiting_for_async: Option<CodeCellValue>,
 
     /// whether transaction is complete
     pub complete: bool,
@@ -692,7 +692,6 @@ mod tests {
             Some(true),
             Some(true),
             None,
-            None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
         assert_eq!(transaction.code_cells.len(), 1);
@@ -718,7 +717,6 @@ mod tests {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
         transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());

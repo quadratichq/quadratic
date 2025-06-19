@@ -76,7 +76,6 @@ pub fn test_create_code_table_with_values(
         Some(false),
         Some(false),
         None,
-        None,
     );
 
     let op = Operation::AddDataTable {

@@ -311,7 +311,6 @@ mod test {
             Some(false),
             Some(false),
             None,
-            None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         let sheet = gc.sheet(sheet_id);
@@ -418,7 +417,6 @@ mod test {
             Some(false),
             Some(false),
             None,
-            None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 2, y: 2 }, Some(data_table.clone()));
@@ -457,7 +455,6 @@ mod test {
             Some(false),
             Some(false),
             None,
-            None,
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         sheet.set_data_table(Pos { x: 2, y: 2 }, Some(data_table.clone()));
@@ -484,7 +481,6 @@ mod test {
             false,
             Some(false),
             Some(false),
-            None,
             None,
         );
         dt.chart_output = Some((2, 2));

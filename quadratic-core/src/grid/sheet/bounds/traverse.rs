@@ -243,7 +243,6 @@ mod test {
             Some(true),
             // make the chart take up 5x5 cells
             Some((5, 5)),
-            None,
         );
         dt.show_name = Some(false);
         dt

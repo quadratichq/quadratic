@@ -152,12 +152,7 @@ impl SheetDataTables {
             // calculate self spill
             spill_current_data_table = self
                 .get_in_rect_sorted(current_un_spilled_output_rect, false)
-                .any(|other| {
-                    other.0 < index
-                        && data_table // ignore a spill if in_table is set to the conflicting table
-                            .in_table
-                            .is_some_and(|table_pos| table_pos != *pos)
-                });
+                .any(|other| other.0 < index);
 
             // if no self spill, check for other data table spill due to this table
             if !spill_current_data_table && !data_table.spill_value {

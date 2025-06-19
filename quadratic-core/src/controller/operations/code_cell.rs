@@ -24,17 +24,13 @@ impl GridController {
             _ => code,
         };
 
-        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
-            return vec![];
-        };
-        let mut ops = vec![];
-        let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
-        if sheet.check_in_data_table(sheet_pos.into()).is_some() {
-            ops.push(Operation::SetDataTableAt { sheet_pos, values })
-        } else {
-            ops.push(Operation::SetCellValues { sheet_pos, values });
-        }
-        ops.push(Operation::ComputeCode { sheet_pos });
+        let mut ops = vec![
+            Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
+            },
+            Operation::ComputeCode { sheet_pos },
+        ];
 
         // change the code cell name if it is provided and the code cell doesn't already have a name
         if let Some(code_cell_name) = code_cell_name {

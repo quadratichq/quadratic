@@ -252,7 +252,7 @@ impl GridController {
             None => {
                 return Err(CoreError::TransactionNotFound("Expected transaction to be waiting_for_async to be defined in transaction::complete".into()));
             }
-            Some((code_cell, in_table)) => {
+            Some(code_cell) => {
                 if !code_cell.language.is_code_language() {
                     return Err(CoreError::UnhandledLanguage(
                         "Transaction.complete called for an unhandled language".into(),
@@ -265,7 +265,6 @@ impl GridController {
                     current_sheet_pos,
                     code_cell.language.clone(),
                     code_cell.code.clone(),
-                    *in_table,
                 );
 
                 self.finalize_data_table(
@@ -292,7 +291,6 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         error: &RunError,
-        in_table: Option<Pos>,
     ) -> Result<()> {
         let sheet_pos = match transaction.current_sheet_pos {
             Some(sheet_pos) => sheet_pos,
@@ -368,7 +366,6 @@ impl GridController {
             None,
             None,
             None,
-            in_table,
         );
 
         self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
@@ -384,7 +381,6 @@ impl GridController {
         start: SheetPos,
         language: CodeCellLanguage,
         code: String,
-        in_table: Option<Pos>,
     ) -> DataTable {
         let table_name = match language {
             CodeCellLanguage::Formula => "Formula1",
@@ -422,7 +418,6 @@ impl GridController {
                 None,
                 None,
                 None,
-                in_table,
             );
         };
 
@@ -505,7 +500,6 @@ impl GridController {
             None,
             None,
             chart_output,
-            in_table,
         );
 
         // If no headers were returned, we want column headers: [0, 1, 2, 3, ...etc]
@@ -576,7 +570,6 @@ mod test {
             Some(true),
             Some(true),
             None,
-            None,
         );
         gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
         assert_eq!(transaction.forward_operations.len(), 1);
@@ -616,7 +609,6 @@ mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
         new_data_table.column_headers = None;

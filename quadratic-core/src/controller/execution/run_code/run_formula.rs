@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    Pos, SheetPos,
+    SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, find_cell_references, parse_formula},
     grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
@@ -13,7 +13,6 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_pos: SheetPos,
         code: String,
-        in_table: Option<Pos>,
     ) {
         let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
@@ -43,12 +42,11 @@ impl GridController {
                     None,
                     None,
                     None,
-                    in_table,
                 );
                 self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
             }
             Err(error) => {
-                let _ = self.code_cell_sheet_error(transaction, &error, in_table);
+                let _ = self.code_cell_sheet_error(transaction, &error);
             }
         }
     }
@@ -82,7 +80,6 @@ impl GridController {
             name,
             "".into(),
             false,
-            None,
             None,
             None,
             None,
@@ -293,7 +290,6 @@ mod test {
             sheet_pos,
             CodeCellLanguage::Javascript,
             r#"return "12";"#.to_string(),
-            None,
         );
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
@@ -312,7 +308,6 @@ mod test {
                 None,
                 None,
                 None,
-                None
             )
             .with_last_modified(result.last_modified)
         );
@@ -382,7 +377,6 @@ mod test {
             sheet_pos,
             CodeCellLanguage::Javascript,
             r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
-            None,
         );
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
@@ -397,7 +391,6 @@ mod test {
             "JavaScript1",
             array.into(),
             false,
-            None,
             None,
             None,
             None,

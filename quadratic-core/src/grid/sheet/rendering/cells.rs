@@ -375,7 +375,6 @@ mod tests {
                 Some(true),
                 Some(true),
                 None,
-                None,
             )),
         );
         assert!(sheet.has_render_cells(rect));

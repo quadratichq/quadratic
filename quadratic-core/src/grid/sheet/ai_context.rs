@@ -404,7 +404,6 @@ mod tests {
                 Some(false),
                 Some(false),
                 None,
-                None,
             )),
         );
 
@@ -438,7 +437,6 @@ mod tests {
                 true,
                 Some(false),
                 Some(false),
-                None,
                 None,
             )),
         );
@@ -477,7 +475,6 @@ mod tests {
                 true,
                 Some(false),
                 Some(false),
-                None,
                 None,
             )),
         );

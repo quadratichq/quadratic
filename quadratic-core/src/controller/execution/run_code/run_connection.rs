@@ -98,7 +98,7 @@ impl GridController {
                         msg: RunErrorMsg::CodeRunError(std::borrow::Cow::Owned(msg.to_string())),
                     };
                     transaction.current_sheet_pos = Some(sheet_pos);
-                    let _ = self.code_cell_sheet_error(transaction, &error, None);
+                    let _ = self.code_cell_sheet_error(transaction, &error);
 
                     // not ideal to clone the transaction, but we need to close it
                     self.finalize_transaction(transaction.clone());
@@ -113,7 +113,7 @@ impl GridController {
             language: CodeCellLanguage::Connection { kind, id },
             code,
         };
-        transaction.waiting_for_async = Some((code_cell, None));
+        transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
     }
 }

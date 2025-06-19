@@ -236,7 +236,6 @@ pub mod test {
             Some(true),
             Some(true),
             None,
-            None,
         )
         .with_last_modified(data_table.last_modified);
 
@@ -311,8 +310,6 @@ pub mod test {
             chart_pixel_output: None,
             spill_value: false,
             spill_data_table: false,
-            in_table: None,
-            has_code: Default::default(),
         };
         sheet.set_cell_value(
             pos,
@@ -371,8 +368,6 @@ pub mod test {
             chart_pixel_output: None,
             spill_value: false,
             spill_data_table: false,
-            in_table: None,
-            has_code: Default::default(),
         };
         t.apply_default_header();
         sheet.set_cell_value(

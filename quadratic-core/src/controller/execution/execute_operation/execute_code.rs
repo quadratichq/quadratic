@@ -158,20 +158,18 @@ impl GridController {
                 _ => return,
             };
 
-            let in_table = sheet.check_in_data_table(pos);
-
             match language {
                 CodeCellLanguage::Python => {
-                    self.run_python(transaction, sheet_pos, code, in_table);
+                    self.run_python(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Formula => {
-                    self.run_formula(transaction, sheet_pos, code, in_table);
+                    self.run_formula(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     self.run_connection(transaction, sheet_pos, code, kind, id);
                 }
                 CodeCellLanguage::Javascript => {
-                    self.run_javascript(transaction, sheet_pos, code, in_table);
+                    self.run_javascript(transaction, sheet_pos, code);
                 }
                 CodeCellLanguage::Import => (), // no-op
             }

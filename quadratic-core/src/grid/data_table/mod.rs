@@ -3,7 +3,6 @@
 //! This lives in sheet.data_tables. CodeRun is optional within sheet.data_tables for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
-use crate::grid::data_table::table_code_cache::TableCodeCache;
 use crate::util::is_false;
 
 pub mod column;
@@ -13,7 +12,6 @@ pub mod formats;
 pub mod row;
 pub mod send_render;
 pub mod sort;
-mod table_code_cache;
 
 use std::num::NonZeroU32;
 
@@ -146,14 +144,6 @@ pub struct DataTable {
     pub value: Value,
     pub last_modified: DateTime<Utc>,
 
-    // whether this is a code table that is in a data table
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub in_table: Option<Pos>,
-
-    // all code tables that may live in this (if it is a data table)
-    #[serde(skip)]
-    has_code: TableCodeCache,
-
     #[serde(skip_serializing_if = "is_false", default)]
     pub header_is_first_row: bool,
 
@@ -212,7 +202,6 @@ impl From<(Import, Array, &A1Context)> for DataTable {
             None,
             None,
             None,
-            None,
         )
     }
 }
@@ -230,7 +219,6 @@ impl DataTable {
         show_name: Option<bool>,
         show_columns: Option<bool>,
         chart_output: Option<(u32, u32)>,
-        in_table: Option<Pos>,
     ) -> Self {
         let mut data_table = DataTable {
             kind,
@@ -251,8 +239,6 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
-            in_table,
-            has_code: Default::default(),
         };
 
         if header_is_first_row {
@@ -284,8 +270,6 @@ impl DataTable {
             show_columns: self.show_columns,
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
-            in_table: self.in_table,
-            has_code: Default::default(),
         }
     }
 
@@ -875,7 +859,6 @@ pub mod test {
             None,
             None,
             None,
-            None,
         )
         .with_last_modified(data_table.last_modified);
 
@@ -913,7 +896,6 @@ pub mod test {
             Some(false),
             Some(false),
             None,
-            None,
         );
 
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
@@ -948,7 +930,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
 
@@ -988,7 +969,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
         data_table.spill_value = true;
@@ -1035,7 +1015,6 @@ pub mod test {
             Some(true),
             Some(true),
             None,
-            None,
         );
         assert!(!data_table.is_single_column());
 
@@ -1048,7 +1027,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
         assert!(data_table.is_single_column());
@@ -1063,7 +1041,6 @@ pub mod test {
             Some(true),
             Some(true),
             None,
-            None,
         );
         assert!(!data_table.is_single_column());
 
@@ -1076,7 +1053,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
         assert!(data_table.is_single_column());
@@ -1092,7 +1068,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
 
@@ -1124,7 +1099,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
 
@@ -1164,7 +1138,6 @@ pub mod test {
             Some(false),
             Some(false),
             None,
-            None,
         );
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
 
@@ -1176,7 +1149,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
         // Height should be 3 (1 for value + 1 for name + 1 for columns)
@@ -1366,7 +1338,6 @@ pub mod test {
             false,
             Some(true),
             Some(true),
-            None,
             None,
         );
 
