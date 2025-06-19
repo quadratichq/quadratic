@@ -1,5 +1,6 @@
 //! User-focused URL parameters (default behavior)
 
+import { filesFromIframe } from '@/app/ai/filesFromIframe/filesFromIframe';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -9,6 +10,7 @@ import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 export class UrlParamsUser {
   private pixiAppSettingsInitialized = false;
   private aiAnalystInitialized = false;
+  private aiAnalystFilesLoaded = false;
   private aiAnalystPromptLoaded = false;
 
   dirty = false;
@@ -17,6 +19,7 @@ export class UrlParamsUser {
     this.loadSheet(params);
     this.loadCursor(params);
     this.loadCode(params);
+    this.loadAIAnalystFiles(params);
     this.loadAIAnalystPrompt(params);
     this.setupListeners(params);
   }
@@ -67,8 +70,25 @@ export class UrlParamsUser {
     }
   }
 
+  private loadAIAnalystFiles = (params: URLSearchParams) => {
+    if (this.aiAnalystFilesLoaded) return;
+    const chatId = params.get('chatid');
+    if (!chatId) {
+      this.aiAnalystFilesLoaded = true;
+      return;
+    }
+
+    // Remove the `chatid` param when we're done
+    const url = new URL(window.location.href);
+    params.delete('chatid');
+    url.search = params.toString();
+    window.history.replaceState(null, '', url.toString());
+
+    filesFromIframe.init(chatId);
+  };
+
   private loadAIAnalystPrompt = (params: URLSearchParams) => {
-    if (!this.pixiAppSettingsInitialized || !this.aiAnalystInitialized) return;
+    if (!this.pixiAppSettingsInitialized || !this.aiAnalystFilesLoaded || !this.aiAnalystInitialized) return;
     if (this.aiAnalystPromptLoaded) return;
     if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
 
@@ -110,6 +130,10 @@ export class UrlParamsUser {
     });
     events.on('aiAnalystInitialized', () => {
       this.aiAnalystInitialized = true;
+      this.loadAIAnalystPrompt(params);
+    });
+    events.on('filesFromIframeInitialized', () => {
+      this.aiAnalystFilesLoaded = true;
       this.loadAIAnalystPrompt(params);
     });
   }

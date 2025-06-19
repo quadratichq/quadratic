@@ -8,7 +8,6 @@ import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFo
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
 import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
-import { AIAnalystGetFiles } from '@/app/ui/menus/AIAnalyst/AIAnalystGetFiles';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
@@ -57,7 +56,6 @@ export const AIAnalyst = memo(() => {
   return (
     <>
       <AIAnalystGetChatName />
-      <AIAnalystGetFiles />
 
       <div
         ref={aiPanelRef}
