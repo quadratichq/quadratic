@@ -7,7 +7,8 @@ import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
 import { AIUserMessageFormDisclaimer } from '@/app/ui/components/AIUserMessageFormDisclaimer';
 import { ResizeControl } from '@/app/ui/components/ResizeControl';
 import { AIAnalystChatHistory } from '@/app/ui/menus/AIAnalyst/AIAnalystChatHistory';
-import { AIAnalystEffects } from '@/app/ui/menus/AIAnalyst/AIAnalystEffects';
+import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatName';
+import { AIAnalystGetFiles } from '@/app/ui/menus/AIAnalyst/AIAnalystGetFiles';
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
@@ -55,7 +56,8 @@ export const AIAnalyst = memo(() => {
 
   return (
     <>
-      <AIAnalystEffects />
+      <AIAnalystGetChatName />
+      <AIAnalystGetFiles />
 
       <div
         ref={aiPanelRef}
