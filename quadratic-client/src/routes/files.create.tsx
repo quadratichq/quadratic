@@ -24,8 +24,17 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
 
   // Are they trying to duplicate an example file? Do that.
   const example = url.searchParams.get('example');
+  url.searchParams.delete('example');
   if (example) {
-    return redirect(ROUTES.CREATE_FILE_EXAMPLE(activeTeamUuid, example));
+    url.searchParams.delete('private');
+    const additionalParams = url.searchParams.toString();
+    return redirect(
+      ROUTES.CREATE_FILE_EXAMPLE({
+        teamUuid: activeTeamUuid,
+        publicFileUrlInProduction: example,
+        additionalParams,
+      })
+    );
   }
 
   // Otherwise, start a new file by redirecting them to the file creation route
