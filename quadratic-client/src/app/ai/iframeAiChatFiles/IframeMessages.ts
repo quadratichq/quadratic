@@ -2,10 +2,10 @@ export type DbFile = {
   chatId: string;
   fileId: string;
   name: string;
-  type: string;
+  mimeType: string;
   lastModified: number;
   size: number;
-  data: ArrayBuffer;
+  data: string;
 };
 
 export type FromIframeReady = {

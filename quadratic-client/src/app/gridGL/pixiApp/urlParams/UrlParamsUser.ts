@@ -6,6 +6,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
 
 export class UrlParamsUser {
   private pixiAppSettingsInitialized = false;
@@ -100,8 +102,20 @@ export class UrlParamsUser {
       throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
     }
 
+    const files: FileContent[] = filesFromIframe.dbFiles.reduce<FileContent[]>((acc, file) => {
+      if (isSupportedMimeType(file.mimeType)) {
+        acc.push({
+          type: 'data',
+          data: file.data,
+          mimeType: file.mimeType,
+          fileName: file.name,
+        });
+      }
+      return acc;
+    }, []);
+
     submitAIAnalystPrompt({
-      content: [{ type: 'text', text: prompt }],
+      content: [{ type: 'text', text: prompt }, ...files],
       context: {
         sheets: [],
         currentSheet: sheets.sheet.name,
