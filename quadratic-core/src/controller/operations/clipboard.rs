@@ -225,10 +225,7 @@ impl GridController {
         &self,
         start_pos: SheetPos,
         tables: Vec<(u32, u32)>,
-        clipboard_origin: &ClipboardOrigin,
-        clipboard_selection: &A1Selection,
-        clipboard_operation: &ClipboardOperation,
-        clipboard_data_tables: &IndexMap<Pos, DataTable>,
+        clipboard: &Clipboard,
         cursor: &mut A1Selection,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
@@ -236,8 +233,8 @@ impl GridController {
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
             for (x, y) in tables.iter() {
                 let source_pos = Pos {
-                    x: clipboard_origin.x + *x as i64,
-                    y: clipboard_origin.y + *y as i64,
+                    x: clipboard.origin.x + *x as i64,
+                    y: clipboard.origin.y + *y as i64,
                 };
 
                 let target_pos = SheetPos {
@@ -250,9 +247,11 @@ impl GridController {
                     .iter_code_output_in_rect(Rect::single_pos(Pos::from(target_pos)))
                     .any(|(output_rect, data_table)| {
                         // this table is being moved in the same transaction
-                        if matches!(clipboard_operation, ClipboardOperation::Cut)
-                            && start_pos.sheet_id == clipboard_selection.sheet_id
-                            && clipboard_selection.contains_pos(output_rect.min, self.a1_context())
+                        if matches!(clipboard.operation, ClipboardOperation::Cut)
+                            && start_pos.sheet_id == clipboard.selection.sheet_id
+                            && clipboard
+                                .selection
+                                .contains_pos(output_rect.min, self.a1_context())
                         {
                             return false;
                         }
@@ -275,10 +274,10 @@ impl GridController {
                     return Err(Error::msg(message));
                 }
 
-                if let Some(data_table) = clipboard_data_tables.get(&source_pos) {
+                if let Some(data_table) = clipboard.data_tables.get(&source_pos) {
                     let mut data_table = data_table.to_owned();
 
-                    if matches!(clipboard_operation, ClipboardOperation::Copy) {
+                    if matches!(clipboard.operation, ClipboardOperation::Copy) {
                         let old_name = data_table.name().to_string();
                         let new_name =
                             unique_data_table_name(&old_name, false, None, self.a1_context());
@@ -296,7 +295,13 @@ impl GridController {
                     });
                 }
 
-                if matches!(clipboard_operation, ClipboardOperation::Copy) {
+                // For a cut, only rerun the code if the cut rectangle overlaps
+                // with the data table's cells accessed or if the paste rectangle
+                // overlaps with the data table's cells accessed.
+                let should_rerun =
+                    self.clipboard_code_operations_should_rerun(&clipboard, source_pos, start_pos);
+
+                if should_rerun {
                     ops.push(Operation::ComputeCode {
                         sheet_pos: target_pos,
                     });
@@ -305,6 +310,44 @@ impl GridController {
         }
 
         Ok(ops)
+    }
+
+    /// For a cut, only rerun the code if the cut rectangle overlaps
+    /// with the data table's cells accessed or if the paste rectangle
+    /// overlaps with the data table's cells accessed.
+    fn clipboard_code_operations_should_rerun(
+        &self,
+        clipboard: &Clipboard,
+        source_pos: Pos,
+        start_pos: SheetPos,
+    ) -> bool {
+        match clipboard.operation {
+            ClipboardOperation::Copy => true,
+            ClipboardOperation::Cut => {
+                let cut_rects = clipboard.selection.rects(self.a1_context());
+                let paste_rect = clipboard.to_rect(start_pos.into());
+
+                let cells_accessed = clipboard
+                    .data_tables
+                    .get(&source_pos)
+                    .and_then(|data_table| data_table.cells_accessed(start_pos.sheet_id));
+
+                let should_rerun = cells_accessed.as_ref().map_or(false, |ranges| {
+                    ranges.iter().any(|range| {
+                        let cut_intersects = cut_rects
+                            .iter()
+                            .any(|rect| range.might_intersect_rect(*rect, self.a1_context()));
+
+                        let paste_intersects =
+                            range.might_intersect_rect(paste_rect, self.a1_context());
+
+                        cut_intersects || paste_intersects
+                    })
+                });
+
+                should_rerun
+            }
+        }
     }
 
     fn clipboard_formats_operations(
@@ -456,10 +499,7 @@ impl GridController {
                 let code_ops = self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
                     tables,
-                    &clipboard.origin,
-                    &clipboard.selection,
-                    &clipboard.operation,
-                    &clipboard.data_tables,
+                    &clipboard,
                     &mut cursor,
                 )?;
                 ops.extend(code_ops);
@@ -1911,7 +1951,7 @@ mod test {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
+        print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
 
@@ -1929,13 +1969,30 @@ mod test {
         // paste cell to the right of the data table
         paste(&mut gc, sheet_id, 4, 3, html.clone());
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
+        print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // paste cell to the bottom of the data table
         paste(&mut gc, sheet_id, 1, 6, html.clone());
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(gc.sheet(sheet_id));
+        print_sheet(&gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
+    }
+
+    #[test]
+    fn test_clipboard_code_operations_should_rerun() {
+        let (mut gc, sheet_id, _, _) = simple_csv();
+        let table_ref = TableRef::new("simple.csv");
+        let (selection, _) = simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:A3"));
+
+        let (_, js_clipboard) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
+        let clipboard = Clipboard::decode(&js_clipboard.html).unwrap();
+
+        let should_rerun = gc.clipboard_code_operations_should_rerun(
+            &clipboard,
+            pos![A1],
+            pos![A1].to_sheet_pos(sheet_id),
+        );
+        assert!(!should_rerun);
     }
 }

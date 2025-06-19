@@ -112,6 +112,14 @@ impl A1Selection {
         rect
     }
 
+    /// Returns a vector of rectangles that make up the selection.
+    pub fn rects(&self, a1_context: &A1Context) -> Vec<Rect> {
+        self.ranges
+            .iter()
+            .filter_map(|range| range.to_rect(a1_context))
+            .collect()
+    }
+
     /// Returns rectangle in case of single finite range selection having more than one cell.
     pub fn single_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         if self.ranges.len() != 1 || !self.is_multi_cursor(a1_context) {
