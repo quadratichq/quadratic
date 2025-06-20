@@ -1,5 +1,5 @@
 use crate::{
-    MultiPos, SheetPos,
+    MultiPos, SheetPos, TablePos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     grid::{CodeCellLanguage, CodeCellValue},
 };
@@ -21,7 +21,7 @@ impl GridController {
             );
         }
         // stop the computation cycle until async returns
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_multi_pos = Some(sheet_pos.into());
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Python,
             code,
@@ -33,7 +33,7 @@ impl GridController {
     pub(crate) fn run_python_in_table(
         &mut self,
         transaction: &mut PendingTransaction,
-        table_pos: MultiPos,
+        table_pos: TablePos,
         code: String,
         x: u32,
         y: u32,
@@ -44,11 +44,11 @@ impl GridController {
                 x as i32,
                 y as i32,
                 table_pos.sheet_id().to_string(),
-                code,
+                code.clone(),
             );
         }
         // stop the computation cycle until async returns
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_multi_pos = Some(table_pos.into());
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Python,
             code,

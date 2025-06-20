@@ -6,7 +6,9 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::{CoreError, Result};
 use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, unique_data_table_name};
-use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
+use crate::{
+    Array, CellValue, MultiPos, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value,
+};
 
 pub mod get_cells;
 pub mod run_connection;
@@ -31,18 +33,18 @@ impl GridController {
     pub(crate) fn finalize_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         mut new_data_table: Option<DataTable>,
         index: Option<usize>,
     ) {
-        transaction.current_sheet_pos = None;
+        transaction.current_multi_pos = None;
         transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
 
-        self.update_cells_accessed_cache(sheet_pos, &new_data_table);
+        self.update_cells_accessed_cache(multi_pos, &new_data_table);
 
-        let sheet_id = sheet_pos.sheet_id;
-        let pos: Pos = sheet_pos.into();
+        let sheet_id = multi_pos.sheet_id;
+        let pos: Pos = multi_pos.into();
         let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted
             return;
@@ -104,23 +106,23 @@ impl GridController {
             let unique_name = unique_data_table_name(
                 new_data_table.name(),
                 false,
-                Some(sheet_pos),
+                Some(multi_pos),
                 &self.a1_context,
             );
             new_data_table.update_table_name(&unique_name);
         }
 
         let sheet_rect = match (&old_data_table, &new_data_table) {
-            (None, None) => sheet_pos.into(),
-            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
+            (None, None) => multi_pos.into(),
+            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(multi_pos, false),
             (Some(old_code_cell_value), None) => {
-                old_code_cell_value.output_sheet_rect(sheet_pos, false)
+                old_code_cell_value.output_sheet_rect(multi_pos, false)
             }
             (Some(old_code_cell_value), Some(code_cell_value)) => {
-                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false);
-                let new = code_cell_value.output_sheet_rect(sheet_pos, false);
+                let old = old_code_cell_value.output_sheet_rect(multi_pos, false);
+                let new = code_cell_value.output_sheet_rect(multi_pos, false);
                 SheetRect {
-                    min: sheet_pos.into(),
+                    min: multi_pos.into(),
                     max: Pos {
                         x: old.max.x.max(new.max.x),
                         y: old.max.y.max(new.max.y),
@@ -200,12 +202,12 @@ impl GridController {
                 }
             }
 
-            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+            self.add_compute_operations(transaction, &sheet_rect, Some(multi_pos));
 
             transaction
                 .forward_operations
                 .push(Operation::SetDataTable {
-                    sheet_pos,
+                    sheet_pos: multi_pos,
                     data_table: new_data_table,
                     index,
                 });
@@ -213,7 +215,7 @@ impl GridController {
             transaction
                 .reverse_operations
                 .push(Operation::SetDataTable {
-                    sheet_pos,
+                    sheet_pos: multi_pos,
                     data_table: old_data_table,
                     index,
                 });
@@ -239,7 +241,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         result: JsCodeResult,
     ) -> Result<()> {
-        let current_sheet_pos = match transaction.current_sheet_pos {
+        let current_sheet_pos = match transaction.current_multi_pos {
             Some(current_sheet_pos) => current_sheet_pos,
             None => {
                 return Err(CoreError::TransactionNotFound(
@@ -292,7 +294,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         error: &RunError,
     ) -> Result<()> {
-        let sheet_pos = match transaction.current_sheet_pos {
+        let sheet_pos = match transaction.current_multi_pos {
             Some(sheet_pos) => sheet_pos,
             None => {
                 return Err(CoreError::TransactionNotFound(

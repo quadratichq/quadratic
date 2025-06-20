@@ -70,7 +70,7 @@ impl GridController {
             ));
         }
 
-        let Some(code_sheet_pos) = transaction.current_sheet_pos else {
+        let Some(code_sheet_pos) = transaction.current_multi_pos else {
             return map_error(CoreError::TransactionNotFound(
                 "Transaction's position not found".into(),
             ));
@@ -117,7 +117,7 @@ impl GridController {
             false,
             true,
             &self.a1_context,
-            transaction.current_sheet_pos.map(|p| p.into()),
+            transaction.current_multi_pos.map(|p| p.into()),
         );
         if rects.len() > 1 {
             return map_error(CoreError::A1Error(
@@ -229,7 +229,7 @@ mod test {
         );
 
         let transactions = gc.transactions.async_transactions_mut();
-        transactions[0].current_sheet_pos = None;
+        transactions[0].current_multi_pos = None;
         let transaction_id = transactions[0].id.to_string();
         let result = gc.calculation_get_cells_a1(transaction_id, "A1".to_string());
         assert!(result.error.is_some());

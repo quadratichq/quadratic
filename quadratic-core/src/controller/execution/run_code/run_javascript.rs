@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    SheetPos, TablePos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     grid::{CodeCellLanguage, CodeCellValue},
 };
@@ -21,7 +21,34 @@ impl GridController {
             );
         }
         // stop the computation cycle until async returns
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_multi_pos = Some(sheet_pos.into());
+        let code_cell = CodeCellValue {
+            language: CodeCellLanguage::Javascript,
+            code,
+        };
+        transaction.waiting_for_async = Some(code_cell);
+        self.transactions.add_async_transaction(transaction);
+    }
+
+    pub(crate) fn run_javascript_in_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        table_pos: TablePos,
+        code: String,
+        x: u32,
+        y: u32,
+    ) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            crate::wasm_bindings::js::jsRunJavascript(
+                transaction.id.to_string(),
+                x as i32,
+                y as i32,
+                table_pos.sheet_id().to_string(),
+                code.clone(),
+            );
+        }
+        // stop the computation cycle until async returns
+        transaction.current_multi_pos = Some(table_pos.into());
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Javascript,
             code,

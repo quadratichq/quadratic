@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    SheetPos,
+    SheetPos, TablePos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, find_cell_references, parse_formula},
     grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
@@ -16,7 +16,7 @@ impl GridController {
     ) {
         let mut eval_ctx = Ctx::new(self, sheet_pos);
         let parse_ctx = self.a1_context();
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_multi_pos = Some(sheet_pos.into());
 
         match parse_formula(&code, parse_ctx, sheet_pos) {
             Ok(parsed) => {
@@ -51,6 +51,50 @@ impl GridController {
         }
     }
 
+    pub(crate) fn run_formula_in_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        table_pos: TablePos,
+        code: String,
+        absolute_sheet_pos: SheetPos,
+    ) {
+        let mut eval_ctx = Ctx::new(self, absolute_sheet_pos);
+        let parse_ctx = self.a1_context();
+        transaction.current_multi_pos = Some(table_pos.into());
+
+        match parse_formula(&code, parse_ctx, absolute_sheet_pos) {
+            Ok(parsed) => {
+                let output = parsed.eval(&mut eval_ctx).into_non_tuple();
+                let errors = output.inner.errors();
+                let new_code_run = CodeRun {
+                    language: CodeCellLanguage::Formula,
+                    code,
+                    std_out: None,
+                    std_err: (!errors.is_empty())
+                        .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
+                    cells_accessed: eval_ctx.cells_accessed,
+                    error: None,
+                    return_type: None,
+                    line_number: None,
+                    output_type: None,
+                };
+                let new_data_table = DataTable::new(
+                    DataTableKind::CodeRun(new_code_run),
+                    "Formula1",
+                    output.inner,
+                    false,
+                    None,
+                    None,
+                    None,
+                );
+                self.finalize_data_table(transaction, table_pos, Some(new_data_table), None);
+            }
+            Err(error) => {
+                let _ = self.code_cell_sheet_error(transaction, &error);
+            }
+        }
+    }
+
     pub(crate) fn add_formula_without_eval(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -59,7 +103,7 @@ impl GridController {
         name: &str,
     ) {
         let parse_ctx = self.a1_context();
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_multi_pos = Some(sheet_pos.into());
 
         let mut cells_accessed = CellsAccessed::default();
         let cell_references = find_cell_references(code, parse_ctx, sheet_pos);

@@ -21,6 +21,14 @@ impl TablePos {
         }
     }
 
+    pub fn to_absolute_sheet_pos(&self) -> SheetPos {
+        SheetPos {
+            x: self.table_sheet_pos.x + self.pos.x,
+            y: self.table_sheet_pos.y + self.pos.y,
+            sheet_id: self.table_sheet_pos.sheet_id,
+        }
+    }
+
     /// Returns the cell value ref at the table pos.
     pub fn cell_value<'a>(&self, sheet: &'a Sheet) -> Option<&'a CellValue> {
         let Some(table) = sheet.data_table_at(&self.table_sheet_pos.into()) else {

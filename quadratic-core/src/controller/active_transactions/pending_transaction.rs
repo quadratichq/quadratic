@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    Pos, Rect, SheetPos, SheetRect,
+    MultiPos, Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
@@ -57,7 +57,7 @@ pub struct PendingTransaction {
     pub cells_accessed: CellsAccessed,
 
     /// save code_cell info for async calls
-    pub current_sheet_pos: Option<SheetPos>,
+    pub current_multi_pos: Option<MultiPos>,
 
     /// whether we are awaiting an async call
     pub waiting_for_async: Option<CodeCellValue>,
@@ -131,7 +131,7 @@ impl Default for PendingTransaction {
             forward_operations: Vec::new(),
             has_async: 0,
             cells_accessed: Default::default(),
-            current_sheet_pos: None,
+            current_multi_pos: None,
             waiting_for_async: None,
             complete: false,
             generate_thumbnail: false,
