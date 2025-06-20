@@ -299,7 +299,7 @@ impl GridController {
                 // with the data table's cells accessed or if the paste rectangle
                 // overlaps with the data table's cells accessed.
                 let should_rerun =
-                    self.clipboard_code_operations_should_rerun(&clipboard, source_pos, start_pos);
+                    self.clipboard_code_operations_should_rerun(clipboard, source_pos, start_pos);
 
                 if should_rerun {
                     ops.push(Operation::ComputeCode {
@@ -332,7 +332,9 @@ impl GridController {
                     .get(&source_pos)
                     .and_then(|data_table| data_table.cells_accessed(start_pos.sheet_id));
 
-                let should_rerun = cells_accessed.as_ref().map_or(false, |ranges| {
+                
+
+                cells_accessed.as_ref().is_some_and(|ranges| {
                     ranges.iter().any(|range| {
                         let cut_intersects = cut_rects
                             .iter()
@@ -343,9 +345,7 @@ impl GridController {
 
                         cut_intersects || paste_intersects
                     })
-                });
-
-                should_rerun
+                })
             }
         }
     }
@@ -499,7 +499,7 @@ impl GridController {
                 let code_ops = self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
                     tables,
-                    &clipboard,
+                    clipboard,
                     &mut cursor,
                 )?;
                 ops.extend(code_ops);
@@ -1952,7 +1952,7 @@ mod test {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(&gc.sheet(sheet_id));
+        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
 
@@ -1970,13 +1970,13 @@ mod test {
         // paste cell to the right of the data table
         paste(&mut gc, sheet_id, 4, 3, html.clone());
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(&gc.sheet(sheet_id));
+        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // paste cell to the bottom of the data table
         paste(&mut gc, sheet_id, 1, 6, html.clone());
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(&gc.sheet(sheet_id));
+        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }
 
@@ -2047,7 +2047,7 @@ mod test {
         let selection = A1Selection::from_range(
             CellRefRange::new_relative_column(1),
             SheetId::TEST,
-            &gc.a1_context(),
+            gc.a1_context(),
         );
         let (_, js_clipboard) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
         let clipboard = Clipboard::decode(&js_clipboard.html).unwrap();
