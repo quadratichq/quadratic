@@ -38,13 +38,25 @@ impl GridController {
                 .get_row(row)
                 .unwrap_or_default()
                 .iter()
-                .map(|c| c.type_id())
+                .map(|c| {
+                    // we map numbers and text to 0, because there are too many false positives
+                    if matches!(c, CellValue::Number(_) | CellValue::Text(_)) {
+                        0 // CellValue::Number.type_id()
+                    } else {
+                        c.type_id()
+                    }
+                })
                 .collect::<Vec<_>>()
         };
 
         let row_0 = types(0);
         let row_1 = types(1);
         let row_2 = types(2);
+
+        // If we have column names that are blank, then probably not a header
+        if row_0.iter().any(|t| *t == CellValue::Blank.type_id()) {
+            return false;
+        }
 
         // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
         let type_row_match = |a: &[u8], b: &[u8], ignore_empty: bool| -> bool {

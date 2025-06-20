@@ -623,4 +623,15 @@ pub(crate) mod tests {
         assert_display_cell_value(&gc, sheet_id, 1, 6, "82");
         assert_display_cell_value(&gc, sheet_id, 1, 1029, "8140");
     }
+
+    #[test]
+    fn test_import_customers() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file_name = "customers-100.csv";
+        let csv_file = read_test_csv_file(file_name);
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_table_count(&gc, sheet_id, 1);
+    }
 }
