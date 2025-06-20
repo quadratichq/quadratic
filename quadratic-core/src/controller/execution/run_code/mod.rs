@@ -43,14 +43,19 @@ impl GridController {
 
         self.update_cells_accessed_cache(multi_pos, &new_data_table);
 
-        let sheet_id = multi_pos.sheet_id;
-        let pos: Pos = multi_pos.into();
+        let sheet_id = multi_pos.sheet_id();
+
+        // let pos: Pos = multi_pos.into();
+
         let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted
             return;
         };
 
-        let old_data_table = sheet.data_table_at(&pos);
+        let old_data_table = match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => sheet.data_table_at(&sheet_pos.into()),
+            MultiPos::TablePos(table_pos) => table_pos.data_table(sheet),
+        };
 
         // preserve some settings from the previous code run
         if let (Some(old_data_table), Some(new_data_table)) = (old_data_table, &mut new_data_table)

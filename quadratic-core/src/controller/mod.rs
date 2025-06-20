@@ -2,10 +2,9 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    Pos, Rect, SheetPos,
+    MultiPos, Pos, Rect, SheetPos,
     a1::A1Context,
-    grid::{CodeCellLanguage, Grid, SheetId},
-    grid::{DataTable, RegionMap},
+    grid::{CodeCellLanguage, DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
@@ -163,10 +162,10 @@ impl GridController {
 
     pub(crate) fn update_cells_accessed_cache(
         &mut self,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         data_table: &Option<DataTable>,
     ) {
-        self.cells_accessed_cache.remove_pos(sheet_pos);
+        self.cells_accessed_cache.remove_pos(multi_pos);
         if let Some(code_run) = data_table.as_ref().and_then(|dt| dt.code_run()) {
             for (sheet_id, rect) in code_run
                 .cells_accessed

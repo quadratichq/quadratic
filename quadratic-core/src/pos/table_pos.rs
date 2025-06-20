@@ -3,7 +3,7 @@
 use crate::{
     CellValue, Pos, SheetPos,
     controller::GridController,
-    grid::{CodeCellValue, Sheet, SheetId},
+    grid::{CodeCellValue, DataTable, Sheet, SheetId},
 };
 use serde::{Deserialize, Serialize};
 
@@ -65,6 +65,17 @@ impl TablePos {
             return None;
         };
         self.code_cell(sheet)
+    }
+
+    /// Returns a code table within a table on the sheet.
+    pub fn data_table<'a>(&self, sheet: &'a Sheet) -> Option<&'a DataTable> {
+        let Some(table) = sheet.data_table_at(&self.table_sheet_pos.into()) else {
+            return None;
+        };
+        table
+            .tables
+            .as_ref()
+            .and_then(|tables| tables.get_at(&self.pos))
     }
 
     // /// Returns the code cell and data table from the grid controller.

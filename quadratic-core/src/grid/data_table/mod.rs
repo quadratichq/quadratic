@@ -22,7 +22,8 @@ use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::util::unique_name;
 use crate::{
-    Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
+    Array, ArraySize, CellValue, MultiPos, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect,
+    Value,
 };
 use anyhow::{Ok, Result, bail};
 use chrono::{DateTime, Utc};
@@ -41,13 +42,13 @@ use super::{CodeCellLanguage, SheetFormatting};
 pub fn unique_data_table_name(
     name: &str,
     require_number: bool,
-    sheet_pos: Option<SheetPos>,
+    multi_pos: Option<MultiPos>,
     a1_context: &A1Context,
 ) -> String {
     // replace spaces with underscores
     let name = name.replace(' ', "_");
 
-    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, multi_pos);
     let iter_names = a1_context.table_map.iter_rev_table_names();
     unique_name(&name, require_number, check_name, iter_names)
 }
