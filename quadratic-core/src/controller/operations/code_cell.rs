@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos,
+    CellValue, MultiPos, Pos, SheetPos,
     cell_values::CellValues,
     controller::GridController,
     formulas::convert_rc_to_a1,
@@ -24,13 +24,26 @@ impl GridController {
             _ => code,
         };
 
-        let mut ops = vec![
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
-            },
-            Operation::ComputeCode { sheet_pos },
-        ];
+        let mut ops = vec![];
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+            return vec![];
+        };
+
+        let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
+        if let Some(table_pos) = sheet.code_in_table(sheet_pos.into()) {
+            let table_pos = MultiPos {
+                table_sheet_pos: table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                pos: Pos {
+                    x: sheet_pos.x - table_pos.x,
+                    y: sheet_pos.y - table_pos.y,
+                },
+            };
+            ops.push(Operation::SetDataTableAt { sheet_pos, values });
+            ops.push(Operation::ComputeCodeInTable { table_pos });
+        } else {
+            ops.push(Operation::SetCellValues { sheet_pos, values });
+            ops.push(Operation::ComputeCode { sheet_pos });
+        }
 
         // change the code cell name if it is provided and the code cell doesn't already have a name
         if let Some(code_cell_name) = code_cell_name {
@@ -47,7 +60,6 @@ impl GridController {
                 });
             }
         }
-
         ops
     }
 

@@ -39,6 +39,7 @@ fn upgrade_data_tables(data_tables: current::DataTablesSchema) -> v1_10::DataTab
                     borders,
                     chart_pixel_output: data_table.chart_pixel_output,
                     chart_output: data_table.chart_output,
+                    tables: None,
                 },
             )
         })

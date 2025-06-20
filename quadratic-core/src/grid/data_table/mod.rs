@@ -3,12 +3,14 @@
 //! This lives in sheet.data_tables. CodeRun is optional within sheet.data_tables for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
+use crate::grid::sheet::data_tables::SheetDataTables;
 use crate::util::is_false;
 
 pub mod column;
 pub mod column_header;
 pub mod display_value;
 pub mod formats;
+mod grid_data_table;
 pub mod row;
 pub mod send_render;
 pub mod sort;
@@ -22,7 +24,7 @@ use crate::util::unique_name;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{Ok, Result, anyhow, bail};
+use anyhow::{Ok, Result, bail};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
 use lazy_static::lazy_static;
@@ -32,7 +34,7 @@ use sort::DataTableSort;
 use strum_macros::Display;
 
 use super::sheet::borders::Borders;
-use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
+use super::{CodeCellLanguage, SheetFormatting};
 
 /// Returns a unique name for the data table, taking into account its
 /// position on the sheet (so it doesn't conflict with itself).
@@ -48,71 +50,6 @@ pub fn unique_data_table_name(
     let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
     let iter_names = a1_context.table_map.iter_rev_table_names();
     unique_name(&name, require_number, check_name, iter_names)
-}
-
-impl Grid {
-    /// Returns the data table at the given position.
-    pub fn data_table_at(&self, sheet_id: SheetId, pos: &Pos) -> Result<&DataTable> {
-        self.try_sheet_result(sheet_id)?.data_table_result(pos)
-    }
-
-    /// Updates the name of a data table and replaces the old name in all code cells that reference it.
-    pub fn update_data_table_name(
-        &mut self,
-        sheet_pos: SheetPos,
-        old_name: &str,
-        new_name: &str,
-        a1_context: &A1Context,
-        require_number: bool,
-    ) -> Result<()> {
-        let unique_name =
-            unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
-
-        self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
-
-        let sheet = self
-            .try_sheet_mut(sheet_pos.sheet_id)
-            .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
-
-        sheet.modify_data_table_at(&sheet_pos.into(), |dt| {
-            dt.update_table_name(&unique_name);
-            Ok(())
-        })?;
-
-        Ok(())
-    }
-
-    /// Returns a unique name for a data table
-    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
-        unique_data_table_name("Table", true, None, a1_context)
-    }
-
-    /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_name_in_code_cells(
-        &mut self,
-        old_name: &str,
-        new_name: &str,
-        a1_context: &A1Context,
-    ) {
-        for sheet in self.sheets.values_mut() {
-            sheet.replace_table_name_in_code_cells(old_name, new_name, a1_context);
-        }
-    }
-
-    /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
-    pub fn replace_table_column_name_in_code_cells(
-        &mut self,
-        table_name: &str,
-        old_name: &str,
-        new_name: &str,
-        a1_context: &A1Context,
-    ) {
-        for sheet in self.sheets.values_mut() {
-            sheet.replace_table_column_name_in_code_cells(
-                table_name, old_name, new_name, a1_context,
-            );
-        }
-    }
 }
 
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
@@ -188,6 +125,9 @@ pub struct DataTable {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub tables: Option<SheetDataTables>,
 }
 
 impl From<(Import, Array, &A1Context)> for DataTable {
@@ -239,6 +179,7 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
+            tables: None,
         };
 
         if header_is_first_row {
@@ -270,6 +211,7 @@ impl DataTable {
             show_columns: self.show_columns,
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
+            tables: None,
         }
     }
 

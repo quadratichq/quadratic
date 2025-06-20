@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, ClearOption, CopyFormats, SheetPos, SheetRect,
+    CellValue, ClearOption, CopyFormats, MultiPos, Pos, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -188,6 +188,11 @@ pub enum Operation {
     /// Runs the code cell at a specific position.
     ComputeCode {
         sheet_pos: SheetPos,
+    },
+
+    /// Runs the code cell at a specific position in a data table.
+    ComputeCodeInTable {
+        table_pos: MultiPos,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.

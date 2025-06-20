@@ -151,7 +151,7 @@ impl GridController {
             let pos: Pos = sheet_pos.into();
 
             // We need to get the corresponding CellValue::Code
-            let (language, code) = match sheet.code_value(pos) {
+            let (language, code) = match sheet.cell_value(pos) {
                 Some(CellValue::Code(value)) => (value.language, value.code),
 
                 // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
@@ -170,6 +170,34 @@ impl GridController {
                 }
                 CodeCellLanguage::Javascript => {
                     self.run_javascript(transaction, sheet_pos, code);
+                }
+                CodeCellLanguage::Import => (), // no-op
+            }
+        }
+    }
+
+    pub fn execute_compute_code_in_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::ComputeCodeInTable { table_pos } = op {
+            let Some(code_cell) = table_pos.code_cell_from_gc(self) else {
+                return;
+            };
+
+            match &code_cell.language {
+                CodeCellLanguage::Python => {
+                    self.run_python_in_table(transaction, table_pos, code_cell.code.clone());
+                }
+                CodeCellLanguage::Formula => {
+                    // self.run_formula(transaction, table_pos, code);
+                }
+                CodeCellLanguage::Connection { kind, id } => {
+                    // self.run_connection(transaction, table_pos, code, kind, id);
+                }
+                CodeCellLanguage::Javascript => {
+                    // self.run_javascript(transaction, table_pos, code);
                 }
                 CodeCellLanguage::Import => (), // no-op
             }

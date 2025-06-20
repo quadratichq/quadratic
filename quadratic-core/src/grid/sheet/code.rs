@@ -268,6 +268,13 @@ impl Sheet {
             _ => None,
         }
     }
+
+    /// Returns whether the position in inside a data table.
+    pub fn code_in_table(&self, pos: Pos) -> Option<Pos> {
+        self.data_table_that_contains(pos)
+            .filter(|(_, table)| table.is_data_table())
+            .map(|(table_pos, _)| table_pos)
+    }
 }
 
 #[cfg(test)]

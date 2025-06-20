@@ -59,8 +59,7 @@ pub struct PendingTransaction {
     /// save code_cell info for async calls
     pub current_sheet_pos: Option<SheetPos>,
 
-    /// whether we are awaiting an async call -- storing the code cell value and
-    /// the in_table Option<Pos>
+    /// whether we are awaiting an async call
     pub waiting_for_async: Option<CodeCellValue>,
 
     /// whether transaction is complete
