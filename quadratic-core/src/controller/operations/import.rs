@@ -38,7 +38,14 @@ impl GridController {
                 .get_row(row)
                 .unwrap_or_default()
                 .iter()
-                .map(|c| c.type_id())
+                .map(|c| {
+                    // we map numbers and text to 0, because there are too many false positives
+                    if matches!(c, CellValue::Number(_) | CellValue::Text(_)) {
+                        0 // CellValue::Number.type_id()
+                    } else {
+                        c.type_id()
+                    }
+                })
                 .collect::<Vec<_>>()
         };
 
