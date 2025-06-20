@@ -1,6 +1,6 @@
 import {
   getLastAIPromptMessageModelKey,
-  getPromptMessages,
+  getPromptMessagesForAI,
   isContentText,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
@@ -31,7 +31,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
       throw new Error('No messages provided');
     }
 
-    const promptMessages = getPromptMessages(messages);
+    const promptMessages = getPromptMessagesForAI(messages);
     const lastPromptMessage = promptMessages[promptMessages.length - 1];
     if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
       return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
@@ -61,30 +61,36 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </role>
 
  <models>
-  <model name="Pro">
-   <capabilities>
-    <capability>Data cleaning</capability>
-    <capability>Augmenting data</capability>
-    <capability>Processing images and PDFs</capability>
-    <capability>Writing JavaScript</capability>
-    <capability>Formatting - simple, conditional, etc.</capability>
-    <capability>Editing existing charts</capability>
-    <capability>API requests</capability>
-    <capability>Any capabilitiesnot defined in these instructions</capability>
-   </capabilities>
-  </model>
   <model name="Claude">
    <capabilities>
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
-    <capability>Requests that involve frustration</capability>
     <capability>Creating new charts</capability>
+    <capability>Editing existing charts</capability>
+    <capability>Requests that involve frustration</capability>
+    <capability>Onboarding questions</capability>
+    <capability>Data cleaning</capability>
+    <capability>Augmenting data</capability>
+    <capability>Processing images and PDFs</capability>
+    <capability>Writing JavaScript</capability>
+    <capability>Conditional formatting</capability>
+    <capability>Charts that have problems</capability>
+    <capability>API requests</capability>
+    <capability>Any capabilities not defined in these instructions</capability>
+    <capability>Requests that involve frustration</capability>
+    <capability>Charts that have problems</capability>
+   </capabilities>
+  </model>
+  <model name="4.1">
+   <capabilities>
+    <capability>Simple/explicitly defined formatting</capability>
+    <capability>Moving data to specific cell locations</capability>
    </capabilities>
   </model>
  </models>
 
  <instructions>
-  Only respond with the model name: "Claude" or "Pro". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
@@ -97,10 +103,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Create a chart</user>
-   <answer>Claude</answer>
-  </example>
-  <example>
    <user>Create a debt snowball calculator</user>
    <answer>Claude</answer>
   </example>
@@ -109,67 +111,79 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Add an extra axis to my chart</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Change the line to blue</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Analyze my PDFs</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Highlight all the cells with value > 50</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>try again</user>
+   <user>Hi, I'm new to Quadratic.</user>
    <answer>Claude</answer>
   </example>
   <example>
-   <user>move that to A9</user>
-   <answer>Pro</answer>
+   <user>Analyze my PDFs</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Highlight all the cells with value > 50</user>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Remove column B from the data</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>How much does each crop produce per year?</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Sum the values in column F</user>
-   <answer>Pro</answer>
-  </example>
- <example>
-   <user>Calculate the mean of costs</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Find the mean, filtered by product type</user>
-   <answer>Pro</answer>
-  </example>
-  <example>
-   <user>Highlight column C blue</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Highlight all male entries orange</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Add an extra axis to my chart</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Change the line to blue</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Create a chart</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Highlight column C blue</user>
+   <answer>4.1</answer>
+  </example>
+  <example>
+   <user>Find the mean, filtered by product type</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+   <user>Sum the values in column F</user>
+   <answer>Claude</answer>
+  </example>
+  <example>
+    <user>Calculate the mean of costs</user>
+    <answer>Claude</answer>
+  </example>
+  <example>
+   <user>move that to A9</user>
+   <answer>4.1</answer>
+  </example>
+  <example>
+   <user>That chart has an issue</user>
+   <answer>Claude</answer>
+  </example>
+    <example>
+   <user>try again</user>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Why do you keep failing?</user>
    <answer>Claude</answer>
   </example>
   <example>
-   <user>Hi</user>
+   <user>Chart is empty or missing data</user>
    <answer>Claude</answer>
   </example>
  </examples>
@@ -210,7 +224,7 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    console.error('Error in getModelKey:', error);
+    console.error('Error in getModelKey: ', error);
   }
 
   return DEFAULT_BACKUP_MODEL;

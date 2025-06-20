@@ -8,6 +8,7 @@ use crate::a1::A1Selection;
 use crate::controller::GridController;
 use crate::grid::Format;
 use crate::grid::formats::FormatUpdate;
+use crate::grid::js_types::JsResponse;
 
 use super::CellFormatSummary;
 use super::NumericFormatKind;
@@ -204,14 +205,23 @@ impl GridController {
         columns: i32,
         rows: i32,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
+    ) -> Result<JsValue, JsValue> {
         if columns <= 0 || rows <= 0 {
-            return Result::Err("Invalid chart size".into());
+            return Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                result: false,
+                error: Some("Invalid chart size".to_string()),
+            })?);
         }
+
         let sheet_pos =
             serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
+
         self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
-        Ok(())
+
+        Ok(serde_wasm_bindgen::to_value(&JsResponse {
+            result: true,
+            error: None,
+        })?)
     }
 
     #[wasm_bindgen(js_name = "setDateTimeFormat")]

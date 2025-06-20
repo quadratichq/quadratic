@@ -1,40 +1,28 @@
-import type { AIModelConfig, AIModelKey, AIRates } from 'quadratic-shared/typesAndSchemasAI';
+import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
+import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
-export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
+// updating this will force the model to be reset to the default model in local storage
+export const DEFAULT_MODEL_VERSION = 17;
 
+// used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
+export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash';
+
+// AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
-export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0';
-
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
-
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
-
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash-preview-05-20';
-
-export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro-preview-05-06';
-
 export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
 export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
 
-// updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 15;
+// Backup models for AI Analyst and AI Assistant chat models
+export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-on';
 
-const claude_sonnet_3_5_20250514_rate: AIRates = {
-  rate_per_million_input_tokens: 15,
-  rate_per_million_output_tokens: 75,
-  rate_per_million_cache_read_tokens: 1.5,
-  rate_per_million_cache_write_tokens: 18.75,
-};
-const claude_sonnet_3_7_20250514_rate: AIRates = claude_sonnet_3_5_20250514_rate;
-const claude_sonnet_4_20250514_rate: AIRates = claude_sonnet_3_5_20250514_rate;
-
-const claude_opus_4_20250514_rate: AIRates = {
-  rate_per_million_input_tokens: 15,
-  rate_per_million_output_tokens: 75,
-  rate_per_million_cache_read_tokens: 1.5,
-  rate_per_million_cache_write_tokens: 18.75,
-};
+// Internal tool call models
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
+export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro:thinking-toggle-off';
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
 
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
@@ -45,58 +33,29 @@ export const MODELS_CONFIGURATION: {
     model: 'quadratic-auto',
     displayName: 'auto',
     temperature: 0,
-    max_tokens: 65535,
+    max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
     provider: 'quadratic',
     promptCaching: false,
     thinkingToggle: false,
-    rate_per_million_input_tokens: 0.15,
-    rate_per_million_output_tokens: 1,
-    rate_per_million_cache_read_tokens: 0,
-    rate_per_million_cache_write_tokens: 0,
+    ...AI_RATES.gemini_2_0_flash_rate,
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
-    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: 'claude 3.7 sonnet',
-    temperature: 1,
-    max_tokens: 16000,
+    model: 'gemini-2.5-pro',
+    displayName: 'gemini 2.5 pro',
+    temperature: 0,
+    max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
-    provider: 'bedrock-anthropic',
-    promptCaching: true,
+    provider: 'vertexai',
+    promptCaching: false,
     thinking: true,
     thinkingToggle: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'vertexai-anthropic:claude-opus-4:thinking-toggle-off': {
-    model: 'claude-opus-4@20250514',
-    displayName: 'claude opus 4',
-    temperature: 0,
-    max_tokens: 32000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai-anthropic',
-    promptCaching: true,
-    thinkingToggle: false,
-    ...claude_opus_4_20250514_rate,
-  },
-  'vertexai-anthropic:claude-opus-4:thinking-toggle-on': {
-    model: 'claude-opus-4@20250514',
-    displayName: 'claude opus 4',
-    temperature: 1,
-    max_tokens: 32000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai-anthropic',
-    promptCaching: true,
-    thinking: true,
-    thinkingToggle: true,
-    ...claude_opus_4_20250514_rate,
+    thinkingBudget: 32768,
+    ...AI_RATES.gemini_2_5_pro_rate,
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4@20250514',
@@ -108,8 +67,9 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai-anthropic',
     promptCaching: true,
+    thinking: false,
     thinkingToggle: false,
-    ...claude_sonnet_4_20250514_rate,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'claude-sonnet-4@20250514',
@@ -123,75 +83,11 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
-    ...claude_sonnet_4_20250514_rate,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
-  'vertexai-anthropic:claude:thinking-toggle-off': {
-    model: 'claude-3-5-sonnet-v2@20241022',
-    displayName: 'claude',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai-anthropic',
-    promptCaching: true,
-    thinkingToggle: false,
-    ...claude_sonnet_3_5_20250514_rate,
-  },
-  'vertexai-anthropic:claude:thinking-toggle-on': {
-    model: 'claude-3-7-sonnet@20250219',
-    displayName: 'claude',
-    temperature: 1,
-    max_tokens: 16000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai-anthropic',
-    promptCaching: true,
-    thinking: true,
-    thinkingToggle: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'vertexai-anthropic:claude-3-7-sonnet@20250219': {
-    model: 'claude-3-7-sonnet@20250219',
-    displayName: 'claude 3.7 sonnet',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai-anthropic',
-    promptCaching: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'vertexai-anthropic:claude-3-7-sonnet@20250219:thinking': {
-    model: 'claude-3-7-sonnet@20250219',
-    displayName: 'claude 3.7 sonnet thinking',
-    temperature: 1,
-    max_tokens: 16000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai-anthropic',
-    promptCaching: true,
-    thinking: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'vertexai-anthropic:claude-3-5-sonnet-v2@20241022': {
-    model: 'claude-3-5-sonnet-v2@20241022',
-    displayName: 'claude 3.5 sonnet',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'vertexai-anthropic',
-    promptCaching: true,
-    ...claude_sonnet_3_5_20250514_rate,
-  },
-  'vertexai:gemini-2.5-pro-preview-05-06': {
-    model: 'gemini-2.5-pro-preview-05-06',
-    displayName: 'gemini 2.5 pro preview',
+  'vertexai:gemini-2.5-pro:thinking-toggle-off': {
+    model: 'gemini-2.5-pro',
+    displayName: 'gemini 2.5 pro',
     temperature: 0,
     max_tokens: 65535,
     canStream: true,
@@ -199,14 +95,14 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai',
     promptCaching: false,
-    rate_per_million_input_tokens: 1.25,
-    rate_per_million_output_tokens: 10,
-    rate_per_million_cache_read_tokens: 0,
-    rate_per_million_cache_write_tokens: 0,
+    thinking: false,
+    thinkingToggle: false,
+    thinkingBudget: 128,
+    ...AI_RATES.gemini_2_5_pro_rate,
   },
-  'vertexai:gemini-2.5-flash-preview-05-20': {
-    model: 'gemini-2.5-flash-preview-05-20',
-    displayName: 'gemini 2.5 flash preview',
+  'vertexai:gemini-2.5-pro:thinking-toggle-on': {
+    model: 'gemini-2.5-pro',
+    displayName: 'gemini 2.5 pro',
     temperature: 0,
     max_tokens: 65535,
     canStream: true,
@@ -214,37 +110,50 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'vertexai',
     promptCaching: false,
-    rate_per_million_input_tokens: 0.15,
-    rate_per_million_output_tokens: 1,
-    rate_per_million_cache_read_tokens: 0,
-    rate_per_million_cache_write_tokens: 0,
-  },
-  'bedrock-anthropic:claude-opus-4:thinking-toggle-off': {
-    model: 'us.anthropic.claude-opus-4-20250514-v1:0',
-    displayName: 'claude opus 4',
-    temperature: 0,
-    max_tokens: 32000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'bedrock-anthropic',
-    promptCaching: true,
-    thinkingToggle: false,
-    ...claude_opus_4_20250514_rate,
-  },
-  'bedrock-anthropic:claude-opus-4:thinking-toggle-on': {
-    model: 'us.anthropic.claude-opus-4-20250514-v1:0',
-    displayName: 'claude opus 4',
-    temperature: 1,
-    max_tokens: 32000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'bedrock-anthropic',
-    promptCaching: true,
     thinking: true,
     thinkingToggle: true,
-    ...claude_opus_4_20250514_rate,
+    thinkingBudget: 32768,
+    ...AI_RATES.gemini_2_5_pro_rate,
+  },
+  'vertexai:gemini-2.5-flash': {
+    model: 'gemini-2.5-flash',
+    displayName: 'gemini 2.5 flash',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: false,
+    thinkingBudget: 0,
+    ...AI_RATES.gemini_2_5_flash_rate,
+  },
+  'vertexai:gemini-2.0-flash': {
+    model: 'gemini-2.0-flash',
+    displayName: 'gemini 2.0 flash',
+    temperature: 0,
+    max_tokens: 8192,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: false,
+    ...AI_RATES.gemini_2_0_flash_rate,
+  },
+  'geminiai:gemini-2.5-flash-lite-preview-06-17': {
+    model: 'gemini-2.5-flash-lite-preview-06-17',
+    displayName: 'gemini 2.5 flash lite',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'geminiai',
+    promptCaching: false,
+    thinking: false,
+    thinkingBudget: 0,
+    ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
@@ -256,8 +165,9 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: true,
+    thinking: false,
     thinkingToggle: false,
-    ...claude_sonnet_4_20250514_rate,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
@@ -271,7 +181,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
-    ...claude_sonnet_4_20250514_rate,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'bedrock-anthropic:claude:thinking-toggle-off': {
     model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
@@ -284,7 +194,7 @@ export const MODELS_CONFIGURATION: {
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
-    ...claude_sonnet_3_5_20250514_rate,
+    ...AI_RATES.claude_sonnet_3_5_20250514_rate,
   },
   'bedrock-anthropic:claude:thinking-toggle-on': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -298,7 +208,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
-    ...claude_sonnet_3_7_20250514_rate,
+    ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -310,7 +220,7 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'bedrock-anthropic',
     promptCaching: true,
-    ...claude_sonnet_3_7_20250514_rate,
+    ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
@@ -323,34 +233,7 @@ export const MODELS_CONFIGURATION: {
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-    displayName: 'claude 3.5 sonnet',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'bedrock-anthropic',
-    promptCaching: false,
-    ...claude_sonnet_3_5_20250514_rate,
-  },
-  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0': {
-    model: 'us.anthropic.claude-3-5-haiku-20241022-v1:0',
-    displayName: 'claude 3.5 haiku',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'bedrock-anthropic',
-    promptCaching: true,
-    rate_per_million_input_tokens: 0.8,
-    rate_per_million_output_tokens: 4,
-    rate_per_million_cache_read_tokens: 0.08,
-    rate_per_million_cache_write_tokens: 1,
+    ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock:us.deepseek.r1-v1:0': {
     model: 'us.deepseek.r1-v1:0',
@@ -367,33 +250,6 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'anthropic:claude-opus-4:thinking-toggle-off': {
-    model: 'claude-opus-4-20250514',
-    displayName: 'claude opus 4',
-    temperature: 0,
-    max_tokens: 32000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'anthropic',
-    promptCaching: true,
-    thinkingToggle: false,
-    ...claude_opus_4_20250514_rate,
-  },
-  'anthropic:claude-opus-4:thinking-toggle-on': {
-    model: 'claude-opus-4-20250514',
-    displayName: 'claude opus 4',
-    temperature: 1,
-    max_tokens: 32000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'anthropic',
-    promptCaching: true,
-    thinking: true,
-    thinkingToggle: true,
-    ...claude_opus_4_20250514_rate,
-  },
   'anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4-20250514',
     displayName: 'claude sonnet 4',
@@ -404,8 +260,9 @@ export const MODELS_CONFIGURATION: {
     enabled: false,
     provider: 'anthropic',
     promptCaching: true,
+    thinking: false,
     thinkingToggle: false,
-    ...claude_sonnet_4_20250514_rate,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'claude-sonnet-4-20250514',
@@ -419,7 +276,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
-    ...claude_sonnet_4_20250514_rate,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'anthropic:claude:thinking-toggle-off': {
     model: 'claude-3-5-sonnet-20241022',
@@ -432,7 +289,7 @@ export const MODELS_CONFIGURATION: {
     provider: 'anthropic',
     promptCaching: true,
     thinkingToggle: false,
-    ...claude_sonnet_3_5_20250514_rate,
+    ...AI_RATES.claude_sonnet_3_5_20250514_rate,
   },
   'anthropic:claude:thinking-toggle-on': {
     model: 'claude-3-7-sonnet-20250219',
@@ -446,44 +303,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'anthropic:claude-3-7-sonnet-20250219': {
-    model: 'claude-3-7-sonnet-20250219',
-    displayName: 'claude 3.7 sonnet',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'anthropic',
-    promptCaching: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'anthropic:claude-3-7-sonnet-20250219:thinking': {
-    model: 'claude-3-7-sonnet-20250219',
-    displayName: 'claude 3.7 sonnet thinking',
-    temperature: 1,
-    max_tokens: 16000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    enabled: false,
-    provider: 'anthropic',
-    promptCaching: true,
-    thinking: true,
-    ...claude_sonnet_3_7_20250514_rate,
-  },
-  'anthropic:claude-3-5-sonnet-20241022': {
-    model: 'claude-3-5-sonnet-20241022',
-    displayName: 'claude 3.5 sonnet',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    promptCaching: true,
-    enabled: false,
-    provider: 'anthropic',
-    ...claude_sonnet_3_5_20250514_rate,
+    ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',

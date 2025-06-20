@@ -5,7 +5,7 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -23,15 +23,7 @@ import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
-    sendImportProgress: (
-      filename: string,
-      current: number,
-      total: number,
-      x: number,
-      y: number,
-      width: number,
-      height: number
-    ) => void;
+    sendImportProgress: (filename: string, current: number, total: number) => void;
     sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
     sendSheetsInfoClient: (sheetsInfo: Uint8Array) => void;
@@ -101,7 +93,7 @@ class CoreClient {
     self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
-    if (debugWebWorkers) console.log('[coreClient] initialized.');
+    if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
   private send(message: CoreClientMessage, transfer?: Transferable) {
@@ -113,7 +105,7 @@ class CoreClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[coreClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'clientCoreLoad':
@@ -367,7 +359,19 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellRenderResize':
-        await core.setChartSize(e.data.sheetId, e.data.x, e.data.y, e.data.width, e.data.height, e.data.cursor);
+        const response = core.setChartSize(
+          e.data.sheetId,
+          e.data.x,
+          e.data.y,
+          e.data.width,
+          e.data.height,
+          e.data.cursor
+        );
+        this.send({
+          type: 'coreClientSetCellRenderResize',
+          id: e.data.id,
+          response,
+        });
         return;
 
       case 'clientCoreAutocomplete':
@@ -704,16 +708,8 @@ class CoreClient {
     }
   };
 
-  sendImportProgress = (
-    filename: string,
-    current: number,
-    total: number,
-    x: number,
-    y: number,
-    width: number,
-    height: number
-  ) => {
-    this.send({ type: 'coreClientImportProgress', filename, current, total, x, y, width, height });
+  sendImportProgress = (filename: string, current: number, total: number) => {
+    this.send({ type: 'coreClientImportProgress', filename, current, total });
   };
 
   sendAddSheet = (sheetInfo: Uint8Array, user: boolean) => {

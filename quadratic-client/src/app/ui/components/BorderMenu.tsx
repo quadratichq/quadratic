@@ -8,7 +8,7 @@ import { CheckSmallIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import * as ToggleGroup from '@radix-ui/react-toggle-group';
+import { ToggleGroup } from 'radix-ui';
 import { useRecoilValue } from 'recoil';
 import './borderMenuStyles.scss';
 

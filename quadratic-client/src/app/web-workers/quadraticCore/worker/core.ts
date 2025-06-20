@@ -6,7 +6,7 @@
  */
 
 import { bigIntReplacer } from '@/app/bigint';
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
@@ -103,7 +103,7 @@ class Core {
       return { error: 'Unable to load file' };
     }
 
-    if (debugWebWorkers) console.log('[core] GridController loaded');
+    if (debugFlag('debugWebWorkers')) console.log('[core] GridController loaded');
 
     return { version: this.gridController.getVersion() };
   };
@@ -836,16 +836,20 @@ class Core {
     });
   }
 
-  setChartSize(sheetId: string, x: number, y: number, width: number, height: number, cursor: string) {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        this.gridController.setChartSize(toSheetPos(x, y, sheetId), width, height, cursor);
-      } catch (e) {
-        this.handleCoreError('setChartSize', e);
-      }
-      resolve(undefined);
-    });
+  setChartSize(
+    sheetId: string,
+    x: number,
+    y: number,
+    width: number,
+    height: number,
+    cursor: string
+  ): JsResponse | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      return this.gridController.setChartSize(toSheetPos(x, y, sheetId), width, height, cursor);
+    } catch (e) {
+      this.handleCoreError('setChartSize', e);
+    }
   }
 
   autocomplete(

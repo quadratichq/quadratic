@@ -67,15 +67,7 @@ extern "C" {
     );
     pub fn jsSheetBoundsUpdate(bounds: Vec<u8> /* Vec<SheetBounds> */);
 
-    pub fn jsImportProgress(
-        file_name: &str,
-        current: u32,
-        total: u32,
-        x: i64,
-        y: i64,
-        w: u32,
-        h: u32,
-    );
+    pub fn jsImportProgress(file_name: &str, current: u32, total: u32);
     pub fn jsTransactionStart(transaction_id: String, name: String);
     pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
     pub fn jsTransactionEnd(transaction_id: String, name: String);
@@ -402,13 +394,10 @@ pub fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsImportProgress(file_name: &str, current: u32, total: u32, x: i64, y: i64, w: u32, h: u32) {
+pub fn jsImportProgress(file_name: &str, current: u32, total: u32) {
     js_call(
         "jsImportProgress",
-        format!(
-            "{},{},{},{},{},{},{}",
-            file_name, current, total, x, y, w, h
-        ),
+        format!("{},{},{}", file_name, current, total),
     );
 }
 

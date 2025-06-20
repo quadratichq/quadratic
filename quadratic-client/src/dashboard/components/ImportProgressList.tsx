@@ -128,7 +128,7 @@ const ImportProgressItem = ({
         ) : state === 'Imported' ? (
           <Link
             key={file.uuid}
-            to={ROUTES.FILE(file.uuid ?? '')}
+            to={ROUTES.FILE({ uuid: file.uuid ?? '', searchParams: '' })}
             reloadDocument
             className={cn('relative z-10 h-full w-full', disabled && `pointer-events-none`)}
           >

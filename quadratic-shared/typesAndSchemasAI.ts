@@ -4,32 +4,26 @@ import { z } from 'zod';
 const AIProvidersSchema = z.enum([
   'quadratic',
   'vertexai-anthropic',
+  'vertexai',
+  'geminiai',
   'bedrock-anthropic',
+  'bedrock',
   'anthropic',
   'openai',
   'xai',
-  'vertexai',
-  'bedrock',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
-const VertexAnthropicModelSchema = z.enum([
-  'claude-opus-4@20250514',
-  'claude-sonnet-4@20250514',
-  'claude-3-7-sonnet@20250219',
-  'claude-3-5-sonnet-v2@20241022',
-]);
-const VertexAIModelSchema = z.enum(['gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-05-20']);
+const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4@20250514']);
+const VertexAIModelSchema = z.enum(['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']);
+const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
-  'us.anthropic.claude-opus-4-20250514-v1:0',
   'us.anthropic.claude-sonnet-4-20250514-v1:0',
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-  'us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum([
-  'claude-opus-4-20250514',
   'claude-sonnet-4-20250514',
   'claude-3-7-sonnet-20250219',
   'claude-3-5-sonnet-20241022',
@@ -46,6 +40,7 @@ const AIModelSchema = z.union([
   QuadraticModelSchema,
   VertexAnthropicModelSchema,
   VertexAIModelSchema,
+  GenAIModelSchema,
   BedrockAnthropicModelSchema,
   BedrockModelSchema,
   AnthropicModelSchema,
@@ -61,35 +56,29 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
-  'vertexai-anthropic:claude-opus-4:thinking-toggle-off',
-  'vertexai-anthropic:claude-opus-4:thinking-toggle-on',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
-  'vertexai-anthropic:claude:thinking-toggle-off',
-  'vertexai-anthropic:claude:thinking-toggle-on',
-  'vertexai-anthropic:claude-3-7-sonnet@20250219',
-  'vertexai-anthropic:claude-3-7-sonnet@20250219:thinking',
-  'vertexai-anthropic:claude-3-5-sonnet-v2@20241022',
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
 const VertexAIModelKeySchema = z.enum([
-  'vertexai:gemini-2.5-pro-preview-05-06',
-  'vertexai:gemini-2.5-flash-preview-05-20',
+  'vertexai:gemini-2.5-pro:thinking-toggle-off',
+  'vertexai:gemini-2.5-pro:thinking-toggle-on',
+  'vertexai:gemini-2.5-flash',
+  'vertexai:gemini-2.0-flash',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
+const GeminiAIModelKeySchema = z.enum(['geminiai:gemini-2.5-flash-lite-preview-06-17']);
+export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
+
 const BedrockAnthropicModelKeySchema = z.enum([
-  'bedrock-anthropic:claude-opus-4:thinking-toggle-off',
-  'bedrock-anthropic:claude-opus-4:thinking-toggle-on',
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-off',
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-on',
   'bedrock-anthropic:claude:thinking-toggle-off',
   'bedrock-anthropic:claude:thinking-toggle-on',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
-  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-  'bedrock-anthropic:us.anthropic.claude-3-5-haiku-20241022-v1:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
@@ -97,15 +86,10 @@ const BedrockModelKeySchema = z.enum(['bedrock:us.deepseek.r1-v1:0']);
 export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 
 const AnthropicModelKeySchema = z.enum([
-  'anthropic:claude-opus-4:thinking-toggle-off',
-  'anthropic:claude-opus-4:thinking-toggle-on',
   'anthropic:claude-sonnet-4:thinking-toggle-off',
   'anthropic:claude-sonnet-4:thinking-toggle-on',
   'anthropic:claude:thinking-toggle-on',
   'anthropic:claude:thinking-toggle-off',
-  'anthropic:claude-3-7-sonnet-20250219',
-  'anthropic:claude-3-7-sonnet-20250219:thinking',
-  'anthropic:claude-3-5-sonnet-20241022',
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
@@ -125,6 +109,7 @@ const AIModelKeySchema = z.union([
   QuadraticModelKeySchema,
   VertexAIAnthropicModelKeySchema,
   VertexAIModelKeySchema,
+  GeminiAIModelKeySchema,
   BedrockAnthropicModelKeySchema,
   BedrockModelKeySchema,
   AnthropicModelKeySchema,
@@ -154,6 +139,7 @@ export const AIModelConfigSchema = z
     strictParams: z.boolean().optional(),
     thinking: z.boolean().optional(),
     thinkingToggle: z.boolean().optional(),
+    thinkingBudget: z.number().optional(),
   })
   .extend(AIRatesSchema.shape);
 export type AIModelConfig = z.infer<typeof AIModelConfigSchema>;
@@ -245,6 +231,12 @@ export type TextFileContent = z.infer<typeof TextFileContentSchema>;
 export const FileContentSchema = z.union([ImageContentSchema, PdfFileContentSchema, TextFileContentSchema]);
 export type FileContent = z.infer<typeof FileContentSchema>;
 
+const GoogleSearchGroundingMetadataSchema = z.object({
+  type: z.literal('google_search_grounding_metadata'),
+  text: z.string(),
+});
+export type GoogleSearchGroundingMetadata = z.infer<typeof GoogleSearchGroundingMetadataSchema>;
+
 const ContentSchema = z.array(z.union([TextContentSchema, FileContentSchema]));
 export type Content = z.infer<typeof ContentSchema>;
 
@@ -312,12 +304,20 @@ const AIResponseContentSchema = z.array(
       text: z.string(),
       signature: z.string(),
     })
-  ).or(
-    z.object({
-      type: z.literal('anthropic_redacted_thinking'),
-      text: z.string(),
-    })
   )
+    .or(
+      z.object({
+        type: z.literal('anthropic_redacted_thinking'),
+        text: z.string(),
+      })
+    )
+    .or(GoogleSearchGroundingMetadataSchema)
+    .or(
+      z.object({
+        type: z.literal('google_thinking'),
+        text: z.string(),
+      })
+    )
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
@@ -351,7 +351,24 @@ export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]);
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
-const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema]);
+const InternalWebSearchContextTypeSchema = z.literal('webSearchInternal');
+export type InternalWebSearchContextType = z.infer<typeof InternalWebSearchContextTypeSchema>;
+
+const GoogleSearchContentSchema = z.object({
+  source: z.literal('google_search'),
+  query: z.string(),
+  results: z.array(z.union([TextContentSchema, GoogleSearchGroundingMetadataSchema])),
+});
+export type GoogleSearchContent = z.infer<typeof GoogleSearchContentSchema>;
+
+const InternalMessageSchema = z.object({
+  role: z.literal('internal'),
+  contextType: InternalWebSearchContextTypeSchema,
+  content: GoogleSearchContentSchema,
+});
+export type InternalMessage = z.infer<typeof InternalMessageSchema>;
+
+const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema, InternalMessageSchema]);
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
 export const ChatSchema = z.object({
@@ -403,6 +420,7 @@ const AISourceSchema = z.enum([
   'GetUserPromptSuggestions',
   'PDFImport',
   'ModelRouter',
+  'WebSearch',
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 

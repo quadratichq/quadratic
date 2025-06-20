@@ -5,7 +5,7 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { Link } from '@/app/shared/types/links';
 import type { DrawRects } from '@/app/shared/types/size';
@@ -30,7 +30,7 @@ class RenderClient {
   }
 
   private handleMessage = (e: MessageEvent<ClientRenderMessage>) => {
-    if (debugWebWorkersMessages && e.data.type !== 'clientRenderViewport') {
+    if (debugFlag('debugWebWorkersMessages') && e.data.type !== 'clientRenderViewport') {
       console.log(`[renderClient] message: ${e.data.type}`);
     }
 
@@ -112,7 +112,7 @@ class RenderClient {
   }
 
   // sends a rendered LabelMeshEntry to the main thread for rendering
-  sendLabelMeshEntry(message: RenderClientLabelMeshEntry, data: ArrayBuffer[]) {
+  sendLabelMeshEntry(message: RenderClientLabelMeshEntry, data: ArrayBufferLike[]) {
     self.postMessage(message, data);
   }
 

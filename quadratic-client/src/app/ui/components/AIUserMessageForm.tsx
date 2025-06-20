@@ -1,5 +1,5 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { debug } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
@@ -11,6 +11,7 @@ import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import { isContentText } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Content, Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import {
   forwardRef,
@@ -24,7 +25,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import type { SetterOrUpdater } from 'recoil';
+import { type SetterOrUpdater } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -87,7 +88,7 @@ export const AIUserMessageForm = memo(
       setFiles(initialContent?.filter((item) => item.type === 'data') ?? []);
       setPrompt(
         initialContent
-          ?.filter((item) => item.type === 'text')
+          ?.filter((item) => isContentText(item))
           .map((item) => item.text)
           .join('\n') ?? ''
       );
@@ -105,6 +106,12 @@ export const AIUserMessageForm = memo(
       [delaySeconds, props.messageIndex, waitingOnMessageIndex]
     );
 
+    const handleClickForm = useCallback(() => {
+      if (editing) {
+        textareaRef.current?.focus();
+      }
+    }, [editing]);
+
     const submit = useCallback(
       (prompt: string) => {
         if (prompt.trim().length === 0) return;
@@ -121,6 +128,44 @@ export const AIUserMessageForm = memo(
       abortController?.abort();
       setLoading(false);
     }, [abortController, setLoading]);
+
+    const handleChange = useCallback((event: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setPrompt(event.target.value);
+    }, []);
+
+    const handleKeyDown = useCallback(
+      (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        event.stopPropagation();
+
+        if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
+          event.preventDefault();
+          if (loading || waitingOnMessageIndex !== undefined) return;
+
+          submit(prompt);
+
+          if (initialContent === undefined) {
+            textareaRef.current?.focus();
+          } else {
+            setEditing(false);
+            bottomTextareaRef.current?.focus();
+          }
+        } else if (event.key === 'Escape') {
+          if (initialContent === undefined) {
+            focusGrid();
+          } else {
+            setEditing(false);
+            bottomTextareaRef.current?.focus();
+          }
+        }
+
+        if (loading || waitingOnMessageIndex !== undefined) return;
+
+        if (formOnKeyDown) {
+          formOnKeyDown(event);
+        }
+      },
+      [bottomTextareaRef, formOnKeyDown, initialContent, loading, prompt, submit, waitingOnMessageIndex]
+    );
 
     const handleFiles = useCallback(
       (files: FileList | File[]) => {
@@ -188,11 +233,7 @@ export const AIUserMessageForm = memo(
           editing ? '' : 'select-none'
         )}
         onSubmit={(e) => e.preventDefault()}
-        onClick={() => {
-          if (editing) {
-            textareaRef.current?.focus();
-          }
-        }}
+        onClick={handleClickForm}
         onPaste={handlePasteOrDrop}
         onDrop={handlePasteOrDrop}
         onDragEnter={handleDrag}
@@ -232,59 +273,22 @@ export const AIUserMessageForm = memo(
           textareaRef={textareaRef}
         />
 
-        {editing ? (
-          <Textarea
-            ref={textareaRef}
-            value={prompt}
-            className={cn(
-              'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
-              editing ? 'min-h-14' : 'pointer-events-none h-fit min-h-fit',
-              waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
-            )}
-            onChange={(event) => setPrompt(event.target.value)}
-            onKeyDown={(event) => {
-              event.stopPropagation();
-
-              if (event.key === 'Enter' && !(event.ctrlKey || event.shiftKey)) {
-                event.preventDefault();
-                if (loading || waitingOnMessageIndex !== undefined) return;
-
-                submit(prompt);
-
-                if (initialContent === undefined) {
-                  textareaRef.current?.focus();
-                } else {
-                  setEditing(false);
-                  bottomTextareaRef.current?.focus();
-                }
-              } else if (event.key === 'Escape') {
-                if (initialContent === undefined) {
-                  focusGrid();
-                } else {
-                  setEditing(false);
-                  bottomTextareaRef.current?.focus();
-                }
-              }
-
-              if (loading || waitingOnMessageIndex !== undefined) return;
-
-              if (formOnKeyDown) {
-                formOnKeyDown(event);
-              }
-            }}
-            autoComplete="off"
-            placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
-            autoHeight={true}
-            maxHeight={maxHeight}
-            disabled={waitingOnMessageIndex !== undefined}
-          />
-        ) : (
-          <div
-            className={cn('pointer-events-none whitespace-pre-wrap p-2 text-sm', showAIUsageExceeded && 'opacity-50')}
-          >
-            {prompt}
-          </div>
-        )}
+        <Textarea
+          ref={textareaRef}
+          value={prompt}
+          className={cn(
+            'rounded-none border-none p-2 pb-0 shadow-none focus-visible:ring-0',
+            editing ? 'min-h-14' : 'pointer-events-none !max-h-none overflow-hidden',
+            (waitingOnMessageIndex !== undefined || showAIUsageExceeded) && 'pointer-events-none opacity-50'
+          )}
+          onChange={handleChange}
+          onKeyDown={handleKeyDown}
+          autoComplete="off"
+          placeholder={waitingOnMessageIndex !== undefined ? 'Waiting to send message...' : 'Ask a question...'}
+          autoHeight={true}
+          maxHeight={maxHeight}
+          disabled={waitingOnMessageIndex !== undefined}
+        />
 
         <AIUsageExceeded show={showAIUsageExceeded} delaySeconds={delaySeconds} />
 
@@ -394,7 +398,7 @@ const AIUserMessageFormFooter = memo(
           <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {!debug && (
+            {!debugFlag('debug') && (
               <>
                 <span>
                   {KeyboardSymbols.Shift}

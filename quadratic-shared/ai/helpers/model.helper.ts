@@ -6,6 +6,7 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
+  GeminiAIModelKey,
   OpenAIModelKey,
   QuadraticModelKey,
   VertexAIAnthropicModelKey,
@@ -42,6 +43,10 @@ export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModel
   return MODELS_CONFIGURATION[modelKey].provider === 'vertexai';
 }
 
+export function isGenAIModel(modelKey: AIModelKey): modelKey is GeminiAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'geminiai';
+}
+
 export function isBedrockModel(modelKey: AIModelKey): modelKey is BedrockModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
 }
@@ -58,6 +63,7 @@ export const getModelOptions = (
   temperature: number;
   max_tokens: number;
   thinking?: boolean;
+  thinkingBudget?: number;
   promptCaching: boolean;
   strictParams: boolean;
 } => {
@@ -74,11 +80,13 @@ export const getModelOptions = (
 
   const thinking = config.thinking;
 
+  const thinkingBudget = config.thinkingBudget;
+
   const temperature = config.temperature;
 
   const promptCaching = config.promptCaching;
 
   const strictParams = !!config.strictParams;
 
-  return { stream, temperature, max_tokens, thinking, promptCaching, strictParams };
+  return { stream, temperature, max_tokens, thinking, thinkingBudget, promptCaching, strictParams };
 };
