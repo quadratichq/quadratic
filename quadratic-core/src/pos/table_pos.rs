@@ -78,36 +78,20 @@ impl TablePos {
             .and_then(|tables| tables.get_at(&self.pos))
     }
 
-    // /// Returns the code cell and data table from the grid controller.
-    // pub fn try_code_from_gc<'a>(
-    //     &self,
-    //     gc: &'a GridController,
-    // ) -> Option<(&'a CodeCellValue, &'a DataTable)> {
-    //     let Some(sheet) = gc.try_sheet(self.table_sheet_pos.sheet_id) else {
-    //         return None;
-    //     };
-    //     self.try_code(sheet)
-    // }
-
-    // /// Returns the code cell and data table from the sheet.
-    // pub fn try_code<'a>(&self, sheet: &'a Sheet) -> Option<(&'a CodeCellValue, &'a DataTable)> {
-    //     let Some(table) = sheet.data_table_at(&self.table_sheet_pos.into()) else {
-    //         return None;
-    //     };
-    //     let Some(CellValue::Code(code_cell)) =
-    //         table.cell_value_ref_at(self.pos.x as u32, self.pos.y as u32)
-    //     else {
-    //         return None;
-    //     };
-
-    //     let Some(tables) = table.tables.as_ref() else {
-    //         return None;
-    //     };
-    //     tables.get_at(&self.pos).map(|table| (code_cell, table))
-    // }
-
     pub fn sheet_id(&self) -> SheetId {
         self.table_sheet_pos.sheet_id
+    }
+}
+
+/// This should not be used in production code, since TablePos -> Pos cannot be
+/// determined without Sheet information (but this is fine in most tests).
+#[cfg(test)]
+impl From<TablePos> for Pos {
+    fn from(table_pos: TablePos) -> Self {
+        Pos {
+            x: table_pos.pos.x + table_pos.table_sheet_pos.x,
+            y: table_pos.pos.y + table_pos.table_sheet_pos.y,
+        }
     }
 }
 

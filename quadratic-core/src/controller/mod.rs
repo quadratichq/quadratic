@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    MultiPos, Pos, Rect, SheetPos,
+    MultiPos, Pos, Rect,
     a1::A1Context,
     grid::{CodeCellLanguage, DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
@@ -172,7 +172,7 @@ impl GridController {
                 .iter_rects_unbounded(&self.a1_context)
             {
                 self.cells_accessed_cache
-                    .insert(sheet_pos, (sheet_id, rect));
+                    .insert(multi_pos, (sheet_id, rect));
             }
         }
     }

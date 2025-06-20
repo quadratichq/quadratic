@@ -2,13 +2,13 @@ use std::{self};
 
 use std::collections::HashSet;
 
-use crate::{SheetPos, SheetRect};
+use crate::{MultiPos, SheetRect};
 
 use super::GridController;
 
 impl GridController {
     /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
-    pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
+    pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<MultiPos>> {
         let dependent_cells = self
             .cells_accessed()
             .get_positions_associated_with_region(sheet_rect.to_region());
@@ -24,7 +24,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Pos, SheetPos, SheetRect, Value,
+        CellValue, MultiPos, Pos, SheetPos, SheetRect, Value,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
         },
@@ -39,16 +39,8 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = CellsAccessed::default();
-        let sheet_pos_00 = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-        let sheet_pos_01 = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos_00: MultiPos = pos![sheet_id!A1].into();
+        let sheet_pos_01: MultiPos = pos![sheet_id!A2].into();
         let sheet_rect = SheetRect {
             min: sheet_pos_00.into(),
             max: sheet_pos_01.into(),
@@ -67,11 +59,7 @@ mod test {
             cells_accessed: cells_accessed.clone(),
         };
 
-        let sheet_pos_02 = SheetPos {
-            x: 1,
-            y: 3,
-            sheet_id,
-        };
+        let sheet_pos_02: MultiPos = pos![sheet_id!A3].into();
 
         let mut transaction = PendingTransaction::default();
         gc.finalize_data_table(
@@ -143,11 +131,14 @@ mod test {
                 sheet_id
             }),
             Some(
-                vec![SheetPos {
-                    x: 2,
-                    y: 1,
-                    sheet_id
-                }]
+                vec![
+                    SheetPos {
+                        x: 2,
+                        y: 1,
+                        sheet_id
+                    }
+                    .into()
+                ]
                 .into_iter()
                 .collect()
             )
