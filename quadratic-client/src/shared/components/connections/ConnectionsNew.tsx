@@ -18,7 +18,7 @@ export const ConnectionsNew = ({
       <ConnectionHeader handleNavigateToListView={handleNavigateToListView}>Create new connection</ConnectionHeader>
 
       <div className="grid grid-cols-2 gap-4">
-        {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
+        {Object.entries(connectionsByType).map(([type, { Logo }]) => (
           <Button
             key={type}
             variant="outline"

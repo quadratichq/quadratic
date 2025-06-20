@@ -1,7 +1,6 @@
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ArrowBackIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import type { ReactNode } from 'react';
 
