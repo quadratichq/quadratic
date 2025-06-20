@@ -10,10 +10,11 @@ interface ThinkingBlockProps {
   isLoading: boolean;
   thinkingContent: AIResponseContent[number];
   expandedDefault: boolean;
+  className?: string;
 }
 
 export const ThinkingBlock = memo(
-  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault }: ThinkingBlockProps) => {
+  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault, className }: ThinkingBlockProps) => {
     // Each thinking block tracks its own expanded state
     const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage && expandedDefault);
     // Track whether this is the first load completion
@@ -54,7 +55,7 @@ export const ThinkingBlock = memo(
 
         {isExpanded && (
           <div className="mt-1 border-l-2 border-muted-foreground/40 pl-4 italic text-muted-foreground">
-            <Markdown>{thinkingContent.text}</Markdown>
+            <Markdown className={className}>{thinkingContent.text}</Markdown>
           </div>
         )}
       </div>
