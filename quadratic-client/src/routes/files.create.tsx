@@ -43,6 +43,8 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     prompt: url.searchParams.get('prompt'),
     // Creating via this route is _always_ private unless explicitly stated
     private: url.searchParams.get('private') === 'false' ? false : true,
+    // File to be fetched from iframe indexeddb for this chatid from marketing site
+    chatId: url.searchParams.get('chatid') || null,
   });
   return redirect(redirectUrl);
 };

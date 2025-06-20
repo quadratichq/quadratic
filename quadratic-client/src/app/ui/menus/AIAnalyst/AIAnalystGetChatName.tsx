@@ -7,7 +7,7 @@ import {
 import { memo, useEffect } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
-export const AIAnalystEffects = memo(() => {
+export const AIAnalystGetChatName = memo(() => {
   const currentChat = useRecoilValue(aiAnalystCurrentChatAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
@@ -24,7 +24,7 @@ export const AIAnalystEffects = memo(() => {
           }
         })
         .catch((error) => {
-          console.error('[AIAnalystEffects] getChatName: ', error);
+          console.error('[AIAnalystGetChatName] getChatName: ', error);
         });
     }
   }, [currentChat.messages.length, currentChat.name, getChatName, loading, setCurrentChatName]);

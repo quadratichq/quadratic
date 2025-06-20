@@ -1,30 +1,19 @@
-export function readFileAsArrayBuffer(file: File): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = function (event) {
-      if (event.target?.result instanceof ArrayBuffer) {
-        const uint8Array = new Uint8Array(event.target.result);
-        resolve(uint8Array);
-      } else {
-        reject(new Error('Failed to read file as ArrayBuffer'));
-      }
-    };
-
-    reader.onerror = function () {
-      reject(new Error('Error reading file'));
-    };
-
-    reader.readAsArrayBuffer(file);
-  });
-}
-
 export function stripExtension(name: string): string {
   return name.replace(/\.[^/.]+$/, '');
 }
 
 export function getExtension(name: string): string {
   return name.split('.').pop() || '';
+}
+
+export function getFileTypeFromName(name: string): 'csv' | 'excel' | 'parquet' | 'grid' | undefined {
+  const extension = getExtension(name);
+  if (extension === 'csv') return 'csv';
+  if (extension === 'xlsx') return 'excel';
+  if (extension === 'xls') return 'excel';
+  if (extension === 'parquet' || extension === 'parq' || extension === 'pqt') return 'parquet';
+  if (extension === 'grid') return 'grid';
+  return undefined;
 }
 
 export function hasExtension(name: string, extension: string): boolean {
@@ -80,6 +69,12 @@ export const uploadFile = async (fileTypes: string[]): Promise<File[]> => {
     input.click();
   });
   return files;
+};
+
+export const arrayBufferToBase64 = (arrayBuffer: ArrayBuffer) => {
+  const uint8Array = new Uint8Array(arrayBuffer);
+  const binaryString = uint8Array.reduce((str, byte) => str + String.fromCharCode(byte), '');
+  return btoa(binaryString);
 };
 
 export const supportedFileTypes = ['.grid', '.xlsx', '.xls', '.csv', '.parquet', '.parq', '.pqt'];
