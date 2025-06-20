@@ -482,7 +482,7 @@ function CopyLinkButton({
 
           // Copy the base file URL (which DOES NOT include the current sheet ID)
           // Can't copy the current location because this can be used on the dashboard
-          const url = window.location.origin + ROUTES.FILE(uuid);
+          const url = window.location.origin + ROUTES.FILE({ uuid, searchParams: '' });
 
           navigator.clipboard
             .writeText(url)

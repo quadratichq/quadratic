@@ -61,7 +61,7 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
  </role>
 
  <models>
-  <model name="Pro">
+  <model name="Claude">
    <capabilities>
     <capability>Creating sample data</capability>
     <capability>Creating calculators</capability>
@@ -77,10 +77,6 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
     <capability>Charts that have problems</capability>
     <capability>API requests</capability>
     <capability>Any capabilities not defined in these instructions</capability>
-   </capabilities>
-  </model>
-  <model name="Claude">
-   <capabilities>
     <capability>Requests that involve frustration</capability>
     <capability>Charts that have problems</capability>
    </capabilities>
@@ -89,71 +85,70 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
    <capabilities>
     <capability>Simple/explicitly defined formatting</capability>
     <capability>Moving data to specific cell locations</capability>
-    <capability>Simple calculations and formulas - sums, means, averages, filters, etc.</capability>
    </capabilities>
   </model>
  </models>
 
  <instructions>
-  Only respond with the model name: "Pro", "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
+  Only respond with the model name: "Claude" or "4.1". Do not include any additional text, explanations, or formatting.
  </instructions>
 
  <examples>
   <example>
    <user>Insert some sample manufacturing data</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>create a dataset of sales data</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Create a debt snowball calculator</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Create a mortgage calculator</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Hi, I'm new to Quadratic.</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Analyze my PDFs</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Highlight all the cells with value > 50</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>change text color to blue in all the rows that have gender male</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Remove column B from the data</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>How much does each crop produce per year?</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Highlight all male entries orange</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Add an extra axis to my chart</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Change the line to blue</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Create a chart</user>
-   <answer>Pro</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Highlight column C blue</user>
@@ -161,15 +156,15 @@ export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelp
   </example>
   <example>
    <user>Find the mean, filtered by product type</user>
-   <answer>4.1</answer>
+   <answer>Claude</answer>
   </example>
   <example>
    <user>Sum the values in column F</user>
-   <answer>4.1</answer>
+   <answer>Claude</answer>
   </example>
   <example>
     <user>Calculate the mean of costs</user>
-    <answer>4.1</answer>
+    <answer>Claude</answer>
   </example>
   <example>
    <user>move that to A9</user>

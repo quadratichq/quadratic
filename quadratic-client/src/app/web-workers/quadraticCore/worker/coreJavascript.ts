@@ -1,4 +1,4 @@
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
@@ -18,11 +18,11 @@ class CoreJavascript {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
-  init = (JavascriptPort: MessagePort) => {
+  init = async (JavascriptPort: MessagePort) => {
     this.coreJavascriptPort = JavascriptPort;
     this.coreJavascriptPort.onmessage = this.handleMessage;
     self.sendRunJavascript = this.sendRunJavascript;
-    if (debugWebWorkers) console.log('[coreJavascript] initialized');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[coreJavascript] initialized');
   };
 
   private handleMessage = (e: MessageEvent<JavascriptCoreMessage>) => {
