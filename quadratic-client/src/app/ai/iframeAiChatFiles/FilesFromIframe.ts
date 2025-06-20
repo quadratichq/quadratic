@@ -16,7 +16,7 @@ class FilesFromIframe {
     window.addEventListener('message', this.handleMessage);
 
     this.iframe = document.createElement('iframe');
-    this.iframe.src = `${window.location.origin}/iframe-indexeddb`;
+    this.iframe.src = `${IFRAME_ORIGIN}/iframe-indexeddb`;
     this.iframe.style.display = 'none';
     this.iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-storage-access-by-user-activation');
 
@@ -28,7 +28,7 @@ class FilesFromIframe {
   }
 
   private handleMessage = (event: MessageEvent<FromIframeMessages>) => {
-    if (event.origin !== window.location.origin) {
+    if (event.origin !== IFRAME_ORIGIN) {
       return;
     }
 
