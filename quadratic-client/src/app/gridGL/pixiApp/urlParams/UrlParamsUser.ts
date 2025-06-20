@@ -1,11 +1,14 @@
 //! User-focused URL parameters (default behavior)
 
-import { filesFromIframe } from '@/app/ai/iframeAiChatFiles/FilesFromIframe';
+import { filesFromIframe, IMPORT_FILE_EXTENSIONS } from '@/app/ai/iframeAiChatFiles/FilesFromIframe';
+import type { DbFile } from '@/app/ai/iframeAiChatFiles/IframeMessages';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
+import { arrayBufferToBase64, getExtension } from '@/app/helpers/files';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
 
@@ -26,7 +29,7 @@ export class UrlParamsUser {
     this.setupListeners(params);
   }
 
-  private loadSheet(params: URLSearchParams) {
+  private loadSheet = (params: URLSearchParams) => {
     const sheetName = params.get('sheet');
     if (sheetName) {
       const sheetId = sheets.getSheetByName(decodeURI(sheetName), true)?.id;
@@ -35,17 +38,17 @@ export class UrlParamsUser {
         return;
       }
     }
-  }
+  };
 
-  private loadCursor(params: URLSearchParams) {
+  private loadCursor = (params: URLSearchParams) => {
     const x = parseInt(params.get('x') ?? '');
     const y = parseInt(params.get('y') ?? '');
     if (!isNaN(x) && !isNaN(y)) {
       sheets.sheet.cursor.moveTo(x, y, { checkForTableRef: true });
     }
-  }
+  };
 
-  private loadCode(params: URLSearchParams) {
+  private loadCode = (params: URLSearchParams) => {
     const code = params.get('code');
     if (code) {
       let language: CodeCellLanguage | undefined;
@@ -70,10 +73,11 @@ export class UrlParamsUser {
         }));
       }
     }
-  }
+  };
 
   private loadAIAnalystFiles = (params: URLSearchParams) => {
     if (this.aiAnalystFilesLoaded) return;
+
     const chatId = params.get('chatid');
     if (!chatId) {
       this.aiAnalystFilesLoaded = true;
@@ -89,33 +93,59 @@ export class UrlParamsUser {
     filesFromIframe.init(chatId);
   };
 
-  private loadAIAnalystPrompt = (params: URLSearchParams) => {
+  private loadAIAnalystPrompt = async (params: URLSearchParams) => {
+    const prompt = params.get('prompt');
+    if (!prompt) {
+      this.aiAnalystPromptLoaded = true;
+      return;
+    }
+
     if (!this.pixiAppSettingsInitialized || !this.aiAnalystFilesLoaded || !this.aiAnalystInitialized) return;
     if (this.aiAnalystPromptLoaded) return;
-    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
 
-    const prompt = params.get('prompt');
-    if (!prompt) return;
+    this.aiAnalystPromptLoaded = true;
+
+    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) {
+      return;
+    }
 
     const { submitAIAnalystPrompt } = pixiAppSettings;
     if (!submitAIAnalystPrompt) {
       throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
     }
 
-    const files: FileContent[] = filesFromIframe.dbFiles.reduce<FileContent[]>((acc, file) => {
+    const importFiles: DbFile[] = [];
+    const aiFiles: FileContent[] = [];
+
+    // segregate files into aiFiles and importFiles
+    for (const file of filesFromIframe.dbFiles) {
       if (isSupportedMimeType(file.mimeType)) {
-        acc.push({
+        aiFiles.push({
           type: 'data',
-          data: file.data,
+          data: arrayBufferToBase64(file.data),
           mimeType: file.mimeType,
           fileName: file.name,
         });
+      } else if (IMPORT_FILE_EXTENSIONS.includes(getExtension(file.name))) {
+        importFiles.push(file);
       }
-      return acc;
-    }, []);
+    }
 
+    // import files to the grid
+    for (const file of importFiles) {
+      await quadraticCore.importFile({
+        file: file.data,
+        fileName: file.name,
+        fileType: getExtension(file.name) as 'csv' | 'parquet' | 'excel',
+        cursor: sheets.sheet.cursor.position.toString(),
+        sheetId: sheets.current,
+        location: { x: 1, y: 1 },
+      });
+    }
+
+    // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
-      content: [{ type: 'text', text: prompt }, ...files],
+      content: [...aiFiles, { type: 'text', text: prompt }],
       context: {
         sheets: [],
         currentSheet: sheets.sheet.name,
@@ -129,11 +159,9 @@ export class UrlParamsUser {
     params.delete('prompt');
     url.search = params.toString();
     window.history.replaceState(null, '', url.toString());
-
-    this.aiAnalystPromptLoaded = true;
   };
 
-  private setupListeners(params: URLSearchParams) {
+  private setupListeners = (params: URLSearchParams) => {
     events.on('cursorPosition', this.setDirty);
     events.on('changeSheet', this.setDirty);
     events.on('codeEditor', this.setDirty);
@@ -150,13 +178,13 @@ export class UrlParamsUser {
       this.aiAnalystFilesLoaded = true;
       this.loadAIAnalystPrompt(params);
     });
-  }
+  };
 
   private setDirty = () => {
     this.dirty = true;
   };
 
-  updateParams() {
+  updateParams = () => {
     if (this.dirty) {
       this.dirty = false;
       const url = new URLSearchParams(window.location.search);
@@ -190,7 +218,8 @@ export class UrlParamsUser {
         }
         url.delete('code');
       }
+
       window.history.replaceState({}, '', `?${url.toString()}`);
     }
-  }
+  };
 }

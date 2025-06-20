@@ -5,7 +5,7 @@ export type DbFile = {
   mimeType: string;
   lastModified: number;
   size: number;
-  data: string;
+  data: ArrayBuffer;
 };
 
 export type FromIframeReady = {

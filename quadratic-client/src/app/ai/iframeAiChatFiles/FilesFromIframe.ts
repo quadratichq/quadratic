@@ -4,6 +4,8 @@ import { events } from '@/app/events/events';
 // const IFRAME_ORIGIN = 'https://quadratic-website-git-ayush-iframfiletransfer.vercel.quadratic-preview.com';
 const IFRAME_ORIGIN = window.location.origin;
 
+export const IMPORT_FILE_EXTENSIONS = ['xlsx', 'xls', 'csv', 'parquet', 'parq', 'pqt'];
+
 class FilesFromIframe {
   private iframe?: HTMLIFrameElement;
   private chatId?: string;
