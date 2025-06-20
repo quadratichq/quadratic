@@ -324,7 +324,7 @@ impl GridController {
         match clipboard.operation {
             ClipboardOperation::Copy => true,
             ClipboardOperation::Cut => {
-                let cut_rects = clipboard.selection.rects(self.a1_context());
+                let cut_rects = clipboard.selection.rects_unbounded(self.a1_context());
                 let paste_rect = clipboard.to_rect(start_pos.into());
 
                 let cells_accessed = clipboard
@@ -2042,5 +2042,20 @@ mod test {
             pos![B1].to_sheet_pos(sheet_id),
         );
         assert!(!should_rerun);
+
+        // unbounded cut should rerun the code
+        let selection = A1Selection::from_range(
+            CellRefRange::new_relative_column(1),
+            SheetId::TEST,
+            &gc.a1_context(),
+        );
+        let (_, js_clipboard) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
+        let clipboard = Clipboard::decode(&js_clipboard.html).unwrap();
+        let should_rerun = gc.clipboard_code_operations_should_rerun(
+            &clipboard,
+            pos![A2],
+            pos![B1].to_sheet_pos(sheet_id),
+        );
+        assert!(should_rerun);
     }
 }
