@@ -53,6 +53,11 @@ impl GridController {
         let row_1 = types(1);
         let row_2 = types(2);
 
+        // If we have column names that are blank, then probably not a header
+        if row_0.iter().any(|t| *t == CellValue::Blank.type_id()) {
+            return false;
+        }
+
         // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
         let type_row_match = |a: &[u8], b: &[u8], ignore_empty: bool| -> bool {
             if a.len() != b.len() {
