@@ -1,7 +1,6 @@
 import type { DbFile, FromIframeMessages, ToIframeMessages } from '@/app/ai/iframeAiChatFiles/IframeMessages';
 import { events } from '@/app/events/events';
 
-// const IFRAME_ORIGIN = 'https://quadratic-website-git-ayush-iframfiletransfer.vercel.quadratic-preview.com';
 const IFRAME_ORIGIN = window.location.origin;
 
 export const IMPORT_FILE_EXTENSIONS = ['xlsx', 'xls', 'csv', 'parquet', 'parq', 'pqt'];
@@ -21,16 +20,11 @@ class FilesFromIframe {
     this.iframe.style.display = 'none';
     this.iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-storage-access-by-user-activation');
 
-    this.iframe.onload = () => {
-      console.log('Iframe loaded');
-    };
-
     this.iframe.onerror = (error) => {
-      console.error('Iframe failed to load:', error);
+      console.error('[FilesFromIframe] Iframe failed to load:', error);
     };
 
     document.body.appendChild(this.iframe);
-    console.log('iframe', this.iframe);
   }
 
   private handleMessage = (event: MessageEvent<FromIframeMessages>) => {
@@ -40,21 +34,19 @@ class FilesFromIframe {
 
     switch (event.data.type) {
       case 'iframe-indexeddb-ready':
-        console.log('Iframe indexeddb ready');
         this.getFiles();
         break;
       case 'get-files-response':
-        console.log('Files received:', event.data);
         this.handleGetFiles(event.data);
         break;
       default:
-        console.log('Unknown message type:', event.data);
+        console.log('[FilesFromIframe] unhandled message from iframe', event.data);
     }
   };
 
   private sendMessage = (message: ToIframeMessages, transferables?: Transferable[]) => {
     if (!this.iframe) {
-      throw new Error('Iframe is not set');
+      throw new Error('[FilesFromIframe] Iframe is not set');
     }
     if (transferables) {
       this.iframe.contentWindow?.postMessage(message, IFRAME_ORIGIN, transferables);
@@ -65,7 +57,7 @@ class FilesFromIframe {
 
   private getFiles = () => {
     if (!this.chatId) {
-      throw new Error('Chat ID is not set');
+      throw new Error('[FilesFromIframe] chatId is not set');
     }
     this.sendMessage({ type: 'get-files', chatId: this.chatId });
   };
