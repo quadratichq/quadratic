@@ -19,3 +19,18 @@
   word-break: break-word;
   overflow-wrap: break-word;
 }
+
+.markdown.streaming-text-animation > *:last-child {
+  animation: subtle-fade-in 0.5s ease-out;
+}
+
+@keyframes subtle-fade-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}

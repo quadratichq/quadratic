@@ -208,19 +208,23 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               ))
             ) : (
               <>
-                {message.content.map((item, contentIndex) =>
-                  (item.type === 'anthropic_thinking' || item.type === 'google_thinking') && !!item.text ? (
+                {message.content.map((item, contentIndex) => {
+                  const isStreaming = isCurrentMessage && loading && contentIndex === message.content.length - 1;
+                  return (item.type === 'anthropic_thinking' || item.type === 'google_thinking') && !!item.text ? (
                     <ThinkingBlock
-                      key={item.text}
+                      key={contentIndex}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
                       expandedDefault={true}
+                      className={isStreaming && item.type === 'google_thinking' ? 'streaming-text-animation' : ''}
                     />
                   ) : item.type === 'text' && !!item.text ? (
-                    <Markdown key={item.text}>{item.text}</Markdown>
-                  ) : null
-                )}
+                    <Markdown key={contentIndex} className={isStreaming ? 'streaming-text-animation' : ''}>
+                      {item.text}
+                    </Markdown>
+                  ) : null;
+                })}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall, index) => (
