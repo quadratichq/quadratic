@@ -6,8 +6,8 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
-import { arrayBufferToBase64, getExtension } from '@/app/helpers/files';
-import type { CodeCellLanguage } from '@/app/quadratic-core-types';
+import { arrayBufferToBase64, getExtension, getFileTypeFromName } from '@/app/helpers/files';
+import type { CodeCellLanguage, JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -131,17 +131,55 @@ export class UrlParamsUser {
       }
     }
 
+    // push excel files to the end of the array
+    importFiles.sort((a, b) => {
+      const extensionA = getExtension(a.name);
+      const extensionB = getExtension(b.name);
+      if (['xls', 'xlsx'].includes(extensionA)) return 1;
+      if (['xls', 'xlsx'].includes(extensionB)) return -1;
+      return 0;
+    });
+
+    const firstSheetId: string = sheets.current;
+
     // import files to the grid
     for (const file of importFiles) {
+      const fileType = getFileTypeFromName(file.name);
+      if (!fileType || fileType === 'grid') {
+        console.warn(`Unsupported file type: ${file.name}`);
+        continue;
+      }
+
+      const sheet = sheets.getById(firstSheetId);
+      if (!sheet) {
+        throw new Error('Expected to find sheet in urlParams.loadAIAnalystPrompt');
+      }
+
+      const sheetBounds = sheet.bounds;
+      const insertAt: JsCoordinate =
+        sheetBounds.type === 'empty'
+          ? {
+              x: 1,
+              y: 1,
+            }
+          : {
+              x: Number(sheetBounds.max.x) + 2,
+              y: 1,
+            };
+
       await quadraticCore.importFile({
         file: file.data,
         fileName: file.name,
-        fileType: getExtension(file.name) as 'csv' | 'parquet' | 'excel',
+        fileType,
+        sheetId: firstSheetId,
+        location: insertAt,
         cursor: sheets.sheet.cursor.position.toString(),
-        sheetId: sheets.current,
-        location: { x: 1, y: 1 },
       });
     }
+
+    // reset the open sheet and cursor to the first sheet and first cell
+    sheets.current = firstSheetId;
+    sheets.sheet.cursor.moveTo(1, 1);
 
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({

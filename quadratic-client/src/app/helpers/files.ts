@@ -6,6 +6,16 @@ export function getExtension(name: string): string {
   return name.split('.').pop() || '';
 }
 
+export function getFileTypeFromName(name: string): 'csv' | 'excel' | 'parquet' | 'grid' | undefined {
+  const extension = getExtension(name);
+  if (extension === 'csv') return 'csv';
+  if (extension === 'xlsx') return 'excel';
+  if (extension === 'xls') return 'excel';
+  if (extension === 'parquet' || extension === 'parq' || extension === 'pqt') return 'parquet';
+  if (extension === 'grid') return 'grid';
+  return undefined;
+}
+
 export function hasExtension(name: string, extension: string): boolean {
   return new RegExp(`\\.${extension}$`, 'i').test(name);
 }
