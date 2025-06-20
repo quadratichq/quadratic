@@ -48,7 +48,7 @@ export const Component = () => {
   );
 
   const iframeUrl = useMemo(
-    () => (activeCheckpointId ? ROUTES.FILE(uuid) + `?checkpoint=${activeCheckpointId}&embed` : ''),
+    () => (activeCheckpointId ? ROUTES.FILE({ uuid, searchParams: `checkpoint=${activeCheckpointId}&embed` }) : ''),
     [activeCheckpointId, uuid]
   );
 
