@@ -1,7 +1,7 @@
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { apiClient } from '@/shared/api/apiClient';
 import { Rectangle, Renderer } from 'pixi.js';
-import { debugShowFileIO } from '../../debugFlags';
 import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
 
@@ -53,7 +53,7 @@ class Thumbnail {
 
               debugTimeCheck('thumbnail', 20);
               apiClient.files.thumbnail.update(uuid, blob).then(() => {
-                if (debugShowFileIO) {
+                if (debugFlag('debugShowFileIO')) {
                   console.log(`[Thumbnail] uploaded file (${Math.round(blob!.size / 1000)}kb).`);
                 }
               });

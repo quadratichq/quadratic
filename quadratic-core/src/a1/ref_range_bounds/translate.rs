@@ -3,16 +3,25 @@ use crate::{RefAdjust, RefError};
 use super::*;
 
 impl RefRangeBounds {
+    /// Returns true if any of the coordinates in the range are unbounded.
+    fn is_any_unbounded(self) -> bool {
+        let is_col_unbounded = self.end.col.is_unbounded();
+        let is_row_unbounded = self.end.row.is_unbounded();
+
+        is_col_unbounded || is_row_unbounded
+    }
     /// Adjusts coordinates by `adjust`. Returns an error if the result is out
     /// of bounds.
     ///
     /// **Note:** `adjust.sheet_id` is ignored by this method.
     #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn adjust(self, adjust: RefAdjust) -> Result<Self, RefError> {
-        Ok(Self {
-            start: self.start.adjust(adjust)?,
-            end: self.end.adjust(adjust)?,
-        })
+        let (start, end) = match self.is_any_unbounded() {
+            true => (self.start, self.end),
+            false => (self.start.adjust(adjust)?, self.end.adjust(adjust)?),
+        };
+
+        Ok(Self { start, end })
     }
     /// Adjusts coordinates by `adjust`, clamping the result within the sheet
     /// bounds. Returns `None` if the result is empty.
@@ -28,10 +37,15 @@ impl RefRangeBounds {
             return None;
         }
 
-        Some(Self {
-            start: self.start.saturating_adjust(adjust),
-            end: self.end.saturating_adjust(adjust),
-        })
+        let (start, end) = match self.is_any_unbounded() {
+            true => (self.start, self.end),
+            false => (
+                self.start.saturating_adjust(adjust),
+                self.end.saturating_adjust(adjust),
+            ),
+        };
+
+        Some(Self { start, end })
     }
 
     // TODO: remove this function when switching to u64
@@ -67,17 +81,17 @@ mod tests {
         assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:D4");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:D4");
 
-        // Test column range translation
+        // Test column range translation doesn't change
         let range = RefRangeBounds::test_a1("A:C");
         let adj = RefAdjust::new_translate(1, 0);
-        assert_eq!(range.adjust(adj).unwrap().to_string(), "B:D");
-        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B:D");
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "A:C");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A:C");
 
-        // Test row range translation
+        // Test row range translation doesn't change
         let range = RefRangeBounds::test_a1("1:3");
         let adj = RefAdjust::new_translate(0, 1);
-        assert_eq!(range.adjust(adj).unwrap().to_string(), "2:4");
-        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "2:4");
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "1:3");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "1:3");
 
         // Test negative translation
         let range = RefRangeBounds::test_a1("B2:D4");
@@ -91,11 +105,11 @@ mod tests {
         assert_eq!(range.adjust(adj).unwrap().to_string(), "A1:C3");
         assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "A1:C3");
 
-        // Ideally * remains unchanged, but that's impossible
+        // Ideally * remains unchanged
         let range = RefRangeBounds::test_a1("*");
         let adj = RefAdjust::new_translate(1, 1);
-        assert_eq!(range.adjust(adj).unwrap().to_string(), "B2:");
-        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "B2:");
+        assert_eq!(range.adjust(adj).unwrap().to_string(), "*");
+        assert_eq!(range.saturating_adjust(adj).unwrap().to_string(), "*");
 
         // Test negative translation capping
         let range = RefRangeBounds::test_a1("A12:Z12");
