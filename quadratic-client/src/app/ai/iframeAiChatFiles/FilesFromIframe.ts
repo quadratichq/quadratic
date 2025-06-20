@@ -18,7 +18,7 @@ class FilesFromIframe {
     this.iframe = document.createElement('iframe');
     this.iframe.src = `${IFRAME_ORIGIN}/iframe-indexeddb`;
     this.iframe.style.display = 'none';
-    this.iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-storage-access-by-user-activation');
+    this.iframe.setAttribute('sandbox', 'allow-same-origin allow-scripts');
 
     this.iframe.onerror = (error) => {
       console.error('[FilesFromIframe] Iframe failed to load:', error);
