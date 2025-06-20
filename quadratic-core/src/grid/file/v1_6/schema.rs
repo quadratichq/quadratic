@@ -273,6 +273,11 @@ pub enum ConnectionKind {
     Mysql,
     Mssql,
     Snowflake,
+    Cockroachdb,
+    Bigquery,
+    Mariadb,
+    Supabase,
+    Neon,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

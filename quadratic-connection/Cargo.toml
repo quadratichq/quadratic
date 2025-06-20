@@ -31,7 +31,7 @@ parquet = { version = "51.0.0", default-features = false, features = [
   "arrow",
   "arrow-array",
 ] }
-quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ "auth", "environment", "net", "quadratic-api", "sql" ] }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ "auth", "environment", "net", "quadratic-api", "sql", "test" ] }
 reqwest = { version = "0.11.22", features = [
   "cookies",
   "json",
@@ -60,6 +60,7 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]
+dotenv = "0.15.0"
 fake = { version = "2.9.1", features = ["derive"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "test",

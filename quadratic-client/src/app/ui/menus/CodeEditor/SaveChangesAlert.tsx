@@ -32,6 +32,7 @@ export const SaveChangesAlert = ({ editorInst }: SaveChangesAlertProps) => {
   }, [afterDialog]);
 
   const onSave = useCallback(() => {
+    console.log('onSave');
     saveAndRunCell();
     afterDialog();
   }, [afterDialog, saveAndRunCell]);

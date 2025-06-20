@@ -155,6 +155,31 @@ export function OnboardingBanner() {
                 <LanguageIcon language="SNOWFLAKE" /> Snowflake
               </Link>
             </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'COCKROACHDB')} onClick={trackCreateConnection}>
+                <LanguageIcon language="COCKROACHDB" /> CockroachDB
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'BIGQUERY')} onClick={trackCreateConnection}>
+                <LanguageIcon language="BIGQUERY" /> BigQuery
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MARIADB')} onClick={trackCreateConnection}>
+                <LanguageIcon language="MARIADB" /> MariaDB
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'SUPABASE')} onClick={trackCreateConnection}>
+                <LanguageIcon language="SUPABASE" /> Supabase
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'NEON')} onClick={trackCreateConnection}>
+                <LanguageIcon language="NEON" /> Neon
+              </Link>
+            </Button>
           </div>
         </>
       ),
