@@ -894,15 +894,16 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::{PasteSpecial, *};
-    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
+    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
     use crate::grid::sheet::validations::rules::ValidationRule;
-    use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
+    use crate::grid::{CellWrap, CellsAccessed, CodeCellLanguage, CodeRun, SheetId};
     use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use crate::{Rect, Value};
 
     fn paste(gc: &mut GridController, sheet_id: SheetId, x: i64, y: i64, html: String) {
         gc.paste_from_clipboard(
@@ -1981,17 +1982,64 @@ mod test {
 
     #[test]
     fn test_clipboard_code_operations_should_rerun() {
-        let (mut gc, sheet_id, _, _) = simple_csv();
-        let table_ref = TableRef::new("simple.csv");
-        let (selection, _) = simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:A3"));
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let pos_1_1 = SheetPos::new(sheet_id, 1, 1);
+        let pos_1_2 = SheetPos::new(sheet_id, 1, 2);
+        let sheet_rect = SheetRect::from_numbers(1, 1, 1, 1, sheet_id);
 
+        gc.set_cell_value(pos_1_1, "1".to_string(), None);
+
+        let mut transaction = PendingTransaction::default();
+        let mut cells_accessed = CellsAccessed::default();
+        cells_accessed.add_sheet_rect(sheet_rect);
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Formula,
+            code: "A1 + 5".into(),
+            std_err: None,
+            std_out: None,
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed: cells_accessed.clone(),
+        };
+        gc.finalize_data_table(
+            &mut transaction,
+            pos_1_2,
+            Some(DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                "Table 1",
+                Value::Single(CellValue::Number(6.into())),
+                false,
+                Some(false),
+                Some(false),
+                None,
+            )),
+            None,
+        );
+
+        // copying A1:A2 and pasting on B1 should rerun the code
+        let selection_rect = SheetRect::from_numbers(1, 1, 1, 2, sheet_id);
+        let selection = A1Selection::from_rect(selection_rect);
         let (_, js_clipboard) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
         let clipboard = Clipboard::decode(&js_clipboard.html).unwrap();
-
         let should_rerun = gc.clipboard_code_operations_should_rerun(
             &clipboard,
-            pos![A1],
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A2],
+            pos![B1].to_sheet_pos(sheet_id),
+        );
+        assert!(should_rerun);
+
+        // copying A2 and pasting on B1 should not rerun the code
+        let selection_rect = SheetRect::from_numbers(1, 2, 1, 1, sheet_id);
+        let selection = A1Selection::from_rect(selection_rect);
+        let (_, js_clipboard) = gc.cut_to_clipboard_operations(&selection, false).unwrap();
+        let clipboard = Clipboard::decode(&js_clipboard.html).unwrap();
+        let should_rerun = gc.clipboard_code_operations_should_rerun(
+            &clipboard,
+            pos![A2],
+            pos![B1].to_sheet_pos(sheet_id),
         );
         assert!(!should_rerun);
     }
