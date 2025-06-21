@@ -132,6 +132,9 @@ new aws.ec2.RouteTableAssociation(
     subnetId: connectionPublicSubnet1.id,
     routeTableId: publicRouteTable.id,
   },
+  {
+    replaceOnChanges: ["*"],
+  },
 );
 
 new aws.ec2.RouteTableAssociation(
@@ -139,6 +142,9 @@ new aws.ec2.RouteTableAssociation(
   {
     subnetId: connectionPublicSubnet2.id,
     routeTableId: publicRouteTable.id,
+  },
+  {
+    replaceOnChanges: ["*"],
   },
 );
 
@@ -148,6 +154,9 @@ new aws.ec2.RouteTableAssociation(
     subnetId: connectionPrivateSubnet1.id,
     routeTableId: privateRouteTable1.id,
   },
+  {
+    replaceOnChanges: ["*"],
+  },
 );
 
 new aws.ec2.RouteTableAssociation(
@@ -155,6 +164,9 @@ new aws.ec2.RouteTableAssociation(
   {
     subnetId: connectionPrivateSubnet2.id,
     routeTableId: privateRouteTable2.id,
+  },
+  {
+    replaceOnChanges: ["*"],
   },
 );
 
