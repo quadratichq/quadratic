@@ -37,7 +37,7 @@ const desiredCapacity = config.getNumber("connection-lb-desired-capacity") ?? 2;
 
 // Create an Launch Template
 const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
-  name: `connection-lt-${connectionSubdomain}-${Math.random().toString(36).substring(2, 8)}`,
+  name: `connection-lt-${connectionSubdomain}`,
   imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
   iamInstanceProfile: {
