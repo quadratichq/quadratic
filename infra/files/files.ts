@@ -25,9 +25,9 @@ const instance = new aws.ec2.Instance("files-instance", {
     Name: `files-instance-${filesSubdomain}`,
   },
   instanceType: instanceSize,
-  ami: latestAmazonLinuxAmi.id,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
+  ami: latestAmazonLinuxAmi.id,
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(

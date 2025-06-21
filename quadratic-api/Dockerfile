@@ -13,12 +13,9 @@ COPY ./quadratic-shared/package.json ./quadratic-shared/
 COPY ./quadratic-api/prisma/. ./quadratic-api/prisma
 
 RUN npm install --no-audit --no-fund
-RUN npm run postinstall --workspace=quadratic-api
 
 COPY quadratic-api ./quadratic-api
 COPY quadratic-shared ./quadratic-shared
-
-RUN npm run build --workspace=quadratic-api
 
 
 ###########################################################################################
@@ -27,13 +24,14 @@ RUN npm run build --workspace=quadratic-api
 FROM node:24-slim AS runtime
 WORKDIR /quadratic
 
-# Install openssl for ssh key generation
+# Install required packages with correct verification
 RUN apt update && \
   apt install -y openssl && \
   apt install -y openssh-client
 
-RUN npm i -g prisma
-
 COPY --from=builder /quadratic .
 
-CMD ["bash", "-c", "npm run prisma:migrate:deploy --workspace=quadratic-api && npm run start:prod --workspace=quadratic-api"]
+RUN npm run postinstall --workspace=quadratic-api
+RUN npm run build --workspace=quadratic-api
+
+CMD ["npm", "run", "start:prod"]
