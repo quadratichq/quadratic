@@ -14,7 +14,7 @@ pub fn unique_data_table_name(
     // replace spaces with underscores
     let name = name.replace(' ', "_");
 
-    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, multi_pos);
     let iter_names = a1_context.table_map.iter_rev_table_names();
     unique_name(&name, require_number, check_name, iter_names)
 }

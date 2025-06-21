@@ -22,7 +22,7 @@ impl Grid {
         require_number: bool,
     ) -> Result<()> {
         let unique_name =
-            unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
+            unique_data_table_name(new_name, require_number, Some(sheet_pos.into()), a1_context);
 
         self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
 

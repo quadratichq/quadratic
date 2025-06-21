@@ -87,10 +87,10 @@ pub struct PendingTransaction {
     pub sheet_borders: HashSet<SheetId>,
 
     /// code cells to update in a1_context
-    pub code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
+    pub code_cells_a1_context: HashMap<SheetId, HashSet<MultiPos>>,
 
     /// code cells to update
-    pub code_cells: HashMap<SheetId, HashSet<Pos>>,
+    pub code_cells: HashMap<SheetId, HashSet<MultiPos>>,
 
     /// html cells to update
     pub html_cells: HashMap<SheetId, HashSet<Pos>>,
@@ -386,43 +386,49 @@ impl PendingTransaction {
     }
 
     /// Adds a code cell to the transaction
-    pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+    pub fn add_code_cell(&mut self, multi_pos: MultiPos) {
         self.code_cells_a1_context
-            .entry(sheet_id)
+            .entry(multi_pos.sheet_id())
             .or_default()
-            .insert(pos);
+            .insert(multi_pos);
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
 
-        self.sheet_data_tables_cache.insert(sheet_id);
+        self.sheet_data_tables_cache.insert(multi_pos.sheet_id());
 
-        self.code_cells.entry(sheet_id).or_default().insert(pos);
+        self.code_cells
+            .entry(multi_pos.sheet_id())
+            .or_default()
+            .insert(multi_pos);
     }
 
     /// Adds a code cell, html cell and image cell to the transaction from a
     /// CodeRun. If the code_cell no longer exists, then it sends the empty code
     /// cell so the client can remove it.
-    pub fn add_from_code_run(
-        &mut self,
-        sheet_id: SheetId,
-        pos: Pos,
-        is_image: bool,
-        is_html: bool,
-    ) {
-        self.add_code_cell(sheet_id, pos);
+    pub fn add_from_code_run(&mut self, multi_pos: MultiPos, is_image: bool, is_html: bool) {
+        self.add_code_cell(multi_pos);
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
 
-        if is_html {
-            self.html_cells.entry(sheet_id).or_default().insert(pos);
-        }
+        // charts must be sheet_pos
+        if let MultiPos::SheetPos(sheet_pos) = multi_pos {
+            if is_html {
+                self.html_cells
+                    .entry(multi_pos.sheet_id())
+                    .or_default()
+                    .insert(sheet_pos.into());
+            }
 
-        if is_image {
-            self.image_cells.entry(sheet_id).or_default().insert(pos);
+            if is_image {
+                self.image_cells
+                    .entry(multi_pos.sheet_id())
+                    .or_default()
+                    .insert(sheet_pos.into());
+            }
         }
     }
 

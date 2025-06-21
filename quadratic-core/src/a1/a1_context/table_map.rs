@@ -129,11 +129,11 @@ impl TableMap {
         }
     }
 
-    pub fn contains_name(&self, table_name: &str, skip_sheet_pos: Option<SheetPos>) -> bool {
+    pub fn contains_name(&self, table_name: &str, skip_multi_pos: Option<MultiPos>) -> bool {
         let table = self.try_table(table_name);
         if let Some(table) = table {
-            if let Some(sheet_pos) = skip_sheet_pos {
-                table.sheet_id() != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()
+            if let Some(multi_pos) = skip_multi_pos {
+                table.multi_pos != multi_pos
             } else {
                 true
             }

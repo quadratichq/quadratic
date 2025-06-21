@@ -1,4 +1,4 @@
-use crate::a1::A1Context;
+use crate::{MultiPos, SheetPos, TablePos, a1::A1Context};
 
 use super::*;
 
@@ -7,7 +7,19 @@ impl Sheet {
     pub fn add_sheet_to_a1_context(&self, context: &mut A1Context) {
         context.sheet_map.insert(self);
         self.data_tables.expensive_iter().for_each(|(pos, table)| {
-            context.table_map.insert_table(self.id, *pos, table);
+            let table_sheet_pos = SheetPos::new(self.id, pos.x, pos.y);
+            let multi_pos = MultiPos::SheetPos(table_sheet_pos);
+            context.table_map.insert_table(multi_pos, *pos, table);
+
+            // Create the A1Context for any code tables within this data table.
+            if table.is_data_table() {
+                if let Some(tables) = &table.tables {
+                    tables.expensive_iter().for_each(|(pos, code_table)| {
+                        let multi_pos = MultiPos::TablePos(TablePos::new(table_sheet_pos, *pos));
+                        context.table_map.insert_table(multi_pos, *pos, code_table);
+                    });
+                }
+            }
         });
     }
 
