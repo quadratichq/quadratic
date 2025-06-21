@@ -274,10 +274,6 @@ jobs:
             - aws-infra-development
           EOF
 
-          pulumi config set api-subdomain api-pr-qa
-          pulumi config set connection-subdomain connection-pr-qa
-          pulumi config set files-subdomain files-pr-qa
-          pulumi config set multiplayer-subdomain multiplayer-pr-qa
           pulumi config set docker-image-tag pr-qa
 
           pulumi up -y

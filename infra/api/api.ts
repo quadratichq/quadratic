@@ -34,6 +34,8 @@ const instanceSize = config.require("api-instance-size");
 const minSize = config.getNumber("api-lb-min-size") ?? 2;
 const maxSize = config.getNumber("api-lb-max-size") ?? 5;
 const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
+const requestCountTarget =
+  config.getNumber("api-lb-request-count-target") ?? 1000;
 
 // Create an Launch Template
 const launchTemplate = new aws.ec2.LaunchTemplate("api-lt", {
@@ -229,7 +231,7 @@ const albRequestCountScalingPolicy = new aws.autoscaling.Policy(
         predefinedMetricType: "ALBRequestCountPerTarget",
         resourceLabel: pulumi.interpolate`${alb.arnSuffix}/${targetGroup.arnSuffix}`,
       },
-      targetValue: 1000.0,
+      targetValue: requestCountTarget,
     },
   },
   {
