@@ -185,14 +185,15 @@ pub enum Operation {
         // select the table after the operation
         select_table: bool,
     },
-    /// Runs the code cell at a specific position.
+
+    /// **Deprecated** Jun 2025 in favor of `ComputeCodeMultiPos`.
     ComputeCode {
         sheet_pos: SheetPos,
     },
 
-    /// Runs the code cell at a specific position in a data table.
-    ComputeCodeInTable {
-        table_pos: MultiPos,
+    /// Runs a code cell.
+    ComputeCodeMultiPos {
+        multi_pos: MultiPos,
     },
 
     /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.

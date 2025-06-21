@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    ClearOption, Pos, Rect, SheetPos,
+    ClearOption, MultiPos, Pos, Rect, SheetPos,
     controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{
         CellWrap, Sheet, SheetId,
@@ -20,7 +20,11 @@ impl DataTable {
         sheet: &Sheet,
         data_table_pos: Pos,
     ) -> Result<()> {
-        transaction.add_from_code_run(sheet.id, data_table_pos, self.is_image(), self.is_html());
+        transaction.add_from_code_run(
+            MultiPos::new_sheet_pos(sheet.id, data_table_pos.x, data_table_pos.y),
+            self.is_image(),
+            self.is_html(),
+        );
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());

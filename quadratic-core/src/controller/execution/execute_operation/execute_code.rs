@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, Pos, SheetPos, SheetRect,
+    CellValue, MultiPos, Pos, SheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -14,7 +14,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         output: &SheetRect,
-        skip_compute: Option<SheetPos>,
+        skip_compute: Option<MultiPos>,
     ) {
         if !transaction.is_user() {
             return;
@@ -23,20 +23,22 @@ impl GridController {
         self.get_dependent_code_cells(output)
             .iter()
             .for_each(|sheet_positions| {
-                sheet_positions.iter().for_each(|code_cell_sheet_pos| {
+                sheet_positions.iter().for_each(|code_cell_multi_pos| {
                     if !skip_compute
-                        .is_some_and(|skip_compute| skip_compute == *code_cell_sheet_pos)
+                        .is_some_and(|skip_compute| skip_compute == *code_cell_multi_pos)
                     {
                         // only add a compute operation if there isn't already one pending
                         if !transaction.operations.iter().any(|op| match op {
-                            Operation::ComputeCode { sheet_pos } => {
-                                code_cell_sheet_pos == sheet_pos
+                            Operation::ComputeCodeMultiPos { multi_pos } => {
+                                code_cell_multi_pos == multi_pos
                             }
                             _ => false,
                         }) {
-                            transaction.operations.push_back(Operation::ComputeCode {
-                                sheet_pos: *code_cell_sheet_pos,
-                            });
+                            transaction
+                                .operations
+                                .push_back(Operation::ComputeCodeMultiPos {
+                                    multi_pos: *code_cell_multi_pos,
+                                });
                         }
                     }
                 });
@@ -80,7 +82,6 @@ impl GridController {
                 });
 
             transaction.add_from_code_run(
-                sheet_pos.sheet_id,
                 sheet_pos.into(),
                 data_table.is_image(),
                 data_table.is_html(),
@@ -120,7 +121,6 @@ impl GridController {
                 });
 
             transaction.add_from_code_run(
-                sheet_pos.sheet_id,
                 sheet_pos.into(),
                 data_table.is_image(),
                 data_table.is_html(),
@@ -139,56 +139,28 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            if !transaction.is_user_undo_redo() && !transaction.is_server() {
-                dbgjs!("Only user / undo / redo / server transaction should have a ComputeCode");
-                return;
-            }
-            let sheet_id = sheet_pos.sheet_id;
-            let Some(sheet) = self.try_sheet(sheet_id) else {
-                // sheet may have been deleted in a multiplayer operation
-                return;
-            };
-            let pos: Pos = sheet_pos.into();
-
-            // We need to get the corresponding CellValue::Code
-            let (language, code) = match sheet.cell_value(pos) {
-                Some(CellValue::Code(value)) => (value.language, value.code),
-
-                // handles the case where the ComputeCode operation is running on a non-code cell (maybe changed b/c of a MP operation?)
-                _ => return,
-            };
-
-            match language {
-                CodeCellLanguage::Python => {
-                    self.run_python(transaction, sheet_pos, code);
-                }
-                CodeCellLanguage::Formula => {
-                    self.run_formula(transaction, sheet_pos, code);
-                }
-                CodeCellLanguage::Connection { kind, id } => {
-                    self.run_connection(transaction, sheet_pos, code, kind, id);
-                }
-                CodeCellLanguage::Javascript => {
-                    self.run_javascript(transaction, sheet_pos, code);
-                }
-                CodeCellLanguage::Import => (), // no-op
-            }
-        }
+            self.execute_compute_code_multi_pos(transaction, Operation::ComputeCodeMultiPos {
+                multi_pos: MultiPos::SheetPos(sheet_pos),
+            });
+            return;
     }
 
-    pub fn execute_compute_code_in_table(
+    pub fn execute_compute_code_multi_pos(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::ComputeCodeInTable { table_pos } = op {
-            let Some(code_cell) = table_pos.code_cell_from_gc(self) else {
+        if let Operation::ComputeCodeMultiPos { multi_pos } = op {
+            let Some(code_cell) = match multi_pos {
+                MultiPos::SheetPos(sheet_pos) => sheet_pos,
+                MultiPos::TablePos(table_pos) => table_pos.code_cell_from_gc(self),
+            } else {
                 return;
             };
 
             match &code_cell.language {
                 CodeCellLanguage::Python => {
-                    self.run_python_in_table(transaction, table_pos, code_cell.code.clone());
+                    self.run_python(transaction, table_pos, code_cell.code.clone());
                 }
                 CodeCellLanguage::Formula => {
                     // self.run_formula(transaction, table_pos, code);

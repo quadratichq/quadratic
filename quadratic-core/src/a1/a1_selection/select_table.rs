@@ -215,7 +215,7 @@ impl A1Selection {
 
         self.ranges.push(table_ref);
         self.cursor = Pos { x, y };
-        self.sheet_id = table.sheet_id;
+        self.sheet_id = table.sheet_id();
     }
 }
 

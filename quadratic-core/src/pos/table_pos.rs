@@ -98,6 +98,12 @@ impl TablePos {
     pub fn sheet_id(&self) -> SheetId {
         self.table_sheet_pos.sheet_id
     }
+
+    /// Used to change sheet_id in tests
+    #[cfg(test)]
+    pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
+        self.table_sheet_pos.sheet_id = sheet_id;
+    }
 }
 
 /// This should not be used in production code, since TablePos -> Pos cannot be

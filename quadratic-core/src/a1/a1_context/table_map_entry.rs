@@ -58,6 +58,12 @@ impl TableMapEntry {
         self.multi_pos.sheet_id()
     }
 
+    /// Used to change sheet_id in tests.
+    #[cfg(test)]
+    pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
+        self.multi_pos.set_sheet_id(sheet_id);
+    }
+
     /// Returns the start and end of the table in row coordinates relative to
     /// the sheet.
     pub fn to_sheet_rows(&self) -> (i64, i64) {

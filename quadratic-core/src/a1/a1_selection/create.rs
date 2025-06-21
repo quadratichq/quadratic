@@ -141,7 +141,7 @@ impl A1Selection {
             None
         } else {
             Some(Self {
-                sheet_id: table_entry.sheet_id,
+                sheet_id: table_entry.sheet_id(),
                 cursor,
                 ranges: ranges
                     .into_iter()

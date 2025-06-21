@@ -22,7 +22,7 @@ impl TableRef {
                         .into_iter()
                         .map(|r| {
                             if let Some(table_ref) =
-                                r.check_for_table_ref(table.sheet_id, a1_context)
+                                r.check_for_table_ref(table.sheet_id(), a1_context)
                             {
                                 table_ref
                             } else {

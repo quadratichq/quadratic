@@ -32,6 +32,15 @@ impl MultiPos {
             MultiPos::TablePos(table_pos) => table_pos.to_sheet_pos(sheet),
         }
     }
+
+    /// Used to change sheet_id in tests
+    #[cfg(test)]
+    pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
+        match self {
+            MultiPos::SheetPos(sheet_pos) => sheet_pos.sheet_id = sheet_id,
+            MultiPos::TablePos(table_pos) => table_pos.set_sheet_id(sheet_id),
+        }
+    }
 }
 
 impl From<SheetPos> for MultiPos {

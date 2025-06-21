@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    Pos, Rect,
+    MultiPos, Pos, Rect,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -46,7 +46,8 @@ impl Sheet {
         for pos in dt_to_delete.into_iter() {
             if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
             {
-                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                let multi_pos = MultiPos::SheetPos(SheetPos::new(self.id, pos.x, pos.y));
+                transaction.add_from_code_run(multi_pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction
                     .reverse_operations

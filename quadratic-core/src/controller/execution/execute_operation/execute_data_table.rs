@@ -1,5 +1,5 @@
 use crate::{
-    ArraySize, CellValue, ClearOption, Pos, Rect, SheetPos, SheetRect,
+    ArraySize, CellValue, ClearOption, MultiPos, Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     cellvalue::Import,
@@ -147,7 +147,7 @@ impl GridController {
             data_table.name = unique_data_table_name(
                 data_table.name(),
                 false,
-                Some(sheet_pos),
+                Some(MultiPos::SheetPos(sheet_pos)),
                 self.a1_context(),
             )
             .into();
@@ -288,7 +288,11 @@ impl GridController {
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let mut old_values = sheet.get_code_cell_values(rect);
 
-            transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_code_cell(MultiPos::new_sheet_pos(
+                sheet_id,
+                data_table_pos.x,
+                data_table_pos.y,
+            ));
             transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
             let rows = data_table.get_rows_with_wrap_in_rect(&data_table_pos, &rect, true);
             if !rows.is_empty() {
@@ -530,7 +534,11 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-            transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_code_cell(MultiPos::new_sheet_pos(
+                sheet_id,
+                data_table_pos.x,
+                data_table_pos.y,
+            ));
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::AddDataTable {
@@ -605,7 +613,11 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-            transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_code_cell(MultiPos::new_sheet_pos(
+                sheet_id,
+                data_table_pos.x,
+                data_table_pos.y,
+            ));
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SwitchDataTableKind {
@@ -818,7 +830,11 @@ impl GridController {
                         false,
                     )?;
                     // mark code cells dirty to update meta data
-                    transaction.add_code_cell(sheet_id, data_table_pos);
+                    transaction.add_code_cell(MultiPos::new_sheet_pos(
+                        sheet_id,
+                        data_table_pos.x,
+                        data_table_pos.y,
+                    ));
                 }
             }
 
@@ -883,9 +899,11 @@ impl GridController {
                         }
                     }
 
+                    let multi_pos =
+                        MultiPos::new_sheet_pos(sheet_id, data_table_pos.x, data_table_pos.y);
                     old_alternating_colors = alternating_colors.map(|alternating_colors| {
                         // mark code cell dirty to update alternating color
-                        transaction.add_code_cell(sheet_id, data_table_pos);
+                        transaction.add_code_cell(multi_pos);
                         std::mem::replace(&mut dt.alternating_colors, alternating_colors)
                     });
 
@@ -893,7 +911,7 @@ impl GridController {
                         let old_columns = dt.column_headers.replace(columns);
                         dt.normalize_column_header_names();
                         // mark code cells as dirty to updata meta data
-                        transaction.add_code_cell(sheet_id, data_table_pos);
+                        transaction.add_code_cell(multi_pos);
                         old_columns
                     });
 
@@ -1428,7 +1446,11 @@ impl GridController {
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
-            transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_code_cell(MultiPos::new_sheet_pos(
+                sheet_id,
+                data_table_pos.x,
+                data_table_pos.y,
+            ));
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_id);
 
@@ -1789,7 +1811,11 @@ impl GridController {
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
-            transaction.add_code_cell(sheet_id, data_table_pos);
+            transaction.add_code_cell(MultiPos::new_sheet_pos(
+                sheet_id,
+                data_table_pos.x,
+                data_table_pos.y,
+            ));
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_id);
 
