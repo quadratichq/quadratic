@@ -274,12 +274,7 @@ jobs:
             - aws-infra-development
           EOF
 
-          pulumi config set multiplayer-subdomain multiplayer-pr-qa
-          pulumi config set files-subdomain files-pr-qa
-          pulumi config set connection-subdomain connection-pr-qa
           pulumi config set docker-image-tag pr-qa
-          pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
-          pulumi config set is-preview true
 
           pulumi up -y
         env:
@@ -302,8 +297,10 @@ jobs:
         service:
           - name: client
             url: "https://qa.quadratic-preview.com/version.json"
-          - name: api
+          - name: api (heroku)
             url: "https://quadratic-staging.herokuapp.com/health"
+          - name: api (aws)
+            url: "https://api-pr-qa.quadratic-preview.com/health"
           - name: multiplayer
             url: "https://multiplayer-pr-qa.quadratic-preview.com/health"
           - name: connection
