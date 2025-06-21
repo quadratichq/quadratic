@@ -138,7 +138,7 @@ impl RegionMap {
             }),
         )
         .filter(|(pos, (region_sheet, _region_rect))| {
-            pos.sheet_id == sheet_id || *region_sheet == sheet_id
+            pos.sheet_id() == sheet_id || *region_sheet == sheet_id
         })
         .collect()
     }
@@ -195,7 +195,7 @@ impl PartialEq for RegionMap {
         let pos_to_region_self: HashSet<(MultiPos, (SheetId, Rect))> = self
             .pos_to_region
             .iter()
-            .flat_map(|(sheet_id, map)| {
+            .flat_map(|(_, map)| {
                 map.iter()
                     .flat_map(|(pos, regions)| regions.iter().map(|&region| (*pos, region)))
             })

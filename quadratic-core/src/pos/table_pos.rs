@@ -21,6 +21,23 @@ impl TablePos {
         }
     }
 
+    /// Properly converts a TablePos to a SheetPos. (This is relative to the
+    /// current state of the sheet.)
+    pub fn to_sheet_pos(&self, sheet: &Sheet) -> Option<SheetPos> {
+        if let Some(pos) = self.translate_pos(sheet) {
+            Some(SheetPos {
+                x: self.table_sheet_pos.x + pos.x,
+                y: self.table_sheet_pos.y + pos.y,
+                sheet_id: self.table_sheet_pos.sheet_id,
+            })
+        } else {
+            None
+        }
+    }
+
+    /// Used by tests as a shortcut to get a sheet pos from a table pos without checking
+    /// the sheet.
+    #[cfg(test)]
     pub fn to_absolute_sheet_pos(&self) -> SheetPos {
         SheetPos {
             x: self.table_sheet_pos.x + self.pos.x,

@@ -2,12 +2,12 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    CellValue, Pos, Rect, Value,
+    CellValue, MultiPos, Pos, Rect, Value,
     a1::A1Context,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
     grid::{
-        CodeCellLanguage, DataTableKind,
+        CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
     },
@@ -274,6 +274,20 @@ impl Sheet {
         self.data_table_that_contains(pos)
             .filter(|(_, table)| table.is_data_table())
             .map(|(table_pos, _)| table_pos)
+    }
+
+    /// Returns the code cell value at the MultiPos.
+    pub fn code_value(&self, multi_pos: MultiPos) -> Option<&CodeCellValue> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                if let Some(CellValue::Code(code)) = self.cell_value_ref(sheet_pos.into()) {
+                    Some(&code)
+                } else {
+                    None
+                }
+            }
+            MultiPos::TablePos(table_pos) => table_pos.code_cell(self),
+        }
     }
 }
 

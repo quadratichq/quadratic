@@ -1,13 +1,13 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Pos, Rect, SheetPos,
+    MultiPos, Pos, Rect, SheetPos,
     grid::{CodeCellLanguage, DataTable, SheetId},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMapEntry {
-    pub sheet_id: SheetId,
+    pub multi_pos: MultiPos,
     pub table_name: String,
     pub visible_columns: Vec<String>,
     pub all_columns: Vec<String>,
@@ -20,14 +20,18 @@ pub struct TableMapEntry {
 }
 
 impl TableMapEntry {
-    pub fn from_table(sheet_id: SheetId, pos: Pos, table: &DataTable) -> Self {
+    /// Creates a TableMapEntry from a DataTable.
+    ///
+    /// The translate_pos is used to translate the code's pos from a MultiPos to
+    /// a Pos (which requires the sheet).
+    pub fn from_table(multi_pos: MultiPos, translated_pos: Pos, table: &DataTable) -> Self {
         if table.has_spill() || table.has_error() {
             Self {
-                sheet_id,
+                multi_pos,
                 table_name: table.name().to_string(),
                 visible_columns: table.columns_map(false),
                 all_columns: table.columns_map(true),
-                bounds: table.output_rect(pos, false),
+                bounds: table.output_rect(translated_pos, false),
                 show_name: false,
                 show_columns: false,
                 is_html_image: false,
@@ -36,11 +40,11 @@ impl TableMapEntry {
             }
         } else {
             Self {
-                sheet_id,
+                multi_pos,
                 table_name: table.name().to_string(),
                 visible_columns: table.columns_map(false),
                 all_columns: table.columns_map(true),
-                bounds: table.output_rect(pos, false),
+                bounds: table.output_rect(translated_pos, false),
                 show_name: table.get_show_name(),
                 show_columns: table.get_show_columns(),
                 is_html_image: table.is_html() || table.is_image(),
@@ -48,6 +52,10 @@ impl TableMapEntry {
                 language: table.get_language(),
             }
         }
+    }
+
+    pub fn sheet_id(&self) -> SheetId {
+        self.multi_pos.sheet_id()
     }
 
     /// Returns the start and end of the table in row coordinates relative to
@@ -150,7 +158,7 @@ impl TableMapEntry {
 
     /// Returns true if the table contains the given position.
     pub fn contains(&self, pos: SheetPos) -> bool {
-        self.sheet_id == pos.sheet_id && self.bounds.contains(pos.into())
+        self.sheet_id() == pos.sheet_id && self.bounds.contains(pos.into())
     }
 
     /// Returns the column name from the index.
@@ -201,7 +209,7 @@ impl TableMapEntry {
             c.iter().map(|c| c.to_string()).collect()
         });
         TableMapEntry {
-            sheet_id: SheetId::TEST,
+            multi_pos: MultiPos::new_sheet_pos(SheetId::TEST, bounds.min.x, bounds.min.y),
             table_name: table_name.to_string(),
             visible_columns,
             all_columns,
@@ -306,8 +314,8 @@ mod tests {
             CodeCellLanguage::Import,
         );
 
-        assert!(entry.contains(SheetPos::new(entry.sheet_id, 2, 2)));
-        assert!(!entry.contains(SheetPos::new(entry.sheet_id, 0, 0)));
+        assert!(entry.contains(SheetPos::new(entry.sheet_id(), 2, 2)));
+        assert!(!entry.contains(SheetPos::new(entry.sheet_id(), 0, 0)));
         assert!(!entry.contains(SheetPos::new(SheetId::new(), 2, 2))); // Different sheet
     }
 

@@ -1,6 +1,9 @@
 #[cfg(test)]
 use crate::{Pos, SheetRect};
-use crate::{SheetPos, TablePos, grid::SheetId};
+use crate::{
+    SheetPos, TablePos,
+    grid::{Sheet, SheetId},
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -10,10 +13,23 @@ pub enum MultiPos {
 }
 
 impl MultiPos {
+    pub fn new_sheet_pos(sheet_id: SheetId, x: i64, y: i64) -> Self {
+        MultiPos::SheetPos(SheetPos { sheet_id, x, y })
+    }
+
     pub fn sheet_id(&self) -> SheetId {
         match self {
             MultiPos::SheetPos(sheet_pos) => sheet_pos.sheet_id,
             MultiPos::TablePos(table_pos) => table_pos.sheet_id(),
+        }
+    }
+
+    /// Properly converts a MultiPos to a SheetPos. (For TablePos, this is
+    /// relative to the current state of the sheet.)
+    pub fn to_sheet_pos(&self, sheet: &Sheet) -> Option<SheetPos> {
+        match self {
+            MultiPos::SheetPos(sheet_pos) => Some(*sheet_pos),
+            MultiPos::TablePos(table_pos) => table_pos.to_sheet_pos(sheet),
         }
     }
 }
