@@ -17,12 +17,12 @@ const internetGateway = new aws.ec2.InternetGateway("connection-igw", {
 });
 
 // Create Elastic IPs
-export const connectionEip1 = new aws.ec2.Eip("nat-eip-1", {
-  vpc: true,
+export const connectionEip1 = new aws.ec2.Eip("connection-nat-eip-1", {
+  domain: "vpc",
 });
 
-export const connectionEip2 = new aws.ec2.Eip("nat-eip-2", {
-  vpc: true,
+export const connectionEip2 = new aws.ec2.Eip("connection-nat-eip-2", {
+  domain: "vpc",
 });
 
 // Create public subnets
@@ -49,16 +49,16 @@ export const connectionPublicSubnet2 = new aws.ec2.Subnet(
 );
 
 // Create a NAT Gateway in each public subnet
-const natGateway1 = new aws.ec2.NatGateway("nat-gateway-1", {
+const natGateway1 = new aws.ec2.NatGateway("connection-nat-gateway-1", {
   allocationId: connectionEip1.id,
   subnetId: connectionPublicSubnet1.id,
-  tags: { Name: "nat-gateway-1" },
+  tags: { Name: "connection-nat-gateway-1" },
 });
 
-const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
+const natGateway2 = new aws.ec2.NatGateway("connection-nat-gateway-2", {
   allocationId: connectionEip2.id,
   subnetId: connectionPublicSubnet2.id,
-  tags: { Name: "nat-gateway-2" },
+  tags: { Name: "connection-nat-gateway-2" },
 });
 
 // Create private subnets
@@ -83,59 +83,80 @@ export const connectionPrivateSubnet2 = new aws.ec2.Subnet(
 );
 
 // Create route tables
-const publicRouteTable = new aws.ec2.RouteTable("public-route-table", {
-  vpcId: connectionVPC.id,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      gatewayId: internetGateway.id,
-    },
-  ],
-  tags: { Name: "public-route-table" },
-});
+const publicRouteTable = new aws.ec2.RouteTable(
+  "connection-public-route-table",
+  {
+    vpcId: connectionVPC.id,
+    routes: [
+      {
+        cidrBlock: "0.0.0.0/0",
+        gatewayId: internetGateway.id,
+      },
+    ],
+    tags: { Name: "connection-public-route-table" },
+  },
+);
 
-const privateRouteTable1 = new aws.ec2.RouteTable("private-route-table-1", {
-  vpcId: connectionVPC.id,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      natGatewayId: natGateway1.id,
-    },
-  ],
-  tags: { Name: "private-route-table-1" },
-});
+const privateRouteTable1 = new aws.ec2.RouteTable(
+  "connection-private-route-table-1",
+  {
+    vpcId: connectionVPC.id,
+    routes: [
+      {
+        cidrBlock: "0.0.0.0/0",
+        natGatewayId: natGateway1.id,
+      },
+    ],
+    tags: { Name: "connection-private-route-table-1" },
+  },
+);
 
-const privateRouteTable2 = new aws.ec2.RouteTable("private-route-table-2", {
-  vpcId: connectionVPC.id,
-  routes: [
-    {
-      cidrBlock: "0.0.0.0/0",
-      natGatewayId: natGateway2.id,
-    },
-  ],
-  tags: { Name: "private-route-table-2" },
-});
+const privateRouteTable2 = new aws.ec2.RouteTable(
+  "connection-private-route-table-2",
+  {
+    vpcId: connectionVPC.id,
+    routes: [
+      {
+        cidrBlock: "0.0.0.0/0",
+        natGatewayId: natGateway2.id,
+      },
+    ],
+    tags: { Name: "connection-private-route-table-2" },
+  },
+);
 
 // Associate subnets with route tables
-new aws.ec2.RouteTableAssociation("public-route-table-association-1", {
-  subnetId: connectionPublicSubnet1.id,
-  routeTableId: publicRouteTable.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "connection-public-route-table-association-1",
+  {
+    subnetId: connectionPublicSubnet1.id,
+    routeTableId: publicRouteTable.id,
+  },
+);
 
-new aws.ec2.RouteTableAssociation("public-route-table-association-2", {
-  subnetId: connectionPublicSubnet2.id,
-  routeTableId: publicRouteTable.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "connection-public-route-table-association-2",
+  {
+    subnetId: connectionPublicSubnet2.id,
+    routeTableId: publicRouteTable.id,
+  },
+);
 
-new aws.ec2.RouteTableAssociation("private-route-table-association-1", {
-  subnetId: connectionPrivateSubnet1.id,
-  routeTableId: privateRouteTable1.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "connection-private-route-table-association-1",
+  {
+    subnetId: connectionPrivateSubnet1.id,
+    routeTableId: privateRouteTable1.id,
+  },
+);
 
-new aws.ec2.RouteTableAssociation("private-route-table-association-2", {
-  subnetId: connectionPrivateSubnet2.id,
-  routeTableId: privateRouteTable2.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "connection-private-route-table-association-2",
+  {
+    subnetId: connectionPrivateSubnet2.id,
+    routeTableId: privateRouteTable2.id,
+  },
+);
 
 // Create a Security Group for the Connection NLB
 export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
@@ -156,7 +177,7 @@ export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
   },
 );
 
-// Create a Security Group for the Multiplayer EC2 instance
+// Create a Security Group for the Connection EC2 instance
 export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
   "connection-sg-1",
   {
