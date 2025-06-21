@@ -39,7 +39,7 @@ const requestCountTarget =
 
 // Create an Launch Template
 const launchTemplate = new aws.ec2.LaunchTemplate("api-lt", {
-  name: `api-lt-${apiSubdomain}`,
+  name: `api-lt-${apiSubdomain}-${Math.random().toString(36).substring(2, 8)}`,
   imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
   iamInstanceProfile: {
