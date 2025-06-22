@@ -52,7 +52,7 @@ jobs:
           # Write to client.env file to be used in Dockerfile
           echo "$ENV_VARS" > ./quadratic-client/client.env
           # Remove quotes if present
-          sed -i 's/"//g' ./quadratic-client/client.env
+          sed -i 's/="\(.*\)"$/=\1/; s/='"'"'\(.*\)'"'"'$/=\1/' ./quadratic-client/client.env
 
           # Create hash from environment variables
           ENV_HASH=$(echo "$ENV_VARS" | sha256sum | cut -d' ' -f1)
