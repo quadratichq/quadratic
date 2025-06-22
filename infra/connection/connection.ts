@@ -1,6 +1,7 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
@@ -31,71 +32,42 @@ const connectionPulumiEscEnvironmentName = config.require(
 const domain = config.require("domain");
 const certificateArn = config.require("certificate-arn");
 const instanceSize = config.require("connection-instance-size");
-const minSize = config.getNumber("connection-lb-min-size") ?? 2;
-const maxSize = config.getNumber("connection-lb-max-size") ?? 5;
-const desiredCapacity = config.getNumber("connection-lb-desired-capacity") ?? 2;
 
-// Create an Launch Template
-const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
-  name: `connection-lt-${connectionSubdomain}-${Math.random().toString(36).substring(2, 8)}`,
-  imageId: latestAmazonLinuxAmi.id,
+// Create an Auto Scaling Group
+const launchConfiguration = new aws.ec2.LaunchConfiguration("connection-lc", {
   instanceType: instanceSize,
-  iamInstanceProfile: {
-    name: instanceProfileIAMContainerRegistry.name,
-  },
-  vpcSecurityGroupIds: [connectionEc2SecurityGroup.id],
-  userData: pulumi
-    .all([connectionEip1.publicIp, connectionEip2.publicIp])
-    .apply(([eip1, eip2]) => {
-      const script = runDockerImageBashScript(
+  iamInstanceProfile: instanceProfileIAMContainerRegistry,
+  imageId: latestAmazonLinuxAmi.id,
+  securityGroups: [connectionEc2SecurityGroup.id],
+  userData: connectionEip1.publicIp.apply((publicIp1) =>
+    connectionEip2.publicIp.apply((publicIp2) =>
+      runDockerImageBashScript(
         connectionECRName,
         dockerImageTag,
         connectionPulumiEscEnvironmentName,
         {
           QUADRATIC_API_URI: quadraticApiUri,
-          STATIC_IPS: `${eip1},${eip2}`,
+          STATIC_IPS: `${publicIp1},${publicIp2}`,
         },
         true,
-      );
-      return Buffer.from(script).toString("base64");
-    }),
-  tagSpecifications: [
-    {
-      resourceType: "instance",
-      tags: {
-        Name: `connection-instance-${connectionSubdomain}`,
-      },
-    },
-  ],
-  monitoring: {
-    enabled: true,
-  },
+      ),
+    ),
+  ),
 });
 
 // Create a new Target Group
 const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
-  tags: { Name: `connection-tg-${connectionSubdomain}` },
-
   port: 80,
   protocol: "TCP",
   targetType: "instance",
   vpcId: connectionVPC.id,
-
-  // Health check configuration
-  healthCheck: {
-    enabled: true,
-    path: "/health",
-    protocol: "HTTP",
-    healthyThreshold: 2,
-    unhealthyThreshold: 2,
-    timeout: 5,
-    interval: 10,
-    matcher: "200",
-  },
-
-  // Connection draining
-  deregistrationDelay: 30,
 });
+
+// Calculate the number of instances to launch
+let minSize = 2;
+let maxSize = 5;
+let desiredCapacity = 2;
+if (isPreviewEnvironment) minSize = maxSize = desiredCapacity = 1;
 
 const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
   tags: [
@@ -109,10 +81,7 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
     connectionPrivateSubnet1.id,
     connectionPrivateSubnet2.id,
   ],
-  launchTemplate: {
-    id: launchTemplate.id,
-    version: launchTemplate.latestVersion.apply((v) => v.toString()),
-  },
+  launchConfiguration: launchConfiguration.id,
   minSize,
   maxSize,
   desiredCapacity,
@@ -124,13 +93,6 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
       instanceWarmup: "60",
     },
   },
-  enabledMetrics: [
-    "GroupMinSize",
-    "GroupMaxSize",
-    "GroupDesiredCapacity",
-    "GroupInServiceInstances",
-    "GroupTotalInstances",
-  ],
 });
 
 // Create a new Network Load Balancer
@@ -161,86 +123,6 @@ const nlbListener = new aws.lb.Listener("connection-nlb-listener", {
   ],
 });
 
-// Add target-tracking auto-scaling policy for CPU
-const targetTrackingScalingPolicy = new aws.autoscaling.Policy(
-  "connection-target-tracking-scaling",
-  {
-    autoscalingGroupName: autoScalingGroup.name,
-    policyType: "TargetTrackingScaling",
-    targetTrackingConfiguration: {
-      predefinedMetricSpecification: {
-        predefinedMetricType: "ASGAverageCPUUtilization",
-      },
-      targetValue: 70.0,
-    },
-  },
-);
-
-// Additional scaling policy for Network Out
-const networkOutScalingPolicy = new aws.autoscaling.Policy(
-  "connection-network-out-scaling",
-  {
-    autoscalingGroupName: autoScalingGroup.name,
-    policyType: "TargetTrackingScaling",
-    targetTrackingConfiguration: {
-      predefinedMetricSpecification: {
-        predefinedMetricType: "ASGAverageNetworkOut",
-      },
-      targetValue: 500000000, // 500 MB/s per instance
-    },
-  },
-);
-
-// Create Global Accelerator
-const connectionGlobalAccelerator = new aws.globalaccelerator.Accelerator(
-  "connection-global-accelerator",
-  {
-    name: `connection-global-accelerator-${connectionSubdomain}`,
-    ipAddressType: "IPV4",
-    enabled: true,
-    tags: {
-      Name: "connection-global-accelerator",
-      Environment: pulumi.getStack(),
-    },
-  },
-);
-
-const connectionGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
-  "connection-global-accelerator-listener",
-  {
-    acceleratorArn: connectionGlobalAccelerator.id,
-    protocol: "TCP",
-    portRanges: [
-      {
-        fromPort: 443,
-        toPort: 443,
-      },
-    ],
-    clientAffinity: "SOURCE_IP",
-  },
-);
-
-const connectionGlobalAcceleratorEndpointGroup =
-  new aws.globalaccelerator.EndpointGroup(
-    "connection-globalaccelerator-endpoint-group",
-    {
-      listenerArn: connectionGlobalAcceleratorListener.id,
-      endpointConfigurations: [
-        {
-          endpointId: nlb.arn,
-          weight: 100,
-          clientIpPreservationEnabled: false,
-        },
-      ],
-      endpointGroupRegion: aws.getRegionOutput().name,
-      healthCheckProtocol: "TCP",
-      healthCheckPort: 443,
-      healthCheckIntervalSeconds: 30,
-      thresholdCount: 3,
-      trafficDialPercentage: 100,
-    },
-  );
-
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
   aws.route53.getZone(
@@ -251,15 +133,15 @@ const hostedZone = pulumi.output(
   ),
 );
 
-// Create a Route 53 record pointing to Global Accelerator
+// Create a Route 53 record pointing to the NLB
 const dnsRecord = new aws.route53.Record("connection-r53-record", {
   zoneId: hostedZone.id,
-  name: `${connectionSubdomain}.${domain}`,
+  name: `${connectionSubdomain}.${domain}`, // subdomain you want to use
   type: "A",
   aliases: [
     {
-      name: connectionGlobalAccelerator.dnsName,
-      zoneId: "Z2BJ6XQ5FK7U4H", // AWS Global Accelerator zone ID
+      name: nlb.dnsName,
+      zoneId: nlb.zoneId,
       evaluateTargetHealth: true,
     },
   ],

@@ -265,7 +265,6 @@ jobs:
 
           pulumi config set docker-image-tag ${{ github.sha }}
 
-          pulumi refresh -y
           pulumi up -y
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -286,10 +285,8 @@ jobs:
         service:
           - name: client
             url: "https://app.quadratichq.com/version.json"
-          - name: api-heroku
+          - name: api
             url: "https://api.quadratichq.com/health"
-          - name: api-aws
-            url: "https://api-aws.quadratichq.com/health"
           - name: multiplayer
             url: "https://multiplayer.quadratichq.com/health"
           - name: connection

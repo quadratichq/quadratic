@@ -18,11 +18,11 @@ const internetGateway = new aws.ec2.InternetGateway("connection-igw", {
 
 // Create Elastic IPs
 export const connectionEip1 = new aws.ec2.Eip("nat-eip-1", {
-  domain: "vpc",
+  vpc: true,
 });
 
 export const connectionEip2 = new aws.ec2.Eip("nat-eip-2", {
-  domain: "vpc",
+  vpc: true,
 });
 
 // Create public subnets
@@ -60,6 +60,7 @@ const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
   subnetId: connectionPublicSubnet2.id,
   tags: { Name: "nat-gateway-2" },
 });
+
 // Create private subnets
 export const connectionPrivateSubnet1 = new aws.ec2.Subnet(
   "connection-private-subnet-1",
@@ -155,7 +156,7 @@ export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
   },
 );
 
-// Create a Security Group for the Connection EC2 instance
+// Create a Security Group for the Multiplayer EC2 instance
 export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
   "connection-sg-1",
   {

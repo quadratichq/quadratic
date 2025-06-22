@@ -27,6 +27,14 @@ app.use(helmet());
 // set CORS origin from env variable
 app.use(cors({ origin: CORS }));
 
+// Middleware to redirect HTTP requests to HTTPS
+app.use((req, res, next) => {
+  if (req.headers['x-forwarded-proto'] !== 'https' && NODE_ENV === 'production') {
+    return res.redirect(`https://${req.hostname}${req.url}`);
+  }
+  return next();
+});
+
 // Health-check
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'OK' });
