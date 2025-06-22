@@ -105,25 +105,49 @@ const privateRouteTable2 = new aws.ec2.RouteTable("api-private-route-table-2", {
 });
 
 // Associate subnets with route tables
-new aws.ec2.RouteTableAssociation("api-public-route-table-association-1", {
-  subnetId: apiPublicSubnet1.id,
-  routeTableId: publicRouteTable.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "api-public-route-table-association-1",
+  {
+    subnetId: apiPublicSubnet1.id,
+    routeTableId: publicRouteTable.id,
+  },
+  {
+    replaceOnChanges: ["*"],
+  },
+);
 
-new aws.ec2.RouteTableAssociation("api-public-route-table-association-2", {
-  subnetId: apiPublicSubnet2.id,
-  routeTableId: publicRouteTable.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "api-public-route-table-association-2",
+  {
+    subnetId: apiPublicSubnet2.id,
+    routeTableId: publicRouteTable.id,
+  },
+  {
+    replaceOnChanges: ["*"],
+  },
+);
 
-new aws.ec2.RouteTableAssociation("api-private-route-table-association-1", {
-  subnetId: apiPrivateSubnet1.id,
-  routeTableId: privateRouteTable1.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "api-private-route-table-association-1",
+  {
+    subnetId: apiPrivateSubnet1.id,
+    routeTableId: privateRouteTable1.id,
+  },
+  {
+    replaceOnChanges: ["*"],
+  },
+);
 
-new aws.ec2.RouteTableAssociation("api-private-route-table-association-2", {
-  subnetId: apiPrivateSubnet2.id,
-  routeTableId: privateRouteTable2.id,
-});
+new aws.ec2.RouteTableAssociation(
+  "api-private-route-table-association-2",
+  {
+    subnetId: apiPrivateSubnet2.id,
+    routeTableId: privateRouteTable2.id,
+  },
+  {
+    replaceOnChanges: ["*"],
+  },
+);
 
 // Create a Security Group for the Api ALB
 export const apiAlbSecurityGroup = new aws.ec2.SecurityGroup(
