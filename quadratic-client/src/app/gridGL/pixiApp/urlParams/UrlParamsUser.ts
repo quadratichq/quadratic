@@ -109,9 +109,16 @@ export class UrlParamsUser {
       return;
     }
 
-    const { submitAIAnalystPrompt } = pixiAppSettings;
-    if (!submitAIAnalystPrompt) {
-      throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
+    const { setFilesImportProgress, submitAIAnalystPrompt } = pixiAppSettings;
+    if (!setFilesImportProgress || !submitAIAnalystPrompt) {
+      throw new Error(
+        'Expected setFilesImportProgress and submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt'
+      );
+    }
+
+    const firstSheet = sheets.getFirst();
+    if (!firstSheet) {
+      throw new Error('Expected to find firstSheet in urlParams.loadAIAnalystPrompt');
     }
 
     const importFiles: DbFile[] = [];
@@ -140,22 +147,40 @@ export class UrlParamsUser {
       return 0;
     });
 
-    const firstSheetId: string = sheets.current;
+    // initialize the import progress state
+    setFilesImportProgress(() => ({
+      importing: true,
+      createNewFile: false,
+      currentFileIndex: undefined,
+      files: importFiles.map((file) => ({
+        name: file.name,
+        size: file.size,
+        step: 'read',
+        progress: 0,
+        transactionId: undefined,
+        transactionOps: undefined,
+        abortController: undefined,
+      })),
+    }));
 
     // import files to the grid
     for (const file of importFiles) {
+      // update the current file index
+      setFilesImportProgress((prev) => {
+        const currentFileIndex = (prev.currentFileIndex ?? -1) + 1;
+        return {
+          ...prev,
+          currentFileIndex,
+        };
+      });
+
       const fileType = getFileTypeFromName(file.name);
       if (!fileType || fileType === 'grid') {
         console.warn(`Unsupported file type: ${file.name}`);
         continue;
       }
 
-      const sheet = sheets.getById(firstSheetId);
-      if (!sheet) {
-        throw new Error('Expected to find sheet in urlParams.loadAIAnalystPrompt');
-      }
-
-      const sheetBounds = sheet.bounds;
+      const sheetBounds = firstSheet.bounds;
       const insertAt: JsCoordinate =
         sheetBounds.type === 'empty'
           ? {
@@ -171,14 +196,22 @@ export class UrlParamsUser {
         file: file.data,
         fileName: file.name,
         fileType,
-        sheetId: firstSheetId,
+        sheetId: firstSheet.id,
         location: insertAt,
         cursor: sheets.sheet.cursor.position.toString(),
       });
     }
 
+    // reset the import progress state
+    setFilesImportProgress(() => ({
+      importing: false,
+      createNewFile: false,
+      currentFileIndex: undefined,
+      files: [],
+    }));
+
     // reset the open sheet and cursor to the first sheet and first cell
-    sheets.current = firstSheetId;
+    sheets.current = firstSheet.id;
     sheets.sheet.cursor.moveTo(1, 1);
 
     // submit the prompt and files to the ai analyst

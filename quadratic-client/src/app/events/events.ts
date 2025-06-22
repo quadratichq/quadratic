@@ -28,7 +28,6 @@ import type {
   CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionEnd,
-  CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
@@ -81,7 +80,6 @@ interface EventTypes {
   importProgress: (message: CoreClientImportProgress) => void;
 
   transactionStart: (message: CoreClientTransactionStart) => void;
-  transactionProgress: (message: CoreClientTransactionProgress) => void;
   transactionEnd: (message: CoreClientTransactionEnd) => void;
 
   multiplayerUpdate: (users: MultiplayerUser[]) => void;
