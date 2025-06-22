@@ -34,6 +34,7 @@ const minSize = config.getNumber("api-lb-min-size") ?? 2;
 const maxSize = config.getNumber("api-lb-max-size") ?? 5;
 const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
 const warmPoolMinSize = config.getNumber("api-lb-warm-pool-min-size") ?? 0;
+const warmPoolMaxSize = config.getNumber("api-lb-warm-pool-max-size") ?? 2;
 const requestCountTarget =
   config.getNumber("api-lb-request-count-target") ?? 1000;
 
@@ -124,6 +125,7 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
 
   warmPool: {
     minSize: warmPoolMinSize,
+    maxGroupPreparedCapacity: warmPoolMaxSize,
     poolState: "Running",
   },
 
