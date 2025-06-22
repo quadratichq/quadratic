@@ -265,7 +265,6 @@ jobs:
 
           pulumi config set docker-image-tag ${{ github.sha }}
 
-          pulumi refresh -y
           pulumi up -y
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
