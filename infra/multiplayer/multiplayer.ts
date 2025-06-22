@@ -89,7 +89,6 @@ const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
 
 // Create a new Network Load Balancer
 const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
-  name: `nlb-${multiplayerSubdomain}`,
   internal: false,
   loadBalancerType: "network",
   subnets: [subNet1, subNet2],
