@@ -1,4 +1,5 @@
 use crate::{
+    MultiPos,
     constants::SHEET_NAME,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -35,7 +36,7 @@ impl GridController {
         // update table names in data tables in the new sheet
         let sheet = self.try_sheet_mut_result(sheet_id)?;
         for pos in data_tables_pos.iter() {
-            transaction.add_code_cell(sheet_id, *pos);
+            transaction.add_code_cell(MultiPos::SheetPos(pos.to_sheet_pos(sheet_id)));
 
             sheet.modify_data_table_at(pos, |data_table| {
                 let old_name = data_table.name().to_string();
@@ -46,7 +47,7 @@ impl GridController {
                     // update table context for replacing table names in code cells
                     if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
                         let mut new_table_map_entry = old_table_map_entry.to_owned();
-                        new_table_map_entry.sheet_id = sheet_id;
+                        new_table_map_entry.set_sheet_id(sheet_id);
                         new_table_map_entry.table_name = unique_name.to_owned();
                         context.table_map.insert(new_table_map_entry);
                     }

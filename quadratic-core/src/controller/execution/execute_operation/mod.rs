@@ -126,8 +126,8 @@ impl GridController {
                     );
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
-                Operation::ComputeCodeInTable { .. } => {
-                    self.execute_compute_code_in_table(transaction, op)
+                Operation::ComputeCodeMultiPos { .. } => {
+                    self.execute_compute_code_multi_pos(transaction, op)
                 }
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {

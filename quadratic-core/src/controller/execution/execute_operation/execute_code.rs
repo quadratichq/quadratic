@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, MultiPos, Pos, SheetPos, SheetRect,
+    MultiPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -133,34 +133,48 @@ impl GridController {
         Ok(())
     }
 
+    /// Deprecated and replaced with execute_compute_code_multi_pos
     pub(super) fn execute_compute_code(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
         if let Operation::ComputeCode { sheet_pos } = op {
-            self.execute_compute_code_multi_pos(transaction, Operation::ComputeCodeMultiPos {
-                multi_pos: MultiPos::SheetPos(sheet_pos),
-            });
+            self.execute_compute_code_multi_pos(
+                transaction,
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: MultiPos::SheetPos(sheet_pos),
+                },
+            );
             return;
+        }
     }
 
-    pub fn execute_compute_code_multi_pos(
+    /// Executes a code cell at a multi-pos.
+    pub(crate) fn execute_compute_code_multi_pos(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
         if let Operation::ComputeCodeMultiPos { multi_pos } = op {
-            let Some(code_cell) = match multi_pos {
-                MultiPos::SheetPos(sheet_pos) => sheet_pos,
-                MultiPos::TablePos(table_pos) => table_pos.code_cell_from_gc(self),
-            } else {
+            let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) else {
+                return;
+            };
+
+            let Some(code_cell) = sheet.code_value(multi_pos) else {
+                return;
+            };
+
+            let Some(pos) = (match multi_pos {
+                MultiPos::SheetPos(sheet_pos) => Some(sheet_pos.into()),
+                MultiPos::TablePos(table_pos) => table_pos.translate_pos(sheet),
+            }) else {
                 return;
             };
 
             match &code_cell.language {
                 CodeCellLanguage::Python => {
-                    self.run_python(transaction, table_pos, code_cell.code.clone());
+                    self.run_python(transaction, multi_pos, code_cell.code.clone(), pos);
                 }
                 CodeCellLanguage::Formula => {
                     // self.run_formula(transaction, table_pos, code);

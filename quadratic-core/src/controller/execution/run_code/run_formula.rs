@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    SheetPos, TablePos,
+    MultiPos, SheetPos, TablePos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, find_cell_references, parse_formula},
     grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
@@ -11,14 +11,15 @@ impl GridController {
     pub(crate) fn run_formula(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         code: String,
+        translated_pos: SheetPos,
     ) {
-        let mut eval_ctx = Ctx::new(self, sheet_pos);
+        let mut eval_ctx = Ctx::new(self, translated_pos);
         let parse_ctx = self.a1_context();
-        transaction.current_multi_pos = Some(sheet_pos.into());
+        transaction.current_multi_pos = Some(multi_pos);
 
-        match parse_formula(&code, parse_ctx, sheet_pos) {
+        match parse_formula(&code, parse_ctx, translated_pos) {
             Ok(parsed) => {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
@@ -43,7 +44,7 @@ impl GridController {
                     None,
                     None,
                 );
-                self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
+                self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
             }
             Err(error) => {
                 let _ = self.code_cell_sheet_error(transaction, &error);
@@ -98,15 +99,16 @@ impl GridController {
     pub(crate) fn add_formula_without_eval(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         code: &str,
         name: &str,
+        translated_pos: SheetPos,
     ) {
         let parse_ctx = self.a1_context();
-        transaction.current_multi_pos = Some(sheet_pos.into());
+        transaction.current_multi_pos = Some(multi_pos);
 
         let mut cells_accessed = CellsAccessed::default();
-        let cell_references = find_cell_references(code, parse_ctx, sheet_pos);
+        let cell_references = find_cell_references(code, parse_ctx, translated_pos);
         for cell_ref in cell_references {
             if let Ok(cell_ref) = cell_ref.inner {
                 cells_accessed.add(cell_ref.sheet_id, cell_ref.cells);
@@ -128,7 +130,7 @@ impl GridController {
             None,
             None,
         );
-        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
+        self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
     }
 }
 

@@ -58,8 +58,6 @@ impl TableMapEntry {
         self.multi_pos.sheet_id()
     }
 
-    /// Used to change sheet_id in tests.
-    #[cfg(test)]
     pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
         self.multi_pos.set_sheet_id(sheet_id);
     }

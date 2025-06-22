@@ -1,5 +1,5 @@
 use crate::{
-    MultiPos, SheetPos, TablePos,
+    MultiPos, Pos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     grid::{CodeCellLanguage, CodeCellValue},
 };
@@ -8,47 +8,21 @@ impl GridController {
     pub(crate) fn run_python(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         code: String,
+        pos: Pos,
     ) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsRunPython(
                 transaction.id.to_string(),
-                sheet_pos.x as i32,
-                sheet_pos.y as i32,
-                sheet_pos.sheet_id.to_string(),
+                pos.x as i32,
+                pos.y as i32,
+                multi_pos.sheet_id().to_string(),
                 code.clone(),
             );
         }
         // stop the computation cycle until async returns
-        transaction.current_multi_pos = Some(sheet_pos.into());
-        let code_cell = CodeCellValue {
-            language: CodeCellLanguage::Python,
-            code,
-        };
-        transaction.waiting_for_async = Some(code_cell);
-        self.transactions.add_async_transaction(transaction);
-    }
-
-    pub(crate) fn run_python_in_table(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        table_pos: TablePos,
-        code: String,
-        x: u32,
-        y: u32,
-    ) {
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsRunPython(
-                transaction.id.to_string(),
-                x as i32,
-                y as i32,
-                table_pos.sheet_id().to_string(),
-                code.clone(),
-            );
-        }
-        // stop the computation cycle until async returns
-        transaction.current_multi_pos = Some(table_pos.into());
+        transaction.current_multi_pos = Some(multi_pos);
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Python,
             code,
