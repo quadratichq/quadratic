@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos,
+    CellValue, MultiPos, SheetPos,
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
@@ -11,14 +11,22 @@ use crate::{
 };
 
 impl GridController {
-    /// Adds operations to compute a CellValue::Code at the sheet_pos.
+    /// Adds operations to compute a CellValue::Code.
     pub fn set_code_cell_operations(
         &self,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         language: CodeCellLanguage,
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
+        let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) else {
+            return vec![];
+        };
+        // converted absolute sheet position -- if not available, then nothing more to do here
+        let Some(sheet_pos) = multi_pos.to_sheet_pos(sheet) else {
+            return vec![];
+        };
+
         let parse_ctx = self.a1_context();
         let code = match language {
             CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
@@ -26,31 +34,36 @@ impl GridController {
         };
 
         let mut ops = vec![];
-        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
-            return vec![];
-        };
 
         let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
-        if let Some(table_pos) = sheet.code_in_table(sheet_pos.into()) {
+        if let Some(table_pos) = sheet.code_in_table(multi_pos.into()) {
             let table_pos = MultiPos::TablePos(TablePos {
-                table_sheet_pos: table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                table_sheet_pos: table_pos.to_sheet_pos(multi_pos.sheet_id),
                 pos: Pos {
-                    x: sheet_pos.x - table_pos.x,
-                    y: sheet_pos.y - table_pos.y,
+                    x: multi_pos.x - table_pos.x,
+                    y: multi_pos.y - table_pos.y,
                 },
             });
-            ops.push(Operation::SetDataTableAt { sheet_pos, values });
+            ops.push(Operation::SetDataTableAt {
+                sheet_pos: multi_pos,
+                values,
+            });
             ops.push(Operation::ComputeCodeInTable { table_pos });
         } else {
-            ops.push(Operation::SetCellValues { sheet_pos, values });
-            ops.push(Operation::ComputeCode { sheet_pos });
+            ops.push(Operation::SetCellValues {
+                sheet_pos: multi_pos,
+                values,
+            });
+            ops.push(Operation::ComputeCode {
+                sheet_pos: multi_pos,
+            });
         }
 
         // change the code cell name if it is provided and the code cell doesn't already have a name
         if let Some(code_cell_name) = code_cell_name {
-            if self.data_table_at(sheet_pos).is_none() {
+            if self.data_table_at(multi_pos).is_none() {
                 ops.push(Operation::DataTableMeta {
-                    sheet_pos,
+                    sheet_pos: multi_pos,
                     name: Some(code_cell_name),
                     alternating_colors: None,
                     columns: None,
@@ -70,7 +83,8 @@ impl GridController {
 
         let sheet_id = selection.sheet_id;
         if let Some(sheet) = self.try_sheet(sheet_id) {
-            let rects = sheet.selection_to_rects(&selection, false, false, true, self.a1_context());
+            let rects =
+                sheet.selection_to_rects(&selection, false, false, true, self.a1_context(), None);
             rects.iter().for_each(|rect| {
                 sheet
                     .data_tables

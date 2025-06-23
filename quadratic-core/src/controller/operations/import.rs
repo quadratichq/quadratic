@@ -328,9 +328,10 @@ impl GridController {
                         };
                         gc.add_formula_without_eval(
                             &mut transaction,
-                            sheet_pos,
+                            sheet_pos.into(),
                             cell,
                             formula_start_name.as_str(),
+                            sheet_pos.into(),
                         );
                         gc.update_a1_context_table_map(
                             std::mem::take(&mut transaction.code_cells_a1_context),

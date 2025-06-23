@@ -76,10 +76,10 @@ impl GridController {
             };
 
             if let Some(rect) = range.to_rect() {
-                let Some(sheet) = self.try_sheet(table.sheet_id) else {
+                let Some(sheet) = self.try_sheet(table.sheet_id()) else {
                     dbgjs!(format!(
                         "[format_ops] invalid sheet ID: {:?}",
-                        table.sheet_id
+                        table.sheet_id()
                     ));
                     return;
                 };
@@ -108,21 +108,21 @@ impl GridController {
             }
 
             // add table operation
-            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, context) {
+            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id(), context) {
                 let formats = SheetFormatUpdates::from_selection(&selection, format_update.clone());
                 ops.push(Operation::DataTableFormats {
-                    sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
+                    sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id()),
                     formats,
                 });
             }
 
             // clear sheet formatting if needed
             if let Some(bounded_selection) =
-                A1Selection::from_ranges(bounded_ranges, table.sheet_id, context)
+                A1Selection::from_ranges(bounded_ranges, table.sheet_id(), context)
             {
                 if let Some(cleared) = format_update.only_cleared() {
                     ops.push(Operation::SetCellFormatsA1 {
-                        sheet_id: table.sheet_id,
+                        sheet_id: table.sheet_id(),
                         formats: SheetFormatUpdates::from_selection(&bounded_selection, cleared),
                     });
                 }

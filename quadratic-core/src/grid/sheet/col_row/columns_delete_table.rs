@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    MultiPos, Pos, Rect,
+    MultiPos, Pos, Rect, SheetPos,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,

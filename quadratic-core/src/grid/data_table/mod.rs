@@ -5,19 +5,16 @@
 //! performed yet).
 
 use crate::grid::sheet::data_tables::SheetDataTables;
-use crate::util::is_false;
+use crate::util::{is_false, unique_name};
 
 pub mod column;
 pub mod column_header;
 pub mod display_value;
 pub mod fix_names;
 pub mod formats;
-mod grid_data_table;
-mod names;
 pub mod row;
 pub mod send_render;
 pub mod sort;
-pub use names::*;
 
 use std::num::NonZeroU32;
 
@@ -27,9 +24,11 @@ use crate::grid::CodeRun;
 use crate::{
     Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
 };
-use anyhow::{Ok, Result, bail};
+use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
 use column_header::DataTableColumnHeader;
+use lazy_static::lazy_static;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use sort::DataTableSort;
 use strum_macros::Display;
@@ -48,7 +47,11 @@ pub fn unique_data_table_name(
     // replace spaces with underscores
     let name = name.replace(' ', "_");
 
-    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
+    let check_name = |name: &str| {
+        !a1_context
+            .table_map
+            .contains_name(name, sheet_pos.map(Into::into))
+    };
     let iter_names = a1_context.table_map.iter_rev_table_names();
     unique_name(&name, require_number, check_name, iter_names)
 }

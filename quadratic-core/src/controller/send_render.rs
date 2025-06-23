@@ -377,12 +377,14 @@ impl GridController {
                 continue;
             };
 
-            for pos in positions.into_iter() {
-                update_code_cells.push(JsUpdateCodeCell {
-                    sheet_id: sheet.id,
-                    pos,
-                    render_code_cell: sheet.get_render_code_cell(pos),
-                });
+            for multi_pos in positions.into_iter() {
+                if let Some(pos) = multi_pos.to_sheet_pos(sheet) {
+                    update_code_cells.push(JsUpdateCodeCell {
+                        sheet_id: sheet.id,
+                        pos: pos.into(),
+                        render_code_cell: sheet.get_render_code_cell(pos.into()),
+                    });
+                }
             }
         }
         if !update_code_cells.is_empty() {

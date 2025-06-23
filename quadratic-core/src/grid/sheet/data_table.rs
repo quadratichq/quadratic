@@ -27,16 +27,16 @@ impl Sheet {
     }
 
     /// Gets the index of the data table
-    pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
-        self.data_tables.get_index_of(&pos)
+    pub fn data_table_index(&self, multi_pos: MultiPos) -> Option<usize> {
+        self.data_tables.get_index_of(&multi_pos)
     }
 
     /// Returns the index of the data table as a result.
-    pub fn data_table_index_result(&self, pos: Pos) -> Result<usize> {
-        self.data_table_index(pos).ok_or_else(|| {
+    pub fn data_table_index_result(&self, multi_pos: MultiPos) -> Result<usize> {
+        self.data_table_index(multi_pos).ok_or_else(|| {
             anyhow!(
                 "Data table not found at {:?} in data_table_index_result()",
-                pos
+                multi_pos
             )
         })
     }
