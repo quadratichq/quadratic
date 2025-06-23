@@ -1,7 +1,6 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
-import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
@@ -34,6 +33,8 @@ const instanceSize = config.require("api-instance-size");
 const minSize = config.getNumber("api-lb-min-size") ?? 2;
 const maxSize = config.getNumber("api-lb-max-size") ?? 5;
 const desiredCapacity = config.getNumber("api-lb-desired-capacity") ?? 2;
+const warmPoolMinSize = config.getNumber("api-lb-warm-pool-min-size") ?? 0;
+const warmPoolMaxSize = config.getNumber("api-lb-warm-pool-max-size") ?? 2;
 const requestCountTarget =
   config.getNumber("api-lb-request-count-target") ?? 1000;
 
@@ -122,13 +123,11 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   desiredCapacity,
   targetGroupArns: [targetGroup.arn],
 
-  warmPool: isPreviewEnvironment
-    ? undefined
-    : {
-        minSize: 1,
-        maxGroupPreparedCapacity: 2,
-        poolState: "Running",
-      },
+  warmPool: {
+    minSize: warmPoolMinSize,
+    maxGroupPreparedCapacity: warmPoolMaxSize,
+    poolState: "Running",
+  },
 
   instanceRefresh: {
     strategy: "Rolling",
