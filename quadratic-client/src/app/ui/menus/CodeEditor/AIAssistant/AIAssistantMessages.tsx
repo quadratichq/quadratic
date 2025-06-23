@@ -3,7 +3,7 @@ import {
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
@@ -27,7 +27,6 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
-
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((node: HTMLDivElement | null) => {
     setDiv(node);
@@ -36,6 +35,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       behavior: 'smooth',
     });
   }, []);
+  const { getFlag } = useDebugFlags();
 
   const shouldAutoScroll = useRef(true);
   const handleScrollEnd = useCallback((e: Event) => {
@@ -102,7 +102,10 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
+        if (
+          !getFlag('debugShowAIInternalContext') &&
+          !['userPrompt', 'webSearchInternal'].includes(message.contextType)
+        ) {
           return null;
         }
 
@@ -119,7 +122,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+            {getFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
@@ -143,7 +146,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' && !!item.text ? (
+                  (item.type === 'anthropic_thinking' || item.type === 'google_thinking') && !!item.text ? (
                     <ThinkingBlock
                       key={item.text}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}

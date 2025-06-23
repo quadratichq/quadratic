@@ -206,8 +206,8 @@ export function useFileImport() {
                 if (openImportedFile) {
                   setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
                   setFilesImportProgressListState({ show: false });
-                  const params = quadraticCore.receivedClientMessage ? `?negative_offsets` : '';
-                  window.location.href = `${ROUTES.FILE(uuid)}${params}`;
+                  const searchParams = quadraticCore.receivedClientMessage ? 'negative_offsets' : '';
+                  window.location.href = `${ROUTES.FILE({ uuid, searchParams })}`;
                 }
               })
               .catch((error) => {
