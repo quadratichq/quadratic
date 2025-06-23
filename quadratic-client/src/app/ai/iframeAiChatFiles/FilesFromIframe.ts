@@ -10,7 +10,7 @@ class FilesFromIframe {
   private chatId?: string;
   dbFiles: DbFile[] = [];
 
-  init(chatId: string) {
+  loadFiles(chatId: string) {
     this.chatId = chatId;
 
     window.addEventListener('message', this.handleMessage);
