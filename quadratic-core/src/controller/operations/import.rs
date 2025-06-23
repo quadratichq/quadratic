@@ -690,7 +690,8 @@ mod test {
     fn import_excel_date_time() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/date_time.xlsx");
-        gc.import_excel(file.as_ref(), "excel", None).unwrap();
+        gc.import_excel(file.as_ref(), "date_time.xlsx", None)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -828,7 +829,8 @@ mod test {
     fn import_excel_dependent_formulas() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "excel", None).unwrap();
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
