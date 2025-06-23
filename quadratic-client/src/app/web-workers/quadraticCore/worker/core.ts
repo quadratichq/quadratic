@@ -6,7 +6,7 @@
  */
 
 import { bigIntReplacer } from '@/app/bigint';
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import type {
   BorderSelection,
@@ -100,7 +100,7 @@ class Core {
       return { error: 'Unable to load file' };
     }
 
-    if (debugWebWorkers) console.log('[core] GridController loaded');
+    if (debugFlag('debugWebWorkers')) console.log('[core] GridController loaded');
 
     return { version: this.gridController.getVersion() };
   };
