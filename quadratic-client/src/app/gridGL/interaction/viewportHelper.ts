@@ -3,10 +3,13 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { CELL_HEIGHT, CELL_WIDTH } from '@/shared/constants/gridConstants';
-import { Point, type Rectangle } from 'pixi.js';
+import { Point } from 'pixi.js';
 
-const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
+// const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
+
+// animating viewport
+const ANIMATION_TIME = 250;
+const ANIMATION_EASE = 'easeInOutSine';
 
 export function getVisibleTopRow(): number {
   const viewport = pixiApp.viewport.getVisibleBounds();
@@ -64,68 +67,74 @@ export function isColumnVisible(column: number): boolean {
   return true;
 }
 
-// Makes a rect visible in the viewport
-export function rectVisible(sheetId: string, min: JsCoordinate, max: JsCoordinate): boolean {
-  if (sheetId !== sheets.current) {
-    sheets.current = sheetId;
-  }
+export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsCoordinate | undefined {
   // returns true if the rect is visible in the viewport
   const { viewport, headings } = pixiApp;
   const sheet = sheets.sheet;
-  const headingSize = headings.headingSize;
 
   const topLeftCell = sheet.getCellOffsets(min.x, min.y);
-  const bottomRightCell = sheet.getCellOffsets(max.x, max.y);
-  let is_off_screen = false;
+  const same = !max || (min.x === max.x && min.y === max.y);
+  const bottomRightCell = same ? topLeftCell : sheet.getCellOffsets(max.x, max.y);
+
+  const headingHeight = headings.headingSize.unscaledHeight;
+
+  let right: number | undefined;
+  let left: number | undefined;
+  let bottom: number | undefined;
+  let top: number | undefined;
+  let y = viewport.y;
+  if (bottomRightCell.bottom > viewport.bottom) {
+    bottom = bottomRightCell.bottom;
+    y = bottom - viewport.worldScreenHeight;
+  }
+  if (topLeftCell.top + headingHeight < viewport.top) {
+    top = topLeftCell.top - headingHeight;
+    y = top;
+  }
+
+  // calculate the new rowWidth when at new Y location
+  const newHeadingSize = pixiApp.headings.getFutureSizes(y);
+  const headingWidth = newHeadingSize.unscaledWidth;
 
   if (bottomRightCell.right > viewport.right) {
-    viewport.right = bottomRightCell.right;
-    is_off_screen = true;
+    right = bottomRightCell.right;
   }
-  if (topLeftCell.left + headingSize.width < viewport.left) {
-    viewport.left = topLeftCell.left - headingSize.width / viewport.scale.x;
-    is_off_screen = true;
+  if (topLeftCell.left + headingWidth < viewport.left) {
+    left = topLeftCell.left - headingWidth;
   }
 
-  if (bottomRightCell.bottom > viewport.bottom) {
-    viewport.bottom = bottomRightCell.bottom;
-    is_off_screen = true;
+  if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
+    const halfWidth = viewport.worldScreenWidth / 2;
+    const halfHeight = viewport.worldScreenHeight / 2;
+    const x = left !== undefined ? left + halfWidth : right !== undefined ? right - halfWidth : viewport.center.x;
+    const y = top !== undefined ? top + halfHeight : bottom !== undefined ? bottom - halfHeight : viewport.center.y;
+    return { x, y };
   }
-  if (topLeftCell.top + headingSize.height < viewport.top) {
-    viewport.top = topLeftCell.top - headingSize.height / viewport.scale.x;
-    is_off_screen = true;
-  }
-
-  return !is_off_screen;
 }
 
-export function ensureRectVisible(sheetId: string, min: JsCoordinate, max: JsCoordinate) {
+// Makes a rect visible in the viewport. Returns true if the rect is visible in the viewport.
+export function rectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordinate): boolean {
+  if (sheetId !== sheets.current) {
+    sheets.current = sheetId;
+  }
+  const move = calculateRectVisible(min, max);
+  if (move) {
+    pixiApp.viewport.animate({
+      position: new Point(move.x, move.y),
+      removeOnInterrupt: true,
+      time: ANIMATION_TIME,
+      ease: ANIMATION_EASE,
+    });
+    return false;
+  } else {
+    return true;
+  }
+}
+
+export function ensureRectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordinate) {
   if (!rectVisible(sheetId, min, max)) {
     pixiApp.viewportChanged();
   }
-}
-
-function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectangle): boolean {
-  const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
-  if (!table) return false;
-  const code = table.codeCell;
-  if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {
-    return false;
-  }
-  if (table.header.onGrid) return false;
-
-  // we need to manually update the table to ensure it is in the correct position
-  // this usually happens during the update loop, but that's too late for our needs
-  const bounds = pixiApp.viewport.getVisibleBounds();
-  const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-  table.update(bounds, gridHeading);
-
-  const tableHeaderBounds = table.header.getTableHeaderBounds();
-  if (intersects.rectangleRectangle(tableHeaderBounds, cell)) {
-    pixiApp.viewport.top -= tableHeaderBounds.bottom - cell.top;
-    return true;
-  }
-  return false;
 }
 
 export function ensureSelectionVisible() {
@@ -139,81 +148,15 @@ export function ensureSelectionVisible() {
   if (intersects.rectangleRectangle(selection, viewportBoundsInCellCoordinates)) {
     return true;
   }
-  cellVisible(sheets.sheet.cursor.position);
+  rectVisible(sheets.current, sheets.sheet.cursor.position);
   pixiApp.viewportChanged();
   return false;
-}
-
-// Makes a cell visible in the viewport
-export function cellVisible(
-  coordinate: JsCoordinate = {
-    x: sheets.sheet.cursor.position.x,
-    y: sheets.sheet.cursor.position.y,
-  }
-): boolean {
-  // returns true if the cursor is visible in the viewport
-  const { viewport, headings } = pixiApp;
-  const sheet = sheets.sheet;
-  const headingSize = headings.headingSize;
-
-  // check if the cell is part of a table header that is visible b/c it is
-  // hovering over the table
-  const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
-  if (tableName) return true;
-
-  const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
-  let is_off_screen = false;
-
-  const bounds = pixiApp.viewport.getVisibleBounds();
-  if (cell.x - headingSize.width / viewport.scale.x < viewport.left) {
-    viewport.left = Math.max(
-      -headingSize.width / viewport.scale.x,
-      cell.x - headingSize.width / viewport.scale.x //+ BUFFER[0]
-    );
-    is_off_screen = true;
-  } else if (cell.x + cell.width > viewport.right) {
-    // if the cell is wider than the viewport, then we show the start of the cell
-    if (cell.width > bounds.width) {
-      viewport.left = Math.max(
-        -headingSize.width / viewport.scale.x,
-        cell.x - headingSize.width / viewport.scale.x //+ BUFFER[0]
-      );
-    } else {
-      viewport.right = cell.x + cell.width + BUFFER[0];
-    }
-    is_off_screen = true;
-  }
-
-  if (cell.y < viewport.top + headingSize.height / viewport.scale.y) {
-    viewport.top = Math.max(
-      -headingSize.height / viewport.scale.y,
-      cell.y - headingSize.height / viewport.scale.y - BUFFER[1]
-    );
-    is_off_screen = true;
-  } else if (cell.y + cell.height > viewport.bottom) {
-    // if the cell is taller than the viewport, then we show the start of the cell
-    if (cell.height > bounds.height) {
-      viewport.top = Math.max(
-        -headingSize.height / viewport.scale.y,
-        cell.y - headingSize.height / viewport.scale.y - BUFFER[1]
-      );
-    } else {
-      viewport.bottom = cell.y + cell.height + BUFFER[1];
-    }
-    is_off_screen = true;
-  }
-
-  if (ensureCellIsNotUnderTableHeader(coordinate, cell)) {
-    is_off_screen = true;
-  }
-
-  return !is_off_screen;
 }
 
 // Ensures the cursor is always visible
 export function ensureVisible(visible: JsCoordinate | undefined) {
   if (visible) {
-    if (!cellVisible(visible)) {
+    if (!rectVisible(sheets.current, visible)) {
       pixiApp.viewportChanged();
     }
   } else {
