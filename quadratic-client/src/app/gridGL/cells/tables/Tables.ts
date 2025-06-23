@@ -224,16 +224,15 @@ export class Tables extends Container<Table> {
       }
     }
 
-    pixiApp.setViewportDirty();
-    pixiApp.singleCellOutlines.setDirty();
-
     if (updateCursor) {
       sheets.sheet.cursor.moveTo(sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, {
         checkForTableRef: true,
       });
-    } else if (this.sheet.id === sheets.current) {
-      events.emit('cursorPosition');
     }
+    this.cursorPosition();
+
+    pixiApp.singleCellOutlines.setDirty();
+    pixiApp.setViewportDirty();
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
@@ -264,6 +263,8 @@ export class Tables extends Container<Table> {
         this.tablesCache.add(table);
       }
     });
+    // ensures that a table at A1 gets highlighted
+    this.cursorPosition();
   };
 
   /// Returns the tables that are visible in the viewport.
@@ -301,27 +302,31 @@ export class Tables extends Container<Table> {
     if (this.sheet.id !== sheets.current) {
       return;
     }
+
     const tables = sheets.sheet.cursor.getSelectedTableNames();
+
     this.activeTables.forEach((table) => table.hideActive());
-    this.activeTables = tables.flatMap((tableName) => {
+    this.activeTables = tables.reduce<Table[]>((acc, tableName) => {
       const table = this.getTableFromName(tableName);
       if (table) {
         table.showActive();
-        return [table];
+        acc.push(table);
       }
-      return [];
-    });
+      return acc;
+    }, []);
+
     const columnTables = sheets.sheet.cursor.getTablesWithColumnSelection();
-    const newColumnTables = columnTables.flatMap((t) => {
-      const table = this.getTableFromName(t);
+    const newColumnTables = columnTables.reduce<Table[]>((acc, tableName) => {
+      const table = this.getTableFromName(tableName);
       if (table) {
-        return [table];
-      } else {
-        return [];
+        acc.push(table);
       }
-    });
+      return acc;
+    }, []);
+
     const tablesNeedingUpdate = new Set([...this.columnTables, ...newColumnTables]);
     tablesNeedingUpdate.forEach((table) => table.header.updateSelection());
+
     this.columnTables = newColumnTables;
   };
 
