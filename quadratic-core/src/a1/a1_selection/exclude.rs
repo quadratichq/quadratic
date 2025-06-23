@@ -55,7 +55,7 @@ impl A1Selection {
                 },
                 end: CellRefRangeEnd {
                     col: range.start.col,
-                    row: CellRefCoord::UNBOUNDED,
+                    row: CellRefCoord::REL_UNBOUNDED,
                 },
             });
         }

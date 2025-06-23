@@ -414,7 +414,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
+        self.update_empty_values_cache();
 
         Ok(())
     }
@@ -452,7 +452,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
+        self.update_empty_values_cache();
 
         Ok(())
     }
@@ -492,7 +492,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
+        self.update_empty_values_cache();
 
         Ok(())
     }

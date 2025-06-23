@@ -10,7 +10,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -164,7 +164,10 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
+        if (
+          !debugFlag('debugShowAIInternalContext') &&
+          !['userPrompt', 'webSearchInternal'].includes(message.contextType)
+        ) {
           return null;
         }
 
@@ -181,7 +184,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+            {debugFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
@@ -206,7 +209,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' && !!item.text ? (
+                  (item.type === 'anthropic_thinking' || item.type === 'google_thinking') && !!item.text ? (
                     <ThinkingBlock
                       key={item.text}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}

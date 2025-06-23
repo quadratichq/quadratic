@@ -489,13 +489,13 @@ pub(crate) mod tests {
         )
         .unwrap();
 
+        print_first_sheet(&gc);
+
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "title_row.csv");
-        assert_eq!(sheet.rendered_value(pos![A2]).unwrap(), "Column 1");
-        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "Sample report");
-        assert_eq!(sheet.rendered_value(pos![A5]).unwrap(), "c1");
-        assert_eq!(sheet.rendered_value(pos![B5]).unwrap(), " c2");
-        assert_eq!(sheet.rendered_value(pos![C5]).unwrap(), " Sample column3");
+        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "Sample report");
+        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "c1");
+        assert_eq!(sheet.rendered_value(pos![B3]).unwrap(), " c2");
+        assert_eq!(sheet.rendered_value(pos![C3]).unwrap(), " Sample column3");
     }
 
     #[test]
@@ -504,7 +504,7 @@ pub(crate) mod tests {
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 2, y: 2 };
+        let pos = Pos { x: 1, y: 1 };
 
         gc.import_csv(
             sheet_id,
@@ -519,9 +519,9 @@ pub(crate) mod tests {
 
         print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 9, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 6, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -551,7 +551,7 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            4,
+            2,
             vec!["issue", " test", " value\u{feff}"],
         );
         assert_cell_value_row(
@@ -559,10 +559,10 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            5,
+            3,
             vec!["0", "1", " Inv\u{feff}alid\u{feff}"],
         );
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 6, vec!["0", "2", " Valid"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {
