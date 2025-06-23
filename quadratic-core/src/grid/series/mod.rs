@@ -101,11 +101,9 @@ pub fn find_auto_complete(options: SeriesOptions) -> Vec<(CellValue, Option<Pos>
 
 #[cfg(test)]
 pub(crate) fn cell_value_number(values: Vec<i32>) -> Vec<(CellValue, Option<Pos>)> {
-    use rust_decimal::prelude::*;
-
     values
         .iter()
-        .map(|s| (CellValue::Number(Decimal::from(*s)), None))
+        .map(|s| (CellValue::Number((*s).into()), None))
         .collect()
 }
 

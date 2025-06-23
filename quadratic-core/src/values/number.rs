@@ -1,3 +1,4 @@
+use anyhow::Result;
 use rust_decimal::prelude::*;
 
 /// Rounds a number to the specified number of digits after the decimal point.
@@ -60,8 +61,14 @@ pub fn normalize(number: Decimal) -> Decimal {
     number.normalize()
 }
 
+/// Sums a vector of `Decimal`s and normalizes the result.
 pub fn sum(numbers: Vec<Decimal>) -> Decimal {
     println!("numbers: {:?}", numbers);
     println!("sum: {:?}", numbers.iter().sum::<Decimal>());
     normalize(numbers.iter().sum())
+}
+
+/// Converts a string to a `Decimal`.
+pub fn from_str(s: &str) -> Result<Decimal> {
+    Ok(Decimal::from_str(s)?)
 }

@@ -90,9 +90,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use rust_decimal::Decimal;
     use uuid::Uuid;
 
     use crate::{
@@ -107,6 +104,7 @@ mod test {
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        number::from_str,
         test_util::pretty_print_data_table,
     };
 
@@ -116,7 +114,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(Decimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(10.into()));
         let sheet_pos = SheetPos {
             x: 2,
             y: 1,
@@ -153,7 +151,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(Decimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(10.into()));
         let sheet_pos = SheetPos {
             x: 2,
             y: 1,
@@ -344,21 +342,13 @@ mod test {
         };
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
         array
-            .set(
-                0,
-                0,
-                CellValue::Number(Decimal::from_str("1.1").unwrap()),
-            )
+            .set(0, 0, CellValue::Number(from_str("1.1").unwrap()))
             .unwrap();
         array
-            .set(
-                1,
-                0,
-                CellValue::Number(Decimal::from_str("0.2").unwrap()),
-            )
+            .set(1, 0, CellValue::Number(from_str("0.2").unwrap()))
             .unwrap();
         array
-            .set(0, 1, CellValue::Number(Decimal::from_str("3").unwrap()))
+            .set(0, 1, CellValue::Number(from_str("3").unwrap()))
             .unwrap();
         array.set(1, 1, CellValue::Text("Hello".into())).unwrap();
 

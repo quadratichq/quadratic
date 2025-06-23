@@ -313,7 +313,6 @@ mod tests {
             sheet::borders::{BorderSelection, BorderStyle},
         },
     };
-    use rust_decimal::Decimal;
 
     const V1_3_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_3.grid");
@@ -543,19 +542,19 @@ mod tests {
         let sheet2 = &imported.sheets[1];
         assert_eq!(
             sheet1.cell_value(pos![A1]).unwrap(),
-            CellValue::Number(Decimal::from(1))
+            CellValue::Number(1.into())
         );
         assert_eq!(
             sheet1.cell_value(pos![F6]).unwrap(),
-            CellValue::Number(Decimal::from(1))
+            CellValue::Number(1.into())
         );
         assert_eq!(
             sheet2.cell_value(pos![A1]).unwrap(),
-            CellValue::Number(Decimal::from(100))
+            CellValue::Number(100.into())
         );
         assert_eq!(
             sheet2.cell_value(pos![D5]).unwrap(),
-            CellValue::Number(Decimal::from(100))
+            CellValue::Number(100.into())
         );
 
         assert_eq!(

@@ -73,8 +73,6 @@ impl GridController {
 mod tests {
     use std::collections::HashMap;
 
-    use rust_decimal::Decimal;
-
     use crate::controller::GridController;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
@@ -544,7 +542,7 @@ mod tests {
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Number(Decimal::from(10)))
+            Some(CellValue::Number(10.into()))
         );
 
         expect_js_call(

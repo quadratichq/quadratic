@@ -530,7 +530,6 @@ mod test {
         test_create_code_table, test_create_data_table, test_create_html_chart,
         test_create_js_chart,
     };
-    use rust_decimal::Decimal;
 
     pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
@@ -548,7 +547,7 @@ mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Single(CellValue::Number(Decimal::from(2))),
+            Value::Single(CellValue::Number(2.into())),
             false,
             None,
             None,
@@ -596,7 +595,7 @@ mod test {
 
         assert_eq!(
             sheet.get_code_cell_value(pos![A1]),
-            Some(CellValue::Number(Decimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(sheet.data_table_at(&pos![A1]), Some(&data_table));
         assert_eq!(sheet.data_table_at(&pos![B2]), None);

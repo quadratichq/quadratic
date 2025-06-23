@@ -3,6 +3,7 @@ use crate::{
     CellValue,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
+    number::from_str,
 };
 use rust_decimal::Decimal;
 use std::str::FromStr;
@@ -60,7 +61,7 @@ pub fn export_cell_value_number(number: Decimal) -> current::CellValueSchema {
 // Change Decimal's serialization to a grid::CellValue (this will be used to
 // convert BD to various CellValue::Number* types, such as NumberF32, etc.)
 pub fn import_cell_value_number(number: String) -> CellValue {
-    CellValue::Number(Decimal::from_str(&number).unwrap_or_default())
+    CellValue::Number(from_str(&number).unwrap_or_default())
 }
 
 pub fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> CodeCellLanguage {

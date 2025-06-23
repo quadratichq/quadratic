@@ -77,8 +77,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use rust_decimal::Decimal;
-
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
     use crate::{CellValue, Pos, SheetPos};
@@ -100,7 +98,7 @@ mod tests {
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(Decimal::from(0)))
+            Some(CellValue::Number(0.into()))
         );
 
         gc.set_cell_value(
@@ -116,7 +114,7 @@ mod tests {
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 0 }),
-            Some(CellValue::Number(Decimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
     }
 
@@ -169,7 +167,7 @@ mod tests {
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
-            Some(CellValue::Number(Decimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         gc.set_cell_value(sheet_pos, "".to_string(), None);
         let sheet = gc.sheet(sheet_id);
@@ -188,7 +186,7 @@ mod tests {
         gc.set_cell_value(sheet_pos, "1".to_string(), None);
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
-            Some(CellValue::Number(Decimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         gc.undo(None);
         assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);

@@ -3,8 +3,6 @@
 //! This entire file feels really janky and awful but this is my best attempt at
 //! mimicking the behavior Excel has.
 
-use std::str::FromStr;
-
 use itertools::Itertools;
 use regex::Regex;
 use rust_decimal::prelude::*;
@@ -12,6 +10,7 @@ use rust_decimal::prelude::*;
 use super::wildcard_pattern_to_regex;
 use crate::{
     Array, CellValue, CodeResult, CoerceInto, RunError, RunErrorMsg, SpannableIterExt, Spanned,
+    number::from_str,
 };
 
 #[derive(Debug, Clone)]
@@ -35,7 +34,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
                     CellValue::Logical(true)
                 } else if rhs_string.eq_ignore_ascii_case("FALSE") {
                     CellValue::Logical(false)
-                } else if let Ok(n) = Decimal::from_str(rhs_string) {
+                } else if let Ok(n) = from_str(rhs_string) {
                     CellValue::Number(n)
                 } else if compare_fn == CompareFn::Eql && rhs_string.contains(['?', '*']) {
                     // If the string doesn't contain any `?` or `*`, then Excel
