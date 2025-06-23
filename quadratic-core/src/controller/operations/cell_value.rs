@@ -502,7 +502,7 @@ impl GridController {
 mod test {
     use std::str::FromStr;
 
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
 
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
@@ -581,21 +581,21 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("123.45", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123.45").unwrap())
+            CellValue::Number(Decimal::from_str("123.45").unwrap())
         );
         assert!(format_update.is_default());
 
         let (value, format_update) = gc.string_to_cell_value("123,456.78", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456.78").unwrap())
+            CellValue::Number(Decimal::from_str("123456.78").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         let (value, format_update) = gc.string_to_cell_value("123,456,789.01", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
+            CellValue::Number(Decimal::from_str("123456789.01").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
@@ -603,7 +603,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+            CellValue::Number(Decimal::from_str("123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -617,7 +617,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("(123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(Decimal::from_str("-123456").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
@@ -630,7 +630,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$ 123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+            CellValue::Number(Decimal::from_str("123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -644,7 +644,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(Decimal::from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -658,7 +658,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(Decimal::from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -672,7 +672,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(Decimal::from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -686,7 +686,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$(123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(Decimal::from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -700,7 +700,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$ ( 123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(Decimal::from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -719,7 +719,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("123456 %", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+            CellValue::Number(Decimal::from_str("1234.56").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -733,7 +733,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("123,456%", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+            CellValue::Number(Decimal::from_str("1234.56").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,

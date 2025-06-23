@@ -851,7 +851,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
 
     use super::{PasteSpecial, *};
     use crate::Rect;
@@ -1095,7 +1095,7 @@ mod test {
 
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
-            Some(CellValue::Number(BigDecimal::from(6)))
+            Some(CellValue::Number(Decimal::from(6)))
         );
 
         let selection = A1Selection::test_a1("A1:B5");
@@ -1114,7 +1114,7 @@ mod test {
 
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((5, 9).into()),
-            Some(CellValue::Number(BigDecimal::from(6)))
+            Some(CellValue::Number(Decimal::from(6)))
         );
     }
 

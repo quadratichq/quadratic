@@ -42,7 +42,7 @@ mod tests {
         },
         grid::js_types::JsRenderCell,
     };
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
 
     #[test]
     fn test_run_javascript() {
@@ -183,7 +183,7 @@ mod tests {
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(pos![A2]),
-            Some(CellValue::Number(BigDecimal::from(10)))
+            Some(CellValue::Number(Decimal::from(10)))
         );
     }
 
@@ -262,7 +262,7 @@ mod tests {
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(pos![A2]),
-            Some(CellValue::Number(BigDecimal::from(11)))
+            Some(CellValue::Number(Decimal::from(11)))
         );
     }
 
@@ -524,15 +524,15 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(Decimal::from(1)))
         );
         assert_eq!(
             sheet.display_value(pos![B1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(Decimal::from(2)))
         );
         assert_eq!(
             sheet.display_value(pos![C1]),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(Decimal::from(3)))
         );
     }
 

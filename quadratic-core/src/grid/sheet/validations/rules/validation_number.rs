@@ -1,4 +1,4 @@
-use bigdecimal::ToPrimitive;
+use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
@@ -62,7 +62,7 @@ impl ValidationNumber {
 
 #[cfg(test)]
 mod tests {
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
 
     use super::*;
 
@@ -79,7 +79,7 @@ mod tests {
             ..Default::default()
         };
         assert!(!rule.validate(None));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
     }
 
     #[test]
@@ -88,10 +88,10 @@ mod tests {
             ranges: vec![NumberRange::Range(None, Some(9f64))],
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(9)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(8)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(9)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(8)))));
     }
 
     #[test]
@@ -100,9 +100,9 @@ mod tests {
             ranges: vec![NumberRange::Range(Some(9f64), None)],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(9)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(8)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(9)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(8)))));
     }
 
     #[test]
@@ -111,10 +111,10 @@ mod tests {
             ranges: vec![NumberRange::Equal(vec![9f64, -10f64])],
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(9)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(8)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(-10)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(9)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(8)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(-10)))));
     }
 
     #[test]
@@ -123,10 +123,10 @@ mod tests {
             ranges: vec![NumberRange::NotEqual(vec![9f64, -10f64])],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(9)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(8)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(-10)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(9)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(8)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(-10)))));
     }
 
     #[test]
@@ -138,29 +138,29 @@ mod tests {
             ],
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(0)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(1)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(11)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(19)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(20)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(30)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(31)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(0)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(1)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(11)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(19)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(20)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(30)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(31)))));
 
         let rule = ValidationNumber {
             ranges: vec![NumberRange::Range(Some(1f64), None)],
             ..Default::default()
         };
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(0)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(1)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(10)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(0)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(1)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(10)))));
 
         let rule = ValidationNumber {
             ranges: vec![NumberRange::Range(None, Some(10f64))],
             ..Default::default()
         };
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(0)))));
-        assert!(rule.validate(Some(&CellValue::Number(BigDecimal::from(1)))));
-        assert!(!rule.validate(Some(&CellValue::Number(BigDecimal::from(11)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(0)))));
+        assert!(rule.validate(Some(&CellValue::Number(Decimal::from(1)))));
+        assert!(!rule.validate(Some(&CellValue::Number(Decimal::from(11)))));
     }
 }

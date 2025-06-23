@@ -152,7 +152,7 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
 
     use super::*;
     use crate::{Pos, constants::SHEET_NAME};
@@ -292,15 +292,15 @@ mod test {
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(Decimal::from(2)))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(Decimal::from(2)))
         );
         assert_eq!(
             sheet_2.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(Decimal::from(2)))
         );
 
         check_operations(&gc);

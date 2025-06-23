@@ -65,7 +65,7 @@ mod test {
     };
     use std::str::FromStr;
 
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
 
     #[test]
     fn test_set_cell_value_undo_redo() {
@@ -131,7 +131,7 @@ mod test {
         let value = String::from("$123.123");
         assert_eq!(
             CellValue::unpack_currency(&value),
-            Some((String::from("$"), BigDecimal::from_str("123.123").unwrap()))
+            Some((String::from("$"), Decimal::from_str("123.123").unwrap()))
         );
 
         let value = String::from("test");
@@ -185,7 +185,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "$1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+            CellValue::Number(Decimal::from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_commas(&gc), None);
         assert_eq!(
@@ -201,7 +201,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+            CellValue::Number(Decimal::from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_decimals(&gc), None);
 
@@ -209,7 +209,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str(".1055").unwrap())
+            CellValue::Number(Decimal::from_str(".1055").unwrap())
         );
         assert_eq!(
             get_cell_numeric_format(&gc),

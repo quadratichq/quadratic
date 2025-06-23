@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use anyhow::{Result, bail};
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
@@ -82,7 +82,7 @@ impl CellValue {
                     // length by using 2 if currency is set by default.
 
                     CellValue::Number(number)
-                } else if let Ok(number) = BigDecimal::from_str(&value) {
+                } else if let Ok(number) = Decimal::from_str(&value) {
                     CellValue::Number(number)
                 } else if let Some(number) = CellValue::unpack_percentage(&value) {
                     let numeric_format = NumericFormat {

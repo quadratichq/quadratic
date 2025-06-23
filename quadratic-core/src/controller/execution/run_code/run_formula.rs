@@ -92,7 +92,7 @@ impl GridController {
 mod test {
     use std::str::FromStr;
 
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
     use uuid::Uuid;
 
     use crate::{
@@ -116,7 +116,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(Decimal::from(10)));
         let sheet_pos = SheetPos {
             x: 2,
             y: 1,
@@ -153,7 +153,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(Decimal::from(10)));
         let sheet_pos = SheetPos {
             x: 2,
             y: 1,
@@ -347,18 +347,18 @@ mod test {
             .set(
                 0,
                 0,
-                CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
+                CellValue::Number(Decimal::from_str("1.1").unwrap()),
             )
             .unwrap();
         array
             .set(
                 1,
                 0,
-                CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
+                CellValue::Number(Decimal::from_str("0.2").unwrap()),
             )
             .unwrap();
         array
-            .set(0, 1, CellValue::Number(BigDecimal::from_str("3").unwrap()))
+            .set(0, 1, CellValue::Number(Decimal::from_str("3").unwrap()))
             .unwrap();
         array.set(1, 1, CellValue::Text("Hello".into())).unwrap();
 

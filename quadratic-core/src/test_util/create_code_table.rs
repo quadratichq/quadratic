@@ -2,7 +2,7 @@
 use std::str::FromStr;
 
 #[cfg(test)]
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 
 #[cfg(test)]
 use crate::{
@@ -47,7 +47,7 @@ pub fn test_create_code_table_with_values(
     let mut array = Array::new_empty(array_size);
     for (i, s) in values.iter().enumerate() {
         if !s.is_empty() {
-            let value = if let Ok(bd) = BigDecimal::from_str(s) {
+            let value = if let Ok(bd) = Decimal::from_str(s) {
                 CellValue::Number(bd)
             } else {
                 CellValue::Text(s.to_string())
@@ -130,7 +130,7 @@ mod tests {
             assert_eq!(array.height(), 2);
             assert_eq!(
                 array.get(0, 0).unwrap(),
-                &CellValue::Number(BigDecimal::from(1))
+                &CellValue::Number(Decimal::from(1))
             );
         } else {
             panic!("Expected array value");
@@ -159,7 +159,7 @@ mod tests {
         if let Value::Array(array) = &table.value {
             assert_eq!(
                 array.get(0, 0).unwrap(),
-                &CellValue::Number(BigDecimal::from(1))
+                &CellValue::Number(Decimal::from(1))
             );
             assert_eq!(
                 array.get(1, 0).unwrap(),
@@ -167,7 +167,7 @@ mod tests {
             );
             assert_eq!(
                 array.get(0, 1).unwrap(),
-                &CellValue::Number(BigDecimal::from_str("3.14").unwrap())
+                &CellValue::Number(Decimal::from_str("3.14").unwrap())
             );
             // Fourth cell should be empty
             assert_eq!(array.get(1, 1).unwrap(), &CellValue::Blank);

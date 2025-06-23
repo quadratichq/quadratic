@@ -5,9 +5,9 @@
 
 use std::str::FromStr;
 
-use bigdecimal::{BigDecimal, Zero};
 use itertools::Itertools;
 use regex::Regex;
+use rust_decimal::prelude::*;
 
 use super::wildcard_pattern_to_regex;
 use crate::{
@@ -35,7 +35,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
                     CellValue::Logical(true)
                 } else if rhs_string.eq_ignore_ascii_case("FALSE") {
                     CellValue::Logical(false)
-                } else if let Ok(n) = BigDecimal::from_str(rhs_string) {
+                } else if let Ok(n) = Decimal::from_str(rhs_string) {
                     CellValue::Number(n)
                 } else if compare_fn == CompareFn::Eql && rhs_string.contains(['?', '*']) {
                     // If the string doesn't contain any `?` or `*`, then Excel
@@ -76,7 +76,7 @@ impl Criterion {
     fn compare(compare_fn: CompareFn, lhs: &CellValue, rhs: &CellValue) -> bool {
         match rhs {
             CellValue::Blank => match lhs {
-                CellValue::Number(lhs) => compare_fn.compare(lhs, &BigDecimal::zero()),
+                CellValue::Number(lhs) => compare_fn.compare(lhs, &Decimal::zero()),
                 _ => false,
             },
             CellValue::Text(rhs) => compare_fn.compare(&lhs.to_string().to_ascii_lowercase(), rhs),

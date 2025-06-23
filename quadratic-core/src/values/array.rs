@@ -146,13 +146,13 @@ impl Array {
     /// Constructs an array of random float values.
     #[cfg(test)]
     pub fn from_random_floats(size: ArraySize) -> Self {
-        use bigdecimal::BigDecimal;
         use rand::Rng;
+        use rust_decimal::Decimal;
 
         let mut rng = rand::rng();
         let values = std::iter::from_fn(|| {
-            Some(CellValue::Number(BigDecimal::from(
-                &rng.random_range(-100..=100),
+            Some(CellValue::Number(Decimal::from(
+                rng.random_range(-100..=100),
             )))
         })
         .take(size.len())

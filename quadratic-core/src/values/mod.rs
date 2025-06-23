@@ -13,6 +13,7 @@ mod convert;
 pub mod date_time;
 mod from_js;
 mod isblank;
+pub mod number;
 pub mod parquet;
 mod time;
 

@@ -152,7 +152,7 @@ mod test {
     };
 
     use super::*;
-    use bigdecimal::BigDecimal;
+    use rust_decimal::Decimal;
     use uuid::Uuid;
 
     #[test]
@@ -204,7 +204,7 @@ mod test {
         let pos = Pos { x: 1, y: 1 };
         sheet.set_cell_value(
             pos,
-            CellValue::Number(BigDecimal::from_str("123.456").unwrap()),
+            CellValue::Number(Decimal::from_str("123.456").unwrap()),
         );
 
         sheet.formats.numeric_format.set(
