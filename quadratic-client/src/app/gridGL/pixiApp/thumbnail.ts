@@ -32,11 +32,11 @@ class Thumbnail {
     this.renderer.destroy(false);
   }
 
-  rendererBusy() {
+  rendererBusy = () => {
     this.lastUpdate = performance.now();
-  }
+  };
 
-  async check() {
+  check = async () => {
     if (
       this.thumbnailDirty &&
       !pixiApp.copying &&
@@ -64,10 +64,10 @@ class Thumbnail {
         this.lastUpdate = now;
       }
     }
-  }
+  };
 
   /** returns a dataURL to a copy of the selected cells */
-  private async generate(): Promise<Blob | null> {
+  private generate = async (): Promise<Blob | null> => {
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
     await pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
     pixiApp.gridLines.update(rectangle, undefined, true);
@@ -77,7 +77,7 @@ class Thumbnail {
     return new Promise((resolve) => {
       this.renderer.view.toBlob?.((blob) => resolve(blob));
     });
-  }
+  };
 }
 
 export const thumbnail = new Thumbnail();
