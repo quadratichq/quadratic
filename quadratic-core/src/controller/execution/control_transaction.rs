@@ -66,6 +66,8 @@ impl GridController {
                 break;
             }
         }
+
+        self.send_client_render_updates(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
