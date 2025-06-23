@@ -89,7 +89,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: ArrayBuffer;
+  grid: ArrayBufferLike;
   id: number;
 }
 
@@ -189,22 +189,6 @@ export interface CoreClientSearch {
   type: 'coreClientSearch';
   results: SheetPos[];
   id: number;
-}
-
-export interface ClientCoreHasRenderCells {
-  type: 'clientCoreHasRenderCells';
-  id: number;
-  sheetId: string;
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-export interface CoreClientHasRenderCells {
-  type: 'coreClientHasRenderCells';
-  id: number;
-  hasRenderCells: boolean;
 }
 
 export interface CoreClientGetJwt {
@@ -390,14 +374,14 @@ export interface ClientCoreUpgradeGridFile {
 export interface CoreClientUpgradeFile {
   type: 'coreClientUpgradeGridFile';
   id: number;
-  contents?: ArrayBuffer;
+  contents?: ArrayBufferLike;
   version?: string;
   error?: string;
 }
 
 export interface ClientCoreImportFile {
   type: 'clientCoreImportFile';
-  file: ArrayBuffer;
+  file: ArrayBufferLike;
   fileName: string;
   fileType: 'csv' | 'parquet' | 'excel';
   sheetId?: string;
@@ -411,7 +395,7 @@ export interface ClientCoreImportFile {
 export interface CoreClientImportFile {
   type: 'coreClientImportFile';
   id: number;
-  contents?: ArrayBuffer;
+  contents?: ArrayBufferLike;
   version?: string;
   error?: string;
 }
@@ -1245,7 +1229,6 @@ export type ClientCoreMessage =
   | ClientCoreExport
   | ClientCoreSearch
   | ClientCoreRerunCodeCells
-  | ClientCoreHasRenderCells
   | ClientCoreCopyToClipboard
   | ClientCoreCutToClipboard
   | ClientCorePasteFromClipboard
@@ -1318,7 +1301,6 @@ export type CoreClientMessage =
   | CoreClientUpgradeFile
   | CoreClientExport
   | CoreClientSearch
-  | CoreClientHasRenderCells
   | CoreClientCopyToClipboard
   | CoreClientCutToClipboard
   | CoreClientHtmlOutput

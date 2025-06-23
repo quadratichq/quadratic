@@ -62,7 +62,6 @@ export class Update {
 
     if (pixiApp.copying) {
       this.raf = requestAnimationFrame(this.update);
-      this.updateFps();
       return;
     }
 
