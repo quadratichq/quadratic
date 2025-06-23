@@ -89,6 +89,7 @@ class IframeAiChatFiles {
   private saveFiles = async (dbFiles: DbFile[]): Promise<DbFile[]> => {
     try {
       const { db } = this.validateState('saveFiles');
+
       const savedFiles = await new Promise<DbFile[]>((resolve, reject) => {
         const tx = db.transaction(DB_STORE, 'readwrite');
         const store = tx.objectStore(DB_STORE);
@@ -107,6 +108,7 @@ class IframeAiChatFiles {
           };
         });
       });
+
       return savedFiles;
     } catch (error) {
       console.error('[IframeAiChatFiles] Error in saveFiles:', error);
@@ -114,9 +116,42 @@ class IframeAiChatFiles {
     }
   };
 
+  private getFiles = async (chatId: string): Promise<DbFile[]> => {
+    try {
+      const { db } = this.validateState('getFiles');
+
+      const dbFiles = await new Promise<DbFile[]>((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        const store = tx.objectStore(DB_STORE);
+
+        tx.onerror = () => reject(tx.error);
+
+        const index = store.index('chatId');
+        const request = index.getAll(chatId);
+
+        request.onsuccess = () => {
+          resolve(request.result);
+        };
+
+        request.onerror = () => {
+          console.error('[IframeAiChatFiles] Error getting files for chat:', chatId, request.error);
+          reject(request.error);
+        };
+      });
+
+      await this.clearStore();
+
+      return dbFiles;
+    } catch (error) {
+      console.error('[IframeAiChatFiles] Error in getFiles:', error);
+      return [];
+    }
+  };
+
   private deleteFiles = async (chatId: string, fileIds: string[]): Promise<string[]> => {
     try {
       const { db } = this.validateState('deleteFiles');
+
       const deletedFileIds = await new Promise<string[]>((resolve, reject) => {
         const tx = db.transaction(DB_STORE, 'readwrite');
         const store = tx.objectStore(DB_STORE);
@@ -145,6 +180,7 @@ class IframeAiChatFiles {
           };
         });
       });
+
       return deletedFileIds;
     } catch (error) {
       console.error('[IframeAiChatFiles] Error in deleteFiles:', error);
@@ -152,39 +188,10 @@ class IframeAiChatFiles {
     }
   };
 
-  private getFiles = async (chatId: string): Promise<DbFile[]> => {
+  private clearStore = async () => {
     try {
-      const { db } = this.validateState('getFiles');
-      const dbFiles = await new Promise<DbFile[]>((resolve, reject) => {
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        const store = tx.objectStore(DB_STORE);
+      const { db } = this.validateState('clearStore');
 
-        tx.onerror = () => reject(tx.error);
-
-        const index = store.index('chatId');
-        const request = index.getAll(chatId);
-
-        request.onsuccess = () => {
-          resolve(request.result);
-        };
-
-        request.onerror = () => {
-          console.error('[IframeAiChatFiles] Error getting files for chat:', chatId, request.error);
-          reject(request.error);
-        };
-      });
-
-      await this.deleteAllFiles();
-      return dbFiles;
-    } catch (error) {
-      console.error('[IframeAiChatFiles] Error in getFiles:', error);
-      return [];
-    }
-  };
-
-  private deleteAllFiles = async () => {
-    try {
-      const { db } = this.validateState('deleteAllFiles');
       await new Promise<void>((resolve, reject) => {
         const tx = db.transaction(DB_STORE, 'readwrite');
         const store = tx.objectStore(DB_STORE);
@@ -203,8 +210,9 @@ class IframeAiChatFiles {
         tx.onerror = () => reject(tx.error);
       });
     } catch (error) {
-      console.error('[IframeAiChatFiles] Error in deleteAllFiles:', error);
+      console.error('[IframeAiChatFiles] Error in clearStore:', error);
     }
   };
 }
+
 export const iframeAiChatFiles = new IframeAiChatFiles();

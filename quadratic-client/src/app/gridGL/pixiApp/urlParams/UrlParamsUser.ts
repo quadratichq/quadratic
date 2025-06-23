@@ -94,11 +94,9 @@ export class UrlParamsUser {
   };
 
   private importDbFilesToGrid = async (importFiles: DbFile[]) => {
-    if (!this.pixiAppSettingsInitialized || !this.iframeFilesLoaded) return;
+    if (!this.pixiAppSettingsInitialized || !this.iframeFilesLoaded || importFiles.length === 0) return;
 
-    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) {
-      return;
-    }
+    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
 
     const { setFilesImportProgress } = pixiAppSettings;
     if (!setFilesImportProgress) {
@@ -177,20 +175,22 @@ export class UrlParamsUser {
   };
 
   private loadAIAnalystPrompt = async (params: URLSearchParams) => {
-    const prompt = params.get('prompt');
-    if (!prompt) {
-      this.aiAnalystPromptLoaded = true;
-      return;
-    }
+    if (this.aiAnalystPromptLoaded) return;
 
     if (!this.pixiAppSettingsInitialized || !this.iframeFilesLoaded || !this.aiAnalystInitialized) return;
-    if (this.aiAnalystPromptLoaded) return;
 
     this.aiAnalystPromptLoaded = true;
 
-    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) {
-      return;
-    }
+    const prompt = params.get('prompt');
+    if (!prompt) return;
+
+    // Remove the `prompt` param when we're done
+    const url = new URL(window.location.href);
+    params.delete('prompt');
+    url.search = params.toString();
+    window.history.replaceState(null, '', url.toString());
+
+    if (!pixiAppSettings.permissions.includes('FILE_EDIT')) return;
 
     const { submitAIAnalystPrompt } = pixiAppSettings;
     if (!submitAIAnalystPrompt) {
@@ -213,6 +213,7 @@ export class UrlParamsUser {
         importFiles.push(file);
       }
     }
+    filesFromIframe.dbFiles = [];
 
     // import the files to the grid
     await this.importDbFilesToGrid(importFiles);
@@ -227,12 +228,6 @@ export class UrlParamsUser {
       },
       messageIndex: 0,
     });
-
-    // Remove the `prompt` param when we're done
-    const url = new URL(window.location.href);
-    params.delete('prompt');
-    url.search = params.toString();
-    window.history.replaceState(null, '', url.toString());
   };
 
   private setupListeners = (params: URLSearchParams) => {

@@ -39,8 +39,6 @@ class FilesFromIframe {
       case 'get-files-response':
         this.handleGetFiles(event.data);
         break;
-      default:
-        console.log('[FilesFromIframe] unhandled message from iframe', event.data);
     }
   };
 
