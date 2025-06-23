@@ -171,13 +171,6 @@ export class Tables extends Container<Table> {
 
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
-    // if the cursor is same as the code cell anchor cell, we may need to update the cursor
-    let updateCursor = false;
-    const isCursorSingleSelection = sheets.sheet.cursor.isSingleSelection();
-    const tableSelectionName = sheets.sheet.cursor.getSingleFullTableSelectionName();
-    const cursorSheetId = sheets.sheet.cursor.sheet.id;
-    const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
-
     for (const updateCodeCell of updateCodeCells) {
       if (updateCodeCell.sheet_id.id !== this.cellsSheet.sheetId) {
         continue;
@@ -187,8 +180,6 @@ export class Tables extends Container<Table> {
       const x = Number(pos.x);
       const y = Number(pos.y);
       const key = `${x},${y}`;
-
-      const cursorIsSameAsCodeCell = cursorSheetId === sheets.current && cursorX === x && cursorY === y;
 
       if (!render_code_cell) {
         delete this.singleCellTables[key];
@@ -215,22 +206,11 @@ export class Tables extends Container<Table> {
             const table = this.addChild(new Table(this.sheet, render_code_cell));
             this.tablesCache.add(table);
           }
-
-          // update cursor for multi-cell tables
-          if (cursorIsSameAsCodeCell && (isCursorSingleSelection || tableSelectionName === render_code_cell.name)) {
-            updateCursor = true;
-          }
         }
       }
     }
 
-    if (updateCursor) {
-      sheets.sheet.cursor.moveTo(sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, {
-        checkForTableRef: true,
-      });
-    }
     this.cursorPosition();
-
     pixiApp.singleCellOutlines.setDirty();
     pixiApp.setViewportDirty();
   };
@@ -302,6 +282,8 @@ export class Tables extends Container<Table> {
     if (this.sheet.id !== sheets.current) {
       return;
     }
+
+    sheets.sheet.cursor.checkForTableRef();
 
     const tables = sheets.sheet.cursor.getSelectedTableNames();
 
