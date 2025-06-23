@@ -58,7 +58,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     rect.y_range().for_each(|y| {
         vals.push(y.to_string());
         rect.x_range().for_each(|x| {
-            let pos: Pos = Pos { x, y };
+            let pos = Pos { x, y };
 
             if sheet.formats.bold.get(pos).is_some_and(|bold| bold) {
                 bolds.push((count_y + 1, count_x + 1));
