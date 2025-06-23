@@ -48,7 +48,7 @@ export class PythonCore {
   sendGetCellsA1 = (transactionId: string, a1: string): JsCellsA1Response => {
     try {
       // This is a growable shared buffer that will be used to communicate with core
-      // The first 4 bytes are used to signal the python core that the data is ready
+      // The first 4 bytes (int32) are used as flag for atomics wait and notify
       let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4, {
         maxByteLength: 4 * 1024 * 1024 * 1024, // 4GB
       });

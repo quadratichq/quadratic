@@ -170,6 +170,9 @@ export class Javascript {
               const uint8View = new Uint8Array(sharedBuffer, 4, cellsUint8Array.byteLength);
               uint8View.set(cellsUint8Array);
             })
+            .catch((error) => {
+              console.error('[javascript] getCellsA1 error:', error);
+            })
             .finally(() => {
               Atomics.store(int32View, 0, 1);
               Atomics.notify(int32View, 0, 1);
