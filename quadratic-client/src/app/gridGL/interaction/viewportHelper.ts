@@ -137,29 +137,6 @@ export function ensureRectVisible(sheetId: string, min: JsCoordinate, max?: JsCo
   }
 }
 
-// function ensureCellIsNotUnderTableHeader(coordinate: JsCoordinate, cell: Rectangle): boolean {
-//   const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
-//   if (!table) return false;
-//   const code = table.codeCell;
-//   if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {
-//     return false;
-//   }
-//   if (table.header.onGrid) return false;
-
-//   // we need to manually update the table to ensure it is in the correct position
-//   // this usually happens during the update loop, but that's too late for our needs
-//   const bounds = pixiApp.viewport.getVisibleBounds();
-//   const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-//   table.update(bounds, gridHeading);
-
-//   const tableHeaderBounds = table.header.getTableHeaderBounds();
-//   if (intersects.rectangleRectangle(tableHeaderBounds, cell)) {
-//     pixiApp.viewport.top -= tableHeaderBounds.bottom - cell.top;
-//     return true;
-//   }
-//   return false;
-// }
-
 export function ensureSelectionVisible() {
   // use cell coordinates b/c selection may include unbounded ranges that we
   // don't want to translate to world coordinates
@@ -175,87 +152,6 @@ export function ensureSelectionVisible() {
   pixiApp.viewportChanged();
   return false;
 }
-
-// // Makes a cell visible in the viewport
-// export function cellVisible(
-//   coordinate: JsCoordinate = {
-//     x: sheets.sheet.cursor.position.x,
-//     y: sheets.sheet.cursor.position.y,
-//   }
-// ): boolean {
-//   // returns true if the cursor is visible in the viewport
-//   const { viewport, headings } = pixiApp;
-//   const sheet = sheets.sheet;
-//   const headingSize = headings.headingSize;
-
-//   // todo...
-//   // check if the cell is part of a table header that is visible b/c it is
-//   // hovering over the table
-//   // const tableName = sheet.cursor.getTableNameInNameOrColumn(sheets.sheet.id, coordinate.x, coordinate.y);
-//   // if (tableName) return true;
-
-//   const cell = sheet.getCellOffsets(coordinate.x, coordinate.y);
-//   let is_off_screen = false;
-
-//   let left: number | undefined;
-//   let right: number | undefined;
-//   let top: number | undefined;
-//   let bottom: number | undefined;
-
-//   const headingWidth = headingSize.unscaledWidth;
-//   const bounds = viewport.getVisibleBounds();
-//   if (cell.x < viewport.left - headingWidth) {
-//     left = cell.x - headingWidth; //Math.max(-headingWidth, cell.x - headingWidth); // - BUFFER[0]);
-//     is_off_screen = true;
-//   }
-//   // else if (cell.x + cell.width > viewport.right) {
-//   //   // if the cell is wider than the viewport, then we show the sa1tart of the cell
-//   //   if (cell.width > bounds.width) {
-//   //     left = Math.max(headingWidth, cell.x + headingWidth); // - BUFFER[0]);
-//   //   } else {
-//   //     right = cell.x + cell.width + BUFFER[0];
-//   //   }
-//   //   is_off_screen = true;
-//   // }
-
-//   const headingHeight = -headingSize.unscaledHeight;
-//   if (cell.y < viewport.top + headingHeight) {
-//     top = Math.max(headingHeight, cell.y + headingHeight); // - BUFFER[1]);
-//     is_off_screen = true;
-//   } else if (cell.y + cell.height > viewport.bottom) {
-//     // if the cell is taller than the viewport, then we show the start of the cell
-//     if (cell.height > bounds.height) {
-//       top = Math.max(headingHeight, cell.y + headingHeight); // - BUFFER[1]);
-//     } else {
-//       bottom = cell.y + cell.height + BUFFER[1];
-//     }
-//     is_off_screen = true;
-//   }
-//   pixiApp.debug
-//     .clear()
-//     .beginFill(0xff0000)
-//     .drawCircle(cell.x - headingWidth, cell.y - headingHeight, 10)
-//     .endFill();
-
-//   if (ensureCellIsNotUnderTableHeader(coordinate, cell)) {
-//     is_off_screen = true;
-//   }
-
-//   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
-//     const halfWidth = bounds.width / 2;
-//     const halfHeight = bounds.height / 2;
-//     const x = left !== undefined ? left + halfWidth : right !== undefined ? right - halfWidth : viewport.center.x;
-//     const y = top !== undefined ? top + halfHeight : bottom !== undefined ? bottom - halfHeight : viewport.center.y;
-//     animate(x, y);
-
-//     // setTimeout(() => {
-//     //   console.log('topLeft', viewport.x, viewport.y);
-//     //   console.log('center', viewport.center.x, viewport.center.y);
-//     // }, 1000);
-//   }
-
-//   return !is_off_screen;
-// }
 
 // Ensures the cursor is always visible
 export function ensureVisible(visible: JsCoordinate | undefined) {

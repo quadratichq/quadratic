@@ -245,6 +245,16 @@ export class GridHeadings extends Container {
     this.horizontalLabels();
   }
 
+  private calculateRowWidth(bottomNumberLength: number): number {
+    if (!this.characterSize) {
+      throw new Error('Expected characterSize to be defined');
+    }
+    const { viewport } = pixiApp;
+    let rowWidth =
+      (bottomNumberLength * this.characterSize.width) / viewport.scale.x + (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
+    return Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
+  }
+
   private drawVerticalBar() {
     if (!this.characterSize) return;
 
@@ -255,17 +265,10 @@ export class GridHeadings extends Container {
     const offsets = sheet.offsets;
     const clamp = sheet.clamp;
 
-    const start = offsets.getYPlacement(bounds.top);
     const end = offsets.getYPlacement(bounds.bottom);
-    const topOffset = start.position;
     const bottomOffset = end.position + end.size;
-    const topNumberLength = Math.round(topOffset / CELL_HEIGHT - 1).toString().length;
     const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
-
-    this.rowWidth =
-      (Math.max(topNumberLength, bottomNumberLength) * this.characterSize.width) / viewport.scale.x +
-      (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
-    this.rowWidth = Math.max(this.rowWidth, CELL_HEIGHT / viewport.scale.x);
+    this.rowWidth = this.calculateRowWidth(bottomNumberLength);
 
     // draw background of vertical bar
     this.headingsGraphics.lineStyle(0);
@@ -543,9 +546,7 @@ export class GridHeadings extends Container {
     const endY = offsets.getYPlacement(viewportTopY + viewportHeight);
     const bottomOffset = endY.position + endY.size;
     const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
-    let rowWidth =
-      (bottomNumberLength * this.characterSize.width) / viewport.scale.x + (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
-    rowWidth = Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
+    const rowWidth = this.calculateRowWidth(bottomNumberLength);
 
     return {
       width: rowWidth * pixiApp.viewport.scale.x,
