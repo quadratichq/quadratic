@@ -733,7 +733,7 @@ impl Array {
     pub fn empty_values_cache_owned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.empty_values_cache
             .as_ref()
-            .and_then(|cache| cache.get_cache_owned())
+            .and_then(|cache| cache.get_cache_cloned())
     }
 }
 

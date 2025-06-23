@@ -69,7 +69,7 @@ impl EmptyValuesCache {
     /// Returns a clone of the cache, this needs to be translated to sheet coordinates
     /// before can be applied to the SheetDataTablesCache
     /// Hidden columns and sorted rows are handled in the SheetDataTablesCache
-    pub fn get_cache_owned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
+    pub fn get_cache_cloned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.cache.clone()
     }
 

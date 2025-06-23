@@ -10,6 +10,7 @@ use crate::util::is_false;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
+pub mod fix_names;
 pub mod formats;
 mod grid_data_table;
 mod names;
@@ -34,7 +35,128 @@ use sort::DataTableSort;
 use strum_macros::Display;
 
 use super::sheet::borders::Borders;
-use super::{CodeCellLanguage, SheetFormatting};
+use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
+
+/// Returns a unique name for the data table, taking into account its
+/// position on the sheet (so it doesn't conflict with itself).
+pub fn unique_data_table_name(
+    name: &str,
+    require_number: bool,
+    sheet_pos: Option<SheetPos>,
+    a1_context: &A1Context,
+) -> String {
+    // replace spaces with underscores
+    let name = name.replace(' ', "_");
+
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
+    let iter_names = a1_context.table_map.iter_rev_table_names();
+    unique_name(&name, require_number, check_name, iter_names)
+}
+
+impl Grid {
+    /// Returns the data table at the given position.
+    pub fn data_table_at(&self, sheet_id: SheetId, pos: &Pos) -> Result<&DataTable> {
+        self.try_sheet_result(sheet_id)?.data_table_result(pos)
+    }
+
+    /// Updates the name of a data table and replaces the old name in all code cells that reference it.
+    pub fn update_data_table_name(
+        &mut self,
+        sheet_pos: SheetPos,
+        old_name: &str,
+        new_name: &str,
+        a1_context: &A1Context,
+        require_number: bool,
+    ) -> Result<()> {
+        let unique_name =
+            unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
+
+        self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
+
+        let sheet = self
+            .try_sheet_mut(sheet_pos.sheet_id)
+            .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
+
+        sheet.modify_data_table_at(&sheet_pos.into(), |dt| {
+            dt.update_table_name(&unique_name);
+            Ok(())
+        })?;
+
+        Ok(())
+    }
+
+    /// Returns a unique name for a data table
+    pub fn next_data_table_name(&self, a1_context: &A1Context) -> String {
+        unique_data_table_name("Table", true, None, a1_context)
+    }
+
+    /// Replaces the table name in all code cells that reference the old name in all sheets in the grid.
+    pub fn replace_table_name_in_code_cells(
+        &mut self,
+        old_name: &str,
+        new_name: &str,
+        a1_context: &A1Context,
+    ) {
+        for sheet in self.sheets.values_mut() {
+            sheet.replace_table_name_in_code_cells(old_name, new_name, a1_context);
+        }
+    }
+
+    /// Replaces the column name in all code cells that reference the old name in all sheets in the grid.
+    pub fn replace_table_column_name_in_code_cells(
+        &mut self,
+        table_name: &str,
+        old_name: &str,
+        new_name: &str,
+        a1_context: &A1Context,
+    ) {
+        for sheet in self.sheets.values_mut() {
+            sheet.replace_table_column_name_in_code_cells(
+                table_name, old_name, new_name, a1_context,
+            );
+        }
+    }
+}
+
+const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
+const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
+
+// Table name must start with alphabet character, and then can have a mix of
+// alphabet, numbers, and "_ . \". Note \p{L} provides foreign alphabetic
+// characters
+const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\p{L}\\][a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// we split the regex into two parts so we can properly sanitize it
+const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\p{L}\\]"#;
+const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// Column names are more open to other characters
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z\p{L}0-9_\-_.(){}`'"~!@$%^&*+=<>?/\\|:;,\p{Pd}][a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
+const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@$%^&*+=<>?/\\|:;,]$"#;
+const COLUMN_NAME_REMAINING_CHARS: &str =
+    r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
+
+lazy_static! {
+    static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
+    static ref R1C1_REGEX_COMPILED: Regex =
+        Regex::new(R1C1_REGEX).expect("Failed to compile R1C1_REGEX");
+    pub(crate) static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
+        Regex::new(TABLE_NAME_VALID_CHARS).expect("Failed to compile TABLE_NAME_VALID_CHARS");
+    pub(crate) static ref TABLE_NAME_FIRST_CHAR_COMPILED: Regex =
+        Regex::new(TABLE_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile TABLE_NAME_FIRST_CHARACTER");
+    pub(crate) static ref TABLE_NAME_REMAINING_CHARACTERS_COMPILED: Regex =
+        Regex::new(TABLE_NAME_REMAINING_CHARACTERS)
+            .expect("Failed to compile TABLE_NAME_REMAINING_CHARACTERS");
+    pub static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_VALID_CHARS).expect("Failed to compile COLUMN_NAME_VALID_CHARS");
+    pub(crate) static ref COLUMN_NAME_FIRST_CHARACTER_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile COLUMN_NAME_FIRST_CHARACTER");
+    pub(crate) static ref COLUMN_NAME_REMAINING_CHARS_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_REMAINING_CHARS)
+            .expect("Failed to compile COLUMN_NAME_FINAL_CHARACTER");
+}
 
 #[allow(clippy::large_enum_variant)]
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display)]
@@ -1160,6 +1282,31 @@ pub mod test {
             "a",
             "123",
             "1column",
+            "@Column",
+            "Column!",
+            "Column?",
+            "Column*",
+            "Column/",
+            "Column\\",
+            "Column$",
+            "Column%",
+            "Column^",
+            "Column&",
+            "Column+",
+            "Column=",
+            "Column;",
+            "Column,",
+            "Column<",
+            "Column>",
+            "Column{",
+            "Column}",
+            "Column|",
+            "Column`",
+            "Column~",
+            "Column'",
+            "Column\"",
+            "Column.",
+            ".Column",
             "Column-with–en—dash", // Testing various dash characters
             longest_name.as_str(),
         ];
@@ -1181,37 +1328,9 @@ pub mod test {
                 "Column name must be between 1 and 255 characters",
             ),
             ("#Invalid", "Column name contains invalid characters"),
-            ("@Column", "Column name contains invalid characters"),
-            ("Column!", "Column name contains invalid characters"),
-            ("Column?", "Column name contains invalid characters"),
-            ("Column*", "Column name contains invalid characters"),
-            ("Column/", "Column name contains invalid characters"),
-            ("Column\\", "Column name contains invalid characters"),
-            ("Column$", "Column name contains invalid characters"),
-            ("Column%", "Column name contains invalid characters"),
-            ("Column^", "Column name contains invalid characters"),
-            ("Column&", "Column name contains invalid characters"),
-            ("Column+", "Column name contains invalid characters"),
-            ("Column=", "Column name contains invalid characters"),
-            ("Column;", "Column name contains invalid characters"),
-            ("Column,", "Column name contains invalid characters"),
-            ("Column<", "Column name contains invalid characters"),
-            ("Column>", "Column name contains invalid characters"),
             ("Column[", "Column name contains invalid characters"),
             ("Column]", "Column name contains invalid characters"),
-            ("Column{", "Column name contains invalid characters"),
-            ("Column}", "Column name contains invalid characters"),
-            ("Column|", "Column name contains invalid characters"),
-            ("Column`", "Column name contains invalid characters"),
-            ("Column~", "Column name contains invalid characters"),
-            ("Column'", "Column name contains invalid characters"),
-            ("Column\"", "Column name contains invalid characters"),
             // Test names ending with invalid characters
-            ("Column ", "Column name contains invalid characters"),
-            ("Column.", "Column name contains invalid characters"),
-            // Test names starting with invalid characters (except underscore and dash)
-            (".Column", "Column name contains invalid characters"),
-            (" Column", "Column name contains invalid characters"),
         ];
 
         for (name, expected_error) in test_cases {

@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     Pos, Rect,
-    compression::serialize_to_bytes,
+    compression::{SerializationFormat, serialize},
     grid::{
         SheetId,
         js_types::{
@@ -551,7 +551,7 @@ impl GridController {
             return;
         }
 
-        match serialize_to_bytes(self.a1_context()) {
+        match serialize(&SerializationFormat::Bincode, self.a1_context()) {
             Ok(bytes) => crate::wasm_bindings::js::jsA1Context(bytes),
             Err(e) => {
                 dbgjs!(format!(

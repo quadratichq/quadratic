@@ -2,13 +2,12 @@
 
 use std::str::FromStr;
 
-use ts_rs::TS;
 use wasm_bindgen::prelude::*;
 
 use crate::{
     Pos, Rect, SheetRect,
     a1::A1Selection,
-    grid::{DataTable, Sheet, SheetId},
+    grid::{DataTable, Sheet, SheetId, js_types::JsCoordinate},
     wasm_bindings::js_a1_context::JsA1Context,
 };
 
@@ -16,13 +15,6 @@ pub mod create;
 pub mod query;
 pub mod select;
 pub mod validate_name;
-
-#[derive(Debug, Clone, TS)]
-#[wasm_bindgen]
-pub struct JsCoordinate {
-    pub x: u32,
-    pub y: u32,
-}
 
 #[wasm_bindgen]
 pub struct JsSelection {
@@ -35,6 +27,12 @@ impl From<Pos> for JsCoordinate {
             x: pos.x as u32,
             y: pos.y as u32,
         }
+    }
+}
+
+impl JsSelection {
+    pub fn get_selection(&self) -> &A1Selection {
+        &self.selection
     }
 }
 

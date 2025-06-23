@@ -946,12 +946,12 @@ class Core {
     }
   }
 
-  rerunCodeCells(sheetId?: string, x?: number, y?: number, cursor?: string): Promise<string | undefined> {
+  rerunCodeCells(sheetId?: string, selection?: string, cursor?: string): Promise<string | undefined> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
-        if (sheetId !== undefined && x !== undefined && y !== undefined) {
-          return resolve(this.gridController.rerunCodeCell(sheetId, posToPos(x, y), cursor));
+        if (sheetId !== undefined && selection !== undefined) {
+          return resolve(this.gridController.rerunCodeCell(sheetId, selection, cursor));
         }
         if (sheetId !== undefined) {
           return resolve(this.gridController.rerunSheetCodeCells(sheetId, cursor));
@@ -975,7 +975,6 @@ class Core {
       output_array: null,
       line_number: null,
       output_display_type: null,
-      cancel_compute: true,
       chart_pixel_output: null,
       has_headers: false,
     };

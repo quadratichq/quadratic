@@ -545,23 +545,21 @@ impl A1Selection {
             }
             CellRefRange::Sheet { range } => {
                 let tables = data_cache.multi_cell_tables.unique_values_in_range(*range);
-                tables.iter().for_each(|table_pos| {
-                    if let Some(table_pos) = table_pos {
-                        if let Some(table) = context
-                            .table_map
-                            .table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                tables.iter().flatten().for_each(|table_pos| {
+                    if let Some(table) = context
+                        .table_map
+                        .table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                    {
+                        // ensure the table name is intersected by the range
+                        if table.show_name
+                            && range.might_intersect_rect(Rect::new(
+                                table.bounds.min.x,
+                                table.bounds.min.y,
+                                table.bounds.max.x,
+                                1,
+                            ))
                         {
-                            // ensure the table name is intersected by the range
-                            if table.show_name
-                                && range.might_intersect_rect(Rect::new(
-                                    table.bounds.min.x,
-                                    table.bounds.min.y,
-                                    table.bounds.max.x,
-                                    1,
-                                ))
-                            {
-                                names.push(table.table_name.clone());
-                            }
+                            names.push(table.table_name.clone());
                         }
                     }
                 });
@@ -574,14 +572,16 @@ impl A1Selection {
 
     /// Returns tables that have a column selection.
     pub fn tables_with_column_selection(&self) -> Vec<String> {
-        let mut names = HashSet::new();
+        let mut names = Vec::new();
         self.ranges.iter().for_each(|range| match range {
             CellRefRange::Table { range } => {
-                names.insert(range.table_name.clone());
+                names.push(range.table_name.clone());
             }
             CellRefRange::Sheet { .. } => (),
         });
-        names.into_iter().collect::<Vec<_>>()
+        names.sort();
+        names.dedup();
+        names
     }
 
     /// Returns the columns that are selected in the table.

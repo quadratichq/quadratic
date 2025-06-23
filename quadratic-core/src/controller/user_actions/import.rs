@@ -551,7 +551,7 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            2,
+            4,
             vec!["issue", " test", " value\u{feff}"],
         );
         assert_cell_value_row(
@@ -559,10 +559,10 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            3,
+            5,
             vec!["0", "1", " Inv\u{feff}alid\u{feff}"],
         );
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["0", "2", " Valid"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 6, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {
@@ -595,6 +595,27 @@ pub(crate) mod tests {
             .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
         assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
+    }
+
+    #[test]
+    fn test_csv_special_chars() {
+        let file_name = "test-special-character$.csv";
+        let csv_file = read_test_csv_file(file_name);
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "test_special_character_.csv");
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            2,
+            vec!["test-1", "$HERE!", "now--this!"],
+        );
     }
 
     #[test]

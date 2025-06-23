@@ -665,7 +665,7 @@ mod tests {
         gc.delete_rows(sheet_id, vec![2], None);
 
         // rerun the code cell to get the new value
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -674,7 +674,7 @@ mod tests {
         );
 
         gc.undo(None);
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -719,7 +719,7 @@ mod tests {
         gc.delete_rows(sheet_id, vec![2], None);
 
         // rerun the code cell to get the new value
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -728,7 +728,7 @@ mod tests {
         );
 
         gc.undo(None);
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

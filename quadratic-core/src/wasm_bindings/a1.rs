@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use crate::{
-    Pos,
-    a1::{A1Selection, CellRefRange, RefRangeBounds, js_selection::JsSelection},
+    a1::{A1Selection, CellRefRange, RefRangeBounds},
     grid::SheetId,
+    wasm_bindings::js_selection::JsSelection,
 };
 use wasm_bindgen::prelude::*;
 
