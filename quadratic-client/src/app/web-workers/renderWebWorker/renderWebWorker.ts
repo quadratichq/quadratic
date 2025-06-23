@@ -1,4 +1,4 @@
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { prepareBitmapFontInformation } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
@@ -25,7 +25,7 @@ class RenderWebWorker {
     this.worker.onerror = (e) => console.warn(`[render.worker] error: ${e.message}`, e);
   }
 
-  init(coreMessagePort: MessagePort) {
+  async init(coreMessagePort: MessagePort) {
     if (!this.worker) {
       throw new Error('Expected worker to be initialized in renderWebWorker.init');
     }
@@ -34,11 +34,11 @@ class RenderWebWorker {
       tableColumnHeaderForeground: getCSSVariableTint('table-column-header-foreground'),
     };
     this.worker.postMessage(message, [coreMessagePort]);
-    if (debugWebWorkers) console.log('[renderWebWorker] initialized.');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[renderWebWorker] initialized.');
   }
 
   private handleMessage = (e: MessageEvent<RenderClientMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[RenderWebWorker] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[RenderWebWorker] message: ${e.data.type}`);
     if (!pixiApp.cellsSheets) {
       this.preloadQueue.push(e);
       return;

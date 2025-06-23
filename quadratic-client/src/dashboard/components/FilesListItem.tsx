@@ -194,7 +194,7 @@ export function FilesListItemUserFile({
       </div>
       <Link
         key={uuid}
-        to={ROUTES.FILE(uuid)}
+        to={ROUTES.FILE({ uuid, searchParams: '' })}
         reloadDocument
         className={cn('relative z-10 w-full', isDisabled && `pointer-events-none opacity-50`)}
         {...dragProps}

@@ -52,7 +52,7 @@ jobs:
           # Write to client.env file to be used in Dockerfile
           echo "$ENV_VARS" > ./quadratic-client/client.env
           # Remove quotes if present
-          sed -i 's/"//g' ./quadratic-client/client.env
+          sed -i 's/="\(.*\)"$/=\1/; s/='"'"'\(.*\)'"'"'$/=\1/' ./quadratic-client/client.env
 
           # Create hash from environment variables
           ENV_HASH=$(echo "$ENV_VARS" | sha256sum | cut -d' ' -f1)
@@ -274,13 +274,9 @@ jobs:
             - aws-infra-development
           EOF
 
-          pulumi config set multiplayer-subdomain multiplayer-pr-qa
-          pulumi config set files-subdomain files-pr-qa
-          pulumi config set connection-subdomain connection-pr-qa
           pulumi config set docker-image-tag pr-qa
-          pulumi config set quadratic-api-uri https://quadratic-staging.herokuapp.com
-          pulumi config set is-preview true
 
+          pulumi refresh -y
           pulumi up -y
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
@@ -302,8 +298,10 @@ jobs:
         service:
           - name: client
             url: "https://qa.quadratic-preview.com/version.json"
-          - name: api
+          - name: api-heroku
             url: "https://quadratic-staging.herokuapp.com/health"
+          - name: api-aws
+            url: "https://api-pr-qa.quadratic-preview.com/health"
           - name: multiplayer
             url: "https://multiplayer-pr-qa.quadratic-preview.com/health"
           - name: connection

@@ -1,5 +1,5 @@
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import './multiplayerClient';
 import './multiplayerServer';
 
-if (debugWebWorkers) console.log('[multiplayer.worker] created');
+if (debugFlag('debugWebWorkers')) console.log('[multiplayer.worker] created');

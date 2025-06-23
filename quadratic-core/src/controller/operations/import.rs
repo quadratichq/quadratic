@@ -30,7 +30,7 @@ const IMPORT_LINES_PER_OPERATION: u32 = 10000;
 impl GridController {
     /// Guesses if the first row of a CSV file is a header based on the types of the
     /// first three rows.
-    pub fn guess_csv_first_row_is_header(&self, cell_values: &Array) -> bool {
+    fn guess_csv_first_row_is_header(cell_values: &Array) -> bool {
         if cell_values.height() < 3 {
             return false;
         }
@@ -48,8 +48,30 @@ impl GridController {
         let row_1 = types(1);
         let row_2 = types(2);
 
-        let row_0_is_different_from_row_1 = row_0 != row_1;
-        let row_1_is_same_as_row_2 = row_1 == row_2;
+        // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
+        let type_row_match = |a: &[u8], b: &[u8], ignore_empty: bool| -> bool {
+            if a.len() != b.len() {
+                return false;
+            }
+
+            for (t1, t2) in a.iter().zip(b.iter()) {
+                //
+                if ignore_empty
+                    && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
+                {
+                    continue;
+                }
+                if t1 != t2 {
+                    return false;
+                }
+            }
+
+            true
+        };
+
+        let row_0_is_different_from_row_1 =
+            !type_row_match(row_0.as_slice(), row_1.as_slice(), false);
+        let row_1_is_same_as_row_2 = type_row_match(row_1.as_slice(), row_2.as_slice(), true);
 
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
@@ -62,7 +84,7 @@ impl GridController {
         file_name: &str,
         insert_at: Pos,
         delimiter: Option<u8>,
-        header_is_first_row: Option<bool>,
+        create_table: Option<bool>,
     ) -> Result<Vec<Operation>> {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
@@ -70,7 +92,7 @@ impl GridController {
         let converted_file = clean_csv_file(&file)?;
         drop(file); // free the memory of the original file
 
-        let (d, width, height) = find_csv_info(&converted_file);
+        let (d, width, height, is_table) = find_csv_info(&converted_file);
         let delimiter = delimiter.unwrap_or(d);
 
         let reader = |flexible| {
@@ -80,10 +102,10 @@ impl GridController {
                 .flexible(flexible)
                 .from_reader(converted_file.as_slice())
         };
-
         let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
         let mut cell_values = Array::new_empty(array_size);
         let mut sheet_format_updates = SheetFormatUpdates::default();
+
         let mut y: u32 = 0;
 
         for entry in reader(true).records() {
@@ -106,7 +128,6 @@ impl GridController {
                     }
                 }
             }
-
             y += 1;
 
             // update the progress bar every time there's a new batch
@@ -117,37 +138,47 @@ impl GridController {
             }
         }
 
-        let context = self.a1_context();
-        let import = Import::new(file_name.into());
-        let mut data_table =
-            DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
+        let mut ops = vec![];
 
-        let apply_first_row_as_header = match header_is_first_row {
+        let apply_first_row_as_header = match create_table {
             Some(true) => true,
             Some(false) => false,
-            None => self.guess_csv_first_row_is_header(&cell_values),
+            None => GridController::guess_csv_first_row_is_header(&cell_values),
         };
 
-        data_table.value = cell_values.into();
-        if !sheet_format_updates.is_default() {
-            data_table
-                .formats
-                .get_or_insert_default()
-                .apply_updates(&sheet_format_updates);
-        }
+        if is_table && apply_first_row_as_header {
+            let context = self.a1_context();
+            let import = Import::new(file_name.into());
+            let mut data_table =
+                DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
 
-        if apply_first_row_as_header {
+            data_table.value = cell_values.into();
+            if !sheet_format_updates.is_default() {
+                data_table
+                    .formats
+                    .get_or_insert_default()
+                    .apply_updates(&sheet_format_updates);
+            }
+
             data_table.apply_first_row_as_header();
+            ops.push(Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+                cell_value: CellValue::Import(import),
+                index: None,
+            });
+            drop(sheet_format_updates);
+        } else {
+            ops.push(Operation::SetCellValues {
+                sheet_pos,
+                values: cell_values.into(),
+            });
+            sheet_format_updates.translate_in_place(sheet_pos.x, sheet_pos.y);
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id,
+                formats: sheet_format_updates,
+            });
         }
-
-        drop(sheet_format_updates);
-
-        let ops = vec![Operation::AddDataTable {
-            sheet_pos,
-            data_table,
-            cell_value: CellValue::Import(import),
-            index: None,
-        }];
 
         Ok(ops)
     }
@@ -382,11 +413,11 @@ mod test {
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     #[test]
-    fn guesses_the_csv_header() {
+    fn test_guesses_the_csv_header() {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
         let sheet = gc.sheet(sheet_id);
         let values = sheet.data_table_at(&pos).unwrap().value_as_array().unwrap();
-        assert!(gc.guess_csv_first_row_is_header(values));
+        assert!(GridController::guess_csv_first_row_is_header(values));
     }
 
     #[test]
@@ -406,7 +437,7 @@ mod test {
                 file_name,
                 pos,
                 Some(b','),
-                Some(false),
+                Some(true),
             )
             .unwrap();
 
@@ -418,6 +449,7 @@ mod test {
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
+        expected_data_table.apply_first_row_as_header();
         assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
         let data_table = match ops[0].clone() {
@@ -450,22 +482,23 @@ mod test {
             csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
         }
 
-        let ops = gc.import_csv_operations(
-            sheet_id,
-            csv.as_bytes().to_vec(),
-            file_name,
-            pos,
-            Some(b','),
-            Some(false),
-        );
+        let ops = gc
+            .import_csv_operations(
+                sheet_id,
+                csv.as_bytes().to_vec(),
+                file_name,
+                pos,
+                Some(b','),
+                Some(true),
+            )
+            .unwrap();
 
         let import = Import::new(file_name.into());
         let cell_value = CellValue::Import(import.clone());
         assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
-        assert_eq!(ops.as_ref().unwrap().len(), 1);
-
-        let (sheet_pos, data_table) = match &ops.unwrap()[0] {
+        assert_eq!(ops.len(), 1);
+        let (sheet_pos, data_table) = match &ops[0] {
             Operation::AddDataTable {
                 sheet_pos,
                 data_table,
@@ -475,7 +508,7 @@ mod test {
         };
         assert_eq!(sheet_pos.x, 1);
         assert_eq!(
-            data_table.cell_value_ref_at(0, 2),
+            data_table.cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))
         );
     }
@@ -853,5 +886,39 @@ mod test {
                 NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
             ))
         );
+    }
+
+    #[test]
+    fn test_csv_error_1() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-1.csv");
+        gc.import_csv(
+            sheet_id,
+            file.to_vec(),
+            "csv-error-1.csv",
+            pos![A1],
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn test_csv_error_2() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-2.csv");
+        gc.import_csv(
+            sheet_id,
+            file.to_vec(),
+            "csv-error-2.csv",
+            pos![A1],
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
     }
 }

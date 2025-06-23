@@ -1,4 +1,4 @@
-import { debugGridSettings } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { AtomEffect } from 'recoil';
@@ -37,13 +37,14 @@ const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
     const settings = JSON.parse(savedValue);
     const newSettings = { ...settings, presentationMode: false };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
-    if (debugGridSettings) console.log('[gridSettings] initializing with values from localStorage', newSettings);
+    if (debugFlag('debugGridSettings'))
+      console.log('[gridSettings] initializing with values from localStorage', newSettings);
     setSelf(newSettings);
     events.emit('gridSettings');
   }
 
   onSet((newValue, _, isReset) => {
-    if (debugGridSettings) console.log('[gridSettings] setting new value', newValue);
+    if (debugFlag('debugGridSettings')) console.log('[gridSettings] setting new value', newValue);
     isReset ? localStorage.removeItem(SETTINGS_KEY) : localStorage.setItem(SETTINGS_KEY, JSON.stringify(newValue));
   });
 };
@@ -51,7 +52,7 @@ const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
 // Emit an event so pixi app can respond and pull latest values from localStorage
 const emitGridSettingsChange: AtomEffect<GridSettings> = ({ onSet }) => {
   onSet(() => {
-    if (debugGridSettings) console.log('[gridSettings] emitting `grid-settings` event');
+    if (debugFlag('debugGridSettings')) console.log('[gridSettings] emitting `grid-settings` event');
     events.emit('gridSettings');
   });
 };
