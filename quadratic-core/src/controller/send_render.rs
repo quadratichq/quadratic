@@ -34,6 +34,7 @@ impl GridController {
             return;
         }
 
+        self.update_a1_context_table_map(transaction);
         self.send_a1_context();
         self.send_sheet_info(transaction);
         self.send_content_cache(transaction);

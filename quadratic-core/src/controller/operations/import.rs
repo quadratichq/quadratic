@@ -332,10 +332,7 @@ impl GridController {
                             cell,
                             formula_start_name.as_str(),
                         );
-                        gc.update_a1_context_table_map(
-                            std::mem::take(&mut transaction.code_cells_a1_context),
-                            false,
-                        );
+                        gc.update_a1_context_table_map(&mut transaction);
                     }
                 }
 
