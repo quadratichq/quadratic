@@ -14,15 +14,22 @@ pub enum MultiPos {
 }
 
 impl MultiPos {
+    /// Creates a new SheetPos.
     pub fn new_sheet_pos(sheet_id: SheetId, x: i64, y: i64) -> Self {
         MultiPos::SheetPos(SheetPos { sheet_id, x, y })
     }
 
+    /// Returns the sheet_id of the MultiPos.
     pub fn sheet_id(&self) -> SheetId {
         match self {
             MultiPos::SheetPos(sheet_pos) => sheet_pos.sheet_id,
             MultiPos::TablePos(table_pos) => table_pos.sheet_id(),
         }
+    }
+
+    /// Returns true if the MultiPos is a TablePos.
+    pub fn is_table_pos(&self) -> bool {
+        matches!(self, MultiPos::TablePos(_))
     }
 
     /// Properly converts a MultiPos to a SheetPos. (For TablePos, this is

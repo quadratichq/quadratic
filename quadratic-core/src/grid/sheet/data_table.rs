@@ -28,7 +28,7 @@ impl Sheet {
 
     /// Gets the index of the data table
     pub fn data_table_index(&self, multi_pos: MultiPos) -> Option<usize> {
-        self.data_tables.get_index_of(&multi_pos)
+        self.data_tables.get_multi_pos_index_of(&multi_pos)
     }
 
     /// Returns the index of the data table as a result.

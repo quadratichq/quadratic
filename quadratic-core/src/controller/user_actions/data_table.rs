@@ -1,5 +1,5 @@
 use crate::{
-    CopyFormats, SheetPos, SheetRect,
+    CopyFormats, MultiPos, SheetPos, SheetRect,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::{
         CodeRun, DataTable, data_table::column_header::DataTableColumnHeader, sort::DataTableSort,
@@ -10,17 +10,17 @@ use anyhow::Result;
 
 impl GridController {
     /// Gets a data table based on a sheet position.
-    pub fn data_table_at(&self, sheet_pos: SheetPos) -> Option<&DataTable> {
-        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-            sheet.data_table_at(&sheet_pos.into())
+    pub fn data_table_at(&self, multi_pos: MultiPos) -> Option<&DataTable> {
+        if let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) {
+            sheet.data_table_multi_pos(&multi_pos)
         } else {
             None
         }
     }
 
     /// Gets a data table based on a sheet position.
-    pub fn code_run_at(&self, sheet_pos: &SheetPos) -> Option<&CodeRun> {
-        self.data_table_at(*sheet_pos).and_then(|dt| dt.code_run())
+    pub fn code_run_at(&self, multi_pos: MultiPos) -> Option<&CodeRun> {
+        self.data_table_at(multi_pos).and_then(|dt| dt.code_run())
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
@@ -639,8 +639,8 @@ mod tests {
 
         let dt = test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
-        assert_eq!(gc.data_table_at(pos![sheet_id!A1]), Some(&dt));
-        assert!(gc.data_table_at(pos![sheet_id!A2]).is_none());
+        assert_eq!(gc.data_table_at(pos![sheet_id!A1].into()), Some(&dt));
+        assert!(gc.data_table_at(pos![sheet_id!A2].into()).is_none());
     }
 
     #[test]

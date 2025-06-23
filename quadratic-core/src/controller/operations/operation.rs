@@ -59,10 +59,11 @@ pub enum Operation {
     DeleteDataTableMultiPos {
         multi_pos: MultiPos,
     },
-    SetDataTableAtMultiPos {
-        multi_pos: MultiPos,
+    SetDataTableAt {
+        sheet_pos: SheetPos,
         values: CellValues,
     },
+
     FlattenDataTableMultiPos {
         multi_pos: MultiPos,
     },
@@ -435,11 +436,6 @@ pub enum Operation {
         sheet_pos: SheetPos,
         pixel_width: f32,
         pixel_height: f32,
-    },
-    /// **Deprecated** Jun 2025 in favor of `SetDataTableAtMultiPos`.
-    SetDataTableAt {
-        sheet_pos: SheetPos,
-        values: CellValues,
     },
     /// **Deprecated** Jun 2025 in favor of `FlattenDataTableMultiPos`.
     FlattenDataTable {

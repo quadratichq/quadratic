@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     MultiPos, Pos, Rect, TablePos,
-    grid::{CodeRun, DataTable, SheetRegionMap},
+    grid::{CodeRun, DataTable, SheetId, SheetRegionMap},
 };
 
 use anyhow::{Result, anyhow};
@@ -81,8 +81,9 @@ impl SheetDataTables {
         self.data_tables.len()
     }
 
-    /// Returns the index (position in indexmap) of the data table at the given position, if it exists.
-    pub fn get_index_of(&self, multi_pos: &MultiPos) -> Option<usize> {
+    /// Returns the index of either a Table or a sub-Table at the given
+    /// multi-pos, if it exists.
+    pub fn get_multi_pos_index_of(&self, multi_pos: &MultiPos) -> Option<usize> {
         match multi_pos {
             MultiPos::SheetPos(sheet_pos) => {
                 let pos: Pos = (*sheet_pos).into();
@@ -103,14 +104,17 @@ impl SheetDataTables {
         }
     }
 
-    /// Returns the data table at the given position, if it exists.
-    pub fn get_at_index(&self, index: usize) -> Option<(&Pos, &DataTable)> {
-        self.data_tables.get_index(index)
-    }
-
-    /// Returns the data table at the given position, if it exists.
-    pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
-        self.data_tables.get(pos)
+    /// Returns the table position of the data table at the given position, if it exists.
+    fn get_table_pos(&self, table_pos: &TablePos) -> Option<&DataTable> {
+        let data_table_pos: Pos = table_pos.table_sheet_pos.into();
+        if let Some(data_table) = self.data_tables.get(&data_table_pos) {
+            data_table
+                .tables
+                .as_ref()
+                .and_then(|tables| tables.data_tables.get(&table_pos.pos))
+        } else {
+            None
+        }
     }
 
     /// Returns the data table at the given position, if it exists.
@@ -121,17 +125,14 @@ impl SheetDataTables {
         }
     }
 
-    /// Returns the table position of the data table at the given position, if it exists.
-    pub fn get_table_pos(&self, table_pos: &TablePos) -> Option<&DataTable> {
-        let data_table_pos: Pos = table_pos.table_sheet_pos.into();
-        if let Some(data_table) = self.data_tables.get(&data_table_pos) {
-            data_table
-                .tables
-                .as_ref()
-                .and_then(|tables| tables.data_tables.get(&table_pos.pos))
-        } else {
-            None
-        }
+    /// Returns the data table at the given position, if it exists.
+    pub fn get_at_index(&self, index: usize) -> Option<(&Pos, &DataTable)> {
+        self.data_tables.get_index(index)
+    }
+
+    /// Returns the data table at the given position, if it exists.
+    pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
+        self.data_tables.get(pos)
     }
 
     /// Returns the data table at the given position, if it exists, along with its index and position.
@@ -357,13 +358,37 @@ impl SheetDataTables {
         &self,
         rect: Rect,
         ignore_spill_error: bool,
-    ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
+        sheet_id: SheetId,
+        find_sub_tables: bool,
+    ) -> impl Iterator<Item = (usize, MultiPos, &CodeRun)> {
         self.iter_pos_in_rect(rect, ignore_spill_error)
             .filter_map(|pos| {
                 self.data_tables
                     .get_full(&pos)
                     .and_then(|(index, _, data_table)| {
-                        data_table.code_run().map(|code_run| (index, pos, code_run))
+                        if let Some(code_run) = data_table.code_run() {
+                            // return the code run
+                            Some((index, pos.to_multi_pos(sheet_id), code_run))
+                        } else {
+                            // if it's a data table, then check for code runs in sub-tables
+                            if find_sub_tables {
+                                if let Some(tables) = &data_table.tables {
+                                    tables
+                                        .iter_pos_in_rect(rect, ignore_spill_error)
+                                        .filter_map(|pos| {
+                                            if let Some(code_run) = data_table.code_run() {
+                                                Some((index, pos.to_multi_pos(sheet_id), code_run))
+                                            } else {
+                                                None
+                                            }
+                                        })
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            }
+                        }
                     })
             })
     }

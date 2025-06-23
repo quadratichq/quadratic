@@ -22,6 +22,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) else {
             return vec![];
         };
+
         // converted absolute sheet position -- if not available, then nothing more to do here
         let Some(sheet_pos) = multi_pos.to_sheet_pos(sheet) else {
             return vec![];
@@ -36,42 +37,36 @@ impl GridController {
         let mut ops = vec![];
 
         let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
-        if let Some(table_pos) = sheet.code_in_table(multi_pos.into()) {
-            let table_pos = MultiPos::TablePos(TablePos {
-                table_sheet_pos: table_pos.to_sheet_pos(multi_pos.sheet_id),
-                pos: Pos {
-                    x: multi_pos.x - table_pos.x,
-                    y: multi_pos.y - table_pos.y,
-                },
-            });
+        if let MultiPos::TablePos(table_pos) = multi_pos {
             ops.push(Operation::SetDataTableAt {
-                sheet_pos: multi_pos,
+                sheet_pos: SheetPos {
+                    x: table_pos.table_sheet_pos.x + table_pos.pos.x,
+                    y: table_pos.table_sheet_pos.y + table_pos.pos.y,
+                    sheet_id: table_pos.table_sheet_pos.sheet_id,
+                },
                 values,
             });
-            ops.push(Operation::ComputeCodeInTable { table_pos });
         } else {
-            ops.push(Operation::SetCellValues {
-                sheet_pos: multi_pos,
-                values,
-            });
-            ops.push(Operation::ComputeCode {
-                sheet_pos: multi_pos,
-            });
+            ops.push(Operation::SetCellValues { sheet_pos, values });
         }
+        ops.push(Operation::ComputeCodeMultiPos { multi_pos });
 
-        // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name {
-            if self.data_table_at(multi_pos).is_none() {
-                ops.push(Operation::DataTableMeta {
-                    sheet_pos: multi_pos,
-                    name: Some(code_cell_name),
-                    alternating_colors: None,
-                    columns: None,
-                    show_ui: None,
-                    show_name: None,
-                    show_columns: None,
-                    readonly: None,
-                });
+        // change the code cell name if it is provided and the code cell doesn't
+        // already have a name. Note: this is only for non-table code cells.
+        if !multi_pos.is_table_pos() {
+            if let Some(code_cell_name) = code_cell_name {
+                if self.data_table_at(multi_pos).is_none() {
+                    ops.push(Operation::DataTableMeta {
+                        sheet_pos,
+                        name: Some(code_cell_name),
+                        alternating_colors: None,
+                        columns: None,
+                        show_ui: None,
+                        show_name: None,
+                        show_columns: None,
+                        readonly: None,
+                    });
+                }
             }
         }
         ops
@@ -88,7 +83,7 @@ impl GridController {
             rects.iter().for_each(|rect| {
                 sheet
                     .data_tables
-                    .get_code_runs_in_rect(*rect, false)
+                    .get_code_runs_in_rect(*rect, false, sheet_id, true)
                     .for_each(|(_, pos, _)| {
                         ops.push(Operation::ComputeCode {
                             sheet_pos: pos.to_sheet_pos(sheet_id),
@@ -159,14 +154,14 @@ impl GridController {
 
     fn get_upstream_dependents(
         &self,
-        sheet_pos: &SheetPos,
-        seen: &mut HashSet<SheetPos>,
-    ) -> Vec<SheetPos> {
-        if !seen.insert(*sheet_pos) {
+        multi_pos: MultiPos,
+        seen: &mut HashSet<MultiPos>,
+    ) -> Vec<MultiPos> {
+        if !seen.insert(multi_pos) {
             return vec![];
         }
 
-        let Some(code_run) = self.code_run_at(sheet_pos) else {
+        let Some(code_run) = self.code_run_at(multi_pos) else {
             return vec![];
         };
 

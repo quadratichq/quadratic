@@ -183,7 +183,7 @@ impl GridController {
         let index = index.unwrap_or(
             sheet
                 .data_tables
-                .get_index_of(&multi_pos)
+                .get_multi_pos_index_of(&multi_pos)
                 .unwrap_or(usize::MAX),
         );
 

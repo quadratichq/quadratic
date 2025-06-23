@@ -1093,8 +1093,12 @@ mod tests {
             None,
             None,
         );
-        let find_index =
-            |sheet: &Sheet, x: i64, y: i64| sheet.data_tables.get_index_of(&Pos { x, y }).unwrap();
+        let find_index = |sheet: &Sheet, x: i64, y: i64| {
+            sheet
+                .data_tables
+                .get_multi_pos_index_of(&Pos { x, y })
+                .unwrap()
+        };
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 2, 1), 1);
