@@ -1,5 +1,6 @@
+use crate::Pos;
 #[cfg(test)]
-use crate::{Pos, SheetRect};
+use crate::SheetRect;
 use crate::{
     SheetPos, TablePos,
     grid::{Sheet, SheetId},
@@ -37,6 +38,15 @@ impl MultiPos {
         match self {
             MultiPos::SheetPos(sheet_pos) => sheet_pos.sheet_id = sheet_id,
             MultiPos::TablePos(table_pos) => table_pos.set_sheet_id(sheet_id),
+        }
+    }
+
+    /// Returns the translated_pos of the MultiPos. A translated_pos is the x,y
+    /// coordinate mapped for a TablePos (and just the x, y for a SheetPos).
+    pub fn translate_pos(&self, sheet: &Sheet) -> Option<Pos> {
+        match self {
+            MultiPos::SheetPos(sheet_pos) => Some((*sheet_pos).into()),
+            MultiPos::TablePos(table_pos) => table_pos.translate_pos(sheet),
         }
     }
 }

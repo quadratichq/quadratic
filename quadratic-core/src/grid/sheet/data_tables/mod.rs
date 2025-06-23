@@ -5,7 +5,7 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Pos, Rect,
+    MultiPos, Pos, Rect, TablePos,
     grid::{CodeRun, DataTable, SheetRegionMap},
 };
 
@@ -82,8 +82,25 @@ impl SheetDataTables {
     }
 
     /// Returns the index (position in indexmap) of the data table at the given position, if it exists.
-    pub fn get_index_of(&self, pos: &Pos) -> Option<usize> {
-        self.data_tables.get_index_of(pos)
+    pub fn get_index_of(&self, multi_pos: &MultiPos) -> Option<usize> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                let pos: Pos = (*sheet_pos).into();
+                self.data_tables.get_index_of(&pos)
+            }
+            MultiPos::TablePos(table_pos) => {
+                let pos = table_pos.table_sheet_pos.into();
+                if let Some(data_table) = self.get_at(&pos) {
+                    if let Some(tables) = &data_table.tables {
+                        tables.data_tables.get_index_of(&table_pos.pos)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+        }
     }
 
     /// Returns the data table at the given position, if it exists.
@@ -94,6 +111,27 @@ impl SheetDataTables {
     /// Returns the data table at the given position, if it exists.
     pub fn get_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get(pos)
+    }
+
+    /// Returns the data table at the given position, if it exists.
+    pub fn get_multi_pos(&self, multi_pos: &MultiPos) -> Option<&DataTable> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => self.get_at(&(*sheet_pos).into()),
+            MultiPos::TablePos(table_pos) => self.get_table_pos(table_pos),
+        }
+    }
+
+    /// Returns the table position of the data table at the given position, if it exists.
+    pub fn get_table_pos(&self, table_pos: &TablePos) -> Option<&DataTable> {
+        let data_table_pos: Pos = table_pos.table_sheet_pos.into();
+        if let Some(data_table) = self.data_tables.get(&data_table_pos) {
+            data_table
+                .tables
+                .as_ref()
+                .and_then(|tables| tables.data_tables.get(&table_pos.pos))
+        } else {
+            None
+        }
     }
 
     /// Returns the data table at the given position, if it exists, along with its index and position.

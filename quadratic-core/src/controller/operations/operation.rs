@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, ClearOption, CopyFormats, MultiPos, Pos, SheetPos, SheetRect,
+    CellValue, ClearOption, CopyFormats, MultiPos, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -40,14 +40,14 @@ pub enum Operation {
         sheet_pos: SheetPos,
         values: CellValues,
     },
-    SetDataTable {
-        sheet_pos: SheetPos,
+    SetDataTableMultiPos {
+        multi_pos: MultiPos,
         data_table: Option<DataTable>,
         index: usize,
     },
-    /// Adds or replaces a data table at a specific SheetPos.
-    AddDataTable {
-        sheet_pos: SheetPos,
+    /// Adds or replaces a data table at a specific MultiPos.
+    AddDataTableMultiPos {
+        multi_pos: MultiPos,
         data_table: DataTable,
         cell_value: CellValue,
 
@@ -56,26 +56,21 @@ pub enum Operation {
         #[serde(default)]
         index: Option<usize>,
     },
-    DeleteDataTable {
-        sheet_pos: SheetPos,
+    DeleteDataTableMultiPos {
+        multi_pos: MultiPos,
     },
-    // **Deprecated** and replaced with SetChartCellSize
-    SetChartSize {
-        sheet_pos: SheetPos,
-        pixel_width: f32,
-        pixel_height: f32,
+    SetDataTableAtMultiPos {
+        multi_pos: MultiPos,
+        values: CellValues,
     },
+    FlattenDataTableMultiPos {
+        multi_pos: MultiPos,
+    },
+
     SetChartCellSize {
         sheet_pos: SheetPos,
         w: u32,
         h: u32,
-    },
-    SetDataTableAt {
-        sheet_pos: SheetPos,
-        values: CellValues,
-    },
-    FlattenDataTable {
-        sheet_pos: SheetPos,
     },
     SwitchDataTableKind {
         sheet_pos: SheetPos,
@@ -85,17 +80,6 @@ pub enum Operation {
     GridToDataTable {
         sheet_rect: SheetRect,
     },
-    // **Deprecated** and replaced with DataTableOptionMeta
-    DataTableMeta {
-        sheet_pos: SheetPos,
-        name: Option<String>,
-        alternating_colors: Option<bool>,
-        columns: Option<Vec<DataTableColumnHeader>>,
-        show_ui: Option<bool>,
-        show_name: Option<bool>,
-        show_columns: Option<bool>,
-        readonly: Option<bool>,
-    },
     DataTableOptionMeta {
         sheet_pos: SheetPos,
         name: Option<String>,
@@ -104,6 +88,7 @@ pub enum Operation {
         show_name: Option<ClearOption<bool>>,
         show_columns: Option<ClearOption<bool>>,
     },
+
     DataTableFormats {
         sheet_pos: SheetPos,
         formats: SheetFormatUpdates,
@@ -186,42 +171,17 @@ pub enum Operation {
         select_table: bool,
     },
 
-    /// **Deprecated** Jun 2025 in favor of `ComputeCodeMultiPos`.
-    ComputeCode {
-        sheet_pos: SheetPos,
-    },
-
     /// Runs a code cell.
     ComputeCodeMultiPos {
         multi_pos: MultiPos,
     },
 
-    /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.
-    SetCellFormats {
-        sheet_rect: SheetRect,
-        attr: CellFmtArray,
-    },
-    /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.
-    SetCellFormatsSelection {
-        selection: OldSelection,
-        formats: Formats,
-    },
     /// Updates cell formats for all cells in a selection.
     SetCellFormatsA1 {
         sheet_id: SheetId,
         formats: SheetFormatUpdates,
     },
 
-    /// **Deprecated** Nov 2024 in favor of `SetBordersA1`.
-    SetBorders {
-        sheet_rect: SheetRect,
-        borders: SheetBorders,
-    },
-    /// **Deprecated** Nov 2024 in favor of `SetBordersA1`.
-    SetBordersSelection {
-        selection: OldSelection,
-        borders: BorderStyleCellUpdates,
-    },
     /// Updates borders for all cells in a selection.
     SetBordersA1 {
         sheet_id: SheetId,
@@ -310,14 +270,6 @@ pub enum Operation {
         size: f64,
     },
 
-    /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
-    SetCursor {
-        sheet_rect: SheetRect,
-    },
-    /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
-    SetCursorSelection {
-        selection: OldSelection,
-    },
     /// Sets the cursor selection. This is used when pasting data.
     SetCursorA1 {
         selection: A1Selection,
@@ -410,5 +362,87 @@ pub enum Operation {
         // this is used to properly redo an InsertRow operation
         #[serde(default)]
         copy_formats: CopyFormats,
+    },
+
+    // **Deprecated** and replaced with DataTableOptionMeta
+    DataTableMeta {
+        sheet_pos: SheetPos,
+        name: Option<String>,
+        alternating_colors: Option<bool>,
+        columns: Option<Vec<DataTableColumnHeader>>,
+        show_ui: Option<bool>,
+        show_name: Option<bool>,
+        show_columns: Option<bool>,
+        readonly: Option<bool>,
+    },
+    /// **Deprecated** Jun 2025 in favor of `SetDataTableMultiPos`.
+    SetDataTable {
+        sheet_pos: SheetPos,
+        data_table: Option<DataTable>,
+        index: usize,
+    },
+    /// **Deprecated** Jun 2025 in favor of `AddDataTableMultiPos`.
+    AddDataTable {
+        sheet_pos: SheetPos,
+        data_table: DataTable,
+        cell_value: CellValue,
+
+        // Used to insert a data table at a specific index (usually after an
+        // undo action)
+        #[serde(default)]
+        index: Option<usize>,
+    },
+    /// **Deprecated** Jun 2025 in favor of `DeleteDataTableMultiPos`.
+    DeleteDataTable {
+        sheet_pos: SheetPos,
+    },
+
+    /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
+    SetCursor {
+        sheet_rect: SheetRect,
+    },
+    /// **Deprecated** Nov 2024 in favor of `SetCursorA1`.
+    SetCursorSelection {
+        selection: OldSelection,
+    },
+    /// **Deprecated** Jun 2025 in favor of `ComputeCodeMultiPos`.
+    ComputeCode {
+        sheet_pos: SheetPos,
+    },
+
+    /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.
+    SetCellFormats {
+        sheet_rect: SheetRect,
+        attr: CellFmtArray,
+    },
+    /// **Deprecated** Nov 2024 in favor of `SetCellFormatsA1`.
+    SetCellFormatsSelection {
+        selection: OldSelection,
+        formats: Formats,
+    },
+    /// **Deprecated** Nov 2024 in favor of `SetBordersA1`.
+    SetBorders {
+        sheet_rect: SheetRect,
+        borders: SheetBorders,
+    },
+    /// **Deprecated** Nov 2024 in favor of `SetBordersA1`.
+    SetBordersSelection {
+        selection: OldSelection,
+        borders: BorderStyleCellUpdates,
+    },
+    // **Deprecated** and replaced with SetChartCellSize
+    SetChartSize {
+        sheet_pos: SheetPos,
+        pixel_width: f32,
+        pixel_height: f32,
+    },
+    /// **Deprecated** Jun 2025 in favor of `SetDataTableAtMultiPos`.
+    SetDataTableAt {
+        sheet_pos: SheetPos,
+        values: CellValues,
+    },
+    /// **Deprecated** Jun 2025 in favor of `FlattenDataTableMultiPos`.
+    FlattenDataTable {
+        sheet_pos: SheetPos,
     },
 }

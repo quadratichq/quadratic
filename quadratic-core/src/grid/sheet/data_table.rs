@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    Pos, Rect, SheetPos,
+    MultiPos, Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
@@ -16,6 +16,11 @@ use anyhow::{Result, anyhow, bail};
 use indexmap::IndexMap;
 
 impl Sheet {
+    /// Returns a DataTable at a MultiPos
+    pub fn data_table_multi_pos(&self, multi_pos: &MultiPos) -> Option<&DataTable> {
+        self.data_tables.get_multi_pos(multi_pos)
+    }
+
     /// Returns a DataTable at a Pos
     pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get_at(pos)

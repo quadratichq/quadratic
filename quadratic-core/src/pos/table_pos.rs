@@ -99,8 +99,6 @@ impl TablePos {
         self.table_sheet_pos.sheet_id
     }
 
-    /// Used to change sheet_id in tests
-    #[cfg(test)]
     pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
         self.table_sheet_pos.sheet_id = sheet_id;
     }

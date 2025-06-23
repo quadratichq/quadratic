@@ -52,9 +52,11 @@ impl GridController {
             return;
         };
 
-        let old_data_table = match multi_pos {
-            MultiPos::SheetPos(sheet_pos) => sheet.data_table_at(&sheet_pos.into()),
-            MultiPos::TablePos(table_pos) => table_pos.data_table(sheet),
+        let old_data_table = sheet.data_table_multi_pos(&multi_pos);
+
+        let Some(sheet_pos) = multi_pos.to_sheet_pos(sheet) else {
+            // sheet table may have been deleted
+            return;
         };
 
         // preserve some settings from the previous code run
@@ -118,16 +120,16 @@ impl GridController {
         }
 
         let sheet_rect = match (&old_data_table, &new_data_table) {
-            (None, None) => multi_pos.into(),
-            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(multi_pos, false),
+            (None, None) => sheet_pos.into(),
+            (None, Some(code_cell_value)) => code_cell_value.output_sheet_rect(sheet_pos, false),
             (Some(old_code_cell_value), None) => {
-                old_code_cell_value.output_sheet_rect(multi_pos, false)
+                old_code_cell_value.output_sheet_rect(sheet_pos, false)
             }
             (Some(old_code_cell_value), Some(code_cell_value)) => {
-                let old = old_code_cell_value.output_sheet_rect(multi_pos, false);
-                let new = code_cell_value.output_sheet_rect(multi_pos, false);
+                let old = old_code_cell_value.output_sheet_rect(sheet_pos, false);
+                let new = code_cell_value.output_sheet_rect(sheet_pos, false);
                 SheetRect {
-                    min: multi_pos.into(),
+                    min: sheet_pos.into(),
                     max: Pos {
                         x: old.max.x.max(new.max.x),
                         y: old.max.y.max(new.max.y),
@@ -166,21 +168,24 @@ impl GridController {
         }
 
         transaction.add_from_code_run(
-            sheet_id,
-            pos,
+            multi_pos,
             old_data_table.as_ref().is_some_and(|dt| dt.is_image()),
             old_data_table.as_ref().is_some_and(|dt| dt.is_html()),
         );
         transaction.add_from_code_run(
-            sheet_id,
-            pos,
+            multi_pos,
             new_data_table.as_ref().is_some_and(|dt| dt.is_image()),
             new_data_table.as_ref().is_some_and(|dt| dt.is_html()),
         );
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
         // index for SetCodeRun is either set by execute_set_code_run or calculated
-        let index = index.unwrap_or(sheet.data_tables.get_index_of(&pos).unwrap_or(usize::MAX));
+        let index = index.unwrap_or(
+            sheet
+                .data_tables
+                .get_index_of(&multi_pos)
+                .unwrap_or(usize::MAX),
+        );
 
         if transaction.is_user_undo_redo() {
             let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table

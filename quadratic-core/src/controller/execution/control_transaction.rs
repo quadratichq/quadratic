@@ -254,7 +254,7 @@ impl GridController {
 
                     self.finalize_data_table(
                         &mut transaction,
-                        current_sheet_pos,
+                        current_sheet_pos.into(),
                         Some(data_table),
                         None,
                     );

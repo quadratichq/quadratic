@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    MultiPos, Pos, Rect,
+    MultiPos, Rect,
     a1::A1Context,
     grid::{CodeCellLanguage, DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
@@ -107,7 +107,7 @@ impl GridController {
 
     pub(crate) fn update_a1_context_table_map(
         &mut self,
-        code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
+        code_cells_a1_context: HashMap<SheetId, HashSet<MultiPos>>,
         sort: bool,
     ) {
         for (sheet_id, positions) in code_cells_a1_context.into_iter() {
@@ -116,9 +116,9 @@ impl GridController {
                 continue;
             };
 
-            for pos in positions.into_iter() {
-                let Some(table) = sheet.data_table_at(&pos) else {
-                    self.a1_context.table_map.remove_at(sheet_id, pos);
+            for multi_pos in positions.into_iter() {
+                let Some(table) = sheet.data_table_multi_pos(&multi_pos) else {
+                    self.a1_context.table_map.remove_at(multi_pos);
                     continue;
                 };
 
@@ -127,10 +127,13 @@ impl GridController {
                     .table_map
                     .contains_name(table.name(), None)
                 {
-                    self.a1_context.table_map.remove_at(sheet_id, pos);
+                    self.a1_context.table_map.remove_at(multi_pos);
                 }
-
-                self.a1_context.table_map.insert_table(sheet_id, pos, table);
+                if let Some(translated_pos) = multi_pos.translate_pos(sheet) {
+                    self.a1_context
+                        .table_map
+                        .insert_table(multi_pos, translated_pos, table);
+                }
             }
         }
 
@@ -154,7 +157,7 @@ impl GridController {
         self.a1_context()
             .iter_tables()
             .filter(|table| {
-                table.sheet_id == sheet_id && table.language == CodeCellLanguage::Import
+                table.sheet_id() == sheet_id && table.language == CodeCellLanguage::Import
             })
             .map(|table| table.bounds)
             .collect::<Vec<_>>()
