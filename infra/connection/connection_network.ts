@@ -18,11 +18,11 @@ const internetGateway = new aws.ec2.InternetGateway("connection-igw", {
 
 // Create Elastic IPs
 export const connectionEip1 = new aws.ec2.Eip("nat-eip-1", {
-  vpc: true,
+  domain: "vpc",
 });
 
 export const connectionEip2 = new aws.ec2.Eip("nat-eip-2", {
-  vpc: true,
+  domain: "vpc",
 });
 
 // Create public subnets
@@ -34,7 +34,7 @@ export const connectionPublicSubnet1 = new aws.ec2.Subnet(
     availabilityZone: "us-west-2a",
     mapPublicIpOnLaunch: true,
     tags: { Name: "connection-public-subnet-1" },
-  }
+  },
 );
 
 export const connectionPublicSubnet2 = new aws.ec2.Subnet(
@@ -45,7 +45,7 @@ export const connectionPublicSubnet2 = new aws.ec2.Subnet(
     availabilityZone: "us-west-2b",
     mapPublicIpOnLaunch: true,
     tags: { Name: "connection-public-subnet-2" },
-  }
+  },
 );
 
 // Create a NAT Gateway in each public subnet
@@ -60,7 +60,6 @@ const natGateway2 = new aws.ec2.NatGateway("nat-gateway-2", {
   subnetId: connectionPublicSubnet2.id,
   tags: { Name: "nat-gateway-2" },
 });
-
 // Create private subnets
 export const connectionPrivateSubnet1 = new aws.ec2.Subnet(
   "connection-private-subnet-1",
@@ -69,7 +68,7 @@ export const connectionPrivateSubnet1 = new aws.ec2.Subnet(
     cidrBlock: "10.0.3.0/24",
     availabilityZone: "us-west-2a",
     tags: { Name: "connection-private-subnet-1" },
-  }
+  },
 );
 
 export const connectionPrivateSubnet2 = new aws.ec2.Subnet(
@@ -79,7 +78,7 @@ export const connectionPrivateSubnet2 = new aws.ec2.Subnet(
     cidrBlock: "10.0.4.0/24",
     availabilityZone: "us-west-2b",
     tags: { Name: "connection-private-subnet-2" },
-  }
+  },
 );
 
 // Create route tables
@@ -153,10 +152,10 @@ export const connectionNlbSecurityGroup = new aws.ec2.SecurityGroup(
     egress: [
       { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
     ],
-  }
+  },
 );
 
-// Create a Security Group for the Multiplayer EC2 instance
+// Create a Security Group for the Connection EC2 instance
 export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
   "connection-sg-1",
   {
@@ -172,7 +171,7 @@ export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
     egress: [
       { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
     ],
-  }
+  },
 );
 
 if (isPreviewEnvironment)

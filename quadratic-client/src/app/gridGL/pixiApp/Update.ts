@@ -1,14 +1,8 @@
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
-import { debugShowFocus, debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
 import { FPS } from '../helpers/Fps';
-import {
-  debugRendererLight,
-  debugShowCachedCounts,
-  debugShowChildren,
-  debugTimeCheck,
-  debugTimeReset,
-} from '../helpers/debugPerformance';
+import { debugRendererLight, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
 import { pixiApp } from './PixiApp';
 import { thumbnail } from './thumbnail';
 
@@ -21,7 +15,7 @@ export class Update {
   firstRenderComplete = false;
 
   constructor() {
-    if (debugShowFPS) {
+    if (debugFlag('debugShowFPS')) {
       this.fps = new FPS();
     }
     events.on('scrollBarsHandler', this.setScrollBarsHandler);
@@ -55,6 +49,13 @@ export class Update {
     }
   };
 
+  private updateFps() {
+    if (!this.fps && debugFlag('debugShowFPS')) {
+      this.fps = new FPS();
+    }
+    this.fps?.update();
+  }
+
   // update loop w/debug checks
   private update = () => {
     if (pixiApp.destroyed) return;
@@ -69,7 +70,7 @@ export class Update {
       return;
     }
 
-    if (debugShowFocus) {
+    if (debugFlag('debugShowFocus')) {
       this.showFocus();
     }
 
@@ -87,7 +88,7 @@ export class Update {
       pixiApp.copy.dirty ||
       pixiApp.singleCellOutlines.dirty;
 
-    if (rendererDirty && debugShowWhyRendering) {
+    if (rendererDirty && debugFlag('debugShowWhyRendering')) {
       console.log(
         `dirty: ${[
           pixiApp.viewport.dirty && 'viewport',
@@ -145,7 +146,6 @@ export class Update {
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
-      debugShowCachedCounts();
       thumbnail.rendererBusy();
     } else {
       debugRendererLight(false);
@@ -158,6 +158,6 @@ export class Update {
     }
 
     this.raf = requestAnimationFrame(this.update);
-    this.fps?.update();
+    this.updateFps();
   };
 }

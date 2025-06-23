@@ -1,6 +1,9 @@
 #[cfg(test)]
 use crate::wasm_bindings::sheet_content_cache::SheetContentCache;
-use crate::{compression::serialize_to_bytes, grid::Sheet};
+use crate::{
+    compression::{SerializationFormat, serialize},
+    grid::Sheet,
+};
 
 impl Sheet {
     #[cfg(test)]
@@ -14,7 +17,10 @@ impl Sheet {
             return;
         }
 
-        match serialize_to_bytes(self.columns.has_cell_value_ref()) {
+        match serialize(
+            &SerializationFormat::Bincode,
+            self.columns.has_cell_value_ref(),
+        ) {
             Ok(bytes) => {
                 crate::wasm_bindings::js::jsSendContentCache(self.id_to_string(), bytes);
             }
@@ -33,7 +39,7 @@ impl Sheet {
             return;
         }
 
-        match serialize_to_bytes(self.data_tables.cache_ref()) {
+        match serialize(&SerializationFormat::Bincode, self.data_tables.cache_ref()) {
             Ok(bytes) => {
                 crate::wasm_bindings::js::jsSendDataTablesCache(self.id_to_string(), bytes);
             }

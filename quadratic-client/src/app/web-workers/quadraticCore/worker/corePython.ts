@@ -1,4 +1,4 @@
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
@@ -19,11 +19,11 @@ class CorePython {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
-  init = (pythonPort: MessagePort) => {
+  init = async (pythonPort: MessagePort) => {
     this.corePythonPort = pythonPort;
     this.corePythonPort.onmessage = this.handleMessage;
     self.sendRunPython = this.sendRunPython;
-    if (debugWebWorkers) console.log('[corePython] initialized');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[corePython] initialized');
   };
 
   private handleMessage = (e: MessageEvent<PythonCoreMessage>) => {

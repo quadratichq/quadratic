@@ -36,7 +36,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
       teamUuid: data.teams[0].team.uuid,
       isPrivate: true,
     });
-    return redirectDocument(ROUTES.FILE(newFileUuid));
+    return redirectDocument(ROUTES.FILE({ uuid: newFileUuid, searchParams: '' }));
   }
 
   // If there's more than one team, return teams and show ui to pick a team
@@ -90,7 +90,7 @@ export const Component = () => {
         <CardFooter className="flex justify-between gap-2">
           <SpinnerIcon className={cn('mr-auto text-muted-foreground', isLoading ? 'opacity-100' : 'opacity-0')} />
           <Button variant="outline" disabled={isLoading} asChild>
-            <Link to={ROUTES.FILE(fileUuid)} reloadDocument>
+            <Link to={ROUTES.FILE({ uuid: fileUuid, searchParams: '' })} reloadDocument>
               Back to file
             </Link>
           </Button>

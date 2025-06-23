@@ -410,7 +410,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
+        self.update_empty_values_cache();
 
         Ok(())
     }
@@ -448,7 +448,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
+        self.update_empty_values_cache();
 
         Ok(())
     }
@@ -488,7 +488,7 @@ impl Array {
 
         self.size = new_size;
         self.values = array.values;
-        self.empty_values_cache = Some(EmptyValuesCache::from((&self.size, &self.values)));
+        self.update_empty_values_cache();
 
         Ok(())
     }
@@ -729,7 +729,7 @@ impl Array {
     pub fn empty_values_cache_owned(&self) -> Option<Contiguous2D<Option<Option<bool>>>> {
         self.empty_values_cache
             .as_ref()
-            .and_then(|cache| cache.get_cache_owned())
+            .and_then(|cache| cache.get_cache_cloned())
     }
 }
 

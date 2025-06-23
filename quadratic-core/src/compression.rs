@@ -56,13 +56,6 @@ where
 
 // SERIALIZATION
 
-pub fn serialize_to_bytes<T>(data: T) -> Result<Vec<u8>>
-where
-    T: serde::Serialize,
-{
-    bincode::serde::encode_to_vec(&data, BINCODE_CONFIG).map_err(|e| anyhow!(e))
-}
-
 pub fn serialize<T>(serialization_format: &SerializationFormat, data: T) -> Result<Vec<u8>>
 where
     T: serde::Serialize,
@@ -71,13 +64,6 @@ where
         SerializationFormat::Bincode => Ok(bincode::serde::encode_to_vec(&data, BINCODE_CONFIG)?),
         SerializationFormat::Json => Ok(serde_json::to_string(&data)?.into_bytes()),
     }
-}
-
-pub fn deserialize_from_bytes<T>(data: &[u8]) -> Result<T>
-where
-    T: DeserializeOwned,
-{
-    deserialize_bincode(data)
 }
 
 pub fn deserialize<T>(serialization_format: &SerializationFormat, data: &[u8]) -> Result<T>

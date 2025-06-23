@@ -8,11 +8,15 @@
  * - coreRender.ts: the interface between this web worker and the render web worker
  */
 
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlagWait } from '@/app/debugFlags/debugFlags';
 import { coreClient } from './coreClient';
 import { coreConnection } from './coreConnection';
 
 coreClient.start();
 coreConnection.start();
 
-if (debugWebWorkers) console.log('[core.worker] created');
+const report = async () => {
+  if (await debugFlagWait('debugWebWorkers')) console.log('[core.worker] created');
+};
+
+report();

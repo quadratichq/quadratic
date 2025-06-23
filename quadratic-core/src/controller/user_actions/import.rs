@@ -489,13 +489,13 @@ pub(crate) mod tests {
         )
         .unwrap();
 
+        print_first_sheet(&gc);
+
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "title_row.csv");
-        assert_eq!(sheet.rendered_value(pos![A2]).unwrap(), "Column 1");
-        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "Sample report");
-        assert_eq!(sheet.rendered_value(pos![A5]).unwrap(), "c1");
-        assert_eq!(sheet.rendered_value(pos![B5]).unwrap(), " c2");
-        assert_eq!(sheet.rendered_value(pos![C5]).unwrap(), " Sample column3");
+        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "Sample report");
+        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "c1");
+        assert_eq!(sheet.rendered_value(pos![B3]).unwrap(), " c2");
+        assert_eq!(sheet.rendered_value(pos![C3]).unwrap(), " Sample column3");
     }
 
     #[test]
@@ -504,7 +504,7 @@ pub(crate) mod tests {
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 2, y: 2 };
+        let pos = Pos { x: 1, y: 1 };
 
         gc.import_csv(
             sheet_id,
@@ -519,9 +519,9 @@ pub(crate) mod tests {
 
         print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 4, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 6, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 2, 4, 9, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 6, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -595,6 +595,27 @@ pub(crate) mod tests {
             .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
         assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
+    }
+
+    #[test]
+    fn test_csv_special_chars() {
+        let file_name = "test-special-character$.csv";
+        let csv_file = read_test_csv_file(file_name);
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "test_special_character_.csv");
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            2,
+            vec!["test-1", "$HERE!", "now--this!"],
+        );
     }
 
     #[test]

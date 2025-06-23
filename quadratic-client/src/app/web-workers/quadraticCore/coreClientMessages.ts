@@ -445,8 +445,7 @@ export interface CoreClientSheetMetaFills {
 export interface ClientCoreRerunCodeCells {
   type: 'clientCoreRerunCodeCells';
   sheetId?: string;
-  x?: number;
-  y?: number;
+  selection?: string;
   cursor: string;
 }
 

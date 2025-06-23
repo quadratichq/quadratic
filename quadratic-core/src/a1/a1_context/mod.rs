@@ -75,7 +75,7 @@ impl A1Context {
 
     /// Returns a list of all table names in the context except for formulas.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
-        self.table_map.table_info()
+        self.table_map.expensive_table_info()
     }
 
     /// Returns any table that intersects with the given sheet position.
