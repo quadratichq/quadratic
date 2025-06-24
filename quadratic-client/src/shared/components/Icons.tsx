@@ -510,6 +510,10 @@ export const PasteIcon: IconComponent = (props) => {
   return <Icon {...props}>content_paste</Icon>;
 };
 
+export const PsychologyIcon: IconComponent = (props) => {
+  return <Icon {...props}>psychology</Icon>;
+};
+
 export const PDFIcon: IconComponent = (props) => {
   return <Icon {...props}>picture_as_pdf</Icon>;
 };
@@ -555,11 +559,15 @@ export const SheetIcon: IconComponent = (props) => {
 };
 
 export const SnippetsIcon: IconComponent = (props) => {
-  return <Icon {...props}>integration_instructions</Icon>;
+  return <Icon {...props}>view_cozy</Icon>;
+};
+
+export const SpeedIcon: IconComponent = (props) => {
+  return <Icon {...props}>speed</Icon>;
 };
 
 export const SpillErrorMoveIcon: IconComponent = (props) => {
-  return <Icon {...props}>vertical_align_bottom</Icon>;
+  return <Icon {...props}>keyboard_arrow_down</Icon>;
 };
 
 export const SpinnerIcon: IconComponent = (props) => {
