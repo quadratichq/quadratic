@@ -34,7 +34,7 @@ export const ROUTES = {
       url.searchParams.set('private', 'true');
     }
     if (searchParams.chatId) {
-      url.searchParams.set('chatid', searchParams.chatId);
+      url.searchParams.set('chat-id', searchParams.chatId);
     }
 
     return url.toString();
