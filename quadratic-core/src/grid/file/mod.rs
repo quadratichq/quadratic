@@ -375,8 +375,6 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid");
     const V1_5_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
-    const V1_6_FILE: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
     const V1_5_QAWOLF_TEST_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_(Main)_QAWolf_test.grid");
     const V1_5_UPGRADE_CODE_RUNS: &[u8] =
@@ -384,6 +382,10 @@ mod tests {
     const V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE: &[u8] = include_bytes!(
         "../../../../quadratic-rust-shared/data/grid/v1_5_JavaScript_getting_started_(example).grid"
     );
+    const V1_6_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
+    const V1_11_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_11_simple.grid");
 
     #[test]
     fn process_a_number_v1_3_file() {
@@ -503,14 +505,6 @@ mod tests {
     }
 
     #[test]
-    fn imports_and_exports_a_v1_6_grid() {
-        let imported = import(V1_6_FILE.to_vec()).unwrap();
-        let exported = export(imported.clone()).unwrap();
-        let imported_copy = import(exported).unwrap();
-        assert_eq!(imported_copy, imported);
-    }
-
-    #[test]
     fn imports_and_exports_v1_5_qawolf_test_file() {
         import(V1_5_QAWOLF_TEST_FILE.to_vec()).unwrap();
 
@@ -575,6 +569,14 @@ mod tests {
                 .std_err,
             Some("x is not defined".into())
         );
+    }
+
+    #[test]
+    fn imports_and_exports_a_v1_6_grid() {
+        let imported = import(V1_6_FILE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let imported_copy = import(exported).unwrap();
+        assert_eq!(imported_copy, imported);
     }
 
     #[test]
@@ -783,6 +785,14 @@ mod tests {
         let exported = export(gc.grid().clone()).unwrap();
         let imported = import(exported).unwrap();
         assert_eq!(imported, gc.grid().clone());
+    }
+
+    #[test]
+    fn imports_and_exports_a_v1_11_grid() {
+        let imported = import(V1_11_FILE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let imported_copy = import(exported).unwrap();
+        assert_eq!(imported_copy, imported);
     }
 
     #[test]
