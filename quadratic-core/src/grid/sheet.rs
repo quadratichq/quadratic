@@ -18,7 +18,7 @@ use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
-use crate::{CellValue, Pos, Rect};
+use crate::{CellValue, MultiPos, Pos, Rect};
 
 pub mod a1_context;
 pub mod a1_selection;
@@ -309,7 +309,28 @@ impl Sheet {
             .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
     }
 
-    /// Returns a mutable reference to the cell value at the Pos in column.values.
+    /// Returns a mutable reference to the cell value at the MultiPos. This
+    /// should be used with caution, as it allows the cell value to be modified
+    /// in place.
+    pub fn cell_value_multi_mut(&mut self, multi_pos: MultiPos) -> Option<&mut CellValue> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => self.cell_value_mut(sheet_pos.into()),
+            MultiPos::TablePos(table_pos) => {
+                if let Some(data_table) = self
+                    .data_tables
+                    .get_at_mut(&table_pos.table_sheet_pos.into())
+                {
+                    data_table.get_value_mut(table_pos.pos)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    /// Returns a mutable reference to the cell value at the Pos in
+    /// column.values. This should be used with caution, as it allows the cell
+    /// value to be modified in place.
     pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
         self.columns.get_value_mut(&pos)
     }

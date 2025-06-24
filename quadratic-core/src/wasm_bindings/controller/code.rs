@@ -65,25 +65,22 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: String,
+        table_pos: Option<String>,
         language: JsValue,
         code_string: String,
         code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> Option<String> {
-        if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
-            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-                if let Ok(language) = serde_wasm_bindgen::from_value(language) {
-                    return Some(self.set_code_cell(
-                        pos.to_sheet_pos(sheet_id),
-                        language,
-                        code_string,
-                        code_cell_name,
-                        cursor,
-                    ));
-                }
-            }
-        }
-        None
+        let pos = serde_json::from_str::<Pos>(&pos).ok()?;
+        let sheet_id = SheetId::from_str(&sheet_id).ok()?;
+        let language = serde_wasm_bindgen::from_value(language).ok()?;
+        let multi_pos = if let Some(table_pos) = table_pos {
+            let table_pos = serde_json::from_str::<Pos>(&table_pos).ok()?;
+            MultiPos::new_table_pos(sheet_id, table_pos.x, table_pos.y, pos.x, pos.y)
+        } else {
+            MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y)
+        };
+        Some(self.set_code_cell(multi_pos, language, code_string, code_cell_name, cursor))
     }
 
     /// Reruns all code cells in grid.

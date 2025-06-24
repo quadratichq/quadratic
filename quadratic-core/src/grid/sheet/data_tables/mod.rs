@@ -135,6 +135,12 @@ impl SheetDataTables {
         self.data_tables.get(pos)
     }
 
+    /// Returns a mutable reference to the DataTable. This should be used with
+    /// caution, as it allows the DataTable to be modified in place.
+    pub fn get_at_mut(&mut self, pos: &Pos) -> Option<&mut DataTable> {
+        self.data_tables.get_mut(pos)
+    }
+
     /// Returns the data table at the given position, if it exists, along with its index and position.
     pub fn get_full(&self, pos: &Pos) -> Option<(usize, &Pos, &DataTable)> {
         self.data_tables.get_full(pos)
@@ -570,8 +576,23 @@ impl SheetDataTables {
     }
 
     /// Removes a data table at the given position, updating mutual spill and cache.
-    pub fn shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
-        self.shift_remove_full(pos).map(|full| (full.2, full.3))
+    pub fn shift_remove(&mut self, multi_pos: &MultiPos) -> Option<(DataTable, HashSet<Rect>)> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                let pos: Pos = (*sheet_pos).into();
+                self.shift_remove_full(&pos).map(|full| (full.2, full.3))
+            }
+            MultiPos::TablePos(table_pos) => {
+                let pos: Pos = table_pos.table_sheet_pos.into();
+                let data_table = self.data_tables.get_mut(&pos)?;
+
+                data_table
+                    .tables
+                    .as_mut()?
+                    .shift_remove_full(&table_pos.pos)
+                    .map(|full| (full.2, full.3))
+            }
+        }
     }
 
     /// Returns the bounds of the column at the given index.

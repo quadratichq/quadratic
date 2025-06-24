@@ -497,8 +497,12 @@ mod tests {
             None,
         );
         let code = "c(1, 1) + 1".to_string();
-        let ops =
-            gc.set_code_cell_operations(sheet_pos, CodeCellLanguage::Python, code.clone(), None);
+        let ops = gc.set_code_cell_operations(
+            sheet_pos.into(),
+            CodeCellLanguage::Python,
+            code.clone(),
+            None,
+        );
 
         // resize rows
         let row_heights = vec![JsRowHeight {

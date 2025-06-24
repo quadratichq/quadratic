@@ -177,7 +177,7 @@ impl GridController {
             return vec![];
         }
 
-        let Some(code_run) = self.code_run_at(multi_pos) else {
+        let Some(code_run) = self.code_run_at(*multi_pos) else {
             return vec![];
         };
 
@@ -187,10 +187,12 @@ impl GridController {
             .iter_rects_unbounded(&self.a1_context)
         {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
-                    let sheet_pos = pos.to_sheet_pos(sheet_id);
-                    if !seen.contains(&sheet_pos) {
-                        parent_nodes.push(sheet_pos);
+                for (_, multi_pos, _) in sheet
+                    .data_tables
+                    .get_code_runs_in_sorted(rect, false, sheet_id, true)
+                {
+                    if !seen.contains(&multi_pos) {
+                        parent_nodes.push(multi_pos);
                     }
                 }
             }
@@ -200,7 +202,7 @@ impl GridController {
         for node in parent_nodes.into_iter() {
             upstream.extend(self.get_upstream_dependents(&node, seen));
         }
-        upstream.push(*sheet_pos);
+        upstream.push(*multi_pos);
         upstream
     }
 }

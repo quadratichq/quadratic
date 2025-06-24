@@ -9,6 +9,8 @@ use crate::{
     grid::{DataTable, Sheet},
 };
 
+// todo: need to handle array-sized code tables within data tables
+
 impl Sheet {
     /// Deletes all data table where either all columns are part of the deleted
     /// columns, or its a code cell where the first column is in the deleted
@@ -77,7 +79,7 @@ impl Sheet {
         let all_pos_intersecting_columns =
             self.data_tables.get_pos_in_columns_sorted(columns, false);
         for (index, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
                 if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
                     return Ok(());
                 }

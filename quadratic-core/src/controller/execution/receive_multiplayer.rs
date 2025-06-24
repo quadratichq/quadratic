@@ -288,7 +288,7 @@ mod tests {
     use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{CellValue, Pos, SheetPos};
+    use crate::{CellValue, MultiPos, Pos, SheetPos};
 
     #[test]
     fn test_multiplayer_hello_world() {
@@ -719,11 +719,7 @@ mod tests {
             Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             crate::grid::CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
@@ -801,7 +797,7 @@ mod tests {
             Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
@@ -869,7 +865,7 @@ mod tests {
     fn create_multiple_calculations_1(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Python,
             "q.cells(\"A1\") + 1".into(),
             None,
@@ -895,7 +891,7 @@ mod tests {
     fn create_multiple_calculations_2(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Python,
             "q.cells(\"B1\") + 1".into(),
             None,
@@ -1061,33 +1057,21 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "1".to_string(),
             None,
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "2".to_string(),
             None,
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 3,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "3".to_string(),
             None,

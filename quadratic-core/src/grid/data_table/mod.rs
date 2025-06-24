@@ -841,6 +841,16 @@ impl DataTable {
         // ))
         None
     }
+
+    /// Returns a mutable reference to the cell value at Pos. This should be
+    /// used carefully, as it allows the cell value to be modified in place.
+    pub fn get_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
+        match &mut self.value {
+            Value::Array(a) => a.get_mut(&pos),
+            Value::Single(v) => Some(v),
+            Value::Tuple(_) => None,
+        }
+    }
 }
 
 #[cfg(test)]

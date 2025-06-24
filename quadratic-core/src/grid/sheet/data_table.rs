@@ -101,6 +101,15 @@ impl Sheet {
         nondefault_rects.any(|(rect, _)| rect != root_cell_rect)
     }
 
+    /// Modifies a data table at a position.
+    pub fn modify_data_table_at_pos(
+        &mut self,
+        pos: &Pos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<(&DataTable, HashSet<Rect>)> {
+        self.data_tables.modify_data_table_at(&pos, f)
+    }
+
     /// Returns a mutable DataTable at a Pos
     pub fn modify_data_table_at(
         &mut self,
@@ -143,13 +152,8 @@ impl Sheet {
         self.data_tables.shift_remove_full(pos)
     }
 
-    pub fn data_table_shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
-        self.data_tables.shift_remove(pos)
-    }
-
-    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(DataTable, HashSet<Rect>)> {
-        self.data_table_shift_remove(&pos)
-            .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
+    pub fn delete_data_table(&mut self, multi_pos: MultiPos) -> Option<(DataTable, HashSet<Rect>)> {
+        self.data_tables.shift_remove(&multi_pos)
     }
 
     pub fn data_tables_update_spill(&mut self, rect: Rect) -> HashSet<Rect> {

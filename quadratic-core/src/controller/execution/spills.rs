@@ -28,7 +28,7 @@ mod tests {
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
-    use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
+    use crate::{Array, CellValue, MultiPos, Pos, Rect, SheetPos, Value};
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
@@ -310,11 +310,7 @@ mod tests {
 
         // copies values to copy to 10,10: column: 10-12, rows: 10="1", 11="2", 12="3"
         gc.set_code_cell(
-            SheetPos {
-                x: 11,
-                y: 11,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 11, 11),
             CodeCellLanguage::Formula,
             "A1:C3".into(),
             None,
@@ -323,11 +319,7 @@ mod tests {
 
         // output that is spilled column: 11, row: 9 creates a spill (since it's inside the other code_cell)
         gc.set_code_cell(
-            SheetPos {
-                x: 12,
-                y: 10,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 12, 10),
             CodeCellLanguage::Formula,
             "A1:A3".into(),
             None,
