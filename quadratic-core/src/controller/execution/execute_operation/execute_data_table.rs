@@ -15,7 +15,7 @@ use crate::{
     },
 };
 
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 
 impl GridController {
     /// Selects the entire data table, including the header
@@ -297,7 +297,10 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
 
             let index = sheet.data_table_index_result(multi_pos)?;
-            let (data_table, dirty_rects) = sheet.delete_data_table(multi_pos)?;
+            let (data_table, dirty_rects) = sheet
+                .delete_data_table(multi_pos)
+                .ok_or_else(|| anyhow!("Failed to delete data table"))?;
+
             let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);

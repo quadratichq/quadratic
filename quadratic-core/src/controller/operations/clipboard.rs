@@ -856,7 +856,6 @@ mod test {
     use bigdecimal::BigDecimal;
 
     use super::{PasteSpecial, *};
-    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
@@ -865,6 +864,7 @@ mod test {
     use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
     use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
+    use crate::{MultiPos, Rect};
 
     fn paste(gc: &mut GridController, sheet_id: SheetId, x: i64, y: i64, html: String) {
         gc.paste_from_clipboard(
@@ -1084,7 +1084,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheeta_pos(sheet_id, 1, 4),
+            MultiPos::new_sheet_pos(sheet_id, 1, 4),
             CodeCellLanguage::Formula,
             "SUM(B1:B3)".to_string(),
             None,
