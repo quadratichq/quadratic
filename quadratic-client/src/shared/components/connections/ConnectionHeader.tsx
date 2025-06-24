@@ -1,3 +1,4 @@
+import type { NavigateToListView } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ArrowBackIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -11,7 +12,7 @@ export const ConnectionHeader = ({
 }: {
   type?: ConnectionType;
   children: ReactNode;
-  handleNavigateToListView: () => void;
+  handleNavigateToListView: NavigateToListView;
 }) => {
   const suffix = type && connectionsByType[type] ? ` ${connectionsByType[type].name} connection` : '';
 

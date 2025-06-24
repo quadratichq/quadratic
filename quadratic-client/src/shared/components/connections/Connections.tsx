@@ -26,6 +26,8 @@ type Props = {
   connections: ConnectionsListConnection[];
   connectionsAreLoading?: boolean;
 };
+
+export type NavigateToListView = () => void;
 export type NavigateToView = (props: { connectionUuid: string; connectionType: ConnectionType }) => void;
 export type NavigateToCreateView = (type: ConnectionType) => void;
 
@@ -130,7 +132,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     },
     [submit, teamUuid]
   );
-  const handleNavigateToListView = useCallback(() => {
+  const handleNavigateToListView: NavigateToListView = useCallback(() => {
     setActiveConnectionState({ view: 'list' });
   }, []);
   const handleNavigateToCreateView: NavigateToCreateView = useCallback((connectionType) => {
@@ -165,7 +167,6 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
           />
         ) : activeConnectionState.view === 'new' ? (
           <ConnectionsNew
-            connectionType={'POSTGRES'}
             handleNavigateToCreateView={handleNavigateToCreateView}
             handleNavigateToListView={handleNavigateToListView}
           />

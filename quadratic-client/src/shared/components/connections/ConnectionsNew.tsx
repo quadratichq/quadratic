@@ -1,17 +1,16 @@
 import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
+import type { NavigateToCreateView, NavigateToListView } from '@/shared/components/connections/Connections';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { AddIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 export const ConnectionsNew = ({
-  connectionType,
   handleNavigateToCreateView,
   handleNavigateToListView,
 }: {
-  connectionType: ConnectionType;
-  handleNavigateToCreateView: (type: ConnectionType) => void;
-  handleNavigateToListView: () => void;
+  handleNavigateToCreateView: NavigateToCreateView;
+  handleNavigateToListView: NavigateToListView;
 }) => {
   return (
     <div>
