@@ -6,10 +6,10 @@ use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::StreamExt;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -269,7 +269,7 @@ impl Connection for PostgresConnection {
             "BOOL" => to_arrow_type!(ArrowType::Boolean, bool, row, index),
             "REAL" | "FLOAT4" => to_arrow_type!(ArrowType::Float32, f32, row, index),
             "DOUBLE PRECISION" | "FLOAT8" => to_arrow_type!(ArrowType::Float64, f64, row, index),
-            "NUMERIC" => to_arrow_type!(ArrowType::BigDecimal, BigDecimal, row, index),
+            "NUMERIC" => to_arrow_type!(ArrowType::Decimal, Decimal, row, index),
             "TIMESTAMP" => to_arrow_type!(ArrowType::Timestamp, NaiveDateTime, row, index),
             "TIMESTAMPTZ" => to_arrow_type!(ArrowType::TimestampTz, DateTime<Local>, row, index),
             "DATE" => match convert_sqlx_type!(NaiveDate, row, index) {

@@ -34,7 +34,7 @@ mod tests {
     fn bigdecimal() {
         let mut numbers = vec![];
         let mut count = 0;
-        let compression_format = compression::CompressionFormat::Zstd;
+        let compression_format = compression::CompressionFormat::Zlib;
         let serialization_format = compression::SerializationFormat::Json;
 
         // Insert BigDecimal
@@ -92,7 +92,7 @@ mod tests {
         let mut numbers = vec![];
         let mut count = 0;
         let compression_format = compression::CompressionFormat::Zstd;
-        let serialization_format = compression::SerializationFormat::Bincode;
+        let serialization_format = compression::SerializationFormat::Json;
 
         // Insert RustDecimal
         let start = Instant::now();

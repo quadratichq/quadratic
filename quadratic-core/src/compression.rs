@@ -17,11 +17,13 @@ const BINCODE_CONFIG: bincode::config::Configuration<
 > = config::standard()
     .with_fixed_int_encoding()
     .with_limit::<MAX_FILE_SIZE>();
+pub const ZSTD_COMPRESSION_LEVEL: i32 = 1;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CompressionFormat {
     None,
     Zlib,
+    Zstd,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -92,6 +94,7 @@ pub fn compress(compression_format: &CompressionFormat, data: Vec<u8>) -> Result
     match compression_format {
         CompressionFormat::None => Ok(data),
         CompressionFormat::Zlib => compress_zlib(data),
+        CompressionFormat::Zstd => compress_zstd(data),
     }
 }
 
@@ -105,10 +108,15 @@ pub fn compress_zlib(data: Vec<u8>) -> Result<Vec<u8>> {
     Ok(encoder.finish()?)
 }
 
+pub fn compress_zstd(data: Vec<u8>) -> Result<Vec<u8>> {
+    Ok(zstd::encode_all(data.as_slice(), ZSTD_COMPRESSION_LEVEL)?)
+}
+
 pub fn decompress(compression_format: &CompressionFormat, data: &[u8]) -> Result<Vec<u8>> {
     match compression_format {
         CompressionFormat::None => Ok(data.to_vec()),
         CompressionFormat::Zlib => decompress_zlib(data),
+        CompressionFormat::Zstd => decompress_zstd(data),
     }
 }
 
@@ -121,6 +129,10 @@ pub fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>> {
     }
 
     Ok(decoder.finish()?)
+}
+
+pub fn decompress_zstd(data: &[u8]) -> Result<Vec<u8>> {
+    Ok(zstd::decode_all(data)?)
 }
 
 // HEADER
