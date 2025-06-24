@@ -115,6 +115,8 @@ export class PixiApp {
     this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();
     this.debug = new Graphics();
+
+    events.on('debugFlags', this.setViewportDirty);
   }
 
   init = (): Promise<void> => {
@@ -166,9 +168,6 @@ export class PixiApp {
 
     this.background = this.viewportContents.addChild(this.background);
 
-    // useful for debugging at viewport locations
-    this.viewportContents.addChild(this.debug);
-
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(this.gridLines);
 
@@ -190,6 +189,9 @@ export class PixiApp {
     this.viewportContents.addChild(this.hoverTableHeaders);
     this.viewportContents.addChild(this.hoverTableColumnsSelection);
     this.headings = this.viewportContents.addChild(gridHeadings);
+
+    // useful for debugging at viewport locations
+    this.viewportContents.addChild(this.debug);
 
     this.reset();
 
@@ -348,7 +350,7 @@ export class PixiApp {
     pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
-  rebuild() {
+  rebuild = () => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.headings.dirty = true;
@@ -358,7 +360,7 @@ export class PixiApp {
     this.boxCells.reset();
     this.reset();
     this.setViewportDirty();
-  }
+  };
 
   saveMultiplayerViewport(): string {
     const viewport = this.viewport;

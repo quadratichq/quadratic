@@ -489,13 +489,13 @@ pub(crate) mod tests {
         )
         .unwrap();
 
+        print_first_sheet(&gc);
+
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "title_row.csv");
-        assert_eq!(sheet.rendered_value(pos![A2]).unwrap(), "Column 1");
-        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "Sample report");
-        assert_eq!(sheet.rendered_value(pos![A5]).unwrap(), "c1");
-        assert_eq!(sheet.rendered_value(pos![B5]).unwrap(), " c2");
-        assert_eq!(sheet.rendered_value(pos![C5]).unwrap(), " Sample column3");
+        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "Sample report");
+        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "c1");
+        assert_eq!(sheet.rendered_value(pos![B3]).unwrap(), " c2");
+        assert_eq!(sheet.rendered_value(pos![C3]).unwrap(), " Sample column3");
     }
 
     #[test]
@@ -504,7 +504,7 @@ pub(crate) mod tests {
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
 
         gc.import_csv(
             sheet_id,
@@ -517,11 +517,11 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
+        print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 6, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -622,5 +622,16 @@ pub(crate) mod tests {
 
         assert_display_cell_value(&gc, sheet_id, 1, 6, "82");
         assert_display_cell_value(&gc, sheet_id, 1, 1029, "8140");
+    }
+
+    #[test]
+    fn test_import_customers() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file_name = "customers-100.csv";
+        let csv_file = read_test_csv_file(file_name);
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_table_count(&gc, sheet_id, 1);
     }
 }

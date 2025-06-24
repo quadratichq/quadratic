@@ -1,4 +1,4 @@
-import { debugShow } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { User as AuthUser } from '@/auth/auth';
 import * as amplitude from '@amplitude/analytics-browser';
 import { setUser } from '@sentry/react';
@@ -83,7 +83,7 @@ function loadGoogleAnalytics(user: User) {
     document.head.appendChild(script_1);
     document.head.appendChild(script_2);
 
-    if (debugShow) console.log('[Analytics] Google activated with UTM data:', utmData);
+    if (debugFlag('debugShow')) console.log('[Analytics] Google activated with UTM data:', utmData);
   }
 }
 
@@ -99,7 +99,7 @@ function initAmplitudeAnalytics(user: User) {
     defaultTracking: { sessions: true, pageViews: true, formInteractions: true, fileDownloads: true },
   });
 
-  if (debugShow) console.log('[Analytics] Amplitude activated');
+  if (debugFlag('debugShow')) console.log('[Analytics] Amplitude activated');
 }
 
 export function initMixpanelAnalytics(user: User) {
@@ -141,6 +141,6 @@ export function initMixpanelAnalytics(user: User) {
 function configureSentry(user: User) {
   if (user) {
     setUser({ email: user.email, id: user.sub });
-    if (debugShow) console.log('[Analytics] Sentry user set');
+    if (debugFlag('debugShow')) console.log('[Analytics] Sentry user set');
   }
 }
