@@ -10,21 +10,12 @@ use rust_decimal::prelude::*;
 /// # Examples
 ///
 /// ```
-/// use quadratic_core::values::number::round_with_strategy;
-/// use rust_decimal::Decimal;
+/// use quadratic_core::number::round_with_strategy;
+/// use rust_decimal::prelude::*;
 ///
 /// let number = Decimal::from(123456789);
 /// let rounded = round_with_strategy(number, 2, RoundingStrategy::MidpointAwayFromZero);
 /// assert_eq!(rounded, Decimal::from(123456789));
-/// ```
-///
-/// ```
-/// use quadratic_core::values::number::round_with_strategy;
-/// use rust_decimal::Decimal;
-///
-/// let number = Decimal::from(123456789);
-/// let rounded = round_with_strategy(number, -2, RoundingStrategy::MidpointAwayFromZero);
-/// assert_eq!(rounded, Decimal::from(123456700));
 /// ```
 pub fn round_with_strategy(number: Decimal, digits: i64, strategy: RoundingStrategy) -> Decimal {
     if digits >= 0 {

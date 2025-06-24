@@ -30,6 +30,7 @@ mod v1_7_1;
 mod v1_8;
 mod v1_9;
 
+pub type CurrentSchema = v1_10::GridSchema;
 pub static CURRENT_VERSION: &str = "1.10";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
@@ -90,34 +91,61 @@ enum GridFile {
     },
 }
 
-// TODO(ddimaria): refactor to be recursive
 impl GridFile {
-    fn into_latest(self) -> Result<v1_10::GridSchema> {
+    // Returns the current schema if the file is at the latest version
+    fn current_schema(&self) -> Option<CurrentSchema> {
         match self {
-            GridFile::V1_10 { grid } => Ok(grid),
-            GridFile::V1_9 { grid } => v1_9::upgrade(grid),
-            GridFile::V1_8 { grid } => v1_9::upgrade(v1_8::upgrade(grid)?),
-            GridFile::V1_7_1 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(grid)?)?),
-            GridFile::V1_7 { grid } => {
-                v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(grid)?)?)?)
-            }
-            GridFile::V1_6 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
-                v1_7::upgrade(v1_6::file::upgrade(grid)?)?,
-            )?)?),
-            GridFile::V1_5 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
-                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?)?,
-            )?)?),
-            GridFile::V1_4 { grid } => {
-                v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(
-                    v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)?,
-                )?)?)?)
-            }
-            GridFile::V1_3 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
-                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
-                    v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
-                )?)?)?,
-            )?)?),
+            GridFile::V1_10 { grid } => Some(grid.clone()),
+            _ => None,
         }
+    }
+
+    // Upgrade to the next verssion
+    fn upgrade_next(self) -> Result<GridFile> {
+        let next = match self {
+            GridFile::V1_10 { grid } => GridFile::V1_10 { grid },
+            GridFile::V1_9 { grid } => GridFile::V1_10 {
+                grid: v1_9::upgrade(grid)?,
+            },
+            GridFile::V1_8 { grid } => GridFile::V1_9 {
+                grid: v1_8::upgrade(grid)?,
+            },
+            GridFile::V1_7_1 { grid } => GridFile::V1_8 {
+                grid: v1_7_1::upgrade(grid)?,
+            },
+            GridFile::V1_7 { grid } => GridFile::V1_7_1 {
+                grid: v1_7::upgrade(grid)?,
+            },
+            GridFile::V1_6 { grid } => GridFile::V1_7 {
+                grid: v1_6::file::upgrade(grid)?,
+            },
+            GridFile::V1_5 { grid } => GridFile::V1_6 {
+                grid: v1_5::file::upgrade(grid)?,
+            },
+            GridFile::V1_4 { grid } => GridFile::V1_5 {
+                grid: v1_4::file::upgrade(grid)?,
+            },
+            GridFile::V1_3 { grid } => GridFile::V1_4 {
+                grid: v1_3::file::upgrade(grid)?,
+            },
+        };
+
+        Ok(next)
+    }
+
+    // recursively upgrade from any version to the latest
+    fn into_latest(self) -> Result<CurrentSchema> {
+        let mut file = self;
+
+        while let Ok(next) = file.upgrade_next() {
+            file = next;
+
+            if let Some(schema) = file.current_schema() {
+                return Ok(schema);
+            }
+        }
+
+        anyhow::bail!("Failed to upgrade file to latest version");
     }
 }
 
@@ -143,8 +171,8 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             check_for_negative_offsets = true;
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
             drop(file_contents);
@@ -157,8 +185,8 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             check_for_negative_offsets = true;
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_7::schema::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
             drop(file_contents);
@@ -168,8 +196,8 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         "1.7.1" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_7_1::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
             drop(file_contents);
@@ -179,8 +207,8 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         "1.8" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_8::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
             drop(file_contents);
@@ -190,8 +218,8 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         "1.9" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_9::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
             drop(file_contents);
@@ -201,8 +229,8 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         "1.10" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<current::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
             drop(file_contents);
@@ -285,8 +313,8 @@ pub fn export(grid: Grid) -> Result<Vec<u8>> {
 
     let converted = serialize::export(grid)?;
     let compressed = serialize_and_compress::<current::GridSchema>(
-        &SERIALIZATION_FORMAT,
-        &COMPRESSION_FORMAT,
+        &SerializationFormat::Json,
+        &CompressionFormat::Zlib,
         converted,
     )?;
     let data = add_header(header, compressed)?;
