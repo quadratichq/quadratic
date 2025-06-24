@@ -18,11 +18,11 @@ export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinki
 export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-on';
 
 // Internal tool call models
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro:thinking-toggle-off';
-export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
 
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
@@ -115,7 +115,7 @@ export const MODELS_CONFIGURATION: {
     thinkingBudget: 32768,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
-  'vertexai:gemini-2.5-flash': {
+  'vertexai:gemini-2.5-flash:thinking-toggle-off': {
     model: 'gemini-2.5-flash',
     displayName: 'gemini 2.5 flash',
     temperature: 0,
@@ -127,6 +127,21 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingBudget: 0,
+    ...AI_RATES.gemini_2_5_flash_rate,
+  },
+  'vertexai:gemini-2.5-flash:thinking-toggle-on': {
+    model: 'gemini-2.5-flash',
+    displayName: 'gemini 2.5 flash thinking',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    enabled: false,
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: true,
+    thinkingToggle: true,
+    thinkingBudget: 24576,
     ...AI_RATES.gemini_2_5_flash_rate,
   },
   'vertexai:gemini-2.0-flash': {
