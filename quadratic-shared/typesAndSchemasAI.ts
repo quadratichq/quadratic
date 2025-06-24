@@ -11,11 +11,17 @@ const AIProvidersSchema = z.enum([
   'anthropic',
   'openai',
   'xai',
+  'azure',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4@20250514']);
-const VertexAIModelSchema = z.enum(['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']);
+const VertexAIModelSchema = z.enum([
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'deepseek-ai/deepseek-r1-0528-maas',
+]);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-sonnet-4-20250514-v1:0',
@@ -36,6 +42,7 @@ const OpenAIModelSchema = z.enum([
   'o3-2025-04-16',
 ]);
 const XAIModelSchema = z.enum(['grok-3-beta']);
+const AzureModelSchema = z.enum(['DeepSeek-R1-0528', 'DeepSeek-V3-0324']);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
   VertexAnthropicModelSchema,
@@ -46,6 +53,7 @@ const AIModelSchema = z.union([
   AnthropicModelSchema,
   OpenAIModelSchema,
   XAIModelSchema,
+  AzureModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
@@ -66,6 +74,7 @@ const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-pro:thinking-toggle-on',
   'vertexai:gemini-2.5-flash',
   'vertexai:gemini-2.0-flash',
+  'vertexai:deepseek-r1',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
@@ -105,6 +114,9 @@ export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
+const AzureModelKeySchema = z.enum(['azure:deepseek-r1', 'azure:deepseek-v3']);
+export type AzureModelKey = z.infer<typeof AzureModelKeySchema>;
+
 const AIModelKeySchema = z.union([
   QuadraticModelKeySchema,
   VertexAIAnthropicModelKeySchema,
@@ -115,6 +127,7 @@ const AIModelKeySchema = z.union([
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
   XAIModelKeySchema,
+  AzureModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;
 

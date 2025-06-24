@@ -74,3 +74,9 @@ export const xai = new OpenAI({
   apiKey: XAI_API_KEY || '',
   baseURL: 'https://api.x.ai/v1',
 });
+
+export const azure = new OpenAI({
+  apiKey: process.env.AZURE_API_KEY || '',
+  baseURL: 'https://r1-experiment-resource.services.ai.azure.com/models',
+  defaultQuery: { 'api-version': '2024-05-01-preview' },
+});

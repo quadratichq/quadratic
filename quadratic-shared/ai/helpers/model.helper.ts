@@ -4,6 +4,7 @@ import type {
   AIModelKey,
   AIRequestBody,
   AnthropicModelKey,
+  AzureModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
   GeminiAIModelKey,
@@ -49,6 +50,10 @@ export function isGenAIModel(modelKey: AIModelKey): modelKey is GeminiAIModelKey
 
 export function isBedrockModel(modelKey: AIModelKey): modelKey is BedrockModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'bedrock';
+}
+
+export function isAzureModel(modelKey: AIModelKey): modelKey is AzureModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'azure';
 }
 
 export const getModelFromModelKey = (modelKey: AIModelKey): AIModel => {
