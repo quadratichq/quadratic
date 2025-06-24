@@ -127,12 +127,60 @@ impl GridController {
             index,
         } = op
         {
-            self.finalize_data_table(transaction, sheet_pos.into(), data_table, Some(index));
+            self.execute_set_data_table_multi_pos(
+                transaction,
+                Operation::SetDataTableMultiPos {
+                    multi_pos: sheet_pos.into(),
+                    data_table,
+                    index,
+                },
+            )
+        }
+    }
+
+    pub(super) fn execute_set_data_table_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::SetDataTableMultiPos {
+            multi_pos,
+            data_table,
+            index,
+        } = op
+        {
+            self.finalize_data_table(transaction, multi_pos, data_table, Some(index));
+        }
+    }
+
+    pub(super) fn execute_add_data_table(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::AddDataTable {
+            sheet_pos,
+            data_table,
+            cell_value,
+            index,
+        } = op
+        {
+            self.execute_add_data_table_multi_pos(
+                transaction,
+                Operation::AddDataTableMultiPos {
+                    multi_pos: sheet_pos.into(),
+                    data_table,
+                    cell_value,
+                    index,
+                },
+            )
+        } else {
+            bail!("Expected Operation::AddDataTable in execute_add_data_table");
         }
     }
 
     /// Adds or replaces a data table at a specific position.
-    pub(super) fn execute_add_data_table(
+    pub(super) fn execute_add_data_table_multi_pos(
         &mut self,
         transaction: &mut PendingTransaction,
         op: Operation,
@@ -211,7 +259,7 @@ impl GridController {
             return Ok(());
         };
 
-        bail!("Expected Operation::AddDataTable in execute_add_data_table");
+        bail!("Expected Operation::AddDataTableMultiPos in execute_add_data_table_multi_pos");
     }
 
     pub(super) fn execute_delete_data_table(

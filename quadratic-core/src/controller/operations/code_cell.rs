@@ -223,7 +223,7 @@ mod test {
         sheet.set_cell_value(pos, CellValue::Text("delete me".to_string()));
 
         let operations = gc.set_code_cell_operations(
-            pos.to_sheet_pos(sheet_id),
+            pos.to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Python,
             "print('hello world')".to_string(),
             None,
@@ -256,11 +256,7 @@ mod test {
         let first = |gc: &mut GridController| {
             let sheet_id = gc.sheet_ids()[0];
             gc.set_code_cell(
-                SheetPos {
-                    x: 1,
-                    y: 1,
-                    sheet_id,
-                },
+                MultiPos::new_sheet_pos(sheet_id, 1, 1),
                 CodeCellLanguage::Formula,
                 "1 + 1".to_string(),
                 None,
@@ -272,11 +268,7 @@ mod test {
         let second = |gc: &mut GridController| {
             let sheet_id = gc.sheet_ids()[0];
             gc.set_code_cell(
-                SheetPos {
-                    x: 2,
-                    y: 2,
-                    sheet_id,
-                },
+                MultiPos::new_sheet_pos(sheet_id, 2, 2),
                 CodeCellLanguage::Formula,
                 "A1".to_string(),
                 None,
@@ -288,11 +280,7 @@ mod test {
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
-                SheetPos {
-                    x: 1,
-                    y: 1,
-                    sheet_id: sheet_id_2,
-                },
+                MultiPos::new_sheet_pos(sheet_id_2, 1, 1),
                 CodeCellLanguage::Formula,
                 format!("'{}1'!A1", SHEET_NAME.to_owned()),
                 None,
@@ -444,7 +432,7 @@ mod test {
             sheet_id,
         };
         gc.set_code_cell(
-            sheet_pos,
+            sheet_pos.into(),
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,

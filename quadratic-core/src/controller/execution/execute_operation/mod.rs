@@ -136,6 +136,15 @@ impl GridController {
                 Operation::SetDataTable { .. } => {
                     self.execute_set_data_table(transaction, op);
                 }
+                Operation::SetDataTableMultiPos { .. } => {
+                    self.execute_set_data_table_multi_pos(transaction, op);
+                }
+                Operation::AddDataTableMultiPos { .. } => {
+                    self.execute_add_data_table_multi_pos(transaction, op);
+                }
+                Operation::DeleteDataTableMultiPos { .. } => {
+                    self.execute_delete_data_table_multi_pos(transaction, op);
+                }
                 Operation::SetCellFormatsA1 { .. } => {
                     self.execute_set_cell_formats_a1(transaction, op);
                 }

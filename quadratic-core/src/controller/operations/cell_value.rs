@@ -805,7 +805,7 @@ mod test {
             sheet_id,
         };
         gc.set_code_cell(
-            sheet_pos_2,
+            sheet_pos_2.into(),
             CodeCellLanguage::Formula,
             "5 + 5".to_string(),
             None,
@@ -847,7 +847,7 @@ mod test {
             sheet_id,
         };
         gc.set_code_cell(
-            sheet_pos_2,
+            sheet_pos_2.into(),
             CodeCellLanguage::Formula,
             "5 + 5".to_string(),
             None,

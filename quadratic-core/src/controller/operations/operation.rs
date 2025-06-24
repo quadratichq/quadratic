@@ -64,8 +64,8 @@ pub enum Operation {
         values: CellValues,
     },
 
-    FlattenDataTableMultiPos {
-        multi_pos: MultiPos,
+    FlattenDataTable {
+        sheet_pos: SheetPos,
     },
 
     SetChartCellSize {
@@ -436,9 +436,5 @@ pub enum Operation {
         sheet_pos: SheetPos,
         pixel_width: f32,
         pixel_height: f32,
-    },
-    /// **Deprecated** Jun 2025 in favor of `FlattenDataTableMultiPos`.
-    FlattenDataTable {
-        sheet_pos: SheetPos,
     },
 }

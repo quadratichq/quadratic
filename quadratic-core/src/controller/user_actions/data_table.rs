@@ -268,7 +268,7 @@ mod tests {
 
         // create a code cell with a table reference
         gc.set_code_cell(
-            sheet_pos_code_cell,
+            sheet_pos_code_cell.into(),
             CodeCellLanguage::Python,
             old_code.to_string(),
             None,
@@ -333,7 +333,7 @@ mod tests {
 
         // create a code cell with a table reference
         gc.set_code_cell(
-            sheet_pos_code_cell,
+            sheet_pos_code_cell.into(),
             CodeCellLanguage::Python,
             old_code.to_string(),
             None,
