@@ -300,7 +300,7 @@ fn get_functions() -> Vec<FormulaFunction> {
                 match &date.inner {
                     CellValue::Blank => 0,
                     CellValue::Number(n) => {
-                        let mut rounded = n.clone();
+                        let mut rounded = *n;
                         rounded.rescale(0);
                         rounded
                             .to_i64()

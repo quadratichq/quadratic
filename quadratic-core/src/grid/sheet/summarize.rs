@@ -47,7 +47,7 @@ impl Sheet {
             return None;
         }
 
-        let average: Decimal = &sum / Decimal::from(count);
+        let average: Decimal = sum / Decimal::from(count);
 
         Some(JsSummarizeSelectionResult {
             count,

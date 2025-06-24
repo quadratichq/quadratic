@@ -250,7 +250,7 @@ impl CellValue {
                 let result: Decimal = if numeric_format.kind == NumericFormatKind::Percentage {
                     n * Decimal::from(100)
                 } else {
-                    n.clone()
+                    *n
                 };
                 let mut number = if numeric_format.kind == NumericFormatKind::Exponential {
                     let num = result.to_f64().unwrap_or_default();
@@ -739,7 +739,7 @@ impl CellValue {
         match self {
             CellValue::Blank => CellValueHash::Blank,
             CellValue::Text(s) => CellValueHash::Text(crate::util::case_fold(s)),
-            CellValue::Number(n) => CellValueHash::Number(n.clone()),
+            CellValue::Number(n) => CellValueHash::Number(*n),
             CellValue::Logical(b) => CellValueHash::Logical(*b),
             CellValue::Instant(Instant { seconds }) => {
                 CellValueHash::Instant(seconds.to_ne_bytes())

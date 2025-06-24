@@ -487,7 +487,7 @@ impl Sheet {
 
                     let scale = n.scale();
                     let max_decimals = 9;
-                    let mut decimals = n.clone();
+                    let mut decimals = n;
                     decimals.rescale(scale.min(max_decimals));
                     decimals = normalize(decimals);
                     let mut decimals = decimals.scale();

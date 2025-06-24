@@ -162,7 +162,7 @@ impl<'a> TryFrom<&'a CellValue> for Decimal {
                 })
             }
             // todo: this may be wrong
-            CellValue::Number(n) => Ok(n.clone()),
+            CellValue::Number(n) => Ok(*n),
             CellValue::Logical(true) => Ok(Decimal::one()),
             CellValue::Logical(false) => Ok(Decimal::zero()),
             CellValue::Instant(_) | CellValue::Duration(_) => Err(RunErrorMsg::Expected {
