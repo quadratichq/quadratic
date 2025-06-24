@@ -52,7 +52,7 @@ export const handleAIRequest = async (
     }
 
     if (args.useQuadraticContext) {
-      const quadraticContext = getQuadraticContext(args.language);
+      const quadraticContext = getQuadraticContext(args.language, args.time);
       args = {
         ...args,
         messages: [...quadraticContext, ...args.messages],
