@@ -92,14 +92,6 @@ enum GridFile {
 }
 
 impl GridFile {
-    // Returns the current schema if the file is at the latest version
-    fn current_schema(&self) -> Option<CurrentSchema> {
-        match self {
-            GridFile::V1_10 { grid } => Some(grid.clone()),
-            _ => None,
-        }
-    }
-
     // Upgrade to the next verssion
     fn upgrade_next(self) -> Result<GridFile> {
         let next = match self {
@@ -137,15 +129,13 @@ impl GridFile {
     fn into_latest(self) -> Result<CurrentSchema> {
         let mut file = self;
 
-        while let Ok(next) = file.upgrade_next() {
-            file = next;
-
-            if let Some(schema) = file.current_schema() {
-                return Ok(schema);
+        loop {
+            if let GridFile::V1_10 { grid } = file {
+                return Ok(grid);
             }
-        }
 
-        anyhow::bail!("Failed to upgrade file to latest version");
+            file = file.upgrade_next()?;
+        }
     }
 }
 
