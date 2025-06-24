@@ -181,6 +181,6 @@ export const createSharedFile = async (page: Page, { fileName, email }: CreateSh
 
   await page.locator('[role="menuitem"]:has-text("Share")').click();
   await page.locator(`[placeholder="Email"]`).fill(email);
-  await page.locator(`[type="submit"]:text('Invite')`).click();
+  await page.locator(`[data-testid="share-file-invite-button"]`).click();
   await page.locator(`[role="dialog"] button:nth-of-type(2)`).click();
 };
