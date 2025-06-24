@@ -1,4 +1,4 @@
-use std::io::Cursor;
+use std::{io::Cursor, path::Path};
 
 use anyhow::{Result, anyhow, bail};
 use chrono::{NaiveDate, NaiveTime};
@@ -16,7 +16,9 @@ use crate::{
     },
     parquet::parquet_to_array,
 };
-use calamine::{Data as ExcelData, Reader as ExcelReader, Xlsx, XlsxError};
+use calamine::{
+    Data as ExcelData, Error as CalamineError, Reader as ExcelReader, Sheets, open_workbook_from_rs,
+};
 
 use super::{
     csv::{clean_csv_file, find_csv_info},
@@ -33,6 +35,9 @@ impl GridController {
             return false;
         }
 
+        let text_type_id = CellValue::Text("".to_string()).type_id();
+        let number_type_id = CellValue::Number(0.into()).type_id();
+
         let types = |row: usize| {
             cell_values
                 .get_row(row)
@@ -46,30 +51,44 @@ impl GridController {
         let row_1 = types(1);
         let row_2 = types(2);
 
-        // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
-        let type_row_match = |a: &[u8], b: &[u8], ignore_empty: bool| -> bool {
-            if a.len() != b.len() {
-                return false;
-            }
+        // If we have column names that are blank, then probably not a header
+        if row_0.iter().any(|t| *t == CellValue::Blank.type_id()) {
+            return false;
+        }
 
-            for (t1, t2) in a.iter().zip(b.iter()) {
-                //
-                if ignore_empty
-                    && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
-                {
-                    continue;
-                }
-                if t1 != t2 {
+        // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
+        let type_row_match =
+            |a: &[u8], b: &[u8], ignore_empty: bool, match_text_number: bool| -> bool {
+                if a.len() != b.len() {
                     return false;
                 }
-            }
 
-            true
-        };
+                for (t1, t2) in a.iter().zip(b.iter()) {
+                    //
+                    if ignore_empty
+                        && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
+                    {
+                        continue;
+                    }
+                    if t1 != t2 {
+                        if !match_text_number {
+                            return false;
+                        }
+                        if !((*t1 == number_type_id && *t2 == text_type_id)
+                            || (*t1 == text_type_id && *t2 == number_type_id))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                true
+            };
 
         let row_0_is_different_from_row_1 =
-            !type_row_match(row_0.as_slice(), row_1.as_slice(), false);
-        let row_1_is_same_as_row_2 = type_row_match(row_1.as_slice(), row_2.as_slice(), true);
+            !type_row_match(row_0.as_slice(), row_1.as_slice(), false, false)
+                || row_0.iter().all(|t| *t == text_type_id);
+        let row_1_is_same_as_row_2 = type_row_match(row_1.as_slice(), row_2.as_slice(), true, true);
 
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
@@ -188,10 +207,25 @@ impl GridController {
         file_name: &str,
     ) -> Result<Vec<Operation>> {
         let mut ops: Vec<Operation> = vec![];
-        let error = |e: XlsxError| anyhow!("Error parsing Excel file {file_name}: {e}");
+        let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
 
+        // detect file extension
+        let path = Path::new(file_name);
         let cursor = Cursor::new(file);
-        let mut workbook: Xlsx<_> = ExcelReader::new(cursor).map_err(error)?;
+        let mut workbook = match path.extension().and_then(|e| e.to_str()) {
+            Some("xls") | Some("xla") => {
+                Sheets::Xls(open_workbook_from_rs(cursor).map_err(CalamineError::Xls)?)
+            }
+            Some("xlsx") | Some("xlsm") | Some("xlam") => {
+                Sheets::Xlsx(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsx)?)
+            }
+            Some("xlsb") => {
+                Sheets::Xlsb(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsb)?)
+            }
+            Some("ods") => Sheets::Ods(open_workbook_from_rs(cursor).map_err(CalamineError::Ods)?),
+            _ => return Err(anyhow!("Cannot detect file format")),
+        };
+
         let sheets = workbook.sheet_names().to_owned();
 
         for new_sheet_name in sheets.iter() {
@@ -530,7 +564,7 @@ mod test {
     }
 
     #[test]
-    fn import_excel() {
+    fn import_xlsx() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
         gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
@@ -555,6 +589,21 @@ mod test {
             }))
         );
         assert_eq!(sheet.cell_value((4, 1).into()), None);
+    }
+
+    #[test]
+    fn import_xls() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/simple.xls");
+        gc.import_excel(file.as_ref(), "simple.xls", None).unwrap();
+
+        let sheet_id = gc.grid.sheets()[0].id;
+        let sheet = gc.sheet(sheet_id);
+
+        assert_eq!(
+            sheet.cell_value((1, 1).into()),
+            Some(CellValue::Number(0.into()))
+        );
     }
 
     #[test]
@@ -658,7 +707,8 @@ mod test {
     fn import_excel_date_time() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/date_time.xlsx");
-        gc.import_excel(file.as_ref(), "excel", None).unwrap();
+        gc.import_excel(file.as_ref(), "date_time.xlsx", None)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -796,7 +846,8 @@ mod test {
     fn import_excel_dependent_formulas() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "excel", None).unwrap();
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
