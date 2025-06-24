@@ -990,7 +990,7 @@ test('Right Click Actions', async ({ page }) => {
   //--------------------------------
   // Navigate to first cell - and highlight table data
   await page.waitForTimeout(5000);
-  await selectCells(page, { startXY: ['A', 3], endXY: ['A', 15] });
+  await selectCells(page, { startXY: ['A', 1], endXY: ['A', 13] });
   await page.waitForTimeout(5000);
 
   // Wait for the download to start
