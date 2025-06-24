@@ -214,7 +214,7 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
+          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete --force
         env:
           S3_DIR: s3://qa.quadratic-preview.com/
 
