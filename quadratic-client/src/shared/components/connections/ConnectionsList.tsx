@@ -43,6 +43,35 @@ export const ConnectionsList = ({
   return (
     <>
       <div className="grid gap-4">
+        <div className="flex gap-2">
+          <form
+            className="grid flex-grow gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <div className="relative">
+              <Input
+                placeholder="Filter by name"
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                autoFocus
+              />
+              {filterQuery.length > 0 && (
+                <Button
+                  type="button"
+                  variant="link"
+                  aria-label="Clear"
+                  onClick={() => setFilterQuery('')}
+                  className="group absolute right-0 top-0"
+                >
+                  <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                </Button>
+              )}
+            </div>
+          </form>
+          <Button onClick={handleNavigateToNewView}>New connection</Button>
+        </div>
         {connectionsAreLoading && (
           <div className="flex flex-col gap-2">
             <Skeleton className="h-[20px] w-full rounded" />
@@ -51,44 +80,13 @@ export const ConnectionsList = ({
         )}
 
         {!connectionsAreLoading && connections.length ? (
-          <>
-            <div className="flex gap-2">
-              <form
-                className="grid flex-grow gap-4"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                }}
-              >
-                <div className="relative">
-                  <Input
-                    placeholder="Filter by name"
-                    value={filterQuery}
-                    onChange={(e) => setFilterQuery(e.target.value)}
-                    autoFocus
-                  />
-                  {filterQuery.length > 0 && (
-                    <Button
-                      type="button"
-                      variant="link"
-                      aria-label="Clear"
-                      onClick={() => setFilterQuery('')}
-                      className="group absolute right-0 top-0"
-                    >
-                      <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
-                    </Button>
-                  )}
-                </div>
-              </form>
-              <Button onClick={handleNavigateToNewView}>New connection</Button>
-            </div>
-            <ListItems
-              filterQuery={filterQuery}
-              items={connections}
-              handleNavigateToDetailsView={handleNavigateToDetailsView}
-              handleNavigateToEditView={handleNavigateToEditView}
-              handleShowConnectionDemo={handleShowConnectionDemo}
-            />
-          </>
+          <ListItems
+            filterQuery={filterQuery}
+            items={connections}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
+            handleNavigateToEditView={handleNavigateToEditView}
+            handleShowConnectionDemo={handleShowConnectionDemo}
+          />
         ) : (
           <EmptyState
             title="No connections"
