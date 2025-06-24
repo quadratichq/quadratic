@@ -54,12 +54,56 @@ pub fn normalize(number: Decimal) -> Decimal {
 
 /// Sums a vector of `Decimal`s and normalizes the result.
 pub fn sum(numbers: Vec<Decimal>) -> Decimal {
-    println!("numbers: {:?}", numbers);
-    println!("sum: {:?}", numbers.iter().sum::<Decimal>());
     normalize(numbers.iter().sum())
 }
 
 /// Converts a string to a `Decimal`.
 pub fn from_str(s: &str) -> Result<Decimal> {
     Ok(Decimal::from_str(s)?)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_round_with_strategy() {
+        let number = Decimal::from(123456789);
+        let rounded = round_with_strategy(number, -1, RoundingStrategy::MidpointAwayFromZero);
+        assert_eq!(rounded, Decimal::from(123456790));
+    }
+
+    #[test]
+    fn test_round() {
+        let number = Decimal::from(123456789);
+        let rounded = round(number, -1);
+        assert_eq!(rounded, Decimal::from(123456790));
+    }
+
+    #[test]
+    fn test_round_up() {
+        let number = Decimal::from(123456789);
+        let rounded = round_up(number, -1);
+        assert_eq!(rounded, Decimal::from(123456790));
+    }
+
+    #[test]
+    fn test_round_down() {
+        let number = Decimal::from(123456789);
+        let rounded = round_down(number, -1);
+        assert_eq!(rounded, Decimal::from(123456780));
+    }
+
+    #[test]
+    fn test_truncate() {
+        let number = Decimal::from_f64(123456789.1234).unwrap();
+        let truncated = truncate(number, 2);
+        assert_eq!(truncated, Decimal::from_f64(123456789.12).unwrap());
+    }
+
+    #[test]
+    fn test_sum() {
+        let numbers = vec![Decimal::from(1), Decimal::from(2), Decimal::from(3)];
+        assert_eq!(sum(numbers), Decimal::from(6));
+    }
 }
