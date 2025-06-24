@@ -35,6 +35,9 @@ impl GridController {
             return false;
         }
 
+        let text_type_id = CellValue::Text("".to_string()).type_id();
+        let number_type_id = CellValue::Number(0.into()).type_id();
+
         let types = |row: usize| {
             cell_values
                 .get_row(row)
@@ -48,30 +51,44 @@ impl GridController {
         let row_1 = types(1);
         let row_2 = types(2);
 
-        // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
-        let type_row_match = |a: &[u8], b: &[u8], ignore_empty: bool| -> bool {
-            if a.len() != b.len() {
-                return false;
-            }
+        // If we have column names that are blank, then probably not a header
+        if row_0.iter().any(|t| *t == CellValue::Blank.type_id()) {
+            return false;
+        }
 
-            for (t1, t2) in a.iter().zip(b.iter()) {
-                //
-                if ignore_empty
-                    && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
-                {
-                    continue;
-                }
-                if t1 != t2 {
+        // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
+        let type_row_match =
+            |a: &[u8], b: &[u8], ignore_empty: bool, match_text_number: bool| -> bool {
+                if a.len() != b.len() {
                     return false;
                 }
-            }
 
-            true
-        };
+                for (t1, t2) in a.iter().zip(b.iter()) {
+                    //
+                    if ignore_empty
+                        && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
+                    {
+                        continue;
+                    }
+                    if t1 != t2 {
+                        if !match_text_number {
+                            return false;
+                        }
+                        if !((*t1 == number_type_id && *t2 == text_type_id)
+                            || (*t1 == text_type_id && *t2 == number_type_id))
+                        {
+                            return false;
+                        }
+                    }
+                }
+
+                true
+            };
 
         let row_0_is_different_from_row_1 =
-            !type_row_match(row_0.as_slice(), row_1.as_slice(), false);
-        let row_1_is_same_as_row_2 = type_row_match(row_1.as_slice(), row_2.as_slice(), true);
+            !type_row_match(row_0.as_slice(), row_1.as_slice(), false, false)
+                || row_0.iter().all(|t| *t == text_type_id);
+        let row_1_is_same_as_row_2 = type_row_match(row_1.as_slice(), row_2.as_slice(), true, true);
 
         row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }

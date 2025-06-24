@@ -25,6 +25,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from '
  *  - *.quadratichq.com/logout
  *  - *.quadratichq.com/education
  *  - *.quadratichq.com/onboarding
+ *  - *.quadratichq.com/iframe-indexeddb
  *
  *  To add a new route:
  *  1. go to the respective cloudflare account (QA / Prod)
@@ -143,6 +144,7 @@ export const router = createBrowserRouter(
         Component={EmptyComponent}
         HydrateFallback={EmptyComponent}
       />
+      <Route path={ROUTES.IFRAME_INDEXEDDB} lazy={() => import('./routes/iframe-indexeddb')} />
     </>
   ),
   {}

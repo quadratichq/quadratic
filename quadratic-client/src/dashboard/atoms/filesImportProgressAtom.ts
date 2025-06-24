@@ -17,14 +17,14 @@ export interface FileImportProgress {
   abortController?: AbortController;
 }
 
-interface FilesImportProgressState {
+export interface FilesImportProgressState {
   importing: boolean;
   createNewFile: boolean;
   currentFileIndex?: number;
   files: FileImportProgress[];
 }
 
-const defaultFilesImportProgressState: FilesImportProgressState = {
+export const defaultFilesImportProgressState: FilesImportProgressState = {
   importing: false,
   createNewFile: false,
   currentFileIndex: undefined,
