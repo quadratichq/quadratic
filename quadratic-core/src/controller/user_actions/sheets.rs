@@ -61,7 +61,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, SheetPos,
+        CellValue, MultiPos, SheetPos,
         a1::A1Selection,
         constants::SHEET_NAME,
         controller::GridController,
@@ -241,11 +241,7 @@ mod test {
 
         gc.set_sheet_name(sheet_id, "Nice Name".into(), None);
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 1,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,
@@ -390,11 +386,7 @@ mod test {
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 2,
-                y: 1,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "A1 + A2".to_string(),
             None,

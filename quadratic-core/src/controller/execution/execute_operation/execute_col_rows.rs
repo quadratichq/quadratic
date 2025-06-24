@@ -295,8 +295,8 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect,
-        Value,
+        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, MultiPos, Pos, Rect, SheetPos,
+        SheetRect, Value,
         a1::A1Selection,
         cell_values::CellValues,
         grid::{
@@ -334,14 +334,14 @@ mod tests {
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 16), "1".into(), None);
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 17), "2".into(), None);
         gc.set_code_cell(
-            SheetPos::new(sheet_id, 1, 1),
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B$16 + $B17".into(),
             None,
             None,
         );
         gc.set_code_cell(
-            SheetPos::new(sheet_id, 1, 2),
+            MultiPos::new_sheet_pos(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "'Sheet 1'!F1+Other!F1 - Nonexistent!F1".into(),
             None,
@@ -432,7 +432,7 @@ mod tests {
         };
 
         gc.set_code_cell(
-            sheet_pos,
+            sheet_pos.into(),
             CodeCellLanguage::Python,
             r#"q.cells("B1:B2")"#.into(),
             None,
@@ -516,7 +516,7 @@ mod tests {
         };
 
         gc.set_code_cell(
-            sheet_pos,
+            sheet_pos.into(),
             CodeCellLanguage::Javascript,
             r#"return q.cells("B1:B2");"#.into(),
             None,
@@ -645,11 +645,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "C1".into(),
             None,
@@ -699,11 +695,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "A3".into(),
             None,
@@ -743,7 +735,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![sheet_id!J10], // 10,10
+            pos![sheet_id!J10].into(), // 10,10
             CodeCellLanguage::Formula,
             "$F6".into(),
             None,
@@ -1091,7 +1083,7 @@ mod tests {
 
         gc.insert_columns(sheet_id, 3, 1, false, None);
 
-        assert_eq!(&table, gc.data_table_at(pos![sheet_id!d2]).unwrap());
+        assert_eq!(&table, gc.data_table_at(pos![sheet_id!d2].into()).unwrap());
         assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
     }
 

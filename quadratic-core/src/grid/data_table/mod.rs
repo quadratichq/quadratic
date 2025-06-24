@@ -22,7 +22,8 @@ use crate::a1::A1Context;
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::{
-    Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
+    Array, ArraySize, CellValue, MultiPos, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect,
+    Value,
 };
 use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
@@ -41,17 +42,13 @@ use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
 pub fn unique_data_table_name(
     name: &str,
     require_number: bool,
-    sheet_pos: Option<SheetPos>,
+    multi_pos: Option<MultiPos>,
     a1_context: &A1Context,
 ) -> String {
     // replace spaces with underscores
     let name = name.replace(' ', "_");
 
-    let check_name = |name: &str| {
-        !a1_context
-            .table_map
-            .contains_name(name, sheet_pos.map(Into::into))
-    };
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, multi_pos);
     let iter_names = a1_context.table_map.iter_rev_table_names();
     unique_name(&name, require_number, check_name, iter_names)
 }
@@ -65,22 +62,22 @@ impl Grid {
     /// Updates the name of a data table and replaces the old name in all code cells that reference it.
     pub fn update_data_table_name(
         &mut self,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         old_name: &str,
         new_name: &str,
         a1_context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
         let unique_name =
-            unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
+            unique_data_table_name(new_name, require_number, Some(multi_pos), a1_context);
 
         self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
 
         let sheet = self
-            .try_sheet_mut(sheet_pos.sheet_id)
-            .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
+            .try_sheet_mut(multi_pos.sheet_id())
+            .ok_or_else(|| anyhow!("Sheet {} not found", multi_pos.sheet_id()))?;
 
-        sheet.modify_data_table_at(&sheet_pos.into(), |dt| {
+        sheet.modify_data_table_at(multi_pos, |dt| {
             dt.update_table_name(&unique_name);
             Ok(())
         })?;

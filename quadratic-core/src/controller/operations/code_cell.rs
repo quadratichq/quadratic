@@ -84,10 +84,8 @@ impl GridController {
                 sheet
                     .data_tables
                     .get_code_runs_in_rect(*rect, false, sheet_id, true)
-                    .for_each(|(_, pos, _)| {
-                        ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                        });
+                    .for_each(|(_, multi_pos, _)| {
+                        ops.push(Operation::ComputeCodeMultiPos { multi_pos });
                     });
             });
         }
@@ -104,7 +102,7 @@ impl GridController {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
+                code_cell_positions.push(MultiPos::new_sheet_pos(*sheet_id, pos.x, pos.y));
             }
         }
 
@@ -117,8 +115,26 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = Vec::new();
-        for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-            code_cell_positions.push(pos.to_sheet_pos(sheet_id));
+        for (table_pos, dt) in sheet.data_tables.expensive_iter() {
+            if dt.code_run().is_some() {
+                code_cell_positions.push(MultiPos::new_sheet_pos(
+                    sheet_id,
+                    table_pos.x,
+                    table_pos.y,
+                ));
+            } else {
+                if let Some(tables) = &dt.tables {
+                    for (pos, _) in tables.expensive_iter_code_runs() {
+                        code_cell_positions.push(MultiPos::new_table_pos(
+                            sheet_id,
+                            table_pos.x,
+                            table_pos.y,
+                            pos.x,
+                            pos.y,
+                        ));
+                    }
+                }
+            }
         }
 
         self.get_code_run_ops_from_positions(code_cell_positions)
@@ -126,17 +142,17 @@ impl GridController {
 
     fn get_code_run_ops_from_positions(
         &self,
-        code_cell_positions: Vec<SheetPos>,
+        code_cell_positions: Vec<MultiPos>,
     ) -> Vec<Operation> {
         let code_cell_positions = self.order_code_cells(code_cell_positions);
         code_cell_positions
             .into_iter()
-            .map(|sheet_pos| Operation::ComputeCode { sheet_pos })
+            .map(|multi_pos| Operation::ComputeCodeMultiPos { multi_pos })
             .collect()
     }
 
     /// Orders code cells to ensure earlier computes do not depend on later computes.
-    fn order_code_cells(&self, code_cell_positions: Vec<SheetPos>) -> Vec<SheetPos> {
+    fn order_code_cells(&self, code_cell_positions: Vec<MultiPos>) -> Vec<MultiPos> {
         let mut ordered_positions = vec![];
 
         let nodes = code_cell_positions.iter().collect::<HashSet<_>>();
@@ -154,10 +170,10 @@ impl GridController {
 
     fn get_upstream_dependents(
         &self,
-        multi_pos: MultiPos,
+        multi_pos: &MultiPos,
         seen: &mut HashSet<MultiPos>,
     ) -> Vec<MultiPos> {
-        if !seen.insert(multi_pos) {
+        if !seen.insert(*multi_pos) {
             return vec![];
         }
 

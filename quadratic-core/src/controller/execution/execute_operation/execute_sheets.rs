@@ -1,5 +1,4 @@
 use crate::{
-    MultiPos,
     constants::SHEET_NAME,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -28,17 +27,17 @@ impl GridController {
 
         let data_tables_pos = sheet
             .data_tables
-            .expensive_iter()
-            .map(|(p, _)| p.to_owned())
+            .expensive_iter_with_sub_tables(sheet_id)
+            .map(|(p, _)| p)
             .collect::<Vec<_>>();
         let mut table_names_to_update_in_cell_ref = vec![];
 
         // update table names in data tables in the new sheet
         let sheet = self.try_sheet_mut_result(sheet_id)?;
-        for pos in data_tables_pos.iter() {
-            transaction.add_code_cell(MultiPos::SheetPos(pos.to_sheet_pos(sheet_id)));
+        for multi_pos in data_tables_pos.iter() {
+            transaction.add_code_cell(*multi_pos);
 
-            sheet.modify_data_table_at(pos, |data_table| {
+            sheet.modify_data_table_at(*multi_pos, |data_table| {
                 let old_name = data_table.name().to_string();
                 let unique_name = unique_data_table_name(&old_name, false, None, &context);
                 if old_name != unique_name {
@@ -62,14 +61,14 @@ impl GridController {
         for (old_name, unique_name) in table_names_to_update_in_cell_ref.into_iter() {
             // update table names references in code cells in the new sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            for pos in data_tables_pos.iter() {
+            for multi_pos in data_tables_pos.iter() {
                 if let Some(code_cell_value) = sheet
-                    .cell_value_mut(*pos)
+                    .cell_value_mut(*multi_pos)
                     .and_then(|cv| cv.code_cell_value_mut())
                 {
                     code_cell_value.replace_table_name_in_cell_references(
                         &context,
-                        pos.to_sheet_pos(sheet_id),
+                        *multi_pos,
                         &old_name,
                         &unique_name,
                     );

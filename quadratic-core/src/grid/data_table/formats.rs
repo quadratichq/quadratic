@@ -127,7 +127,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        a1::A1Selection, controller::user_actions::import::tests::simple_csv_at,
+        MultiPos, a1::A1Selection, controller::user_actions::import::tests::simple_csv_at,
         grid::sort::SortDirection,
     };
 
@@ -410,7 +410,7 @@ pub mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y), |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })

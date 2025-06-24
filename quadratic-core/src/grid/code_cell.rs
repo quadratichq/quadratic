@@ -125,19 +125,19 @@ impl CodeCellValue {
     pub fn replace_table_name_in_cell_references(
         &mut self,
         a1_context: &A1Context,
-        pos: SheetPos,
+        sheet_pos: SheetPos,
         old_name: &str,
         new_name: &str,
     ) {
         if old_name != new_name {
             if self.language == CodeCellLanguage::Formula {
                 self.code = crate::formulas::replace_table_name(
-                    &self.code, a1_context, pos, old_name, new_name,
+                    &self.code, a1_context, sheet_pos, old_name, new_name,
                 );
             } else if self.language.has_q_cells() {
-                self.replace_q_cells_a1_selection(pos, a1_context, |mut cell_ref| {
+                self.replace_q_cells_a1_selection(sheet_pos, a1_context, |mut cell_ref| {
                     cell_ref.replace_table_name(old_name, new_name);
-                    Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
+                    Ok(cell_ref.to_a1_string(Some(sheet_pos.sheet_id), a1_context))
                 });
             }
         }

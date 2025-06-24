@@ -606,7 +606,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        ClearOption, Pos, SheetPos,
+        ClearOption, MultiPos, Pos, SheetPos,
         a1::A1Selection,
         controller::{
             GridController,
@@ -709,7 +709,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            (1, 1, sheet_id).into(),
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             crate::grid::CodeCellLanguage::Python,
             "test".to_string(),
             None,

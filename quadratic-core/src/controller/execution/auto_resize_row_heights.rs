@@ -439,7 +439,7 @@ mod tests {
         )
         .unwrap();
         gc.set_code_cell(
-            sheet_pos,
+            sheet_pos.into(),
             CodeCellLanguage::Formula,
             "1+1".to_string(),
             None,

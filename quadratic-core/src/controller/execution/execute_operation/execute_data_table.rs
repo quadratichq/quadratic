@@ -220,18 +220,36 @@ impl GridController {
         op: Operation,
     ) -> Result<()> {
         if let Operation::DeleteDataTable { sheet_pos } = op {
-            let sheet_id = sheet_pos.sheet_id;
-            let pos = Pos::from(sheet_pos);
-            let sheet = self.try_sheet_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(pos)?;
+            self.execute_delete_data_table_multi_pos(
+                transaction,
+                Operation::DeleteDataTableMultiPos {
+                    multi_pos: sheet_pos.into(),
+                },
+            )
+        } else {
+            bail!("Expected Operation::DeleteDataTable in execute_delete_data_table");
+        }
+    }
 
-            // mark the data table as dirty
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+    pub(super) fn execute_delete_data_table_multi_pos(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) -> Result<()> {
+        if let Operation::DeleteDataTableMultiPos { multi_pos } = op {
+            let sheet_id = multi_pos.sheet_id();
+            let sheet = self.try_sheet_result(sheet_id)?;
+            // let data_table_pos = sheet.data_table_pos_that_contains(pos)?;
+
+            // mark the data table as dirty (if its a sheet pos)
+            if let MultiPos::SheetPos(data_table_pos) = multi_pos {
+                self.mark_data_table_dirty(transaction, sheet_id, data_table_pos.into())?;
+            }
 
             let sheet = self.try_sheet_mut_result(sheet_id)?;
 
-            let index = sheet.data_table_index_result(data_table_pos)?;
-            let (data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
+            let index = sheet.data_table_index_result(multi_pos)?;
+            let (data_table, dirty_rects) = sheet.delete_data_table(multi_pos)?;
             let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, false)
                 .to_sheet_rect(sheet_id);

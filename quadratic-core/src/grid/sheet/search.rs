@@ -269,7 +269,7 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        Array,
+        Array, MultiPos,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     };
@@ -727,7 +727,7 @@ mod test {
 
         // hide first column
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y), |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[0].display = false;
                 Ok(())

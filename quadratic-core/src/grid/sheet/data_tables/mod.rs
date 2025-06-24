@@ -293,6 +293,31 @@ impl SheetDataTables {
         Ok((data_table, dirty_rects))
     }
 
+    /// Modifies the sub-data table at the given position. This will find the
+    /// parent data table, and then attempt to modify its sub-code table.
+    pub fn modify_data_sub_table_at(
+        &mut self,
+        table_pos: TablePos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<(&DataTable, HashSet<Rect>)> {
+        let err = || {
+            anyhow!(
+                "Data table not found at {:?} in modify_data_sub_table_at",
+                table_pos
+            )
+        };
+        let data_table = self
+            .data_tables
+            .get_mut(&Pos::from(table_pos.table_sheet_pos))
+            .ok_or_else(err)?;
+
+        data_table
+            .tables
+            .as_mut()
+            .ok_or_else(err)?
+            .modify_data_table_at(&table_pos.pos, f)
+    }
+
     /// Returns the anchor position of the data table which contains the given position, if it exists.
     pub fn get_pos_contains(&self, pos: Pos) -> Option<Pos> {
         self.cache.get_pos_contains(pos)
@@ -359,37 +384,39 @@ impl SheetDataTables {
         rect: Rect,
         ignore_spill_error: bool,
         sheet_id: SheetId,
-        find_sub_tables: bool,
+        include_child_code_runs: bool,
     ) -> impl Iterator<Item = (usize, MultiPos, &CodeRun)> {
         self.iter_pos_in_rect(rect, ignore_spill_error)
-            .filter_map(|pos| {
-                self.data_tables
-                    .get_full(&pos)
-                    .and_then(|(index, _, data_table)| {
-                        if let Some(code_run) = data_table.code_run() {
-                            // return the code run
-                            Some((index, pos.to_multi_pos(sheet_id), code_run))
-                        } else {
-                            // if it's a data table, then check for code runs in sub-tables
-                            if find_sub_tables {
-                                if let Some(tables) = &data_table.tables {
-                                    tables
-                                        .iter_pos_in_rect(rect, ignore_spill_error)
-                                        .filter_map(|pos| {
-                                            if let Some(code_run) = data_table.code_run() {
-                                                Some((index, pos.to_multi_pos(sheet_id), code_run))
-                                            } else {
-                                                None
-                                            }
-                                        })
-                                } else {
-                                    None
+            .flat_map(move |table_pos| {
+                let mut results = Vec::new();
+                if let Some((index, _, data_table)) = self.data_tables.get_full(&table_pos) {
+                    // Add the code run from the main data table if it exists
+                    if let Some(code_run) = data_table.code_run() {
+                        results.push((index, table_pos.to_multi_pos(sheet_id), code_run));
+                    }
+
+                    // Add code runs from sub-tables if enabled
+                    if include_child_code_runs {
+                        if let Some(tables) = &data_table.tables {
+                            for pos in tables.iter_pos_in_rect(rect, ignore_spill_error) {
+                                if let Some(code_run) = data_table.code_run() {
+                                    results.push((
+                                        index,
+                                        MultiPos::new_table_pos(
+                                            sheet_id,
+                                            table_pos.x,
+                                            table_pos.y,
+                                            pos.x,
+                                            pos.y,
+                                        ),
+                                        code_run,
+                                    ));
                                 }
-                            } else {
-                                None
                             }
                         }
-                    })
+                    }
+                }
+                results.into_iter()
             })
     }
 
@@ -408,8 +435,10 @@ impl SheetDataTables {
         &self,
         rect: Rect,
         ignore_spill_error: bool,
-    ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
-        self.get_code_runs_in_rect(rect, ignore_spill_error)
+        sheet_id: SheetId,
+        include_child_code_runs: bool,
+    ) -> impl Iterator<Item = (usize, MultiPos, &CodeRun)> {
+        self.get_code_runs_in_rect(rect, ignore_spill_error, sheet_id, include_child_code_runs)
             .sorted_by(|a, b| a.0.cmp(&b.0))
     }
 
@@ -565,6 +594,29 @@ impl SheetDataTables {
         self.data_tables.iter()
     }
 
+    /// Returns an iterator over all data tables in the sheet data tables, including sub-tables.
+    pub fn expensive_iter_with_sub_tables(
+        &self,
+        sheet_id: SheetId,
+    ) -> impl Iterator<Item = (MultiPos, &DataTable)> {
+        let mut results = vec![];
+        self.data_tables.iter().for_each(|(table_pos, data_table)| {
+            results.push((
+                MultiPos::new_sheet_pos(sheet_id, table_pos.x, table_pos.y),
+                data_table,
+            ));
+            if let Some(tables) = &data_table.tables {
+                tables.data_tables.iter().for_each(|(pos, data_table)| {
+                    results.push((
+                        MultiPos::new_table_pos(sheet_id, table_pos.x, table_pos.y, pos.x, pos.y),
+                        data_table,
+                    ));
+                });
+            }
+        });
+        results.into_iter()
+    }
+
     /// Returns an iterator over all code runs in the sheet data tables.
     pub fn expensive_iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
         self.data_tables
@@ -616,7 +668,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
 
         gc.set_code_cell(
-            pos![sheet_id!A3],
+            pos![sheet_id!A3].into(),
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,

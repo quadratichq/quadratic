@@ -190,7 +190,7 @@ impl GridController {
         if transaction.is_user_undo_redo() {
             let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
             {
-                sheet.data_table_insert_before(index, &pos, new_data_table.to_owned())
+                sheet.data_table_insert_before(index, &multi_pos, new_data_table.to_owned())
             } else {
                 sheet.data_table_shift_remove_full(&pos).map_or(
                     (index, None, HashSet::new()),
@@ -216,16 +216,16 @@ impl GridController {
 
             transaction
                 .forward_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos: multi_pos,
+                .push(Operation::SetDataTableMultiPos {
+                    multi_pos,
                     data_table: new_data_table,
                     index,
                 });
 
             transaction
                 .reverse_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos: multi_pos,
+                .push(Operation::SetDataTableMultiPos {
+                    multi_pos,
                     data_table: old_data_table,
                     index,
                 });

@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    CellValue, MultiPos, Pos, Rect, Value,
+    CellValue, MultiPos, Pos, Rect, TablePos, Value,
     a1::A1Context,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
@@ -10,6 +10,7 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
+        sheet::data_tables::{SheetDataTables, cache::SheetDataTablesCache},
     },
 };
 

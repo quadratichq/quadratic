@@ -57,7 +57,7 @@ mod tests {
 
     use super::*;
 
-    use crate::{Array, controller::user_actions::import::tests::simple_csv};
+    use crate::{Array, MultiPos, controller::user_actions::import::tests::simple_csv};
 
     #[test]
     fn exports_a_csv() {
@@ -86,7 +86,7 @@ mod tests {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y), |dt| {
                 dt.apply_first_row_as_header();
                 Ok(())
             })

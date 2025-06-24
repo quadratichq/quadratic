@@ -104,10 +104,17 @@ impl Sheet {
     /// Returns a mutable DataTable at a Pos
     pub fn modify_data_table_at(
         &mut self,
-        pos: &Pos,
+        multi_pos: MultiPos,
         f: impl FnOnce(&mut DataTable) -> Result<()>,
     ) -> Result<(&DataTable, HashSet<Rect>)> {
-        self.data_tables.modify_data_table_at(pos, f)
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                self.data_tables.modify_data_table_at(&sheet_pos.into(), f)
+            }
+            MultiPos::TablePos(table_pos) => {
+                self.data_tables.modify_data_sub_table_at(table_pos, f)
+            }
+        }
     }
 
     pub fn data_table_insert_full(
@@ -157,8 +164,8 @@ impl Sheet {
 
         let mut dirty_rects = HashSet::new();
 
-        for (pos, new_spill) in data_tables_to_modify {
-            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, |dt| {
+        for (multi_pos, new_spill) in data_tables_to_modify {
+            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&multi_pos, |dt| {
                 dt.spill_value = new_spill;
                 Ok(())
             }) {
@@ -613,7 +620,7 @@ mod test {
     fn test_copy_data_table_to_clipboard() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y), |dt| {
                 dt.chart_pixel_output = Some((100.0, 100.0));
                 Ok(())
             })

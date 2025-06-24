@@ -61,10 +61,13 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_pixel_output;
-            let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                dt.chart_pixel_output = Some((pixel_width, pixel_height));
-                Ok(())
-            })?;
+            let (data_table, dirty_rects) = sheet.modify_data_table_at(
+                MultiPos::new_sheet_pos(sheet_id, data_table_pos.x, data_table_pos.y),
+                |dt| {
+                    dt.chart_pixel_output = Some((pixel_width, pixel_height));
+                    Ok(())
+                },
+            )?;
 
             transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
@@ -104,10 +107,13 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_output;
-            let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
-                dt.chart_output = Some((w, h));
-                Ok(())
-            })?;
+            let (data_table, dirty_rects) = sheet.modify_data_table_at(
+                MultiPos::new_sheet_pos(sheet_id, data_table_pos.x, data_table_pos.y),
+                |dt| {
+                    dt.chart_output = Some((w, h));
+                    Ok(())
+                },
+            )?;
 
             transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
@@ -194,12 +200,13 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, Pos, SheetPos,
+        CellValue, MultiPos, Pos, SheetPos,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation,
         },
         grid::CodeCellLanguage,
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call_count},
     };
 
@@ -211,11 +218,7 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("one".into()));
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("two".into()));
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -269,10 +272,10 @@ mod tests {
     fn execute_code() {
         clear_js_calls();
 
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
         gc.set_code_cell(
-            (0, 0, sheet_id).into(),
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
@@ -281,7 +284,7 @@ mod tests {
         expect_js_call_count("jsRunJavascript", 1, true);
 
         gc.set_code_cell(
-            (0, 0, sheet_id).into(),
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Python,
             "code".to_string(),
             None,
