@@ -86,6 +86,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
     if (prompt) {
       searchParamsToPass.set('prompt', prompt);
     }
+    const chatId = searchParams.get('chat-id');
+    if (chatId) {
+      searchParamsToPass.set('chat-id', chatId);
+    }
 
     return replace(ROUTES.FILE({ uuid, searchParams: searchParamsToPass.toString() }));
   } catch (error) {
