@@ -51,7 +51,6 @@ import type {
   ClientCoreGetCodeCell,
   ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
-  ClientCoreHasRenderCells,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMessage,
@@ -66,7 +65,6 @@ import type {
   CoreClientGetEditCell,
   CoreClientGetJwt,
   CoreClientGetValidationList,
-  CoreClientHasRenderCells,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -415,25 +413,6 @@ class QuadraticCore {
     });
   }
 
-  hasRenderCells(sheetId: string, column: number, row: number, width: number, height: number): Promise<boolean> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      const message: ClientCoreHasRenderCells = {
-        type: 'clientCoreHasRenderCells',
-        sheetId,
-        x: column,
-        y: row,
-        width,
-        height,
-        id,
-      };
-      this.waitingForResponse[id] = (message: CoreClientHasRenderCells) => {
-        resolve(message.hasRenderCells);
-      };
-      this.send(message);
-    });
-  }
-
   setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellValue',
@@ -529,13 +508,13 @@ class QuadraticCore {
     grid: ArrayBuffer,
     sequenceNumber: number
   ): Promise<{
-    contents?: ArrayBuffer;
+    contents?: ArrayBufferLike;
     version?: string;
     error?: string;
   }> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
         resolve(message);
       };
       const message: ClientCoreUpgradeGridFile = {
@@ -551,13 +530,13 @@ class QuadraticCore {
   importFile = async (
     args: Omit<ClientCoreImportFile, 'type' | 'id'>
   ): Promise<{
-    contents?: ArrayBuffer;
+    contents?: ArrayBufferLike;
     version?: string;
     error?: string;
   }> => {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
         resolve(message);
       };
       this.send(

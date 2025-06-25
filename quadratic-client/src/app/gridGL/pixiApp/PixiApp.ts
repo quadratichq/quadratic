@@ -171,9 +171,6 @@ export class PixiApp {
 
     this.background = this.viewportContents.addChild(this.background);
 
-    // useful for debugging at viewport locations
-    this.viewportContents.addChild(this.debug);
-
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(this.gridLines);
 
@@ -196,6 +193,9 @@ export class PixiApp {
     this.viewportContents.addChild(this.hoverTableHeaders);
     this.viewportContents.addChild(this.hoverTableColumnsSelection);
     this.headings = this.viewportContents.addChild(gridHeadings);
+
+    // useful for debugging at viewport locations
+    this.viewportContents.addChild(this.debug);
 
     this.reset();
 
@@ -309,8 +309,12 @@ export class PixiApp {
 
   // called before and after a render
   prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+    // this is expensive, so we do it first, before blocking the canvas renderer
     await this.htmlPlaceholders.prepare(options?.cull);
+
+    // this blocks the canvas renderer
     this.copying = true;
+
     this.gridLines.visible = options?.gridLines ?? false;
     this.cursor.visible = options?.ai ?? false;
     this.cellHighlights.visible = false;

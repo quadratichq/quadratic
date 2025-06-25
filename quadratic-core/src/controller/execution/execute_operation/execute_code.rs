@@ -117,15 +117,6 @@ impl GridController {
 
             transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
-            transaction.forward_operations.push(op);
-            transaction
-                .reverse_operations
-                .push(Operation::SetChartCellSize {
-                    sheet_pos,
-                    w: original.map(|(w, _)| w).unwrap_or(w),
-                    h: original.map(|(_, h)| h).unwrap_or(h),
-                });
-
             transaction.add_from_code_run(
                 sheet_pos.into(),
                 data_table.is_image(),
@@ -134,6 +125,27 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+
+            if transaction.is_user_undo_redo() {
+                transaction.forward_operations.push(op);
+
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetChartCellSize {
+                        sheet_pos,
+                        w: original.map(|(w, _)| w).unwrap_or(w),
+                        h: original.map(|(_, h)| h).unwrap_or(h),
+                    });
+
+                let sheet_rect = SheetRect::from_numbers(
+                    sheet_pos.x,
+                    sheet_pos.y,
+                    w as i64,
+                    h as i64,
+                    sheet_pos.sheet_id,
+                );
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+            }
         }
 
         Ok(())

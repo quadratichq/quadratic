@@ -37,10 +37,7 @@ impl GridController {
         }
 
         loop {
-            self.update_a1_context_table_map(
-                std::mem::take(&mut transaction.code_cells_a1_context),
-                false,
-            );
+            self.update_a1_context_table_map(transaction);
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);

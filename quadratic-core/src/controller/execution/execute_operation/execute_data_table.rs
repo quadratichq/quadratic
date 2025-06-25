@@ -48,9 +48,11 @@ impl GridController {
             return Ok(());
         }
 
-        let data_table_rect =
-            data_table.output_sheet_rect(data_table_pos.to_sheet_pos(sheet_id), false);
-        transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(data_table_rect);
+        if transaction.is_user_undo_redo() {
+            let data_table_rect =
+                data_table.output_sheet_rect(data_table_pos.to_sheet_pos(sheet_id), false);
+            transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(data_table_rect);
+        }
 
         Ok(())
     }
@@ -2007,8 +2009,6 @@ impl GridController {
         if let Operation::DataTableFormats { sheet_pos, formats } = op.to_owned() {
             let sheet_id = sheet_pos.sheet_id;
 
-            transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
-
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet_pos.into();
 
@@ -2024,14 +2024,21 @@ impl GridController {
                     &reverse_formats,
                 );
 
-                forward_operations.push(op);
-                reverse_operations.push(Operation::DataTableFormats {
-                    sheet_pos,
-                    formats: reverse_formats,
-                });
+                if transaction.is_user_undo_redo() {
+                    forward_operations.push(op);
+
+                    reverse_operations.push(Operation::DataTableFormats {
+                        sheet_pos,
+                        formats: reverse_formats,
+                    });
+                }
 
                 Ok(())
             })?;
+
+            if transaction.is_user_undo_redo() {
+                transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
+            }
 
             self.data_table_operations(transaction, forward_operations, reverse_operations, None);
 
@@ -2049,8 +2056,6 @@ impl GridController {
         if let Operation::DataTableBorders { sheet_pos, borders } = op.to_owned() {
             let sheet_id = sheet_pos.sheet_id;
 
-            transaction.generate_thumbnail |= self.thumbnail_dirty_borders(sheet_id, &borders);
-
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet_pos.into();
 
@@ -2062,14 +2067,21 @@ impl GridController {
 
                 transaction.add_borders(sheet_id);
 
-                forward_operations.push(op);
-                reverse_operations.push(Operation::DataTableBorders {
-                    sheet_pos,
-                    borders: reverse_borders,
-                });
+                if transaction.is_user_undo_redo() {
+                    forward_operations.push(op);
+
+                    reverse_operations.push(Operation::DataTableBorders {
+                        sheet_pos,
+                        borders: reverse_borders,
+                    });
+                }
 
                 Ok(())
             })?;
+
+            if transaction.is_user_undo_redo() {
+                transaction.generate_thumbnail |= self.thumbnail_dirty_borders(sheet_id, &borders);
+            }
 
             self.data_table_operations(transaction, forward_operations, reverse_operations, None);
 

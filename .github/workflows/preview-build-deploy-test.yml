@@ -149,8 +149,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR Private
@@ -289,8 +289,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Wait for stack deployment
@@ -583,7 +583,7 @@ jobs:
       ]
     runs-on: blacksmith-2vcpu-ubuntu-2204
     container:
-      image: mcr.microsoft.com/playwright:v1.52.0-noble
+      image: mcr.microsoft.com/playwright:v1.53.1-noble
       options: --user root
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 15
@@ -690,15 +690,17 @@ jobs:
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Upload HTML report to S3
         if: ${{ !cancelled() }}
         run: |
           # Upload entire build directory to S3
-          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} --delete
+          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} \
+            --delete --force \
+            --cache-control "public, max-age=30"
 
       - name: Find Build & Deploy Images Comment
         if: always()

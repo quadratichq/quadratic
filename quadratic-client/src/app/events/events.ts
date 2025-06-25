@@ -139,6 +139,7 @@ interface EventTypes {
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;
+  filesFromIframeInitialized: () => void;
 
   gridLinesDirty: () => void;
 

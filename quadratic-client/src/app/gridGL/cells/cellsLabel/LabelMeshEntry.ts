@@ -21,7 +21,6 @@ export class LabelMeshEntry extends Mesh {
     const geometry = new MeshGeometry();
     const shader = message.hasColor ? shaderTint : shaderNoTint;
 
-    // Get the font from BitmapFont.available instead of Assets
     const font = BitmapFont.available[message.fontName];
     if (!font) {
       throw new Error(`Font not found: ${message.fontName}`);
@@ -51,7 +50,6 @@ export class LabelMeshEntry extends Mesh {
     if (message.hasColor && message.colors) {
       geometry.addAttribute('aColors', message.colors, 4);
     }
-
     super(geometry, material);
     this.fontName = message.fontName;
     this.blendMode = BLEND_MODES.NORMAL_NPM;
