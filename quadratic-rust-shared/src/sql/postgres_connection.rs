@@ -294,6 +294,7 @@ impl<'a> Connection<'a> for PostgresConnection {
             "VOID" => ArrowType::Void,
             // try to convert others to a string
             _ => {
+                println!("Unknown type: {:?}", column.type_info().name());
                 match column.type_info().kind() {
                     PgTypeKind::Enum(_) => {
                         let value = row
@@ -308,7 +309,15 @@ impl<'a> Connection<'a> for PostgresConnection {
                     PgTypeKind::Pseudo => {}
                     PgTypeKind::Domain(_type_info) => {}
                     PgTypeKind::Composite(_type_info_array) => {}
-                    PgTypeKind::Array(_type_info) => {}
+                    PgTypeKind::Array(_type_info) => {
+                        let value = row
+                            .try_get_raw(index)
+                            .map(|value| value.as_str().unwrap_or_default().to_string());
+
+                        if let Ok(value) = value {
+                            return ArrowType::Utf8(value);
+                        }
+                    }
                     PgTypeKind::Range(_type_info) => {}
                 };
 
@@ -377,7 +386,7 @@ mod tests {
         for row in &rows {
             for (index, col) in row.columns().iter().enumerate() {
                 let value = connection.to_arrow(row, col, index);
-                println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
+                // println!("{} ({}) = {:?}", col.name(), col.type_info().name(), value);
             }
         }
 
