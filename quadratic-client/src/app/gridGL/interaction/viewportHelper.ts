@@ -5,10 +5,13 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { Point } from 'pixi.js';
 
-// const BUFFER = [CELL_WIDTH / 2, CELL_HEIGHT / 2];
-
 // animating viewport
 const ANIMATION_TIME = 250;
+const ANIMATION_TIME_SHORT = 50;
+
+// distance where we use the short animation time
+const ANIMATION_SHORT_DISTANCE_SQUARED = 600 ** 2;
+
 const ANIMATION_EASE = 'easeInOutSine';
 
 export function getVisibleTopRow(): number {
@@ -87,7 +90,7 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
     bottom = bottomRightCell.bottom;
     y = bottom - viewport.worldScreenHeight;
   }
-  if (topLeftCell.top + headingHeight < viewport.top) {
+  if (topLeftCell.top - headingHeight < viewport.top) {
     top = topLeftCell.top - headingHeight;
     y = top;
   }
@@ -99,7 +102,7 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   if (bottomRightCell.right > viewport.right) {
     right = bottomRightCell.right;
   }
-  if (topLeftCell.left + headingWidth < viewport.left) {
+  if (topLeftCell.left - headingWidth < viewport.left) {
     left = topLeftCell.left - headingWidth;
   }
 
@@ -112,6 +115,17 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   }
 }
 
+function animate(move: JsCoordinate) {
+  const distanceSquared = (move.x - pixiApp.viewport.center.x) ** 2 + (move.y - pixiApp.viewport.center.y) ** 2;
+  const time = distanceSquared < ANIMATION_SHORT_DISTANCE_SQUARED ? ANIMATION_TIME_SHORT : ANIMATION_TIME;
+  pixiApp.viewport.animate({
+    position: new Point(move.x, move.y),
+    removeOnInterrupt: true,
+    time,
+    ease: ANIMATION_EASE,
+  });
+}
+
 // Makes a rect visible in the viewport. Returns true if the rect is visible in the viewport.
 export function rectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordinate): boolean {
   if (sheetId !== sheets.current) {
@@ -119,12 +133,7 @@ export function rectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordina
   }
   const move = calculateRectVisible(min, max);
   if (move) {
-    pixiApp.viewport.animate({
-      position: new Point(move.x, move.y),
-      removeOnInterrupt: true,
-      time: ANIMATION_TIME,
-      ease: ANIMATION_EASE,
-    });
+    animate(move);
     return false;
   } else {
     return true;
@@ -213,19 +222,35 @@ export function getShareUrlParams(): string {
   return url;
 }
 
+// Returns the current viewport center position or the target position the
+// viewport is animating to
+function getCurrentViewportPosition(): Point {
+  const { viewport } = pixiApp;
+  const animatePlugin = viewport.plugins.get('animate');
+  if (animatePlugin && !animatePlugin.complete && animatePlugin.options.position) {
+    return animatePlugin.options.position;
+  }
+  return viewport.center;
+}
+
 // Moves the cursor up or down one page
 export function pageUpDown(up: boolean) {
   const cursorRect = pixiApp.cursor.cursorRectangle;
-  const { viewport } = pixiApp;
   if (cursorRect) {
-    const distanceTopToCursorTop = cursorRect.top - viewport.top;
+    // need to ensure we have an accurate cursor rectangle
+    if (pixiApp.cursor.dirty) pixiApp.cursor.update(false);
+    const halfScreenHeight = pixiApp.viewport.screenHeightInWorldPixels / 2;
+    const currentViewportPosition = getCurrentViewportPosition();
+    const distanceTopToCursorTop = cursorRect.top - pixiApp.viewport.top; //currentViewportPosition.y - halfScreenHeight;
     const newY = cursorRect.y + pixiApp.viewport.screenHeightInWorldPixels * (up ? -1 : 1);
     const newRow = Math.max(1, sheets.sheet.getColumnRowFromScreen(0, newY).row);
     const cursor = sheets.sheet.cursor;
     cursor.moveTo(cursor.position.x, newRow, { checkForTableRef: true, ensureVisible: false });
     const newCursorY = sheets.sheet.getRowY(newRow);
     const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-    pixiApp.viewport.y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
+    const y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
+    animate({ x: currentViewportPosition.x, y: y + halfScreenHeight });
+    // pixiApp.viewport.y = y;
     pixiApp.viewportChanged();
   }
 }
