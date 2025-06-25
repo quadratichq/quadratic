@@ -341,10 +341,6 @@ impl Sheet {
                     }
                 }
 
-                if output_rect.len() <= 1 {
-                    return;
-                }
-
                 let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
                 let y_start = std::cmp::max(output_rect.min.y, bounds.min.y);
                 let x_end = std::cmp::min(output_rect.max.x, bounds.max.x);

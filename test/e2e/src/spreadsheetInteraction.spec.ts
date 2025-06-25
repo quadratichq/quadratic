@@ -1831,7 +1831,7 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 530, y: 150 } });
 
   // Click Delete column
-  await page.getByText(`Delete 8 columns`).click();
+  await page.getByText(`Delete 8 columns`).click({ timeout: 5 * 1000 });
 
   //--------------------------------
   // Assert:
