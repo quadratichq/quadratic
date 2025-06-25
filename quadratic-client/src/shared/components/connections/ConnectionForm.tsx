@@ -1,7 +1,6 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
-import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
@@ -43,14 +42,7 @@ export function ConnectionFormCreate({
     handleSubmitForm,
   };
 
-  return (
-    <>
-      <ConnectionHeader type={type} handleNavigateToListView={handleNavigateToListView}>
-        Create
-      </ConnectionHeader>
-      <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />
-    </>
-  );
+  return <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />;
 }
 
 export function ConnectionFormEdit({
@@ -82,30 +74,23 @@ export function ConnectionFormEdit({
     handleNavigateToListView();
   };
 
-  return (
-    <>
-      <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
-        Edit
-      </ConnectionHeader>
-      {fetcher.data?.ok ? (
-        <ConnectionFormWrapper
-          type={fetcher.data.connection.type}
-          teamUuid={teamUuid}
-          props={{
-            connection: fetcher.data.connection,
-            handleNavigateToListView,
-            handleSubmitForm,
-          }}
-        />
-      ) : (
-        <div className="gap-2 pt-2">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        </div>
-      )}
-    </>
+  return fetcher.data?.ok ? (
+    <ConnectionFormWrapper
+      type={fetcher.data.connection.type}
+      teamUuid={teamUuid}
+      props={{
+        connection: fetcher.data.connection,
+        handleNavigateToListView,
+        handleSubmitForm,
+      }}
+    />
+  ) : (
+    <div className="gap-2 pt-2">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    </div>
   );
 }
 
