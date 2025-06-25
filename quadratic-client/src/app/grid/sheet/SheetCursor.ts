@@ -5,6 +5,7 @@
 import { events } from '@/app/events/events';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { getTableNameInNameOrColumn, JsSelection } from '@/app/quadratic-core/quadratic_core';
@@ -281,25 +282,17 @@ export class SheetCursor {
   };
 
   selectPageDown = () => {
-    // todo...
-    // let end = this.jsSelection.getBottomRightCell();
-    // console.log(end.x, end.y);
-    // const bounds = pixiApp.viewport.getVisibleBounds();
-    // const y = sheets.sheet.getRowY(end.x);
-    // const distanceTopToCursorTop = y - bounds.top;
-    // const row = sheets.sheet.getRowFromScreen(y + bounds.height);
-    // this.jsSelection.selectTo(end.x, row, false);
-    // this.updatePosition(false);
-    // const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-    // pixiApp.viewport.y = Math.min(gridHeadings, -(y + bounds.height) + distanceTopToCursorTop);
-    // pixiApp.viewportChanged();
+    if (isAnimating()) return;
+    const { x, y, column, row } = calculatePageUpDown(false, true);
+    this.jsSelection.selectTo(column, row, false);
+    animateViewport({ x, y: -y });
   };
 
   selectPageUp = () => {
-    // todo...
-    // const bounds = pixiApp.viewport.getVisibleBounds();
-    // this.jsSelection.selectPage(bounds.height, true);
-    // this.updatePosition(true);
+    if (isAnimating()) return;
+    const { x, y, column, row } = calculatePageUpDown(true, true);
+    this.jsSelection.selectTo(column, row, false);
+    animateViewport({ x, y: -y });
   };
 
   isMultiCursor = (): boolean => {

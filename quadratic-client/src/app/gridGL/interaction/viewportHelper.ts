@@ -116,7 +116,8 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   }
 }
 
-function animate(move: JsCoordinate) {
+// Animates the viewport to a new screen location
+export function animateViewport(move: JsCoordinate) {
   const distanceSquared = (move.x - pixiApp.viewport.center.x) ** 2 + (move.y - pixiApp.viewport.center.y) ** 2;
   const time = distanceSquared < ANIMATION_SHORT_DISTANCE_SQUARED ? ANIMATION_TIME_SHORT : ANIMATION_TIME;
   pixiApp.viewport.animate({
@@ -134,7 +135,7 @@ export function rectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordina
   }
   const move = calculateRectVisible(min, max);
   if (move) {
-    animate(move);
+    animateViewport(move);
     return false;
   } else {
     return true;
@@ -224,12 +225,17 @@ export function getShareUrlParams(): string {
 }
 
 // Calculates the new row and y position for a page up and down
-export function calculatePageUpDown(up: boolean): { x: number; y: number; row: number } {
+export function calculatePageUpDown(
+  up: boolean,
+  select: boolean
+): { x: number; y: number; column: number; row: number } {
   const { viewport } = pixiApp;
   const { sheet } = sheets;
 
+  const cursorPosition = select ? sheet.cursor.selectionEnd : sheet.cursor.position;
+
   // current position of the cursor in world coordinates
-  const cursorY = sheet.getRowY(sheet.cursor.position.y);
+  const cursorY = sheet.getRowY(cursorPosition.y);
 
   // calculate distance from animation-complete top to the cursor
   const viewportPositionY = viewport.center.y;
@@ -248,18 +254,19 @@ export function calculatePageUpDown(up: boolean): { x: number; y: number; row: n
   // (taking into account the headings)
   const gridHeadings = pixiApp.headings.headingSize.unscaledHeight;
   const y = Math.min(gridHeadings - viewport.screenHeightInWorldPixels / 2, -newCursorY + distanceTopToCursor);
-  return { x: viewport.center.x, y, row: newRow };
+  return { x: viewport.center.x, y, column: cursorPosition.x, row: newRow };
 }
 
-function isAnimating(): boolean {
+// Returns whether the viewport is currently animating to a location
+export function isAnimating(): boolean {
   return !!pixiApp.viewport.plugins.get('animate');
 }
 
 // Moves the cursor up or down one page
 export function pageUpDown(up: boolean) {
   if (isAnimating()) return;
-  const { x, y, row } = calculatePageUpDown(up);
+  const { x, y, column, row } = calculatePageUpDown(up, false);
   const cursor = sheets.sheet.cursor;
-  cursor.moveTo(cursor.position.x, row, { checkForTableRef: true, ensureVisible: false });
-  animate({ x, y: -y });
+  cursor.moveTo(column, row, { checkForTableRef: true, ensureVisible: false });
+  animateViewport({ x, y: -y });
 }
