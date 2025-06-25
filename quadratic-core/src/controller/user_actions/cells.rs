@@ -343,7 +343,7 @@ mod test {
         };
 
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.header_is_first_row = false;
                 Ok(())
             })
@@ -389,7 +389,7 @@ mod test {
 
         // show name
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.show_name = Some(false);
                 Ok(())
             })
@@ -425,7 +425,7 @@ mod test {
 
         // show columns
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.show_columns = Some(false);
                 Ok(())
             })
@@ -460,7 +460,7 @@ mod test {
         );
 
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.header_is_first_row = true;
                 Ok(())
             })
@@ -497,7 +497,7 @@ mod test {
 
         // hide first column
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[0].display = false;
                 Ok(())
@@ -525,7 +525,7 @@ mod test {
 
         // show first column
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[0].display = true;
                 Ok(())
@@ -565,7 +565,7 @@ mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })
@@ -593,7 +593,7 @@ mod test {
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::None).unwrap();
                 Ok(())
             })

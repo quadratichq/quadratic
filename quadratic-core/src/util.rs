@@ -107,7 +107,7 @@ macro_rules! row {
 
 /// Parses a cell position in A1 notation.
 ///
-/// Expressions evalulating to sheet IDs are allowed but must be surrounded in
+/// Expressions evaluating to sheet IDs are allowed but must be surrounded in
 /// parentheses if they are anything other than a single identifier.
 ///
 /// # Examples

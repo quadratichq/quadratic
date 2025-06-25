@@ -229,7 +229,7 @@ mod tests {
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(true);
                 dt.show_columns = Some(true);
                 Ok(())
@@ -294,7 +294,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(false);
                 dt.show_columns = Some(false);
                 Ok(())
@@ -309,7 +309,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(true);
                 dt.show_columns = Some(true);
                 Ok(())
@@ -323,7 +323,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(false);
                 Ok(())
             })
@@ -336,7 +336,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_columns = Some(false);
                 Ok(())
             })
@@ -349,7 +349,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.header_is_first_row = true;
                 Ok(())
             })
@@ -362,7 +362,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_columns = Some(true);
                 Ok(())
             })
@@ -408,7 +408,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         let data_table = sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(0, SortDirection::Descending).unwrap();
                 Ok(())
             })

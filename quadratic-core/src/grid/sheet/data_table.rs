@@ -86,6 +86,16 @@ impl Sheet {
     }
 
     /// Returns a DataTable at a Pos as a result
+    pub fn data_table_multi_pos_result(&self, multi_pos: &MultiPos) -> Result<&DataTable> {
+        self.data_table_multi_pos(multi_pos).ok_or_else(|| {
+            anyhow!(
+                "Data table not found at {:?} in data_table_result()",
+                multi_pos
+            )
+        })
+    }
+
+    /// Returns a DataTable at a Pos as a result
     pub fn data_table_result(&self, pos: &Pos) -> Result<&DataTable> {
         self.data_table_at(pos)
             .ok_or_else(|| anyhow!("Data table not found at {:?} in data_table_result()", pos))
@@ -526,8 +536,8 @@ impl Sheet {
         if let Some(data_table) = data_table {
             self.data_table_insert_full(&pos, data_table).1
         } else {
-            self.data_table_shift_remove(&pos)
-                .map(|(data_table, _)| data_table)
+            self.data_table_shift_remove_full(&pos)
+                .map(|(_, _, data_table, _)| data_table)
         }
     }
 }
@@ -714,13 +724,22 @@ mod test {
         let sheet = gc.sheet(sheet_id);
 
         // Test that the data table index is 0 for the first data table
-        assert_eq!(sheet.data_table_index(pos![A1]), Some(0));
+        assert_eq!(
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, 1, 1)),
+            Some(0)
+        );
 
         // Test that a non-existent data table returns None
-        assert_eq!(sheet.data_table_index(pos![B2]), None);
+        assert_eq!(
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, 2, 2)),
+            None
+        );
 
         // The second data table should have index 1
-        assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
+        assert_eq!(
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, 5, 2)),
+            Some(1)
+        );
     }
 
     #[test]

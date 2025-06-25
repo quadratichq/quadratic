@@ -132,7 +132,7 @@ impl RegionMap {
                     .iter()
                     .map(|obj| (obj.data, (*region_sheet, *obj.geom())))
             }),
-            self.pos_to_region.iter().flat_map(|(pos_sheet, map)| {
+            self.pos_to_region.iter().flat_map(|(_, map)| {
                 map.iter()
                     .flat_map(|(pos, regions)| regions.iter().map(|&region| (*pos, region)))
             }),

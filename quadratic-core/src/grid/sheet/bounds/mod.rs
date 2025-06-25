@@ -763,7 +763,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
         gc.set_code_cell(
-            (2, 1, sheet_id).into(),
+            MultiPos::new_sheet_pos(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "[['c','d']]".into(),
             None,

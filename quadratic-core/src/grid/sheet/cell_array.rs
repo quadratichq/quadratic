@@ -167,7 +167,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        CellValue, Pos, Rect, SheetPos,
+        CellValue, MultiPos, Pos, Rect, SheetPos,
         controller::GridController,
         grid::{CodeCellLanguage, Sheet},
     };
@@ -266,22 +266,14 @@ mod tests {
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 3,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "1 + 1".into(),
             None,
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{1, 2, 3}".into(),
             None,

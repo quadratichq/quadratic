@@ -479,7 +479,7 @@ pub mod test {
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::None).unwrap();
                 Ok(())
             })

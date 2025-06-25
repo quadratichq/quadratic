@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    CellValue, MultiPos, Pos, Rect, TablePos, Value,
+    CellValue, MultiPos, Pos, Rect, Value,
     a1::A1Context,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
@@ -10,7 +10,6 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
-        sheet::data_tables::{SheetDataTables, cache::SheetDataTablesCache},
     },
 };
 
@@ -392,11 +391,7 @@ mod test {
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{1, 2, 3}".to_string(),
             None,
