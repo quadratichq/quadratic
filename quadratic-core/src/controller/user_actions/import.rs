@@ -551,7 +551,7 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            2,
+            3,
             vec!["issue", " test", " value\u{feff}"],
         );
         assert_cell_value_row(
@@ -559,10 +559,10 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            3,
+            4,
             vec!["0", "1", " Inv\u{feff}alid\u{feff}"],
         );
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["0", "2", " Valid"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 5, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {

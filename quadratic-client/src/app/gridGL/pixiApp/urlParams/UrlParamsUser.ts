@@ -78,15 +78,15 @@ export class UrlParamsUser {
   private loadIframeFiles = (params: URLSearchParams) => {
     if (this.iframeFilesLoaded) return;
 
-    const chatId = params.get('chatid');
+    const chatId = params.get('chat-id');
     if (!chatId) {
       this.iframeFilesLoaded = true;
       return;
     }
 
-    // Remove the `chatid` param when we're done
+    // Remove the `chat-id` param when we're done
     const url = new URL(window.location.href);
-    params.delete('chatid');
+    params.delete('chat-id');
     url.search = params.toString();
     window.history.replaceState(null, '', url.toString());
 

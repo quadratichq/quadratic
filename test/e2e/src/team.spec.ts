@@ -1087,23 +1087,10 @@ test('Can View Team Member Cannot Edit Files', async ({ page: adminUserPage }) =
   await createFile(adminUserPage, { fileName: testPermissionFile });
 
   // Invite canViewUser to the team with "Can view" permission
-  // Click the "add" button by class and text
-  await adminUserPage
-    .locator('span.material-symbols-outlined.material-symbols-20.text-background:has-text("add")')
-    .click();
-  await adminUserPage.locator(`[aria-label="Email"]`).fill(canViewUserEmail);
-
-  const currentPermission = await adminUserPage.locator(`button[role="combobox"]`).textContent();
-
-  if (currentPermission !== permission) {
-    await adminUserPage.locator(`button[role="combobox"]`).click();
-    await adminUserPage.locator(`[role="option"] :text("${permission}")`).last().click();
-  }
-
-  await adminUserPage.locator(`button:text("Invite")`).click();
-
-  // Wait for the invitation to process
-  await adminUserPage.waitForTimeout(2000);
+  await inviteUserToTeam(adminUserPage, {
+    email: canViewUserEmail,
+    permission,
+  });
 
   //--------------------------------
   // Act:

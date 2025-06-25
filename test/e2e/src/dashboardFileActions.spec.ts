@@ -125,11 +125,13 @@ test('Edit Share File Permissions', async ({ page }) => {
 
   // Click "Share" -> Fill in recipient email -> select "Can view"
   await page.locator(`[role="menuitem"]:text-is("Share")`).click();
-  await page.locator(`[aria-label="Email"]`).fill(recipientEmail);
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can view');
+  await page.pause();
 
   // Click "Invite" and close the share file dialog
-  await page.locator(`button:text-is("Invite")`).click();
+  await page.locator(`button[data-testid="share-file-invite-button"]`).click();
   await page.locator(`button:has-text("Copy link") + button`).click();
 
   // Bring recipient page to the front and navigate to "Shared with me"
@@ -169,6 +171,7 @@ test('Edit Share File Permissions', async ({ page }) => {
 
   // Click "Share" -> "Can edit" on recipient permission
   await page.locator(`[role="menuitem"]:text-is("Share")`).click();
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`button:right-of(:text("${recipientEmail}"))`).first().click();
   await page.locator(`[role="option"]:has-text("Can edit")`).click();
 
@@ -249,6 +252,7 @@ test('Edit Share File Permissions', async ({ page }) => {
     dialog.accept().catch((err) => console.error(err));
   });
   await page.locator(`[role="menuitem"]:text-is("Share")`).click();
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`button:right-of(:text("${recipientEmail}"))`).first().click();
   await page.locator(`[role="option"]:has-text("Remove")`).click();
   await page.waitForTimeout(5 * 1000);
@@ -494,8 +498,9 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
 
   // Invite user 2 and allow them to edit
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page.locator(`input[placeholder="Email"]`).fill(user2Email);
-  await user1Page.locator(`button[type="submit"]:text-is("Invite")`).click();
+  await user1Page.locator(`button[data-testid="share-file-invite-button"]`).click();
   await user1Page.keyboard.press('Escape');
 
   // Bring user 2 to the front and navigate to "Shared with me"
@@ -549,6 +554,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Open kebab menu icon of fileName and open share menu, change user 2 permissions to Can view
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click();
   await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page.locator(`div:has-text("${user2Email}") + div:has-text("Can edit")`).click();
   await user1Page.locator(`span:text("Can view")`).click();
   await user1Page.keyboard.press('Escape');
@@ -593,6 +599,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Open kebab menu icon of fileName and open share menu, change "Anyone with the link" to "Can edit"
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click();
   await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page.locator(`div:has-text("Anyone with the link") + div > button > span:text("No access")`).click();
   await user1Page.locator(`div[data-state="unchecked"] > span:text("Can edit")`).click();
   await user1Page.keyboard.press('Escape');
@@ -655,6 +662,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Open kebab menu icon of fileName and open share menu, change "Anyone with the link" to "Can view"
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click();
   await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page.locator(`div:has-text("Anyone with the link") + div > button > span:text("Can edit")`).click();
   await user1Page.locator(`div[data-state="unchecked"] > span:text("Can view")`).click();
   await user1Page.keyboard.press('Escape');

@@ -16,7 +16,7 @@ jobs:
       pull-requests: write
       issues: write
       deployments: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 5
     outputs:
@@ -113,15 +113,15 @@ jobs:
       matrix:
         include:
           - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: files
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -241,7 +241,7 @@ jobs:
       pull-requests: write
       issues: write
       deployments: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
     outputs:
@@ -485,7 +485,7 @@ jobs:
   verify_deployed_version:
     name: Verify Version
     needs: [build_images, deploy_images]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
     strategy:
@@ -532,7 +532,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 15
     outputs:
@@ -581,7 +581,7 @@ jobs:
         verify_deployed_version,
         test-e2e-start-comment,
       ]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     container:
       image: mcr.microsoft.com/playwright:v1.53.1-noble
       options: --user root
@@ -626,7 +626,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: always() && needs.test-e2e-start-comment.result == 'success' && (github.head_ref != 'qa' || github.base_ref != 'main')
     timeout-minutes: 15
     env:
