@@ -17,11 +17,11 @@ export const ConnectionHeader = ({
   const suffix = type && connectionsByType[type] ? ` ${connectionsByType[type].name} connection` : '';
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 pb-3">
       <Button variant="ghost" size="icon" onClick={handleNavigateToListView}>
         <ArrowBackIcon />
       </Button>
-      <h3 className="text-md flex items-center justify-between gap-3 py-4">
+      <h3 className="text-md flex items-center justify-between gap-3">
         {children} {suffix}
       </h3>
     </div>

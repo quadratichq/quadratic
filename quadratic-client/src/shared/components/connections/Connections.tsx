@@ -7,10 +7,13 @@ import {
 } from '@/routes/api.connections';
 import { ConnectionDetails } from '@/shared/components/connections/ConnectionDetails';
 import { ConnectionFormCreate, ConnectionFormEdit } from '@/shared/components/connections/ConnectionForm';
+import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsNew } from '@/shared/components/connections/ConnectionsNew';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
+import { ArrowBackIcon } from '@/shared/components/Icons';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
+import { Button } from '@/shared/shadcn/ui/button';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useCallback, useState } from 'react';
@@ -152,30 +155,44 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     <div className={'grid-cols-12 gap-12 md:grid'}>
       <div className="col-span-8">
         {activeConnectionState.view === 'edit' ? (
-          <ConnectionFormEdit
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionState.type}
-            handleNavigateToListView={handleNavigateToListView}
-            teamUuid={teamUuid}
-          />
+          <>
+            <ConnectionHeader onBack={handleNavigateToListView}>
+              Edit {connectionsByType[activeConnectionState.type].name} connection
+            </ConnectionHeader>
+            <ConnectionFormEdit
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionState.type}
+              handleNavigateToListView={handleNavigateToListView}
+              teamUuid={teamUuid}
+            />
+          </>
         ) : activeConnectionState.view === 'details' ? (
-          <ConnectionDetails
-            connectionUuid={activeConnectionState.uuid}
-            connectionType={activeConnectionState.type}
-            handleNavigateToListView={handleNavigateToListView}
-            teamUuid={teamUuid}
-          />
+          <>
+            <ConnectionHeader onBack={handleNavigateToListView}>
+              Browse {connectionsByType[activeConnectionState.type].name} schema
+            </ConnectionHeader>
+            <ConnectionDetails
+              connectionUuid={activeConnectionState.uuid}
+              connectionType={activeConnectionState.type}
+              teamUuid={teamUuid}
+            />
+          </>
         ) : activeConnectionState.view === 'new' ? (
-          <ConnectionsNew
-            handleNavigateToCreateView={handleNavigateToCreateView}
-            handleNavigateToListView={handleNavigateToListView}
-          />
+          <>
+            <ConnectionHeader onBack={handleNavigateToListView}>New connection</ConnectionHeader>
+            <ConnectionsNew handleNavigateToCreateView={handleNavigateToCreateView} />
+          </>
         ) : activeConnectionState.view === 'create' ? (
-          <ConnectionFormCreate
-            teamUuid={teamUuid}
-            type={activeConnectionState.type}
-            handleNavigateToListView={handleNavigateToListView}
-          />
+          <>
+            <ConnectionHeader onBack={handleNavigateToNewView}>
+              New connection: {connectionsByType[activeConnectionState.type].name}
+            </ConnectionHeader>
+            <ConnectionFormCreate
+              teamUuid={teamUuid}
+              type={activeConnectionState.type}
+              handleNavigateToListView={handleNavigateToListView}
+            />
+          </>
         ) : (
           <ConnectionsList
             connections={connections}
@@ -194,6 +211,17 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     </div>
   );
 };
+
+function ConnectionHeader({ children, onBack }: { children: React.ReactNode; onBack: () => void }) {
+  return (
+    <div className="flex items-center gap-2 pb-3">
+      <Button variant="ghost" size="icon" onClick={onBack}>
+        <ArrowBackIcon />
+      </Button>
+      <h3 className="text-md flex items-center justify-between gap-3">{children}</h3>
+    </div>
+  );
+}
 
 function getInitialConnectionState(searchParams: URLSearchParams): ConnectionState {
   const type = searchParams.get('initial-connection-type');
