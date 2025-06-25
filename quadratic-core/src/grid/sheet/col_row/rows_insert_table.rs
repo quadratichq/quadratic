@@ -98,7 +98,7 @@ impl Sheet {
         data_tables_to_move.sort_by(|(_, a), (_, b)| b.y.cmp(&a.y));
         for (_, old_pos) in data_tables_to_move {
             if let Some((index, old_pos, data_table, dirty_rects)) =
-                self.data_table_shift_remove_full(&old_pos)
+                self.data_table_shift_remove(&old_pos)
             {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);

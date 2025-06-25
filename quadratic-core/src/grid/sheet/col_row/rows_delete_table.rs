@@ -51,8 +51,7 @@ impl Sheet {
         }
 
         for pos in dt_to_delete.into_iter() {
-            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
-            {
+            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove(&pos) {
                 transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction
@@ -209,8 +208,7 @@ impl Sheet {
 
         dt_to_shift_up.sort_by(|(a, _), (b, _)| a.y.cmp(&b.y));
         for (pos, shift_table) in dt_to_shift_up {
-            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
-            else {
+            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove(&pos) else {
                 dbgjs!(format!(
                     "Error in check_delete_tables_columns: cannot shift up data table\n{:?}",
                     pos

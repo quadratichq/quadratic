@@ -131,7 +131,7 @@ impl Sheet {
         data_tables_to_move_right.sort_by(|(_, a), (_, b)| b.x.cmp(&a.x));
         for (_, old_pos) in data_tables_to_move_right {
             if let Some((index, old_pos, data_table, dirty_rects)) =
-                self.data_table_shift_remove_full(&old_pos)
+                self.data_table_shift_remove(&old_pos)
             {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction.add_from_code_run(

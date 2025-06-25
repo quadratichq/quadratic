@@ -562,7 +562,7 @@ impl SheetDataTables {
     }
 
     /// Removes a data table at the given position, updating mutual spill and cache.
-    pub fn shift_remove_full(
+    pub fn shift_remove_full_pos(
         &mut self,
         pos: &Pos,
     ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
@@ -575,12 +575,15 @@ impl SheetDataTables {
         Some((index, *pos, old_data_table, dirty_rects))
     }
 
-    /// Removes a data table at the given position, updating mutual spill and cache.
-    pub fn shift_remove(&mut self, multi_pos: &MultiPos) -> Option<(DataTable, HashSet<Rect>)> {
+    pub fn shift_remove_full(
+        &mut self,
+        multi_pos: &MultiPos,
+    ) -> Option<(usize, MultiPos, DataTable, HashSet<Rect>)> {
         match multi_pos {
             MultiPos::SheetPos(sheet_pos) => {
-                let pos: Pos = (*sheet_pos).into();
-                self.shift_remove_full(&pos).map(|full| (full.2, full.3))
+                let pos = (*sheet_pos).into();
+                self.shift_remove_full_pos(&pos)
+                    .map(|full| (full.0, MultiPos::SheetPos(*sheet_pos), full.2, full.3))
             }
             MultiPos::TablePos(table_pos) => {
                 let pos: Pos = table_pos.table_sheet_pos.into();
@@ -589,10 +592,19 @@ impl SheetDataTables {
                 data_table
                     .tables
                     .as_mut()?
-                    .shift_remove_full(&table_pos.pos)
-                    .map(|full| (full.2, full.3))
+                    .shift_remove_full(&MultiPos::new_sheet_pos(
+                        multi_pos.sheet_id(),
+                        table_pos.pos.x,
+                        table_pos.pos.y,
+                    ))
             }
         }
+    }
+
+    /// Removes a data table at the given position, updating mutual spill and cache.
+    pub fn shift_remove(&mut self, multi_pos: &MultiPos) -> Option<(DataTable, HashSet<Rect>)> {
+        self.shift_remove_full(multi_pos)
+            .map(|full| (full.2, full.3))
     }
 
     /// Returns the bounds of the column at the given index.

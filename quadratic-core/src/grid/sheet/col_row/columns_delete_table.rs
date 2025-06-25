@@ -46,8 +46,7 @@ impl Sheet {
         }
 
         for pos in dt_to_delete.into_iter() {
-            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
-            {
+            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove(&pos) {
                 let multi_pos = MultiPos::SheetPos(SheetPos::new(self.id, pos.x, pos.y));
                 transaction.add_from_code_run(multi_pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
@@ -259,8 +258,7 @@ impl Sheet {
 
         dt_to_shift_left.sort_by(|(a, _), (b, _)| a.x.cmp(&b.x));
         for (pos, shift_table) in dt_to_shift_left {
-            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
-            else {
+            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove(&pos) else {
                 dbgjs!(format!(
                     "Error in check_delete_tables_columns: cannot shift left data table\n{:?}",
                     pos

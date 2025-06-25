@@ -9,6 +9,7 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
+        sheet::data_tables::SheetDataTables,
     },
 };
 
@@ -85,7 +86,7 @@ impl Sheet {
             .any(|pos| skip != Some(&pos))
     }
 
-    /// Returns a DataTable at a Pos as a result
+    /// Returns a DataTable at a MultiPos as a result
     pub fn data_table_multi_pos_result(&self, multi_pos: &MultiPos) -> Result<&DataTable> {
         self.data_table_multi_pos(multi_pos).ok_or_else(|| {
             anyhow!(
@@ -148,18 +149,46 @@ impl Sheet {
     pub fn data_table_insert_before(
         &mut self,
         index: usize,
-        pos: &Pos,
+        multi_pos: MultiPos,
         mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
-        data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
-        self.data_tables.insert_before(index, pos, data_table)
+    ) -> Result<(usize, Option<DataTable>, HashSet<Rect>)> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                let pos = sheet_pos.into();
+                data_table.spill_value = self.check_spills_due_to_column_values(&pos, &data_table);
+                Ok(self.data_tables.insert_before(index, &pos, data_table))
+            }
+            MultiPos::TablePos(table_pos) => {
+                // For TablePos, we need to insert into the sub-tables of the parent data table
+                let mut result = None;
+                self.data_tables.modify_data_sub_table_at(table_pos, |dt| {
+                    // Check if the data table has sub-tables
+                    if let Some(tables) = &mut dt.tables {
+                        // Insert the data table into the sub-tables
+                        let (index, old_data_table, dirty_rects) =
+                            tables.insert_before(index, &table_pos.pos, data_table);
+                        result = Some((index, old_data_table, dirty_rects));
+                        Ok(())
+                    } else {
+                        // If no sub-tables exist, create them and insert
+                        let mut tables = SheetDataTables::new();
+                        let (index, old_data_table, dirty_rects) =
+                            tables.insert_before(index, &table_pos.pos, data_table);
+                        dt.tables = Some(tables);
+                        result = Some((index, old_data_table, dirty_rects));
+                        Ok(())
+                    }
+                })?;
+                result.ok_or_else(|| anyhow!("Failed to insert data table into sub-table"))
+            }
+        }
     }
 
-    pub fn data_table_shift_remove_full(
+    pub fn data_table_shift_remove(
         &mut self,
-        pos: &Pos,
-    ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
-        self.data_tables.shift_remove_full(pos)
+        multi_pos: &MultiPos,
+    ) -> Option<(usize, MultiPos, DataTable, HashSet<Rect>)> {
+        self.data_tables.shift_remove_full(multi_pos)
     }
 
     pub fn delete_data_table(&mut self, multi_pos: MultiPos) -> Option<(DataTable, HashSet<Rect>)> {
@@ -536,7 +565,7 @@ impl Sheet {
         if let Some(data_table) = data_table {
             self.data_table_insert_full(&pos, data_table).1
         } else {
-            self.data_table_shift_remove_full(&pos)
+            self.data_table_shift_remove(&pos)
                 .map(|(_, _, data_table, _)| data_table)
         }
     }

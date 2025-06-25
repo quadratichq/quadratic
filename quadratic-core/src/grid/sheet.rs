@@ -289,6 +289,21 @@ impl Sheet {
         rect_values
     }
 
+    /// Returns the cell_value at the MultiPos.
+    pub fn cell_value_multi_pos(&self, multi_pos: MultiPos) -> Option<CellValue> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => self.cell_value(sheet_pos.into()),
+            MultiPos::TablePos(table_pos) => {
+                if let Some(data_table) = self.data_tables.get_at(&table_pos.table_sheet_pos.into())
+                {
+                    data_table.cell_value_at(table_pos.pos.x as u32, table_pos.pos.y as u32)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
     /// Returns the cell_value at the Pos in column.values. This does not check
     /// or return results within code_runs.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
