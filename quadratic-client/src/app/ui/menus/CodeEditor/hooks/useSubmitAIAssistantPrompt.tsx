@@ -226,6 +226,7 @@ export function useSubmitAIAssistantPrompt() {
               chatId,
               source: 'AIAssistant',
               modelKey,
+              time: new Date().toString(),
               messages: messagesWithContext,
               useStream: true,
               toolName: undefined,

@@ -149,8 +149,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR Private
@@ -289,8 +289,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Wait for stack deployment
@@ -525,214 +525,214 @@ jobs:
           expected_version: ${{ env.EXPECTED_VERSION }}
           max_attempts: ${{ env.MAX_ATTEMPTS }}
 
-  # test-e2e-start-comment:
-  #   name: Tests-E2E - Generate Matrix and Start Comment
-  #   needs: [build_images, deploy_images, verify_deployed_version]
-  #   permissions:
-  #     contents: read
-  #     pull-requests: write
-  #     issues: write
-  #   runs-on: blacksmith-2vcpu-ubuntu-2204
-  #   if: github.head_ref != 'qa' || github.base_ref != 'main'
-  #   timeout-minutes: 15
-  #   outputs:
-  #     matrix: ${{ steps.generate-matrix.outputs.matrix }}
-  #   env:
-  #     matrix_runner: 156
-  #     e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
-  #     deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
-  #   steps:
-  #     - name: Generate Test Matrix
-  #       id: generate-matrix
-  #       run: |
-  #         # Create a matrix with shardIndex values from 1 to matrix_runner
-  #         matrix=$(python -c "import json; print(json.dumps({'shardIndex': list(range(1, ${{ env.matrix_runner }} + 1)), 'shardTotal': [${{ env.matrix_runner }}]}))" | tr -d '\n')
-  #         echo "matrix=$matrix" >> $GITHUB_OUTPUT
-  #         echo "Generated matrix: $matrix"
+  test-e2e-start-comment:
+    name: Tests-E2E - Generate Matrix and Start Comment
+    needs: [build_images, deploy_images, verify_deployed_version]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: (github.head_ref != 'qa' || github.base_ref != 'main') && false
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    env:
+      matrix_runner: 156
+      e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
+      deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
+    steps:
+      - name: Generate Test Matrix
+        id: generate-matrix
+        run: |
+          # Create a matrix with shardIndex values from 1 to matrix_runner
+          matrix=$(python -c "import json; print(json.dumps({'shardIndex': list(range(1, ${{ env.matrix_runner }} + 1)), 'shardTotal': [${{ env.matrix_runner }}]}))" | tr -d '\n')
+          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "Generated matrix: $matrix"
 
-  #     - name: Find Build & Deploy Images Comment
-  #       uses: peter-evans/find-comment@v3
-  #       id: test-e2e-start-comment
-  #       with:
-  #         issue-number: ${{ github.event.pull_request.number }}
-  #         comment-author: "github-actions[bot]"
-  #         body-includes: "Preview - Build, Deploy & Tests-E2E"
+      - name: Find Build & Deploy Images Comment
+        uses: peter-evans/find-comment@v3
+        id: test-e2e-start-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
-  #     - name: Update comment on E2E tests start
-  #       uses: peter-evans/create-or-update-comment@v3
-  #       with:
-  #         comment-id: ${{ steps.test-e2e-start-comment.outputs.comment-id }}
-  #         issue-number: ${{ github.event.pull_request.number }}
-  #         body: |
-  #           ## Preview - Build, Deploy & Tests-E2E
-  #           ✅ Build images
-  #           ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
-  #           ⏳ Tests-E2E running...
+      - name: Update comment on E2E tests start
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-start-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
+            ⏳ Tests-E2E running...
 
-  #           🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
-  #         edit-mode: replace
+            🔍 Please check the [workflow run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) for details.
+          edit-mode: replace
 
-  # test-e2e-matrix-run:
-  #   name: Tests-E2E - Matrix Run, Shard
-  #   needs:
-  #     [
-  #       build_images,
-  #       deploy_images,
-  #       verify_deployed_version,
-  #       test-e2e-start-comment,
-  #     ]
-  #   runs-on: blacksmith-2vcpu-ubuntu-2204
-  #   container:
-  #     image: mcr.microsoft.com/playwright:v1.52.0-noble
-  #     options: --user root
-  #   if: github.head_ref != 'qa' || github.base_ref != 'main'
-  #   timeout-minutes: 15
-  #   strategy:
-  #     fail-fast: false
-  #     matrix: ${{ fromJson(needs.test-e2e-start-comment.outputs.matrix) }}
-  #   env:
-  #     e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 1
-  #         sparse-checkout: |
-  #           .github/actions/tests-e2e
-  #         sparse-checkout-cone-mode: false
-  #         fetch-tags: false
-  #         submodules: false
-  #         lfs: false
+  test-e2e-matrix-run:
+    name: Tests-E2E - Matrix Run, Shard
+    needs:
+      [
+        build_images,
+        deploy_images,
+        verify_deployed_version,
+        test-e2e-start-comment,
+      ]
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    container:
+      image: mcr.microsoft.com/playwright:v1.52.0-noble
+      options: --user root
+    if: github.head_ref != 'qa' || github.base_ref != 'main'
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.test-e2e-start-comment.outputs.matrix) }}
+    env:
+      e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            .github/actions/tests-e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
 
-  #     - name: Run tests e2e
-  #       uses: ./.github/actions/tests-e2e
-  #       id: run-tests-e2e
-  #       with:
-  #         e2e_url: "https://${{ env.e2e_url }}"
-  #         shard_index: ${{ matrix.shardIndex }}
-  #         shard_total: ${{ matrix.shardTotal }}
+      - name: Run tests e2e
+        uses: ./.github/actions/tests-e2e
+        id: run-tests-e2e
+        with:
+          e2e_url: "https://${{ env.e2e_url }}"
+          shard_index: ${{ matrix.shardIndex }}
+          shard_total: ${{ matrix.shardTotal }}
 
-  # test-e2e-merge-report-and-end-comment:
-  #   name: Tests-E2E - Generate Report and End Comment
-  #   needs:
-  #     [
-  #       build_images,
-  #       deploy_images,
-  #       verify_deployed_version,
-  #       test-e2e-start-comment,
-  #       test-e2e-matrix-run,
-  #     ]
-  #   permissions:
-  #     contents: read
-  #     pull-requests: write
-  #     issues: write
-  #   runs-on: blacksmith-2vcpu-ubuntu-2204
-  #   if: always() && needs.test-e2e-start-comment.result == 'success' && (github.head_ref != 'qa' || github.base_ref != 'main')
-  #   timeout-minutes: 15
-  #   env:
-  #     e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
-  #     deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
-  #     s3_bucket: e2e.quadratic-preview.com
-  #   steps:
-  #     - name: Checkout code
-  #       if: ${{ !cancelled() }}
-  #       uses: actions/checkout@v4
-  #       with:
-  #         fetch-depth: 1
-  #         sparse-checkout: |
-  #           test/e2e
-  #         sparse-checkout-cone-mode: false
-  #         fetch-tags: false
-  #         submodules: false
-  #         lfs: false
+  test-e2e-merge-report-and-end-comment:
+    name: Tests-E2E - Generate Report and End Comment
+    needs:
+      [
+        build_images,
+        deploy_images,
+        verify_deployed_version,
+        test-e2e-start-comment,
+        test-e2e-matrix-run,
+      ]
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    runs-on: blacksmith-2vcpu-ubuntu-2204
+    if: always() && needs.test-e2e-start-comment.result == 'success' && (github.head_ref != 'qa' || github.base_ref != 'main')
+    timeout-minutes: 15
+    env:
+      e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
+      deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
+      s3_bucket: e2e.quadratic-preview.com
+    steps:
+      - name: Checkout code
+        if: ${{ !cancelled() }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            test/e2e
+          sparse-checkout-cone-mode: false
+          fetch-tags: false
+          submodules: false
+          lfs: false
 
-  #     - name: Setup Node
-  #       if: ${{ !cancelled() }}
-  #       uses: useblacksmith/setup-node@v5
-  #       with:
-  #         node-version: 24
+      - name: Setup Node
+        if: ${{ !cancelled() }}
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
 
-  #     - name: Install Dependencies
-  #       if: ${{ !cancelled() }}
-  #       run: cd test/e2e && npm install
+      - name: Install Dependencies
+        if: ${{ !cancelled() }}
+        run: cd test/e2e && npm install
 
-  #     - name: Download and merge all blobs into HTML report
-  #       if: ${{ !cancelled() }}
-  #       env:
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       run: |
-  #         # Create temp directory for download
-  #         mkdir -p temp-download
+      - name: Download and merge all blobs into HTML report
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Create temp directory for download
+          mkdir -p temp-download
 
-  #         # Download all matching artifacts
-  #         gh run download ${{ github.run_id }} \
-  #           --repo ${{ github.repository }} \
-  #           --pattern "blob-report-${{ github.run_id }}-*" \
-  #           --dir temp-download
+          # Download all matching artifacts
+          gh run download ${{ github.run_id }} \
+            --repo ${{ github.repository }} \
+            --pattern "blob-report-${{ github.run_id }}-*" \
+            --dir temp-download
 
-  #         # Create the target directory
-  #         mkdir -p all-blob-reports
+          # Create the target directory
+          mkdir -p all-blob-reports
 
-  #         # Move all files from subdirectories to the target directory
-  #         find temp-download -type f -exec mv {} all-blob-reports/ \;
+          # Move all files from subdirectories to the target directory
+          find temp-download -type f -exec mv {} all-blob-reports/ \;
 
-  #         # Clean up
-  #         rm -rf temp-download
+          # Clean up
+          rm -rf temp-download
 
-  #         # Verify download
-  #         echo "Downloaded $(find all-blob-reports -type f | wc -l) files"
+          # Verify download
+          echo "Downloaded $(find all-blob-reports -type f | wc -l) files"
 
-  #     - name: Merge into HTML Report
-  #       if: ${{ !cancelled() }}
-  #       run: npx playwright merge-reports --reporter html ./all-blob-reports
+      - name: Merge into HTML Report
+        if: ${{ !cancelled() }}
+        run: npx playwright merge-reports --reporter html ./all-blob-reports
 
-  #     - name: Configure AWS Credentials
-  #       if: ${{ !cancelled() }}
-  #       uses: aws-actions/configure-aws-credentials@v4
-  #       with:
-  #         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-  #         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
-  #         aws-region: ${{ secrets.AWS_REGION }}
+      - name: Configure AWS Credentials
+        if: ${{ !cancelled() }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-  #     - name: Upload HTML report to S3
-  #       if: ${{ !cancelled() }}
-  #       run: |
-  #         # Upload entire build directory to S3
-  #         aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} \
-  #           --delete \
-  #           --cache-control "public, max-age=30"
+      - name: Upload HTML report to S3
+        if: ${{ !cancelled() }}
+        run: |
+          # Upload entire build directory to S3
+          aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} \
+            --delete --force \
+            --cache-control "public, max-age=30"
 
-  #     - name: Find Build & Deploy Images Comment
-  #       if: always()
-  #       uses: peter-evans/find-comment@v3
-  #       id: test-e2e-merge-report-and-end-comment
-  #       with:
-  #         issue-number: ${{ github.event.pull_request.number }}
-  #         comment-author: "github-actions[bot]"
-  #         body-includes: "Preview - Build, Deploy & Tests-E2E"
+      - name: Find Build & Deploy Images Comment
+        if: always()
+        uses: peter-evans/find-comment@v3
+        id: test-e2e-merge-report-and-end-comment
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: "Preview - Build, Deploy & Tests-E2E"
 
-  #     - name: Update comment on E2E tests end
-  #       if: ${{ !cancelled() }}
-  #       uses: peter-evans/create-or-update-comment@v3
-  #       with:
-  #         comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
-  #         issue-number: ${{ github.event.pull_request.number }}
-  #         body: |
-  #           ## Preview - Build, Deploy & Tests-E2E
-  #           ✅ Build images
-  #           ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
-  #           ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)
-  #         edit-mode: replace
+      - name: Update comment on E2E tests end
+        if: ${{ !cancelled() }}
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)
+          edit-mode: replace
 
-  #     - name: Update comment on E2E tests end
-  #       if: cancelled()
-  #       uses: peter-evans/create-or-update-comment@v3
-  #       with:
-  #         comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
-  #         issue-number: ${{ github.event.pull_request.number }}
-  #         body: |
-  #           ## Preview - Build, Deploy & Tests-E2E
-  #           ✅ Build images
-  #           ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
-  #           ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-  #         edit-mode: replace
+      - name: Update comment on E2E tests end
+        if: cancelled()
+        uses: peter-evans/create-or-update-comment@v3
+        with:
+          comment-id: ${{ steps.test-e2e-merge-report-and-end-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            ## Preview - Build, Deploy & Tests-E2E
+            ✅ Build images
+            ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
+            ❌ Tests-E2E - [Cancelled](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          edit-mode: replace

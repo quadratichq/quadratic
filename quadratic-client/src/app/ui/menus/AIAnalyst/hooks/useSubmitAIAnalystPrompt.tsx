@@ -21,7 +21,7 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
@@ -299,11 +299,27 @@ export function useSubmitAIAnalystPrompt() {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
 
-            if (debugShowAIInternalContext) {
+            if (debugFlag('debugShowAIInternalContext')) {
               console.log('AIAnalyst messages with context:', {
                 context,
                 messagesWithContext,
               });
+            }
+            if (debugFlag('debugPrintAIInternalContext')) {
+              console.log(
+                messagesWithContext
+                  .filter((message) => message.role === 'user' && message.contextType === 'userPrompt')
+                  .map((message) => {
+                    return `${message.role}: ${message.content.map((content) => {
+                      if ('type' in content && content.type === 'text') {
+                        return content.text;
+                      } else {
+                        return 'data';
+                      }
+                    })}`;
+                  })
+                  .join('\n')
+              );
             }
 
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
@@ -311,6 +327,7 @@ export function useSubmitAIAnalystPrompt() {
               chatId,
               source: 'AIAnalyst',
               modelKey,
+              time: new Date().toString(),
               messages: messagesWithContext,
               useStream: USE_STREAM,
               toolName: undefined,

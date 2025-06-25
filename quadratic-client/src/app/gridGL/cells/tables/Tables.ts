@@ -143,6 +143,7 @@ export class Tables extends Container<Table> {
         }
         pixiApp.setViewportDirty();
       });
+    this.cursorPosition();
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
@@ -164,6 +165,8 @@ export class Tables extends Container<Table> {
     codeCells.forEach((codeCell) => {
       this.addChild(new Table(this.sheet, codeCell));
     });
+    // ensures that a table at A1 gets highlighted
+    this.cursorPosition();
   };
 
   update(dirtyViewport: boolean) {

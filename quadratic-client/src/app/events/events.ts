@@ -28,7 +28,6 @@ import type {
   CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionEnd,
-  CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
@@ -81,7 +80,6 @@ interface EventTypes {
   importProgress: (message: CoreClientImportProgress) => void;
 
   transactionStart: (message: CoreClientTransactionStart) => void;
-  transactionProgress: (message: CoreClientTransactionProgress) => void;
   transactionEnd: (message: CoreClientTransactionEnd) => void;
 
   multiplayerUpdate: (users: MultiplayerUser[]) => void;
@@ -140,6 +138,7 @@ interface EventTypes {
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;
+  filesFromIframeInitialized: () => void;
 
   gridLinesDirty: () => void;
 
@@ -149,6 +148,8 @@ interface EventTypes {
   scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
 
   bitmapFontsLoaded: () => void;
+
+  debugFlags: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

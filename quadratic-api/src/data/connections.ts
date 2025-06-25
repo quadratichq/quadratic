@@ -17,7 +17,7 @@ export let connectionDemo: Connection | undefined;
 try {
   connectionDemo = ApiSchemas['/v0/teams/:uuid/connections/:connectionUuid.GET.response'].parse({
     // Sensitive data in the env var
-    ...JSON.parse(CONNECTION_DEMO),
+    ...JSON.parse(CONNECTION_DEMO.replace(/\\"/g, '"')),
 
     // Stuff we hard-code (these don't really matter for the UI)
     createdDate: '2022-01-01T00:00:00.000Z',

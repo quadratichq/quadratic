@@ -59,7 +59,7 @@ export const FileMenubarMenu = () => {
               .map((file) => (
                 <MenubarItem
                   onClick={() => {
-                    window.location.href = ROUTES.FILE(file.uuid);
+                    window.location.href = ROUTES.FILE({ uuid: file.uuid, searchParams: '' });
                   }}
                   key={file.uuid}
                 >

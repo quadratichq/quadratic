@@ -52,7 +52,6 @@ impl GridController {
         }
         transaction.last_client_update = Some(Instant::now());
 
-        self.send_transaction_progress(transaction);
         self.send_sheet_info(transaction);
         self.send_code_cells(transaction);
         self.process_visible_dirty_hashes(transaction);
@@ -564,18 +563,6 @@ impl GridController {
             }
         }
         transaction.image_cells.clear();
-    }
-
-    /// Send transaction progress to client
-    pub(crate) fn send_transaction_progress(&self, transaction: &PendingTransaction) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            return;
-        }
-
-        crate::wasm_bindings::js::jsTransactionProgress(
-            transaction.id.to_string(),
-            transaction.operations.len() as i32,
-        );
     }
 
     pub(crate) fn send_a1_context(&self) {
