@@ -232,14 +232,20 @@ export function calculatePageUpDown(
   const { viewport } = pixiApp;
   const { sheet } = sheets;
 
+  // use end of selection if we are selecting
   const cursorPosition = select ? sheet.cursor.selectionEnd : sheet.cursor.position;
 
   // current position of the cursor in world coordinates
   const cursorY = sheet.getRowY(cursorPosition.y);
 
-  // calculate distance from animation-complete top to the cursor
-  const viewportPositionY = viewport.center.y;
-  const distanceTopToCursor = cursorY - viewportPositionY;
+  // distance from cursor to center of viewport
+  let distanceTopToCursor = cursorY - viewport.center.y;
+
+  // if distance between cursor and top of viewport is greater than the screen
+  // height, then center the cursor
+  if (Math.abs(distanceTopToCursor) > viewport.screenHeightInWorldPixels) {
+    distanceTopToCursor = 0;
+  }
 
   // calculate where the new cursor will be after the page up/down
   const onePageY = cursorY + viewport.screenHeightInWorldPixels * (up ? -1 : 1);
