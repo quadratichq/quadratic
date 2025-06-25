@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -6,7 +7,7 @@ import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { Point } from 'pixi.js';
 
 // animating viewport
-const ANIMATION_TIME = 250;
+const ANIMATION_TIME = 150;
 const ANIMATION_TIME_SHORT = 50;
 
 // distance where we use the short animation time
@@ -222,35 +223,60 @@ export function getShareUrlParams(): string {
   return url;
 }
 
-// Returns the current viewport center position or the target position the
-// viewport is animating to
-function getCurrentViewportPosition(): Point {
+// Calculates the new row and y position for a page up and down
+export function calculatePageUpDown(up: boolean): { x: number; y: number; row: number } {
   const { viewport } = pixiApp;
-  const animatePlugin = viewport.plugins.get('animate');
-  if (animatePlugin && !animatePlugin.complete && animatePlugin.options.position) {
-    return animatePlugin.options.position;
-  }
-  return viewport.center;
+  const { sheet } = sheets;
+
+  // current position of the cursor in world coordinates
+  const cursorY = sheet.getRowY(sheet.cursor.position.y);
+
+  // calculate distance from animation-complete top to the cursor
+  const viewportPositionY = viewport.center.y;
+  const distanceTopToCursor = cursorY - viewportPositionY;
+
+  // calculate where the new cursor will be after the page up/down
+  const onePageY = cursorY + viewport.screenHeightInWorldPixels * (up ? -1 : 1);
+
+  // clamp to the first row
+  const newRow = Math.max(1, sheet.getColumnRowFromScreen(0, onePageY).row);
+
+  // get the actual position of the new cursor in row coordinates
+  const newCursorY = sheet.getRowY(newRow);
+
+  // calculate the viewport location, clamping it ot the top of the viewport
+  // (taking into account the headings)
+  const gridHeadings = pixiApp.headings.headingSize.unscaledHeight;
+  const y = Math.min(gridHeadings - viewport.screenHeightInWorldPixels / 2, -newCursorY + distanceTopToCursor);
+  return { x: viewport.center.x, y, row: newRow };
+}
+
+function isAnimating(): boolean {
+  return !!pixiApp.viewport.plugins.get('animate');
 }
 
 // Moves the cursor up or down one page
 export function pageUpDown(up: boolean) {
+  if (isAnimating()) return;
+  const { x, y, row } = calculatePageUpDown(up);
+  const cursor = sheets.sheet.cursor;
+  cursor.moveTo(cursor.position.x, row, { checkForTableRef: true, ensureVisible: false });
+  animate({ x, y: -y });
+}
+
+// Moves the cursor up or down one page
+export function pageUpDown1(up: boolean) {
   const cursorRect = pixiApp.cursor.cursorRectangle;
+  const { viewport } = pixiApp;
   if (cursorRect) {
-    // need to ensure we have an accurate cursor rectangle
-    if (pixiApp.cursor.dirty) pixiApp.cursor.update(false);
-    const halfScreenHeight = pixiApp.viewport.screenHeightInWorldPixels / 2;
-    const currentViewportPosition = getCurrentViewportPosition();
-    const distanceTopToCursorTop = cursorRect.top - pixiApp.viewport.top; //currentViewportPosition.y - halfScreenHeight;
+    const distanceTopToCursorTop = cursorRect.top - viewport.top;
     const newY = cursorRect.y + pixiApp.viewport.screenHeightInWorldPixels * (up ? -1 : 1);
     const newRow = Math.max(1, sheets.sheet.getColumnRowFromScreen(0, newY).row);
     const cursor = sheets.sheet.cursor;
     cursor.moveTo(cursor.position.x, newRow, { checkForTableRef: true, ensureVisible: false });
     const newCursorY = sheets.sheet.getRowY(newRow);
     const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-    const y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
-    animate({ x: currentViewportPosition.x, y: y + halfScreenHeight });
-    // pixiApp.viewport.y = y;
+    pixiApp.viewport.y = Math.min(gridHeadings, -newCursorY + distanceTopToCursorTop);
     pixiApp.viewportChanged();
   }
 }
