@@ -5,7 +5,7 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import type { JsSnackbarSeverity, TransactionName } from '@/app/quadratic-core-types';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -95,7 +95,7 @@ class CoreClient {
     self.sendClientMessage = coreClient.sendClientMessage;
     self.sendDataTablesCache = coreClient.sendDataTablesCache;
     self.sendContentCache = coreClient.sendContentCache;
-    if (debugWebWorkers) console.log('[coreClient] initialized.');
+    if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
   private send(message: CoreClientMessage, transfer?: Transferable) {
@@ -107,7 +107,7 @@ class CoreClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientCoreMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[coreClient] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[coreClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'clientCoreLoad':
@@ -297,17 +297,6 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreHasRenderCells':
-        const hasRenderCells = await core.hasRenderCells(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height
-        );
-        this.send({ type: 'coreClientHasRenderCells', id: e.data.id, hasRenderCells });
-        return;
-
       case 'clientCoreSetCellAlign':
         await core.setAlign(e.data.selection, e.data.align, e.data.cursor);
         return;
@@ -413,7 +402,7 @@ class CoreClient {
         return;
 
       case 'clientCoreRerunCodeCells':
-        core.rerunCodeCells(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreCancelExecution':

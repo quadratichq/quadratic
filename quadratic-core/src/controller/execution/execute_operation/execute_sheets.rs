@@ -221,14 +221,15 @@ impl GridController {
             sheet.order.clone_from(&order);
             self.grid.move_sheet(target, order.clone());
 
-            if old_first != self.grid.first_sheet_id() {
-                transaction.generate_thumbnail = true;
-            }
-
             if transaction.is_user_undo_redo() {
+                if old_first != self.grid.first_sheet_id() {
+                    transaction.generate_thumbnail = true;
+                }
+
                 transaction
                     .forward_operations
                     .push(Operation::ReorderSheet { target, order });
+
                 transaction
                     .reverse_operations
                     .push(Operation::ReorderSheet {

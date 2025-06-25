@@ -158,26 +158,19 @@ export class Tables extends Container<Table> {
   };
 
   // Updates the cells markers for a single cell table
-  private singleCellUpdate = (codeCell: JsRenderCodeCell) => {
+  private singleCellUpdate = (x: number, y: number, codeCell?: JsRenderCodeCell) => {
     const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
     if (!cellsMarkers) return;
-    if (codeCell.state === 'RunError' || codeCell.state === 'SpillError') {
-      const box = this.sheet.getCellOffsets(codeCell.x, codeCell.y);
+    if (codeCell?.state === 'RunError' || codeCell?.state === 'SpillError') {
+      const box = this.sheet.getCellOffsets(x, y);
       cellsMarkers.add(box, codeCell);
     } else {
-      cellsMarkers.remove(codeCell.x, codeCell.y);
+      cellsMarkers.remove(x, y);
     }
   };
 
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
-    // if the cursor is same as the code cell anchor cell, we may need to update the cursor
-    let updateCursor = false;
-    const isCursorSingleSelection = sheets.sheet.cursor.isSingleSelection();
-    const tableSelectionName = sheets.sheet.cursor.getSingleFullTableSelectionName();
-    const cursorSheetId = sheets.sheet.cursor.sheet.id;
-    const { x: cursorX, y: cursorY } = sheets.sheet.cursor.position;
-
     for (const updateCodeCell of updateCodeCells) {
       if (updateCodeCell.sheet_id.id !== this.cellsSheet.sheetId) {
         continue;
@@ -188,17 +181,16 @@ export class Tables extends Container<Table> {
       const y = Number(pos.y);
       const key = `${x},${y}`;
 
-      const cursorIsSameAsCodeCell = cursorSheetId === sheets.current && cursorX === x && cursorY === y;
-
       if (!render_code_cell) {
         delete this.singleCellTables[key];
         this.deleteTable(x, y);
+        this.singleCellUpdate(x, y);
       } else {
         const isSingleCell = this.isCodeCellSingle(render_code_cell);
         if (isSingleCell) {
           this.singleCellTables[key] = render_code_cell;
           this.deleteTable(x, y);
-          this.singleCellUpdate(render_code_cell);
+          this.singleCellUpdate(x, y, render_code_cell);
         } else {
           delete this.singleCellTables[key];
           const table = this.getTable(x, y);
@@ -214,25 +206,13 @@ export class Tables extends Container<Table> {
             const table = this.addChild(new Table(this.sheet, render_code_cell));
             this.tablesCache.add(table);
           }
-
-          // update cursor for multi-cell tables
-          if (cursorIsSameAsCodeCell && (isCursorSingleSelection || tableSelectionName === render_code_cell.name)) {
-            updateCursor = true;
-          }
         }
       }
     }
 
-    pixiApp.setViewportDirty();
+    this.cursorPosition();
     pixiApp.singleCellOutlines.setDirty();
-
-    if (updateCursor) {
-      sheets.sheet.cursor.moveTo(sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, {
-        checkForTableRef: true,
-      });
-    } else if (this.sheet.id === sheets.current) {
-      events.emit('cursorPosition');
-    }
+    pixiApp.setViewportDirty();
   };
 
   // We cannot start rendering code cells until the bitmap fonts are loaded. We
@@ -256,13 +236,15 @@ export class Tables extends Container<Table> {
     codeCells.forEach((codeCell) => {
       if (this.isCodeCellSingle(codeCell)) {
         this.singleCellTables[`${codeCell.x},${codeCell.y}`] = codeCell;
-        this.singleCellUpdate(codeCell);
+        this.singleCellUpdate(codeCell.x, codeCell.y, codeCell);
         return;
       } else {
         const table = this.addChild(new Table(this.sheet, codeCell));
         this.tablesCache.add(table);
       }
     });
+    // ensures that a table at A1 gets highlighted
+    this.cursorPosition();
   };
 
   /// Returns the tables that are visible in the viewport.
@@ -300,27 +282,33 @@ export class Tables extends Container<Table> {
     if (this.sheet.id !== sheets.current) {
       return;
     }
+
+    sheets.sheet.cursor.checkForTableRef();
+
     const tables = sheets.sheet.cursor.getSelectedTableNames();
+
     this.activeTables.forEach((table) => table.hideActive());
-    this.activeTables = tables.flatMap((tableName) => {
+    this.activeTables = tables.reduce<Table[]>((acc, tableName) => {
       const table = this.getTableFromName(tableName);
       if (table) {
         table.showActive();
-        return [table];
+        acc.push(table);
       }
-      return [];
-    });
+      return acc;
+    }, []);
+
     const columnTables = sheets.sheet.cursor.getTablesWithColumnSelection();
-    const newColumnTables = columnTables.flatMap((t) => {
-      const table = this.getTableFromName(t);
+    const newColumnTables = columnTables.reduce<Table[]>((acc, tableName) => {
+      const table = this.getTableFromName(tableName);
       if (table) {
-        return [table];
-      } else {
-        return [];
+        acc.push(table);
       }
-    });
+      return acc;
+    }, []);
+
     const tablesNeedingUpdate = new Set([...this.columnTables, ...newColumnTables]);
     tablesNeedingUpdate.forEach((table) => table.header.updateSelection());
+
     this.columnTables = newColumnTables;
   };
 
@@ -627,15 +615,15 @@ export class Tables extends Container<Table> {
     return !!this.getTable(x, y) || !!this.getSingleCodeCell(x, y);
   };
 
-  isWithinCodeCell = (x: number, y: number): boolean => {
-    const codeCell = this.getCodeCellIntersects({ x, y });
-    return codeCell?.language !== 'Import';
-  };
-
   /// Returns whether there are any code cells with the cell-based rectangle
   hasCodeCellInRect = (r: Rectangle): boolean => {
     if (!this.dataTablesCache) return false;
     return this.dataTablesCache.hasTableInRect(r.x, r.y, r.right - 1, r.bottom - 1);
+  };
+
+  hasCodeCellInCurrentSelection = () => {
+    if (!this.dataTablesCache) return false;
+    return this.dataTablesCache.hasCodeCellInSelection(sheets.sheet.cursor.jsSelection, sheets.jsA1Context);
   };
 
   //#endregion

@@ -44,7 +44,7 @@ test('Create Example', async ({ page }) => {
   }
 
   // assert that the correct file is created
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Resources_Create_Example.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Resources_Create_Example.png', {
     maxDiffPixelRatio: 0.01,
   });
 

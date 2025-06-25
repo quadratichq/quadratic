@@ -1,6 +1,6 @@
-import { debugOffline, debugShowOfflineTransactions } from '@/app/debugFlags';
-import { core } from './core';
-import { coreClient } from './coreClient';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;
@@ -124,7 +124,7 @@ class Offline {
     this.stats.transactions++;
     this.stats.operations += operations;
     coreClient.sendOfflineTransactionStats();
-    if (debugOffline) {
+    if (debugFlag('debugOffline')) {
       console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
     }
   };
@@ -139,11 +139,11 @@ class Offline {
         this.stats.operations -= cursor.value.operations;
         coreClient.sendOfflineTransactionStats();
         cursor.delete();
-        if (debugOffline) {
+        if (debugFlag('debugOffline')) {
           console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);
         }
       } else {
-        if (debugOffline) {
+        if (debugFlag('debugOffline')) {
           console.log(`[Offline] Failed to remove transaction ${transactionId} from indexedDB (might not exist).`);
         }
       }
@@ -169,10 +169,10 @@ class Offline {
   // and a second time when the socket server connects.
   async loadTransactions() {
     const unsentTransactions = await this.load();
-    if (debugShowOfflineTransactions) {
+    if (debugFlag('debugShowOfflineTransactions')) {
       console.log(JSON.stringify(unsentTransactions));
     }
-    if (debugOffline) {
+    if (debugFlag('debugOffline')) {
       if (unsentTransactions?.length) {
         console.log(`[Offline] Loading ${unsentTransactions.length} unsent transactions from indexedDB.`);
       } else {

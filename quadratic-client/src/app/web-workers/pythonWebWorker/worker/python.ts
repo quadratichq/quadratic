@@ -1,4 +1,4 @@
-import { debugWebWorkers } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response, JsCellValueResult, JsCodeResult } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
@@ -140,12 +140,12 @@ class Python {
     const pythonVersion = await this.pyodide.runPythonAsync('import platform; platform.python_version()');
     const pyodideVersion = this.pyodide.version;
 
-    if (debugWebWorkers) console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
+    if (debugFlag('debugWebWorkers'))
+      console.log(`[Python] loaded Python v.${pythonVersion} via Pyodide v.${pyodideVersion}`);
 
     pythonClient.sendInit(pythonVersion);
-    pythonClient.sendPythonState('ready');
-    this.transactionId = undefined;
     this.state = 'ready';
+    pythonClient.sendPythonState(this.state);
     return this.next();
   };
 
@@ -168,6 +168,8 @@ class Python {
 
   private next = () => {
     if (!this.pyodide) {
+      this.state = 'loading';
+      pythonClient.sendPythonState(this.state);
       return this.init();
     }
 
@@ -199,7 +201,8 @@ class Python {
       return;
     }
 
-    pythonClient.sendPythonState('running', {
+    this.state = 'running';
+    pythonClient.sendPythonState(this.state, {
       current: this.corePythonRunToCodeRun(message),
       awaitingExecution: this.awaitingExecution,
     });
@@ -285,7 +288,7 @@ class Python {
     }
 
     let codeResult: JsCodeResult | undefined = {
-      transaction_id: message.transactionId,
+      transaction_id: this.transactionId,
       success: pythonRun.success,
       std_err: pythonRun.std_err,
       std_out: pythonRun.std_out,
@@ -293,7 +296,6 @@ class Python {
       output_array: output_array ? (output_array as any as JsCellValueResult[][]) : null,
       line_number: pythonRun.lineno ?? null,
       output_display_type: pythonRun.output_type ?? null,
-      cancel_compute: false,
       chart_pixel_output: null,
       has_headers: !!pythonRun.has_headers,
     };
@@ -304,13 +306,13 @@ class Python {
     inspectionResults = undefined;
 
     const uint8Array = toUint8Array(codeResult);
-    pythonCore.sendPythonResults(message.transactionId, uint8Array.buffer as ArrayBuffer);
+    pythonCore.sendPythonResults(uint8Array.buffer as ArrayBuffer);
 
     codeResult = undefined;
 
-    pythonClient.sendPythonState('ready', { current: undefined });
-    this.transactionId = undefined;
     this.state = 'ready';
+    pythonClient.sendPythonState(this.state, { current: undefined });
+    this.transactionId = undefined;
     return this.next();
   };
 }

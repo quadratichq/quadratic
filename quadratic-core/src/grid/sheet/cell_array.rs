@@ -13,14 +13,22 @@ impl Sheet {
         let mut old_values = Array::new_empty(values.size());
         for x in rect.x_range() {
             for y in rect.y_range() {
-                if let Ok(value) = values.get((x - rect.min.x) as u32, (y - rect.min.y) as u32) {
-                    let old_value = self.columns.set_value(&(x, y).into(), value.to_owned());
-                    let _ = old_values.set(
+                let new_value = values
+                    .get((x - rect.min.x) as u32, (y - rect.min.y) as u32)
+                    .unwrap_or(&CellValue::Blank);
+                let old_value = self.columns.set_value(&(x, y).into(), new_value.to_owned());
+                if let Some(old_value) = old_value {
+                    match old_values.set(
                         (x - rect.min.x) as u32,
                         (y - rect.min.y) as u32,
-                        old_value.unwrap_or(CellValue::Blank),
+                        old_value,
                         false,
-                    );
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            dbgjs!(format!("Error setting cell value: {:?}", e));
+                        }
+                    }
                 }
             }
         }

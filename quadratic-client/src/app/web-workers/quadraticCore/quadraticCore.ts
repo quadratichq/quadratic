@@ -4,7 +4,7 @@
  * Also open communication channel between core web worker and render web worker.
  */
 
-import { debug, debugShowFileIO, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -51,7 +51,6 @@ import type {
   ClientCoreGetCodeCell,
   ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
-  ClientCoreHasRenderCells,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMessage,
@@ -66,7 +65,6 @@ import type {
   CoreClientGetEditCell,
   CoreClientGetJwt,
   CoreClientGetValidationList,
-  CoreClientHasRenderCells,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -101,7 +99,7 @@ class QuadraticCore {
   }
 
   private handleMessage = async (e: MessageEvent<CoreClientMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[quadraticCore] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[quadraticCore] message: ${e.data.type}`);
 
     // quadratic-core initiated messages
     if (e.data.type === 'coreClientAddSheet') {
@@ -204,7 +202,9 @@ class QuadraticCore {
       events.emit('a1Context', e.data.context);
       return;
     } else if (e.data.type === 'coreClientCoreError') {
-      if (debug) console.error('[quadraticCore] core error', e.data.from, e.data.error);
+      if (debugFlag('debug')) {
+        console.error('[quadraticCore] core error', e.data.from, e.data.error);
+      }
       events.emit('coreError', e.data.from, e.data.error);
       return;
     } else if (e.data.type === 'coreClientContentCache') {
@@ -267,10 +267,10 @@ class QuadraticCore {
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientLoad) => {
         if (message.error) {
-          if (debugShowFileIO) console.log(`[quadraticCore] error loading file "${message.error}".`);
+          if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] error loading file "${message.error}".`);
           resolve({ error: message.error });
         } else if (message.version) {
-          if (debugShowFileIO) console.log(`[quadraticCore] file loaded.`);
+          if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] file loaded.`);
           resolve({ version: message.version });
         } else {
           throw new Error('Expected CoreClientLoad to include either version or error');
@@ -286,7 +286,7 @@ class QuadraticCore {
         fileId,
         teamUuid,
       };
-      if (debugShowFileIO) console.log(`[quadraticCore] loading file ${url}`);
+      if (debugFlag('debugShowFileIO')) console.log(`[quadraticCore] loading file ${url}`);
       this.send(message, port.port1);
     });
   }
@@ -413,25 +413,6 @@ class QuadraticCore {
     });
   }
 
-  hasRenderCells(sheetId: string, column: number, row: number, width: number, height: number): Promise<boolean> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      const message: ClientCoreHasRenderCells = {
-        type: 'clientCoreHasRenderCells',
-        sheetId,
-        x: column,
-        y: row,
-        width,
-        height,
-        id,
-      };
-      this.waitingForResponse[id] = (message: CoreClientHasRenderCells) => {
-        resolve(message.hasRenderCells);
-      };
-      this.send(message);
-    });
-  }
-
   setCellValue(sheetId: string, x: number, y: number, value: string, cursor?: string) {
     this.send({
       type: 'clientCoreSetCellValue',
@@ -527,13 +508,13 @@ class QuadraticCore {
     grid: ArrayBuffer,
     sequenceNumber: number
   ): Promise<{
-    contents?: ArrayBuffer;
+    contents?: ArrayBufferLike;
     version?: string;
     error?: string;
   }> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
         resolve(message);
       };
       const message: ClientCoreUpgradeGridFile = {
@@ -549,13 +530,13 @@ class QuadraticCore {
   importFile = async (
     args: Omit<ClientCoreImportFile, 'type' | 'id'>
   ): Promise<{
-    contents?: ArrayBuffer;
+    contents?: ArrayBufferLike;
     version?: string;
     error?: string;
   }> => {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
         resolve(message);
       };
       this.send(
@@ -816,12 +797,11 @@ class QuadraticCore {
     });
   }
 
-  rerunCodeCells(sheetId: string | undefined, x: number | undefined, y: number | undefined, cursor: string) {
+  rerunCodeCells(sheetId: string | undefined, selection: string | undefined, cursor: string) {
     this.send({
       type: 'clientCoreRerunCodeCells',
       sheetId,
-      x,
-      y,
+      selection,
       cursor,
     });
   }

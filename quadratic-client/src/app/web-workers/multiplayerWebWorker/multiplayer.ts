@@ -1,5 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { debugShowMultiplayer, debugShowVersionCheck, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
@@ -104,7 +104,7 @@ export class Multiplayer {
   };
 
   private handleMessage = async (e: MessageEvent<MultiplayerClientMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[Multiplayer] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[Multiplayer] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'multiplayerClientState':
@@ -294,7 +294,7 @@ export class Multiplayer {
   }
 
   private clearAllUsers() {
-    if (debugShowMultiplayer) console.log('[Multiplayer] Clearing all users.');
+    if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] Clearing all users.');
     this.users.clear();
     pixiApp.multiplayerCursor.dirty = true;
     events.emit('multiplayerUpdate', this.getUsers());
@@ -385,7 +385,7 @@ export class Multiplayer {
       return;
     }
 
-    if (debugShowVersionCheck) {
+    if (debugFlag('debugShowVersionCheck')) {
       console.log(`Multiplayer server version (${serverVersion}) is different than the client version (${VERSION})`);
     }
 
@@ -404,7 +404,7 @@ export class Multiplayer {
           isPatchVersionDifferent(versionClient, VERSION) ? RefreshType.RECOMMENDED : RefreshType.REQUIRED
         );
       } else {
-        if (debugShowVersionCheck) {
+        if (debugFlag('debugShowVersionCheck')) {
           console.log(
             `quadratic-client's version (${versionClient}) does not yet match the quadratic-multiplayer's version (${serverVersion}) (trying again in ${RECHECK_VERSION_INTERVAL}ms)`
           );
@@ -439,7 +439,7 @@ export class Multiplayer {
           player.selection = user.selection;
           player.parsedSelection = parsedSelection;
           remaining.delete(user.session_id);
-          if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
+          if (debugFlag('debugShowMultiplayer')) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
         } else {
           player = {
             session_id: user.session_id,
@@ -465,12 +465,13 @@ export class Multiplayer {
             follow: user.follow,
           };
           this.users.set(user.session_id, player);
-          if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
+          if (debugFlag('debugShowMultiplayer')) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
       }
     }
     remaining.forEach((sessionId) => {
-      if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
+      if (debugFlag('debugShowMultiplayer'))
+        console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
       this.users.delete(sessionId);
     });
     events.emit('multiplayerUpdate', this.getUsers());

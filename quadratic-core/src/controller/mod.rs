@@ -1,11 +1,9 @@
-use std::collections::{HashMap, HashSet};
-
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    Pos, SheetPos,
+    SheetPos,
     a1::A1Context,
-    grid::{DataTable, RegionMap},
-    grid::{Grid, SheetId},
+    controller::active_transactions::pending_transaction::PendingTransaction,
+    grid::{DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
@@ -106,11 +104,8 @@ impl GridController {
         &self.cells_accessed_cache
     }
 
-    pub(crate) fn update_a1_context_table_map(
-        &mut self,
-        code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
-        sort: bool,
-    ) {
+    pub(crate) fn update_a1_context_table_map(&mut self, transaction: &mut PendingTransaction) {
+        let code_cells_a1_context = std::mem::take(&mut transaction.code_cells_a1_context);
         for (sheet_id, positions) in code_cells_a1_context.into_iter() {
             let Some(sheet) = self.grid.try_sheet(sheet_id) else {
                 self.a1_context.table_map.remove_sheet(sheet_id);
@@ -135,7 +130,7 @@ impl GridController {
             }
         }
 
-        if sort {
+        if transaction.complete {
             self.a1_context.table_map.sort();
         }
     }

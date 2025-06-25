@@ -89,48 +89,6 @@ pub(crate) mod indexmap_serde {
     }
 }
 
-#[allow(unused)]
-pub(crate) mod hashmap_serde {
-    use std::collections::HashMap;
-    use std::hash::Hash;
-
-    use serde::ser::SerializeMap;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
-        map: &HashMap<K, V>,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        let mut m = s.serialize_map(Some(map.len()))?;
-        for (k, v) in map {
-            if let Ok(key) = serde_json::to_string(k) {
-                m.serialize_entry(&key, v)?;
-            }
-        }
-        m.end()
-    }
-
-    pub fn deserialize<
-        'de,
-        D: Deserializer<'de>,
-        K: for<'k> Deserialize<'k> + Eq + Hash,
-        V: Deserialize<'de>,
-    >(
-        d: D,
-    ) -> Result<HashMap<K, V>, D::Error> {
-        Ok(HashMap::<String, V>::deserialize(d)?
-            .into_iter()
-            .filter_map(|(k, v)| {
-                if let Ok(key) = serde_json::from_str(&k) {
-                    Some((key, v))
-                } else {
-                    None
-                }
-            })
-            .collect())
-    }
-}
-
 /// Converts a column name to a number.
 #[allow(unused)]
 macro_rules! col {
@@ -209,7 +167,7 @@ macro_rules! rect {
 ///     start: CellRefRangeEnd::new_relative_xy(1, 1),
 ///     end: CellRefRangeEnd {
 ///         col: CellRefCoord::new_abs(3),
-///         row: CellRefCoord::UNBOUNDED,
+///         row: CellRefCoord::ABS_UNBOUNDED,
 ///     },
 /// });
 /// ```
@@ -470,6 +428,9 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
 }
 #[cfg(test)]
 mod tests {
+    use crate::a1::{CellRefCoord, CellRefRangeEnd, RefRangeBounds};
+    use crate::ref_range_bounds;
+
     use super::*;
 
     #[test]
@@ -504,5 +465,19 @@ mod tests {
         assert_eq!(unused_name("Sheet", &used), "Sheet 3");
         let used = ["Sheet 2", "Sheet 3"];
         assert_eq!(unused_name("Sheet", &used), "Sheet 4");
+    }
+
+    #[test]
+    fn test_ref_range_bounds() {
+        assert_eq!(
+            ref_range_bounds![:$C],
+            RefRangeBounds {
+                start: CellRefRangeEnd::new_relative_xy(1, 1),
+                end: CellRefRangeEnd {
+                    col: CellRefCoord::new_abs(3),
+                    row: CellRefCoord::ABS_UNBOUNDED,
+                },
+            }
+        );
     }
 }

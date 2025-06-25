@@ -37,10 +37,7 @@ impl GridController {
         }
 
         loop {
-            self.update_a1_context_table_map(
-                std::mem::take(&mut transaction.code_cells_a1_context),
-                false,
-            );
+            self.update_a1_context_table_map(transaction);
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
@@ -66,6 +63,8 @@ impl GridController {
                 break;
             }
         }
+
+        self.send_client_render_updates(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
@@ -161,11 +160,6 @@ impl GridController {
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
         let transaction_id = Uuid::parse_str(&result.transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-
-        if result.cancel_compute.unwrap_or(false) {
-            self.start_transaction(&mut transaction);
-        }
-
         self.after_calculation_async(&mut transaction, result)?;
         self.finalize_transaction(transaction);
         Ok(())

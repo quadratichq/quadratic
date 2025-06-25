@@ -139,6 +139,7 @@ interface EventTypes {
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;
+  filesFromIframeInitialized: () => void;
 
   gridLinesDirty: () => void;
 
@@ -151,6 +152,8 @@ interface EventTypes {
 
   dataTablesCache: (sheetId: string, dataTablesCache: SheetDataTablesCache) => void;
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
+
+  debugFlags: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

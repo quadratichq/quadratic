@@ -1,5 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { debug } from '@/app/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { LightbulbIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
@@ -23,18 +23,18 @@ interface SelectAIModelMenuProps {
 
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const [selectedModel, setSelectedModel, selectedModelConfig, thinkingToggle, setThinkingToggle] = useAIModel();
-
+  const { getFlag } = useDebugFlags();
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
 
     // enable all models in debug mode
-    if (debug) {
+    if (getFlag('debug')) {
       return configs;
     }
 
     // only show enabled models in production
     return configs.filter(([_, config]) => config.enabled);
-  }, []);
+  }, [getFlag]);
 
   const canToggleThinking = useMemo(
     () => selectedModelConfig.thinkingToggle !== undefined,
@@ -63,7 +63,26 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   return (
     <>
-      {debug && (
+      {canToggleThinking && (
+        <TooltipPopover label="Extended thinking for complex prompts">
+          <Toggle
+            aria-label="Extended thinking"
+            size="sm"
+            disabled={loading}
+            onClick={() => handleThinkingToggle(!thinkingToggle)}
+            className={cn(
+              thinking && '!bg-border !text-primary',
+              !thinking && 'w-7 hover:text-foreground',
+              'mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal'
+            )}
+          >
+            <LightbulbIcon />
+            {thinking && <span className="mr-1">Think</span>}
+          </Toggle>
+        </TooltipPopover>
+      )}
+
+      {getFlag('debug') && (
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
@@ -103,7 +122,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                   >
                     <div className="flex w-full items-center justify-between text-xs">
                       <span className="pr-4">
-                        {(debug ? `${modelConfig.enabled ? '' : '(debug) '}${provider} - ` : '') + displayName}
+                        {(getFlag('debug') ? `${modelConfig.enabled ? '' : '(debug) '}${provider} - ` : '') +
+                          displayName}
                       </span>
                     </div>
                   </DropdownMenuCheckboxItem>
@@ -111,25 +131,6 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               })}
           </DropdownMenuContent>
         </DropdownMenu>
-      )}
-
-      {canToggleThinking && (
-        <TooltipPopover label="Extended thinking for complex prompts">
-          <Toggle
-            aria-label="Extended thinking"
-            size="sm"
-            disabled={loading}
-            onClick={() => handleThinkingToggle(!thinkingToggle)}
-            className={cn(
-              thinking && '!bg-border !text-primary',
-              !thinking && 'text-muted-foreground hover:text-foreground',
-              'mr-auto flex h-6 items-center !gap-0 px-1.5 py-1 text-xs font-normal'
-            )}
-          >
-            <LightbulbIcon className={cn('mr-0.5 !flex !h-4 !w-4 items-center !text-base')} />
-            Think
-          </Toggle>
-        </TooltipPopover>
       )}
     </>
   );

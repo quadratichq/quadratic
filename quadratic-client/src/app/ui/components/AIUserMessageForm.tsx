@@ -1,9 +1,9 @@
 import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
-import { debug } from '@/app/debugFlags';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
+import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -25,7 +25,7 @@ import {
   type ClipboardEvent,
   type DragEvent,
 } from 'react';
-import type { SetterOrUpdater } from 'recoil';
+import { type SetterOrUpdater } from 'recoil';
 
 export type AIUserMessageFormWrapperProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -226,6 +226,8 @@ export const AIUserMessageForm = memo(
       }
     }, [loading, initialContent]);
 
+    const disabled = waitingOnMessageIndex !== undefined || !editing;
+
     return (
       <form
         className={cn(
@@ -266,10 +268,8 @@ export const AIUserMessageForm = memo(
           setContext={ctx.setContext}
           files={files}
           setFiles={setFiles}
-          handleFiles={handleFiles}
-          fileTypes={fileTypes}
           editing={editing}
-          disabled={waitingOnMessageIndex !== undefined || !editing}
+          disabled={disabled}
           textareaRef={textareaRef}
         />
 
@@ -300,6 +300,9 @@ export const AIUserMessageForm = memo(
           prompt={prompt}
           submitPrompt={() => submit(prompt)}
           abortPrompt={abortPrompt}
+          disabled={disabled}
+          handleFiles={handleFiles}
+          fileTypes={fileTypes}
         />
       </form>
     );
@@ -364,6 +367,7 @@ const CancelButton = memo(({ show, waitingOnMessageIndex, abortPrompt }: CancelB
 });
 
 type AIUserMessageFormFooterProps = {
+  disabled: boolean;
   show: boolean;
   loading: boolean;
   waitingOnMessageIndex?: number;
@@ -371,6 +375,8 @@ type AIUserMessageFormFooterProps = {
   prompt: string;
   submitPrompt: () => void;
   abortPrompt: () => void;
+  handleFiles: (files: FileList | File[]) => void;
+  fileTypes: string[];
 };
 
 const AIUserMessageFormFooter = memo(
@@ -382,6 +388,9 @@ const AIUserMessageFormFooter = memo(
     prompt,
     submitPrompt,
     abortPrompt,
+    disabled,
+    handleFiles,
+    fileTypes,
   }: AIUserMessageFormFooterProps) => {
     if (!show) {
       return null;
@@ -395,20 +404,10 @@ const AIUserMessageFormFooter = memo(
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
+          <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
           <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            {!debug && (
-              <>
-                <span>
-                  {KeyboardSymbols.Shift}
-                  {KeyboardSymbols.Enter} new line
-                </span>
-
-                <span>{KeyboardSymbols.Enter} submit</span>
-              </>
-            )}
-
             <ConditionalWrapper
               condition={prompt.length !== 0}
               Wrapper={({ children }) => (

@@ -2,14 +2,17 @@
 
 import { redisHost, redisPort } from "./shared/redis";
 
-import { multiplayerPublicDns } from "./multiplayer/multiplayer";
-
-import { filesPublicDns } from "./files/files";
+import { apiPublicDns } from "./api/api";
 
 import { connectionPublicDns } from "./connection/connection";
 
+import { filesPublicDns } from "./files/files";
+
+import { multiplayerPublicDns } from "./multiplayer/multiplayer";
+
 // Global exports
 export {
+  apiPublicDns,
   connectionPublicDns,
   filesPublicDns,
   multiplayerPublicDns,

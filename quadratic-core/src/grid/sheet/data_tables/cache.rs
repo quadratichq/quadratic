@@ -5,8 +5,8 @@ use std::collections::HashSet;
 
 use crate::{
     Pos, Rect, Value,
-    a1::RefRangeBounds,
-    grid::{Contiguous2D, DataTable},
+    a1::{A1Context, A1Selection, RefRangeBounds},
+    grid::{CodeCellLanguage, Contiguous2D, DataTable},
 };
 
 use serde::{Deserialize, Serialize};
@@ -110,6 +110,31 @@ impl SheetDataTablesCache {
         self.multi_cell_tables.has_empty_value(pos)
     }
 
+    /// Returns whether there are any code cells within a selection
+    pub fn code_in_selection(&self, selection: &A1Selection, context: &A1Context) -> bool {
+        let sheet_id = selection.sheet_id;
+        for range in selection.ranges.iter() {
+            if let Some(rect) = range.to_rect_unbounded(context) {
+                if !self.single_cell_tables.is_all_default_in_rect(rect) {
+                    return true;
+                }
+                let tables = self.multi_cell_tables.unique_values_in_rect(rect);
+                if !tables.is_empty() {
+                    for table_pos in tables.iter().flatten() {
+                        if let Some(table) =
+                            context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
+                        {
+                            if table.language != CodeCellLanguage::Import {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
+
     /// Returns the rectangles that have some value in the given rectangle.
     pub fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
         self.single_cell_tables
@@ -125,14 +150,14 @@ impl SheetDataTablesCache {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct MultiCellTablesCache {
-    // position map indicating presence of multi-cell data table at a position
-    // each position value is the root cell position of the data table
-    // this accounts for table spills hence values cannot overlap
+    /// position map indicating presence of multi-cell data table at a position
+    /// each position value is the root cell position of the data table
+    /// this accounts for table spills hence values cannot overlap
     multi_cell_tables: Contiguous2D<Option<Pos>>,
 
-    // position map indicating presence of empty cells within a multi-cell data table
-    // this is used to assist with finding the next cell with content
-    // NOTE: the bool cannot be false
+    /// position map indicating presence of empty cells within a multi-cell data table
+    /// this is used to assist with finding the next cell with content
+    /// NOTE: the bool cannot be false
     multi_cell_tables_empty: Contiguous2D<Option<bool>>,
 }
 
@@ -271,7 +296,7 @@ impl MultiCellTablesCache {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_util::*;
+    use crate::{a1::A1Selection, test_util::*};
 
     #[test]
     fn test_has_content_ignore_blank_table() {
@@ -314,5 +339,41 @@ mod tests {
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![6, 2]));
         assert!(sheet_data_tables_cache.has_content_ignore_blank_table(pos![7, 2]));
         assert!(!sheet_data_tables_cache.has_content_ignore_blank_table(pos![8, 2]));
+    }
+
+    #[test]
+    fn test_code_in_selection() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        // Create a single-cell code table
+        test_create_code_table(&mut gc, sheet_id, pos![2, 2], 1, 1);
+
+        // Create a multi-cell code table
+        test_create_code_table(&mut gc, sheet_id, pos![4, 2], 3, 1);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let context = gc.a1_context();
+
+        // Test selection containing single-cell code table
+        let selection = A1Selection::test_a1("B2");
+        assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test selection containing multi-cell code table
+        let selection = A1Selection::test_a1("D2:F2");
+        assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test selection containing both tables
+        let selection = A1Selection::test_a1("B2:F2");
+        assert!(sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test empty selection
+        let selection = A1Selection::test_a1("J10");
+        assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
+
+        // Test selection with no code tables
+        let selection = A1Selection::test_a1("A1");
+        assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
     }
 }

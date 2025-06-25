@@ -1,11 +1,12 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debugShowFileIO, debugShowMultiplayer, debugStartupTime } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { loadAssets } from '@/app/gridGL/loadAssets';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
+import { QuadraticAppDebugSettings } from '@/app/ui/QuadraticAppDebugSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
@@ -32,9 +33,9 @@ export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidate
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
   // Start loading PIXI assets early and asynchronously
-  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing PIXI assets');
+  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
   loadAssets().catch((e) => console.error('Error loading assets', e));
-  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
 
   const { uuid } = params as { uuid: string };
 
@@ -56,16 +57,19 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     if (!isVersionHistoryPreview) updateRecentFiles(uuid, '', false);
     throw new Response('Failed to load file from server.', { status: error.status });
   }
-
-  if (debugShowMultiplayer || debugShowFileIO) {
+  if (debugFlag('debugShowMultiplayer') || debugFlag('debugShowFileIO'))
     console.log(
       `[File API] Received information for file ${uuid} with sequence_num ${data.file.lastCheckpointSequenceNumber}.`
     );
-  }
 
-  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing workers');
+  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing workers');
   initWorkers();
-  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing workers');
+  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing workers');
+
+  if (debugFlag('debugStartupTime'))
+    console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+  // initialize: Rust metadata
+  await initCoreClient();
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {
@@ -79,10 +83,6 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     checkpoint.version = version;
     checkpoint.sequenceNumber = sequenceNumber;
   }
-
-  if (debugStartupTime) console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
-  // initialize: Rust metadata
-  await initCoreClient();
 
   // initialize Core web worker
   const result = await quadraticCore.load({
@@ -135,7 +135,8 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     data.userMakingRequest.filePermissions = [FilePermissionSchema.enum.FILE_VIEW];
   }
 
-  if (debugStartupTime) console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+  if (debugFlag('debugStartupTime'))
+    console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
 
   return data;
 };
@@ -174,6 +175,7 @@ export const Component = () => {
     <RecoilRoot initializeState={initializeState}>
       <QuadraticApp />
       <Outlet />
+      <QuadraticAppDebugSettings />
     </RecoilRoot>
   );
 };

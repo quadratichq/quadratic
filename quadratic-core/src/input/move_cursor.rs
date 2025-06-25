@@ -4,11 +4,9 @@
 use crate::{
     Pos, SheetPos,
     a1::A1Context,
-    grid::sheet::data_tables::cache::SheetDataTablesCache,
+    grid::{js_types::Direction, sheet::data_tables::cache::SheetDataTablesCache},
     input::has_content::{chart_at, table_header_at},
 };
-
-use super::Direction;
 
 /// Returns a new Pos after pressing an arrow key.
 pub fn move_cursor(

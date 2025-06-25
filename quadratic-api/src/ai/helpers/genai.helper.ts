@@ -205,20 +205,41 @@ export async function parseGenAIStream(
 
       // text and tool calls
       for (const part of candidate?.content?.parts ?? []) {
-        if (part.text !== undefined) {
-          let currentContent = responseMessage.content.pop();
-          if (currentContent?.type !== 'text') {
-            if (currentContent?.text) {
-              responseMessage.content.push(currentContent);
+        if (part.text) {
+          // thinking text
+          if (part.thought) {
+            let currentContent = responseMessage.content.pop();
+            if (currentContent?.type !== 'google_thinking') {
+              if (currentContent?.text) {
+                responseMessage.content.push(currentContent);
+              }
+              currentContent = {
+                type: 'google_thinking',
+                text: '',
+              };
             }
-            currentContent = {
-              type: 'text',
-              text: '',
-            };
+            currentContent.text += part.text;
+            responseMessage.content.push(currentContent);
           }
-          currentContent.text += part.text;
-          responseMessage.content.push(currentContent);
-        } else if (part.functionCall?.name) {
+          // chat text
+          else {
+            let currentContent = responseMessage.content.pop();
+            if (currentContent?.type !== 'text') {
+              if (currentContent?.text) {
+                responseMessage.content.push(currentContent);
+              }
+              currentContent = {
+                type: 'text',
+                text: '',
+              };
+            }
+            currentContent.text += part.text;
+            responseMessage.content.push(currentContent);
+          }
+        }
+
+        // tool call
+        if (part.functionCall?.name) {
           responseMessage.toolCalls.push({
             id: part.functionCall.id ?? part.functionCall.name,
             name: part.functionCall.name,

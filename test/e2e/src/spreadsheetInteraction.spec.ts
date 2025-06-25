@@ -966,7 +966,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_reference_tables_sheet_initial.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_reference_tables_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -992,7 +992,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   //--------------------------------
 
   // Assert Python1 displaying #Error after Table1 deletion
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_reference_table_1layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_reference_table_1layer.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1032,7 +1032,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   //--------------------------------
 
   // Assert Python3 displaying #Error after Table1 deletion
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table_1layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_code_reference_table_1layer.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1072,7 +1072,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   //--------------------------------
 
   // Assert Python4 displaying #Error after Table1 deletion
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table1_2layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_code_reference_table1_2layer.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1084,7 +1084,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
 
   // Assert Python5 displaying #Error after Table1 deletion
   // Do not change maxDiffPixels of 100, need to capture #Error vs Empty cCel
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table2_2layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_code_reference_table2_2layer.png', {
     maxDiffPixels: 100,
   });
 
@@ -1270,7 +1270,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
     },
     {
       bufferData: `data:${mimeType};base64,${buffer}`,
-      fileName,
+      fileName: `${fileName}.${fileType}`,
       fileType: mimeType,
     }
   );
@@ -1301,7 +1301,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
 
   // ----- Assertion: Screenshot ------
   // Assert CSV data matches the quadratic content using a screenshot
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Drag_Drop_Spreadsheet_Check.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Drag_Drop_Spreadsheet_Check.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -2943,7 +2943,7 @@ test('Python More Snippets', async ({ page }) => {
   // Type 'Read' in the search snippets input to filter snippets
   await page.getByPlaceholder('Search snippets...').fill('Read');
 
-  // Click on the 'Read data from the sneet' snippet
+  // Click on the 'Read data from the sheet' snippet
   await page.getByText('Read data from the sheet').click();
 
   //--------------------------------
@@ -3078,7 +3078,7 @@ test('Python Snippets', async ({ page }) => {
   expect(clipboardText).toBe('Python1\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9'); // Assert the clipboard content
 
   // close editor
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
@@ -4397,7 +4397,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
     // Assert with screenshot that the canvas has the expected accent color applied
     // Ensure selected column(s), row(s) and cell(s) have the accent color
     await selectCells(page, { startXY: [1, 1], endXY: [6, 6] });
-    await expect(page.locator('canvas:visible')).toHaveScreenshot(
+    await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
       `ApperanceCustomization-Sheet-${theme.name}-Accent.png`,
       {
         maxDiffPixelRatio: 0.01,
@@ -4469,7 +4469,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, darkText);
 
   // Assert with screenshot that the canvas is in a dark mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -4492,7 +4492,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, darkText);
 
   // Assert with screenshot that the canvas is in a dark mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -4546,7 +4546,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, lightText);
 
   // Assert with screenshot that the canvas is in a light mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -4569,7 +4569,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, lightText);
 
   // Assert with screenshot that the canvas is in a light mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
     maxDiffPixelRatio: 0.01,
   });
 

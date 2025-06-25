@@ -102,9 +102,10 @@ impl JsSelection {
     #[wasm_bindgen(js_name = "checkForTableRef")]
     pub fn check_for_table_ref(&mut self, sheet_id: String, context: &JsA1Context) {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            if let Some(last) = self.selection.ranges.last_mut() {
-                if let Some(range) = last.check_for_table_ref(sheet_id, context.get_context()) {
-                    *last = range;
+            for range in self.selection.ranges.iter_mut() {
+                if let Some(new_range) = range.check_for_table_ref(sheet_id, context.get_context())
+                {
+                    *range = new_range;
                 }
             }
         }

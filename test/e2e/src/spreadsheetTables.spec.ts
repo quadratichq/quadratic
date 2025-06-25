@@ -832,7 +832,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(cellRange);
 
   // Assert visually that correct cells are selected
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Cell_Range.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Cell_Range.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -860,7 +860,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(tableName);
 
   // Assert visually that the Table is selected
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Menu_Table.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Menu_Table.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -887,7 +887,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(pythonCode);
 
   // Assert visually that correct code cells are selected
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Code_Python.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Code_Python.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -907,7 +907,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByRole(`textbox`)).toHaveValue(javascriptCode);
 
   // Assert visually that correct code cells are selected
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Code_Javascript.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Code_Javascript.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -934,7 +934,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByText(`${cellSheet}arrow_drop_down`)).toBeVisible();
 
   // Assert visually correct sheet is visible
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Cell_Range.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Cell_Range.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -954,7 +954,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   await expect(page.getByText(`${tableSheet}arrow_drop_down`)).toBeVisible();
 
   // Assert visually correct sheet is visible
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Go_To_Menu_Table.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Go_To_Menu_Table.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1127,10 +1127,10 @@ test('Jump to table cell location from code editor location button', async ({ pa
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 10 });
 
   // Assert Go To Menu Box showing initial table name
-  await expect(page.getByRole(`textbox`)).toHaveValue(tableName);
+  await expect(page.locator(`input[data-testid="cursor-position"]`)).toHaveValue(tableName);
 
   // Assert the code reference table is highlighted
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_ref_table_selected.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Code_ref_table_selected.png', {
     maxDiffPixels: 100,
   });
 
@@ -1138,7 +1138,16 @@ test('Jump to table cell location from code editor location button', async ({ pa
   await page.keyboard.press('/');
 
   // Wait for a short duration to ensure stability
-  await page.waitForTimeout(3000);
+  await page.waitForTimeout(10 * 1000);
+
+  // Change cursor position
+  await page.mouse.click(250, 250);
+  await expect(page.locator(`input[data-testid="cursor-position"]`)).not.toHaveValue(tableName);
+
+  // Assert the code reference table is not highlighted
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Code_ref_table_not_selected.png', {
+    maxDiffPixels: 100,
+  });
 
   // Click on Table Name Cell in code editor
   await page.getByRole(`button`, { name: tableNameCell }).click();
@@ -1147,13 +1156,10 @@ test('Jump to table cell location from code editor location button', async ({ pa
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert Go To Menu Box not showing initial table name
-  await expect(page.getByRole(`textbox`)).not.toHaveValue(tableName);
-
-  // Assert Go To Menu Box showing code table name cell
-  await expect(page.getByRole(`textbox`)).toHaveValue(tableNameCell);
+  await expect(page.locator(`input[data-testid="cursor-position"]`)).toHaveValue(tableName);
 
   // Assert the code reference table is not highlighted
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_ref_table_not_selected.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Code_ref_table_selected.png', {
     maxDiffPixels: 100,
   });
 
@@ -2006,7 +2012,7 @@ test('Table reference from code input', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_sheet_initial.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_reference_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -2040,7 +2046,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_table_from_existing_table.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_reference_table_from_existing_table.png', {
     maxDiffPixels: 100,
   });
 
@@ -2078,7 +2084,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_column_from_existing_table.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_reference_column_from_existing_table.png', {
     maxDiffPixels: 100,
   });
 
@@ -2116,7 +2122,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_table_from_code_table.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_reference_table_from_code_table.png', {
     maxDiffPixels: 100,
   });
 
@@ -2154,9 +2160,12 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_reference_table_from_code_table_headers.png', {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'Table_reference_table_from_code_table_headers.png',
+    {
+      maxDiffPixels: 100,
+    }
+  );
 
   //--------------------------------
   // Table reference (Multi columns) from code using a code referenced table
@@ -2192,7 +2201,7 @@ test('Table reference from code input', async ({ page }) => {
   await page.getByRole(`button`, { name: `close` }).click();
 
   // Assert the table reference from the existing table is correct
-  await expect(page.locator('canvas:visible')).toHaveScreenshot(
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
     'Table_reference_table_from_col_table_multi_columns.png',
     {
       maxDiffPixels: 100,
@@ -2211,7 +2220,7 @@ test('Table Resize', async ({ page }) => {
   // Constants
   const fileName = 'Athletes_Table';
   const fileType = 'grid';
-  const startX = 523; // Bottom right corner of (E, 12)
+  const startX = 520; // Bottom right corner of (E, 12)
   const startY = 273; // Bottom right corner of (E, 12)
   const endX = 620; // Bottom right corner of (F, 16)
   const endY = 355; // Bottom right corner of (F, 16)
@@ -2230,12 +2239,9 @@ test('Table Resize', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_resize_sheet_initial.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_resize_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
-
-  // await displayMouseCoords(page, { offsets: true });
-  // await page.pause();
 
   // Get canvas bounding box
   const canvas = page.locator('#QuadraticCanvasID');
@@ -2245,6 +2251,9 @@ test('Table Resize', async ({ page }) => {
   //--------------------------------
   // Resize Table to Add Data
   //--------------------------------
+  // Click outside table to lose focus
+  await page.mouse.click(canvasBox.x + endX + 100, canvasBox.y + endY + 100);
+
   // Hover and click down at start cell coordinates (E, 12)
   await page.mouse.move(canvasBox.x + startX, canvasBox.y + startY, { steps: 50 });
   await page.waitForTimeout(5 * 1000);
@@ -2320,7 +2329,7 @@ test('Table Sort', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Table_sort_sheet_initial.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_sort_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
 

@@ -43,7 +43,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.keyboard.press('Control+9');
   await page.keyboard.press('Control+Shift+=');
   await page.waitForTimeout(5 * 1000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_TextFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_TextFormatting.png', {
     maxDiffPixels: 1000,
   });
 
@@ -69,7 +69,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_LeftAlignment.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_LeftAlignment.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -79,7 +79,7 @@ test('Cell Formatting', async ({ page }) => {
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_CenterAlignment.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_CenterAlignment.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -88,7 +88,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.getByRole(`menuitem`, { name: `format_align_right Right` }).click();
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_RightAlignment.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_RightAlignment.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -116,7 +116,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_AllBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_AllBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -129,7 +129,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.getByLabel(`Borders`).click();
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_InnerBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_InnerBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -143,7 +143,7 @@ test('Cell Formatting', async ({ page }) => {
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_OuterBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_OuterBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -157,7 +157,7 @@ test('Cell Formatting', async ({ page }) => {
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_HorizontalBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_HorizontalBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -171,7 +171,7 @@ test('Cell Formatting', async ({ page }) => {
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_VerticalBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_VerticalBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -195,7 +195,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_LeftBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_LeftBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -208,7 +208,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.getByLabel(`Borders`).click();
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_TopBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_TopBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -221,7 +221,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.getByLabel(`Borders`).click();
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_RightBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_RightBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -234,7 +234,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.getByLabel(`Borders`).click();
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_BottomBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_BottomBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -257,7 +257,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_NoBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_NoBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -280,7 +280,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Cell is formatted with expected color
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_CellColor.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_CellColor.png', {
     maxDiffPixels: 1500,
   });
 
@@ -301,7 +301,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Cell is formatted with no Color
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_ClearCellColor.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_ClearCellColor.png', {
     maxDiffPixels: 1500,
   });
 
@@ -327,7 +327,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Cell's Formats are cleared
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_ClearFormats.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_ClearFormats.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -373,7 +373,7 @@ test('Code Cell Outlines', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert that the cells that have code are no longer outlined
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_Cell_No_Outlines.png');
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Code_Cell_No_Outlines.png');
 
   //--------------------------------
   // Toggle Code Cell Outlines On
@@ -389,7 +389,7 @@ test('Code Cell Outlines', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert that the cells that have code are now outlined
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_Cell_Outlines.png');
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Code_Cell_Outlines.png');
 
   //--------------------------------
   // Clean up:
@@ -657,7 +657,7 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // Assert that the number is formatted per the Automatic Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_AutomaticFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_AutomaticFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -674,7 +674,7 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Commas Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_CommasOnFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_CommasOnFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -693,7 +693,7 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Currency Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_CurrencyFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_CurrencyFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -716,7 +716,7 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Scientific Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_ScientificFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_ScientificFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -739,9 +739,12 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number has increased decimal
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_IncreaseDecimalsFormatting.png', {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'Number_Formatting_IncreaseDecimalsFormatting.png',
+    {
+      maxDiffPixels: 100,
+    }
+  );
 
   //--------------------------------
   // Decrease decimals
@@ -756,9 +759,12 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number has decreased decimal
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_DecreaseDecimalsFormatting.png', {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'Number_Formatting_DecreaseDecimalsFormatting.png',
+    {
+      maxDiffPixels: 100,
+    }
+  );
 
   //--------------------------------
   // Percent
@@ -773,7 +779,7 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Percent Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_PercentFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_PercentFormatting.png', {
     maxDiffPixels: 100,
   });
 
