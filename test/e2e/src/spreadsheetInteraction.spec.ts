@@ -1270,7 +1270,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
     },
     {
       bufferData: `data:${mimeType};base64,${buffer}`,
-      fileName,
+      fileName: `${fileName}.${fileType}`,
       fileType: mimeType,
     }
   );
@@ -2943,7 +2943,7 @@ test('Python More Snippets', async ({ page }) => {
   // Type 'Read' in the search snippets input to filter snippets
   await page.getByPlaceholder('Search snippets...').fill('Read');
 
-  // Click on the 'Read data from the sneet' snippet
+  // Click on the 'Read data from the sheet' snippet
   await page.getByText('Read data from the sheet').click();
 
   //--------------------------------
