@@ -101,7 +101,7 @@ impl Sheet {
         nondefault_rects.any(|(rect, _)| rect != root_cell_rect)
     }
 
-    /// Modifies a data table at a position.
+    /// Modifies a data table at a position (only works for SheetPos, not TablePos, tables).
     pub fn modify_data_table_at_pos(
         &mut self,
         pos: &Pos,

@@ -437,7 +437,7 @@ impl Sheet {
 #[cfg(test)]
 mod test {
     use crate::{
-        Array, CellValue, Pos, Rect, SheetPos,
+        Array, CellValue, MultiPos, Pos, Rect, SheetPos,
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{
@@ -680,11 +680,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -700,11 +696,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -720,11 +712,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -740,11 +728,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
