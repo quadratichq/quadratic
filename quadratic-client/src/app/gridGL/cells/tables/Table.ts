@@ -119,6 +119,24 @@ export class Table extends Container {
     }
   };
 
+  /// Based on any arbitrary viewport bounds, returns the bounds of the table header if it would be floating
+  calculateHeadingBounds = (bounds: Rectangle, gridHeading: number): Rectangle | undefined => {
+    const codeCell = this.codeCell;
+
+    // return undefined if the table is not floating
+    if (
+      codeCell.is_html ||
+      (!codeCell.show_name && !codeCell.show_columns) ||
+      this.tableBounds.top < bounds.top + gridHeading
+    ) {
+      return;
+    }
+
+    const y = Math.min(this.header.bottomOfTable, this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top);
+    console.log(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
+    return new Rectangle(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
+  };
+
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     const codeCell = this.codeCell;
     if (

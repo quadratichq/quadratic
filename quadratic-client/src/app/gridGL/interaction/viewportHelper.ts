@@ -4,7 +4,7 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { Point } from 'pixi.js';
+import { Point, Rectangle } from 'pixi.js';
 
 // animating viewport
 const ANIMATION_TIME = 150;
@@ -71,6 +71,28 @@ export function isColumnVisible(column: number): boolean {
   return true;
 }
 
+// Gets the viewport Y to ensure that the cell is not under the table header
+function getYToEnsureCursorIsNotUnderTableHeader(
+  coordinate: JsCoordinate,
+  bounds: Rectangle,
+  cell: Rectangle
+): number | undefined {
+  const table = pixiApp.cellsSheet().tables.getInTable(coordinate);
+  if (!table) return;
+  const code = table.codeCell;
+  if (code.state === 'SpillError' || code.state === 'RunError' || code.is_html_image) {
+    return;
+  }
+
+  // if the cell rectangle intersects with the table header, return the viewport Y position
+  // needed to position the cell below the table header
+  const tableHeaderBounds = table.calculateHeadingBounds(bounds, pixiApp.headings.headingSize.unscaledHeight);
+  if (tableHeaderBounds && intersects.rectangleRectangle(tableHeaderBounds, cell)) {
+    return tableHeaderBounds.bottom - cell.top;
+  }
+  return;
+}
+
 export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsCoordinate | undefined {
   // returns true if the rect is visible in the viewport
   const { viewport, headings } = pixiApp;
@@ -107,12 +129,17 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
     left = topLeftCell.left - headingWidth;
   }
 
+  let x = viewport.x;
   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
-    const halfWidth = viewport.worldScreenWidth / 2;
-    const halfHeight = viewport.worldScreenHeight / 2;
-    const x = left !== undefined ? left + halfWidth : right !== undefined ? right - halfWidth : viewport.center.x;
-    const y = top !== undefined ? top + halfHeight : bottom !== undefined ? bottom - halfHeight : viewport.center.y;
-    return { x, y };
+    x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : viewport.x;
+    y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : viewport.y;
+  }
+  const futureVisibleBounds = new Rectangle(x, y, viewport.worldScreenWidth, viewport.worldScreenHeight);
+  console.log({ futureVisibleBounds }, pixiApp.viewport.getVisibleBounds());
+  y = getYToEnsureCursorIsNotUnderTableHeader(min, futureVisibleBounds, topLeftCell) ?? y;
+
+  if (x !== viewport.x || y !== viewport.y) {
+    return { x: x + viewport.worldScreenWidth / 2, y: y + viewport.worldScreenHeight / 2 };
   }
 }
 
@@ -129,22 +156,13 @@ export function animateViewport(move: JsCoordinate) {
 }
 
 // Makes a rect visible in the viewport. Returns true if the rect is visible in the viewport.
-export function rectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordinate): boolean {
+export function ensureRectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordinate) {
   if (sheetId !== sheets.current) {
     sheets.current = sheetId;
   }
   const move = calculateRectVisible(min, max);
   if (move) {
     animateViewport(move);
-    return false;
-  } else {
-    return true;
-  }
-}
-
-export function ensureRectVisible(sheetId: string, min: JsCoordinate, max?: JsCoordinate) {
-  if (!rectVisible(sheetId, min, max)) {
-    pixiApp.viewportChanged();
   }
 }
 
@@ -159,17 +177,14 @@ export function ensureSelectionVisible() {
   if (intersects.rectangleRectangle(selection, viewportBoundsInCellCoordinates)) {
     return true;
   }
-  rectVisible(sheets.current, sheets.sheet.cursor.position);
-  pixiApp.viewportChanged();
+  ensureRectVisible(sheets.current, sheets.sheet.cursor.position);
   return false;
 }
 
 // Ensures the cursor is always visible
 export function ensureVisible(visible: JsCoordinate | undefined) {
   if (visible) {
-    if (!rectVisible(sheets.current, visible)) {
-      pixiApp.viewportChanged();
-    }
+    ensureRectVisible(sheets.current, visible);
   } else {
     ensureSelectionVisible();
   }
@@ -236,10 +251,10 @@ export function calculatePageUpDown(
   const cursorPosition = select ? sheet.cursor.selectionEnd : sheet.cursor.position;
 
   // current position of the cursor in world coordinates
-  const cursorY = sheet.getRowY(cursorPosition.y);
+  const cursorRect = sheet.getCellOffsets(cursorPosition.x, cursorPosition.y);
 
   // distance from cursor to center of viewport
-  let distanceTopToCursor = cursorY - viewport.center.y;
+  let distanceTopToCursor = cursorRect.y - viewport.center.y;
 
   // if distance between cursor and top of viewport is greater than the screen
   // height, then center the cursor
@@ -248,7 +263,7 @@ export function calculatePageUpDown(
   }
 
   // calculate where the new cursor will be after the page up/down
-  const onePageY = cursorY + viewport.screenHeightInWorldPixels * (up ? -1 : 1);
+  const onePageY = cursorRect.y + viewport.screenHeightInWorldPixels * (up ? -1 : 1);
 
   // clamp to the first row
   const newRow = Math.max(1, sheet.getColumnRowFromScreen(0, onePageY).row);
@@ -259,8 +274,22 @@ export function calculatePageUpDown(
   // calculate the viewport location, clamping it ot the top of the viewport
   // (taking into account the headings)
   const gridHeadings = pixiApp.headings.headingSize.unscaledHeight;
-  const y = Math.min(gridHeadings - viewport.screenHeightInWorldPixels / 2, -newCursorY + distanceTopToCursor);
-  return { x: viewport.center.x, y, column: cursorPosition.x, row: newRow };
+
+  const halfScreenHeight = viewport.screenHeightInWorldPixels / 2;
+  let centerY = Math.min(gridHeadings - halfScreenHeight, -newCursorY + distanceTopToCursor);
+
+  const visibleBounds = viewport.getVisibleBounds();
+  const adjustedY = getYToEnsureCursorIsNotUnderTableHeader(
+    cursorPosition,
+    new Rectangle(visibleBounds.left, centerY - halfScreenHeight, visibleBounds.width, visibleBounds.height),
+    cursorRect
+  );
+
+  if (adjustedY !== undefined) {
+    centerY = adjustedY;
+  }
+
+  return { x: viewport.center.x, y: centerY, column: cursorPosition.x, row: newRow };
 }
 
 // Returns whether the viewport is currently animating to a location
