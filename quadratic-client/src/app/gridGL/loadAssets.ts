@@ -1,8 +1,8 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
+import { createBorderTypes } from '@/app/gridGL/generateTextures';
 import FontFaceObserver from 'fontfaceobserver';
 import { Assets, BitmapFont } from 'pixi.js';
-import { createBorderTypes } from './generateTextures';
 
 export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'OpenSans-BoldItalic'];
 

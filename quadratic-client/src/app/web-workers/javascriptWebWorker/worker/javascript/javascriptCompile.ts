@@ -9,10 +9,10 @@
 
 import { getJavascriptFetchOverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptFetchOverride';
 import { getJavascriptXHROverride } from '@/app/web-workers/javascriptWebWorker/worker/javascript/getJavascriptXHROverride';
-import * as esbuild from 'esbuild-wasm';
-import { LINE_NUMBER_VAR } from './javascript';
-import { javascriptLibrary } from './runner/generateJavascriptForRunner';
+import { LINE_NUMBER_VAR } from '@/app/web-workers/javascriptWebWorker/worker/javascript/javascript';
+import { javascriptLibrary } from '@/app/web-workers/javascriptWebWorker/worker/javascript/runner/generateJavascriptForRunner';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
+import * as esbuild from 'esbuild-wasm';
 export interface JavascriptTransformedCode {
   imports: string;
   code: string;

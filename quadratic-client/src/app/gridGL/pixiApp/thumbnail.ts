@@ -1,10 +1,10 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
+import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { apiClient } from '@/shared/api/apiClient';
 import { Rectangle, Renderer } from 'pixi.js';
-import { debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
-import { pixiApp } from './PixiApp';
 
 // This also needs to be changed in thumbnail.rs
 const imageWidth = 1280;

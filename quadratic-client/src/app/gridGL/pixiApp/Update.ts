@@ -1,10 +1,15 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
+import {
+  debugRendererLight,
+  debugShowChildren,
+  debugTimeCheck,
+  debugTimeReset,
+} from '@/app/gridGL/helpers/debugPerformance';
+import { FPS } from '@/app/gridGL/helpers/Fps';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
-import { FPS } from '../helpers/Fps';
-import { debugRendererLight, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
-import { pixiApp } from './PixiApp';
-import { thumbnail } from './thumbnail';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 
 export class Update {
   private raf?: number;
