@@ -126,7 +126,7 @@ test('Basic Formula Creation', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Screenshot assertion with cell outlines
-  await expect(page.locator('canvas:visible')).toHaveScreenshot(`${sheetName}-formula-cells-selected.png`, {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-cells-selected.png`, {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -136,7 +136,7 @@ test('Basic Formula Creation', async ({ page }) => {
 
   // Screenshot assertion with answer
   // Note: do not increase maxDiffPixelRatio - after pressing "Enter", cell [1,3] should be highlighted
-  await expect(page.locator('canvas:visible')).toHaveScreenshot(`${sheetName}-formula-cells-post.png`, {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-cells-post.png`, {
     maxDiffPixelRatio: 0.001,
   });
 
@@ -1107,7 +1107,7 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   });
 
   // Close modal
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   // Press "/"
   await page.keyboard.press('/');
@@ -1270,7 +1270,7 @@ hire_date DATE);`);
   await cleanUpServerConnections(page, {
     connectionName: POSTGRES_DB.connectionName,
   });
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
@@ -1332,7 +1332,7 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
   });
 
   // Close modal
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   // Open connection/code modal
   await page.keyboard.press('/');
@@ -1514,7 +1514,7 @@ hire_date DATE);`);
   await cleanUpServerConnections(page, {
     connectionName: POSTGRES_DB.connectionName,
   });
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
@@ -1578,7 +1578,7 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
   });
 
   // Close modal
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   // Press '/' to open code/connections modal
   await page.keyboard.press('/');
@@ -1788,7 +1788,7 @@ hire_date DATE);`);
   await cleanUpServerConnections(page, {
     connectionName: POSTGRES_DB.connectionName,
   });
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:

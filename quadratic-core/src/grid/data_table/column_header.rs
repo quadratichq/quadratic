@@ -3,6 +3,7 @@
 use serde::{Deserialize, Serialize};
 
 use super::DataTable;
+use crate::grid::fix_names::sanitize_column_name;
 use crate::grid::js_types::JsDataTableColumnHeader;
 use crate::util::unique_name;
 use crate::{CellValue, Value};
@@ -23,7 +24,7 @@ impl From<DataTableColumnHeader> for CellValue {
 impl DataTableColumnHeader {
     pub fn new(name: String, display: bool, value_index: u32) -> Self {
         DataTableColumnHeader {
-            name: CellValue::Text(name),
+            name: CellValue::Text(sanitize_column_name(name)),
             display,
             value_index,
         }
@@ -298,7 +299,7 @@ pub mod test {
             sort: None,
             sort_dirty: false,
             display_buffer: None,
-            value: Value::Array(array),
+            value: array.into(),
             last_modified: Utc::now(),
             show_name: Some(true),
             show_columns: Some(true),
@@ -356,7 +357,7 @@ pub mod test {
             sort: None,
             sort_dirty: false,
             display_buffer: None,
-            value: Value::Array(array),
+            value: array.into(),
             last_modified: Utc::now(),
             show_name: Some(true),
             show_columns: Some(true),

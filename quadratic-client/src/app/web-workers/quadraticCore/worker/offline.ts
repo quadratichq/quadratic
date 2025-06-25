@@ -1,6 +1,6 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { core } from './core';
-import { coreClient } from './coreClient';
+import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;

@@ -55,6 +55,9 @@ impl GridController {
                     }
 
                     if transaction.is_user_undo_redo() {
+                        transaction.generate_thumbnail |=
+                            self.thumbnail_dirty_sheet_rect(sheet_rect);
+
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_pos, values });
@@ -65,9 +68,6 @@ impl GridController {
                                 sheet_pos,
                                 values: old_values,
                             });
-
-                        transaction.generate_thumbnail |=
-                            self.thumbnail_dirty_sheet_rect(sheet_rect);
                     }
                 }
             }

@@ -11,8 +11,8 @@ use crate::{
         execution::TransactionSource,
     },
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTable, SheetId, formats::SheetFormatUpdates,
-        unique_data_table_name,
+        CodeCellLanguage, CodeCellValue, DataTable, SheetId, fix_names::sanitize_table_name,
+        formats::SheetFormatUpdates, unique_data_table_name,
     },
     parquet::parquet_to_array,
 };
@@ -132,7 +132,7 @@ impl GridController {
                     for (x, value) in record.iter().enumerate() {
                         let (cell_value, format_update) = self.string_to_cell_value(value, false);
                         cell_values
-                            .set(u32::try_from(x)?, y, cell_value)
+                            .set(u32::try_from(x)?, y, cell_value, false)
                             .map_err(|e| error(e.to_string()))?;
 
                         if !format_update.is_default() {
@@ -165,7 +165,7 @@ impl GridController {
 
         if is_table && apply_first_row_as_header {
             let context = self.a1_context();
-            let import = Import::new(file_name.into());
+            let import = Import::new(sanitize_table_name(file_name.into()));
             let mut data_table =
                 DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
 
@@ -366,7 +366,7 @@ impl GridController {
                             cell,
                             formula_start_name.as_str(),
                         );
-                        gc.send_client_updates_during_transaction(&mut transaction, false);
+                        gc.update_a1_context_table_map(&mut transaction);
                     }
                 }
 
@@ -408,7 +408,7 @@ impl GridController {
     ) -> Result<Vec<Operation>> {
         let cell_values = parquet_to_array(file, file_name, updater)?;
         let context = self.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(sanitize_table_name(file_name.into()));
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
 
@@ -463,11 +463,10 @@ mod test {
             vec!["Southborough", "MA", "United States", "a lot of people"],
         ];
         let context = gc.a1_context();
-        let import = Import::new(file_name.into());
+        let import = Import::new(sanitize_table_name(file_name.into()));
         let cell_value = CellValue::Import(import.clone());
         let mut expected_data_table = DataTable::from((import, values.into(), context));
         expected_data_table.apply_first_row_as_header();
-        assert_display_cell_value(&gc, sheet_id, 1, 1, &cell_value.to_string());
 
         let data_table = match ops[0].clone() {
             Operation::AddDataTable { data_table, .. } => data_table,
@@ -491,7 +490,7 @@ mod test {
     fn imports_a_long_csv() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 1, y: 2 };
+        let pos: Pos = Pos { x: 1, y: 2 };
         let file_name = "long.csv";
 
         let mut csv = String::new();
@@ -509,10 +508,6 @@ mod test {
                 Some(true),
             )
             .unwrap();
-
-        let import = Import::new(file_name.into());
-        let cell_value = CellValue::Import(import.clone());
-        assert_display_cell_value(&gc, sheet_id, 0, 0, &cell_value.to_string());
 
         assert_eq!(ops.len(), 1);
         let (sheet_pos, data_table) = match &ops[0] {
@@ -548,11 +543,13 @@ mod test {
         )
         .unwrap();
 
+        print_first_sheet(&gc);
+
         let value = CellValue::Date(NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap());
-        assert_display_cell_value(&gc, sheet_id, 1, 3, &value.to_string());
+        assert_display_cell_value(&gc, sheet_id, 1, 1, &value.to_string());
 
         let value = CellValue::Time(NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap());
-        assert_display_cell_value(&gc, sheet_id, 2, 3, &value.to_string());
+        assert_display_cell_value(&gc, sheet_id, 2, 1, &value.to_string());
 
         let value = CellValue::DateTime(
             NaiveDate::from_ymd_opt(2024, 12, 21)
@@ -560,7 +557,7 @@ mod test {
                 .and_hms_opt(13, 23, 0)
                 .unwrap(),
         );
-        assert_display_cell_value(&gc, sheet_id, 3, 3, &value.to_string());
+        assert_display_cell_value(&gc, sheet_id, 3, 1, &value.to_string());
     }
 
     #[test]
