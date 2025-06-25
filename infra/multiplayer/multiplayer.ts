@@ -12,11 +12,11 @@ const config = new pulumi.Config();
 
 // Configuration from command line
 const multiplayerSubdomain = config.require("multiplayer-subdomain");
-const quadraticApiUri = config.require("quadratic-api-uri");
 const dockerImageTag = config.require("docker-image-tag");
+const quadraticApiUri = config.require("quadratic-api-uri");
 const multiplayerECRName = config.require("multiplayer-ecr-repo-name");
 const multiplayerPulumiEscEnvironmentName = config.require(
-  "multiplayer-pulumi-esc-environment-name"
+  "multiplayer-pulumi-esc-environment-name",
 );
 
 // Configuration from Pulumi ESC
@@ -32,10 +32,10 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
     Name: `multiplayer-instance-${multiplayerSubdomain}`,
   },
   instanceType: instanceSize,
+  ami: latestAmazonLinuxAmi.id,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [multiplayerEc2SecurityGroup.id],
   subnetId: subNet1, // Assign a subnet, otherwise a random one will be chosen which could be disconnected from the NLB
-  ami: latestAmazonLinuxAmi.id,
   // Run Setup script on instance boot to create multiplayer systemd service
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
@@ -48,10 +48,44 @@ const instance = new aws.ec2.Instance("multiplayer-instance", {
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
       },
-      true
-    )
+      true,
+    ),
   ),
 });
+
+// Create a new Target Group
+const targetGroup = new aws.lb.TargetGroup("multiplayer-nlb-tg", {
+  tags: { Name: `multiplayer-tg-${multiplayerSubdomain}` },
+
+  port: 80,
+  protocol: "TCP",
+  targetType: "instance",
+  vpcId: vpcId,
+
+  // Health check configuration
+  healthCheck: {
+    enabled: true,
+    path: "/health",
+    protocol: "HTTP",
+    healthyThreshold: 2,
+    unhealthyThreshold: 2,
+    timeout: 5,
+    interval: 10,
+    matcher: "200",
+  },
+
+  // Connection draining
+  deregistrationDelay: 30,
+});
+
+// Attach the instance to the new Target Group
+const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
+  "multiplayer-attach-instance-tg",
+  {
+    targetId: instance.id,
+    targetGroupArn: targetGroup.arn,
+  },
+);
 
 // Create a new Network Load Balancer
 const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
@@ -61,23 +95,6 @@ const nlb = new aws.lb.LoadBalancer("multiplayer-nlb", {
   enableCrossZoneLoadBalancing: true,
   securityGroups: [multiplayerNlbSecurityGroup.id],
 });
-
-// Create a new Target Group
-const targetGroup = new aws.lb.TargetGroup("multiplayer-nlb-tg", {
-  port: 80,
-  protocol: "TCP",
-  targetType: "instance",
-  vpcId: vpcId,
-});
-
-// Attach the instance to the new Target Group
-const targetGroupAttachment = new aws.lb.TargetGroupAttachment(
-  "multiplayer-attach-instance-tg",
-  {
-    targetId: instance.id,
-    targetGroupArn: targetGroup.arn,
-  }
-);
 
 // Create NLB Listener for TLS on port 443
 const nlbListener = new aws.lb.Listener("multiplayer-nlb-listener", {
@@ -97,25 +114,75 @@ const nlbListener = new aws.lb.Listener("multiplayer-nlb-listener", {
   ],
 });
 
+// Create Global Accelerator
+const multiplayerGlobalAccelerator = new aws.globalaccelerator.Accelerator(
+  "multiplayer-global-accelerator",
+  {
+    name: `multiplayer-global-accelerator-${multiplayerSubdomain}`,
+    ipAddressType: "IPV4",
+    enabled: true,
+    tags: {
+      Name: "multiplayer-global-accelerator",
+      Environment: pulumi.getStack(),
+    },
+  },
+);
+
+const multiplayerGlobalAcceleratorListener = new aws.globalaccelerator.Listener(
+  "multiplayer-global-accelerator-listener",
+  {
+    acceleratorArn: multiplayerGlobalAccelerator.id,
+    protocol: "TCP",
+    portRanges: [
+      {
+        fromPort: 443,
+        toPort: 443,
+      },
+    ],
+    clientAffinity: "SOURCE_IP",
+  },
+);
+
+const multiplayerGlobalAcceleratorEndpointGroup =
+  new aws.globalaccelerator.EndpointGroup(
+    "multiplayer-globalaccelerator-endpoint-group",
+    {
+      listenerArn: multiplayerGlobalAcceleratorListener.id,
+      endpointConfigurations: [
+        {
+          endpointId: nlb.arn,
+          weight: 100,
+          clientIpPreservationEnabled: false,
+        },
+      ],
+      endpointGroupRegion: aws.getRegionOutput().name,
+      healthCheckProtocol: "TCP",
+      healthCheckPort: 443,
+      healthCheckIntervalSeconds: 30,
+      thresholdCount: 3,
+      trafficDialPercentage: 100,
+    },
+  );
+
 // Get the hosted zone ID for domain
 const hostedZone = pulumi.output(
   aws.route53.getZone(
     {
       name: domain,
     },
-    { async: true }
-  )
+    { async: true },
+  ),
 );
 
-// Create a Route 53 record pointing to the NLB
+// Create a Route 53 record pointing to Global Accelerator
 const dnsRecord = new aws.route53.Record("multiplayer-r53-record", {
   zoneId: hostedZone.id,
-  name: `${multiplayerSubdomain}.${domain}`, // subdomain you want to use
+  name: `${multiplayerSubdomain}.${domain}`,
   type: "A",
   aliases: [
     {
-      name: nlb.dnsName,
-      zoneId: nlb.zoneId,
+      name: multiplayerGlobalAccelerator.dnsName,
+      zoneId: "Z2BJ6XQ5FK7U4H", // AWS Global Accelerator zone ID
       evaluateTargetHealth: true,
     },
   ],

@@ -40,7 +40,6 @@ declare var self: WorkerGlobalScope &
     sendSheetCodeCells: (sheetId: string, renderCodeCells: Uint8Array) => void;
     sendSheetBoundsUpdateClient: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
-    sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
     sendUpdateCodeCells: (updateCodeCells: Uint8Array) => void;
     sendUndoRedo: (undo: boolean, redo: boolean) => void;
@@ -84,7 +83,6 @@ class CoreClient {
     self.sendSheetCodeCells = coreClient.sendSheetCodeCells;
     self.sendSheetBoundsUpdateClient = coreClient.sendSheetBoundsUpdate;
     self.sendTransactionStartClient = coreClient.sendTransactionStart;
-    self.sendTransactionProgress = coreClient.sendTransactionProgress;
     self.sendTransactionEndClient = coreClient.sendTransactionEnd;
     self.sendUpdateCodeCells = coreClient.sendUpdateCodeCells;
     self.sendUndoRedo = coreClient.sendUndoRedo;
@@ -781,10 +779,6 @@ class CoreClient {
       transactionId,
       transactionName,
     });
-  };
-
-  sendTransactionProgress = (transactionId: string, remainingOperations: number) => {
-    this.send({ type: 'coreClientTransactionProgress', transactionId, remainingOperations });
   };
 
   sendTransactionEnd = (transactionId: string, transactionName: TransactionName) => {
