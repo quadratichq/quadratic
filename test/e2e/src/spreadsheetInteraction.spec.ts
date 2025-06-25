@@ -3078,7 +3078,7 @@ test('Python Snippets', async ({ page }) => {
   expect(clipboardText).toBe('Python1\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9'); // Assert the clipboard content
 
   // close editor
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
