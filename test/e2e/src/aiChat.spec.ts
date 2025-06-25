@@ -528,8 +528,8 @@ test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
   // Wait for AI to finish
   await page.waitForTimeout(3 * 60 * 1000);
 
-  // Screnshot assertion to make sure value 10 is in A1
-  await expect(page.locator('canvas:visible')).toHaveScreenshot(`${fileName}-A1-10`);
+  // Screenshot assertion to make sure value 10 is in A1
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-A1-10`);
 
   // Copy cell and assert clipboard text
   await page.waitForTimeout(10 * 1000);
@@ -583,7 +583,7 @@ test.skip('AI Prompt - Use Python Code to return a value in a cell', async ({ pa
   await page.getByRole(`button`, { name: `arrow_upward` }).click();
 
   // Screnshot assertion to make sure value 10 is in A1
-  await expect(page.locator('canvas:visible')).toHaveScreenshot(`${fileName}-A1-10.png`);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-A1-10.png`);
 
   // Copy cell and assert clipboard text
   await page.waitForTimeout(10000);

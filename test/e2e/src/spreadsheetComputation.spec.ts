@@ -126,7 +126,7 @@ test('Basic Formula Creation', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Screenshot assertion with cell outlines
-  await expect(page.locator('canvas:visible')).toHaveScreenshot(`${sheetName}-formula-cells-selected.png`, {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-cells-selected.png`, {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -136,7 +136,7 @@ test('Basic Formula Creation', async ({ page }) => {
 
   // Screenshot assertion with answer
   // Note: do not increase maxDiffPixelRatio - after pressing "Enter", cell [1,3] should be highlighted
-  await expect(page.locator('canvas:visible')).toHaveScreenshot(`${sheetName}-formula-cells-post.png`, {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-cells-post.png`, {
     maxDiffPixelRatio: 0.001,
   });
 
