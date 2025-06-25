@@ -709,19 +709,5 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-cockroachdb
 
-volumes:
-  postgres-connection-data:
-    name: postgres-connection-data
-    driver: local
-  mysql-connection-data:
-    name: mysql-connection-data
-    driver: local
-  ssh-mysql-connection-data:
-    name: ssh-mysql-connection-data
-    driver: local
-  ssh-mssql-connection-data:
-    name: ssh-mssql-connection-data
-    driver: local
-
 networks:
   host:
