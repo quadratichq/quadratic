@@ -176,7 +176,7 @@ export function keyboardPosition(event: KeyboardEvent): boolean {
     const sheet = sheets.sheet;
     const bounds = sheet.getBounds(true);
     if (bounds) {
-      setCursorPosition(bounds.right, bounds.bottom);
+      setCursorPosition(bounds.right - 1, bounds.bottom - 1);
     } else {
       setCursorPosition(1, 1);
     }
