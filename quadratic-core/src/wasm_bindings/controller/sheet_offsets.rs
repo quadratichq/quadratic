@@ -21,8 +21,7 @@ impl GridController {
                     Ok(resize) => resize,
                     Err(e) => {
                         return Err(JsValue::from_str(&format!(
-                            "Failed to parse transient resize: {}",
-                            e
+                            "Failed to parse transient resize: {e}"
                         )));
                     }
                 };
@@ -58,15 +57,15 @@ impl GridController {
     ) -> Result<JsValue, JsValue> {
         let transaction_id = match Uuid::parse_str(&transaction_id) {
             Ok(transaction_id) => transaction_id,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {}", e))),
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid transaction id: {e}"))),
         };
         let sheet_id = match SheetId::from_str(&sheet_id) {
             Ok(sheet_id) => sheet_id,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid sheet id: {}", e))),
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid sheet id: {e}"))),
         };
         let row_heights = match serde_json::from_str::<Vec<JsRowHeight>>(&row_heights) {
             Ok(row_heights) => row_heights,
-            Err(e) => return Err(JsValue::from_str(&format!("Invalid row heights: {}", e))),
+            Err(e) => return Err(JsValue::from_str(&format!("Invalid row heights: {e}"))),
         };
         Ok(serde_wasm_bindgen::to_value(
             &self.complete_auto_resize_row_heights(transaction_id, sheet_id, row_heights),

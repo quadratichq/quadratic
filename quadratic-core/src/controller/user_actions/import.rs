@@ -99,7 +99,7 @@ pub(crate) mod tests {
 
     fn read_test_csv_file(file_name: &str) -> Vec<u8> {
         let path = format!("../quadratic-rust-shared/data/csv/{file_name}");
-        std::fs::read(path).unwrap_or_else(|_| panic!("test csv file not found {}", file_name))
+        std::fs::read(path).unwrap_or_else(|_| panic!("test csv file not found {file_name}"))
     }
 
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/temperature.xlsx";
@@ -195,7 +195,7 @@ pub(crate) mod tests {
 
         for _ in 0..10000 {
             for x in 0..10 {
-                csv.push_str(&format!("{},", x));
+                csv.push_str(&format!("{x},"));
             }
             csv.push_str("done,\n");
         }

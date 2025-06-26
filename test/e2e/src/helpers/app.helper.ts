@@ -1,4 +1,4 @@
-import { type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
 import { gotoCells } from './sheet.helper';
 
 /*
@@ -180,27 +180,34 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
 
   // Press "/"
   await page.keyboard.press('/');
-  await page.locator(`span:text-is("Add or manage…")`).click();
-
-  if (await page.getByRole(`heading`, { name: `No connections` }).isVisible()) {
-    return;
-  }
+  await page.locator(`span:text-is("Add or manage…")`).click({ timeout: 30 * 1000 });
 
   // filter file by name
   await page.locator('[placeholder="Filter by name"]').waitFor();
   await page.locator('[placeholder="Filter by name"]').fill(connectionName);
   await page.waitForTimeout(2500);
 
+  const connectionNameLocator = page.locator(`span[data-testid="connection-name-${connectionName}"]`);
+
+  const connectionCount = await connectionNameLocator.count();
+  if (connectionCount === 0) {
+    return;
+  }
+
   // loop through and delete all the connections
-  const connectionCount = await page.locator(`form + div > div`).count();
   for (let i = 0; i < connectionCount; i++) {
-    await page.locator(`button:has-text("${connectionName}") div`).first().click();
-    await page.getByRole(`button`, { name: `Delete` }).click();
+    await page
+      .locator(`button:has-text("${connectionName}") div`)
+      .first()
+      .click({ timeout: 30 * 1000 });
+    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 30 * 1000 });
     await page.waitForTimeout(1000);
     // Confirm delete action
-    await page.getByRole(`button`, { name: `Delete` }).click();
+    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 30 * 1000 });
     await page.waitForTimeout(1000);
   }
+
+  expect(await connectionNameLocator.count()).toBe(0);
 };
 
 /**
@@ -220,6 +227,6 @@ export const showCodeEditorConsole = async (page: Page, { targetColumn, targetRo
   await page.waitForTimeout(3000);
 
   // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click();
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(3000);
 };

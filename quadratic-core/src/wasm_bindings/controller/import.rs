@@ -100,8 +100,7 @@ impl GridController {
             })?),
             Err(e) => {
                 let error = format!(
-                    "Error importing Excel file: {:?}, error: {:?}",
-                    file_name, e
+                    "Error importing Excel file: {file_name:?}, error: {e:?}"
                 );
                 dbgjs!(&error);
                 Ok(serde_wasm_bindgen::to_value(&JsResponse {

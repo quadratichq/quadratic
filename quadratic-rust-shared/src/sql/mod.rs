@@ -15,26 +15,43 @@ use std::sync::Arc;
 use crate::{SharedError, arrow::arrow_type::ArrowType, error::Result};
 
 use self::{
-    mssql_connection::MsSqlConnection, mysql_connection::MySqlConnection,
-    postgres_connection::PostgresConnection,
+    bigquery_connection::BigqueryConnection, mssql_connection::MsSqlConnection,
+    mysql_connection::MySqlConnection, postgres_connection::PostgresConnection,
 };
 
+pub mod bigquery_connection;
+pub mod cockroachdb_connection;
 pub mod error;
+pub mod mariadb_connection;
 pub mod mssql_connection;
 pub mod mysql_connection;
+pub mod neon_connection;
 pub mod postgres_connection;
 pub mod schema;
 pub mod snowflake_connection;
 
+pub fn query_error(e: impl ToString) -> SharedError {
+    SharedError::Sql(SqlError::Query(e.to_string()))
+}
+
+pub fn schema_error(e: impl ToString) -> SharedError {
+    SharedError::Sql(SqlError::Schema(e.to_string()))
+}
+
+pub fn connect_error(e: impl ToString) -> SharedError {
+    SharedError::Sql(SqlError::Connect(e.to_string()))
+}
+
 pub enum SqlConnection {
-    Postgres(PostgresConnection),
-    Mysql(MySqlConnection),
+    BigqueryConnection(BigqueryConnection),
     Mssql(MsSqlConnection),
+    Mysql(MySqlConnection),
+    Postgres(PostgresConnection),
     SnowflakeConnection(SnowflakeConnection),
 }
 
 #[async_trait]
-pub trait Connection {
+pub trait Connection<'a> {
     type Conn;
     type Row;
     type Column;
@@ -46,7 +63,7 @@ pub trait Connection {
     ///
     /// Returns: (Parquet bytes, is over the limit, number of records)
     async fn query(
-        &self,
+        &mut self,
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -59,19 +76,18 @@ pub trait Connection {
     fn row_columns(row: &Self::Row) -> Box<dyn Iterator<Item = &Self::Column> + '_>;
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str;
+    fn column_name(&self, col: &Self::Column, index: usize) -> String;
 
     /// Generically query a database
     async fn schema(&self, pool: &mut Self::Conn) -> Result<DatabaseSchema>;
 
     /// Convert a database-specific column to an Arrow type
-    fn to_arrow(row: &Self::Row, col: &Self::Column, col_index: usize) -> ArrowType;
+    fn to_arrow(&self, row: &Self::Row, col: &Self::Column, col_index: usize) -> ArrowType;
 
     /// Default implementation of converting a vec of rows to a Parquet byte array
     ///
     /// Returns: (Parquet bytes, number of records)
-    /// This should work over any row/column SQLx vec
-    fn to_parquet(data: Vec<Self::Row>) -> Result<(Bytes, usize)> {
+    fn to_parquet(&'a self, data: Vec<Self::Row>) -> Result<(Bytes, usize)> {
         if data.is_empty() {
             return Ok((Bytes::new(), 0));
         }
@@ -83,7 +99,7 @@ pub trait Connection {
 
         for row in &data {
             for (col_index, col) in Self::row_columns(row).enumerate() {
-                let value = Self::to_arrow(row, col, col_index);
+                let value = self.to_arrow(row, col, col_index);
                 transposed[col_index].push(value);
             }
         }
@@ -99,7 +115,7 @@ pub trait Connection {
             .enumerate()
             .map(|(index, col)| {
                 Field::new(
-                    Self::column_name(col).to_string(),
+                    self.column_name(col, index).to_string(),
                     cols[index].data_type().to_owned(),
                     true,
                 )
@@ -193,6 +209,17 @@ pub trait UsesSsh {
 
     // Set the SSH key
     fn set_ssh_key(&mut self, ssh_key: Option<String>);
+}
+
+/// Unwrap a result or return a null value
+#[macro_export]
+macro_rules! sql_unwrap_or_null {
+    ( $value:expr ) => {{
+        match $value {
+            Ok(value) => value,
+            Err(_) => ArrowType::Null,
+        }
+    }};
 }
 
 /// Convert a column data to an ArrowType into an Arrow type

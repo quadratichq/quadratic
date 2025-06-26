@@ -33,30 +33,9 @@ export const getLanguageSymbol = (language: CodeCellLanguage, isError: boolean):
     symbol.tint = 0xffffff;
     return symbol;
   } else if (typeof language === 'object') {
-    switch (language.Connection?.kind) {
-      case 'MSSQL':
-        symbol.texture = Assets.get('icon-mssql');
-        symbol.tint = isError ? colors.cellColorError : 0xffffff;
-        return symbol;
-
-      case 'POSTGRES':
-        symbol.tint = isError ? colors.cellColorError : 0xffffff;
-        symbol.texture = Assets.get('icon-postgres');
-        return symbol;
-
-      case 'MYSQL':
-        symbol.tint = isError ? colors.cellColorError : 0xffffff;
-        symbol.texture = Assets.get('icon-mysql');
-        return symbol;
-
-      case 'SNOWFLAKE':
-        symbol.tint = isError ? colors.cellColorError : 0xffffff;
-        symbol.texture = Assets.get('icon-snowflake');
-        return symbol;
-
-      default:
-        console.log(`Unknown connection kind: ${language.Connection?.kind} in getLanguageSymbol`);
-    }
+    symbol.texture = Assets.get('icon-connection');
+    symbol.tint = 0xffffff;
+    return symbol;
   }
 };
 

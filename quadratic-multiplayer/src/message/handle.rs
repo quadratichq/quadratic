@@ -191,8 +191,7 @@ pub(crate) async fn handle_message(
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
             let decoded_operations = STANDARD.decode(&operations).map_err(|e| {
                 MpError::Serialization(format!(
-                    "Could not decode base64 encoded operations in transaction {id}: {:?}",
-                    e
+                    "Could not decode base64 encoded operations in transaction {id}: {e:?}"
                 ))
             })?;
 
