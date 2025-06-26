@@ -1,6 +1,6 @@
 use indexmap::IndexMap;
 
-use crate::a1::{A1Context, A1Selection};
+use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::cell_values::CellValues;
 use crate::controller::operations::clipboard::{Clipboard, ClipboardOperation, ClipboardOrigin};
 use crate::grid::Sheet;
@@ -39,26 +39,31 @@ impl Sheet {
             None
         };
 
-        let (sheet_ranges, _) = selection.separate_table_ranges();
-        for sheet_range in sheet_ranges.iter() {
-            let rect = self.ref_range_bounds_to_rect(sheet_range, true);
-            for y in rect.y_range() {
-                for x in rect.x_range() {
-                    let pos = Pos { x, y };
+        for range in selection.ranges.iter() {
+            match range {
+                CellRefRange::Sheet { range } => {
+                    let rect = self.ref_range_bounds_to_rect(range, true);
+                    for y in rect.y_range() {
+                        for x in rect.x_range() {
+                            let pos = Pos { x, y };
 
-                    let new_x = (x - origin.x) as u32;
-                    let new_y = (y - origin.y) as u32;
+                            let new_x = (x - origin.x) as u32;
+                            let new_y = (y - origin.y) as u32;
 
-                    // create quadratic clipboard values
-                    let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
-                    cells.set(new_x, new_y, cell_value);
+                            // create quadratic clipboard values
+                            let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
+                            cells.set(new_x, new_y, cell_value);
 
-                    // create quadratic clipboard value-only for PasteSpecial::Values
-                    if let Some(values) = values.as_mut() {
-                        let display_value = self.display_value(pos).unwrap_or(CellValue::Blank);
-                        values.set(new_x, new_y, display_value);
+                            // create quadratic clipboard value-only for PasteSpecial::Values
+                            if let Some(values) = values.as_mut() {
+                                let display_value =
+                                    self.display_value(pos).unwrap_or(CellValue::Blank);
+                                values.set(new_x, new_y, display_value);
+                            }
+                        }
                     }
                 }
+                CellRefRange::Table { .. } => (),
             }
         }
 

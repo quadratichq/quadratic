@@ -41,7 +41,7 @@ impl GridController {
         let mut data_tables_rects = vec![];
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             data_tables_rects = sheet
-                .data_tables_rects_intersect_rect(moved_left_up_rect, |_, data_table| {
+                .data_tables_output_rects_intersect_rect(moved_left_up_rect, |_, data_table| {
                     !data_table.is_code()
                 })
                 .collect();

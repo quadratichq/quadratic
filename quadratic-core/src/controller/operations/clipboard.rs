@@ -856,7 +856,7 @@ impl GridController {
             .try_sheet(selection.sheet_id)
             .map(|sheet| {
                 sheet
-                    .data_tables_rects_intersect_rect(
+                    .data_tables_output_rects_intersect_rect(
                         moved_left_up_rect,
                         |&data_table_pos, data_table| {
                             !(data_table.is_code()

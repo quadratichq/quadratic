@@ -94,7 +94,7 @@ impl Sheet {
     }
 
     /// Returns data tables that intersect a rect, sorted by index
-    pub fn data_tables_rects_intersect_rect(
+    pub fn data_tables_output_rects_intersect_rect(
         &self,
         rect: Rect,
         filter: impl Fn(&Pos, &DataTable) -> bool,
