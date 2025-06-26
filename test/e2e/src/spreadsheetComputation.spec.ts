@@ -1236,7 +1236,7 @@ hire_date DATE);`);
   //--------------------------------
   // Screenshot assertion: Page should populate data query
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`${POSTGRES_DB.connectionName}-data-queried.png`, {
-    maxDiffPixels: 10,
+    maxDiffPixels: 0,
   });
 
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 3 });
@@ -1497,7 +1497,7 @@ hire_date DATE);`);
 
   // Screenshot assertion: Page should not show #ERROR
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`${POSTGRES_DB.connectionName}-python-result.png`, {
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixels: 0,
   });
 
   //--------------------------------
