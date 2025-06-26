@@ -108,7 +108,7 @@ impl BigqueryConnection {
         let fields = map_schema(schema.fields);
         let mut columns = Vec::new();
 
-        for field in 0..fields {
+        for field in fields {
             let column = ColumnSchema {
                 field_type: field.0.to_owned(),
                 field_name: field.1.to_owned(),
