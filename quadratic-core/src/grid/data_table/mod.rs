@@ -8,6 +8,7 @@ use crate::util::is_false;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
+pub mod fix_names;
 pub mod formats;
 pub mod row;
 pub mod send_render;
@@ -117,17 +118,42 @@ impl Grid {
 
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
-const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str =
-    r#"^[a-zA-Z0-9_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
+
+// Table name must start with alphabet character, and then can have a mix of
+// alphabet, numbers, and "_ . \". Note \p{L} provides foreign alphabetic
+// characters
+const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\p{L}\\][a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// we split the regex into two parts so we can properly sanitize it
+const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\p{L}\\]"#;
+const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// Column names are more open to other characters
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z\p{L}0-9_\-_.(){}`'"~!@$%^&*+=<>?/\\|:;,\p{Pd}][a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
+const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@$%^&*+=<>?/\\|:;,]$"#;
+const COLUMN_NAME_REMAINING_CHARS: &str =
+    r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
+
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
         Regex::new(R1C1_REGEX).expect("Failed to compile R1C1_REGEX");
-    static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
+    pub(crate) static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
         Regex::new(TABLE_NAME_VALID_CHARS).expect("Failed to compile TABLE_NAME_VALID_CHARS");
-    static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
+    pub(crate) static ref TABLE_NAME_FIRST_CHAR_COMPILED: Regex =
+        Regex::new(TABLE_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile TABLE_NAME_FIRST_CHARACTER");
+    pub(crate) static ref TABLE_NAME_REMAINING_CHARACTERS_COMPILED: Regex =
+        Regex::new(TABLE_NAME_REMAINING_CHARACTERS)
+            .expect("Failed to compile TABLE_NAME_REMAINING_CHARACTERS");
+    pub static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
         Regex::new(COLUMN_NAME_VALID_CHARS).expect("Failed to compile COLUMN_NAME_VALID_CHARS");
+    pub(crate) static ref COLUMN_NAME_FIRST_CHARACTER_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile COLUMN_NAME_FIRST_CHARACTER");
+    pub(crate) static ref COLUMN_NAME_REMAINING_CHARS_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_REMAINING_CHARS)
+            .expect("Failed to compile COLUMN_NAME_FINAL_CHARACTER");
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -197,7 +223,7 @@ impl From<(Import, Array, &A1Context)> for DataTable {
         DataTable::new(
             DataTableKind::Import(import),
             &name,
-            Value::Array(cell_values),
+            cell_values.into(),
             false,
             None,
             None,
@@ -584,7 +610,7 @@ impl DataTable {
                     self.value = Value::Single(value);
                 }
                 Value::Array(ref mut a) => {
-                    if let Err(error) = a.set(x, y, value) {
+                    if let Err(error) = a.set(x, y, value, true) {
                         dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
                         return false;
                     }
@@ -830,11 +856,10 @@ pub mod test {
         let kind = data_table.kind.clone();
         let values = data_table.value.clone().into_array().unwrap();
 
-        let expected_values = Value::Array(values.clone());
         let expected_data_table = DataTable::new(
             kind.clone(),
             "test.csv",
-            expected_values,
+            values.into(),
             false,
             None,
             None,
@@ -906,7 +931,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            Array::new_empty(ArraySize::new(10, 11).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -945,7 +970,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            Array::new_empty(ArraySize::new(10, 11).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1003,7 +1028,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run.clone()),
             "Table 1",
-            Value::Array(single_column),
+            single_column.into(),
             false,
             Some(true),
             Some(true),
@@ -1016,7 +1041,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(multi_column),
+            multi_column.into(),
             false,
             Some(true),
             Some(true),
@@ -1044,7 +1069,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            Array::new_empty(ArraySize::new(4, 3).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1075,7 +1100,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            Array::new_empty(ArraySize::new(4, 3).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1229,6 +1254,31 @@ pub mod test {
             "a",
             "123",
             "1column",
+            "@Column",
+            "Column!",
+            "Column?",
+            "Column*",
+            "Column/",
+            "Column\\",
+            "Column$",
+            "Column%",
+            "Column^",
+            "Column&",
+            "Column+",
+            "Column=",
+            "Column;",
+            "Column,",
+            "Column<",
+            "Column>",
+            "Column{",
+            "Column}",
+            "Column|",
+            "Column`",
+            "Column~",
+            "Column'",
+            "Column\"",
+            "Column.",
+            ".Column",
             "Column-with–en—dash", // Testing various dash characters
             longest_name.as_str(),
         ];
@@ -1250,37 +1300,9 @@ pub mod test {
                 "Column name must be between 1 and 255 characters",
             ),
             ("#Invalid", "Column name contains invalid characters"),
-            ("@Column", "Column name contains invalid characters"),
-            ("Column!", "Column name contains invalid characters"),
-            ("Column?", "Column name contains invalid characters"),
-            ("Column*", "Column name contains invalid characters"),
-            ("Column/", "Column name contains invalid characters"),
-            ("Column\\", "Column name contains invalid characters"),
-            ("Column$", "Column name contains invalid characters"),
-            ("Column%", "Column name contains invalid characters"),
-            ("Column^", "Column name contains invalid characters"),
-            ("Column&", "Column name contains invalid characters"),
-            ("Column+", "Column name contains invalid characters"),
-            ("Column=", "Column name contains invalid characters"),
-            ("Column;", "Column name contains invalid characters"),
-            ("Column,", "Column name contains invalid characters"),
-            ("Column<", "Column name contains invalid characters"),
-            ("Column>", "Column name contains invalid characters"),
             ("Column[", "Column name contains invalid characters"),
             ("Column]", "Column name contains invalid characters"),
-            ("Column{", "Column name contains invalid characters"),
-            ("Column}", "Column name contains invalid characters"),
-            ("Column|", "Column name contains invalid characters"),
-            ("Column`", "Column name contains invalid characters"),
-            ("Column~", "Column name contains invalid characters"),
-            ("Column'", "Column name contains invalid characters"),
-            ("Column\"", "Column name contains invalid characters"),
             // Test names ending with invalid characters
-            ("Column ", "Column name contains invalid characters"),
-            ("Column.", "Column name contains invalid characters"),
-            // Test names starting with invalid characters (except underscore and dash)
-            (".Column", "Column name contains invalid characters"),
-            (" Column", "Column name contains invalid characters"),
         ];
 
         for (name, expected_error) in test_cases {
@@ -1314,7 +1336,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(2, 2).unwrap())),
+            Array::new_empty(ArraySize::new(2, 2).unwrap()).into(),
             false,
             Some(true),
             Some(true),

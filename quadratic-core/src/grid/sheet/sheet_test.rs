@@ -102,9 +102,9 @@ impl Sheet {
                     CellValue::Text(s.to_string())
                 };
                 if vertical {
-                    let _ = array.set(0, i as u32, value);
+                    let _ = array.set(0, i as u32, value, false);
                 } else {
-                    let _ = array.set(i as u32, 0, value);
+                    let _ = array.set(i as u32, 0, value, false);
                 }
             }
         }
@@ -133,7 +133,7 @@ impl Sheet {
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table1",
-                Value::Array(array),
+                array.into(),
                 false,
                 Some(false),
                 Some(false),
@@ -162,7 +162,7 @@ impl Sheet {
                 } else {
                     CellValue::Text(s.to_string())
                 };
-                array.set(i as u32 % w, i as u32 / w, value).unwrap();
+                array.set(i as u32 % w, i as u32 / w, value, false).unwrap();
             }
         }
 
@@ -183,7 +183,7 @@ impl Sheet {
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table1",
-                Value::Array(array),
+                array.into(),
                 false,
                 Some(false),
                 Some(false),
@@ -410,9 +410,9 @@ mod tests {
     #[test]
     fn test_set_code_run_empty() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_number(0, 0, "11");
+        sheet.test_set_code_run_number(1, 1, "11");
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(BigDecimal::from_str("11").unwrap()))
         );
     }

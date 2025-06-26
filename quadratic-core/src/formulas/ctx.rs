@@ -231,7 +231,7 @@ impl<'ctx> Ctx<'ctx> {
         }
 
         let result = Array::new_row_major(size, values)?;
-        Ok(Value::Array(result))
+        Ok(result.into())
     }
 
     /// Parses a sequence of `eval_range` and `criteria` arguments from `args`,

@@ -252,28 +252,23 @@ export class q {
       );
     }
 
-    let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
-    let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
+    let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4, {
+      maxByteLength: 4 * 1024 * 1024 * 1024, // 4GB
+    });
+    let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 1);
     Atomics.store(int32View, 0, 0);
 
-    self.postMessage({ type: 'getCellsA1Length', sharedBuffer, a1 });
+    self.postMessage({ type: 'getCellsA1', sharedBuffer, a1 });
     Atomics.wait(int32View, 0, 0);
-    const byteLength = int32View[1];
-    if (byteLength === 0) throw new Error('Error in get cells a1 length');
+    int32View = undefined;
 
-    const id = int32View[2];
-
-    // New shared buffer, which is sized to hold the cells string
-    sharedBuffer = new SharedArrayBuffer(4 + byteLength);
-    int32View = new Int32Array(sharedBuffer, 0, 1);
-    Atomics.store(int32View, 0, 0);
-
-    self.postMessage({ type: 'getCellsData', id, sharedBuffer });
-    Atomics.wait(int32View, 0, 0);
-
-    let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, byteLength);
+    const byteLength = sharedBuffer.byteLength;
+    if (byteLength <= 4) {
+      throw new Error('Error in get cells');
+    }
 
     // Copy the data to a non-shared buffer, for decoding
+    let uint8View: Uint8Array | undefined = new Uint8Array(sharedBuffer, 4, byteLength - 4);
     const nonSharedBuffer = new ArrayBuffer(uint8View.byteLength);
     const nonSharedView = new Uint8Array(nonSharedBuffer);
     nonSharedView.set(uint8View);

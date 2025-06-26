@@ -230,6 +230,7 @@ type InviteUserToTeamOptions = {
 export const inviteUserToTeam = async (page: Page, { email, permission }: InviteUserToTeamOptions) => {
   // Navigate to Members page
   await page.locator(`nav :text-is("Members")`).click();
+  await expect(page.locator(`h1:has-text("Team members")`)).toBeVisible({ timeout: 30 * 1000 });
   await page.locator(`[aria-label="Email"]`).fill(email);
   const currentPermission = await page.locator(`button[role="combobox"]`).first().textContent();
   if (currentPermission !== permission) {
