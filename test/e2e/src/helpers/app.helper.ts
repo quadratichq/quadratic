@@ -34,7 +34,7 @@ export const navigateOnSheet = async (
   // Click canvas if needed
   if (!skipCanvasClick) {
     try {
-      await page.locator(`#QuadraticCanvasID`).click();
+      await page.locator(`#QuadraticCanvasID`).click({ timeout: 30 * 1000 });
       await page.waitForTimeout(100);
     } catch (err) {
       console.error(err);
@@ -158,7 +158,7 @@ export const displayMouseCoords = async (page: Page, { offsets }: DisplayMouseCo
  * Helper Function to clear code editor
  */
 export const clearCodeEditor = async (page: Page) => {
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
   // Click Control + A to Select All, then Backspace to Clear
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Backspace');
