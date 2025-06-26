@@ -97,7 +97,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingToggle: false,
-    thinkingBudget: 128,
+    thinkingBudget: 8192,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
   'vertexai:gemini-2.5-pro:thinking-toggle-on': {
