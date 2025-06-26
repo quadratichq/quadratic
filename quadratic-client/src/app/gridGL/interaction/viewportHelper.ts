@@ -271,7 +271,7 @@ export function calculatePageUpDown(
   const onePageY = cursorRect.y + viewport.screenHeightInWorldPixels * (up ? -1 : 1);
 
   // clamp to the first row
-  const newRow = Math.max(1, sheet.getColumnRowFromScreen(0, onePageY).row);
+  const newRow = Math.max(1, sheet.getRowFromScreen(onePageY));
 
   // get the actual position of the new cursor in row coordinates
   const newCursorY = sheet.getRowY(newRow);
@@ -282,17 +282,6 @@ export function calculatePageUpDown(
 
   const halfScreenHeight = viewport.screenHeightInWorldPixels / 2;
   let centerY = Math.min(gridHeadings - halfScreenHeight, -newCursorY + distanceTopToCursor);
-
-  // const visibleBounds = viewport.getVisibleBounds();
-  // const adjustedY = getYToEnsureCursorIsNotUnderTableHeader(
-  //   cursorPosition,
-  //   new Rectangle(visibleBounds.left, centerY - halfScreenHeight, visibleBounds.width, visibleBounds.height),
-  //   cursorRect
-  // );
-
-  // if (adjustedY !== undefined) {
-  //   centerY = adjustedY;
-  // }
 
   return { x: -viewport.center.x, y: centerY, column: cursorPosition.x, row: newRow };
 }
