@@ -35,5 +35,20 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
     return true;
   }
 
+  // Select goto row start
+  if (matchShortcut(Action.SelectGotoRowStart, event)) {
+    cursor.selectTo(1, sheets.sheet.cursor.position.y, false);
+    return true;
+  }
+
+  // Select goto row end
+  if (matchShortcut(Action.SelectGotoRowEnd, event)) {
+    const sheet = sheets.sheet;
+    const bounds = sheet.getBounds(true);
+    const right = bounds?.right ?? 1;
+    cursor.selectTo(right, sheets.sheet.cursor.position.y, false);
+    return true;
+  }
+
   return false;
 }
