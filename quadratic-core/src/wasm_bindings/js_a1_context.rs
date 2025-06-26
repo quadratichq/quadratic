@@ -24,7 +24,7 @@ impl JsA1Context {
         match deserialize::<A1Context>(&SerializationFormat::Bincode, &context) {
             Ok(context) => Self { context },
             Err(e) => {
-                dbgjs!(&format!("Error creating JsA1Context: {}", e));
+                dbgjs!(&format!("Error creating JsA1Context: {e}"));
                 Self::default()
             }
         }

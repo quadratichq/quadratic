@@ -294,6 +294,6 @@ spDLJbPts5Dztw8g9mRQsrMtxnKC0/6XU+Zr0PnCUnM/rITuZsnrJvmPPEILnHP8CqxaJh
     async fn test_ssh_connect() {
         let mut session = get_ssh_config().connect().await.unwrap();
         let result = session.call("ls -la").await.unwrap();
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
     }
 }

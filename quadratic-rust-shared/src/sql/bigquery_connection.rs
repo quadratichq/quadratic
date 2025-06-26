@@ -52,16 +52,16 @@ impl BigqueryConnection {
     pub async fn new(credentials: String, project_id: String, dataset: String) -> Result<Self> {
         let credentials = CredentialsFile::new_from_str(&credentials)
             .await
-            .map_err(|e| connect_error(format!("Unable to parse credentials file: {}", e)))?;
+            .map_err(|e| connect_error(format!("Unable to parse credentials file: {e}")))?;
 
         let config = ClientConfig::new_with_credentials(credentials)
             .await
-            .map_err(|e| connect_error(format!("Unable to create config: {}", e)))?
+            .map_err(|e| connect_error(format!("Unable to create config: {e}")))?
             .0;
 
         let client = Client::new(config)
             .await
-            .map_err(|e| connect_error(format!("Unable to create client: {}", e)))?;
+            .map_err(|e| connect_error(format!("Unable to create client: {e}")))?;
 
         Ok(Self {
             project_id,
@@ -138,7 +138,7 @@ impl BigqueryConnection {
     pub fn get_column_schema(&self, index: usize) -> Result<&ColumnSchema> {
         self.columns
             .get(index)
-            .ok_or_else(|| query_error(format!("Column not found at {}", index)))
+            .ok_or_else(|| query_error(format!("Column not found at {index}")))
     }
 
     pub fn get_column_field_type(&self, index: usize) -> TableFieldType {
@@ -150,7 +150,7 @@ impl BigqueryConnection {
     pub fn get_column_field_name(&self, index: usize) -> String {
         self.get_column_schema(index)
             .map(|c| c.field_name.to_owned())
-            .unwrap_or_else(|_| format!("Column {}", index))
+            .unwrap_or_else(|_| format!("Column {index}"))
     }
 }
 
@@ -372,7 +372,7 @@ fn bigquery_number(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
 fn bigquery_date(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
     let date_string = string_column_value(row, index);
     let date =
-        NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_string), "%Y-%m-%d %H:%M:%S")
+        NaiveDateTime::parse_from_str(&format!("{date_string} 00:00:00"), "%Y-%m-%d %H:%M:%S")
             .map_err(query_error)?;
     let epoch = DateTime::<Utc>::from_timestamp(0, 0)
         .ok_or_else(|| query_error("Unable to create epoch"))?
@@ -590,7 +590,7 @@ pub mod tests {
             "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10"
         );
         let results = connection.raw_query(&sql, None).await.unwrap();
-        println!("{:?}", results);
+        println!("{results:?}");
     }
 
     #[tokio::test]
