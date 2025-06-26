@@ -14,7 +14,7 @@ const modelsById = {
 };
 
 export const AIUserMessageFormModelButton = () => {
-  const isFreeUser = true; // TODO: Pull this from...? will probably have to update API
+  const isFreeUser = false; // TODO: Pull this from...? will probably have to update API
   const [activeModel, setActiveModel] = useState<keyof typeof modelsById>(isFreeUser ? 'basic' : 'pro');
   const activeModelLabel = modelsById[activeModel].label;
 
@@ -22,7 +22,7 @@ export const AIUserMessageFormModelButton = () => {
     <Popover>
       {/* Needs a min-width or it shifts as the popover closes */}
       <PopoverTrigger className="group flex min-w-24 items-center justify-end gap-0 text-right">
-        Model: {activeModelLabel} <ArrowDropDownIcon className="group-[[aria-expanded=truez]]:rotate-180" />
+        Model: {activeModelLabel} <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
       </PopoverTrigger>
       <PopoverContent className="flex w-80 flex-col gap-2">
         <div className="mt-2 flex flex-col items-center">
