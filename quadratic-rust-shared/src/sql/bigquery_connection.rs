@@ -86,20 +86,18 @@ impl BigqueryConnection {
             Ok(response) => response,
             Err(e) => {
                 // Check if the error is due to bytes billed limit exceeded
-                match &e {
-                    BigqueryError::Response(error) => {
-                        if error
-                            .errors
-                            .as_ref()
-                            .and_then(|e| e.get(0).map(|e| e.reason.to_owned()))
-                            .unwrap_or_default()
-                            == "bytesBilledLimitExceeded"
-                        {
-                            return Ok((Vec::new(), true, 0));
-                        }
-                    }
-                    _ => {}
-                };
+                if let BigqueryError::Response(error) = &e {
+                     if error
+                         .errors
+                         .as_ref()
+                         .and_then(|e| e.first().map(|e| e.reason.to_owned()))
+                         .unwrap_or_default()
+                         == "bytesBilledLimitExceeded"
+                     {
+                         return Ok((Vec::new(), true, 0));
+                     }
+                 };
+                
                 return Err(query_error(e));
             }
         };
@@ -110,11 +108,11 @@ impl BigqueryConnection {
         let fields = map_schema(schema.fields);
         let mut columns = Vec::new();
 
-        for column in 0..fields.len() {
+        for field in 0..fields.len() {
             let column = ColumnSchema {
-                field_type: fields[column].0.to_owned(),
-                field_name: fields[column].1.to_owned(),
-                field_struct: fields[column].2.to_owned(),
+                field_type: field.0.to_owned(),
+                field_name: field.1.to_owned(),
+                field_struct: field.2.to_owned(),
             };
 
             columns.push(column);
