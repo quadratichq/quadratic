@@ -33,7 +33,7 @@ export const MODELS_CONFIGURATION: {
     model: 'quadratic-auto',
     displayName: 'auto',
     temperature: 0,
-    max_tokens: 8192,
+    max_tokens: 4096,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
