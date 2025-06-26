@@ -1,4 +1,9 @@
-import { debugFlagDefaults, type DebugFlag, type DebugFlagOptions } from '@/app/debugFlags/debugFlagsDefinitions';
+import {
+  debugFlagDefaults,
+  debugFlagDescriptions,
+  type DebugFlag,
+  type DebugFlagOptions,
+} from '@/app/debugFlags/debugFlagsDefinitions';
 import { events } from '@/app/events/events';
 import localforage from 'localforage';
 
@@ -45,6 +50,13 @@ class DebugFlags {
     } catch (e) {
       // on error, reset to defaults
       this.flags = debugFlagDefaults;
+    }
+
+    const url = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search);
+    for (const key in debugFlagDescriptions) {
+      if (url.has(key)) {
+        this.setFlag(key as DebugFlag, true);
+      }
     }
   };
 

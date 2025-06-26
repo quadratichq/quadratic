@@ -104,6 +104,7 @@ type UploadFileOptions = {
   fileName: string;
   fileType: string;
   fullFilePath?: string;
+  query?: string;
 };
 export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath }: UploadFileOptions) => {
   // Click Import
