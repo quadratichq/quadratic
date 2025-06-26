@@ -147,7 +147,7 @@ pub(crate) mod tests {
         // data table should be at `pos`
         assert_eq!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(&pos)
+                .data_table_pos_that_contains(pos)
                 .unwrap(),
             pos
         );
@@ -156,7 +156,7 @@ pub(crate) mod tests {
         assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 1, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 12, last_row);
+        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 11, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
@@ -551,7 +551,7 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            2,
+            3,
             vec!["issue", " test", " value\u{feff}"],
         );
         assert_cell_value_row(
@@ -559,10 +559,10 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            3,
+            4,
             vec!["0", "1", " Inv\u{feff}alid\u{feff}"],
         );
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["0", "2", " Valid"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 5, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {
@@ -598,6 +598,27 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn test_csv_special_chars() {
+        let file_name = "test-special-character$.csv";
+        let csv_file = read_test_csv_file(file_name);
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "test_special_character_.csv");
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            2,
+            vec!["test-1", "$HERE!", "now--this!"],
+        );
+    }
+
+    #[test]
     fn imports_a_parquet_with_multiple_batches() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -622,5 +643,16 @@ pub(crate) mod tests {
 
         assert_display_cell_value(&gc, sheet_id, 1, 6, "82");
         assert_display_cell_value(&gc, sheet_id, 1, 1029, "8140");
+    }
+
+    #[test]
+    fn test_import_customers() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file_name = "customers-100.csv";
+        let csv_file = read_test_csv_file(file_name);
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_table_count(&gc, sheet_id, 1);
     }
 }

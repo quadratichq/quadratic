@@ -332,8 +332,6 @@ impl GridController {
                     .get(&source_pos)
                     .and_then(|data_table| data_table.cells_accessed(start_pos.sheet_id));
 
-                
-
                 cells_accessed.as_ref().is_some_and(|ranges| {
                     ranges.iter().any(|range| {
                         let cut_intersects = cut_rects
@@ -811,10 +809,19 @@ impl GridController {
         }
 
         // cell values need to be set before the compute_code_ops
-        ops.push(Operation::SetCellValues {
-            sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
-            values: cell_values,
-        });
+        if matches!(special, PasteSpecial::None | PasteSpecial::Values) {
+            ops.push(Operation::SetCellValues {
+                sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
+                values: cell_values,
+            });
+
+            data_table_ops.extend(GridController::grow_data_table_operations(
+                data_table_columns,
+                data_table_rows,
+            ));
+
+            ops.extend(compute_code_ops);
+        }
 
         if !formats.is_default() {
             ops.push(Operation::SetCellFormatsA1 {
@@ -833,13 +840,6 @@ impl GridController {
         ops.push(Operation::SetCursorA1 {
             selection: selection.to_owned(),
         });
-
-        data_table_ops.extend(GridController::grow_data_table_operations(
-            data_table_columns,
-            data_table_rows,
-        ));
-
-        ops.extend(compute_code_ops);
 
         Ok((ops, data_table_ops))
     }
@@ -1978,6 +1978,68 @@ mod test {
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
+    }
+
+    #[test]
+    fn test_paste_special() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        gc.set_cell_values(
+            SheetPos {
+                x: 2,
+                y: 1,
+                sheet_id,
+            },
+            vec![vec!["1".into(), "2".into(), "3".into()]],
+            None,
+        );
+
+        gc.set_bold(
+            &A1Selection::from_single_cell(pos![sheet_id!B1]),
+            Some(true),
+            None,
+        )
+        .unwrap();
+
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 1, vec!["1", "2", "3"]);
+        assert_cell_format_bold_row(&gc, sheet_id, 2, 4, 1, vec![true, false, false]);
+
+        let clipboard = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::from_rect(rect![B1:D1].to_sheet_rect(sheet_id)),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                true,
+            )
+            .unwrap();
+
+        // paste values only
+        gc.paste_from_clipboard(
+            &A1Selection::from_single_cell(pos![sheet_id!B2]),
+            Some(clipboard.plain_text.clone()),
+            Some(clipboard.html.clone()),
+            PasteSpecial::Values,
+            None,
+        );
+        // values are pasted
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["1", "2", "3"]);
+        // formats are not pasted
+        assert_cell_format_bold_row(&gc, sheet_id, 2, 4, 2, vec![false, false, false]);
+
+        // paste formats only, offset by 1 column to check for values getting overwritten
+        gc.paste_from_clipboard(
+            &A1Selection::from_single_cell(pos![sheet_id!C2]),
+            Some(clipboard.plain_text),
+            Some(clipboard.html),
+            PasteSpecial::Formats,
+            None,
+        );
+        // values should be the same
+        assert_cell_value_row(&gc, sheet_id, 2, 4, 2, vec!["1", "2", "3"]);
+        // formats should be pasted, offset by 1 column
+        assert_cell_format_bold_row(&gc, sheet_id, 2, 5, 2, vec![false, true, false, false]);
     }
 
     #[test]

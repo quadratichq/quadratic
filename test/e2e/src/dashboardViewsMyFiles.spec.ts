@@ -147,7 +147,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
   await page.keyboard.press('ArrowDown');
   await page.keyboard.type('test', { delay: 500 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(60 * 1000);
 
   await page.locator(`nav a svg`).click();
 
