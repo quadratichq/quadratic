@@ -83,16 +83,15 @@ impl GridController {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use std::str::FromStr;
 
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
+        number::from_str,
         test_util::*,
         wasm_bindings::js::clear_js_calls,
     };
 
-    use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime};
 
     use crate::wasm_bindings::js::expect_js_call_count;
@@ -271,7 +270,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             sheet.cell_value((5, 2).into()).unwrap(),
-            CellValue::Number(BigDecimal::from_str("1.1").unwrap())
+            CellValue::Number(from_str("1.1").unwrap())
         );
         assert_eq!(
             sheet.cell_value((6, 2).into()).unwrap(),
@@ -281,7 +280,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             sheet.cell_value((7, 2).into()).unwrap(),
-            CellValue::Number(BigDecimal::from_str("1").unwrap())
+            CellValue::Number(from_str("1").unwrap())
         );
         assert_eq!(
             sheet.cell_value((8, 2).into()).unwrap(),

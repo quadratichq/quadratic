@@ -6,10 +6,10 @@ use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::StreamExt;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -269,7 +269,7 @@ impl Connection for MySqlConnection {
             "BOOL" | "BOOLEAN" => to_arrow_type!(ArrowType::Boolean, bool, row, index),
             "FLOAT" => to_arrow_type!(ArrowType::Float32, f32, row, index),
             "DOUBLE" => to_arrow_type!(ArrowType::Float64, f64, row, index),
-            "DECIMAL" => to_arrow_type!(ArrowType::BigDecimal, BigDecimal, row, index),
+            "DECIMAL" => to_arrow_type!(ArrowType::Decimal, Decimal, row, index),
             "TIMESTAMP" => to_arrow_type!(ArrowType::TimestampTz, DateTime<Local>, row, index),
             "DATETIME" => to_arrow_type!(ArrowType::Timestamp, NaiveDateTime, row, index),
             "DATE" => match convert_sqlx_type!(NaiveDate, row, index) {
@@ -316,7 +316,6 @@ mod tests {
 
     use super::*;
     // use std::io::Read;
-    use bigdecimal::BigDecimal;
     use serde_json::json;
 
     fn new_mysql_connection() -> MySqlConnection {
@@ -374,7 +373,7 @@ mod tests {
         assert_eq!(to_arrow(5), ArrowType::Int64(9223372036854775807));
         assert_eq!(
             to_arrow(6),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap())
         );
         assert_eq!(to_arrow(7), ArrowType::Float32(123.45));
         assert_eq!(to_arrow(8), ArrowType::Float64(123456789.123456));

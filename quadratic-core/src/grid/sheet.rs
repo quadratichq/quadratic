@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use anyhow::{Result, anyhow};
-use bigdecimal::RoundingMode;
 use borders::Borders;
 use columns::SheetColumns;
 use data_tables::SheetDataTables;
@@ -17,6 +16,7 @@ use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, A1Selection, CellRefRange, UNBOUNDED};
+use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
 
@@ -476,19 +476,18 @@ impl Sheet {
                         return Some(n.to_string().len() as i16 - 1);
                     }
 
-                    let exponent = n.as_bigint_and_exponent().1;
+                    let scale = n.scale();
                     let max_decimals = 9;
-                    let mut decimals = n
-                        .with_scale_round(exponent.min(max_decimals), RoundingMode::HalfUp)
-                        .normalized()
-                        .as_bigint_and_exponent()
-                        .1 as i16;
+                    let mut decimals = n;
+                    decimals.rescale(scale.min(max_decimals));
+                    decimals = normalize(decimals);
+                    let mut decimals = decimals.scale();
 
                     if kind == NumericFormatKind::Percentage {
                         decimals -= 2;
                     }
 
-                    Some(decimals)
+                    Some(decimals as i16)
                 }
                 _ => None,
             }
@@ -575,9 +574,7 @@ impl Sheet {
     /// Should only be used for testing (as it will not propagate in multiplayer)
     #[cfg(test)]
     pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
-        use std::str::FromStr;
-
-        use bigdecimal::BigDecimal;
+        use crate::number::from_str;
         use rand::Rng;
 
         self.columns.clear();
@@ -585,10 +582,7 @@ impl Sheet {
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let value = rng.random_range(-10000..=10000).to_string();
-                self.set_cell_value(
-                    (x, y).into(),
-                    CellValue::Number(BigDecimal::from_str(&value).unwrap()),
-                );
+                self.set_cell_value((x, y).into(), CellValue::Number(from_str(&value).unwrap()));
             }
         }
         self.recalculate_bounds(a1_context);
@@ -599,7 +593,6 @@ impl Sheet {
 mod test {
     use std::str::FromStr;
 
-    use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     use super::*;
@@ -608,6 +601,7 @@ mod test {
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };
+    use crate::number::from_str;
     use crate::test_util::print_table_in_rect;
     use crate::{Array, SheetPos, SheetRect, Value};
 
@@ -645,7 +639,7 @@ mod test {
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
-        let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
+        let _ = sheet.set_cell_value(pos, CellValue::Number(from_str(value).unwrap()));
         assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
@@ -766,7 +760,7 @@ mod test {
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str("11.100000000000000000").unwrap()),
+            CellValue::Number(from_str("11.100000000000000000").unwrap()),
         );
 
         // expect a single decimal place
@@ -800,8 +794,8 @@ mod test {
         let vals = vec!["a", "1", "$1.11"];
         let expected = [
             CellValue::Text("a".into()),
-            CellValue::Number(BigDecimal::from_str("1").unwrap()),
-            CellValue::Number(BigDecimal::from_str("1.11").unwrap()),
+            CellValue::Number(from_str("1").unwrap()),
+            CellValue::Number(from_str("1.11").unwrap()),
         ];
         let (grid, sheet_id) = test_setup(&selected, &vals);
 
@@ -858,7 +852,7 @@ mod test {
         let sheet = grid.sheet(sheet_id);
         let value = sheet.display_value((2, 1).into());
 
-        assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
+        assert_eq!(value, Some(CellValue::Number(1.into())));
     }
 
     #[test]

@@ -3,8 +3,9 @@ use crate::{
     CellValue,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
+    number::from_str,
 };
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use std::str::FromStr;
 
 pub fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCellLanguageSchema {
@@ -51,16 +52,16 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
     }
 }
 
-// Change BigDecimal to a current::CellValue (this will be used to convert BD to
+// Change Decimal to a current::CellValue (this will be used to convert BD to
 // various CellValue::Number* types, such as NumberF32, etc.)
-pub fn export_cell_value_number(number: BigDecimal) -> current::CellValueSchema {
+pub fn export_cell_value_number(number: Decimal) -> current::CellValueSchema {
     current::CellValueSchema::Number(number.to_string())
 }
 
-// Change BigDecimal's serialization to a grid::CellValue (this will be used to
+// Change Decimal's serialization to a grid::CellValue (this will be used to
 // convert BD to various CellValue::Number* types, such as NumberF32, etc.)
 pub fn import_cell_value_number(number: String) -> CellValue {
-    CellValue::Number(BigDecimal::from_str(&number).unwrap_or_default())
+    CellValue::Number(from_str(&number).unwrap_or_default())
 }
 
 pub fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> CodeCellLanguage {

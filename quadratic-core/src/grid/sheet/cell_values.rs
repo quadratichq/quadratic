@@ -126,7 +126,6 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
 
     use crate::{
         CellValue,
@@ -141,12 +140,12 @@ mod test {
             js_types::JsHashValidationWarnings,
             sheet::validations::{rules::ValidationRule, validation::Validation},
         },
+        number::from_str,
         test_create_gc,
         wasm_bindings::js::expect_js_call,
     };
 
     use super::*;
-    use bigdecimal::BigDecimal;
     use uuid::Uuid;
 
     #[test]
@@ -196,10 +195,7 @@ mod test {
     fn test_rendered_value() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 1, y: 1 };
-        sheet.set_cell_value(
-            pos,
-            CellValue::Number(BigDecimal::from_str("123.456").unwrap()),
-        );
+        sheet.set_cell_value(pos, CellValue::Number(from_str("123.456").unwrap()));
 
         sheet.formats.numeric_format.set(
             pos,

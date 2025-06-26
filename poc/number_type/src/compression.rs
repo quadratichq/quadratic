@@ -7,7 +7,6 @@ use flate2::{
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use std::io::prelude::*;
 
-const HEADER_DELIMITER: u8 = "*".as_bytes()[0];
 const BUFFER_SIZE: usize = 8192; // 8KB chunks
 const MAX_FILE_SIZE: usize = 104857600; // 100 MB
 const BINCODE_CONFIG: bincode::config::Configuration<
@@ -17,6 +16,7 @@ const BINCODE_CONFIG: bincode::config::Configuration<
 > = config::standard()
     .with_fixed_int_encoding()
     .with_limit::<MAX_FILE_SIZE>();
+
 pub const ZSTD_COMPRESSION_LEVEL: i32 = 1;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -133,29 +133,6 @@ pub fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>> {
 
 pub fn decompress_zstd(data: &[u8]) -> Result<Vec<u8>> {
     Ok(zstd::decode_all(data)?)
-}
-
-// HEADER
-
-pub fn add_header(header: Vec<u8>, data: Vec<u8>) -> Result<Vec<u8>> {
-    // add the delimiter to the header
-    let mut output = [header, vec![HEADER_DELIMITER]].concat();
-
-    // now append the data
-    output.extend(data);
-
-    Ok(output)
-}
-
-pub fn remove_header(data: &[u8]) -> Result<(&[u8], &[u8])> {
-    let index = data
-        .iter()
-        .position(|&r| r == HEADER_DELIMITER)
-        .ok_or_else(|| anyhow!("Could not find the file header delimiter"))?;
-    let header = &data[0..=index];
-    let data = &data[index + 1..];
-
-    Ok((header, data))
 }
 
 #[cfg(test)]

@@ -58,14 +58,12 @@ mod test {
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{NumericFormat, SheetId, sort::SortDirection},
+        number::from_str,
         test_util::{
             assert_cell_value_col, assert_cell_value_row, assert_display_cell_value_pos,
             print_sheet, print_table_in_rect, str_vec_to_string_vec,
         },
     };
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_set_cell_value_undo_redo() {
@@ -131,7 +129,7 @@ mod test {
         let value = String::from("$123.123");
         assert_eq!(
             CellValue::unpack_currency(&value),
-            Some((String::from("$"), BigDecimal::from_str("123.123").unwrap()))
+            Some((String::from("$"), from_str("123.123").unwrap()))
         );
 
         let value = String::from("test");
@@ -185,7 +183,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "$1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+            CellValue::Number(from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_commas(&gc), None);
         assert_eq!(
@@ -201,7 +199,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+            CellValue::Number(from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_decimals(&gc), None);
 
@@ -209,7 +207,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str(".1055").unwrap())
+            CellValue::Number(from_str(".1055").unwrap())
         );
         assert_eq!(
             get_cell_numeric_format(&gc),

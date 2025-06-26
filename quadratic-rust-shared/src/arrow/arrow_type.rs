@@ -11,8 +11,8 @@ use arrow::{
     },
     datatypes::{DataType, TimeUnit},
 };
-use bigdecimal::BigDecimal;
 use chrono::{DateTime, Local, NaiveDateTime, NaiveTime, Timelike};
+use rust_decimal::{Decimal, prelude::ToPrimitive};
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -37,7 +37,7 @@ pub enum ArrowType {
     UInt64(u64),
     Float32(f32),
     Float64(f64),
-    BigDecimal(BigDecimal),
+    Decimal(Decimal),
     Utf8(String),
     Boolean(bool),
     Date32(i32),
@@ -69,7 +69,7 @@ impl ArrowType {
             ArrowType::UInt64(_) => DataType::UInt64,
             ArrowType::Float32(_) => DataType::Float32,
             ArrowType::Float64(_) => DataType::Float64,
-            ArrowType::BigDecimal(_) => DataType::Decimal256(10, 2),
+            ArrowType::Decimal(_) => DataType::Decimal256(10, 2),
             ArrowType::Utf8(_) => DataType::Utf8,
             ArrowType::Boolean(_) => DataType::Boolean,
             ArrowType::Date32(_) => DataType::Date32,
@@ -128,7 +128,7 @@ impl ArrowType {
             }
             DataType::Decimal256(_precision, _scale) => {
                 let converted = values.iter().filter_map(|value| match value {
-                    ArrowType::BigDecimal(value) => (*value).to_string().parse::<f64>().ok(),
+                    ArrowType::Decimal(value) => value.to_f64(),
                     _ => None,
                 });
 
@@ -143,9 +143,9 @@ impl ArrowType {
             DataType::Float64 => {
                 vec_arrow_type_to_array_ref!(ArrowType::Float64, Float64Array, values)
             }
-            // DataType::BigDecimal => {
+            // DataType::Decimal => {
             //     let converted = values.iter().filter_map(|value| match value {
-            //         ArrowType::BigDecimal(value) => (*value).to_string().parse::<f64>().ok(),
+            //         ArrowType::Decimal(value) => (*value).to_string().parse::<f64>().ok(),
             //         _ => None,
             //     });
 

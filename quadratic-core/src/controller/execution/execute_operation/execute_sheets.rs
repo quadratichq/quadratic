@@ -372,7 +372,6 @@ mod tests {
             js::{clear_js_calls, expect_js_call},
         },
     };
-    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_add_sheet() {
@@ -452,7 +451,7 @@ mod tests {
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         gc.delete_sheet(sheet_id, None);
         assert_eq!(gc.grid.sheets().len(), 1);
