@@ -57,6 +57,8 @@ declare var self: WorkerGlobalScope &
     sendValidationWarnings: (warnings: Uint8Array) => void;
     sendMultiplayerSynced: () => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
+    sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
+    sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
   };
 
 class CoreClient {
@@ -91,6 +93,8 @@ class CoreClient {
     self.sendValidationWarnings = coreClient.sendValidationWarnings;
     self.sendMultiplayerSynced = coreClient.sendMultiplayerSynced;
     self.sendClientMessage = coreClient.sendClientMessage;
+    self.sendDataTablesCache = coreClient.sendDataTablesCache;
+    self.sendContentCache = coreClient.sendContentCache;
     if (debugFlag('debugWebWorkers')) console.log('[coreClient] initialized.');
   }
 
@@ -121,14 +125,6 @@ class CoreClient {
           type: 'coreClientGetCodeCell',
           id: e.data.id,
           cell: await core.getCodeCell(e.data.sheetId, e.data.x, e.data.y),
-        });
-        return;
-
-      case 'clientCoreCellHasContent':
-        this.send({
-          type: 'coreClientCellHasContent',
-          id: e.data.id,
-          hasContent: await core.cellHasContent(e.data.sheetId, e.data.x, e.data.y),
         });
         return;
 
@@ -301,17 +297,6 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreHasRenderCells':
-        const hasRenderCells = await core.hasRenderCells(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.width,
-          e.data.height
-        );
-        this.send({ type: 'coreClientHasRenderCells', id: e.data.id, hasRenderCells });
-        return;
-
       case 'clientCoreSetCellAlign':
         await core.setAlign(e.data.selection, e.data.align, e.data.cursor);
         return;
@@ -392,14 +377,6 @@ class CoreClient {
         this.send({ type: 'coreClientExportCsvSelection', id: e.data.id, csv });
         return;
 
-      case 'clientCoreJumpCursor':
-        this.send({
-          type: 'coreClientJumpCursor',
-          id: e.data.id,
-          coordinate: await core.jumpCursor(e.data.sheetId, e.data.current, e.data.jump, e.data.direction),
-        });
-        return;
-
       case 'clientCoreCommitTransientResize':
         core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
         return;
@@ -425,7 +402,7 @@ class CoreClient {
         return;
 
       case 'clientCoreRerunCodeCells':
-        core.rerunCodeCells(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor);
         return;
 
       case 'clientCoreCancelExecution':
@@ -854,6 +831,14 @@ class CoreClient {
 
   sendCoreError = (from: string, error: Error | unknown) => {
     this.send({ type: 'coreClientCoreError', from, error });
+  };
+
+  sendDataTablesCache = (sheetId: string, dataTablesCache: Uint8Array) => {
+    this.send({ type: 'coreClientDataTablesCache', sheetId, dataTablesCache }, dataTablesCache.buffer);
+  };
+
+  sendContentCache = (sheetId: string, contentCache: Uint8Array) => {
+    this.send({ type: 'coreClientContentCache', sheetId, contentCache }, contentCache.buffer);
   };
 }
 

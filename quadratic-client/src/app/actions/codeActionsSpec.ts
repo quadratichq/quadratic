@@ -1,10 +1,10 @@
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { SaveAndRunIcon } from '@/shared/components/Icons';
 
 type CodeActionSpec = Pick<
   ActionSpecRecord,
@@ -17,19 +17,16 @@ export const cancelExecution = () => {
 };
 
 export const executeCode = () => {
-  const { x, y } = sheets.sheet.cursor.position;
-  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
-  if (table?.isCodeCell()) {
-    quadraticCore.rerunCodeCells(sheets.current, table.codeCell.x, table.codeCell.y, sheets.getCursorPosition());
-  }
+  const selection = sheets.sheet.cursor.a1String();
+  quadraticCore.rerunCodeCells(sheets.current, selection, sheets.getCursorPosition());
 };
 
 export const rerunSheetCode = () => {
-  quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition());
+  quadraticCore.rerunCodeCells(sheets.current, undefined, sheets.getCursorPosition());
 };
 
 export const rerunAllCode = () => {
-  quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition());
+  quadraticCore.rerunCodeCells(undefined, undefined, sheets.getCursorPosition());
 };
 
 export const codeActionsSpec: CodeActionSpec = {
@@ -38,15 +35,16 @@ export const codeActionsSpec: CodeActionSpec = {
     run: cancelExecution,
   },
   [Action.ExecuteCode]: {
-    label: () => 'Execute code',
+    label: () => 'Run code cells',
+    Icon: SaveAndRunIcon,
     run: executeCode,
   },
   [Action.RerunSheetCode]: {
-    label: () => 'Rerun sheet code',
+    label: () => 'Run sheet code',
     run: rerunSheetCode,
   },
   [Action.RerunAllCode]: {
-    label: () => 'Rerun all code',
+    label: () => 'Run all code',
     run: rerunAllCode,
   },
 };

@@ -1,11 +1,11 @@
 import { inlineEditorAtom } from '@/app/atoms/inlineEditorAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import BottomBarItem from '@/app/ui/menus/BottomBar/BottomBarItem';
 import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
+import { SelectionSummary } from '@/app/ui/menus/BottomBar/SelectionSummary';
+import SyncState from '@/app/ui/menus/BottomBar/SyncState';
 import { VERSION } from '@/shared/constants/appConstants';
 import { useRecoilValue } from 'recoil';
-import BottomBarItem from './BottomBarItem';
-import { SelectionSummary } from './SelectionSummary';
-import SyncState from './SyncState';
 
 export const BottomBar = () => {
   const inlineEditorState = useRecoilValue(inlineEditorAtom);

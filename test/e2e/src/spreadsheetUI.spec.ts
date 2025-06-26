@@ -990,7 +990,7 @@ test('Right Click Actions', async ({ page }) => {
   //--------------------------------
   // Navigate to first cell - and highlight table data
   await page.waitForTimeout(5000);
-  await selectCells(page, { startXY: ['A', 3], endXY: ['A', 15] });
+  await selectCells(page, { startXY: ['A', 1], endXY: ['A', 13] });
   await page.waitForTimeout(5000);
 
   // Wait for the download to start
@@ -1063,11 +1063,12 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Click "Share" -> Fill in recipient email -> select "Can edit"
   await page.locator(`button:text-is("Share")`).click();
-  await page.locator(`[aria-label="Email"]`).fill(recipientEmail);
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can edit');
 
   // Click "Invite" and close the share file dialog
-  await page.locator(`button:text-is("Invite")`).click();
+  await page.locator(`button[data-testid="share-file-invite-button"]`).click();
   await page.locator(`button:has-text("Copy link") + button`).click();
 
   await page.waitForTimeout(10 * 1000);
@@ -1166,11 +1167,12 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Click "Share" -> Fill in recipient email -> select "Can view"
   await page.locator(`button:text-is("Share")`).click();
-  await page.locator(`[aria-label="Email"]`).fill(recipientEmail);
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can view');
 
   // Click "Invite" and close the share file dialog
-  await page.locator(`button:text-is("Invite")`).click();
+  await page.locator(`button[data-testid="share-file-invite-button"]`).click();
   await page.locator(`button:has-text("Copy link") + button`).click();
 
   // Bring recipient page to the front and navigate to "Shared with me"
@@ -1209,6 +1211,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Click "Share" -> select "Can edit" for "Anyone with the link"
   await page.locator(`button:text-is("Share")`).click();
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`button:has-text("No access")`).click();
   await page.locator(`[role="option"]:has-text("Can edit")`).click();
 
@@ -1294,8 +1297,10 @@ test('Share File - Spreadsheet', async ({ page }) => {
 
   // Click "Share" -> select "Can view" for "Anyone with the link"
   await page.locator(`button:text-is("Share")`).click();
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`div:has-text("Anyone with the link") + div button span:text-is("Can edit")`).click();
   await page.locator(`[role="option"]:has-text("Can view")`).click();
+  await page.waitForTimeout(10 * 1000);
 
   // Copy the link
   await page.locator(`button:text("Copy link")`).click();

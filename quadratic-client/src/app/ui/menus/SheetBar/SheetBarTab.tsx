@@ -186,7 +186,7 @@ const TabName = memo(
     const validateName = useCallback(
       (value: string) => {
         try {
-          validateSheetName(value, sheet.id, sheets.a1Context);
+          validateSheetName(value, sheet.id, sheets.jsA1Context);
           return true;
         } catch (error) {
           setErrorMessage(error as string);
