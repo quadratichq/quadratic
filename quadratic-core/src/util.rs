@@ -284,8 +284,8 @@ pub fn unique_name<'a>(
     let mut name = String::from("");
 
     while name.is_empty() {
-        let new_name = format!("{}{}", base, num);
-        let new_name_alt = format!("{} {}", base, num);
+        let new_name = format!("{base}{num}");
+        let new_name_alt = format!("{base} {num}");
         let new_names = [new_name.as_str(), new_name_alt.as_str()];
 
         if new_names.iter().all(|name| check_name(name)) {
@@ -422,8 +422,7 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
 
     assert!(
         (expected - actual).abs() < EPSILON,
-        "{}: expected {expected} but got {actual}",
-        message
+        "{message}: expected {expected} but got {actual}"
     );
 }
 #[cfg(test)]

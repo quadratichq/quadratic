@@ -112,7 +112,7 @@ pub struct Clipboard {
 impl Clipboard {
     /// Decode the clipboard html and return a Clipboard struct.
     pub fn decode(html: &str) -> Result<Self> {
-        let error = |e, msg| Error::msg(format!("Clipboard decode {:?}: {:?}", msg, e));
+        let error = |e, msg| Error::msg(format!("Clipboard decode {msg:?}: {e:?}"));
 
         match Regex::new(r#"data-quadratic="(.*?)".*><tbody"#) {
             Err(e) => Err(error(e.to_string(), "Regex creation error")),

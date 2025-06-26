@@ -147,7 +147,7 @@ mod tests {
 
         let result = parse_formula_results("Table1", &context, sheet_id, 1, 1);
 
-        println!("{:?}", result);
+        println!("{result:?}");
 
         // result.cells_accessed should include the TableRef
     }

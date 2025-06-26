@@ -1084,8 +1084,13 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   //--------------------------------
   // Act:
   //--------------------------------
+  // Click on the new connection button
+  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 30 * 1000 });
+  // Click on the PostgreSQL button
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
-  await page.locator(`div:has(h2:text-is("Manage team connections")) + div >> button >> nth=0`).click();
+  await page.locator(`button[data-testid="new-connection-POSTGRES"]`).click({
+    timeout: 30 * 1000,
+  });
 
   // Fill in database details:
   await page.getByLabel(`Connection name`).fill(POSTGRES_DB.connectionName);
@@ -1231,7 +1236,7 @@ hire_date DATE);`);
   //--------------------------------
   // Screenshot assertion: Page should populate data query
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`${POSTGRES_DB.connectionName}-data-queried.png`, {
-    maxDiffPixels: 10,
+    maxDiffPixels: 0,
   });
 
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 3 });
@@ -1313,8 +1318,13 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
   });
 
   // Setup database connection
+  // Click on the new connection button
+  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 30 * 1000 });
+  // Click on the PostgreSQL button
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
-  await page.locator(`div:has(h2:text-is("Manage team connections")) + div >> button >> nth=0`).click();
+  await page.locator(`button[data-testid="new-connection-POSTGRES"]`).click({
+    timeout: 30 * 1000,
+  });
 
   await page.getByLabel(`Connection name`).fill(POSTGRES_DB.connectionName);
   await page.getByLabel(`Hostname (IP or domain)`).fill(POSTGRES_DB.hostname);
@@ -1487,7 +1497,7 @@ hire_date DATE);`);
 
   // Screenshot assertion: Page should not show #ERROR
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`${POSTGRES_DB.connectionName}-python-result.png`, {
-    maxDiffPixelRatio: 0.01,
+    maxDiffPixels: 0,
   });
 
   //--------------------------------
@@ -1558,8 +1568,13 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
   });
 
   // Setup database connection
+  // Click on the new connection button
+  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 30 * 1000 });
+  // Click on the PostgreSQL button
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
-  await page.locator(`div:has(h2:text-is("Manage team connections")) + div >> button >> nth=0`).click();
+  await page.locator(`button[data-testid="new-connection-POSTGRES"]`).click({
+    timeout: 30 * 1000,
+  });
 
   // Fill in database details:
   await page.getByLabel(`Connection name`).fill(POSTGRES_DB.connectionName);

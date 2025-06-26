@@ -36,10 +36,8 @@ export async function loadAssets() {
     'icon-formula': '/images/icon-formula.png',
     'icon-python': '/images/icon-python.png',
     'icon-javascript': '/images/icon-javascript.png',
-    'icon-postgres': '/images/icon-postgres.png',
-    'icon-mysql': '/images/icon-mysql.png',
-    'icon-snowflake': '/images/icon-snowflake.png',
-    'icon-mssql': '/images/icon-mssql.png',
+    'icon-connection': '/images/icon-connection.png',
+
     'checkbox-icon': '/images/checkbox.png',
     'checkbox-checked-icon': '/images/checkbox-checked.png',
     'dropdown-icon': '/images/dropdown.png',
