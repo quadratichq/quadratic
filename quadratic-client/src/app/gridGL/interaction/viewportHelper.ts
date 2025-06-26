@@ -109,12 +109,17 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   let left: number | undefined;
   let bottom: number | undefined;
   let top: number | undefined;
+
+  // y is used to calculate the future size of the headings
   let y = viewport.y;
+
   if (bottomRightCell.bottom > viewport.bottom) {
+    console.log('bottom');
     bottom = bottomRightCell.bottom;
     y = bottom - viewport.worldScreenHeight;
   }
   if (topLeftCell.top - headingHeight < viewport.top) {
+    console.log('top');
     top = topLeftCell.top - headingHeight;
     y = top;
   }
@@ -125,22 +130,26 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
 
   if (bottomRightCell.right > viewport.right) {
     right = bottomRightCell.right;
+    console.log('right');
   }
   if (topLeftCell.left - headingWidth < viewport.left) {
     left = topLeftCell.left - headingWidth;
+    console.log('left');
   }
 
   let x = viewport.x;
   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
-    x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : viewport.x;
-    y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : viewport.y;
+    x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : -viewport.x;
+    y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : -viewport.y;
   }
+
   // const futureVisibleBounds = new Rectangle(x, y, viewport.worldScreenWidth, viewport.worldScreenHeight);
   // pixiApp.debug.clear().beginFill(0xff0000, 0.25).drawShape(futureVisibleBounds).endFill();
   // y = getYToEnsureCursorIsNotUnderTableHeader(min, futureVisibleBounds, topLeftCell) ?? y;
-  console.log({ x: -x, viewportX: viewport.x, y: -y, viewportY: viewport.y });
+
   if (x !== viewport.x || y !== viewport.y) {
-    return { x: -x + viewport.worldScreenWidth / 2, y: -y + viewport.worldScreenHeight / 2 };
+    console.log({ x, viewportX: viewport.x, y, viewportY: viewport.y });
+    return { x: x + viewport.worldScreenWidth / 2, y: y + viewport.worldScreenHeight / 2 };
   }
 }
 
@@ -148,6 +157,7 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
 export function animateViewport(move: JsCoordinate) {
   const distanceSquared = (move.x - pixiApp.viewport.center.x) ** 2 + (move.y - pixiApp.viewport.center.y) ** 2;
   const time = distanceSquared < ANIMATION_SHORT_DISTANCE_SQUARED ? ANIMATION_TIME_SHORT : ANIMATION_TIME;
+  console.log(`From ${pixiApp.viewport.center.x}, ${pixiApp.viewport.center.y} to ${move.x}, ${move.y}`);
   pixiApp.viewport.animate({
     position: new Point(move.x, move.y),
     removeOnInterrupt: true,
