@@ -174,7 +174,7 @@ impl Sheet {
             let e = "delete_rows_error".to_string();
             if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
                 let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
-                crate::wasm_bindings::js::jsClientMessage(e.clone(), severity.to_string());
+                crate::wasm_bindings::js::jsClientMessage(e.to_owned(), severity.to_string());
             }
             bail!(e);
         }
