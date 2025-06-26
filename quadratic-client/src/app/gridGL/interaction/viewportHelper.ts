@@ -130,6 +130,7 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   if (bottomRightCell.right > viewport.right) {
     right = bottomRightCell.right;
   }
+
   if (topLeftCell.left - headingWidth < viewport.left) {
     left = topLeftCell.left - headingWidth;
   }

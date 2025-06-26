@@ -542,7 +542,7 @@ export class GridHeadings extends Container {
 
     const sheet = sheets.sheet;
 
-    const screenBottom = -viewportTopY + viewportHeight;
+    const screenBottom = viewportTopY + viewportHeight;
     const cellBottom = sheet.getRowFromScreen(screenBottom);
     const bottomNumberLength = cellBottom.toString().length;
     const rowWidth = this.calculateRowWidth(bottomNumberLength);
