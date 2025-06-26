@@ -33,7 +33,7 @@ export const MODELS_CONFIGURATION: {
     model: 'quadratic-auto',
     displayName: 'auto',
     temperature: 0,
-    max_tokens: 4096,
+    max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
     enabled: true,
@@ -97,7 +97,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingToggle: false,
-    thinkingBudget: 8192,
+    thinkingBudget: 512,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
   'vertexai:gemini-2.5-pro:thinking-toggle-on': {
