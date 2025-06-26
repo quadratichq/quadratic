@@ -279,8 +279,8 @@ export class SheetCursor {
   selectPageDown = () => {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(false, true);
-    const column = this.jsSelection.selectionEnd().x;
-    this.jsSelection.selectTo(column, row, false);
+    const column = this.selectionEnd.x;
+    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -288,8 +288,8 @@ export class SheetCursor {
   selectPageUp = () => {
     if (isAnimating()) return;
     const { x, y, row } = calculatePageUpDown(true, true);
-    const column = this.jsSelection.selectionEnd().x;
-    this.jsSelection.selectTo(column, row, true);
+    const column = this.selectionEnd.x;
+    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context);
     this.updatePosition(false);
     animateViewport({ x: -x, y: -y });
   };
@@ -385,7 +385,7 @@ export class SheetCursor {
   };
 
   get selectionEnd(): JsCoordinate {
-    return this.jsSelection.selectionEnd();
+    return this.jsSelection.selectionEnd(this.sheets.jsA1Context);
   }
 
   /// Returns true if the cursor is on an html or image cell.

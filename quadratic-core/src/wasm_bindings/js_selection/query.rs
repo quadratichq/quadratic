@@ -162,7 +162,7 @@ impl JsSelection {
     }
 
     #[wasm_bindgen(js_name = "selectionEnd")]
-    pub fn bottom_right_cell(&self) -> JsCoordinate {
+    pub fn js_selection_end(&self, context: &JsA1Context) -> JsCoordinate {
         JsCoordinate {
             x: self.selection.last_selection_end(context.get_context()).x as u32,
             y: self.selection.last_selection_end(context.get_context()).y as u32,

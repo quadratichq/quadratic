@@ -8,8 +8,8 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import type { Point, Rectangle } from 'pixi.js';
-import { Container } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
   private outline: TableOutline;

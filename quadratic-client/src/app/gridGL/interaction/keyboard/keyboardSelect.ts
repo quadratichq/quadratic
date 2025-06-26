@@ -37,7 +37,7 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
 
   // Select goto row start
   if (matchShortcut(Action.SelectGotoRowStart, event)) {
-    const row = cursor.jsSelection.selectionEnd().y;
+    const row = cursor.selectionEnd.y;
     cursor.selectTo(1, row, false);
     return true;
   }
@@ -47,7 +47,7 @@ export function keyboardSelect(event: React.KeyboardEvent<HTMLElement>): boolean
     const sheet = sheets.sheet;
     const bounds = sheet.getBounds(true);
     const right = bounds?.right ?? 1;
-    const row = cursor.jsSelection.selectionEnd().y;
+    const row = cursor.selectionEnd.y;
     cursor.selectTo(right, row, false);
     return true;
   }
