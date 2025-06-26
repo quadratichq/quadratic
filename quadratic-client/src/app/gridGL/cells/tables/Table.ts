@@ -120,7 +120,8 @@ export class Table extends Container {
   };
 
   /// Based on any arbitrary viewport bounds, returns the bounds of the table header if it would be floating
-  calculateHeadingBounds = (bounds: Rectangle, gridHeading: number): Rectangle | undefined => {
+  calculateHeadingBounds = (bounds: Rectangle): Rectangle | undefined => {
+    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
     const codeCell = this.codeCell;
 
     // return undefined if the table is not floating
