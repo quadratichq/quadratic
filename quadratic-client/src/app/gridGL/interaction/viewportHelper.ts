@@ -109,8 +109,10 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   let bottom: number | undefined;
   let top: number | undefined;
 
+  const scale = 1 / pixiApp.viewport.scale.x;
+
   // y is used to calculate the future size of the headings
-  let y = -viewport.y;
+  let y = -viewport.y * scale;
 
   if (bottomRightCell.bottom > viewport.bottom) {
     bottom = bottomRightCell.bottom;
@@ -132,10 +134,10 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
     left = topLeftCell.left - headingWidth;
   }
 
-  let x = -viewport.x;
+  let x = -viewport.x * scale;
   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
-    x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : -viewport.x;
-    y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : -viewport.y;
+    x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : -viewport.x * scale;
+    y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : -viewport.y * scale;
   }
 
   const futureVisibleBounds = new Rectangle(x, y, viewport.worldScreenWidth, viewport.worldScreenHeight);
