@@ -150,6 +150,10 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
 
 // Animates the viewport to a new screen location
 export function animateViewport(move: JsCoordinate) {
+  const { viewport } = pixiApp;
+  if (move.x === viewport.x && move.y === viewport.y) {
+    pixiApp.viewportChanged();
+  }
   const distanceSquared = (move.x - pixiApp.viewport.center.x) ** 2 + (move.y - pixiApp.viewport.center.y) ** 2;
   const time = distanceSquared < ANIMATION_SHORT_DISTANCE_SQUARED ? ANIMATION_TIME_SHORT : ANIMATION_TIME;
   pixiApp.viewport.animate({

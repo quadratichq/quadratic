@@ -285,14 +285,14 @@ export class SheetCursor {
     if (isAnimating()) return;
     const { x, y, column, row } = calculatePageUpDown(false, true);
     this.jsSelection.selectTo(column, row, false);
-    animateViewport({ x, y: -y });
+    animateViewport({ x: -x, y: -y });
   };
 
   selectPageUp = () => {
     if (isAnimating()) return;
     const { x, y, column, row } = calculatePageUpDown(true, true);
     this.jsSelection.selectTo(column, row, false);
-    animateViewport({ x, y: -y });
+    animateViewport({ x: -x, y: -y });
   };
 
   isMultiCursor = (): boolean => {
