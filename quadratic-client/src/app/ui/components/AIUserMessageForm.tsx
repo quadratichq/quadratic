@@ -4,6 +4,7 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
+import { AIUserMessageFormModelButton } from '@/app/ui/components/AIUserMessageFormModelButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -408,6 +409,7 @@ const AIUserMessageFormFooter = memo(
           <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <AIUserMessageFormModelButton />
             <ConditionalWrapper
               condition={prompt.length !== 0}
               Wrapper={({ children }) => (
