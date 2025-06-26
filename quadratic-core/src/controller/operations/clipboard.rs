@@ -124,11 +124,18 @@ pub struct Clipboard {
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub validations: Option<ClipboardValidations>,
 
-    #[serde(with = "crate::util::indexmap_serde")]
+    #[serde(
+        skip_serializing_if = "IndexMap::is_empty",
+        default,
+        with = "crate::util::indexmap_serde"
+    )]
     pub data_tables: IndexMap<Pos, DataTable>,
 
     pub operation: ClipboardOperation,
 }
+
+pub static CLIPBOARD_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
+pub static CLIPBOARD_COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zstd;
 
 impl Clipboard {
     /// Decode the clipboard html and return a Clipboard struct.
@@ -149,8 +156,8 @@ impl Clipboard {
 
         // decompress and deserialize
         decompress_and_deserialize::<Clipboard>(
-            &SerializationFormat::Json,
-            &CompressionFormat::Zstd,
+            &CLIPBOARD_SERIALIZATION_FORMAT,
+            &CLIPBOARD_COMPRESSION_FORMAT,
             &data,
         )
         .map_err(|e| error(e.to_string(), "Decompression/deserialization error"))
@@ -320,8 +327,8 @@ impl From<Clipboard> for JsClipboard {
 
         // compress and serialize
         let data = serialize_and_compress(
-            &SerializationFormat::Json,
-            &CompressionFormat::Zstd,
+            &CLIPBOARD_SERIALIZATION_FORMAT,
+            &CLIPBOARD_COMPRESSION_FORMAT,
             clipboard,
         )
         .unwrap_or_default();

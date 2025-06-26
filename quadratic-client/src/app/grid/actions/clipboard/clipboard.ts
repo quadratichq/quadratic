@@ -28,21 +28,33 @@ const canvasIsTarget = () => {
 };
 
 export const copyToClipboardEvent = async (e: ClipboardEvent) => {
-  if (!canvasIsTarget()) return;
-  e.preventDefault();
-  debugTimeReset();
-  await toClipboardCopy();
-  pixiApp.copy.changeCopyRanges();
-  debugTimeCheck('copy to clipboard');
+  try {
+    if (!canvasIsTarget()) return;
+    e.preventDefault();
+    debugTimeReset();
+    await toClipboardCopy();
+    pixiApp.copy.changeCopyRanges();
+    debugTimeCheck('copy to clipboard');
+  } catch (error) {
+    console.error(error);
+    pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
+    Sentry.captureException(error);
+  }
 };
 
 export const cutToClipboardEvent = async (e: ClipboardEvent) => {
-  if (!canvasIsTarget()) return;
-  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
-  e.preventDefault();
-  debugTimeReset();
-  await toClipboardCut();
-  debugTimeCheck('[Clipboard] cut to clipboard');
+  try {
+    if (!canvasIsTarget()) return;
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
+    e.preventDefault();
+    debugTimeReset();
+    await toClipboardCut();
+    debugTimeCheck('[Clipboard] cut to clipboard');
+  } catch (error) {
+    console.error(error);
+    pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
+    Sentry.captureException(error);
+  }
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
@@ -165,17 +177,29 @@ const toClipboardCopy = async () => {
 };
 
 export const cutToClipboard = async () => {
-  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
-  debugTimeReset();
-  await toClipboardCut();
-  debugTimeCheck('cut to clipboard (fallback)');
+  try {
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
+    debugTimeReset();
+    await toClipboardCut();
+    debugTimeCheck('cut to clipboard (fallback)');
+  } catch (error) {
+    console.error(error);
+    pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
+    Sentry.captureException(error);
+  }
 };
 
 export const copyToClipboard = async () => {
-  debugTimeReset();
-  await toClipboardCopy();
-  pixiApp.copy.changeCopyRanges();
-  debugTimeCheck('copy to clipboard');
+  try {
+    debugTimeReset();
+    await toClipboardCopy();
+    pixiApp.copy.changeCopyRanges();
+    debugTimeCheck('copy to clipboard');
+  } catch (error) {
+    console.error(error);
+    pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
+    Sentry.captureException(error);
+  }
 };
 
 export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) => {
@@ -210,63 +234,69 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
 };
 
 export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
-  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
+  try {
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
-  if (fullClipboardSupport()) {
-    const clipboardData = await navigator.clipboard.read();
+    if (fullClipboardSupport()) {
+      const clipboardData = await navigator.clipboard.read();
 
-    // get text/plain if available
-    let plainText = '';
-    const plainTextItem = clipboardData.find((item) => item.types.includes('text/plain'));
-    if (plainTextItem) {
-      const item = await plainTextItem.getType('text/plain');
-      plainText = await item.text();
+      // get text/plain if available
+      let plainText = '';
+      const plainTextItem = clipboardData.find((item) => item.types.includes('text/plain'));
+      if (plainTextItem) {
+        const item = await plainTextItem.getType('text/plain');
+        plainText = await item.text();
+      }
+
+      // gets text/html if available
+      let html = '';
+      const htmlItem = clipboardData.find((item) => item.types.includes('text/html'));
+      if (htmlItem) {
+        const item = await htmlItem.getType('text/html');
+        html = await item.text();
+      }
+
+      if (plainText || html) {
+        const jsClipboard: JsClipboard = {
+          plainText,
+          html,
+        };
+        const jsClipboardUint8Array = toUint8Array(jsClipboard);
+        plainText = '';
+        html = '';
+
+        quadraticCore.pasteFromClipboard({
+          selection: sheets.sheet.cursor.save(),
+          jsClipboard: jsClipboardUint8Array,
+          special,
+          cursor: sheets.getCursorPosition(),
+        });
+      }
     }
 
-    // gets text/html if available
-    let html = '';
-    const htmlItem = clipboardData.find((item) => item.types.includes('text/html'));
-    if (htmlItem) {
-      const item = await htmlItem.getType('text/html');
-      html = await item.text();
+    // handles firefox using localStorage :(
+    else {
+      let html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
+      if (html) {
+        const jsClipboard: JsClipboard = {
+          plainText: '',
+          html,
+        };
+        const jsClipboardUint8Array = toUint8Array(jsClipboard);
+        html = '';
+
+        quadraticCore.pasteFromClipboard({
+          selection: sheets.sheet.cursor.save(),
+          jsClipboard: jsClipboardUint8Array,
+          special,
+          cursor: sheets.getCursorPosition(),
+        });
+      }
     }
-
-    if (plainText || html) {
-      const jsClipboard: JsClipboard = {
-        plainText,
-        html,
-      };
-      const jsClipboardUint8Array = toUint8Array(jsClipboard);
-      plainText = '';
-      html = '';
-
-      quadraticCore.pasteFromClipboard({
-        selection: sheets.sheet.cursor.save(),
-        jsClipboard: jsClipboardUint8Array,
-        special,
-        cursor: sheets.getCursorPosition(),
-      });
-    }
-  }
-
-  // handles firefox using localStorage :(
-  else {
-    let html = (await localforage.getItem(clipboardLocalStorageKey)) as string;
-    if (html) {
-      const jsClipboard: JsClipboard = {
-        plainText: '',
-        html,
-      };
-      const jsClipboardUint8Array = toUint8Array(jsClipboard);
-      html = '';
-
-      quadraticCore.pasteFromClipboard({
-        selection: sheets.sheet.cursor.save(),
-        jsClipboard: jsClipboardUint8Array,
-        special,
-        cursor: sheets.getCursorPosition(),
-      });
-    }
+  } catch (error) {
+    console.error(error);
+    pixiAppSettings.addGlobalSnackbar?.('Failed to paste from clipboard.', { severity: 'error' });
+    Sentry.captureException(error);
   }
 };
 
