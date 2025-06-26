@@ -172,7 +172,7 @@ export class Tables extends Container<Table> {
   update(dirtyViewport: boolean) {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
-      const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+      const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
       this.children.forEach((table) => table.update(bounds, gridHeading));
     }
   }

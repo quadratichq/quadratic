@@ -127,13 +127,12 @@ export class Table extends Container {
     if (
       codeCell.is_html ||
       (!codeCell.show_name && !codeCell.show_columns) ||
-      this.tableBounds.top < bounds.top + gridHeading
+      this.tableBounds.top >= bounds.top + gridHeading
     ) {
       return;
     }
 
     const y = Math.min(this.header.bottomOfTable, this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top);
-    console.log(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
     return new Rectangle(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
   };
 
