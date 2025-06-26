@@ -16,7 +16,7 @@ pub mod sort;
 
 use std::num::NonZeroU32;
 
-use crate::a1::A1Context;
+use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::util::unique_name;
@@ -719,11 +719,19 @@ impl DataTable {
         }
     }
 
+    /// Returns a mutable reference to the value as an array.
     pub fn mut_value_as_array(&mut self) -> Result<&mut Array> {
         match &mut self.value {
             Value::Array(array) => Ok(array),
             _ => bail!("Expected an array"),
         }
+    }
+
+    /// Returns the cells accessed by the data table.
+    pub fn cells_accessed(&self, sheet_id: SheetId) -> Option<Vec<&CellRefRange>> {
+        self.code_run()
+            .and_then(|code_run| code_run.cells_accessed.cells.get(&sheet_id))
+            .map(|ranges| ranges.iter().collect::<Vec<_>>())
     }
 
     /// Returns the y adjustment for the data table to account for the UI
@@ -821,8 +829,9 @@ pub mod test {
     use super::*;
     use crate::{
         Array,
+        a1::CellRefCoord,
         controller::GridController,
-        grid::{Sheet, SheetId},
+        grid::{CellsAccessed, Sheet, SheetId},
         test_util::pretty_print_data_table,
     };
 
@@ -1370,5 +1379,39 @@ pub mod test {
         // Test with Image content
         data_table.value = Value::Single(CellValue::Image("test".into()));
         assert_eq!(data_table.ui_rows(pos), vec![2]);
+    }
+
+    #[test]
+    fn test_cells_accessed() {
+        let sheet_id = SheetId::TEST;
+        let mut cells_accessed = CellsAccessed::default();
+        cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: r#"q.cells("B1:B2")"#.into(),
+            std_err: None,
+            std_out: None,
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed,
+        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "test",
+            Value::Array(Array::from(vec![vec!["3"]])),
+            false,
+            Some(false),
+            Some(false),
+            None,
+        );
+        let range = CellRefRange::new_sheet_ref(
+            CellRefCoord::new_rel(1),
+            CellRefCoord::new_rel(1),
+            CellRefCoord::new_rel(2),
+            CellRefCoord::new_rel(2),
+        );
+        assert_eq!(data_table.cells_accessed(sheet_id), Some(vec![&range]));
     }
 }
