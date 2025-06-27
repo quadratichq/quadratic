@@ -31,7 +31,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   await page.mouse.click(540, 200, { button: 'right' });
 
   // Click `Convert to table` option
-  await page.getByRole(`menuitem`, { name: `Convert to table` }).click();
+  await page.getByRole(`menuitem`, { name: `Convert to table` }).click({ timeout: 30 * 1000 });
 
   // Short wait
   await page.waitForTimeout(5 * 1000);
@@ -46,8 +46,8 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   await page.mouse.click(540, 200, { button: 'right' });
 
   // Click `Flatten` option
-  await page.getByRole(`menuitem`, { name: `table Table` }).click();
-  await page.getByRole(`menuitem`, { name: `Flatten` }).click();
+  await page.getByRole(`menuitem`, { name: `table Table` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`menuitem`, { name: `Flatten` }).click({ timeout: 30 * 1000 });
 
   // Short wait
   await page.waitForTimeout(3 * 1000);
@@ -59,7 +59,7 @@ test('Convert Data into a Table and Flattened Data', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -90,7 +90,7 @@ test('Create Table by Code Output', async ({ page }) => {
   await page.keyboard.press(`/`);
 
   // Click `Python` option from menu
-  await page.locator(`[data-value="Python"]`).click();
+  await page.locator(`[data-value="Python"]`).click({ timeout: 30 * 1000 });
 
   // Short wait
   await page.waitForTimeout(10 * 1000);
@@ -118,7 +118,7 @@ df`);
   await page.keyboard.press('Control+V');
 
   // Press run button
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(10 * 1000);
 
@@ -136,7 +136,7 @@ df`);
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -167,7 +167,7 @@ test('Create Table by Code Output without Headers', async ({ page }) => {
   await page.keyboard.press(`/`);
 
   // Click `Python` option from menu
-  await page.locator(`[data-value="Python"]`).click();
+  await page.locator(`[data-value="Python"]`).click({ timeout: 30 * 1000 });
 
   // Short wait
   await page.waitForTimeout(10 * 1000);
@@ -190,7 +190,7 @@ df`);
   await page.keyboard.press('Control+V');
 
   // Press run button
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(10 * 1000);
 
@@ -207,7 +207,7 @@ df`);
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -299,7 +299,7 @@ test('Edit Table Data', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -328,7 +328,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Edit Table Text Formatting
   //--------------------------------
   // Click "Bold" option
-  await page.getByLabel(`Bold`).click();
+  await page.getByLabel(`Bold`).click({ timeout: 30 * 1000 });
 
   // Assert text formatting bold has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Bold.png', {
@@ -336,10 +336,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Bold" option to deselect
-  await page.getByLabel(`Bold`).click();
+  await page.getByLabel(`Bold`).click({ timeout: 30 * 1000 });
 
   // Click "Italic" option
-  await page.getByLabel(`Italic`).click();
+  await page.getByLabel(`Italic`).click({ timeout: 30 * 1000 });
 
   // Assert text formatting italics has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Italic.png', {
@@ -347,10 +347,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Italic" option to deselect
-  await page.getByLabel(`Italic`).click();
+  await page.getByLabel(`Italic`).click({ timeout: 30 * 1000 });
 
   // Click "Underline" option
-  await page.getByRole(`button`, { name: `Underline` }).click();
+  await page.getByRole(`button`, { name: `Underline` }).click({ timeout: 30 * 1000 });
 
   // Assert text formatting underline has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Underline.png', {
@@ -358,10 +358,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Underline" option to deselect
-  await page.getByRole(`button`, { name: `Underline` }).click();
+  await page.getByRole(`button`, { name: `Underline` }).click({ timeout: 30 * 1000 });
 
   // Click "Strike through" option
-  await page.getByRole(`button`, { name: `Strike through` }).click();
+  await page.getByRole(`button`, { name: `Strike through` }).click({ timeout: 30 * 1000 });
 
   // Assert text formatting strike through has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Strike.png', {
@@ -369,13 +369,13 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Strike through" option to deselect
-  await page.getByRole(`button`, { name: `Strike through` }).click();
+  await page.getByRole(`button`, { name: `Strike through` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Edit Table Color Formatting
   //--------------------------------
   // Click "Text color" option
-  await page.getByLabel(`Text color`).click();
+  await page.getByLabel(`Text color`).click({ timeout: 30 * 1000 });
 
   // Select text color red
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
@@ -387,13 +387,15 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Text color" option
-  await page.getByLabel(`Text color`).click();
+  await page.getByLabel(`Text color`).click({ timeout: 30 * 1000 });
 
   // Select 'Clear' text color button
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the "Fill Color" icon
-  await page.locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")').click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
+    .click({ timeout: 30 * 1000 });
 
   // Select fill color to red
   await page.locator(`[title="#E74C3C"]`).nth(0).click({ force: true });
@@ -412,10 +414,10 @@ test('Edit Table Formatting', async ({ page }) => {
   // Edit Table Borders Formatting
   //--------------------------------
   // Click Borders option to open border menu
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Click 'Border All' option
-  await page.getByRole(`radio`, { name: `border_all` }).click();
+  await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert all border formatting has applied successfully
@@ -424,10 +426,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click 'Border All' option to deselect
-  await page.getByRole(`radio`, { name: `border_all` }).click();
+  await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 30 * 1000 });
 
   // Click 'Border Outer' option
-  await page.getByRole(`radio`, { name: `border_outer` }).click();
+  await page.getByRole(`radio`, { name: `border_outer` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert outer border formatting has applied successfully
@@ -436,10 +438,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click 'Border Outer' option to deselect
-  await page.getByRole(`radio`, { name: `border_outer` }).click();
+  await page.getByRole(`radio`, { name: `border_outer` }).click({ timeout: 30 * 1000 });
 
   // Click 'Border Inner' option
-  await page.getByRole(`radio`, { name: `border_inner` }).click();
+  await page.getByRole(`radio`, { name: `border_inner` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert inner border formatting has applied successfully
@@ -448,10 +450,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click 'Border Inner' option to deselect
-  await page.getByRole(`radio`, { name: `border_inner` }).click();
+  await page.getByRole(`radio`, { name: `border_inner` }).click({ timeout: 30 * 1000 });
 
   // Click 'Border Left' option
-  await page.getByRole(`radio`, { name: `border_left` }).click();
+  await page.getByRole(`radio`, { name: `border_left` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert left border formatting has applied successfully
@@ -460,10 +462,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click 'Border Left' option to deselect
-  await page.getByRole(`radio`, { name: `border_left` }).click();
+  await page.getByRole(`radio`, { name: `border_left` }).click({ timeout: 30 * 1000 });
 
   // Click 'Border Right' option
-  await page.getByRole(`radio`, { name: `border_right` }).click();
+  await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert right border formatting has applied successfully
@@ -472,10 +474,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click 'Border Right' option to deselect
-  await page.getByRole(`radio`, { name: `border_right` }).click();
+  await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 30 * 1000 });
 
   // Click Borders option to close border menu
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Edit Table Wrap, Overflow, Clip Formatting
@@ -491,8 +493,8 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(500);
 
   // Click on the "Text Wrap" icon and select "Overflow"
-  await page.getByRole('button', { name: 'Text Wrap' }).click();
-  await page.locator('div[role="menuitem"] >> text=Overflow').click();
+  await page.getByRole('button', { name: 'Text Wrap' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Overflow').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert text wrap formatting has successfully applied
@@ -501,13 +503,13 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click on the "Text Wrap" icon and select "Clip"
-  await page.getByRole('button', { name: 'Text Wrap' }).click();
-  await page.locator('div[role="menuitem"] >> text=Clip').click();
+  await page.getByRole('button', { name: 'Text Wrap' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Clip').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Text Wrap" icon and select "Wrap"
-  await page.getByRole('button', { name: 'Text Wrap' }).click();
-  await page.locator('div[role="menuitem"] >> text=Wrap').click();
+  await page.getByRole('button', { name: 'Text Wrap' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Wrap').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert text wrap formatting has successfully applied
@@ -519,8 +521,8 @@ test('Edit Table Formatting', async ({ page }) => {
   // Edit Table Alignment Formatting
   //--------------------------------
   // Click on the "Horizontal Align" icon and select "Left"
-  await page.getByRole('button', { name: 'Horizontal align' }).click();
-  await page.locator('div[role="menuitem"] >> text=Left').click();
+  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
@@ -532,8 +534,8 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Horizontal Align" icon and select "Right"
-  await page.getByRole('button', { name: 'Horizontal align' }).click();
-  await page.locator('div[role="menuitem"] >> text=Right').click();
+  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Right').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
@@ -543,8 +545,8 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Horizontal Align" icon and select "Center"
-  await page.getByRole('button', { name: 'Horizontal align' }).click();
-  await page.locator('div[role="menuitem"] >> text=Center').click();
+  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Center').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert horizontal alignment formatting has applied successfully
@@ -554,8 +556,8 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Vertical Align" icon and select "Bottom"
-  await page.getByRole('button', { name: 'Vertical align' }).click();
-  await page.locator('div[role="menuitem"] >> text=Bottom').click();
+  await page.getByRole('button', { name: 'Vertical align' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Bottom').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
@@ -567,8 +569,8 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Vertical Align" icon and select "Top"
-  await page.getByRole('button', { name: 'Vertical align' }).click();
-  await page.locator('div[role="menuitem"] >> text=Top').click();
+  await page.getByRole('button', { name: 'Vertical align' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Top').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
@@ -580,8 +582,8 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Vertical Align" icon and select "Middle"
-  await page.getByRole('button', { name: 'Vertical align' }).click();
-  await page.locator('div[role="menuitem"] >> text=Middle').click();
+  await page.getByRole('button', { name: 'Vertical align' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Middle').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert vertical alignment formatting has applied successfully
@@ -596,7 +598,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Edit Table Clear Formatting
   //--------------------------------
   // Click the Clear Formatting button
-  await page.getByLabel(`Clear formatting`).click();
+  await page.getByLabel(`Clear formatting`).click({ timeout: 30 * 1000 });
 
   // Assert clear formatting has successfully applied
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Clear.png', {
@@ -610,38 +612,40 @@ test('Edit Table Formatting', async ({ page }) => {
   await selectCells(page, { startXY: ['C', 3], endXY: ['C', 5] });
 
   // Click "Bold" option
-  await page.getByLabel(`Bold`).click();
+  await page.getByLabel(`Bold`).click({ timeout: 30 * 1000 });
 
   // Click "Italic" option
-  await page.getByLabel(`Italic`).click();
+  await page.getByLabel(`Italic`).click({ timeout: 30 * 1000 });
 
   // Click "Underline" option
-  await page.getByRole(`button`, { name: `Underline` }).click();
+  await page.getByRole(`button`, { name: `Underline` }).click({ timeout: 30 * 1000 });
 
   // Click "Strike through" option
-  await page.getByRole(`button`, { name: `Strike through` }).click();
+  await page.getByRole(`button`, { name: `Strike through` }).click({ timeout: 30 * 1000 });
 
   // Click "Text color" option
-  await page.getByLabel(`Text color`).click();
+  await page.getByLabel(`Text color`).click({ timeout: 30 * 1000 });
 
   // Select text color red
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
   await page.waitForTimeout(5 * 1000);
 
   // Click Borders option to open border menu
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Click 'Border All' option
-  await page.getByRole(`radio`, { name: `border_all` }).click();
+  await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Horizontal Align" icon and select "Left"
-  await page.getByRole('button', { name: 'Horizontal align' }).click();
-  await page.locator('div[role="menuitem"] >> text=Left').click();
+  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Fill Color" icon
-  await page.locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")').click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
+    .click({ timeout: 30 * 1000 });
 
   // Select fill color to blue
   await page.locator(`[title="#3498DB"]`).click({ force: true });
@@ -656,14 +660,14 @@ test('Edit Table Formatting', async ({ page }) => {
   await selectCells(page, { startXY: ['B', 7], endXY: ['B', 9] });
 
   // Click Borders option to open border menu
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Assert border formatting options apply to highlighted cells correctly
   const borderOptions = ['top', 'bottom', 'left', 'right', 'all', 'inner', 'outer'];
 
   for (const option of borderOptions) {
     // Click Border option
-    await page.getByRole(`radio`, { name: `border_${option}` }).click();
+    await page.getByRole(`radio`, { name: `border_${option}` }).click({ timeout: 30 * 1000 });
     await page.waitForTimeout(5 * 1000);
 
     // Asser cell border formatting has applied successfully
@@ -675,20 +679,20 @@ test('Edit Table Formatting', async ({ page }) => {
     );
 
     // Click Border option to deselect
-    await page.getByRole(`radio`, { name: `border_${option}` }).click();
+    await page.getByRole(`radio`, { name: `border_${option}` }).click({ timeout: 30 * 1000 });
     await page.waitForTimeout(5 * 1000);
   }
 
   // Click Borders option to close border menu
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Assert horizontal align formatting options apply to highlighted cells correctly
   const horizontalAlignOptions = ['Center', 'Left', 'Right'];
 
   for (const option of horizontalAlignOptions) {
     // Click on the "Horizontal Align" icon and select option
-    await page.getByRole('button', { name: 'Horizontal align' }).click();
-    await page.locator(`div[role="menuitem"] >> text=${option}`).click();
+    await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 30 * 1000 });
+    await page.locator(`div[role="menuitem"] >> text=${option}`).click({ timeout: 30 * 1000 });
     await page.waitForTimeout(5 * 1000);
 
     // Asser cell horizontal align formatting has applied successfully
@@ -704,7 +708,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -754,7 +758,7 @@ test('Go To Menu Cell Selection', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -782,7 +786,10 @@ test('Go To Menu Navigation', async ({ page }) => {
   // Go to Cell
   //--------------------------------
   // Click on Go-To menu dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Wait for the dropdown to open
   await page.waitForTimeout(2000);
@@ -817,7 +824,10 @@ test('Go To Menu Navigation', async ({ page }) => {
   const cellRange = `A5:F25`;
 
   // Click on Go-To menu dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Wait for the dropdown to open
   await page.waitForTimeout(2000);
@@ -845,13 +855,16 @@ test('Go To Menu Navigation', async ({ page }) => {
   const tableName = `BasketBall`;
 
   // Click on Go-To menu dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Wait for the dropdown to open
   await page.waitForTimeout(2000);
 
   // Click on the table name to navigate to it
-  await page.getByText(`BasketBall`).click();
+  await page.getByText(`BasketBall`).click({ timeout: 30 * 1000 });
 
   // Assert that we are in the correct sheet
   await expect(page.getByText(`Tablearrow_drop_down`)).toBeVisible();
@@ -872,13 +885,16 @@ test('Go To Menu Navigation', async ({ page }) => {
   const javascriptCode = `JavaScript1`;
 
   // Click on Go-To menu dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Wait for the dropdown to open
   await page.waitForTimeout(2000);
 
   // Click on the Python code to navigate to it
-  await page.getByText(pythonCode).click();
+  await page.getByText(pythonCode).click({ timeout: 30 * 1000 });
 
   // Assert that we are in the correct sheet
   await expect(page.getByText(`Codearrow_drop_down`)).toBeVisible();
@@ -892,13 +908,16 @@ test('Go To Menu Navigation', async ({ page }) => {
   });
 
   // Click on Go-To menu dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Wait for the dropdown to open
   await page.waitForTimeout(2000);
 
   // Click on the JavaScript code to navigate to it
-  await page.getByText(javascriptCode).click();
+  await page.getByText(javascriptCode).click({ timeout: 30 * 1000 });
 
   // Wait for the navigation to complete
   await page.waitForTimeout(2000);
@@ -919,16 +938,25 @@ test('Go To Menu Navigation', async ({ page }) => {
   const tableSheet = `Table`;
 
   // Click on Go-To menu dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Wait for the dropdown to open
   await page.waitForTimeout(2000);
 
   // Click on the cell sheet to navigate to it
-  await page.getByLabel(`Sheets`).getByText(cellSheet).click();
+  await page
+    .getByLabel(`Sheets`)
+    .getByText(cellSheet)
+    .click({ timeout: 30 * 1000 });
 
   // Click out of the dropdown after
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Assert that we are in the correct sheet
   await expect(page.getByText(`${cellSheet}arrow_drop_down`)).toBeVisible();
@@ -939,16 +967,25 @@ test('Go To Menu Navigation', async ({ page }) => {
   });
 
   // Click on Go-To menu dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Wait for the dropdown to open
   await page.waitForTimeout(2000);
 
   // Click on the table sheet to navigate to it
-  await page.getByLabel(`Sheets`).getByText(tableSheet).click();
+  await page
+    .getByLabel(`Sheets`)
+    .getByText(tableSheet)
+    .click({ timeout: 30 * 1000 });
 
   // Click out of the dropdown
-  await page.getByRole(`button`, { name: `arrow_drop_down` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_drop_down` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Assert that we are in the correct sheet
   await expect(page.getByText(`${tableSheet}arrow_drop_down`)).toBeVisible();
@@ -962,7 +999,7 @@ test('Go To Menu Navigation', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -998,7 +1035,7 @@ test('Insert and Remove Table Rows and Columns', async ({ page }) => {
   await expect(page.getByText(`Insert column to the left`)).not.toBeVisible();
 
   // Click 'Insert row above' option
-  await page.getByText(`Insert row above`).click();
+  await page.getByText(`Insert row above`).click({ timeout: 30 * 1000 });
 
   // Navigate to cell A5
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 5 });
@@ -1023,7 +1060,7 @@ test('Insert and Remove Table Rows and Columns', async ({ page }) => {
   await expect(page.getByText(`Delete 1 row`)).toBeVisible();
 
   // Click 'Delete 1 row' option
-  await page.getByText(`Delete 1 row`).click();
+  await page.getByText(`Delete 1 row`).click({ timeout: 30 * 1000 });
 
   // Navigate to cell A5
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 5 });
@@ -1052,7 +1089,7 @@ test('Insert and Remove Table Rows and Columns', async ({ page }) => {
   await expect(page.getByText(`Insert row above`)).not.toBeVisible();
 
   // Click 'Insert column left' option
-  await page.getByText(`Insert column left`).click();
+  await page.getByText(`Insert column left`).click({ timeout: 30 * 1000 });
 
   // Navigate to cell B5
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 5 });
@@ -1077,7 +1114,7 @@ test('Insert and Remove Table Rows and Columns', async ({ page }) => {
   await expect(page.getByText(`Delete 1 column`)).toBeVisible();
 
   // Click 'Delete 1 column' option
-  await page.getByText(`Delete 1 column`).click();
+  await page.getByText(`Delete 1 column`).click({ timeout: 30 * 1000 });
 
   // Navigate to cell B5
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 5 });
@@ -1096,7 +1133,7 @@ test('Insert and Remove Table Rows and Columns', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1150,10 +1187,10 @@ test('Jump to table cell location from code editor location button', async ({ pa
   });
 
   // Click on Table Name Cell in code editor
-  await page.getByRole(`button`, { name: tableNameCell }).click();
+  await page.getByRole(`button`, { name: tableNameCell }).click({ timeout: 30 * 1000 });
 
   // Close the command menu
-  await page.getByRole(`button`, { name: `close` }).click();
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
 
   // Assert Go To Menu Box not showing initial table name
   await expect(page.locator(`input[data-testid="cursor-position"]`)).toHaveValue(tableName);
@@ -1167,7 +1204,7 @@ test('Jump to table cell location from code editor location button', async ({ pa
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1207,7 +1244,7 @@ test('Rename code table from code editor', async ({ page }) => {
   await page.waitForTimeout(3000);
 
   // Click on Table name in code editor
-  await page.getByRole(`button`, { name: initialTableName }).click();
+  await page.getByRole(`button`, { name: initialTableName }).click({ timeout: 30 * 1000 });
 
   // Select all text in the code editor
   await page.keyboard.press('Control+A');
@@ -1228,7 +1265,7 @@ test('Rename code table from code editor', async ({ page }) => {
   await expect(page.getByRole(`button`, { name: editedTableName })).toBeVisible();
 
   // Close the current view
-  await page.getByRole(`button`, { name: `close` }).click();
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
 
   // Navigate back to the specific cell on the sheet
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 10 });
@@ -1240,7 +1277,7 @@ test('Rename code table from code editor', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1305,7 +1342,7 @@ test('Rename Table', async ({ page }) => {
   await page.mouse.click(94, 113, { button: 'right' });
 
   // Click `Rename` option
-  await page.getByRole(`menuitem`, { name: `text_select_start Rename` }).click();
+  await page.getByRole(`menuitem`, { name: `text_select_start Rename` }).click({ timeout: 30 * 1000 });
 
   // Type table name 2
   await page.keyboard.type(tableName2);
@@ -1317,7 +1354,7 @@ test('Rename Table', async ({ page }) => {
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Rename_Table_Context_Menu.png');
 
   // Click body
-  await page.locator(`body`).click();
+  await page.locator(`body`).click({ timeout: 30 * 1000 });
 
   // Click table header
   await page.mouse.click(94, 113, { delay: 1000 });
@@ -1329,7 +1366,7 @@ test('Rename Table', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1374,7 +1411,7 @@ test('Table is created from Importing Data', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1403,7 +1440,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Show name' option to toggle off 'Show name'
-  await page.getByRole(`menuitem`, { name: `Show name` }).click();
+  await page.getByRole(`menuitem`, { name: `Show name` }).click({ timeout: 30 * 1000 });
 
   // Assert table name is not visible
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Name_Off.png', {
@@ -1420,7 +1457,7 @@ test('Table Menu Options', async ({ page }) => {
   await expect(page.getByRole(`menuitem`, { name: `Show name` }).getByText(`check`)).not.toBeVisible();
 
   // Click 'Show name' option to toggle on 'Show name'
-  await page.getByRole(`menuitem`, { name: `Show name` }).click();
+  await page.getByRole(`menuitem`, { name: `Show name` }).click({ timeout: 30 * 1000 });
 
   // Assert table name is visible
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Name_On.png', {
@@ -1434,7 +1471,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Show column names' option to toggle off 'Show column names'
-  await page.getByRole(`menuitem`, { name: `Show column names` }).click();
+  await page.getByRole(`menuitem`, { name: `Show column names` }).click({ timeout: 30 * 1000 });
 
   // Assert column names/headers are not visible
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Column_Names_Off.png', {
@@ -1448,7 +1485,7 @@ test('Table Menu Options', async ({ page }) => {
   await expect(page.getByRole(`menuitem`, { name: `Show column names` }).getByText(`check`)).not.toBeVisible();
 
   // Click 'Show column names' option to toggle on 'Show column names'
-  await page.getByRole(`menuitem`, { name: `Show column names` }).click();
+  await page.getByRole(`menuitem`, { name: `Show column names` }).click({ timeout: 30 * 1000 });
 
   // Assert column names/headers are visible
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Column_Names_On.png', {
@@ -1462,7 +1499,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Show alternating colors' option to toggle off 'Show alternating colors'
-  await page.getByRole(`menuitem`, { name: `Show alternating colors` }).click();
+  await page.getByRole(`menuitem`, { name: `Show alternating colors` }).click({ timeout: 30 * 1000 });
 
   // Assert row alternating colors are not visible
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Show_Alternating_Colors_Off.png', {
@@ -1476,7 +1513,7 @@ test('Table Menu Options', async ({ page }) => {
   await expect(page.getByRole(`menuitem`, { name: `Show alternating colors` }).getByText(`check`)).not.toBeVisible();
 
   // Click 'Show alternating colors' option to toggle on 'Show alternating colors'
-  await page.getByRole(`menuitem`, { name: `Show alternating colors` }).click();
+  await page.getByRole(`menuitem`, { name: `Show alternating colors` }).click({ timeout: 30 * 1000 });
 
   // Assert row alternating colors are visible
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Show_Table_Show_Alternating_Colors_On.png', {
@@ -1490,7 +1527,7 @@ test('Table Menu Options', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Use first row as column names' option to toggle on 'Use first row as column names'
-  await page.getByRole(`menuitem`, { name: `Use first row as column names` }).click();
+  await page.getByRole(`menuitem`, { name: `Use first row as column names` }).click({ timeout: 30 * 1000 });
 
   // Assert first row is used as column names
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Use_First_Row_As_Column_Names_On.png', {
@@ -1504,7 +1541,7 @@ test('Table Menu Options', async ({ page }) => {
   await expect(page.getByRole(`menuitem`, { name: `Use first row as column names` }).getByText(`check`)).toBeVisible();
 
   // Click 'Use first row as column names' option to toggle off 'Use first row as column names'
-  await page.getByRole(`menuitem`, { name: `Use first row as column names` }).click();
+  await page.getByRole(`menuitem`, { name: `Use first row as column names` }).click({ timeout: 30 * 1000 });
 
   // Assert first row not ot used as column names
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Use_First_Row_As_Column_Names_Off.png', {
@@ -1515,7 +1552,7 @@ test('Table Menu Options', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1544,22 +1581,28 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Sort' option
-  await page.getByRole(`menuitem`, { name: `Sort` }).click();
+  await page.getByRole(`menuitem`, { name: `Sort` }).click({ timeout: 30 * 1000 });
 
   // Click the first column selection dropdown in the table sort modal
-  await page.locator('[role="combobox"]').nth(0).click();
+  await page
+    .locator('[role="combobox"]')
+    .nth(0)
+    .click({ timeout: 30 * 1000 });
 
   // Select the 'Population' option
-  await page.getByText('Population').click();
+  await page.getByText('Population').click({ timeout: 30 * 1000 });
 
   // Click the second column selection dropdown in the table sort modal
-  await page.locator('[role="combobox"]').nth(2).click();
+  await page
+    .locator('[role="combobox"]')
+    .nth(2)
+    .click({ timeout: 30 * 1000 });
 
   // Select the 'GDP (Billion USD)' option
-  await page.getByText('GDP (Billion USD)').click();
+  await page.getByText('GDP (Billion USD)').click({ timeout: 30 * 1000 });
 
   // Click "Apply" button
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Wait for sorting to apply
   await page.waitForTimeout(5 * 1000);
@@ -1643,22 +1686,31 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Sort' option
-  await page.getByRole(`menuitem`, { name: `Sort` }).click();
+  await page.getByRole(`menuitem`, { name: `Sort` }).click({ timeout: 30 * 1000 });
 
   // Click the first filter dropdown in the table sort modal
-  await page.locator('[role="combobox"]').nth(1).click();
+  await page
+    .locator('[role="combobox"]')
+    .nth(1)
+    .click({ timeout: 30 * 1000 });
 
   // Select the 'Descending' option
-  await page.getByText('Descending', { exact: true }).click();
+  await page.getByText('Descending', { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click the second filter dropdown in the table sort modal
-  await page.locator('[role="combobox"]').nth(3).click();
+  await page
+    .locator('[role="combobox"]')
+    .nth(3)
+    .click({ timeout: 30 * 1000 });
 
   // Select the 'Descending' option
-  await page.getByText('Descending', { exact: true }).last().click();
+  await page
+    .getByText('Descending', { exact: true })
+    .last()
+    .click({ timeout: 30 * 1000 });
 
   // Click "Apply" button
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Store 'Population' column values
   const populationValuesDescending = [];
@@ -1736,16 +1788,22 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Sort' option
-  await page.getByRole(`menuitem`, { name: `Sort` }).click();
+  await page.getByRole(`menuitem`, { name: `Sort` }).click({ timeout: 30 * 1000 });
 
   // Click the first delete button to delete first sort rule
-  await page.getByRole(`button`, { name: `close` }).first().click();
+  await page
+    .getByRole(`button`, { name: `close` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Click the second delete button to delete second sort rule
-  await page.getByRole(`button`, { name: `close` }).first().click();
+  await page
+    .getByRole(`button`, { name: `close` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Click "Apply" button
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Store 'Population' column values
   const populationValuesUnsorted = [];
@@ -1811,7 +1869,7 @@ test('Table Multi-Sort and Delete Sort Options', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1841,22 +1899,28 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Sort' option
-  await page.getByRole(`menuitem`, { name: `Sort` }).click();
+  await page.getByRole(`menuitem`, { name: `Sort` }).click({ timeout: 30 * 1000 });
 
   // Click the first column selection dropdown in the table sort modal
-  await page.locator('[role="combobox"]').nth(0).click();
+  await page
+    .locator('[role="combobox"]')
+    .nth(0)
+    .click({ timeout: 30 * 1000 });
 
   // Select the 'State' option
-  await page.getByText('State').click();
+  await page.getByText('State').click({ timeout: 30 * 1000 });
 
   // Click the second column selection dropdown in the table sort modal
-  await page.locator('[role="combobox"]').nth(2).click();
+  await page
+    .locator('[role="combobox"]')
+    .nth(2)
+    .click({ timeout: 30 * 1000 });
 
   // Select the 'Population' option
-  await page.getByText('Population').click();
+  await page.getByText('Population').click({ timeout: 30 * 1000 });
 
   // Click "Apply" button
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Navigate to cell A3
   await page.keyboard.press(`Escape`);
@@ -1899,13 +1963,16 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 79, y: 30 } });
 
   // Click 'Sort' option
-  await page.getByRole(`menuitem`, { name: `Sort` }).click();
+  await page.getByRole(`menuitem`, { name: `Sort` }).click({ timeout: 30 * 1000 });
 
   // Click down arrow next to 'State' sort to reorder sorting rules by ascending 'Population' and 'State' respectively
-  await page.getByRole(`button`, { name: `arrow_downward` }).first().click();
+  await page
+    .getByRole(`button`, { name: `arrow_downward` })
+    .first()
+    .click({ timeout: 30 * 1000 });
 
   // Click "Apply" button
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Navigate to cell B3
   await page.keyboard.press(`Escape`);
@@ -1989,7 +2056,7 @@ test('Table Multi-Sort Re-arrange', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2027,23 +2094,23 @@ test('Table reference from code input', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click();
+  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
 
   // Focus the default text inside the code editor
   await page.locator(`[id="QuadraticCodeEditorID"] [data-keybinding-context="1"] [class="view-line"]`).focus();
 
   // Click code editor to ensure it's active
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
 
   // Type the table reference code into the editor
   await page.keyboard.type(tableToFullTableRefCode);
 
   // Click run to execute the code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
-  await page.getByRole(`button`, { name: `close` }).click();
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
 
   // Assert the table reference from the existing table is correct
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_reference_table_from_existing_table.png', {
@@ -2066,22 +2133,22 @@ test('Table reference from code input', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click();
+  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
 
   // Click code editor to ensure it's active
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
 
   // Type the table reference code into the editor
   await page.keyboard.type(tableToColumnTableRefCode);
 
   // Click run to execute the code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
 
   // Wait for 1 second to allow code execution
   await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
-  await page.getByRole(`button`, { name: `close` }).click();
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
 
   // Assert the table reference from the existing table is correct
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_reference_column_from_existing_table.png', {
@@ -2104,22 +2171,22 @@ test('Table reference from code input', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click();
+  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
 
   // Click code editor to ensure it's active
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
 
   // Type the table reference code into the editor
   await page.keyboard.type(codeTableToFullTableRefCode);
 
   // Click run to execute the code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
 
   // Wait for 1 second to allow code execution
   await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
-  await page.getByRole(`button`, { name: `close` }).click();
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
 
   // Assert the table reference from the existing table is correct
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Table_reference_table_from_code_table.png', {
@@ -2142,22 +2209,22 @@ test('Table reference from code input', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click();
+  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
 
   // Click code editor to ensure it's active
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
 
   // Type the table reference code into the editor
   await page.keyboard.type(codeTableHeadersToFullTableRefCode);
 
   // Click run to execute the code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
 
   // Wait for 1 second to allow code execution
   await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
-  await page.getByRole(`button`, { name: `close` }).click();
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
 
   // Assert the table reference from the existing table is correct
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
@@ -2183,22 +2250,22 @@ test('Table reference from code input', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click();
+  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
 
   // Click code editor to ensure it's active
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
 
   // Type the table reference code into the editor
   await page.keyboard.type(codeTableMultiColumnsToTableRefCode);
 
   // Click run to execute the code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
 
   // Wait for 1 second to allow code execution
   await page.waitForTimeout(5 * 1000);
 
   // Close the code execution result
-  await page.getByRole(`button`, { name: `close` }).click();
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
 
   // Assert the table reference from the existing table is correct
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
@@ -2212,7 +2279,7 @@ test('Table reference from code input', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2306,7 +2373,7 @@ test('Table Resize', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2340,7 +2407,7 @@ test('Table Sort', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 179, y: 50 } });
 
   // Click 'Sort ascending' option
-  await page.getByText('Sort ascending').click();
+  await page.getByText('Sort ascending').click({ timeout: 30 * 1000 });
 
   // Navigate to cell B3
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 3 });
@@ -2385,7 +2452,7 @@ test('Table Sort', async ({ page }) => {
   await page.locator('#QuadraticCanvasID').click({ button: 'right', position: { x: 179, y: 50 } });
 
   // Click 'Sort descending' option
-  await page.getByText('Sort descending').click();
+  await page.getByText('Sort descending').click({ timeout: 30 * 1000 });
 
   // Store 'Population' column values
   const populationValuesDescending = [];
@@ -2419,6 +2486,6 @@ test('Table Sort', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  // await page.locator(`nav a svg`).click();
+  // await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   // await cleanUpFiles(page, { fileName });
 });

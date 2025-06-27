@@ -271,7 +271,7 @@ export class Tables extends Container<Table> {
   update = (dirtyViewport: boolean) => {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
-      const gridHeading = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
+      const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
       const visibleTables = this.getVisibleTables();
       visibleTables?.forEach((table) => table.update(bounds, gridHeading));
     }

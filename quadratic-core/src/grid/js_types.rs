@@ -466,7 +466,7 @@ pub enum JsSnackbarSeverity {
 
 impl fmt::Display for JsSnackbarSeverity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
+        write!(f, "{}", format!("{self:?}").to_lowercase())
     }
 }
 

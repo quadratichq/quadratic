@@ -1187,7 +1187,7 @@ mod tests {
 
         // Test single table selection
         let selection = A1Selection::test_a1_context("test_table", gc.a1_context());
-        println!("selection: {:?}", selection);
+        println!("selection: {selection:?}");
         assert_eq!(
             selection.selected_table_names(sheet_id, &cache, gc.a1_context()),
             vec!["test_table"]

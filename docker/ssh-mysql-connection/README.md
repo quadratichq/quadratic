@@ -3,7 +3,7 @@
 ## Build the Docker Image
 
 ```bash
-docker build -t ssh-mysql-connection .
+docker build -t ssh-mysql-connection -f docker/ssh-mysql-connection/Dockerfile .
 ```
 
 ## Run the Docker Container

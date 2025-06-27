@@ -8,8 +8,8 @@ import { intersects } from '@/app/gridGL/helpers/intersects';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCoordinate, JsRenderCodeCell } from '@/app/quadratic-core-types';
-import type { Point, Rectangle } from 'pixi.js';
-import { Container } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 
 export class Table extends Container {
   private outline: TableOutline;
@@ -105,6 +105,24 @@ export class Table extends Container {
     } else {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
     }
+  };
+
+  /// Based on any arbitrary viewport bounds, returns the bounds of the table header if it would be floating
+  calculateHeadingBounds = (bounds: Rectangle): Rectangle | undefined => {
+    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+    const codeCell = this.codeCell;
+
+    // return undefined if the table is not floating
+    if (
+      codeCell.is_html ||
+      (!codeCell.show_name && !codeCell.show_columns) ||
+      this.tableBounds.top >= bounds.top + gridHeading
+    ) {
+      return;
+    }
+
+    const y = Math.min(this.header.bottomOfTable, this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top);
+    return new Rectangle(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
   };
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {

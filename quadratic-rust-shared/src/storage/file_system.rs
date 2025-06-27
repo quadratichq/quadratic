@@ -126,7 +126,7 @@ mod tests {
         let storage = FileSystem { config };
         let file_name = Uuid::new_v4().to_string();
         let seqence_number = 0;
-        let key = &format!("{}-{}.grid", file_name, seqence_number);
+        let key = &format!("{file_name}-{seqence_number}.grid");
         let data = &Bytes::from("Hello, world!");
 
         storage.write(key, data).await.unwrap();

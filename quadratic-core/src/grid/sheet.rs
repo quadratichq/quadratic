@@ -412,14 +412,14 @@ impl Sheet {
             if let Some(numeric_format) = format.numeric_format {
                 values.push(format!("numeric kind is {}", numeric_format.kind));
                 if let Some(symbol) = numeric_format.symbol {
-                    values.push(format!("numeric symbol is {}", symbol));
+                    values.push(format!("numeric symbol is {symbol}"));
                 }
             }
             if let Some(numeric_decimals) = format.numeric_decimals {
-                values.push(format!("numeric decimals is {}", numeric_decimals));
+                values.push(format!("numeric decimals is {numeric_decimals}"));
             }
             if let Some(numeric_commas) = format.numeric_commas {
-                values.push(format!("numeric commas is {}", numeric_commas));
+                values.push(format!("numeric commas is {numeric_commas}"));
             }
             if let Some(date_time) = format.date_time {
                 values.push(format!("date time is {}", date_time.clone()));
@@ -1222,8 +1222,7 @@ mod test {
         for name in valid_names {
             assert!(
                 Sheet::validate_sheet_name(name, SheetId::TEST, &context).is_ok(),
-                "Expected '{}' to be valid",
-                name
+                "Expected '{name}' to be valid"
             );
         }
 
@@ -1274,14 +1273,12 @@ mod test {
             let result = Sheet::validate_sheet_name(name, SheetId::TEST, &context);
             assert!(
                 result.is_err(),
-                "Expected '{}' to be invalid, but it was valid",
-                name
+                "Expected '{name}' to be invalid, but it was valid"
             );
             assert_eq!(
                 result.unwrap_err(),
                 expected_error,
-                "Unexpected error message for '{}'",
-                name
+                "Unexpected error message for '{name}'"
             );
         }
 

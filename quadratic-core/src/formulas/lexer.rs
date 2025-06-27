@@ -99,7 +99,7 @@ lazy_static! {
     ///   ({})        contents of inner square brackets
     /// ```
     static ref TABLE_BRACKETS_SEGMENT_PATTERN: &'static str =
-        format!(r"\[({})\]", TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN).leak();
+        format!(r"\[({TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN})\]").leak();
 
     /// Outermost square brackets of a table reference.
     ///
@@ -478,7 +478,7 @@ mod tests {
     fn test_block_comment(expected_to_end: bool, s: &str) {
         let tokens = tokenize(s).collect_vec();
         if expected_to_end {
-            assert_eq!(1, tokens.len(), "Too many tokens: {:?}", tokens);
+            assert_eq!(1, tokens.len(), "Too many tokens: {tokens:?}");
         }
         let expected = if expected_to_end {
             Token::Comment

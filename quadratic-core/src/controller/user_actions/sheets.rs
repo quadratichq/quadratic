@@ -289,7 +289,7 @@ mod test {
         let borders_str = serde_json::to_vec(&borders).unwrap();
         expect_js_call(
             "jsBordersSheet",
-            format!("{},{:?}", duplicated_sheet_id, borders_str),
+            format!("{duplicated_sheet_id},{borders_str:?}"),
             false,
         );
         // code cells should rerun and send updated code cell
