@@ -3,18 +3,20 @@
 import { debugFlags } from '@/app/debugFlags/debugFlags';
 import type { DebugFlag } from '@/app/debugFlags/debugFlagsDefinitions';
 import { events } from '@/app/events/events';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface DebugFlags {
   getFlag: (key: DebugFlag) => boolean;
   debugAvailable: boolean;
 }
 
-export const useDebugFlags = (): DebugFlags => {
+export const useDebugFlags = (): { debug: boolean; debugFlags: DebugFlags } => {
   const [debugFlagsState, setDebugFlagsState] = useState<DebugFlags>({
     getFlag: debugFlags.getFlag,
     debugAvailable: debugFlags.debugAvailable,
   });
+
+  const debug = useMemo(() => debugFlagsState.getFlag('debug'), [debugFlagsState]);
 
   useEffect(() => {
     const updateFlags = () => {
@@ -29,5 +31,5 @@ export const useDebugFlags = (): DebugFlags => {
     };
   }, []);
 
-  return debugFlagsState;
+  return { debug, debugFlags: debugFlagsState };
 };

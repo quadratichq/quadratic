@@ -1,10 +1,9 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import mixpanel from 'mixpanel-browser';
-import { useLayoutEffect, useMemo } from 'react';
+import { useLayoutEffect } from 'react';
 
 export function useRemoveInitialLoadingUI() {
-  const debugFlags = useDebugFlags();
-  const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
+  const { debug } = useDebugFlags();
 
   useLayoutEffect(() => {
     // Get the initial start time (in ms) so we can track the load time

@@ -9,7 +9,7 @@ import { SelectionSummary } from './SelectionSummary';
 import SyncState from './SyncState';
 
 export const BottomBar = memo(() => {
-  const debugFlags = useDebugFlags();
+  const { debugFlags } = useDebugFlags();
 
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
 

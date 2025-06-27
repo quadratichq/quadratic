@@ -55,8 +55,7 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 };
 
 export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
-  const debugFlags = useDebugFlags();
-  const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
+  const { debug } = useDebugFlags();
 
   const { editorInst, setEditorInst } = props;
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);

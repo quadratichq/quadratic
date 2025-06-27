@@ -13,11 +13,12 @@ import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
 
 export const QuadraticAppDebugSettings = () => {
+  const { debugFlags } = useDebugFlags();
+
   const [open, setOpen] = useState(false);
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(
     Object.fromEntries(debugFlagGroups.map((group) => [group, true]))
   );
-  const debugFlags = useDebugFlags();
 
   // Magic shortcut cmd+shift+option+i opens settings
   useEffect(() => {

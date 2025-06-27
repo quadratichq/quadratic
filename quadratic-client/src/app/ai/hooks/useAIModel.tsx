@@ -16,8 +16,7 @@ export const useAIModel = (): {
   thinkingToggle: boolean;
   setThinkingToggle: SetValue<boolean>;
 } => {
-  const debugFlags = useDebugFlags();
-  const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
+  const { debug } = useDebugFlags();
 
   const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL_FREE);
   const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(THINKING_TOGGLE_LOCAL_STORAGE_KEY, false);

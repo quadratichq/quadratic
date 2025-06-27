@@ -16,7 +16,7 @@ import {
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAssistantMessagesProps = {
@@ -24,8 +24,7 @@ type AIAssistantMessagesProps = {
 };
 
 export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {
-  const debugFlags = useDebugFlags();
-  const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
+  const { debug, debugFlags } = useDebugFlags();
 
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);

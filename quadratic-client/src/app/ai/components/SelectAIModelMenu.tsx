@@ -37,8 +37,7 @@ interface SelectAIModelMenuProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
-  const debugFlags = useDebugFlags();
-  const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
+  const { debug } = useDebugFlags();
 
   const {
     modelKey: selectedModel,

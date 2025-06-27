@@ -44,7 +44,7 @@ export const Component = () => {
 };
 
 export const ErrorBoundary = () => {
-  const debugFlags = useDebugFlags();
+  const { debugFlags } = useDebugFlags();
   const error = useRouteError();
   if (debugFlags.getFlag('debugShowUILogs')) console.error('[<MineRoute>.<ErrorBoundary>]', error);
 
