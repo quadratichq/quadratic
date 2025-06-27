@@ -18,7 +18,7 @@ let pythonResults: any;
 vi.mock('./pythonCore.ts', () => {
   return {
     pythonCore: {
-      sendPythonResults: (_: string, results: any) => {
+      sendPythonResults: (results: any) => {
         pythonResults = results;
       },
     },

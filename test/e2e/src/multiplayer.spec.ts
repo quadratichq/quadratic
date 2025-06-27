@@ -55,7 +55,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
-  await userPage2.locator(`a:has-text("${fileName}")`).click();
+  await userPage2.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // Third user navigates into file
   await userPage3.bringToFront();
@@ -66,12 +66,12 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
-  await userPage3.locator(`a:has-text("${fileName}")`).click();
+  await userPage3.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // First user navigates into file
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click();
-  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
   //--------------------------------
   // Act:
   //--------------------------------
@@ -80,8 +80,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Type in cell
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 4,
+    a1: 'B4',
     text: 'User 1 - Test',
   });
 
@@ -94,7 +93,10 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Close Chat
   try {
-    await userPage2.getByRole(`button`, { name: `close` }).first().click();
+    await userPage2
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 30 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -123,16 +125,14 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // Type some text as user 2
   await typeInCell(userPage2, {
-    targetColumn: 4,
-    targetRow: 4,
+    a1: 'D4',
     text: 'User 2 - Test',
   });
 
   // User 1: bring userPage1 to the front, type some text
   await userPage1.bringToFront();
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 6,
+    a1: 'B6',
     text: 'User 1 - Test',
   });
 
@@ -163,8 +163,8 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // User 2: change the color of a cell
   await navigateOnSheet(userPage2, { targetColumn: 4, targetRow: 4 });
-  await userPage2.locator(`button span:text-is("format_color_fill")`).click();
-  await userPage2.locator(`div[title="#F9D2CE"]`).click();
+  await userPage2.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage2.locator(`div[title="#F9D2CE"]`).click({ timeout: 30 * 1000 });
 
   await userPage2.keyboard.press('Escape');
   await userPage2.waitForTimeout(5000);
@@ -180,8 +180,8 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // User 3: add a python code cell
   await userPage3.bringToFront();
-  await typeInCell(userPage3, { targetColumn: 2, targetRow: 10, text: '24' });
-  await typeInCell(userPage3, { targetColumn: 2, targetRow: 11, text: '48' });
+  await typeInCell(userPage3, { a1: 'B10', text: '24' });
+  await typeInCell(userPage3, { a1: 'B11', text: '48' });
 
   await userPage3.waitForTimeout(2000);
   await userPage3.keyboard.press('/');
@@ -191,11 +191,11 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   await userPage3.keyboard.type('q.cells("B10") + q.cells("B11")');
 
-  await userPage3.getByRole(`button`, { name: `play_arrow` }).click();
+  await userPage3.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
 
   await userPage2.waitForTimeout(2000);
 
-  await userPage3.locator(`#QuadraticCodeEditorCloseButtonID`).click();
+  await userPage3.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -209,7 +209,10 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Close Chat
   try {
-    await userPage1.getByRole(`button`, { name: `close` }).first().click();
+    await userPage1
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 30 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -241,18 +244,18 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   // Zoom in all pages to screenshot smaller field
   await userPage1.bringToFront();
   await selectCells(userPage1, { startXY: [1, 1], endXY: [4, 19] });
-  await userPage1.locator(`button:text("%")`).click();
-  await userPage1.locator(`:text("Zoom to selection")`).click();
+  await userPage1.locator(`button:text("%")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`:text("Zoom to selection")`).click({ timeout: 30 * 1000 });
 
   await userPage2.bringToFront();
   await selectCells(userPage2, { startXY: [1, 1], endXY: [4, 19] });
-  await userPage2.locator(`button:text("%")`).click();
-  await userPage2.locator(`:text("Zoom to selection")`).click();
+  await userPage2.locator(`button:text("%")`).click({ timeout: 30 * 1000 });
+  await userPage2.locator(`:text("Zoom to selection")`).click({ timeout: 30 * 1000 });
 
   await userPage3.bringToFront();
   await selectCells(userPage3, { startXY: [1, 1], endXY: [4, 19] });
-  await userPage3.locator(`button:text("%")`).click();
-  await userPage3.locator(`:text("Zoom to selection")`).click();
+  await userPage3.locator(`button:text("%")`).click({ timeout: 30 * 1000 });
+  await userPage3.locator(`:text("Zoom to selection")`).click({ timeout: 30 * 1000 });
 
   // User 2: click and drag cell to cover multiple cells
   await userPage2.bringToFront();
@@ -294,7 +297,10 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Close Chat
   try {
-    await userPage1.getByRole(`button`, { name: `close` }).first().click();
+    await userPage1
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 30 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -305,7 +311,10 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Close Chat
   try {
-    await userPage2.getByRole(`button`, { name: `close` }).first().click();
+    await userPage2
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 30 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -316,7 +325,10 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Close Chat
   try {
-    await userPage3.getByRole(`button`, { name: `close` }).first().click();
+    await userPage3
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 30 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -368,7 +380,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
 
   // Clean up
   await userPage1.bringToFront();
-  await userPage1.locator(`nav a svg`).click();
+  await userPage1.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await userPage1.waitForTimeout(2000);
   await cleanUpFiles(userPage1, { fileName });
 });
@@ -426,7 +438,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
-  await userPage2.locator(`a:has-text("${fileName}")`).click();
+  await userPage2.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // Third user navigates into file
   await userPage3.bringToFront();
@@ -436,12 +448,12 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
-  await userPage3.locator(`a:has-text("${fileName}")`).click();
+  await userPage3.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // First user navigates into file
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click();
-  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
@@ -451,21 +463,19 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
 
   // User 1 to type in cell and fill color some cells
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 4,
+    a1: 'B4',
     text: 'User 1 - Test',
   });
   await typeInCell(userPage1, {
-    targetColumn: 3,
-    targetRow: 4,
+    a1: 'C4',
     text: 'User 1 - Test',
   });
   await navigateOnSheet(userPage1, { targetColumn: 3, targetRow: 4 });
   await userPage1.keyboard.press('Control+i');
 
   await selectCells(userPage1, { startXY: [1, 1], endXY: [2, 5] });
-  await userPage1.locator(`button span:text-is("format_color_fill")`).click();
-  await userPage1.locator(`div[title="#9B59B6"]`).click();
+  await userPage1.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`div[title="#9B59B6"]`).click({ timeout: 30 * 1000 });
   await userPage1.waitForTimeout(2000);
 
   // Bring user 3 to the front, assert screenshot prior to connection going down
@@ -480,20 +490,17 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   // User 1 and User 2 will type text and format items
   await userPage2.bringToFront();
   await typeInCell(userPage2, {
-    targetColumn: 2,
-    targetRow: 8,
+    a1: 'B8',
     text: 'User 2 - Test',
   });
   await typeInCell(userPage2, {
-    targetColumn: 2,
-    targetRow: 9,
+    a1: 'B9',
     text: 'User 2 - Test',
   });
   await navigateOnSheet(userPage2, { targetColumn: 2, targetRow: 8 });
   await userPage2.keyboard.press('Control+b');
   await typeInCell(userPage2, {
-    targetColumn: 5,
-    targetRow: 9,
+    a1: 'E9',
     text: 'User 2 - Test',
   });
 
@@ -501,8 +508,8 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await userPage1.waitForTimeout(2000);
   await selectCells(userPage1, { startXY: [5, 9], endXY: [0, 3] });
   await userPage1.waitForTimeout(2000);
-  await userPage1.locator(`button span:text-is("format_color_fill")`).click();
-  await userPage1.locator(`div[title="#7BE9D3"]`).click();
+  await userPage1.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`div[title="#7BE9D3"]`).click({ timeout: 30 * 1000 });
   await userPage1.mouse.click(300, 0);
 
   // Assert userPage3 has the same screenshot as earlier
@@ -525,7 +532,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
 
   // Cleanup newly created files
   await userPage1.bringToFront();
-  await userPage1.locator(`nav a svg`).click();
+  await userPage1.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(userPage1, { fileName });
 });
 
@@ -583,7 +590,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
-  await userPage2.locator(`a:has-text("${fileName}")`).click();
+  await userPage2.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // Third user navigates into file
   await userPage3.bringToFront();
@@ -594,12 +601,12 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
-  await userPage3.locator(`a:has-text("${fileName}")`).click();
+  await userPage3.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // First user navigates into file
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click();
-  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
   //--------------------------------
   // Act:
   //--------------------------------
@@ -607,13 +614,11 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   // User 1 to type in cell and fill color some cells
   await userPage1.bringToFront();
   await typeInCell(userPage1, {
-    targetColumn: 2,
-    targetRow: 4,
+    a1: 'B4',
     text: 'User 1 - Test',
   });
   await typeInCell(userPage1, {
-    targetColumn: 3,
-    targetRow: 4,
+    a1: 'C4',
     text: 'User 1 - Test',
   });
   await navigateOnSheet(userPage1, {
@@ -626,8 +631,8 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
     startXY: [1, 1],
     endXY: [2, 5],
   });
-  await userPage1.locator(`button span:text-is("format_color_fill")`).click();
-  await userPage1.locator(`div[title="#9B59B6"]`).click();
+  await userPage1.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`div[title="#9B59B6"]`).click({ timeout: 30 * 1000 });
   await userPage1.waitForTimeout(2000);
   await userPage1.mouse.click(300, 0);
   await userPage1.waitForTimeout(2000);
@@ -642,28 +647,25 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage3.context().setOffline(true);
 
   await typeInCell(userPage3, {
-    targetColumn: 2,
-    targetRow: 8,
+    a1: 'B8',
     text: 'User 3 - Test',
   });
   await typeInCell(userPage3, {
-    targetColumn: 2,
-    targetRow: 9,
+    a1: 'B9',
     text: 'User 3 - Test',
   });
   await navigateOnSheet(userPage3, { targetColumn: 2, targetRow: 8 });
   await userPage3.keyboard.press('Control+b');
   await typeInCell(userPage3, {
-    targetColumn: 5,
-    targetRow: 9,
+    a1: 'E9',
     text: 'User 3 - Test',
   });
 
   await userPage3.waitForTimeout(2000);
   await selectCells(userPage3, { startXY: [1, 3], endXY: [5, 9] });
   await userPage3.waitForTimeout(2000);
-  await userPage3.locator(`button span:text-is("format_color_fill")`).click();
-  await userPage3.locator(`div[title="#7BE9D3"]`).click();
+  await userPage3.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage3.locator(`div[title="#7BE9D3"]`).click({ timeout: 30 * 1000 });
   await userPage3.mouse.click(300, 0);
   await userPage3.waitForTimeout(5000);
 
@@ -721,7 +723,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
 
   // Cleanup newly created files
   await userPage1.bringToFront();
-  await userPage1.locator(`nav a svg`).click();
+  await userPage1.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(userPage1, { fileName });
 });
 
@@ -792,7 +794,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // Move Mouse as the first user
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click();
+  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 30 * 1000 });
   await navigateIntoFile(userPage1, { fileName });
 
   await navigateOnSheet(userPage1, { targetColumn: 5, targetRow: 1 });
@@ -957,7 +959,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
-  await userPage2.locator(`a:has-text("${fileName}")`).click();
+  await userPage2.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // Third user navigates into file
   await userPage3.bringToFront();
@@ -968,7 +970,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   await userPage3.waitForTimeout(2000);
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
-  await userPage3.locator(`a:has-text("${fileName}")`).click();
+  await userPage3.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
@@ -976,18 +978,24 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
 
   // User 2 to make Sheet2
   await userPage2.bringToFront();
-  await userPage2.getByRole(`button`, { name: `add` }).nth(2).click();
+  await userPage2
+    .getByRole(`button`, { name: `add` })
+    .nth(2)
+    .click({ timeout: 30 * 1000 });
 
   // User 3 to make Sheet3
   await userPage3.bringToFront();
-  await userPage3.getByRole(`button`, { name: `add` }).nth(2).click();
+  await userPage3
+    .getByRole(`button`, { name: `add` })
+    .nth(2)
+    .click({ timeout: 30 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
   // Switch to first user's page, assert that squares are present in Sheet3
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click();
-  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
   await expect(userPage1.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 30 * 1000,
   });
@@ -1024,7 +1032,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
 
   // User 1 clicks on Sheet2
   await userPage1.bringToFront();
-  await userPage1.locator(`[data-title='Sheet 2']`).click();
+  await userPage1.locator(`[data-title='Sheet 2']`).click({ timeout: 30 * 1000 });
 
   // Sheet1 square is not visible
   await expect(userPage1.locator(`[data-title='Sheet 1'] + div [style*='width: 5px; height: 5px']`)).not.toBeVisible({
@@ -1060,7 +1068,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
   });
 
   // Switch to third user's page, third user enters Sheet2.
-  await userPage3.locator(`[data-title='Sheet 2']`).click();
+  await userPage3.locator(`[data-title='Sheet 2']`).click({ timeout: 30 * 1000 });
   await expect(userPage3.locator(`[data-title='Sheet 1'] + div  [style*='width: 5px; height: 5px']`)).not.toBeVisible({
     timeout: 30 * 1000,
   });
@@ -1073,7 +1081,7 @@ test('Switching Tabs Persists Cursor', async ({ page: userPage1 }) => {
 
   // Clean up Files
   await userPage1.bringToFront();
-  await userPage1.locator(`nav a svg`).click();
+  await userPage1.locator(`nav a svg`).click({ timeout: 30 * 1000 });
 
   await userPage1.waitForTimeout(2000);
   await cleanUpFiles(userPage1, { fileName });
@@ -1128,7 +1136,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await userPage2.waitForTimeout(2000);
   await userPage2.waitForLoadState('domcontentloaded');
   await userPage2.waitForLoadState('networkidle');
-  await userPage2.locator(`a:has-text("${fileName}")`).click();
+  await userPage2.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // Third user navigates into file
   await userPage3.bringToFront();
@@ -1140,7 +1148,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   await userPage3.waitForLoadState('domcontentloaded');
   await userPage3.waitForLoadState('networkidle');
 
-  await userPage3.locator(`a:has-text("${fileName}")`).click();
+  await userPage3.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   // Reload all pages so that user icons will show on each one
   await userPage1.reload();
@@ -1152,8 +1160,8 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
   //--------------------------------
   // User2 can see both user1 and user3 at the top right
   await userPage1.bringToFront();
-  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click();
-  await userPage1.locator(`a:has-text("${fileName}")`).click();
+  await userPage1.locator(`h3:text-is("Team") + div a:text-is("Files")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`a:has-text("${fileName}")`).click({ timeout: 30 * 1000 });
 
   await userPage2.bringToFront();
   const userPage2_user1_icon = userPage2.locator(`[alt="${user1Email}"]`);
@@ -1255,7 +1263,7 @@ test('User Can See Other Users on File', async ({ page: userPage1 }) => {
 
   // Clean up Files
   await userPage1.bringToFront();
-  await userPage1.locator(`nav a svg`).click();
+  await userPage1.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await userPage1.waitForTimeout(2000);
   await cleanUpFiles(userPage1, { fileName });
 });

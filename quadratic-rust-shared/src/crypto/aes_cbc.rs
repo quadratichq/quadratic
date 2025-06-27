@@ -26,7 +26,7 @@ pub fn encrypt(key: &[u8; 32], iv: &[u8; 16], data: &[u8]) -> Result<Bytes> {
 
 /// Convenience function to handle errors when decrypting data.
 fn decrypt_error(e: impl Debug) -> SharedError {
-    let error = CryptoError::AesCbcDecode(format!("Error decoding data: {:?}", e));
+    let error = CryptoError::AesCbcDecode(format!("Error decoding data: {e:?}"));
     SharedError::Crypto(error)
 }
 

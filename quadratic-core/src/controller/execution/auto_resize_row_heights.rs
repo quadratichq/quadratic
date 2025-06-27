@@ -13,19 +13,27 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         rows: Vec<i64>,
-    ) -> bool {
+    ) {
         if !(cfg!(target_family = "wasm") || cfg!(test))
             || !transaction.is_user()
             || rows.is_empty()
         {
-            return false;
+            return;
         }
+
+        // send sheet info and offsets modified to get the correct row heights
+        self.send_sheet_info(transaction);
+        self.send_offsets_modified(transaction);
+
+        // process visible dirty hashes to so that we can get the correct row heights
+        self.process_visible_dirty_hashes(transaction);
 
         if let Some(sheet) = self.try_sheet(sheet_id) {
             let mut auto_resize_rows = sheet.get_auto_resize_rows(rows);
             if auto_resize_rows.is_empty() {
-                return false;
+                return;
             }
+
             auto_resize_rows.sort();
             if let Ok(rows_string) = serde_json::to_string(&auto_resize_rows) {
                 crate::wasm_bindings::js::jsRequestRowHeights(
@@ -37,7 +45,6 @@ impl GridController {
                 // as we will not receive renderer callback during tests and the transaction will never complete
                 if !cfg!(test) {
                     self.transactions.add_async_transaction(transaction);
-                    return true;
                 }
             } else {
                 dbgjs!(
@@ -47,7 +54,6 @@ impl GridController {
         } else {
             dbgjs!("[control_transactions] start_auto_resize_row_heights: Sheet not found");
         }
-        false
     }
 
     pub fn complete_auto_resize_row_heights(
