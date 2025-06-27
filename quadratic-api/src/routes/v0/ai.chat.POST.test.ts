@@ -1,7 +1,7 @@
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
-import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUser, upgradeTeamToPro } from '../../tests/testDataGenerator';
 
 const auth0Id = 'user';
 
@@ -52,9 +52,11 @@ jest.mock('@anthropic-ai/bedrock-sdk', () => ({
   })),
 }));
 
+let teamId: number;
 beforeAll(async () => {
   const user = await createUser({ auth0Id });
   const team = await createTeam({ users: [{ userId: user.id, role: 'OWNER' }] });
+  teamId = team.id;
   await createFile({
     data: {
       uuid: payload.fileUuid,
@@ -78,6 +80,7 @@ describe('POST /v0/ai/chat', () => {
     });
 
     it('responds with model response when the token is valid', async () => {
+      await upgradeTeamToPro(teamId);
       await request(app)
         .post('/v0/ai/chat')
         .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000002' })
@@ -102,7 +105,7 @@ describe('POST /v0/ai/chat', () => {
               },
             ],
             modelKey: payload.modelKey,
-            isOnPaidPlan: false,
+            isOnPaidPlan: true,
             exceededBillingLimit: false,
           });
         });

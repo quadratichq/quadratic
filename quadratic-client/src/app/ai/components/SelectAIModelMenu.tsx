@@ -96,9 +96,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const setModelMode = useCallback(
     (mode: ModelMode) => {
       const nextModel = modelConfigs.find(
-        ([_, modelConfig]) =>
-          modelConfig.mode === mode &&
-          (modelConfig.thinkingToggle === undefined || modelConfig.thinkingToggle === thinkingToggle)
+        ([_, modelConfig]) => modelConfig.mode === mode && modelConfig.thinkingToggle === thinkingToggle
       );
 
       if (nextModel) {
@@ -111,14 +109,12 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const isOnPaidPlan = useRecoilValue(editorInteractionStateIsOnPaidPlanAtom);
   useEffect(() => {
-    if (debug) {
+    if (debug || isOnPaidPlan) {
       return;
     }
 
-    if (modelMode === 'pro' && !isOnPaidPlan) {
-      setModelMode('basic');
-    }
-  }, [debug, isOnPaidPlan, modelMode, setModelMode]);
+    setModelMode('basic');
+  }, [debug, isOnPaidPlan, setModelMode]);
 
   return (
     <>
