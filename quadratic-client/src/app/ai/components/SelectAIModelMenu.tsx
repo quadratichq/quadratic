@@ -56,6 +56,19 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
 
+  const dropdownModels = useMemo(
+    () =>
+      modelConfigs
+        .filter(
+          ([, modelConfig]) =>
+            modelConfig.thinkingToggle === undefined ||
+            (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
+            selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
+        )
+        .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1)),
+    [modelConfigs, selectedModelConfig.thinkingToggle, thinkingToggle]
+  );
+
   const handleThinkingToggle = useCallback(
     (thinkingToggle: boolean) => {
       const nextModelKey = thinkingToggle
@@ -94,18 +107,20 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             )}
           >
             <LightbulbIcon />
+
             {thinking && <span className="mr-1">Think</span>}
           </Toggle>
         </TooltipPopover>
       )}
 
-      {debug && (
+      {debug ? (
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
             className={cn(`mr-1 flex items-center text-xs text-muted-foreground`, !loading && 'hover:text-foreground')}
           >
             {selectedModelConfig.displayName}
+
             <CaretDownIcon />
           </DropdownMenuTrigger>
 
@@ -117,83 +132,72 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               textareaRef.current?.focus();
             }}
           >
-            {modelConfigs
-              .filter(
-                ([, modelConfig]) =>
-                  modelConfig.thinkingToggle === undefined ||
-                  (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
-                  selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
-              )
-              .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1))
-              .map(([key, modelConfig]) => {
-                const { model, displayName, provider } = modelConfig;
-
-                return (
-                  <DropdownMenuCheckboxItem
-                    key={key}
-                    checked={selectedModel === key}
-                    onCheckedChange={() => {
-                      mixpanel.track('[AI].model.change', { model });
-                      setSelectedModel(key);
-                    }}
-                  >
-                    <div className="flex w-full items-center justify-between text-xs">
-                      <span className="pr-4">
-                        {(debug ? `${modelConfig.enabled ? '' : '(debug) '}${provider} - ` : '') + displayName}
-                      </span>
-                    </div>
-                  </DropdownMenuCheckboxItem>
-                );
-              })}
+            {dropdownModels.map(([key, modelConfig]) => (
+              <DropdownMenuCheckboxItem
+                key={key}
+                checked={selectedModel === key}
+                onCheckedChange={() => {
+                  mixpanel.track('[AI].model.change', { model: modelConfig.model });
+                  setSelectedModel(key);
+                }}
+              >
+                <div className="flex w-full items-center justify-between text-xs">
+                  <span className="pr-4">
+                    {(debug ? `${modelConfig.enabled ? '' : '(debug) '}${modelConfig.provider} - ` : '') +
+                      modelConfig.displayName}
+                  </span>
+                </div>
+              </DropdownMenuCheckboxItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
+      ) : (
+        <Popover>
+          {/* Needs a min-width or it shifts as the popover closes */}
+          <PopoverTrigger className="group flex min-w-24 items-center justify-end gap-0 text-right">
+            Model: {activeModelLabel} <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
+          </PopoverTrigger>
+
+          <PopoverContent className="flex w-80 flex-col gap-2">
+            <div className="mt-2 flex flex-col items-center">
+              <AIIcon className="mb-2 text-primary" size="lg" />
+
+              <h4 className="text-lg font-semibold">AI models</h4>
+
+              <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
+            </div>
+
+            <form className="flex flex-col gap-1 rounded border border-border text-sm">
+              <RadioGroup
+                value={activeModel}
+                onValueChange={(val) => setActiveModel(val as keyof typeof modelsById)}
+                className="flex flex-col gap-0"
+              >
+                {Object.entries(modelsById).map(([id, { label, description }], i) => (
+                  <Label
+                    className={cn(
+                      'cursor-pointer px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
+                      i !== 0 && 'border-t border-border'
+                    )}
+                    key={id}
+                  >
+                    <strong className="font-bold">{label}</strong>: <span className="font-normal">{description}</span>
+                    <RadioGroupItem value={id} className="float-right ml-auto" disabled={isFreeUser} />
+                  </Label>
+                ))}
+              </RadioGroup>
+            </form>
+
+            {isFreeUser && (
+              <Button variant="link" asChild>
+                <Link to={ROUTES.ACTIVE_TEAM_SETTINGS} target="_blank">
+                  Upgrade to Pro
+                </Link>
+              </Button>
+            )}
+          </PopoverContent>
+        </Popover>
       )}
-
-      <Popover>
-        {/* Needs a min-width or it shifts as the popover closes */}
-        <PopoverTrigger className="group flex min-w-24 items-center justify-end gap-0 text-right">
-          Model: {activeModelLabel} <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
-        </PopoverTrigger>
-
-        <PopoverContent className="flex w-80 flex-col gap-2">
-          <div className="mt-2 flex flex-col items-center">
-            <AIIcon className="mb-2 text-primary" size="lg" />
-
-            <h4 className="text-lg font-semibold">AI models</h4>
-
-            <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
-          </div>
-
-          <form className="flex flex-col gap-1 rounded border border-border text-sm">
-            <RadioGroup
-              value={activeModel}
-              onValueChange={(val) => setActiveModel(val as keyof typeof modelsById)}
-              className="flex flex-col gap-0"
-            >
-              {Object.entries(modelsById).map(([id, { label, description }], i) => (
-                <Label
-                  className={cn(
-                    'cursor-pointer px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
-                    i !== 0 && 'border-t border-border'
-                  )}
-                  key={id}
-                >
-                  <strong className="font-bold">{label}</strong>: <span className="font-normal">{description}</span>
-                  <RadioGroupItem value={id} className="float-right ml-auto" disabled={isFreeUser} />
-                </Label>
-              ))}
-            </RadioGroup>
-          </form>
-
-          {isFreeUser && (
-            <Button variant="link" asChild>
-              <Link to={ROUTES.ACTIVE_TEAM_SETTINGS} target="_blank">
-                Upgrade to Pro
-              </Link>
-            </Button>
-          )}
-        </PopoverContent>
-      </Popover>
     </>
   );
 });

@@ -1,5 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { AI_FREE_TIER_WAIT_TIME_SECONDS, useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
@@ -7,7 +7,6 @@ import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantCurrentChatMessagesCountAtom,
-  aiAssistantDelaySecondsAtom,
   aiAssistantIdAtom,
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
@@ -31,7 +30,6 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useRef } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
@@ -73,8 +71,6 @@ export function useSubmitAIAssistantPrompt() {
     [getCurrentSheetContext, getVisibleContext, getCodeCellContext]
   );
 
-  const delayTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
       async ({ content, messageIndex, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
@@ -114,10 +110,25 @@ export function useSubmitAIAssistantPrompt() {
           ]);
         }
 
+        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
+        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
+          await apiClient.teams.billing.aiUsage(teamUuid);
+        if (exceededBillingLimit) {
+          set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
+
+          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+            exceededBillingLimit: exceededBillingLimit,
+            billingLimit: billingLimit,
+            currentPeriodUsage: currentPeriodUsage,
+            location: 'AIAssistant',
+          });
+
+          return;
+        }
+
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
           let prevWaitingOnMessageIndex: number | undefined = undefined;
-          clearTimeout(delayTimerRef.current);
           set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
             prevWaitingOnMessageIndex = prev;
             return undefined;
@@ -154,45 +165,6 @@ export function useSubmitAIAssistantPrompt() {
           });
         });
         set(aiAssistantAbortControllerAtom, abortController);
-
-        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
-          await apiClient.teams.billing.aiUsage(teamUuid);
-        if (exceededBillingLimit) {
-          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
-          set(aiAssistantDelaySecondsAtom, localDelaySeconds);
-          set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
-
-          mixpanel.track('[Billing].ai.exceededBillingLimit', {
-            exceededBillingLimit: exceededBillingLimit,
-            billingLimit: billingLimit,
-            currentPeriodUsage: currentPeriodUsage,
-            localDelaySeconds: localDelaySeconds,
-            location: 'AIAssistant',
-          });
-
-          await new Promise<void>((resolve) => {
-            const resolveAfterDelay = () => {
-              localDelaySeconds -= 1;
-              if (localDelaySeconds <= 0) {
-                resolve();
-              } else {
-                set(aiAssistantDelaySecondsAtom, localDelaySeconds);
-                clearTimeout(delayTimerRef.current);
-                delayTimerRef.current = setTimeout(resolveAfterDelay, 1000);
-              }
-            };
-
-            resolveAfterDelay();
-          });
-        }
-        set(aiAssistantWaitingOnMessageIndexAtom, undefined);
-
-        if (abortController.signal.aborted) {
-          set(aiAssistantAbortControllerAtom, undefined);
-          set(aiAssistantLoadingAtom, false);
-          return;
-        }
 
         if (onSubmit) {
           onSubmit();

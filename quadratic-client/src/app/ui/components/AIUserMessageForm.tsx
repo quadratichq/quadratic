@@ -54,16 +54,13 @@ type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
     initialContext?: Context;
   };
   waitingOnMessageIndex?: number;
-  delaySeconds?: number;
 };
-
 export const AIUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormProps>((props: AIUserMessageFormProps, ref) => {
     const {
       initialContent,
       ctx,
       waitingOnMessageIndex,
-      delaySeconds,
       autoFocusRef,
       textareaRef: bottomTextareaRef,
       abortController,
@@ -102,8 +99,8 @@ export const AIUserMessageForm = memo(
     }, [initialContent]);
 
     const showAIUsageExceeded = useMemo(
-      () => waitingOnMessageIndex === props.messageIndex && !!delaySeconds,
-      [delaySeconds, props.messageIndex, waitingOnMessageIndex]
+      () => waitingOnMessageIndex === props.messageIndex,
+      [props.messageIndex, waitingOnMessageIndex]
     );
 
     const handleClickForm = useCallback(() => {
@@ -226,7 +223,7 @@ export const AIUserMessageForm = memo(
       }
     }, [loading, initialContent]);
 
-    const disabled = waitingOnMessageIndex !== undefined || !editing;
+    const disabled = useMemo(() => waitingOnMessageIndex !== undefined || !editing, [waitingOnMessageIndex, editing]);
 
     return (
       <form
@@ -290,7 +287,7 @@ export const AIUserMessageForm = memo(
           disabled={waitingOnMessageIndex !== undefined}
         />
 
-        <AIUsageExceeded show={showAIUsageExceeded} delaySeconds={delaySeconds} />
+        <AIUsageExceeded show={showAIUsageExceeded} />
 
         <AIUserMessageFormFooter
           show={editing}
@@ -315,7 +312,6 @@ type EditButtonProps = {
   setEditing: (editing: boolean) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
-
 const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonProps) => {
   if (!show) {
     return null;
@@ -342,11 +338,9 @@ const EditButton = memo(({ show, loading, setEditing, textareaRef }: EditButtonP
 
 type CancelButtonProps = {
   show: boolean;
-  waitingOnMessageIndex?: number;
   abortPrompt: () => void;
 };
-
-const CancelButton = memo(({ show, waitingOnMessageIndex, abortPrompt }: CancelButtonProps) => {
+const CancelButton = memo(({ show, abortPrompt }: CancelButtonProps) => {
   if (!show) {
     return null;
   }
@@ -361,7 +355,7 @@ const CancelButton = memo(({ show, waitingOnMessageIndex, abortPrompt }: CancelB
         abortPrompt();
       }}
     >
-      <BackspaceIcon className="mr-1" /> Cancel {waitingOnMessageIndex !== undefined ? 'sending' : 'generating'}
+      <BackspaceIcon className="mr-1" /> Cancel generating
     </Button>
   );
 });
@@ -378,7 +372,6 @@ type AIUserMessageFormFooterProps = {
   handleFiles: (files: FileList | File[]) => void;
   fileTypes: string[];
 };
-
 const AIUserMessageFormFooter = memo(
   ({
     show,
@@ -432,11 +425,7 @@ const AIUserMessageFormFooter = memo(
           </div>
         </div>
 
-        <CancelButton
-          show={loading || waitingOnMessageIndex !== undefined}
-          waitingOnMessageIndex={waitingOnMessageIndex}
-          abortPrompt={abortPrompt}
-        />
+        <CancelButton show={loading} abortPrompt={abortPrompt} />
       </>
     );
   }

@@ -365,20 +365,3 @@ export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
     });
   },
 });
-
-export const aiAnalystDelaySecondsAtom = selector<number>({
-  key: 'aiAnalystDelaySecondsAtom',
-  get: ({ get }) => get(aiAnalystAtom).delaySeconds,
-  set: ({ set }, newValue) => {
-    set(aiAnalystAtom, (prev) => {
-      if (newValue instanceof DefaultValue) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        delaySeconds: newValue,
-      };
-    });
-  },
-});

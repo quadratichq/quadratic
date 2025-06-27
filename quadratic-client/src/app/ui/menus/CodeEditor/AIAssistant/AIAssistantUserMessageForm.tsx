@@ -1,6 +1,5 @@
 import {
   aiAssistantAbortControllerAtom,
-  aiAssistantDelaySecondsAtom,
   aiAssistantLoadingAtom,
   aiAssistantWaitingOnMessageIndexAtom,
   codeEditorCodeCellAtom,
@@ -21,7 +20,6 @@ export const AIAssistantUserMessageForm = memo(
     const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
-    const delaySeconds = useRecoilValue(aiAssistantDelaySecondsAtom);
     const { submitPrompt } = useSubmitAIAssistantPrompt();
 
     const handleSubmit = useCallback(
@@ -47,7 +45,6 @@ export const AIAssistantUserMessageForm = memo(
         submitPrompt={handleSubmit}
         ctx={{ context: { sheets: [], currentSheet: '', codeCell } }}
         waitingOnMessageIndex={waitingOnMessageIndex}
-        delaySeconds={delaySeconds}
       />
     );
   })

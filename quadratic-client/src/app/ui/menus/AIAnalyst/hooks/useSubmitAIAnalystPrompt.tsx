@@ -11,7 +11,6 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystDelaySecondsAtom,
   aiAnalystLoadingAtom,
   aiAnalystPDFImportAtom,
   aiAnalystPromptSuggestionsAtom,
@@ -36,7 +35,6 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useRef } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -108,8 +106,6 @@ export function useSubmitAIAnalystPrompt() {
     [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext]
   );
 
-  const delayTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
       async ({ content, context, messageIndex, onSubmit }: SubmitAIAnalystPromptArgs) => {
@@ -168,10 +164,25 @@ export function useSubmitAIAnalystPrompt() {
           });
         }
 
+        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
+        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
+          await apiClient.teams.billing.aiUsage(teamUuid);
+        if (exceededBillingLimit) {
+          set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
+
+          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+            exceededBillingLimit: exceededBillingLimit,
+            billingLimit: billingLimit,
+            currentPeriodUsage: currentPeriodUsage,
+            location: 'AIAnalyst',
+          });
+
+          return;
+        }
+
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
           let prevWaitingOnMessageIndex: number | undefined = undefined;
-          clearTimeout(delayTimerRef.current);
           set(aiAnalystWaitingOnMessageIndexAtom, (prev) => {
             prevWaitingOnMessageIndex = prev;
             return undefined;
@@ -215,50 +226,9 @@ export function useSubmitAIAnalystPrompt() {
             return prevMessages;
           });
 
-          clearTimeout(delayTimerRef.current);
           set(aiAnalystWaitingOnMessageIndexAtom, undefined);
         });
         set(aiAnalystAbortControllerAtom, abortController);
-
-        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
-          await apiClient.teams.billing.aiUsage(teamUuid);
-        if (exceededBillingLimit) {
-          // let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
-          let localDelaySeconds = 999999999;
-          set(aiAnalystDelaySecondsAtom, localDelaySeconds);
-          set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
-
-          mixpanel.track('[Billing].ai.exceededBillingLimit', {
-            exceededBillingLimit: exceededBillingLimit,
-            billingLimit: billingLimit,
-            currentPeriodUsage: currentPeriodUsage,
-            localDelaySeconds: localDelaySeconds,
-            location: 'AIAnalyst',
-          });
-
-          await new Promise<void>((resolve) => {
-            const resolveAfterDelay = () => {
-              localDelaySeconds -= 1;
-              if (localDelaySeconds <= 0) {
-                resolve();
-              } else {
-                set(aiAnalystDelaySecondsAtom, localDelaySeconds);
-                clearTimeout(delayTimerRef.current);
-                delayTimerRef.current = setTimeout(resolveAfterDelay, 1000);
-              }
-            };
-
-            resolveAfterDelay();
-          });
-        }
-        set(aiAnalystWaitingOnMessageIndexAtom, undefined);
-
-        if (abortController.signal.aborted) {
-          set(aiAnalystAbortControllerAtom, undefined);
-          set(aiAnalystLoadingAtom, false);
-          return;
-        }
 
         if (onSubmit) {
           onSubmit();
