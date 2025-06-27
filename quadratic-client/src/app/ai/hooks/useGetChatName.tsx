@@ -15,8 +15,8 @@ export const useGetChatName = () => {
       async (): Promise<string> => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
         const chatPromptMessages = getPromptMessagesForAI(chatMessages).map((message) => ({
-          ...message,
-          content: message.content.filter((content) => !('type' in content) || content.type !== 'data'),
+          role: message.role,
+          content: message.content.filter((content) => 'type' in content && content.type === 'text'),
         }));
         const messages: ChatMessage[] = [
           {
