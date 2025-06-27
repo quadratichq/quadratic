@@ -148,6 +148,7 @@ pub fn print_js_calls() {
 #[cfg(test)]
 #[track_caller]
 pub fn expect_js_call(name: &str, args: String, clear: bool) {
+    let mut should_panic = false;
     JS_CALLS.with(|js_calls| {
         let mut js_calls = js_calls.lock().unwrap();
         let result = TestFunction {
@@ -161,18 +162,23 @@ pub fn expect_js_call(name: &str, args: String, clear: bool) {
             }
             None => {
                 dbg!(&js_calls);
-                panic!("Expected to find in TEST_ARRAY: {:?}", result)
+                dbg!("Expected to find in TEST_ARRAY: {:?}", result);
+                should_panic = true;
             }
         }
         if clear {
             js_calls.clear();
         }
     });
+    if should_panic {
+        panic!("expect_js_call failed");
+    }
 }
 
 #[cfg(test)]
 #[track_caller]
 pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
+    let mut should_panic = false;
     JS_CALLS.with(|js_calls| {
         let mut js_calls = js_calls.lock().unwrap();
         let mut found = 0;
@@ -183,11 +189,17 @@ pub fn expect_js_call_count(name: &str, count: usize, clear: bool) {
             }
             true
         });
-        assert_eq!(found, count);
+        if found != count {
+            dbg!("Expected to find {} calls for {:?}", count, name);
+            should_panic = true;
+        }
         if clear {
             js_calls.clear();
         }
     });
+    if should_panic {
+        panic!("expect_js_call_count failed");
+    }
 }
 
 #[cfg(test)]
