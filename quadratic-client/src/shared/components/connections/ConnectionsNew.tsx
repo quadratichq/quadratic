@@ -13,6 +13,7 @@ export const ConnectionsNew = ({
     <div className="grid grid-cols-2 gap-4">
       {Object.entries(connectionsByType).map(([type, { Logo }]) => (
         <Button
+          data-testid={`new-connection-${type}`}
           key={type}
           variant="outline"
           className="group relative h-auto w-full"

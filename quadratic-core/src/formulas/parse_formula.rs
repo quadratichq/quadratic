@@ -72,7 +72,7 @@ impl From<Spanned<SheetCellRefRange>> for JsCellRefSpan {
 /// `parse_error_span`, `parse_error_msg` may still be present.
 pub fn parse_formula_results(
     formula_string: &str,
-    ctx: A1Context,
+    ctx: &A1Context,
     sheet_id: SheetId,
     x: i32,
     y: i32,
@@ -81,9 +81,9 @@ pub fn parse_formula_results(
     let y = y as i64;
     let code_cell_pos = Pos { x, y }.to_sheet_pos(sheet_id);
 
-    let parse_error = parse_formula(formula_string, &ctx, code_cell_pos).err();
+    let parse_error = parse_formula(formula_string, ctx, code_cell_pos).err();
 
-    let parse_result = super::find_cell_references(formula_string, &ctx, code_cell_pos);
+    let parse_result = super::find_cell_references(formula_string, ctx, code_cell_pos);
     let spans = parse_result.iter().map(|spanned| spanned.span).collect();
     let cells_accessed = parse_result
         .into_iter()
@@ -145,9 +145,9 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B10"))]);
         let sheet_id = SheetId::TEST;
 
-        let result = parse_formula_results("Table1", context, sheet_id, 1, 1);
+        let result = parse_formula_results("Table1", &context, sheet_id, 1, 1);
 
-        println!("{:?}", result);
+        println!("{result:?}");
 
         // result.cells_accessed should include the TableRef
     }

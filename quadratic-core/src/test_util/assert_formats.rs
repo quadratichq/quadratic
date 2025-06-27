@@ -78,11 +78,7 @@ pub fn assert_cell_format_fill_color(
     let fill_color = sheet.formats.fill_color.get(Pos { x, y });
     assert!(
         fill_color == Some(expect_fill_color.to_string()),
-        "Cell at ({}, {}) should be fill_color={:?}, but is actually fill_color={:?}",
-        x,
-        y,
-        expect_fill_color,
-        fill_color
+        "Cell at ({x}, {y}) should be fill_color={expect_fill_color:?}, but is actually fill_color={fill_color:?}"
     );
 }
 

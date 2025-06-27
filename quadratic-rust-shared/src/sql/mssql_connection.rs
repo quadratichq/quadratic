@@ -181,16 +181,16 @@ impl<'a> Connection<'a> for MsSqlConnection {
         config.trust_cert();
 
         let tcp = TcpStream::connect(config.get_addr()).await.map_err(|e| {
-            SharedError::Sql(SqlError::Connect(format!("Failed to connect: {}", e)))
+            SharedError::Sql(SqlError::Connect(format!("Failed to connect: {e}")))
         })?;
         tcp.set_nodelay(true).map_err(|e| {
-            SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {}", e)))
+            SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {e}")))
         })?;
 
         let client = Client::connect(config, tcp.compat_write())
             .await
             .map_err(|e| {
-                SharedError::Sql(SqlError::Connect(format!("Failed to create client: {}", e)))
+                SharedError::Sql(SqlError::Connect(format!("Failed to create client: {e}")))
             })?;
 
         Ok(client)

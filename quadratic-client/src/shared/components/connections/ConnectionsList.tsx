@@ -167,7 +167,9 @@ function ListItems({
                 </div>
 
                 <div className="flex w-full min-w-0 flex-grow flex-col text-left">
-                  <span className="truncate text-sm">{name}</span>
+                  <span data-testid={`connection-name-${name}`} className="truncate text-sm">
+                    {name}
+                  </span>
 
                   {isDemo ? (
                     <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>

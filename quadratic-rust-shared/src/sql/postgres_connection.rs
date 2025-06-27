@@ -28,7 +28,6 @@ use crate::{
     error::{Result, SharedError},
 };
 use crate::{convert_sqlx_type, net::ssh::SshConfig, sql::UsesSsh, to_arrow_type};
-use arrow::array::Array;
 
 /// PostgreSQL connection
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -402,8 +401,6 @@ impl UsesSsh for PostgresConnection {
 }
 
 pub mod tests {
-
-    use arrow::datatypes::DataType;
 
     use super::*;
     use std::str::FromStr;

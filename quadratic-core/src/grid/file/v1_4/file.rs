@@ -15,7 +15,7 @@ fn convert_column_values(
             let value = match type_field.to_lowercase().as_str() {
                 "text" => v1_5::CellValue::Text(value.clone()),
                 "number" => v1_5::CellValue::Number(value.clone()),
-                _ => panic!("Unknown type_field: {}", type_field),
+                _ => panic!("Unknown type_field: {type_field}"),
             };
             (k.clone(), value)
         })

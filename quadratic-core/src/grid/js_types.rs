@@ -1,3 +1,6 @@
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
+
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -463,7 +466,7 @@ pub enum JsSnackbarSeverity {
 
 impl fmt::Display for JsSnackbarSeverity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
+        write!(f, "{}", format!("{self:?}").to_lowercase())
     }
 }
 
@@ -513,4 +516,20 @@ pub struct JsUpdateCodeCell {
     pub sheet_id: SheetId,
     pub pos: Pos,
     pub render_code_cell: Option<JsRenderCodeCell>,
+}
+
+#[derive(Debug, Clone, TS)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+pub struct JsCoordinate {
+    pub x: u32,
+    pub y: u32,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
 }

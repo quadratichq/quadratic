@@ -64,7 +64,7 @@ pub fn clean_errors(error: impl ToString) -> String {
     let remove = vec!["error returned from database: "];
 
     for r in remove {
-        cleaned = format!("{:?}", cleaned).replace(r, "");
+        cleaned = format!("{cleaned:?}").replace(r, "");
     }
 
     cleaned

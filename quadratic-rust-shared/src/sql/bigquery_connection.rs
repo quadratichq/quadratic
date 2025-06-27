@@ -52,16 +52,16 @@ impl BigqueryConnection {
     pub async fn new(credentials: String, project_id: String, dataset: String) -> Result<Self> {
         let credentials = CredentialsFile::new_from_str(&credentials)
             .await
-            .map_err(|e| connect_error(format!("Unable to parse credentials file: {}", e)))?;
+            .map_err(|e| connect_error(format!("Unable to parse credentials file: {e}")))?;
 
         let config = ClientConfig::new_with_credentials(credentials)
             .await
-            .map_err(|e| connect_error(format!("Unable to create config: {}", e)))?
+            .map_err(|e| connect_error(format!("Unable to create config: {e}")))?
             .0;
 
         let client = Client::new(config)
             .await
-            .map_err(|e| connect_error(format!("Unable to create client: {}", e)))?;
+            .map_err(|e| connect_error(format!("Unable to create client: {e}")))?;
 
         Ok(Self {
             project_id,
@@ -86,20 +86,18 @@ impl BigqueryConnection {
             Ok(response) => response,
             Err(e) => {
                 // Check if the error is due to bytes billed limit exceeded
-                match &e {
-                    BigqueryError::Response(error) => {
-                        if error
-                            .errors
-                            .as_ref()
-                            .and_then(|e| e.get(0).map(|e| e.reason.to_owned()))
-                            .unwrap_or_default()
-                            == "bytesBilledLimitExceeded"
-                        {
-                            return Ok((Vec::new(), true, 0));
-                        }
-                    }
-                    _ => {}
-                };
+                if let BigqueryError::Response(error) = &e {
+                     if error
+                         .errors
+                         .as_ref()
+                         .and_then(|e| e.first().map(|e| e.reason.to_owned()))
+                         .unwrap_or_default()
+                         == "bytesBilledLimitExceeded"
+                     {
+                         return Ok((Vec::new(), true, 0));
+                     }
+                 };
+                
                 return Err(query_error(e));
             }
         };
@@ -110,11 +108,11 @@ impl BigqueryConnection {
         let fields = map_schema(schema.fields);
         let mut columns = Vec::new();
 
-        for column in 0..fields.len() {
+        for field in fields {
             let column = ColumnSchema {
-                field_type: fields[column].0.to_owned(),
-                field_name: fields[column].1.to_owned(),
-                field_struct: fields[column].2.to_owned(),
+                field_type: field.0.to_owned(),
+                field_name: field.1.to_owned(),
+                field_struct: field.2.to_owned(),
             };
 
             columns.push(column);
@@ -140,7 +138,7 @@ impl BigqueryConnection {
     pub fn get_column_schema(&self, index: usize) -> Result<&ColumnSchema> {
         self.columns
             .get(index)
-            .ok_or_else(|| query_error(format!("Column not found at {}", index)))
+            .ok_or_else(|| query_error(format!("Column not found at {index}")))
     }
 
     pub fn get_column_field_type(&self, index: usize) -> TableFieldType {
@@ -152,7 +150,7 @@ impl BigqueryConnection {
     pub fn get_column_field_name(&self, index: usize) -> String {
         self.get_column_schema(index)
             .map(|c| c.field_name.to_owned())
-            .unwrap_or_else(|_| format!("Column {}", index))
+            .unwrap_or_else(|_| format!("Column {index}"))
     }
 }
 
@@ -374,7 +372,7 @@ fn bigquery_number(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
 fn bigquery_date(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
     let date_string = string_column_value(row, index);
     let date =
-        NaiveDateTime::parse_from_str(&format!("{} 00:00:00", date_string), "%Y-%m-%d %H:%M:%S")
+        NaiveDateTime::parse_from_str(&format!("{date_string} 00:00:00"), "%Y-%m-%d %H:%M:%S")
             .map_err(query_error)?;
     let epoch = DateTime::<Utc>::from_timestamp(0, 0)
         .ok_or_else(|| query_error("Unable to create epoch"))?
@@ -592,7 +590,7 @@ pub mod tests {
             "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10"
         );
         let results = connection.raw_query(&sql, None).await.unwrap();
-        println!("{:?}", results);
+        println!("{results:?}");
     }
 
     #[tokio::test]

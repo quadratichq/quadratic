@@ -1039,12 +1039,12 @@ mod test {
         let mut gc = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 0, 0);
-        set_cell_value(&mut gc, sheet_id, "100", 0, 2);
+        set_formula_code_cell(&mut gc, sheet_id, "{1, 2, 3; 4, 5, 6}", 1, 1);
+        set_cell_value(&mut gc, sheet_id, "100", 1, 3);
 
         gc.move_cells(
-            SheetRect::new_pos_span(Pos { x: 0, y: 0 }, Pos { x: 3, y: 2 }, sheet_id),
-            (10, 10, sheet_id).into(),
+            SheetRect::new_pos_span(Pos { x: 1, y: 1 }, Pos { x: 3, y: 3 }, sheet_id),
+            (11, 11, sheet_id).into(),
             false,
             false,
             None,
@@ -1052,27 +1052,27 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.display_value((10, 10).into()),
+            sheet.display_value((11, 11).into()),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value((10, 12).into()),
+            sheet.display_value((11, 13).into()),
             Some(CellValue::Number(BigDecimal::from(100)))
         );
-        assert_eq!(sheet.display_value((0, 0).into()), None);
-        assert_eq!(sheet.display_value((0, 2).into()), None);
+        assert_eq!(sheet.display_value((1, 1).into()), None);
+        assert_eq!(sheet.display_value((1, 3).into()), None);
 
         gc.undo(None);
 
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.display_value((10, 10).into()), None);
-        assert_eq!(sheet.display_value((10, 12).into()), None);
+        assert_eq!(sheet.display_value((11, 11).into()), None);
+        assert_eq!(sheet.display_value((11, 13).into()), None);
         assert_eq!(
-            sheet.display_value((0, 0).into()),
+            sheet.display_value((1, 1).into()),
             Some(CellValue::Number(BigDecimal::from(1)))
         );
         assert_eq!(
-            sheet.display_value((0, 2).into()),
+            sheet.display_value((1, 3).into()),
             Some(CellValue::Number(BigDecimal::from(100)))
         );
     }
