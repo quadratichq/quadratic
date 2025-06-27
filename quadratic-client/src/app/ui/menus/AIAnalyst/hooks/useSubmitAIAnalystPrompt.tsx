@@ -78,7 +78,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
-  const [modelKey] = useAIModel();
+  const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     () =>

@@ -1,7 +1,7 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { DEFAULT_MODEL, DEFAULT_MODEL_VERSION, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { DEFAULT_MODEL_FREE, DEFAULT_MODEL_VERSION, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { useEffect, useMemo } from 'react';
 
@@ -9,21 +9,27 @@ const MODEL_LOCAL_STORAGE_KEY = 'aiModel';
 const THINKING_TOGGLE_LOCAL_STORAGE_KEY = 'aiThinkingToggle';
 const MODEL_VERSION_LOCAL_STORAGE_KEY = 'aiModelVersion';
 
-export function useAIModel(): [AIModelKey, SetValue<AIModelKey>, AIModelConfig, boolean, SetValue<boolean>] {
+export const useAIModel = (): {
+  modelKey: AIModelKey;
+  setModelKey: SetValue<AIModelKey>;
+  modelConfig: AIModelConfig;
+  thinkingToggle: boolean;
+  setThinkingToggle: SetValue<boolean>;
+} => {
   const debugFlags = useDebugFlags();
   const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
 
-  const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL);
+  const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL_FREE);
   const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(THINKING_TOGGLE_LOCAL_STORAGE_KEY, false);
   const [version] = useLocalStorage<number>('aiModelVersion', 0);
 
   // This is to force update model stored in local storage to the current default model
   useEffect(() => {
     if (version !== DEFAULT_MODEL_VERSION) {
-      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL));
+      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_FREE));
       window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
 
-      const modelConfig = MODELS_CONFIGURATION[DEFAULT_MODEL];
+      const modelConfig = MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
       if ('thinkingToggle' in modelConfig) {
         window.localStorage.setItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY, JSON.stringify(!!modelConfig.thinking));
       }
@@ -33,26 +39,32 @@ export function useAIModel(): [AIModelKey, SetValue<AIModelKey>, AIModelConfig, 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
     const config = MODELS_CONFIGURATION[modelKey];
-    if (!config || (!debug && !config.enabled)) {
-      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL));
+    if (!config || (!debug && config.mode === 'disabled')) {
+      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_FREE));
       window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
     }
   }, [debug, modelKey]);
 
-  const config = useMemo(() => {
+  const modelConfig = useMemo(() => {
     return MODELS_CONFIGURATION[modelKey];
   }, [modelKey]);
 
   const defaultConfig = useMemo(() => {
-    return MODELS_CONFIGURATION[DEFAULT_MODEL];
+    return MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
   }, []);
   if (!defaultConfig) {
-    throw new Error(`Default model ${DEFAULT_MODEL} not found`);
+    throw new Error(`Default model ${DEFAULT_MODEL_FREE} not found`);
   }
 
-  if (!config) {
-    return [DEFAULT_MODEL, setModelKey, defaultConfig, thinkingToggle, setThinkingToggle];
+  if (!modelConfig) {
+    return {
+      modelKey: DEFAULT_MODEL_FREE,
+      setModelKey,
+      modelConfig: defaultConfig,
+      thinkingToggle,
+      setThinkingToggle,
+    };
   }
 
-  return [modelKey, setModelKey, config, thinkingToggle, setThinkingToggle];
-}
+  return { modelKey, setModelKey, modelConfig, thinkingToggle, setThinkingToggle };
+};

@@ -18,43 +18,44 @@ import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useMemo, useState } from 'react';
+import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
+
+const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
+  Exclude<ModelMode, 'disabled'>,
+  { label: string; description: string }
+> = {
+  basic: { label: 'Basic', description: 'good for everyday tasks' },
+  pro: { label: 'Pro', description: 'smartest and most capable' },
+};
 
 interface SelectAIModelMenuProps {
   loading: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
-
-const modelsById = {
-  basic: { label: 'Basic', description: 'good for everyday tasks' },
-  pro: { label: 'Pro', description: 'smartest and most capable' },
-};
-
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const debugFlags = useDebugFlags();
   const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
 
-  const [selectedModel, setSelectedModel, selectedModelConfig, thinkingToggle, setThinkingToggle] = useAIModel();
-  const modelConfigs = useMemo(() => {
-    const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
+  const {
+    modelKey: selectedModel,
+    setModelKey: setSelectedModel,
+    modelConfig: selectedModelConfig,
+    thinkingToggle,
+    setThinkingToggle,
+  } = useAIModel();
 
-    // enable all models in debug mode
-    if (debug) {
-      return configs;
-    }
-
-    // only show enabled models in production
-    return configs.filter(([_, config]) => config.enabled);
-  }, [debug]);
-
+  const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
   const canToggleThinking = useMemo(
     () => selectedModelConfig.thinkingToggle !== undefined,
     [selectedModelConfig.thinkingToggle]
   );
 
-  const thinking = useMemo(() => !!selectedModelConfig.thinkingToggle, [selectedModelConfig.thinkingToggle]);
+  const modelConfigs = useMemo(() => {
+    const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
+    return debug ? configs : configs.filter(([_, config]) => config.mode !== 'disabled');
+  }, [debug]);
 
   const dropdownModels = useMemo(
     () =>
@@ -65,7 +66,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             (selectedModelConfig.thinkingToggle === undefined && modelConfig.thinkingToggle === thinkingToggle) ||
             selectedModelConfig.thinkingToggle === modelConfig.thinkingToggle
         )
-        .sort(([, a], [, b]) => (a.enabled ? 1 : -1) + (b.enabled ? -1 : 1)),
+        .sort(([, a], [, b]) => (a.mode !== 'disabled' ? 1 : -1) + (b.mode !== 'disabled' ? -1 : 1)),
     [modelConfigs, selectedModelConfig.thinkingToggle, thinkingToggle]
   );
 
@@ -87,13 +88,40 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
   );
 
-  const isFreeUser = false; // TODO: Pull this from...? will probably have to update API
-  const [activeModel, setActiveModel] = useState<keyof typeof modelsById>(isFreeUser ? 'basic' : 'pro');
-  const activeModelLabel = modelsById[activeModel].label;
+  const modelMode = useMemo(
+    () => (selectedModelConfig.mode === 'disabled' ? 'pro' : selectedModelConfig.mode),
+    [selectedModelConfig.mode]
+  );
+  const setModelMode = useCallback(
+    (mode: ModelMode) => {
+      const nextModel = modelConfigs.find(
+        ([_, modelConfig]) =>
+          modelConfig.mode === mode &&
+          (modelConfig.thinkingToggle === undefined || modelConfig.thinkingToggle === thinkingToggle)
+      );
+
+      if (nextModel) {
+        setSelectedModel(nextModel[0]);
+      }
+    },
+    [modelConfigs, setSelectedModel, thinkingToggle]
+  );
+  const activeModelLabel = useMemo(() => MODEL_MODES_LABELS_DESCRIPTIONS[modelMode].label, [modelMode]);
+
+  const isOnPaidPlan = false; // TODO: Pull this from...? will probably have to update API
+  useEffect(() => {
+    if (debug) {
+      return;
+    }
+
+    if (modelMode === 'pro' && !isOnPaidPlan) {
+      setModelMode('basic');
+    }
+  }, [debug, isOnPaidPlan, modelMode, setModelMode]);
 
   return (
     <>
-      {canToggleThinking && (
+      {canToggleThinking ? (
         <TooltipPopover label="Extended thinking for complex prompts">
           <Toggle
             aria-label="Extended thinking"
@@ -111,6 +139,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             {thinking && <span className="mr-1">Think</span>}
           </Toggle>
         </TooltipPopover>
+      ) : (
+        <div className="mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal" />
       )}
 
       {debug ? (
@@ -143,7 +173,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               >
                 <div className="flex w-full items-center justify-between text-xs">
                   <span className="pr-4">
-                    {(debug ? `${modelConfig.enabled ? '' : '(debug) '}${modelConfig.provider} - ` : '') +
+                    {(debug ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - ` : '') +
                       modelConfig.displayName}
                   </span>
                 </div>
@@ -155,7 +185,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         <Popover>
           {/* Needs a min-width or it shifts as the popover closes */}
           <PopoverTrigger className="group flex min-w-24 items-center justify-end gap-0 text-right">
-            Model: {activeModelLabel} <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
+            Model: {activeModelLabel}
+            <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
           </PopoverTrigger>
 
           <PopoverContent className="flex w-80 flex-col gap-2">
@@ -169,26 +200,26 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
             <form className="flex flex-col gap-1 rounded border border-border text-sm">
               <RadioGroup
-                value={activeModel}
-                onValueChange={(val) => setActiveModel(val as keyof typeof modelsById)}
+                value={modelMode}
+                onValueChange={(val) => setModelMode(val as ModelMode)}
                 className="flex flex-col gap-0"
               >
-                {Object.entries(modelsById).map(([id, { label, description }], i) => (
+                {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
                   <Label
                     className={cn(
                       'cursor-pointer px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
                       i !== 0 && 'border-t border-border'
                     )}
-                    key={id}
+                    key={mode}
                   >
                     <strong className="font-bold">{label}</strong>: <span className="font-normal">{description}</span>
-                    <RadioGroupItem value={id} className="float-right ml-auto" disabled={isFreeUser} />
+                    <RadioGroupItem value={mode} className="float-right ml-auto" disabled={!isOnPaidPlan} />
                   </Label>
                 ))}
               </RadioGroup>
             </form>
 
-            {isFreeUser && (
+            {!isOnPaidPlan && (
               <Button variant="link" asChild>
                 <Link to={ROUTES.ACTIVE_TEAM_SETTINGS} target="_blank">
                   Upgrade to Pro

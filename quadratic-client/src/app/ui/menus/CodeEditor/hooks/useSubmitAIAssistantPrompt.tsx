@@ -47,7 +47,7 @@ export function useSubmitAIAssistantPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
-  const [modelKey] = useAIModel();
+  const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ snapshot }) =>
