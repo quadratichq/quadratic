@@ -1,7 +1,8 @@
 import { test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, uploadFile } from './helpers/file.helpers';
-import { assertSelection } from './helpers/sheet.helper';
+import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
+import { assertSelection, gotoCells } from './helpers/sheet.helper';
 
 test('Keyboard Navigation', async ({ page }) => {
   // Constants
@@ -130,7 +131,83 @@ test('Keyboard Navigation', async ({ page }) => {
   await page.keyboard.press('Control+ArrowDown');
   await assertSelection(page, { a1: 'K25' });
 
+  await gotoCells(page, { a1: 'A1' });
+
+  await page.keyboard.press('PageDown', { delay: 100 });
+  await assertSelection(page, { a1: 'A28' });
+
+  await page.keyboard.press('PageDown');
+  await assertSelection(page, { a1: 'A55' });
+
+  await page.keyboard.press('ArrowDown', { delay: 100 });
+  await page.keyboard.press('ArrowDown', { delay: 100 });
+  await page.keyboard.press('ArrowDown', { delay: 100 });
+  await assertSelection(page, { a1: 'A58' });
+
+  await page.keyboard.press('PageUp', { delay: 100 });
+  await assertSelection(page, { a1: 'A30' });
+
+  await page.keyboard.press('PageUp', { delay: 100 });
+  await assertSelection(page, { a1: 'A2' });
+
+  await page.keyboard.press('PageUp', { delay: 100 });
+  await assertSelection(page, { a1: 'A1' });
+
   // All done
   await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Keyboard Selection', async ({ page }) => {
+  // Constants
+  const fileName = 'Keyboard Movement';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_keyboard_movement` });
+
+  // Create a new team
+  // const teamName = `Keyboard selection - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  // Turn on top left position flag
+  await addQueryParams(page, { topLeft: true });
+
+  // Test of the top left position flag
+  await assertTopLeftPosition(page, 'A1');
+
+  await page.keyboard.press('Shift+PageDown', { delay: 100 });
+  await page.waitForTimeout(5 * 1000);
+  await assertSelection(page, { a1: 'A1:A28' });
+  await assertTopLeftPosition(page, 'A28');
+
+  await page.keyboard.press('Shift+PageDown', { delay: 100 });
+  await page.waitForTimeout(5 * 1000);
+  await assertSelection(page, { a1: 'A1:A55' });
+  await assertTopLeftPosition(page, 'A55');
+
+  await page.keyboard.press('Shift+ArrowRight', { delay: 100 });
+  await page.keyboard.press('Shift+ArrowRight', { delay: 100 });
+  await page.waitForTimeout(5 * 1000);
+  await assertSelection(page, { a1: 'A1:C55' });
+
+  await page.keyboard.press('Shift+PageUp', { delay: 100 });
+  await page.waitForTimeout(5 * 1000);
+  await assertSelection(page, { a1: 'A1:C27' });
+  await assertTopLeftPosition(page, 'A27');
+
+  await page.keyboard.press('Shift+PageUp', { delay: 100 });
+  await page.waitForTimeout(5 * 1000);
+  await assertSelection(page, { a1: 'A1:C1' });
+  await assertTopLeftPosition(page, 'A1');
+
+  // All done
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

@@ -5,6 +5,7 @@
 import type { Sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
+import { animateViewport, calculatePageUpDown, isAnimating } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { A1Selection, CellRefRange, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { JsSelection } from '@/app/quadratic-core/quadratic_core';
@@ -276,25 +277,21 @@ export class SheetCursor {
   };
 
   selectPageDown = () => {
-    // todo...
-    // let end = this.jsSelection.getBottomRightCell();
-    // console.log(end.x, end.y);
-    // const bounds = pixiApp.viewport.getVisibleBounds();
-    // const y = this.sheets.sheet.getRowY(end.x);
-    // const distanceTopToCursorTop = y - bounds.top;
-    // const row = this.sheets.sheet.getRowFromScreen(y + bounds.height);
-    // this.jsSelection.selectTo(end.x, row, false);
-    // this.updatePosition(false);
-    // const gridHeadings = pixiApp.headings.headingSize.height / pixiApp.viewport.scale.y;
-    // pixiApp.viewport.y = Math.min(gridHeadings, -(y + bounds.height) + distanceTopToCursorTop);
-    // pixiApp.viewportChanged();
+    if (isAnimating()) return;
+    const { x, y, row } = calculatePageUpDown(false, true);
+    const column = this.selectionEnd.x;
+    this.jsSelection.selectTo(column, row, false, this.sheets.jsA1Context);
+    this.updatePosition(false);
+    animateViewport({ x: -x, y: -y });
   };
 
   selectPageUp = () => {
-    // todo...
-    // const bounds = pixiApp.viewport.getVisibleBounds();
-    // this.jsSelection.selectPage(bounds.height, true);
-    // this.updatePosition(true);
+    if (isAnimating()) return;
+    const { x, y, row } = calculatePageUpDown(true, true);
+    const column = this.selectionEnd.x;
+    this.jsSelection.selectTo(column, row, true, this.sheets.jsA1Context);
+    this.updatePosition(false);
+    animateViewport({ x: -x, y: -y });
   };
 
   isMultiCursor = (): boolean => {
@@ -388,7 +385,7 @@ export class SheetCursor {
   };
 
   get selectionEnd(): JsCoordinate {
-    return this.jsSelection.bottomRightCell(this.sheets.jsA1Context);
+    return this.jsSelection.selectionEnd(this.sheets.jsA1Context);
   }
 
   /// Returns true if the cursor is on an html or image cell.

@@ -4,7 +4,8 @@ import { TableColumnHeadersGridLines } from '@/app/gridGL/cells/tables/TableColu
 import { TableName } from '@/app/gridGL/cells/tables/TableName';
 import type { TablePointerDownResult } from '@/app/gridGL/cells/tables/Tables';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { Container, Rectangle, type Point } from 'pixi.js';
+import type { Rectangle } from 'pixi.js';
+import { Container, type Point } from 'pixi.js';
 
 export class TableHeader extends Container {
   table: Table;
@@ -16,7 +17,7 @@ export class TableHeader extends Container {
   private columnHeadersGridLines?: TableColumnHeadersGridLines;
 
   // Calculated lowest y position for a floating table header
-  private bottomOfTable = 0;
+  bottomOfTable = 0;
 
   onGrid = true;
 
@@ -136,10 +137,6 @@ export class TableHeader extends Container {
     if (this.parent !== this.table) {
       this.table.addChildAt(this, 0);
     }
-  }
-
-  getTableHeaderBounds(): Rectangle {
-    return new Rectangle(this.x, this.y, this.width, this.height);
   }
 
   toHover = (bounds: Rectangle, gridHeading: number) => {
