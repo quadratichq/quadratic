@@ -72,6 +72,12 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
   );
 
   useEffect(() => {
+    if (window.localStorage.getItem(key) === null) {
+      setValue(initialValue);
+    }
+  }, [initialValue, key, setValue]);
+
+  useEffect(() => {
     setStoredValue(readValue());
   }, [readValue]);
 
