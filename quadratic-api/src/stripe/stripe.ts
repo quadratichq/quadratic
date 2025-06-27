@@ -223,24 +223,3 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
     console.error('Unexpected Error: Unhandled number of subscriptions:', customer.subscriptions?.data);
   }
 };
-
-export const getIsOnPaidPlan = async (team: Team | DecryptedTeam) => {
-  if (team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE && !!team.stripeCurrentPeriodEnd) {
-    // If the team is on a paid plan, but the current period has ended, update the billing info
-    if (team.stripeCurrentPeriodEnd < new Date()) {
-      await updateBilling(team);
-
-      const dbTeam = await dbClient.team.findUnique({
-        where: {
-          id: team.id,
-        },
-      });
-
-      return dbTeam?.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE;
-    }
-
-    return true; // on a paid plan
-  }
-
-  return false; // not on a paid plan
-};

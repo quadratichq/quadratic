@@ -1,16 +1,15 @@
-import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
-import { isRunningInTest } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
-import { createCheckoutSession, createCustomer, getIsOnPaidPlan, getMonthlyPriceId } from '../../stripe/stripe';
+import { createCheckoutSession, createCustomer, getMonthlyPriceId } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
+import { getIsOnPaidPlan } from '../../utils/billing';
 
 export default [
   validateRequestSchema(
@@ -39,9 +38,7 @@ async function handler(req: Request, res: Response) {
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });
   }
 
-  const isOnPaidPlan = isRunningInTest
-    ? team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE
-    : await getIsOnPaidPlan(team);
+  const isOnPaidPlan = await getIsOnPaidPlan(team);
   if (isOnPaidPlan) {
     return res.status(400).json({ error: { message: 'Team already has an active subscription.' } });
   }

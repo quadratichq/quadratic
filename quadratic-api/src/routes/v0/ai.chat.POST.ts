@@ -1,4 +1,3 @@
-import { SubscriptionStatus } from '@prisma/client';
 import type { Response } from 'express';
 import { getLastAIPromptMessageIndex, getLastUserMessageType } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
@@ -10,15 +9,15 @@ import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
-import { isRunningInTest, STORAGE_TYPE } from '../../env-vars';
+import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getBucketName, S3Bucket } from '../../storage/s3';
 import { uploadFile } from '../../storage/storage';
-import { getIsOnPaidPlan } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
+import { getIsOnPaidPlan } from '../../utils/billing';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
 
@@ -39,9 +38,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = await getFile({ uuid: fileUuid, userId });
 
   // Check if the file's owner team is on a paid plan
-  const isOnPaidPlan = isRunningInTest
-    ? ownerTeam.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE
-    : await getIsOnPaidPlan(ownerTeam);
+  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
 
   // Get the user's role in this owner team
   const userTeamRole = await dbClient.userTeamRole.findUnique({

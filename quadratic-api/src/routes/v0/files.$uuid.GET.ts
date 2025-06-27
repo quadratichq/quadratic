@@ -1,19 +1,17 @@
-import { SubscriptionStatus } from '@prisma/client';
 import type { ResponseError } from '@sendgrid/mail';
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
-import { isRunningInTest } from '../../env-vars';
 import { licenseClient } from '../../licenseClient';
 import { getFile } from '../../middleware/getFile';
 import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
-import { getIsOnPaidPlan } from '../../stripe/stripe';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getIsOnPaidPlan } from '../../utils/billing';
 import { getDecryptedTeam } from '../../utils/teams';
 
 export default [
@@ -48,9 +46,7 @@ async function handler(
     throw new ApiError(500, 'Unable to retrieve SSH keys');
   }
 
-  const isOnPaidPlan = isRunningInTest
-    ? ownerTeam.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE
-    : await getIsOnPaidPlan(ownerTeam);
+  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
