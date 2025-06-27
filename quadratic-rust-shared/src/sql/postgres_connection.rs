@@ -28,6 +28,7 @@ use crate::{
     error::{Result, SharedError},
 };
 use crate::{convert_sqlx_type, net::ssh::SshConfig, sql::UsesSsh, to_arrow_type};
+use arrow::array::Array;
 
 /// PostgreSQL connection
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -400,15 +401,14 @@ impl UsesSsh for PostgresConnection {
     }
 }
 
-#[cfg(test)]
-mod tests {
+pub mod tests {
+
+    use arrow::datatypes::DataType;
 
     use super::*;
-
     use std::str::FromStr;
-    use uuid::Uuid;
 
-    fn new_postgres_connection() -> PostgresConnection {
+    pub fn new_postgres_connection() -> PostgresConnection {
         PostgresConnection::new(
             Some("user".into()),
             Some("password".into()),
@@ -423,94 +423,8 @@ mod tests {
         )
     }
 
-    #[tokio::test]
-    async fn test_postgres_connection() {
-        let connection = new_postgres_connection();
-        let mut pool = connection.connect().await.unwrap();
-        let sql = "select * from all_native_data_types limit 1";
-        let rows = PostgresConnection::query_all(&mut pool, sql).await.unwrap();
-
-        let first_row = rows.first().unwrap();
-        let arrow_values = rows
-            .first()
-            .unwrap()
-            .columns()
-            .iter()
-            .enumerate()
-            .map(|(index, col)| connection.to_arrow(first_row, col, index))
-            .collect::<Vec<_>>();
-
-        let expected = vec![
-            ArrowType::Int32(1),
-            ArrowType::Int16(32767),
-            ArrowType::Int32(2147483647),
-            ArrowType::Int64(9223372036854775807),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
-            ArrowType::Float32(123.45),
-            ArrowType::Float64(123456789.123456),
-            ArrowType::Int32(1),
-            ArrowType::Int64(1),
-            ArrowType::Null,
-            ArrowType::Utf8("char_data ".into()),
-            ArrowType::Utf8("varchar_data".into()),
-            ArrowType::Utf8("text_data".into()),
-            ArrowType::Null,
-            ArrowType::Timestamp(NaiveDateTime::from_str("2024-05-20T12:34:56").unwrap()),
-            ArrowType::TimestampTz(DateTime::from_str("2024-05-20T00:34:56-06:00").unwrap()),
-            ArrowType::Date32(19863),
-            ArrowType::Time32(NaiveTime::from_str("12:34:56").unwrap()),
-            ArrowType::Time32(NaiveTime::from_str("12:34:56").unwrap()),
-            ArrowType::Void,
-            ArrowType::Boolean(true),
-            ArrowType::Utf8("value1".into()),
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Null,
-            ArrowType::Json(serde_json::json!({"key": "value"})),
-            ArrowType::Jsonb(serde_json::json!({"key": "value"})),
-            ArrowType::Uuid(Uuid::from_str("123e4567-e89b-12d3-a456-426614174000").unwrap()),
-            ArrowType::Null,
-            ArrowType::Utf8("1,2,3".into()),
-            ArrowType::Utf8("32767,16384,8192".into()),
-            ArrowType::Utf8("9223372036854775807,4611686018427387903,2305843009213693951".into()),
-            ArrowType::Utf8("123.4500,67.8900,12.3400".into()),
-            ArrowType::Utf8("123.45,67.89,12.34".into()),
-            ArrowType::Utf8("123456789.123456,987654321.987654,555555555.555555".into()),
-            ArrowType::Utf8("text1,text2,text3".into()),
-            ArrowType::Utf8("varchar1,varchar2,varchar3".into()),
-            ArrowType::Utf8("true,false,true".into()),
-            ArrowType::Utf8("2024-05-20 12:34:56,2024-06-15 15:30:00,2024-07-10 09:15:30".into()),
-            ArrowType::Utf8("2024-05-20,2024-06-15,2024-07-10".into()),
-            ArrowType::Utf8(
-                "{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}".into(),
-            ),
-            ArrowType::Null,
-        ];
-
-        assert_eq!(arrow_values, expected);
-
-        // happy path, just making sure it doesn't error
-        let _data = connection.to_parquet(rows);
-        // println!("{:?}", _data);
-    }
-
-    #[tokio::test]
-    async fn test_postgres_schema() {
-        let connection = new_postgres_connection();
-        let mut pool = connection.connect().await.unwrap();
-        let schema = connection.schema(&mut pool).await.unwrap();
-
-        // println!("{:?}", schema);
-
-        let expected = vec![
+    pub fn expected_postgres_schema() -> Vec<SchemaColumn> {
+        vec![
             SchemaColumn {
                 name: "id".into(),
                 r#type: "int4".into(),
@@ -761,10 +675,103 @@ mod tests {
                 r#type: "bool".into(),
                 is_nullable: true,
             },
-        ];
+        ]
+    }
 
+    pub fn expected_postgres_arrow_values() -> Vec<ArrowType> {
+        vec![
+            ArrowType::Int32(1),
+            ArrowType::Int16(32767),
+            ArrowType::Int32(2147483647),
+            ArrowType::Int64(9223372036854775807),
+            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
+            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
+            ArrowType::Float32(123.45),
+            ArrowType::Float64(123456789.123456),
+            ArrowType::Int32(1),
+            ArrowType::Int64(1),
+            ArrowType::Null,
+            ArrowType::Utf8("char_data ".into()),
+            ArrowType::Utf8("varchar_data".into()),
+            ArrowType::Utf8("text_data".into()),
+            ArrowType::Null,
+            ArrowType::Timestamp(NaiveDateTime::from_str("2024-05-20T12:34:56").unwrap()),
+            ArrowType::TimestampTz(DateTime::from_str("2024-05-20T00:34:56-06:00").unwrap()),
+            ArrowType::Date32(19863),
+            ArrowType::Time32(NaiveTime::from_str("12:34:56").unwrap()),
+            ArrowType::Time32(NaiveTime::from_str("12:34:56").unwrap()),
+            ArrowType::Void,
+            ArrowType::Boolean(true),
+            ArrowType::Utf8("value1".into()),
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Null,
+            ArrowType::Json(serde_json::json!({"key": "value"})),
+            ArrowType::Jsonb(serde_json::json!({"key": "value"})),
+            ArrowType::Uuid(uuid::Uuid::from_str("123e4567-e89b-12d3-a456-426614174000").unwrap()),
+            ArrowType::Null,
+            ArrowType::Utf8("1,2,3".into()),
+            ArrowType::Utf8("32767,16384,8192".into()),
+            ArrowType::Utf8("9223372036854775807,4611686018427387903,2305843009213693951".into()),
+            ArrowType::Utf8("123.4500,67.8900,12.3400".into()),
+            ArrowType::Utf8("123.45,67.89,12.34".into()),
+            ArrowType::Utf8("123456789.123456,987654321.987654,555555555.555555".into()),
+            ArrowType::Utf8("text1,text2,text3".into()),
+            ArrowType::Utf8("varchar1,varchar2,varchar3".into()),
+            ArrowType::Utf8("true,false,true".into()),
+            ArrowType::Utf8("2024-05-20 12:34:56,2024-06-15 15:30:00,2024-07-10 09:15:30".into()),
+            ArrowType::Utf8("2024-05-20,2024-06-15,2024-07-10".into()),
+            ArrowType::Utf8(
+                "{\"key1\":\"value1\"},{\"key2\":\"value2\"},{\"key3\":\"value3\"}".into(),
+            ),
+            ArrowType::Null,
+        ]
+    }
+
+    #[cfg(test)]
+    #[tokio::test]
+    async fn test_postgres_connection() {
+        let connection = new_postgres_connection();
+        let mut pool = connection.connect().await.unwrap();
+        let sql = "select * from all_native_data_types limit 1";
+        let rows = PostgresConnection::query_all(&mut pool, sql).await.unwrap();
+
+        let first_row = rows.first().unwrap();
+        let arrow_values = rows
+            .first()
+            .unwrap()
+            .columns()
+            .iter()
+            .enumerate()
+            .map(|(index, col)| connection.to_arrow(first_row, col, index))
+            .collect::<Vec<_>>();
+
+        let expected = expected_postgres_arrow_values();
+        assert_eq!(arrow_values, expected);
+
+        // happy path, just making sure it doesn't error
+        let _data = connection.to_parquet(rows);
+        // println!("{:?}", _data);
+    }
+
+    #[cfg(test)]
+    #[tokio::test]
+    async fn test_postgres_schema() {
+        let connection = new_postgres_connection();
+        let mut pool = connection.connect().await.unwrap();
+        let schema = connection.schema(&mut pool).await.unwrap();
+
+        // println!("{:?}", schema);
+
+        let expected = expected_postgres_schema();
         let columns = &schema.tables.get("all_native_data_types").unwrap().columns;
-
         assert_eq!(columns, &expected);
     }
 }
