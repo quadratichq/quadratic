@@ -96,7 +96,7 @@ impl GridController {
                 }
                 Ok(grid)
             }
-            Err(e) => Err(JsValue::from_str(&format!("Failed to import grid: {}", e))),
+            Err(e) => Err(JsValue::from_str(&format!("Failed to import grid: {e}"))),
         }
     }
 

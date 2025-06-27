@@ -40,7 +40,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
         let values: Vec<Vec<String>> = serde_wasm_bindgen::from_value(values)
-            .map_err(|e| JsValue::from_str(&format!("Failed to parse values: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Failed to parse values: {e}")))?;
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
             self.set_cell_values(SheetPos::new(sheet_id, x as i64, y as i64), values, cursor);
 
@@ -131,8 +131,7 @@ impl GridController {
             Ok(ai_cells) => serde_json::to_string(ai_cells)
                 .map_err(|_| JsValue::from_str("Unable to parse AICells")),
             Err(e) => Err(JsValue::from_str(&format!(
-                "Unable to parse AICells: {}",
-                e
+                "Unable to parse AICells: {e}"
             ))),
         }
     }
@@ -153,8 +152,7 @@ impl GridController {
             Ok(ai_cell_formats) => serde_json::to_string(ai_cell_formats)
                 .map_err(|_| JsValue::from_str("Unable to parse AICellFormats")),
             Err(e) => Err(JsValue::from_str(&format!(
-                "Unable to parse AICellFormats: {}",
-                e
+                "Unable to parse AICellFormats: {e}"
             ))),
         }
     }

@@ -43,7 +43,7 @@ impl Borders {
 
             for row in rect.y_range() {
                 // Print y-axis coordinate
-                print!("{:2} ", row);
+                print!("{row:2} ");
                 Self::print_row(&horizontal, &vertical, row, rect);
                 println!();
             }
@@ -58,7 +58,7 @@ impl Borders {
     ) {
         for col in rect.x_range() {
             let chars = Self::get_border_chars(horizontal, vertical, col, row);
-            print!("{:2}", chars); // Adjust spacing for coordinate labels
+            print!("{chars:2}"); // Adjust spacing for coordinate labels
         }
     }
 
@@ -78,7 +78,7 @@ impl Borders {
         } else {
             EMPTY
         };
-        format!("{}{}", v_char, h_char)
+        format!("{v_char}{h_char}")
     }
 }
 
@@ -107,7 +107,7 @@ mod tests {
 
         for selection in selections {
             let mut gc = GridController::test();
-            println!("\n{:?}:", selection);
+            println!("\n{selection:?}:");
             gc.set_borders(
                 A1Selection::test_a1("A1:D5"),
                 selection,

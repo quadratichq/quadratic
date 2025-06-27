@@ -33,8 +33,7 @@ impl GridController {
                     e
                 ));
                 Err(format!(
-                    "Failed to serialize get cells a1 response: {:?}",
-                    e
+                    "Failed to serialize get cells a1 response: {e:?}"
                 ))
             }
         }
