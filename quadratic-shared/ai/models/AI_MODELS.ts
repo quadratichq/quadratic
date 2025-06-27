@@ -11,20 +11,21 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash
 export const DEFAULT_MODEL_PRO: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
 export const DEFAULT_MODEL_FREE: AIModelKey = 'vertexai:gemini-2.5-pro:thinking-toggle-off';
 
-export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
+export const DEFAULT_SQL_MODEL: AIModelKey =
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
 export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-on';
 
 // Internal tool call models
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
-export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro:thinking-toggle-off';
-export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
 
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
@@ -117,7 +118,7 @@ export const MODELS_CONFIGURATION: {
     thinkingBudget: 32768,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
-  'vertexai:gemini-2.5-flash': {
+  'vertexai:gemini-2.5-flash:thinking-toggle-off': {
     model: 'gemini-2.5-flash',
     displayName: 'gemini 2.5 flash',
     temperature: 0,
@@ -129,6 +130,21 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingBudget: 0,
+    ...AI_RATES.gemini_2_5_flash_rate,
+  },
+  'vertexai:gemini-2.5-flash:thinking-toggle-on': {
+    model: 'gemini-2.5-flash',
+    displayName: 'gemini 2.5 flash',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: true,
+    thinkingToggle: true,
+    thinkingBudget: 24576,
     ...AI_RATES.gemini_2_5_flash_rate,
   },
   'vertexai:gemini-2.0-flash': {
@@ -212,7 +228,7 @@ export const MODELS_CONFIGURATION: {
     thinkingToggle: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
     displayName: 'claude 3.7 sonnet',
     temperature: 0,
@@ -222,11 +238,12 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: true,
+    thinkingToggle: false,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: 'claude 3.7 sonnet thinking',
+    displayName: 'claude 3.7 sonnet',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
@@ -235,6 +252,7 @@ export const MODELS_CONFIGURATION: {
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
+    thinkingToggle: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock:us.deepseek.r1-v1:0': {

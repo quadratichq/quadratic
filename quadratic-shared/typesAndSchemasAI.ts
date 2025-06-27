@@ -64,7 +64,8 @@ export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKey
 const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-pro:thinking-toggle-off',
   'vertexai:gemini-2.5-pro:thinking-toggle-on',
-  'vertexai:gemini-2.5-flash',
+  'vertexai:gemini-2.5-flash:thinking-toggle-off',
+  'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.0-flash',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
@@ -77,8 +78,8 @@ const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-on',
   'bedrock-anthropic:claude:thinking-toggle-off',
   'bedrock-anthropic:claude:thinking-toggle-on',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
