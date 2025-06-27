@@ -185,7 +185,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
       ) : (
         <Popover>
           {/* Needs a min-width or it shifts as the popover closes */}
-          <PopoverTrigger className="group flex min-w-24 items-center justify-end gap-0 text-right">
+          <PopoverTrigger className="group mr-1.5 flex min-w-24 items-center justify-end gap-0 text-right">
             Model: {activeModelLabel}
             <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
           </PopoverTrigger>
