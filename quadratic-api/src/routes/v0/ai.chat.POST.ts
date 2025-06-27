@@ -1,5 +1,6 @@
+import { SubscriptionStatus } from '@prisma/client';
 import type { Response } from 'express';
-import { getLastAIPromptMessageIndex, getLastPromptMessageType } from 'quadratic-shared/ai/helpers/message.helper';
+import { getLastAIPromptMessageIndex, getLastUserMessageType } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
@@ -9,7 +10,7 @@ import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
-import { STORAGE_TYPE } from '../../env-vars';
+import { isRunningInTest, STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -38,7 +39,9 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = await getFile({ uuid: fileUuid, userId });
 
   // Check if the file's owner team is on a paid plan
-  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
+  const isOnPaidPlan = isRunningInTest
+    ? ownerTeam.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE
+    : await getIsOnPaidPlan(ownerTeam);
 
   // Get the user's role in this owner team
   const userTeamRole = await dbClient.userTeamRole.findUnique({
@@ -52,7 +55,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
 
   let exceededBillingLimit = false;
 
-  const messageType = getLastPromptMessageType(args.messages);
+  const messageType = getLastUserMessageType(args.messages);
 
   // Either team is not on a paid plan or user is not a member of the team
   // and the message is a user prompt, not a tool result

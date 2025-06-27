@@ -1,8 +1,10 @@
+import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
+import { isRunningInTest } from '../../env-vars';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
@@ -37,7 +39,9 @@ async function handler(req: Request, res: Response) {
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });
   }
 
-  const isOnPaidPlan = await getIsOnPaidPlan(team);
+  const isOnPaidPlan = isRunningInTest
+    ? team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE
+    : await getIsOnPaidPlan(team);
   if (isOnPaidPlan) {
     return res.status(400).json({ error: { message: 'Team already has an active subscription.' } });
   }

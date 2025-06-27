@@ -41,6 +41,12 @@ jest.mock('@anthropic-ai/bedrock-sdk', () => ({
             input: { param1: 'value1' },
           },
         ],
+        usage: {
+          input_tokens: 100,
+          output_tokens: 100,
+          cache_read_input_tokens: 0,
+          cache_creation_input_tokens: 0,
+        },
       }),
     },
   })),
@@ -96,6 +102,8 @@ describe('POST /v0/ai/chat', () => {
               },
             ],
             modelKey: payload.modelKey,
+            isOnPaidPlan: false,
+            exceededBillingLimit: false,
           });
         });
 
