@@ -224,7 +224,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             {!isOnPaidPlan && (
               <Button variant="link" asChild>
                 <Link to={ROUTES.ACTIVE_TEAM_SETTINGS} target="_blank">
-                  Upgrade to Pro
+                  Upgrade now for access to Pro
                 </Link>
               </Button>
             )}
