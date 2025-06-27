@@ -14,7 +14,6 @@ import {
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
-import { isRunningInTest } from '../../env-vars';
 import { handleAIRequest } from '../handler/ai.handler';
 
 export const getModelKey = async (
@@ -24,10 +23,6 @@ export const getModelKey = async (
   exceededBillingLimit: boolean
 ): Promise<AIModelKey> => {
   try {
-    if (isRunningInTest) {
-      return modelKey;
-    }
-
     if (!isOnPaidPlan) {
       return DEFAULT_MODEL_FREE;
     }

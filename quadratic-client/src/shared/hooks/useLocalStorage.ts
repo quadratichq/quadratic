@@ -57,7 +57,13 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
         setStoredValue(newValue);
 
         // We dispatch a custom event so every useLocalStorage hook are notified
-        window.dispatchEvent(new StorageEvent('local-storage', { key }));
+        window.dispatchEvent(
+          new StorageEvent('local-storage', {
+            key,
+            oldValue: JSON.stringify(storedValue),
+            newValue: JSON.stringify(newValue),
+          })
+        );
       } catch (error) {
         throw new Error(`Error setting localStorage key “${key}”`);
       }

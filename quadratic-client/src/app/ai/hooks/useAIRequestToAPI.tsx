@@ -31,13 +31,14 @@ export function useAIRequestToAPI() {
         content: AIMessagePrompt['content'];
         toolCalls: AIMessagePrompt['toolCalls'];
       }> => {
+        const isOnPaidPlan = await snapshot.getPromise(editorInteractionStateIsOnPaidPlanAtom);
         let responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
           role: 'assistant',
           content: [],
           contextType: 'userPrompt',
           toolCalls: [],
           modelKey: args.modelKey,
-          isOnPaidPlan: false,
+          isOnPaidPlan,
           exceededBillingLimit: false,
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
