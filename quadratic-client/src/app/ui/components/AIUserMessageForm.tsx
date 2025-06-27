@@ -36,7 +36,6 @@ export type AIUserMessageFormWrapperProps = {
 
 export type SubmitPromptArgs = {
   content: Content;
-  onSubmit?: () => void;
 };
 
 type AIUserMessageFormProps = AIUserMessageFormWrapperProps & {
@@ -91,13 +90,6 @@ export const AIUserMessageForm = memo(
       );
     }, [initialContent]);
 
-    const onSubmit = useCallback(() => {
-      if (initialContent === undefined) {
-        setPrompt('');
-        setFiles([]);
-      }
-    }, [initialContent]);
-
     const showAIUsageExceeded = useMemo(
       () => waitingOnMessageIndex === props.messageIndex,
       [props.messageIndex, waitingOnMessageIndex]
@@ -113,12 +105,16 @@ export const AIUserMessageForm = memo(
       (prompt: string) => {
         if (prompt.trim().length === 0) return;
 
+        if (initialContent === undefined) {
+          setPrompt('');
+          setFiles([]);
+        }
+
         submitPrompt({
           content: [...files, { type: 'text', text: prompt }],
-          onSubmit: initialContent === undefined ? onSubmit : undefined,
         });
       },
-      [files, initialContent, onSubmit, submitPrompt]
+      [files, initialContent, submitPrompt]
     );
 
     const abortPrompt = useCallback(() => {

@@ -23,12 +23,11 @@ export const AIAssistantUserMessageForm = memo(
     const { submitPrompt } = useSubmitAIAssistantPrompt();
 
     const handleSubmit = useCallback(
-      ({ content, onSubmit }: SubmitPromptArgs) => {
+      ({ content }: SubmitPromptArgs) => {
         mixpanel.track('[AIAssistant].submitPrompt');
         submitPrompt({
           content,
           messageIndex: props.messageIndex,
-          onSubmit,
         });
       },
       [props.messageIndex, submitPrompt]

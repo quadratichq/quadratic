@@ -25,6 +25,7 @@ export interface EditorInteractionState {
   user?: User;
   fileUuid: string;
   teamUuid: string;
+  isOnPaidPlan: boolean;
   follow?: string;
   undo: boolean;
   redo: boolean;
@@ -51,6 +52,7 @@ export const defaultEditorInteractionState: EditorInteractionState = {
   user: undefined, // when we call <RecoilRoot> we initialize this with the value from the server
   fileUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
   teamUuid: '', // when we call <RecoilRoot> we initialize this with the value from the server
+  isOnPaidPlan: false,
   follow: undefined,
   undo: false,
   redo: false,
@@ -180,6 +182,7 @@ export const editorInteractionStateSettingsAtom = createSelector('settings');
 export const editorInteractionStateUserAtom = createSelector('user');
 export const editorInteractionStateFileUuidAtom = createSelector('fileUuid');
 export const editorInteractionStateTeamUuidAtom = createSelector('teamUuid');
+export const editorInteractionStateIsOnPaidPlanAtom = createSelector('isOnPaidPlan');
 export const editorInteractionStateFollowAtom = createSelector('follow');
 export const editorInteractionStateUndoAtom = createSelector('undo');
 export const editorInteractionStateRedoAtom = createSelector('redo');

@@ -9,6 +9,7 @@ import { userOptionalMiddleware } from '../../middleware/user';
 import { validateOptionalAccessToken } from '../../middleware/validateOptionalAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
+import { getIsOnPaidPlan } from '../../stripe/stripe';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getDecryptedTeam } from '../../utils/teams';
@@ -44,6 +45,8 @@ async function handler(
   if (decryptedTeam.sshPublicKey === null) {
     throw new ApiError(500, 'Unable to retrieve SSH keys');
   }
+
+  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -94,6 +97,7 @@ async function handler(
     team: {
       uuid: ownerTeam.uuid,
       name: ownerTeam.name,
+      isOnPaidPlan,
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },

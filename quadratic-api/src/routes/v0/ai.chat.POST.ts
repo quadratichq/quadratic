@@ -1,12 +1,13 @@
 import type { Response } from 'express';
 import { getLastAIPromptMessageIndex, getLastPromptMessageType } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
+import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -15,6 +16,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getBucketName, S3Bucket } from '../../storage/s3';
 import { uploadFile } from '../../storage/storage';
+import { getIsOnPaidPlan } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
@@ -28,32 +30,74 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
-  // const usage = await BillingAIUsageMonthlyForUser(userId);
-  // const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
-
-  // if (exceededBillingLimit) {
-  //   //@ts-expect-error
-  //   return res.status(402).json({ error: 'Billing limit exceeded' });
-  // }
-
   const { body } = parseRequest(req, schema);
   const { chatId, fileUuid, modelKey: clientModelKey, ...args } = body;
-
-  const source = args.source;
-  const modelKey = await getModelKey(clientModelKey, args);
-
-  const parsedResponse = await handleAIRequest(modelKey, args, res);
-  if (parsedResponse) {
-    args.messages.push(parsedResponse.responseMessage);
-  }
 
   const {
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
+  // Check if the file's owner team is on a paid plan
+  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
+
+  // Get the user's role in this owner team
+  const userTeamRole = await dbClient.userTeamRole.findUnique({
+    where: {
+      userId_teamId: {
+        userId,
+        teamId: ownerTeam.id,
+      },
+    },
+  });
+
+  let exceededBillingLimit = false;
+
+  const messageType = getLastPromptMessageType(args.messages);
+
+  // Either team is not on a paid plan or user is not a member of the team
+  // and the message is a user prompt, not a tool result
+  if ((!isOnPaidPlan || !userTeamRole) && messageType === 'userPrompt') {
+    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
+    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+
+    if (exceededBillingLimit) {
+      const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
+        role: 'assistant',
+        content: [],
+        contextType: 'userPrompt',
+        toolCalls: [],
+        modelKey: clientModelKey,
+        isOnPaidPlan,
+        exceededBillingLimit,
+      };
+
+      const { stream } = getModelOptions(clientModelKey, args);
+
+      if (stream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+        res.end();
+        return;
+      } else {
+        res.status(200).json(responseMessage);
+      }
+
+      return;
+    }
+  }
+
+  const source = args.source;
+  const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+
+  const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
+  if (parsedResponse) {
+    args.messages.push(parsedResponse.responseMessage);
+  }
+
   const model = getModelFromModelKey(modelKey);
   const messageIndex = getLastAIPromptMessageIndex(args.messages) + (parsedResponse ? 0 : 1);
-  const messageType = getLastPromptMessageType(args.messages);
 
   const chat = await dbClient.analyticsAIChat.upsert({
     where: {
