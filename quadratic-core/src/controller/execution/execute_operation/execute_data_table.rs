@@ -187,8 +187,8 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::AddDataTable {
-            sheet_pos,
+        if let Operation::AddDataTableMultiPos {
+            multi_pos,
             mut data_table,
             cell_value,
             index,
@@ -197,65 +197,117 @@ impl GridController {
             data_table.name = unique_data_table_name(
                 data_table.name(),
                 false,
-                Some(MultiPos::SheetPos(sheet_pos)),
+                Some(multi_pos),
                 self.a1_context(),
             )
             .into();
 
-            let sheet_id = sheet_pos.sheet_id;
+            let sheet_id = multi_pos.sheet_id();
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = Pos::from(sheet_pos);
-            let sheet_rect_for_compute_and_spills = data_table.output_sheet_rect(sheet_pos, false);
-
-            // select the entire data table
-            Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
-
-            // update the CellValue
-            let old_value = sheet
-                .columns
-                .set_value(&data_table_pos, cell_value.to_owned());
 
             // insert the data table into the sheet
-            let (old_index, old_data_table, dirty_rects) = sheet.data_table_insert_before(
+            let Ok((old_index, old_data_table, dirty_rects)) = sheet.data_table_insert_before(
                 index.unwrap_or(usize::MAX),
-                &data_table_pos,
+                multi_pos,
                 data_table.to_owned(),
-            );
+            ) else {
+                return Err(anyhow!("Failed to insert data table"));
+            };
+
+            let mut reverse_operations = vec![];
+
+            let (sheet_rect_for_compute_and_spills, data_table_pos) = match multi_pos {
+                MultiPos::SheetPos(sheet_pos) => {
+                    let data_table_pos = sheet_pos.into();
+
+                    // select the entire data table
+                    Self::select_full_data_table(
+                        transaction,
+                        sheet_id,
+                        data_table_pos,
+                        &data_table,
+                    );
+
+                    // update the CellValue
+                    let old_value = sheet
+                        .columns
+                        .set_value(&data_table_pos, cell_value.to_owned());
+
+                    reverse_operations.push(Operation::SetCellValues {
+                        sheet_pos,
+                        values: old_value.unwrap_or(CellValue::Blank).into(),
+                    });
+
+                    // mark old data table as dirty, if it exists
+                    if let Some(old_data_table) = &old_data_table {
+                        let old_data_table_rect =
+                            old_data_table.output_sheet_rect(sheet_pos, false);
+                        transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
+                    }
+
+                    (
+                        Some(data_table.output_sheet_rect(sheet_pos, false)),
+                        Some(data_table_pos),
+                    )
+                }
+                MultiPos::TablePos(table_pos) => {
+                    if let Some(sheet_pos) = table_pos.to_sheet_pos(sheet) {
+                        if transaction.is_user_undo_redo() {
+                            transaction.add_update_selection(A1Selection::table(
+                                sheet_pos,
+                                data_table.name(),
+                            ));
+                        }
+
+                        // update the CellValue
+                        sheet.modify_data_table_at_pos(
+                            &table_pos.table_sheet_pos.into(),
+                            |table| {
+                                let old_value = table
+                                    .cell_value_at(table_pos.pos.x as u32, table_pos.pos.y as u32);
+                                table.set_cell_value_at(
+                                    table_pos.pos.x as u32,
+                                    table_pos.pos.y as u32,
+                                    cell_value.to_owned(),
+                                );
+                                reverse_operations.push(Operation::SetDataTableAt {
+                                    sheet_pos,
+                                    values: old_value.unwrap_or(CellValue::Blank).into(),
+                                });
+                                Ok(())
+                            },
+                        );
+                    }
+                    (None, None)
+                }
+            };
+
+            reverse_operations.push(Operation::SetDataTableMultiPos {
+                multi_pos,
+                data_table: old_data_table,
+                index: old_index,
+            });
 
             // mark new data table as dirty
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
-            // mark old data table as dirty, if it exists
-            if let Some(old_data_table) = &old_data_table {
-                let old_data_table_rect = old_data_table.output_sheet_rect(sheet_pos, false);
-                transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
-            }
-
-            let forward_operations = vec![Operation::AddDataTable {
-                sheet_pos,
+            let forward_operations = vec![Operation::AddDataTableMultiPos {
+                multi_pos,
                 data_table,
                 cell_value,
                 index,
             }];
-            let reverse_operations = vec![
-                Operation::SetCellValues {
-                    sheet_pos,
-                    values: old_value.unwrap_or(CellValue::Blank).into(),
-                },
-                Operation::SetDataTable {
-                    sheet_pos,
-                    data_table: old_data_table,
-                    index: old_index,
-                },
-            ];
+
+            if let Some(data_table_pos) = data_table_pos {
+                self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            }
 
             self.data_table_operations(
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                sheet_rect_for_compute_and_spills.as_ref(),
             );
 
             return Ok(());
