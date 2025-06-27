@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    MultiPos, SheetPos, TablePos,
+    MultiPos, SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, find_cell_references, parse_formula},
     grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
@@ -44,51 +44,8 @@ impl GridController {
                     None,
                     None,
                 );
-                self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
-            }
-            Err(error) => {
-                let _ = self.code_cell_sheet_error(transaction, &error);
-            }
-        }
-    }
-
-    pub(crate) fn run_formula_in_table(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        table_pos: TablePos,
-        code: String,
-        absolute_sheet_pos: SheetPos,
-    ) {
-        let mut eval_ctx = Ctx::new(self, absolute_sheet_pos);
-        let parse_ctx = self.a1_context();
-        transaction.current_multi_pos = Some(table_pos.into());
-
-        match parse_formula(&code, parse_ctx, absolute_sheet_pos) {
-            Ok(parsed) => {
-                let output = parsed.eval(&mut eval_ctx).into_non_tuple();
-                let errors = output.inner.errors();
-                let new_code_run = CodeRun {
-                    language: CodeCellLanguage::Formula,
-                    code,
-                    std_out: None,
-                    std_err: (!errors.is_empty())
-                        .then(|| errors.into_iter().map(|e| e.to_string()).join("\n")),
-                    cells_accessed: eval_ctx.cells_accessed,
-                    error: None,
-                    return_type: None,
-                    line_number: None,
-                    output_type: None,
-                };
-                let new_data_table = DataTable::new(
-                    DataTableKind::CodeRun(new_code_run),
-                    "Formula1",
-                    output.inner,
-                    false,
-                    None,
-                    None,
-                    None,
-                );
-                self.finalize_data_table(transaction, table_pos.into(), Some(new_data_table), None);
+                let _ =
+                    self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
             }
             Err(error) => {
                 let _ = self.code_cell_sheet_error(transaction, &error);
@@ -130,7 +87,7 @@ impl GridController {
             None,
             None,
         );
-        self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
+        let _ = self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
     }
 }
 
@@ -142,7 +99,7 @@ mod test {
     use uuid::Uuid;
 
     use crate::{
-        Array, ArraySize, CellValue, Pos, SheetPos, Value,
+        Array, ArraySize, CellValue, MultiPos, Pos, SheetPos, Value,
         cell_values::CellValues,
         controller::{
             GridController,
@@ -200,13 +157,9 @@ mod test {
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
-        let sheet_pos = SheetPos {
-            x: 2,
-            y: 1,
-            sheet_id,
-        };
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 2, 1);
         gc.set_code_cell(
-            sheet_pos,
+            multi_pos,
             CodeCellLanguage::Formula,
             "A1 + 1".to_string(),
             None,
@@ -220,11 +173,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 3,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "B1 + 1".to_string(),
             None,
@@ -277,11 +226,7 @@ mod test {
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "A1 + 1".into(),
             None,
@@ -323,20 +268,18 @@ mod test {
             ..Default::default()
         };
         let mut transaction = PendingTransaction::default();
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
 
         // need the result to ensure last_modified is the same
-        let result = gc.js_code_result_to_code_cell_value(
-            &mut transaction,
-            result,
-            sheet_pos,
-            CodeCellLanguage::Javascript,
-            r#"return "12";"#.to_string(),
-        );
+        let result = gc
+            .js_code_result_to_code_cell_value(
+                &mut transaction,
+                result,
+                multi_pos,
+                CodeCellLanguage::Javascript,
+                r#"return "12";"#.to_string(),
+            )
+            .unwrap();
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: r#"return "12";"#.to_string(),
@@ -383,11 +326,7 @@ mod test {
             ..Default::default()
         };
 
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
         array
             .set(
@@ -417,13 +356,15 @@ mod test {
             .set(1, 1, CellValue::Text("Hello".into()), false)
             .unwrap();
 
-        let result = gc.js_code_result_to_code_cell_value(
-            &mut transaction,
-            result,
-            sheet_pos,
-            CodeCellLanguage::Javascript,
-            r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
-        );
+        let result = gc
+            .js_code_result_to_code_cell_value(
+                &mut transaction,
+                result,
+                multi_pos,
+                CodeCellLanguage::Javascript,
+                r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
+            )
+            .unwrap();
         let code_run = CodeRun {
             language: CodeCellLanguage::Javascript,
             code: r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
@@ -469,11 +410,7 @@ mod test {
 
         // create code that will later have a spill error
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "A1:A4".into(),
             None,
@@ -535,14 +472,10 @@ mod test {
     fn test_formula_error() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
-        let pos: Pos = sheet_pos.into();
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
+        let pos: Pos = Pos::new(1, 1);
 
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
+        gc.set_code_cell(multi_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(pos),
@@ -556,7 +489,7 @@ mod test {
         assert!(result.code_run().unwrap().std_err.is_some());
 
         gc.set_code_cell(
-            sheet_pos,
+            multi_pos,
             CodeCellLanguage::Formula,
             "{0,1/0;2/0,0}".into(),
             None,

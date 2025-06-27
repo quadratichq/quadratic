@@ -210,9 +210,9 @@ mod test {
 
         for (pos, data_table) in data_tables.into_iter() {
             let name = data_table.name().to_string();
-            let sheet_pos = pos.to_sheet_pos(duplicate_sheet_id);
+            let multi_pos = pos.to_multi_pos(duplicate_sheet_id);
             gc.grid
-                .update_data_table_name(sheet_pos, &name, &name, &context, false)
+                .update_data_table_name(multi_pos, &name, &name, &context, false)
                 .unwrap();
         }
 

@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos, TablePos,
+    MultiPos, SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     grid::{CodeCellLanguage, CodeCellValue},
 };
@@ -8,47 +8,21 @@ impl GridController {
     pub(crate) fn run_javascript(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         code: String,
+        translated_pos: SheetPos,
     ) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsRunJavascript(
                 transaction.id.to_string(),
-                sheet_pos.x as i32,
-                sheet_pos.y as i32,
-                sheet_pos.sheet_id.to_string(),
+                translated_pos.x as i32,
+                translated_pos.y as i32,
+                multi_pos.sheet_id().to_string(),
                 code.clone(),
             );
         }
         // stop the computation cycle until async returns
-        transaction.current_multi_pos = Some(sheet_pos.into());
-        let code_cell = CodeCellValue {
-            language: CodeCellLanguage::Javascript,
-            code,
-        };
-        transaction.waiting_for_async = Some(code_cell);
-        self.transactions.add_async_transaction(transaction);
-    }
-
-    pub(crate) fn run_javascript_in_table(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        table_pos: TablePos,
-        code: String,
-        x: u32,
-        y: u32,
-    ) {
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsRunJavascript(
-                transaction.id.to_string(),
-                x as i32,
-                y as i32,
-                table_pos.sheet_id().to_string(),
-                code.clone(),
-            );
-        }
-        // stop the computation cycle until async returns
-        transaction.current_multi_pos = Some(table_pos.into());
+        transaction.current_multi_pos = Some(multi_pos);
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Javascript,
             code,
@@ -76,10 +50,10 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet_pos = pos![A1].to_sheet_pos(sheet_id);
+        let multi_pos = pos![sheet_id!A1].into();
         let code = "return 'test';".to_string();
         gc.set_code_cell(
-            sheet_pos,
+            multi_pos,
             CodeCellLanguage::Javascript,
             code.clone(),
             None,
@@ -96,7 +70,7 @@ mod tests {
         .ok();
 
         let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
-        let pos = sheet_pos.into();
+        let pos = multi_pos.to_pos();
         let code_cell = sheet.cell_value(pos).unwrap();
         match code_cell {
             CellValue::Code(code_cell) => {
@@ -127,7 +101,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1].into(),
             CodeCellLanguage::Javascript,
             "return 'hello world';".into(),
             None,
@@ -161,7 +135,7 @@ mod tests {
 
         // create a javascript program at A2 that adds A1 + 1
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![sheet_id!A2].into(),
             CodeCellLanguage::Javascript,
             "return q.cells(\"A1\") + 1;".into(),
             None,
@@ -224,7 +198,7 @@ mod tests {
 
         // create a javascript program at A2 that adds A1 + 1
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![sheet_id!A2].into(),
             CodeCellLanguage::Javascript,
             "return q.cells(\"A1\") + 1;".into(),
             None,
@@ -307,7 +281,7 @@ mod tests {
 
         // creates a javascript program that outputs an array of length 10 from A1 -> C1
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1].into(),
             CodeCellLanguage::Javascript,
             "create an array output".into(),
             None,
@@ -351,7 +325,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1].into(),
             CodeCellLanguage::Javascript,
             "dummy calculation".into(),
             None,
@@ -383,7 +357,7 @@ mod tests {
 
         // creates a javascript program that outputs a string
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1].into(),
             CodeCellLanguage::Javascript,
             "return 'original output';".into(),
             None,
@@ -411,7 +385,7 @@ mod tests {
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1].into(),
             CodeCellLanguage::Javascript,
             "return 'new output';".into(),
             None,
@@ -445,7 +419,7 @@ mod tests {
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1].into(),
             CodeCellLanguage::Javascript,
             "return 'new output second time';".into(),
             None,
@@ -487,7 +461,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "1".to_string(), None);
         gc.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![sheet_id!B1].into(),
             CodeCellLanguage::Javascript,
             "q.cells(\"A1\") + 1".into(),
             None,
@@ -518,7 +492,7 @@ mod tests {
         // assert!(result.ok().unwrap().generate_thumbnail);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![sheet_id!C1].into(),
             CodeCellLanguage::Javascript,
             "q.cells(\"B2\") + 1".into(),
             None,
@@ -567,7 +541,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1].into(),
             CodeCellLanguage::Javascript,
             "return ['header', 1, 2, 3];".into(),
             None,

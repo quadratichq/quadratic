@@ -75,7 +75,8 @@ mod test {
                 None,
             )),
             None,
-        );
+        )
+        .unwrap();
 
         assert_eq!(
             gc.get_dependent_code_cells(&sheet_pos_00.into())

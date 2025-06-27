@@ -184,6 +184,16 @@ impl Sheet {
         }
     }
 
+    pub fn data_table_shift_remove_pos(
+        &mut self,
+        pos: &Pos,
+    ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
+        self.data_tables
+            .shift_remove_full_pos(pos)
+            .map(|(index, pos, data_table, dirty_rects)| (index, pos, data_table, dirty_rects))
+    }
+
+    /// Removes a data table at a MultiPos
     pub fn data_table_shift_remove(
         &mut self,
         multi_pos: &MultiPos,
@@ -565,7 +575,7 @@ impl Sheet {
         if let Some(data_table) = data_table {
             self.data_table_insert_full(&pos, data_table).1
         } else {
-            self.data_table_shift_remove(&pos)
+            self.data_table_shift_remove_pos(&pos)
                 .map(|(_, _, data_table, _)| data_table)
         }
     }

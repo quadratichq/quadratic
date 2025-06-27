@@ -246,7 +246,7 @@ impl GridController {
                         None,
                     );
 
-                    self.finalize_data_table(
+                    let _ = self.finalize_data_table(
                         &mut transaction,
                         current_sheet_pos.into(),
                         Some(data_table),

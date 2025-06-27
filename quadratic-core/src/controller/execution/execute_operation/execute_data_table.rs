@@ -109,7 +109,7 @@ impl GridController {
 
         // delete the data tables in reverse order, so that shift_remove is less expensive
         data_tables_to_delete.into_iter().rev().for_each(|pos| {
-            self.finalize_data_table(
+            let _ = self.finalize_data_table(
                 transaction,
                 pos.to_sheet_pos(sheet_rect.sheet_id).into(),
                 None,
@@ -151,7 +151,7 @@ impl GridController {
             index,
         } = op
         {
-            self.finalize_data_table(transaction, multi_pos, data_table, Some(index));
+            let _ = self.finalize_data_table(transaction, multi_pos, data_table, Some(index));
         }
     }
 
@@ -260,7 +260,7 @@ impl GridController {
                         }
 
                         // update the CellValue
-                        sheet.modify_data_table_at_pos(
+                        let _ = sheet.modify_data_table_at_pos(
                             &table_pos.table_sheet_pos.into(),
                             |table| {
                                 let old_value = table
@@ -2495,7 +2495,7 @@ mod tests {
         // create a formula cell in the grid data table
         let formula_pos = SheetPos::new(sheet_id, 1, 3);
         gc.set_code_cell(
-            formula_pos,
+            formula_pos.into(),
             CodeCellLanguage::Formula,
             "=1+1".into(),
             None,
@@ -2517,7 +2517,7 @@ mod tests {
     fn test_execute_sort_data_table() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.apply_first_row_as_header();
                 Ok(())
             })
@@ -2810,14 +2810,14 @@ mod tests {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         gc.set_code_cell(
-            pos!(F14).to_sheet_pos(sheet_id),
+            pos!(sheet_id!F14).into(),
             CodeCellLanguage::Formula,
             "1+1".to_string(),
             None,
             None,
         );
         gc.set_code_cell(
-            pos!(I5).to_sheet_pos(sheet_id),
+            pos!(sheet_id!I5).into(),
             CodeCellLanguage::Formula,
             "2+2".to_string(),
             None,

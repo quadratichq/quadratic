@@ -19,6 +19,20 @@ impl SheetPos {
         self.y = pos.y;
     }
 
+    /// Translates the pos in place by the given delta, clamping the result to the given min.
+    pub fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
+        self.x = (self.x + x).max(min_x);
+        self.y = (self.y + y).max(min_y);
+    }
+
+    /// Returns a new Pos translated by the given delta, clamping the result to the given min.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
+        let mut sheet_pos = *self;
+        sheet_pos.translate_in_place(x, y, min_x, min_y);
+        sheet_pos
+    }
+
     #[cfg(test)]
     pub fn test() -> Self {
         Self {

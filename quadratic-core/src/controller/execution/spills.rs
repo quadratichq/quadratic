@@ -69,11 +69,7 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 2, 1),
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -107,11 +103,7 @@ mod tests {
 
         // sets code cell that outputs 1,0=1 and 1,1=2
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 2, 1),
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -172,11 +164,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -247,11 +235,7 @@ mod tests {
 
         // value to cause the spill
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -270,11 +254,7 @@ mod tests {
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "1 + 2".into(),
             None,
@@ -394,11 +374,7 @@ mod tests {
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Javascript,
             "".into(),
             None,

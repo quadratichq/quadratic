@@ -7,8 +7,8 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::Sheet,
+    CopyFormats, MultiPos,
+    controller::active_transactions::pending_transaction::PendingTransaction, grid::Sheet,
 };
 
 impl Sheet {
@@ -31,7 +31,7 @@ impl Sheet {
             .get_pos_after_column_sorted(column - 1, false);
 
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
                 let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
@@ -39,8 +39,7 @@ impl Sheet {
                         if column >= pos.x && column < pos.x + output_rect.width() as i64 {
                             dt.chart_output = Some((width + 1, height));
                             transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
+                                MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y),
                                 dt.is_image(),
                                 dt.is_html(),
                             );
@@ -60,8 +59,7 @@ impl Sheet {
                                 dt.get_column_index_from_display_index(display_column_index, true);
                             let _ = dt.insert_column_sorted(column_index as usize, None, None);
                             transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
+                                MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y),
                                 dt.is_image(),
                                 dt.is_html(),
                             );
@@ -130,26 +128,20 @@ impl Sheet {
         // move the data tables to the right to match with their new anchor positions
         data_tables_to_move_right.sort_by(|(_, a), (_, b)| b.x.cmp(&a.x));
         for (_, old_pos) in data_tables_to_move_right {
+            let old_pos = old_pos.to_multi_pos(self.id);
             if let Some((index, old_pos, data_table, dirty_rects)) =
                 self.data_table_shift_remove(&old_pos)
             {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
-                transaction.add_from_code_run(
-                    self.id,
-                    old_pos,
-                    data_table.is_image(),
-                    data_table.is_html(),
-                );
+                transaction.add_from_code_run(old_pos, data_table.is_image(), data_table.is_html());
 
                 let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
-                transaction.add_from_code_run(
-                    self.id,
-                    new_pos,
-                    data_table.is_image(),
-                    data_table.is_html(),
-                );
-                let dirty_rects = self.data_table_insert_before(index, &new_pos, data_table).2;
-                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                transaction.add_from_code_run(new_pos, data_table.is_image(), data_table.is_html());
+                if let Ok((_, _, dirty_rects)) =
+                    self.data_table_insert_before(index, new_pos, data_table)
+                {
+                    transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                }
             }
         }
         // In the special case of CopyFormats::Before and column == pos.x, we
@@ -158,7 +150,7 @@ impl Sheet {
         for (_, to) in data_tables_to_move_back {
             let from = to.translate(1, 0, i64::MIN, i64::MIN);
             self.columns.move_cell_value(&from, &to);
-            transaction.add_code_cell(self.id, to);
+            transaction.add_code_cell(MultiPos::new_sheet_pos(self.id, to.x, to.y));
         }
     }
 }

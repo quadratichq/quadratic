@@ -53,6 +53,16 @@ impl MultiPos {
         }
     }
 
+    /// Converts a MultiPos to a SheetPos. This is only used in tests as it
+    /// assumes its a SheetPos.
+    #[cfg(test)]
+    pub fn to_sheet_pos_force(&self) -> SheetPos {
+        match self {
+            MultiPos::SheetPos(sheet_pos) => *sheet_pos,
+            MultiPos::TablePos(_) => panic!("TablePos cannot be converted to SheetPos"),
+        }
+    }
+
     pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
         match self {
             MultiPos::SheetPos(sheet_pos) => sheet_pos.sheet_id = sheet_id,
@@ -66,6 +76,30 @@ impl MultiPos {
         match self {
             MultiPos::SheetPos(sheet_pos) => Some((*sheet_pos).into()),
             MultiPos::TablePos(table_pos) => table_pos.translate_pos(sheet),
+        }
+    }
+
+    /// Translates the pos in place by the given delta, clamping the result to the given min.
+    pub fn translate_in_place(&mut self, x: i64, y: i64, min_x: i64, min_y: i64) {
+        match self {
+            MultiPos::SheetPos(sheet_pos) => sheet_pos.translate_in_place(x, y, min_x, min_y),
+            MultiPos::TablePos(table_pos) => table_pos.pos.translate_in_place(x, y, min_x, min_y),
+        }
+    }
+
+    /// Returns a new Pos translated by the given delta, clamping the result to the given min.
+    #[must_use = "this method returns a new value instead of modifying its input"]
+    pub fn translate(&self, x: i64, y: i64, min_x: i64, min_y: i64) -> Self {
+        let mut pos = *self;
+        pos.translate_in_place(x, y, min_x, min_y);
+        pos
+    }
+
+    #[cfg(test)]
+    pub fn to_pos(&self) -> Pos {
+        match self {
+            MultiPos::SheetPos(sheet_pos) => (*sheet_pos).into(),
+            MultiPos::TablePos(_) => panic!("TablePos cannot be converted to Pos"),
         }
     }
 }

@@ -274,7 +274,12 @@ impl GridController {
                     code_cell.code.clone(),
                 );
 
-                self.finalize_data_table(transaction, current_multi_pos, new_data_table.ok(), None);
+                let _ = self.finalize_data_table(
+                    transaction,
+                    current_multi_pos,
+                    new_data_table.ok(),
+                    None,
+                );
             }
         }
 
@@ -365,7 +370,7 @@ impl GridController {
             None,
         );
 
-        self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
+        let _ = self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
 
         Ok(())
     }
@@ -535,16 +540,12 @@ mod test {
         let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
 
         // manually set the CellValue::Code
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.set_cell_value(
-            sheet_pos.into(),
+            multi_pos.into(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
                 code: "delete me".to_string(),
@@ -575,12 +576,13 @@ mod test {
             Some(true),
             None,
         );
-        gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
+        gc.finalize_data_table(transaction, multi_pos, Some(new_data_table.clone()), None)
+            .unwrap();
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.data_table_at(&sheet_pos.into()),
+            sheet.data_table_at(&multi_pos.into()),
             Some(&new_data_table)
         );
 
@@ -617,12 +619,13 @@ mod test {
         );
         new_data_table.column_headers = None;
 
-        gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
+        gc.finalize_data_table(transaction, multi_pos, Some(new_data_table.clone()), None)
+            .unwrap();
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.data_table_at(&sheet_pos.into()),
+            sheet.data_table_at(&multi_pos.into()),
             Some(&new_data_table)
         );
 
@@ -634,11 +637,12 @@ mod test {
 
         // remove the code_run
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_data_table(transaction, sheet_pos, None, None);
+        gc.finalize_data_table(transaction, multi_pos, None, None)
+            .unwrap();
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table_at(&sheet_pos.into()), None);
+        assert_eq!(sheet.data_table_at(&multi_pos.into()), None);
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -653,13 +657,9 @@ mod test {
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
         gc.set_code_cell(
-            sheet_pos,
+            multi_pos,
             CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
@@ -680,16 +680,12 @@ mod test {
     fn ensure_chart_size_remains_same_if_same_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
 
         let languages = vec![CodeCellLanguage::Javascript, CodeCellLanguage::Python];
 
         for language in languages {
-            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None, None);
+            gc.set_code_cell(multi_pos, language.clone(), "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -700,11 +696,11 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&multi_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
-            gc.set_code_cell(sheet_pos, language, "code".to_string(), None, None);
+            gc.set_code_cell(multi_pos, language, "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -715,7 +711,7 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&multi_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
         }
     }
