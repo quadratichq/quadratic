@@ -25,31 +25,29 @@ export const useAIModel = (): {
   // This is to force update model stored in local storage to the current default model
   useEffect(() => {
     if (version !== DEFAULT_MODEL_VERSION) {
-      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_FREE));
-      window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
-
       setModelKey(DEFAULT_MODEL_FREE);
       setVersion(DEFAULT_MODEL_VERSION);
 
-      const modelConfig = MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
-      if ('thinkingToggle' in modelConfig) {
-        window.localStorage.setItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY, JSON.stringify(!!modelConfig.thinking));
-        setThinkingToggle(!!modelConfig.thinking);
+      const defaultConfig = MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
+      if ('thinkingToggle' in defaultConfig) {
+        setThinkingToggle(!!defaultConfig.thinking);
       }
     }
-  }, [version, setModelKey, setVersion, setThinkingToggle]);
+  }, [setModelKey, setThinkingToggle, setVersion, version]);
 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
     const config = MODELS_CONFIGURATION[modelKey];
     if (!config || (!debug && config.mode === 'disabled')) {
-      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_FREE));
-      window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
-
       setModelKey(DEFAULT_MODEL_FREE);
       setVersion(DEFAULT_MODEL_VERSION);
+
+      const defaultConfig = MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
+      if ('thinkingToggle' in defaultConfig) {
+        setThinkingToggle(!!defaultConfig.thinking);
+      }
     }
-  }, [debug, modelKey, setModelKey, setVersion, setThinkingToggle]);
+  }, [debug, modelKey, setModelKey, setThinkingToggle, setVersion]);
 
   const defaultConfig = useMemo(() => MODELS_CONFIGURATION[DEFAULT_MODEL_FREE], []);
   if (!defaultConfig) {
