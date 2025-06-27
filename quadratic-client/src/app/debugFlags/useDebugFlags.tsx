@@ -16,20 +16,20 @@ export const useDebugFlags = (): { debug: boolean; debugFlags: DebugFlags } => {
     debugAvailable: debugFlags.debugAvailable,
   });
 
-  const debug = useMemo(() => debugFlagsState.getFlag('debug'), [debugFlagsState]);
-
   useEffect(() => {
     const updateFlags = () => {
-      setDebugFlagsState(() => ({
+      setDebugFlagsState({
         getFlag: debugFlags.getFlag,
         debugAvailable: debugFlags.debugAvailable,
-      }));
+      });
     };
     events.on('debugFlags', updateFlags);
     return () => {
       events.off('debugFlags', updateFlags);
     };
   }, []);
+
+  const debug = useMemo(() => debugFlagsState.getFlag('debug'), [debugFlagsState]);
 
   return { debug, debugFlags: debugFlagsState };
 };
