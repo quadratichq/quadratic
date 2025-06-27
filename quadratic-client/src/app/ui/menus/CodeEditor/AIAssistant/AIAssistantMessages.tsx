@@ -16,7 +16,7 @@ import {
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAssistantMessagesProps = {
@@ -24,6 +24,9 @@ type AIAssistantMessagesProps = {
 };
 
 export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {
+  const debugFlags = useDebugFlags();
+  const debug = useMemo(() => debugFlags.getFlag('debug'), [debugFlags]);
+
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
@@ -35,7 +38,6 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       behavior: 'smooth',
     });
   }, []);
-  const { getFlag } = useDebugFlags();
 
   const shouldAutoScroll = useRef(true);
   const handleScrollEnd = useCallback((e: Event) => {
@@ -103,7 +105,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
     >
       {messages.map((message, index) => {
         if (
-          !getFlag('debugShowAIInternalContext') &&
+          !debugFlags.getFlag('debugShowAIInternalContext') &&
           !['userPrompt', 'webSearchInternal'].includes(message.contextType)
         ) {
           return null;
@@ -122,7 +124,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {getFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (

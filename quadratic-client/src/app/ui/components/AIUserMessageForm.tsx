@@ -4,7 +4,6 @@ import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { AIContext } from '@/app/ui/components/AIContext';
 import { AIUsageExceeded } from '@/app/ui/components/AIUsageExceeded';
 import { AIUserMessageFormAttachFileButton } from '@/app/ui/components/AIUserMessageFormAttachFileButton';
-import { AIUserMessageFormModelButton } from '@/app/ui/components/AIUserMessageFormModelButton';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { ArrowUpwardIcon, BackspaceIcon, EditIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -401,15 +400,15 @@ const AIUserMessageFormFooter = memo(
       <>
         <div
           className={cn(
-            'flex w-full select-none items-center justify-between px-2 pb-1',
+            'flex w-full select-none items-center justify-between px-2 pb-1 text-xs text-muted-foreground',
             waitingOnMessageIndex !== undefined && 'pointer-events-none opacity-50'
           )}
         >
           <AIUserMessageFormAttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
+
           <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <AIUserMessageFormModelButton />
+          <div className="flex items-center gap-3">
             <ConditionalWrapper
               condition={prompt.length !== 0}
               Wrapper={({ children }) => (
