@@ -1828,9 +1828,9 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   // Act:
   //--------------------------------
   // Select columns 4-11
-  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 230, y: 10 } });
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 275, y: 10 } });
   await page.keyboard.down('Shift');
-  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 930, y: 10 } });
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 975, y: 10 } });
   await page.keyboard.up('Shift');
 
   // Right click
@@ -2346,7 +2346,7 @@ test('Key Actions', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('Shift+Tab', { delay: 500 });
 
-  // Confirm we're Prompted to type and edting is allowed
+  // Confirm we're Prompted to type and editing is allowed
   await expect(
     page.locator(`div[style*="left: 2px; top: 23px"] > div[id="cell-edit"]:has-text("Shift+Tab")`)
   ).toBeVisible();

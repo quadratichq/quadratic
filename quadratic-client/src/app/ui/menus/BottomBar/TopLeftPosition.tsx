@@ -9,9 +9,11 @@ export const TopLeftPosition = () => {
   const [topLeftCoordinate, SetTopLeftCoordinate] = useState('');
 
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout | undefined;
     const updateTopLeftCoordinate = () => {
       // need to wait for the animation to complete before querying the viewport location
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
+        timeoutId = undefined;
         const topLeft = pixiApp.viewport.getVisibleBounds();
         const gridHeadings = pixiApp.headings.headingSize;
         const topLeftCoordinate = sheets.sheet.getColumnRowFromScreen(
@@ -21,10 +23,13 @@ export const TopLeftPosition = () => {
         SetTopLeftCoordinate(xyToA1(topLeftCoordinate.column, topLeftCoordinate.row));
       }, WAIT_TO_SNAP_TIME);
     };
-    events.on('viewportChanged', updateTopLeftCoordinate);
     updateTopLeftCoordinate();
+    events.on('viewportChanged', updateTopLeftCoordinate);
     return () => {
       events.off('viewportChanged', updateTopLeftCoordinate);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   }, []);
 
