@@ -20,7 +20,7 @@ export const useAIModel = (): {
 
   const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL_FREE);
   const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(THINKING_TOGGLE_LOCAL_STORAGE_KEY, false);
-  const [version] = useLocalStorage<number>('aiModelVersion', 0);
+  const [version, setVersion] = useLocalStorage<number>(MODEL_VERSION_LOCAL_STORAGE_KEY, DEFAULT_MODEL_VERSION);
 
   // This is to force update model stored in local storage to the current default model
   useEffect(() => {
@@ -28,12 +28,16 @@ export const useAIModel = (): {
       window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_FREE));
       window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
 
+      setModelKey(DEFAULT_MODEL_FREE);
+      setVersion(DEFAULT_MODEL_VERSION);
+
       const modelConfig = MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
       if ('thinkingToggle' in modelConfig) {
         window.localStorage.setItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY, JSON.stringify(!!modelConfig.thinking));
+        setThinkingToggle(!!modelConfig.thinking);
       }
     }
-  }, [version]);
+  }, [version, setModelKey, setVersion, setThinkingToggle]);
 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
@@ -41,20 +45,18 @@ export const useAIModel = (): {
     if (!config || (!debug && config.mode === 'disabled')) {
       window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_FREE));
       window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
+
+      setModelKey(DEFAULT_MODEL_FREE);
+      setVersion(DEFAULT_MODEL_VERSION);
     }
-  }, [debug, modelKey]);
+  }, [debug, modelKey, setModelKey, setVersion, setThinkingToggle]);
 
-  const modelConfig = useMemo(() => {
-    return MODELS_CONFIGURATION[modelKey];
-  }, [modelKey]);
-
-  const defaultConfig = useMemo(() => {
-    return MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
-  }, []);
+  const defaultConfig = useMemo(() => MODELS_CONFIGURATION[DEFAULT_MODEL_FREE], []);
   if (!defaultConfig) {
     throw new Error(`Default model ${DEFAULT_MODEL_FREE} not found`);
   }
 
+  const modelConfig = useMemo(() => MODELS_CONFIGURATION[modelKey], [modelKey]);
   if (!modelConfig) {
     return {
       modelKey: DEFAULT_MODEL_FREE,
