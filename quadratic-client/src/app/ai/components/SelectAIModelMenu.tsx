@@ -89,7 +89,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
   );
 
-  const modelMode = useMemo(
+  const selectedModelMode = useMemo(
     () => (selectedModelConfig.mode === 'disabled' ? 'pro' : selectedModelConfig.mode),
     [selectedModelConfig.mode]
   );
@@ -105,7 +105,10 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     },
     [modelConfigs, setSelectedModel, thinkingToggle]
   );
-  const activeModelLabel = useMemo(() => MODEL_MODES_LABELS_DESCRIPTIONS[modelMode].label, [modelMode]);
+  const selectedModelLabel = useMemo(
+    () => MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode].label,
+    [selectedModelMode]
+  );
 
   const isOnPaidPlan = useRecoilValue(editorInteractionStateIsOnPaidPlanAtom);
   useEffect(() => {
@@ -113,8 +116,10 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
       return;
     }
 
-    setModelMode('basic');
-  }, [debug, isOnPaidPlan, setModelMode]);
+    if (selectedModelMode === 'pro') {
+      setModelMode('basic');
+    }
+  }, [debug, isOnPaidPlan, selectedModelMode, setModelMode]);
 
   return (
     <>
@@ -182,7 +187,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         <Popover>
           {/* Needs a min-width or it shifts as the popover closes */}
           <PopoverTrigger className="group mr-1.5 flex min-w-24 items-center justify-end gap-0 text-right">
-            Model: {activeModelLabel}
+            Model: {selectedModelLabel}
             <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
           </PopoverTrigger>
 
@@ -196,11 +201,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             </div>
 
             <form className="flex flex-col gap-1 rounded border border-border text-sm">
-              <RadioGroup
-                value={modelMode}
-                onValueChange={(val) => setModelMode(val as ModelMode)}
-                className="flex flex-col gap-0"
-              >
+              <RadioGroup value={selectedModelMode} className="flex flex-col gap-0">
                 {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
                   <Label
                     className={cn(
@@ -208,6 +209,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                       i !== 0 && 'border-t border-border'
                     )}
                     key={mode}
+                    onPointerDown={() => setModelMode(mode as ModelMode)}
                   >
                     <strong className="font-bold">{label}</strong>: <span className="font-normal">{description}</span>
                     <RadioGroupItem value={mode} className="float-right ml-auto" disabled={!isOnPaidPlan} />
