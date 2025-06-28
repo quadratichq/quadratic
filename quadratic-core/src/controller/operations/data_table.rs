@@ -449,7 +449,7 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         match &ops[0] {
-            Operation::AddDataTable {
+            Operation::AddDataTableMultiPos {
                 data_table,
                 cell_value,
                 ..

@@ -241,8 +241,8 @@ mod test {
         );
         assert_eq!(
             operations[1],
-            Operation::ComputeCode {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
+            Operation::ComputeCodeMultiPos {
+                multi_pos: pos.to_multi_pos(sheet_id),
             }
         );
     }
