@@ -19,8 +19,17 @@ impl Sheet {
                     .unwrap_or(&CellValue::Blank);
                 let old_value = self.columns.set_value(&(x, y).into(), new_value.to_owned());
                 if let Some(old_value) = old_value {
-                    let _ =
-                        old_values.set((x - rect.min.x) as u32, (y - rect.min.y) as u32, old_value);
+                    match old_values.set(
+                        (x - rect.min.x) as u32,
+                        (y - rect.min.y) as u32,
+                        old_value,
+                        false,
+                    ) {
+                        Ok(_) => (),
+                        Err(e) => {
+                            dbgjs!(format!("Error setting cell value: {:?}", e));
+                        }
+                    }
                 }
             }
         }
@@ -140,7 +149,7 @@ impl Sheet {
             for y in spill_rect.y_range() {
                 let cell_pos = Pos { x, y };
                 if self
-                    .data_table_pos_that_contains(&cell_pos)
+                    .data_table_pos_that_contains(cell_pos)
                     .is_ok_and(|data_table_pos| code_pos != data_table_pos)
                 {
                     results.insert(cell_pos);

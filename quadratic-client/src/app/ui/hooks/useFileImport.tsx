@@ -157,7 +157,7 @@ export function useFileImport() {
             throw new Error('Failed to read file');
           }
 
-          let result: { contents?: ArrayBuffer; version?: string; error?: string } | undefined = undefined;
+          let result: { contents?: ArrayBufferLike; version?: string; error?: string } | undefined = undefined;
 
           if (fileType === 'grid') {
             result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);

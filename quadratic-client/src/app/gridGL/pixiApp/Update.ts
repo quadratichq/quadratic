@@ -1,10 +1,15 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
+import {
+  debugRendererLight,
+  debugShowChildren,
+  debugTimeCheck,
+  debugTimeReset,
+} from '@/app/gridGL/helpers/debugPerformance';
+import { FPS } from '@/app/gridGL/helpers/Fps';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
-import { FPS } from '../helpers/Fps';
-import { debugRendererLight, debugShowChildren, debugTimeCheck, debugTimeReset } from '../helpers/debugPerformance';
-import { pixiApp } from './PixiApp';
-import { thumbnail } from './thumbnail';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 
 export class Update {
   private raf?: number;
@@ -62,7 +67,6 @@ export class Update {
 
     if (pixiApp.copying) {
       this.raf = requestAnimationFrame(this.update);
-      this.updateFps();
       return;
     }
 
@@ -75,8 +79,7 @@ export class Update {
       this.showFocus();
     }
 
-    pixiApp.viewport.updateViewport();
-
+    const viewportChanged = pixiApp.viewport.updateViewport();
     let rendererDirty =
       pixiApp.gridLines.dirty ||
       pixiApp.headings.dirty ||
@@ -87,7 +90,8 @@ export class Update {
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
       pixiApp.validations.dirty ||
-      pixiApp.copy.dirty;
+      pixiApp.copy.dirty ||
+      pixiApp.singleCellOutlines.dirty;
 
     if (rendererDirty && debugFlag('debugShowWhyRendering')) {
       console.log(
@@ -103,6 +107,7 @@ export class Update {
           pixiApp.cellMoving.dirty && 'cellMoving',
           pixiApp.validations.dirty && 'validations',
           pixiApp.copy.dirty && 'copy',
+          pixiApp.singleCellOutlines.dirty && 'singleCellOutlines',
         ]
           .filter(Boolean)
           .join(', ')}`
@@ -136,6 +141,8 @@ export class Update {
     debugTimeCheck('[Update] copy');
     this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
+    pixiApp.singleCellOutlines.update(viewportChanged);
+    debugTimeCheck('[Update] singleCellOutlines');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();

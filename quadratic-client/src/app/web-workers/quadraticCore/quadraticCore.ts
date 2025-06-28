@@ -18,14 +18,12 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Direction,
   Format,
   FormatUpdate,
   JsBordersSheet,
   JsCellValue,
   JsClipboard,
   JsCodeCell,
-  JsCoordinate,
   JsDataTableColumnHeader,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -46,14 +44,13 @@ import type {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
+import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
-  ClientCoreCellHasContent,
   ClientCoreGetCellFormatSummary,
   ClientCoreGetCodeCell,
   ClientCoreGetDisplayCell,
   ClientCoreGetEditCell,
-  ClientCoreHasRenderCells,
   ClientCoreImportFile,
   ClientCoreLoad,
   ClientCoreMessage,
@@ -68,8 +65,6 @@ import type {
   CoreClientGetEditCell,
   CoreClientGetJwt,
   CoreClientGetValidationList,
-  CoreClientHasRenderCells,
-  CoreClientJumpCursor,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -207,10 +202,16 @@ class QuadraticCore {
       events.emit('a1Context', e.data.context);
       return;
     } else if (e.data.type === 'coreClientCoreError') {
-      events.emit('coreError', e.data.from, e.data.error);
       if (debugFlag('debug')) {
         console.error('[quadraticCore] core error', e.data.from, e.data.error);
       }
+      events.emit('coreError', e.data.from, e.data.error);
+      return;
+    } else if (e.data.type === 'coreClientContentCache') {
+      events.emit('contentCache', e.data.sheetId, new SheetContentCache(e.data.contentCache));
+      return;
+    } else if (e.data.type === 'coreClientDataTablesCache') {
+      events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
       return;
     }
 
@@ -318,23 +319,6 @@ class QuadraticCore {
     });
   }
 
-  cellHasContent(sheetId: string, x: number, y: number): Promise<boolean> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { hasContent: boolean }) => {
-        resolve(message.hasContent);
-      };
-      const message: ClientCoreCellHasContent = {
-        type: 'clientCoreCellHasContent',
-        sheetId,
-        x,
-        y,
-        id,
-      };
-      this.send(message);
-    });
-  }
-
   getEditCell(sheetId: string, x: number, y: number): Promise<string | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -426,25 +410,6 @@ class QuadraticCore {
         resolve(message.tablesContext);
       };
       this.send({ type: 'clientCoreGetAITablesContext', id });
-    });
-  }
-
-  hasRenderCells(sheetId: string, column: number, row: number, width: number, height: number): Promise<boolean> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      const message: ClientCoreHasRenderCells = {
-        type: 'clientCoreHasRenderCells',
-        sheetId,
-        x: column,
-        y: row,
-        width,
-        height,
-        id,
-      };
-      this.waitingForResponse[id] = (message: CoreClientHasRenderCells) => {
-        resolve(message.hasRenderCells);
-      };
-      this.send(message);
     });
   }
 
@@ -543,13 +508,13 @@ class QuadraticCore {
     grid: ArrayBuffer,
     sequenceNumber: number
   ): Promise<{
-    contents?: ArrayBuffer;
+    contents?: ArrayBufferLike;
     version?: string;
     error?: string;
   }> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
         resolve(message);
       };
       const message: ClientCoreUpgradeGridFile = {
@@ -565,13 +530,13 @@ class QuadraticCore {
   importFile = async (
     args: Omit<ClientCoreImportFile, 'type' | 'id'>
   ): Promise<{
-    contents?: ArrayBuffer;
+    contents?: ArrayBufferLike;
     version?: string;
     error?: string;
   }> => {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBuffer; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
         resolve(message);
       };
       this.send(
@@ -832,12 +797,11 @@ class QuadraticCore {
     });
   }
 
-  rerunCodeCells(sheetId: string | undefined, x: number | undefined, y: number | undefined, cursor: string) {
+  rerunCodeCells(sheetId: string | undefined, selection: string | undefined, cursor: string) {
     this.send({
       type: 'clientCoreRerunCodeCells',
       sheetId,
-      x,
-      y,
+      selection,
       cursor,
     });
   }
@@ -1103,28 +1067,6 @@ class QuadraticCore {
   //#endregion
 
   //#region Bounds
-
-  jumpCursor(
-    sheetId: string,
-    current: JsCoordinate,
-    jump: boolean,
-    direction: Direction
-  ): Promise<JsCoordinate | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientJumpCursor) => {
-        resolve(message.coordinate);
-      };
-      this.send({
-        type: 'clientCoreJumpCursor',
-        sheetId,
-        current,
-        direction,
-        id,
-        jump,
-      });
-    });
-  }
 
   commitTransientResize(sheetId: string, transientResize: string) {
     this.send({

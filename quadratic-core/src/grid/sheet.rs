@@ -35,7 +35,6 @@ pub mod columns;
 pub mod data_table;
 pub mod data_tables;
 pub mod formats;
-pub mod keyboard;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
@@ -182,7 +181,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a vertical edge of a table.
-    pub fn is_at_table_edge_col(&self, pos: &Pos) -> bool {
+    pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
@@ -198,7 +197,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
-    pub fn is_at_table_edge_row(&self, pos: &Pos) -> bool {
+    pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
@@ -357,7 +356,7 @@ impl Sheet {
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
-        if let Ok(data_table_pos) = self.data_table_pos_that_contains(&pos) {
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains(pos) {
             if let Some(data_table) = self.data_table_at(&data_table_pos) {
                 if !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
@@ -1321,20 +1320,20 @@ mod test {
         sheet.data_table_insert_full(&anchor_pos, dt);
 
         // Test row edges
-        assert!(sheet.is_at_table_edge_row(&pos![B2])); // Table name
-        assert!(!sheet.is_at_table_edge_row(&pos![B3])); // Column header
-        assert!(sheet.is_at_table_edge_row(&pos![B4])); // first line of data
-        assert!(sheet.is_at_table_edge_row(&pos![C7])); // Bottom edge
-        assert!(!sheet.is_at_table_edge_row(&pos![C5])); // Middle row
+        assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
+        assert!(!sheet.is_at_table_edge_row(pos![B3])); // Column header
+        assert!(sheet.is_at_table_edge_row(pos![B4])); // first line of data
+        assert!(sheet.is_at_table_edge_row(pos![C7])); // Bottom edge
+        assert!(!sheet.is_at_table_edge_row(pos![C5])); // Middle row
 
         // Test column edges
-        assert!(sheet.is_at_table_edge_col(&pos![B5])); // Left edge
-        assert!(sheet.is_at_table_edge_col(&pos![D5])); // Right edge
-        assert!(!sheet.is_at_table_edge_col(&pos![C5])); // Middle column
+        assert!(sheet.is_at_table_edge_col(pos![B5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![D5])); // Right edge
+        assert!(!sheet.is_at_table_edge_col(pos![C5])); // Middle column
 
         // Test position outside table
-        assert!(!sheet.is_at_table_edge_row(&pos![E5]));
-        assert!(!sheet.is_at_table_edge_col(&pos![E5]));
+        assert!(!sheet.is_at_table_edge_row(pos![E5]));
+        assert!(!sheet.is_at_table_edge_col(pos![E5]));
 
         // Test with show_ui = false
         let mut dt_no_ui = DataTable::new(
@@ -1350,10 +1349,10 @@ mod test {
         sheet.data_table_insert_full(&pos![E5], dt_no_ui);
 
         // Test edges without UI
-        assert!(sheet.is_at_table_edge_row(&pos![E5])); // Top edge
-        assert!(sheet.is_at_table_edge_row(&pos![E6])); // Bottom edge
-        assert!(sheet.is_at_table_edge_col(&pos![E5])); // Left edge
-        assert!(sheet.is_at_table_edge_col(&pos![F5])); // Right edge
+        assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge
+        assert!(sheet.is_at_table_edge_row(pos![E6])); // Bottom edge
+        assert!(sheet.is_at_table_edge_col(pos![E5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![F5])); // Right edge
     }
 
     #[test]

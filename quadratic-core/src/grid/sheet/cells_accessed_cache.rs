@@ -14,7 +14,7 @@ impl Sheet {
             .for_each(|(pos, code_run)| {
                 let sheet_pos = pos.to_sheet_pos(self.id);
                 for (sheet_id, rect) in code_run.cells_accessed.iter_rects_unbounded(a1_context) {
-                    cells_accessed.insert(sheet_pos, (sheet_id.to_owned(), rect));
+                    cells_accessed.insert(sheet_pos, (sheet_id, rect));
                 }
             });
     }

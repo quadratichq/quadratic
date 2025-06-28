@@ -19,7 +19,6 @@ export function javascriptErrorResult(transactionId: string, message: string, li
     output_array: null,
     line_number: lineNumber ?? null,
     output_display_type: null,
-    cancel_compute: false,
     chart_pixel_output: null,
     has_headers: false,
   };
@@ -54,7 +53,6 @@ export function javascriptResults(
     line_number: lineNumber !== undefined ? (lineNumber === 0 ? 1 : lineNumber) : null,
 
     output_display_type: outputType?.displayType || outputArray?.displayType || null,
-    cancel_compute: false,
     chart_pixel_output: chartPixelOutput || null,
 
     has_headers: false,

@@ -193,12 +193,22 @@ function getTableQuery({ table: { name, schema }, connectionKind }: { table: Tab
   switch (connectionKind) {
     case 'POSTGRES':
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'COCKROACHDB':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'SUPABASE':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'NEON':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
     case 'MYSQL':
+      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+    case 'MARIADB':
       return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
     case 'MSSQL':
       return `SELECT TOP 100 * FROM [${schema}].[${name}]`;
     case 'SNOWFLAKE':
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'BIGQUERY':
+      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
     default:
       return '';
   }

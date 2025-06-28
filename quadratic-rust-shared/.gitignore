@@ -1,1 +1,2 @@
+.env.test
 src/auto_gen_path.rs

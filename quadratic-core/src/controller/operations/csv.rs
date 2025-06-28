@@ -198,7 +198,8 @@ mod tests {
             find_csv_info(&converted_file)
         };
 
-        assert_eq!(info("encoding_issue.csv"), (b',', 3, 3, true));
+        assert_eq!(info("encoding_issue.csv"), (b',', 3, 4, true));
+        assert_eq!(info("kaggle_top_100_dataset.csv"), (b';', 9, 100, true));
         assert_eq!(info("simple_space_separator.csv"), (b' ', 4, 3, true));
         assert_eq!(info("simple.csv"), (b',', 4, 11, true));
         assert_eq!(info("title_row_empty_first.csv"), (b',', 3, 6, false));

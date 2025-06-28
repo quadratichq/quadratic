@@ -9,23 +9,16 @@ export interface CorePythonRun {
 
 export interface PythonCoreResults {
   type: 'pythonCoreResults';
-  transactionId: string;
   jsCodeResultBuffer: ArrayBuffer;
 }
 
-export interface PythonCoreGetCellsA1Length {
-  type: 'pythonCoreGetCellsA1Length';
+export interface PythonCoreGetCellsA1 {
+  type: 'pythonCoreGetCellsA1';
   sharedBuffer: SharedArrayBuffer;
   transactionId: string;
   a1: string;
 }
 
-export interface PythonCoreGetCellsA1Data {
-  type: 'pythonCoreGetCellsA1Data';
-  id: number;
-  sharedBuffer: SharedArrayBuffer;
-}
-
 export type CorePythonMessage = CorePythonRun;
 
-export type PythonCoreMessage = PythonCoreResults | PythonCoreGetCellsA1Length | PythonCoreGetCellsA1Data;
+export type PythonCoreMessage = PythonCoreResults | PythonCoreGetCellsA1;

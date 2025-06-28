@@ -3,7 +3,7 @@
 ## Build the Docker Image
 
 ```bash
-docker build -t ssh-mssql-connection .
+docker build -t ssh-mssql-connection -f docker/ssh-mssql-connection/Dockerfile .
 ```
 
 ## Run the Docker Container

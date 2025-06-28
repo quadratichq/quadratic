@@ -94,6 +94,9 @@ export class HtmlCellResizing {
         if (response?.error) {
           pixiAppSettings.addGlobalSnackbar?.(response.error, { severity: 'error' });
         }
+        if (response?.result) {
+          this.htmlCell.updateOffsets();
+        }
       });
   }
 

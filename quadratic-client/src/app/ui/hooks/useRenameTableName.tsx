@@ -24,7 +24,7 @@ export function useRenameTableName() {
       newName = newName.trim();
 
       try {
-        validateTableName(newName, sheetId, x, y, sheets.a1Context);
+        validateTableName(newName, sheetId, x, y, sheets.jsA1Context);
       } catch (error) {
         addGlobalSnackbar(error as string, { severity: 'error' });
         return;

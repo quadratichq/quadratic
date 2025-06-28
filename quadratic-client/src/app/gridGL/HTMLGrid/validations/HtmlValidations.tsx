@@ -1,7 +1,7 @@
-import { HtmlValidationCheckbox } from './HtmlValidationCheckbox';
-import { HtmlValidationList } from './HtmlValidationList';
-import { HtmlValidationMessage } from './HtmlValidationMessage';
-import { useHtmlValidations } from './useHtmlValidations';
+import { HtmlValidationCheckbox } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationCheckbox';
+import { HtmlValidationList } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationList';
+import { HtmlValidationMessage } from '@/app/gridGL/HTMLGrid/validations/HtmlValidationMessage';
+import { useHtmlValidations } from '@/app/gridGL/HTMLGrid/validations/useHtmlValidations';
 
 export const HtmlValidations = () => {
   const htmlValidationsData = useHtmlValidations();

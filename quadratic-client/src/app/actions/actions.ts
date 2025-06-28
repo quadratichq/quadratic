@@ -123,6 +123,8 @@ export enum Action {
   GotoBottomRight = 'goto_bottom_right',
   GotoRowStart = 'goto_row_start',
   GotoRowEnd = 'goto_row_end',
+  SelectGotoRowStart = 'select_goto_row_start',
+  SelectGotoRowEnd = 'select_goto_row_end',
   PageUp = 'page_up',
   PageDown = 'page_down',
   MoveCursorRightWithSelection = 'move_cursor_right_with_selection',

@@ -14,6 +14,7 @@ export const CursorPosition = memo(() => {
   return (
     <div className="flex h-full items-center justify-between">
       <Input
+        data-testid="cursor-position"
         value={cursorString}
         onChange={(e) => {}}
         className="h-full flex-grow rounded-none border-none shadow-none focus:bg-accent focus-visible:ring-inset"

@@ -30,10 +30,12 @@ test('Log Out', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click the Account Icon in the bottom left
-  await page.locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_"))').click();
+  await page
+    .locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_"))')
+    .click({ timeout: 30 * 1000 });
 
   // Click the Log out button
-  await page.getByText('logout', { exact: true }).click();
+  await page.getByText('logout', { exact: true }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -65,14 +67,16 @@ test.skip('Sign Up', async ({ page }) => {
   await signUp(page, { email });
 
   // Log Out
-  await page.locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_signup_"))').click();
-  await page.getByText('logout', { exact: true }).click();
+  await page
+    .locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_signup_"))')
+    .click({ timeout: 30 * 1000 });
+  await page.getByText('logout', { exact: true }).click({ timeout: 30 * 1000 });
   await expect(page).toHaveURL(/login/);
 
   // Log In
   await page.locator(`#username`).fill(email);
   await page.locator(`#password`).fill(USER_PASSWORD);
-  await page.locator(`button:text("Continue")`).click();
+  await page.locator(`button:text("Continue")`).click({ timeout: 30 * 1000 });
 
   // Assert we can successfully log in
   await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 30 * 1000 });

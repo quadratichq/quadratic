@@ -17,7 +17,7 @@ const MINIMUM_VIEWPORT_SCALE = 0.01;
 const MAXIMUM_VIEWPORT_SCALE = 10;
 const WHEEL_ZOOM_PERCENT = 1.5;
 
-const WAIT_TO_SNAP_TIME = 200;
+export const WAIT_TO_SNAP_TIME = 200;
 const SNAPPING_TIME = 50;
 
 type SnapState = 'waiting' | 'snapping' | undefined;
@@ -234,7 +234,8 @@ export class Viewport extends PixiViewport {
     }
   };
 
-  updateViewport = () => {
+  // Returns true if the viewport has changed
+  updateViewport = (): boolean => {
     let dirty = false;
     if (this.lastViewportScale !== this.scale.x) {
       this.lastViewportScale = this.scale.x;
@@ -291,6 +292,7 @@ export class Viewport extends PixiViewport {
         }
       }
     }
+    return dirty;
   };
 
   private handleWaitForZoomEnd = () => {

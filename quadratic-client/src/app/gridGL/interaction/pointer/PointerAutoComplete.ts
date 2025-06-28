@@ -2,6 +2,7 @@ import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
@@ -10,7 +11,6 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { Point } from 'pixi.js';
 import { Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
-import { htmlCellsHandler } from '../../HTMLGrid/htmlCells/htmlCellsHandler';
 
 export type StateVertical = 'expandDown' | 'expandUp' | 'shrink' | undefined;
 export type StateHorizontal = 'expandRight' | 'expandLeft' | 'shrink' | undefined;

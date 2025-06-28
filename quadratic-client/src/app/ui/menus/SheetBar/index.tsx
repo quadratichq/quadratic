@@ -1,2 +1,2 @@
-import { SheetBar } from './SheetBar';
+import { SheetBar } from '@/app/ui/menus/SheetBar/SheetBar';
 export default SheetBar;

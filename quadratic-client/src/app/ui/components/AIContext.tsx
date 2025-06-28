@@ -5,9 +5,8 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-
-import { getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
+import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -21,7 +20,6 @@ import {
 import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { AIAnalystSelectContextMenu } from '../menus/AIAnalyst/AIAnalystSelectContextMenu';
 
 type AIContextProps = {
   initialContext?: Context;
@@ -213,17 +211,22 @@ type CodeCellContextPillProps = {
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {
-    const updateTableName = (a1Context: Uint8Array) => {
+    const updateTableName = () => {
       if (!codeCell?.sheetId) return;
-      const tableName = getTableNameFromPos(a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
+      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
+        codeCell.sheetId,
+        codeCell.pos.x,
+        codeCell.pos.y,
+        sheets.jsA1Context
+      );
       setTableName(tableName);
     };
 
-    updateTableName(sheets.a1Context);
+    updateTableName();
 
-    events.on('a1Context', updateTableName);
+    events.on('a1ContextUpdated', updateTableName);
     return () => {
-      events.off('a1Context', updateTableName);
+      events.off('a1ContextUpdated', updateTableName);
     };
   }, [codeCell?.pos.x, codeCell?.pos.y, codeCell?.sheetId]);
 

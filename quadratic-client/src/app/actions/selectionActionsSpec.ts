@@ -31,6 +31,8 @@ type SelectionActionSpec = Pick<
   | Action.GotoRowEnd
   | Action.SelectPageDown
   | Action.SelectPageUp
+  | Action.SelectGotoRowStart
+  | Action.SelectGotoRowEnd
 >;
 
 export const selectionActionsSpec: SelectionActionSpec = {
@@ -152,6 +154,14 @@ export const selectionActionsSpec: SelectionActionSpec = {
   },
   [Action.SelectPageUp]: {
     label: () => 'Select page up',
+    run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
+  },
+  [Action.SelectGotoRowStart]: {
+    label: () => 'Select goto row start',
+    run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
+  },
+  [Action.SelectGotoRowEnd]: {
+    label: () => 'Select goto row end',
     run: () => {}, // TODO(ayush): add this when refactoring shortcuts to use action specs
   },
 };

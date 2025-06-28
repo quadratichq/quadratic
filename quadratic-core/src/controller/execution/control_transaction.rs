@@ -37,21 +37,14 @@ impl GridController {
         }
 
         loop {
-            if transaction.operations.is_empty() && transaction.resize_rows.is_empty() {
-                transaction.complete = true;
-                break;
-            }
-
-            self.execute_operation(transaction);
-
-            self.send_client_updates_during_transaction(transaction, false);
+            self.update_a1_context_table_map(transaction);
 
             if transaction.has_async > 0 {
                 self.transactions.update_async_transaction(transaction);
                 break;
-            }
-
-            if transaction.operations.is_empty() {
+            } else if !transaction.operations.is_empty() {
+                self.execute_operation(transaction);
+            } else if !transaction.resize_rows.is_empty() {
                 if let Some((sheet_id, rows)) = transaction
                     .resize_rows
                     .iter()
@@ -59,22 +52,19 @@ impl GridController {
                     .map(|(&k, v)| (k, v.clone()))
                 {
                     transaction.resize_rows.remove(&sheet_id);
-
-                    self.send_offsets_modified(transaction);
-                    let resizing = self.start_auto_resize_row_heights(
+                    self.start_auto_resize_row_heights(
                         transaction,
                         sheet_id,
                         rows.into_iter().collect(),
                     );
-                    // break only if async resize operation is being executed
-                    if resizing {
-                        break;
-                    }
                 }
+            } else {
+                transaction.complete = true;
+                break;
             }
         }
 
-        self.send_client_updates_during_transaction(transaction, true);
+        self.send_client_render_updates(transaction);
     }
 
     /// Finalizes the transaction and pushes it to the various stacks (if needed)
@@ -121,7 +111,7 @@ impl GridController {
             TransactionSource::Unset => panic!("Expected a transaction type"),
         }
 
-        self.send_client_updates_after_transaction(&mut transaction);
+        self.send_client_render_updates(&mut transaction);
 
         transaction.send_transaction();
 
@@ -170,11 +160,6 @@ impl GridController {
     pub fn calculation_complete(&mut self, result: JsCodeResult) -> Result<()> {
         let transaction_id = Uuid::parse_str(&result.transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
-
-        if result.cancel_compute.unwrap_or(false) {
-            self.start_transaction(&mut transaction);
-        }
-
         self.after_calculation_async(&mut transaction, result)?;
         self.finalize_transaction(transaction);
         Ok(())
@@ -206,6 +191,11 @@ impl GridController {
                             ConnectionKind::Mysql => "MySQL1",
                             ConnectionKind::Mssql => "MSSQL1",
                             ConnectionKind::Snowflake => "Snowflake1",
+                            ConnectionKind::Cockroachdb => "Cockroachdb1",
+                            ConnectionKind::Bigquery => "Bigquery1",
+                            ConnectionKind::Mariadb => "Mariadb1",
+                            ConnectionKind::Supabase => "Supabase1",
+                            ConnectionKind::Neon => "Neon1",
                         },
                         // this should not happen
                         _ => "Connection 1",

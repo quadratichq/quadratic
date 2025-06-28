@@ -1,10 +1,10 @@
+import { DashboardHeader, DashboardHeaderTitle } from '@/dashboard/components/DashboardHeader';
 import type { FilesListExampleFile } from '@/dashboard/components/FilesList';
 import { ExampleFilesList } from '@/dashboard/components/FilesList';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { ROUTES } from '@/shared/constants/routes';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import { useLoaderData } from 'react-router';
-import { DashboardHeader, DashboardHeaderTitle } from '../dashboard/components/DashboardHeader';
 
 export const loader = async () => {
   const examples = await sanityClient.examples.list();

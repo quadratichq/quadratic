@@ -32,10 +32,10 @@ test('Cell Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Click on the Bold Formatting button
-  await page.getByLabel(`Bold`).click();
+  await page.getByLabel(`Bold`).click({ timeout: 30 * 1000 });
 
   // Click on the Italic Formatting button
-  await page.getByLabel(`Italic`).click();
+  await page.getByLabel(`Italic`).click({ timeout: 30 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -43,7 +43,7 @@ test('Cell Formatting', async ({ page }) => {
   await page.keyboard.press('Control+9');
   await page.keyboard.press('Control+Shift+=');
   await page.waitForTimeout(5 * 1000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_TextFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_TextFormatting.png', {
     maxDiffPixels: 1000,
   });
 
@@ -52,43 +52,49 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Reset Bold and Italic Formats
-  await page.getByLabel(`Bold`).click();
-  await page.getByLabel(`Italic`).click();
+  await page.getByLabel(`Bold`).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Italic`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click on the Left Alignment button
   // Click on the dropdown arrow icon
-  await page.locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0').click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
+    .click({ timeout: 30 * 1000 });
   // Click on the menu item containing the 'format_align_left' icon and the text 'Left'
-  await page.locator('div[role="menuitem"] >> text=Left').click();
+  await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_LeftAlignment.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_LeftAlignment.png', {
     maxDiffPixelRatio: 0.01,
   });
 
   // Click on the center Alignment button
-  await page.locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0').click();
-  await page.getByRole(`menuitem`, { name: `format_align_center Center` }).click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
+    .click({ timeout: 30 * 1000 });
+  await page.getByRole(`menuitem`, { name: `format_align_center Center` }).click({ timeout: 30 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_CenterAlignment.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_CenterAlignment.png', {
     maxDiffPixelRatio: 0.01,
   });
 
   // Click on the Right Alignment button
-  await page.locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0').click();
-  await page.getByRole(`menuitem`, { name: `format_align_right Right` }).click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
+    .click({ timeout: 30 * 1000 });
+  await page.getByRole(`menuitem`, { name: `format_align_right Right` }).click({ timeout: 30 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_RightAlignment.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_RightAlignment.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -98,80 +104,82 @@ test('Cell Formatting', async ({ page }) => {
 
   // Reset to left alignment
   // Click on the dropdown arrow icon
-  await page.locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0').click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
+    .click({ timeout: 30 * 1000 });
   // Click on the menu item containing the 'format_align_left' icon and the text 'Left'
-  await page.locator('div[role="menuitem"] >> text=Left').click();
+  await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 30 * 1000 });
   await page.waitForTimeout(2000);
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click the Border button
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Click on the all Borders Icon
-  await page.getByRole(`radio`, { name: `border_all` }).click();
+  await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 30 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_AllBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_AllBorders.png', {
     maxDiffPixels: 1500,
   });
 
   // Clear Border Filters
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the Inner Borders Icon
-  await page.getByRole(`radio`, { name: `border_inner` }).click();
+  await page.getByRole(`radio`, { name: `border_inner` }).click({ timeout: 30 * 1000 });
   // Click the Border button to make it disappear for screenshot
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_InnerBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_InnerBorders.png', {
     maxDiffPixels: 1500,
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click();
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the Outer Borders Icon
-  await page.getByRole(`radio`, { name: `border_outer` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByRole(`radio`, { name: `border_outer` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_OuterBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_OuterBorders.png', {
     maxDiffPixels: 1500,
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click();
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the Horizontal Borders Icon
-  await page.getByRole(`radio`, { name: `border_horizontal` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByRole(`radio`, { name: `border_horizontal` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_HorizontalBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_HorizontalBorders.png', {
     maxDiffPixels: 1500,
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click();
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the Vertical Borders Icon
-  await page.getByRole(`radio`, { name: `border_vertical` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByRole(`radio`, { name: `border_vertical` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_VerticalBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_VerticalBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -180,61 +188,64 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click();
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click on the Left Borders Icon
-  await page.getByRole(`radio`, { name: `border_left` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByRole(`radio`, { name: `border_left` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_LeftBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_LeftBorders.png', {
     maxDiffPixels: 1500,
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click();
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the Top Borders Icon
-  await page.getByRole(`radio`, { name: `border_top` }).first().click();
-  await page.getByLabel(`Borders`).click();
+  await page
+    .getByRole(`radio`, { name: `border_top` })
+    .first()
+    .click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_TopBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_TopBorders.png', {
     maxDiffPixels: 1500,
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click();
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the Right Borders Icon
-  await page.getByRole(`radio`, { name: `border_right` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_RightBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_RightBorders.png', {
     maxDiffPixels: 1500,
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click();
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the Bottom Borders Icon
-  await page.getByRole(`radio`, { name: `border_bottom` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByRole(`radio`, { name: `border_bottom` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_BottomBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_BottomBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -243,21 +254,21 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Add All Borders
-  await page.getByLabel(`Borders`).click();
-  await page.getByRole(`radio`, { name: `border_all` }).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click the Clear all Borders
-  await page.getByRole(`radio`, { name: `border_clear` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByRole(`radio`, { name: `border_clear` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_NoBorders.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_NoBorders.png', {
     maxDiffPixels: 1500,
   });
 
@@ -270,7 +281,9 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Click the Format Color Icon
   // Click on the element with the 'format_color_fill' icon
-  await page.locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")').click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
+    .click({ timeout: 30 * 1000 });
 
   // Select a color
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
@@ -280,7 +293,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Cell is formatted with expected color
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_CellColor.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_CellColor.png', {
     maxDiffPixels: 1500,
   });
 
@@ -289,19 +302,21 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Click the Format Color Icon
-  await page.locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")').click();
+  await page
+    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
+    .click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
-  await page.getByText(`Clear`, { exact: true }).click();
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Cell is formatted with no Color
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_ClearCellColor.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_ClearCellColor.png', {
     maxDiffPixels: 1500,
   });
 
@@ -310,24 +325,24 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Add Different Formats
-  await page.getByLabel(`Bold`).click();
+  await page.getByLabel(`Bold`).click({ timeout: 30 * 1000 });
 
-  await page.getByLabel(`Borders`).click();
-  await page.getByRole(`radio`, { name: `border_right` }).click();
-  await page.getByLabel(`Borders`).click();
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
+  await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`Borders`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click the Clear Formatting button
-  await page.getByLabel(`Clear formatting`).click();
+  await page.getByLabel(`Clear formatting`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Cell's Formats are cleared
   await page.waitForTimeout(2000);
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Cell_Formatting_ClearFormats.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_ClearFormats.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -335,7 +350,7 @@ test('Cell Formatting', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -361,10 +376,10 @@ test('Code Cell Outlines', async ({ page }) => {
   // Toggle Code Cell Outlines Off
   //--------------------------------
   // Open view menu
-  await page.getByRole(`menuitem`, { name: `View` }).click();
+  await page.getByRole(`menuitem`, { name: `View` }).click({ timeout: 30 * 1000 });
 
   // Uncheck show code cells
-  await page.getByRole(`menuitem`, { name: `check_small Show code cell` }).click();
+  await page.getByRole(`menuitem`, { name: `check_small Show code cell` }).click({ timeout: 30 * 1000 });
 
   // Wait before screenshot
   await page.waitForTimeout(2000);
@@ -373,29 +388,29 @@ test('Code Cell Outlines', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert that the cells that have code are no longer outlined
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_Cell_No_Outlines.png');
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Code_Cell_No_Outlines.png');
 
   //--------------------------------
   // Toggle Code Cell Outlines On
   //--------------------------------
   // Open view menu
-  await page.getByRole(`menuitem`, { name: `View` }).click();
+  await page.getByRole(`menuitem`, { name: `View` }).click({ timeout: 30 * 1000 });
 
   // Uncheck show code cells
-  await page.getByRole(`menuitem`, { name: `Show code cell` }).click();
+  await page.getByRole(`menuitem`, { name: `Show code cell` }).click({ timeout: 30 * 1000 });
   await page.waitForTimeout(2000);
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the cells that have code are now outlined
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Code_Cell_Outlines.png');
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Code_Cell_Outlines.png');
 
   //--------------------------------
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -431,16 +446,16 @@ test('Custom time and date formatting', async ({ page }) => {
   await selectCells(page, { startXY: [1, 1], endXY: [4, 24] });
 
   // Open Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select Date and time option
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Switch to Custom tab
-  await page.getByRole(`tab`, { name: `Custom` }).click();
+  await page.getByRole(`tab`, { name: `Custom` }).click({ timeout: 30 * 1000 });
 
   // Click on the format input field
-  await page.getByPlaceholder(`%d, %B %Y`).click();
+  await page.getByPlaceholder(`%d, %B %Y`).click({ timeout: 30 * 1000 });
 
   // Clear the existing format
   await page.getByPlaceholder(`%d, %B %Y`).clear();
@@ -449,7 +464,7 @@ test('Custom time and date formatting', async ({ page }) => {
   await page.getByPlaceholder(`%d, %B %Y`).fill(customDate);
 
   // Apply the selected format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -477,16 +492,16 @@ test('Custom time and date formatting', async ({ page }) => {
   await selectCells(page, { startXY: [5, 1], endXY: [8, 24] });
 
   // Open Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select Date and time option
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Switch to Custom tab
-  await page.getByRole(`tab`, { name: `Custom` }).click();
+  await page.getByRole(`tab`, { name: `Custom` }).click({ timeout: 30 * 1000 });
 
   // Click on the format input field
-  await page.getByPlaceholder(`%d, %B %Y`).click();
+  await page.getByPlaceholder(`%d, %B %Y`).click({ timeout: 30 * 1000 });
 
   // Clear the existing format
   await page.getByPlaceholder(`%d, %B %Y`).clear();
@@ -495,7 +510,7 @@ test('Custom time and date formatting', async ({ page }) => {
   await page.getByPlaceholder(`%d, %B %Y`).fill(customTime);
 
   // Apply the selected format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -510,7 +525,7 @@ test('Custom time and date formatting', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -545,16 +560,16 @@ test('Date Formatting', async ({ page }) => {
   await selectCells(page, { startXY: [1, 1], endXY: [4, 24] });
 
   // Open Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select Date and time option
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Choose mm/dd/yyyy format
-  await page.locator(`[role="radio"][value="%m/%d/%Y"]`).click();
+  await page.locator(`[role="radio"][value="%m/%d/%Y"]`).click({ timeout: 30 * 1000 });
 
   // Apply the selected format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -569,16 +584,16 @@ test('Date Formatting', async ({ page }) => {
   // Date in ISO Format (YYYY-MM-DD)
   //--------------------------------
   // Open the Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select the Date and time option from the menu
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Choose the YYYY-MM-DD format
-  await page.locator(`[role="radio"][value="%Y-%m-%d"]`).click();
+  await page.locator(`[role="radio"][value="%Y-%m-%d"]`).click({ timeout: 30 * 1000 });
 
   // Apply the selected format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -593,16 +608,16 @@ test('Date Formatting', async ({ page }) => {
   // Date in Full Written Format (Month D, YYYY)
   //--------------------------------
   // Open the Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select the Date and time option from the menu
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Choose the "Month DD, YYYY" format (e.g., "January 01, 2024")
-  await page.locator(`[role="radio"][value="%B %d, %Y"]`).click();
+  await page.locator(`[role="radio"][value="%B %d, %Y"]`).click({ timeout: 30 * 1000 });
 
   // Apply the selected format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -617,7 +632,7 @@ test('Date Formatting', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -651,13 +666,13 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
 
   // Click Automatic
-  await page.getByLabel(`Automatic`).click();
+  await page.getByLabel(`Automatic`).click({ timeout: 30 * 1000 });
 
   // Click cell at position 'B', 2
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // Assert that the number is formatted per the Automatic Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_AutomaticFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_AutomaticFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -668,13 +683,13 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
 
   // click Toggle Commas
-  await page.locator(`[aria-label="Toggle commas"]`).click();
+  await page.locator(`[aria-label="Toggle commas"]`).click({ timeout: 30 * 1000 });
 
   // Click cell at position 'B', 2
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Commas Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_CommasOnFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_CommasOnFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -684,16 +699,16 @@ test('Number Formatting', async ({ page }) => {
   // Un-toggle commas
   // click cell at position 'A', 1
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
-  await page.locator(`[aria-label="Toggle commas"]`).click();
+  await page.locator(`[aria-label="Toggle commas"]`).click({ timeout: 30 * 1000 });
 
   // click Currency
-  await page.locator(`[aria-label="Currency"]`).click();
+  await page.locator(`[aria-label="Currency"]`).click({ timeout: 30 * 1000 });
 
   // Click cell at position 'B', 2
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Currency Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_CurrencyFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_CurrencyFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -704,19 +719,19 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
 
   // Click into Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Hover over Number option
   await page.getByRole(`menuitem`, { name: `Number` }).hover();
 
   // Click Scientific option
-  await page.getByRole(`menuitem`, { name: `functions Scientific 1.01E+` }).click();
+  await page.getByRole(`menuitem`, { name: `functions Scientific 1.01E+` }).click({ timeout: 30 * 1000 });
 
   // Click cell at position 'B', 2
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Scientific Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_ScientificFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_ScientificFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -726,22 +741,25 @@ test('Number Formatting', async ({ page }) => {
   // Reset to Automatic Formatting
   // click cell at position 'A', 1
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
-  await page.getByLabel(`Automatic`).click();
+  await page.getByLabel(`Automatic`).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // click Increase Decimals
-  await page.locator(`[aria-label="Increase decimals"]`).click();
+  await page.locator(`[aria-label="Increase decimals"]`).click({ timeout: 30 * 1000 });
 
   // Click cell at position 'B', 2
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number has increased decimal
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_IncreaseDecimalsFormatting.png', {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'Number_Formatting_IncreaseDecimalsFormatting.png',
+    {
+      maxDiffPixels: 100,
+    }
+  );
 
   //--------------------------------
   // Decrease decimals
@@ -750,15 +768,18 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
 
   // click Decrease Decimals
-  await page.locator(`[aria-label="Decrease decimals"]`).click();
+  await page.locator(`[aria-label="Decrease decimals"]`).click({ timeout: 30 * 1000 });
 
   // Click cell at position 'B', 2
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number has decreased decimal
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_DecreaseDecimalsFormatting.png', {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+    'Number_Formatting_DecreaseDecimalsFormatting.png',
+    {
+      maxDiffPixels: 100,
+    }
+  );
 
   //--------------------------------
   // Percent
@@ -767,13 +788,13 @@ test('Number Formatting', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'A', targetRow: 1 });
 
   // click Percent
-  await page.locator(`[aria-label="Percent"]`).click();
+  await page.locator(`[aria-label="Percent"]`).click({ timeout: 30 * 1000 });
 
   // Click cell at position 'B', 2
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 2 });
 
   // assert that the number is formatted per the Percent Format
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Number_Formatting_PercentFormatting.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Number_Formatting_PercentFormatting.png', {
     maxDiffPixels: 100,
   });
 
@@ -781,7 +802,7 @@ test('Number Formatting', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -809,10 +830,10 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   //--------------------------------
   const longText =
     "This is a very long text string that should wrap to the next line when it reaches the edge of the text area. We'll use this to test the text wrap functionality.";
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: longText });
+  await typeInCell(page, { a1: 'A1', text: longText });
 
-  await page.locator(`[aria-label="Text wrap"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Overflow")`).click();
+  await page.locator(`[aria-label="Text wrap"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Overflow")`).click({ timeout: 30 * 1000 });
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Check text overflow
@@ -821,16 +842,16 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   });
 
   // Test text wrap
-  await page.locator(`[aria-label="Text wrap"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Wrap")`).click();
+  await page.locator(`[aria-label="Text wrap"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Wrap")`).click({ timeout: 30 * 1000 });
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Check text wrap
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrap.png', { maxDiffPixels: 1000 });
 
   // Test for text cut-off
-  await page.locator(`[aria-label="Text wrap"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Clip")`).click();
+  await page.locator(`[aria-label="Text wrap"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Clip")`).click({ timeout: 30 * 1000 });
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Check text cut-off
@@ -843,8 +864,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   const mediumText = 'Horizontal Align Testing left, center, and right.';
 
   await page.mouse.dblclick(119, 60);
-  await typeInCell(page, { targetColumn: 1, targetRow: 2, text: shortText });
-  await typeInCell(page, { targetColumn: 1, targetRow: 3, text: mediumText });
+  await typeInCell(page, { a1: 'A2', text: shortText });
+  await typeInCell(page, { a1: 'A3', text: mediumText });
 
   //--------------------------------
   // Act and Assert:
@@ -852,8 +873,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Left alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
-  await page.locator(`[aria-label="Horizontal align"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Left")`).click();
+  await page.locator(`[aria-label="Horizontal align"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Left")`).click({ timeout: 30 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert left alignment
@@ -863,8 +884,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Center alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
-  await page.locator(`[aria-label="Horizontal align"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Center")`).click();
+  await page.locator(`[aria-label="Horizontal align"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Center")`).click({ timeout: 30 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert center alignment
@@ -874,8 +895,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Right alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
-  await page.locator(`[aria-label="Horizontal align"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Right")`).click();
+  await page.locator(`[aria-label="Horizontal align"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Right")`).click({ timeout: 30 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert right alignment
@@ -904,8 +925,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   //--------------------------------
 
   // Top alignment
-  await page.locator(`[aria-label="Vertical align"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Top")`).click();
+  await page.locator(`[aria-label="Vertical align"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Top")`).click({ timeout: 30 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert top alignment
@@ -914,8 +935,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   });
 
   // Center alignment
-  await page.locator(`[aria-label="Vertical align"]`).click();
-  await page.locator(`[role="menuitem"][ data-orientation="vertical"] >> nth=1`).click();
+  await page.locator(`[aria-label="Vertical align"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"][ data-orientation="vertical"] >> nth=1`).click({ timeout: 30 * 1000 });
 
   // Assert center alignment
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterverticalalign.png', {
@@ -923,8 +944,8 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   });
 
   // Bottom alignment
-  await page.locator(`[aria-label="Vertical align"]`).click();
-  await page.locator(`[role="menuitem"] span:has-text("Bottom")`).click();
+  await page.locator(`[aria-label="Vertical align"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"] span:has-text("Bottom")`).click({ timeout: 30 * 1000 });
 
   // Assert bottom alignment
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testbottomverticalalign.png', {
@@ -935,7 +956,7 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -969,16 +990,16 @@ test('Time Formatting', async ({ page }) => {
   await selectCells(page, { startXY: [5, 1], endXY: [8, 24] });
 
   // Open Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select Date and time option
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Choose the time format: Hour:Minute AM/PM (e.g., 1:30 PM)
-  await page.locator(`[role="radio"][value="%-I:%M %p"]`).click();
+  await page.locator(`[role="radio"][value="%-I:%M %p"]`).click({ timeout: 30 * 1000 });
 
   // Apply the selected time format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Take a screenshot of the formatted time cells and compare it to the expected result
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-hr-mm-am-pm-format.png', {
@@ -989,16 +1010,16 @@ test('Time Formatting', async ({ page }) => {
   // Time in 12-Hour Format with Seconds (HH:MM:SS AM/PM)
   //--------------------------------
   // Open Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select Date and time option from the menu
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Choose the time format: Hour:Minute:Second AM/PM (e.g., 1:30:45 PM)
-  await page.locator(`[role="radio"][value="%-I:%M:%S %p"]`).click();
+  await page.locator(`[role="radio"][value="%-I:%M:%S %p"]`).click({ timeout: 30 * 1000 });
 
   // Apply the selected time format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Take a screenshot of the formatted time cells and compare it to the expected result
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-hr-mm-ss-am-pm-format.png', {
@@ -1009,16 +1030,16 @@ test('Time Formatting', async ({ page }) => {
   // Time in 24-Hour Format (HH:MM)
   //--------------------------------
   // Open Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select Date and time option from the menu
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Choose the 24-hour time format: Hour:Minute (e.g., 13:30)
-  await page.locator(`[role="radio"][value="%H:%M"]`).click();
+  await page.locator(`[role="radio"][value="%H:%M"]`).click({ timeout: 30 * 1000 });
 
   // Apply the selected 24-hour time format
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Take a screenshot of the formatted time cells and compare it to the expected result
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-24hr-mm-format.png', {
@@ -1029,16 +1050,16 @@ test('Time Formatting', async ({ page }) => {
   // Time in 24-Hour Format with Seconds (HH:MM:SS)
   //--------------------------------
   // Open Format menu
-  await page.getByRole(`menuitem`, { name: `Format` }).click();
+  await page.getByRole(`menuitem`, { name: `Format` }).click({ timeout: 30 * 1000 });
 
   // Select Date and time option from the menu
-  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click();
+  await page.getByRole(`menuitem`, { name: `calendar_month Date and time` }).click({ timeout: 30 * 1000 });
 
   // Choose the 24-hour time format with seconds: Hour:Minute:Second (e.g., 13:30:45)
-  await page.locator(`[role="radio"][value="%H:%M:%S"]`).click();
+  await page.locator(`[role="radio"][value="%H:%M:%S"]`).click({ timeout: 30 * 1000 });
 
   // Apply the selected 24-hour time format with seconds
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 30 * 1000 });
 
   // Take a screenshot of the formatted time cells and compare it to the expected result
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('times-24hr-mm-ss-format.png', {
@@ -1049,6 +1070,6 @@ test('Time Formatting', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

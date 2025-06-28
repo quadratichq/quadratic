@@ -14,7 +14,7 @@ use super::{
 
 pub(crate) fn import_column_builder(
     columns_schema: Vec<(i64, current::ColumnSchema)>,
-) -> Result<SheetColumns> {
+) -> SheetColumns {
     let mut columns = BTreeMap::new();
     let mut has_cell_value = Contiguous2D::new();
     for (x, column) in columns_schema {
@@ -28,7 +28,7 @@ pub(crate) fn import_column_builder(
         }
         columns.insert(x, col);
     }
-    Ok((columns, has_cell_value).into())
+    (columns, has_cell_value).into()
 }
 
 pub(crate) fn export_values(values: BTreeMap<i64, CellValue>) -> current::ColumnSchema {

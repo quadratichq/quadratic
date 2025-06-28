@@ -1,7 +1,7 @@
 import { authClient } from '@/auth/auth';
+import { apiClient } from '@/shared/api/apiClient';
 import * as Sentry from '@sentry/react';
 import type z from 'zod';
-import { apiClient } from './apiClient';
 
 export class ApiError extends Error {
   status: number;
