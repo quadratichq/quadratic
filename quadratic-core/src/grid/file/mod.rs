@@ -100,7 +100,7 @@ enum GridFile {
 }
 
 impl GridFile {
-    // Upgrade to the next verssion
+    // Upgrade to the next version
     fn upgrade_next(self) -> Result<GridFile> {
         let next = match self {
             GridFile::V1_11 { grid } => GridFile::V1_11 { grid },
@@ -242,8 +242,8 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         }
         "1.11" => {
             let schema = decompress_and_deserialize::<v1_11::GridSchema>(
-                &SerializationFormat::Json,
-                &CompressionFormat::Zstd,
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
                 data,
             )?;
 

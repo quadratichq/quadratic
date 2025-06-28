@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 use crate::grid::file::v1_10;
 
 pub type A1SelectionSchema = v1_10::A1SelectionSchema;
@@ -76,9 +74,4 @@ pub type ValidationsSchema = v1_10::ValidationsSchema;
 pub type DataTableSchema = v1_10::DataTableSchema;
 pub type DataTablesSchema = v1_10::DataTablesSchema;
 pub type SheetSchema = v1_10::SheetSchema;
-
-#[derive(Default, Debug, PartialEq, Serialize, Deserialize, Clone)]
-pub struct GridSchema {
-    pub sheets: Vec<SheetSchema>,
-    pub version: Option<String>,
-}
+pub type GridSchema = v1_10::GridSchema;
