@@ -78,7 +78,7 @@ impl GridController {
             let table_pos = serde_json::from_str::<Pos>(&table_pos).ok()?;
             MultiPos::new_table_pos(sheet_id, table_pos.x, table_pos.y, pos.x, pos.y)
         } else {
-            MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y)
+            pos.to_multi_pos(sheet_id)
         };
         Some(self.set_code_cell(multi_pos, language, code_string, code_cell_name, cursor))
     }

@@ -102,7 +102,7 @@ impl GridController {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
             for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                code_cell_positions.push(MultiPos::new_sheet_pos(*sheet_id, pos.x, pos.y));
+                code_cell_positions.push(pos.to_multi_pos(*sheet_id));
             }
         }
 
@@ -117,11 +117,7 @@ impl GridController {
         let mut code_cell_positions = Vec::new();
         for (table_pos, dt) in sheet.data_tables.expensive_iter() {
             if dt.code_run().is_some() {
-                code_cell_positions.push(MultiPos::new_sheet_pos(
-                    sheet_id,
-                    table_pos.x,
-                    table_pos.y,
-                ));
+                code_cell_positions.push(table_pos.to_multi_pos(sheet_id));
             } else {
                 if let Some(tables) = &dt.tables {
                     for (pos, _) in tables.expensive_iter_code_runs() {

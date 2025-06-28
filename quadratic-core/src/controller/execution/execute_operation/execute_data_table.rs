@@ -415,11 +415,7 @@ impl GridController {
             let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
             let mut old_values = sheet.get_code_cell_values(rect);
 
-            transaction.add_code_cell(MultiPos::new_sheet_pos(
-                sheet_id,
-                data_table_pos.x,
-                data_table_pos.y,
-            ));
+            transaction.add_code_cell(data_table_pos.to_multi_pos(sheet_id));
             transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
             let rows = data_table.get_rows_with_wrap_in_rect(&data_table_pos, &rect, true);
             if !rows.is_empty() {
@@ -653,7 +649,7 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-            transaction.add_code_cell(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y));
+            transaction.add_code_cell(pos.to_multi_pos(sheet_id));
 
             let forward_operations = vec![op];
             reverse_operations.push(Operation::AddDataTable {
@@ -1011,8 +1007,7 @@ impl GridController {
                         }
                     }
 
-                    let multi_pos =
-                        MultiPos::new_sheet_pos(sheet_id, data_table_pos.x, data_table_pos.y);
+                    let multi_pos = data_table_pos.to_multi_pos(sheet_id);
                     old_alternating_colors = alternating_colors.map(|alternating_colors| {
                         // mark code cell dirty to update alternating color
                         transaction.add_code_cell(multi_pos);
@@ -1559,11 +1554,7 @@ impl GridController {
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
-            transaction.add_code_cell(MultiPos::new_sheet_pos(
-                sheet_id,
-                data_table_pos.x,
-                data_table_pos.y,
-            ));
+            transaction.add_code_cell(data_table_pos.to_multi_pos(sheet_id));
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_id);
 
@@ -1959,11 +1950,7 @@ impl GridController {
             if select_table {
                 Self::select_full_data_table(transaction, sheet_id, data_table_pos, data_table);
             }
-            transaction.add_code_cell(MultiPos::new_sheet_pos(
-                sheet_id,
-                data_table_pos.x,
-                data_table_pos.y,
-            ));
+            transaction.add_code_cell(data_table_pos.to_multi_pos(sheet_id));
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_id);
 

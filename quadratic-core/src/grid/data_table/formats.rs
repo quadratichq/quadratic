@@ -410,7 +410,7 @@ pub mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y), |dt| {
+            .modify_data_table_at(pos.to_multi_pos(sheet_id), |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })

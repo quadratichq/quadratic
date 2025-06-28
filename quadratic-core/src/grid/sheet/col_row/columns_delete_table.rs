@@ -678,11 +678,17 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![B2], 5, 3);
 
+        print_first_sheet!(&gc);
+
         gc.delete_columns(sheet_id, vec![2, 3, 4], None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);
 
+        print_first_sheet!(&gc);
+
         gc.undo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 5, 3, false);
+
+        print_first_sheet!(&gc);
 
         gc.redo(None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 2, 3, false);

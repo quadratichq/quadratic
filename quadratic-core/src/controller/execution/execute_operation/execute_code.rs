@@ -61,13 +61,11 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_pixel_output;
-            let (data_table, dirty_rects) = sheet.modify_data_table_at(
-                MultiPos::new_sheet_pos(sheet_id, data_table_pos.x, data_table_pos.y),
-                |dt| {
+            let (data_table, dirty_rects) =
+                sheet.modify_data_table_at(data_table_pos.to_multi_pos(sheet_id), |dt| {
                     dt.chart_pixel_output = Some((pixel_width, pixel_height));
                     Ok(())
-                },
-            )?;
+                })?;
 
             transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
@@ -107,13 +105,11 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_output;
-            let (data_table, dirty_rects) = sheet.modify_data_table_at(
-                MultiPos::new_sheet_pos(sheet_id, data_table_pos.x, data_table_pos.y),
-                |dt| {
+            let (data_table, dirty_rects) =
+                sheet.modify_data_table_at(data_table_pos.to_multi_pos(sheet_id), |dt| {
                     dt.chart_output = Some((w, h));
                     Ok(())
-                },
-            )?;
+                })?;
 
             transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 

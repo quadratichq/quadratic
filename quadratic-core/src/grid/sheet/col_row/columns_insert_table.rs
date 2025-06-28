@@ -39,7 +39,7 @@ impl Sheet {
                         if column >= pos.x && column < pos.x + output_rect.width() as i64 {
                             dt.chart_output = Some((width + 1, height));
                             transaction.add_from_code_run(
-                                MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y),
+                                pos.to_multi_pos(sheet_id),
                                 dt.is_image(),
                                 dt.is_html(),
                             );
@@ -59,7 +59,7 @@ impl Sheet {
                                 dt.get_column_index_from_display_index(display_column_index, true);
                             let _ = dt.insert_column_sorted(column_index as usize, None, None);
                             transaction.add_from_code_run(
-                                MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y),
+                                pos.to_multi_pos(sheet_id),
                                 dt.is_image(),
                                 dt.is_html(),
                             );
@@ -150,7 +150,7 @@ impl Sheet {
         for (_, to) in data_tables_to_move_back {
             let from = to.translate(1, 0, i64::MIN, i64::MIN);
             self.columns.move_cell_value(&from, &to);
-            transaction.add_code_cell(MultiPos::new_sheet_pos(self.id, to.x, to.y));
+            transaction.add_code_cell(to.to_multi_pos(self.id));
         }
     }
 }

@@ -592,11 +592,7 @@ impl SheetDataTables {
                 data_table
                     .tables
                     .as_mut()?
-                    .shift_remove_full(&MultiPos::new_sheet_pos(
-                        multi_pos.sheet_id(),
-                        table_pos.pos.x,
-                        table_pos.pos.y,
-                    ))
+                    .shift_remove_full(&table_pos.pos.to_multi_pos(multi_pos.sheet_id()))
             }
         }
     }
@@ -634,10 +630,7 @@ impl SheetDataTables {
     ) -> impl Iterator<Item = (MultiPos, &DataTable)> {
         let mut results = vec![];
         self.data_tables.iter().for_each(|(table_pos, data_table)| {
-            results.push((
-                MultiPos::new_sheet_pos(sheet_id, table_pos.x, table_pos.y),
-                data_table,
-            ));
+            results.push((table_pos.to_multi_pos(sheet_id), data_table));
             if let Some(tables) = &data_table.tables {
                 tables.data_tables.iter().for_each(|(pos, data_table)| {
                     results.push((

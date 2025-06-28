@@ -673,7 +673,7 @@ mod test {
     fn test_copy_data_table_to_clipboard() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y), |dt| {
+            .modify_data_table_at(pos.to_multi_pos(sheet_id), |dt| {
                 dt.chart_pixel_output = Some((100.0, 100.0));
                 Ok(())
             })
