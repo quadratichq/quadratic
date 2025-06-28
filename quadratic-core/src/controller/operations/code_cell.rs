@@ -295,32 +295,20 @@ mod test {
             assert_eq!(operations.len(), 3);
             assert_eq!(
                 operations[0],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!A1].into(),
                 }
             );
             assert_eq!(
                 operations[1],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 2,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!B2].into(),
                 }
             );
             assert_eq!(
                 operations[2],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id: sheet_id_2,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id_2!A1].into(),
                 }
             );
         };
@@ -389,22 +377,14 @@ mod test {
             assert_eq!(operations.len(), 2);
             assert_eq!(
                 operations[0],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!A1].into(),
                 }
             );
             assert_eq!(
                 operations[1],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 2,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!B2].into(),
                 }
             );
         };
