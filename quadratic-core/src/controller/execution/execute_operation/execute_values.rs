@@ -217,7 +217,7 @@ mod tests {
         );
         gc.set_cell_value(
             SheetPos {
-                x: 2,
+                x: 1,
                 y: 1,
                 sheet_id,
             },
