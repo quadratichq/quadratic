@@ -72,6 +72,7 @@ impl From<TransactionHeader> for TransactionVersion {
         match header.version.as_str() {
             "1.0" => TransactionVersion::v1(),
             "2.0" => TransactionVersion::v2(),
+            "3.0" => TransactionVersion::v3(),
             _ => TransactionVersion::current(),
         }
     }
@@ -86,7 +87,7 @@ pub struct TransactionVersion {
 
 impl TransactionVersion {
     pub fn current() -> Self {
-        Self::v2()
+        Self::v3()
     }
 
     pub fn v1() -> Self {
@@ -102,6 +103,14 @@ impl TransactionVersion {
             header: TransactionHeader::from("2.0"),
             serialized_format: SerializationFormat::Json,
             compression_format: CompressionFormat::Zlib,
+        }
+    }
+
+    pub fn v3() -> Self {
+        Self {
+            header: TransactionHeader::from("3.0"),
+            serialized_format: SerializationFormat::Json,
+            compression_format: CompressionFormat::Zstd,
         }
     }
 }
@@ -148,7 +157,8 @@ impl Transaction {
                 &TransactionVersion::v1().compression_format,
                 data,
             ),
-            "2.0" => {
+            // The only difference between v2 and v3 is the compression format (from zlib to zstd).
+            "2.0" | "3.0" => {
                 let decoded: ReceiveTransaction =
                     Message::decode(data).map_err(|e| anyhow::anyhow!(e))?;
 

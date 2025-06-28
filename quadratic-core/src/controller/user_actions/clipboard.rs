@@ -198,8 +198,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use bigdecimal::BigDecimal;
-
     use super::*;
     use crate::controller::operations::clipboard::ClipboardOperation;
     use crate::controller::user_actions::import::tests::simple_csv_at;
@@ -254,7 +252,7 @@ mod test {
         for &(x, y, expected) in values {
             assert_eq!(
                 sheet.display_value(Pos { x, y }),
-                Some(CellValue::Number(BigDecimal::from(expected))),
+                Some(CellValue::Number(expected.into())),
                 "wrong cell value at ({x}, {y})"
             );
         }
@@ -325,7 +323,7 @@ mod test {
         );
         assert_eq!(
             sheet.display_value(Pos { x: 4, y: 3 }),
-            Some(CellValue::Number(BigDecimal::from(12)))
+            Some(CellValue::Number(12.into()))
         );
 
         // paste using html
@@ -362,7 +360,7 @@ mod test {
         );
         assert_eq!(
             sheet.display_value(Pos { x: 4, y: 3 }),
-            Some(CellValue::Number(BigDecimal::from(12)))
+            Some(CellValue::Number(12.into()))
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 4, y: 3 }),
@@ -436,7 +434,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
 
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 1, 1, sheet_id));
@@ -461,7 +459,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         gc.undo(None);
         let sheet = gc.sheet(sheet_id);
@@ -475,7 +473,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(4)))
+            Some(CellValue::Number(4.into()))
         );
 
         gc.paste_from_clipboard(
@@ -488,7 +486,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
 
         assert_eq!(gc.undo_stack.len(), 2);
@@ -499,7 +497,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(4)))
+            Some(CellValue::Number(4.into()))
         );
 
         assert_eq!(gc.undo_stack.len(), 1);
@@ -523,15 +521,15 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 3, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 3, 1, sheet_id));
         let JsClipboard { html, .. } = sheet
@@ -555,15 +553,15 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 3, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
 
         gc.undo(None);
@@ -732,7 +730,7 @@ mod test {
         let cell11 = sheet.display_value(Pos { x: 2, y: 3 });
         assert_eq!(cell11.unwrap(), CellValue::Text(String::from("1, 1")));
         let cell21 = sheet.display_value(Pos { x: 4, y: 4 });
-        assert_eq!(cell21.unwrap(), CellValue::Number(BigDecimal::from(12)));
+        assert_eq!(cell21.unwrap(), CellValue::Number(12.into()));
     }
 
     // | 1 | A1           |
@@ -780,7 +778,7 @@ mod test {
                     language: CodeCellLanguage::Formula,
                     code: code.into(),
                 }));
-                let expected_display_value = Some(CellValue::Number(BigDecimal::from(value)));
+                let expected_display_value = Some(CellValue::Number(value.into()));
 
                 assert_eq!(cell_value, (expected_cell_value, expected_display_value));
             };
@@ -885,11 +883,11 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 3, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -909,15 +907,15 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(Pos { x: 0, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.cell_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.cell_value(Pos { x: 2, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
     }
 
@@ -999,7 +997,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
 
         // don't copy the origin point
@@ -1026,7 +1024,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
 
         gc.undo(None);
@@ -1053,11 +1051,11 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value((11, 11).into()),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value((11, 13).into()),
-            Some(CellValue::Number(BigDecimal::from(100)))
+            Some(CellValue::Number(100.into()))
         );
         assert_eq!(sheet.display_value((1, 1).into()), None);
         assert_eq!(sheet.display_value((1, 3).into()), None);
@@ -1069,11 +1067,11 @@ mod test {
         assert_eq!(sheet.display_value((11, 13).into()), None);
         assert_eq!(
             sheet.display_value((1, 1).into()),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value((1, 3).into()),
-            Some(CellValue::Number(BigDecimal::from(100)))
+            Some(CellValue::Number(100.into()))
         );
     }
 

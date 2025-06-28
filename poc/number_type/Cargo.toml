@@ -1,0 +1,22 @@
+[package]
+name = "number_type"
+authors = ["@ddimaria"]
+edition = "2024"
+description = "Number Type PoC"
+repository = "https://github.com/quadratichq/quadratic"
+license-file = "LICENSE"
+version = "0.1.0"
+
+[dependencies]
+anyhow = "1.0.98"
+arrow-array = { version = "55.1.0", features = [] }
+arrow-schema = { version = "55.1.0", features = ["serde"] }
+bigdecimal = { version = "0.4.8", features = ["serde", "serde_json"] }
+bincode = { version = "2.0.1", features = ["serde"] }
+byte-unit = "5.1.6"
+flate2 = "1.1.2"
+num-format = "0.4.4"
+rust_decimal = { version = "1.37.2", features = ["serde-with-float"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0.140"
+zstd = "0.13.3"
