@@ -86,7 +86,7 @@ mod tests {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(pos.to_sheet_pos(sheet_id), |dt| {
+            .modify_data_table_at(pos.to_multi_pos(sheet_id), |dt| {
                 dt.apply_first_row_as_header();
                 Ok(())
             })
