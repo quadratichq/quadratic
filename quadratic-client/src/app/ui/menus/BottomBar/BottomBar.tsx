@@ -6,11 +6,13 @@ import { SelectionSummary } from '@/app/ui/menus/BottomBar/SelectionSummary';
 import SyncState from '@/app/ui/menus/BottomBar/SyncState';
 import { TopLeftPosition } from '@/app/ui/menus/BottomBar/TopLeftPosition';
 import { VERSION } from '@/shared/constants/appConstants';
+import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const BottomBar = () => {
+export const BottomBar = memo(() => {
+  const { debugFlags } = useDebugFlags();
+
   const inlineEditorState = useRecoilValue(inlineEditorAtom);
-  const { getFlag } = useDebugFlags();
 
   return (
     <div
@@ -33,7 +35,7 @@ export const BottomBar = () => {
           </BottomBarItem>
         )}
 
-        {getFlag('debugShowFPS') && (
+        {debugFlags.getFlag('debugShowFPS') && (
           <BottomBarItem>
             <div
               className="debug-show-renderer"
@@ -49,12 +51,12 @@ export const BottomBar = () => {
             <span className="debug-show-FPS">--</span> FPS
           </BottomBarItem>
         )}
-        {getFlag('debugShowCoordinates') && (
+        {debugFlags.getFlag('debugShowCoordinates') && (
           <BottomBarItem>
             <Coordinates />
           </BottomBarItem>
         )}
-        {getFlag('debugShowTopLeftPosition') && (
+        {debugFlags.getFlag('debugShowTopLeftPosition') && (
           <BottomBarItem>
             <TopLeftPosition />
           </BottomBarItem>
@@ -69,4 +71,4 @@ export const BottomBar = () => {
       </div>
     </div>
   );
-};
+});

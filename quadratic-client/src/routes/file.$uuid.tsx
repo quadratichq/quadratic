@@ -146,7 +146,7 @@ export const Component = () => {
   const { loggedInUser } = useRootRouteLoaderData();
   const {
     file: { uuid: fileUuid },
-    team: { uuid: teamUuid, settings: teamSettings },
+    team: { uuid: teamUuid, isOnPaidPlan, settings: teamSettings },
     userMakingRequest: { filePermissions },
   } = useLoaderData() as FileData;
   const initializeState = useCallback(
@@ -158,9 +158,10 @@ export const Component = () => {
         user: loggedInUser,
         fileUuid,
         teamUuid,
+        isOnPaidPlan,
       }));
     },
-    [filePermissions, teamSettings, loggedInUser, fileUuid, teamUuid]
+    [filePermissions, fileUuid, isOnPaidPlan, loggedInUser, teamSettings, teamUuid]
   );
 
   // If this is an embed, ensure that wheel events do not scroll the page

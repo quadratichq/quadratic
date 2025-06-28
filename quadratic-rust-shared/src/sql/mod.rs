@@ -229,6 +229,25 @@ macro_rules! convert_sqlx_type {
 }
 
 /// Convert a column data to an ArrowType into an Arrow type
+#[macro_export]
+macro_rules! convert_sqlx_array_type {
+    ( $kind:ty, $row:ident, $index:ident ) => {{
+        let array = convert_sqlx_type!($kind, $row, $index);
+        if let Some(array) = array {
+            let array_string = array
+                .iter()
+                .map(|value| value.to_string())
+                .collect::<Vec<String>>()
+                .join(",");
+
+            return ArrowType::Utf8(array_string);
+        }
+
+        ArrowType::Null
+    }};
+}
+
+/// Convert a column data to an ArrowType into an Arrow type
 /// else return a null value
 #[macro_export]
 macro_rules! to_arrow_type {
