@@ -8,7 +8,7 @@ pub fn print_last_undo_transaction_names(gc: &GridController) {
     for op in &undo.operations {
         println!(
             "{}",
-            format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+            format!("{op:?}").split('{').next().unwrap_or("Unknown")
         );
     }
     println!("\n");
@@ -19,7 +19,7 @@ pub fn print_last_undo_transactions(gc: &GridController) {
     let undo = gc.undo_stack().last().expect("No redo stack");
     println!("__Last undo ops__");
     for op in &undo.operations {
-        println!("{:?}", op);
+        println!("{op:?}");
     }
     println!("\n");
 }
@@ -32,7 +32,7 @@ pub fn print_last_redo_transaction_names(gc: &GridController) {
     for op in &redo.operations {
         println!(
             "{}",
-            format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+            format!("{op:?}").split('{').next().unwrap_or("Unknown")
         );
     }
     println!("\n");

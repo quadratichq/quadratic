@@ -1,4 +1,3 @@
-import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
@@ -10,6 +9,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { createCheckoutSession, createCustomer, getMonthlyPriceId } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
+import { getIsOnPaidPlan } from '../../utils/billing';
 
 export default [
   validateRequestSchema(
@@ -38,7 +38,8 @@ async function handler(req: Request, res: Response) {
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });
   }
 
-  if (team?.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE) {
+  const isOnPaidPlan = await getIsOnPaidPlan(team);
+  if (isOnPaidPlan) {
     return res.status(400).json({ error: { message: 'Team already has an active subscription.' } });
   }
 

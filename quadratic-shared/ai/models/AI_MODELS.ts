@@ -2,27 +2,30 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 17;
+export const DEFAULT_MODEL_VERSION = 18;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
-export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.0-flash';
+export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
-export const DEFAULT_SQL_MODEL: AIModelKey = 'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0';
+export const DEFAULT_MODEL_PRO: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
+export const DEFAULT_MODEL_FREE: AIModelKey = 'vertexai:gemini-2.5-pro:thinking-toggle-off';
+
+export const DEFAULT_SQL_MODEL: AIModelKey =
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
 export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking';
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
 export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-on';
 
 // Internal tool call models
-export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
-export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-pro:thinking-toggle-off';
-export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash';
-export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash'; // not used
+export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
 
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
@@ -36,7 +39,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    mode: 'pro',
     provider: 'quadratic',
     promptCaching: false,
     thinkingToggle: false,
@@ -49,7 +52,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: true,
+    mode: 'pro',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
@@ -64,7 +67,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: false,
@@ -78,7 +81,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'vertexai-anthropic',
     promptCaching: true,
     thinking: true,
@@ -92,7 +95,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'basic',
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
@@ -107,7 +110,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'basic',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
@@ -115,18 +118,33 @@ export const MODELS_CONFIGURATION: {
     thinkingBudget: 32768,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
-  'vertexai:gemini-2.5-flash': {
+  'vertexai:gemini-2.5-flash:thinking-toggle-off': {
     model: 'gemini-2.5-flash',
     displayName: 'gemini 2.5 flash',
     temperature: 0,
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
     thinkingBudget: 0,
+    ...AI_RATES.gemini_2_5_flash_rate,
+  },
+  'vertexai:gemini-2.5-flash:thinking-toggle-on': {
+    model: 'gemini-2.5-flash',
+    displayName: 'gemini 2.5 flash',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: true,
+    thinkingToggle: true,
+    thinkingBudget: 24576,
     ...AI_RATES.gemini_2_5_flash_rate,
   },
   'vertexai:gemini-2.0-flash': {
@@ -136,7 +154,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     ...AI_RATES.gemini_2_0_flash_rate,
@@ -148,7 +166,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'geminiai',
     promptCaching: false,
     thinking: false,
@@ -162,7 +180,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: false,
@@ -176,7 +194,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
@@ -190,7 +208,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: false,
     thinkingToggle: false,
@@ -203,36 +221,38 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0': {
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
     displayName: 'claude 3.7 sonnet',
     temperature: 0,
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: true,
+    thinkingToggle: false,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking': {
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on': {
     model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: 'claude 3.7 sonnet thinking',
+    displayName: 'claude 3.7 sonnet',
     temperature: 1,
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: true,
     thinking: true,
+    thinkingToggle: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock:us.deepseek.r1-v1:0': {
@@ -242,7 +262,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: false,
-    enabled: false,
+    mode: 'disabled',
     provider: 'bedrock',
     promptCaching: false,
     rate_per_million_input_tokens: 1.35,
@@ -257,7 +277,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'anthropic',
     promptCaching: true,
     thinking: false,
@@ -271,7 +291,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'anthropic',
     promptCaching: true,
     thinking: true,
@@ -285,7 +305,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'anthropic',
     promptCaching: true,
     thinkingToggle: false,
@@ -298,7 +318,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'anthropic',
     promptCaching: true,
     thinking: true,
@@ -312,7 +332,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: false,
@@ -328,7 +348,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16384,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: false,
@@ -344,7 +364,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: false,
@@ -360,7 +380,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 100000,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: false,
@@ -376,7 +396,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 100000,
     canStream: false, // stream is not supported for o1
     canStreamWithToolCalls: false,
-    enabled: false,
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: false,
@@ -392,7 +412,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 131072,
     canStream: true,
     canStreamWithToolCalls: true,
-    enabled: false,
+    mode: 'disabled',
     provider: 'xai',
     promptCaching: true, // not used for xai
     strictParams: false,

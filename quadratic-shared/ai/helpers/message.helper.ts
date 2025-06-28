@@ -90,7 +90,7 @@ const getAIPromptMessages = (messages: ChatMessage[]): AIMessagePrompt[] => {
   return getPromptMessages(messages).filter((message): message is AIMessagePrompt => message.role === 'assistant');
 };
 
-export const getLastPromptMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
+export const getLastUserMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
   const userPromptMessage = getUserPromptMessages(messages);
   return userPromptMessage[userPromptMessage.length - 1].contextType;
 };

@@ -18,14 +18,14 @@ pub fn first_sheet(gc: &GridController) -> &Sheet {
 #[cfg(test)]
 pub fn sheet(gc: &GridController, id: SheetId) -> &Sheet {
     gc.try_sheet(id)
-        .unwrap_or_else(|| panic!("Sheet with id {} not found", id))
+        .unwrap_or_else(|| panic!("Sheet with id {id} not found"))
 }
 
 /// Gets a sheet from a grid controller by id
 #[cfg(test)]
 pub fn sheet_mut(gc: &mut GridController, id: SheetId) -> &mut Sheet {
     gc.try_sheet_mut(id)
-        .unwrap_or_else(|| panic!("Sheet with id {} not found", id))
+        .unwrap_or_else(|| panic!("Sheet with id {id} not found"))
 }
 
 /// Gets the first sheet id from a grid controller

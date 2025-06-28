@@ -16,17 +16,4 @@ impl GridController {
         let output = sheet.get_render_cells(rect, self.a1_context());
         Ok(serde_json::to_vec(&output).map_err(|e| e.to_string())?)
     }
-
-    /// Returns whether there is any cells to render in this region
-    #[wasm_bindgen(js_name = "hasRenderCells")]
-    pub fn has_render_cells(&self, sheet_id: String, rect: String) -> bool {
-        if let Ok(rect) = serde_json::from_str::<Rect>(&rect) {
-            let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
-                return false;
-            };
-            sheet.has_render_cells(rect)
-        } else {
-            false
-        }
-    }
 }

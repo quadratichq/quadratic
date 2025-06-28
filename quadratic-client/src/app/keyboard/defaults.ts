@@ -373,4 +373,12 @@ export const defaultShortcuts: ActionShortcut = {
     mac: [[MacModifiers.Ctrl, Keys.T]],
     windows: [[WindowsModifiers.Ctrl, WindowsModifiers.Alt, Keys.T]],
   },
+  [Action.SelectGotoRowStart]: {
+    mac: [[MacModifiers.Shift, Keys.Home]],
+    windows: [[WindowsModifiers.Shift, Keys.Home]],
+  },
+  [Action.SelectGotoRowEnd]: {
+    mac: [[MacModifiers.Shift, Keys.End]],
+    windows: [[WindowsModifiers.Shift, Keys.End]],
+  },
 };

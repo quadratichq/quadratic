@@ -4,14 +4,13 @@ import { memo } from 'react';
 
 type AIUsageExceededProps = {
   show: boolean;
-  delaySeconds?: number;
 };
 
 const divClassName =
   'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50';
 
-export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProps) => {
-  if (!show || !delaySeconds) {
+export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
+  if (!show) {
     return null;
   }
 

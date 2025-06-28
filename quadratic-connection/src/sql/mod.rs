@@ -11,6 +11,7 @@ use crate::{
     state::State,
 };
 
+pub(crate) mod bigquery;
 pub(crate) mod mssql;
 pub(crate) mod mysql;
 pub(crate) mod postgres;
@@ -26,8 +27,8 @@ pub struct Schema {
 }
 
 /// Query the database and return the results as a parquet file.
-pub(crate) async fn query_generic<T: Connection>(
-    connection: T,
+pub(crate) async fn query_generic<'a, T: Connection<'a>>(
+    mut connection: T,
     state: Extension<State>,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
