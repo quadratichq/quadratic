@@ -112,6 +112,22 @@ impl A1Selection {
         rect
     }
 
+    /// Returns a vector of rectangles that make up the selection.
+    pub fn rects(&self, a1_context: &A1Context) -> Vec<Rect> {
+        self.ranges
+            .iter()
+            .filter_map(|range| range.to_rect(a1_context))
+            .collect()
+    }
+
+    /// Returns a vector of rectangles that make up the selection.
+    pub fn rects_unbounded(&self, a1_context: &A1Context) -> Vec<Rect> {
+        self.ranges
+            .iter()
+            .filter_map(|range| range.to_rect_unbounded(a1_context))
+            .collect()
+    }
+
     /// Returns rectangle in case of single finite range selection having more than one cell.
     pub fn single_rect(&self, a1_context: &A1Context) -> Option<Rect> {
         if self.ranges.len() != 1 || !self.is_multi_cursor(a1_context) {
@@ -1171,7 +1187,7 @@ mod tests {
 
         // Test single table selection
         let selection = A1Selection::test_a1_context("test_table", gc.a1_context());
-        println!("selection: {:?}", selection);
+        println!("selection: {selection:?}");
         assert_eq!(
             selection.selected_table_names(sheet_id, &cache, gc.a1_context()),
             vec!["test_table"]

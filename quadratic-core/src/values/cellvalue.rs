@@ -98,10 +98,10 @@ impl fmt::Display for CellValue {
             CellValue::Time(d) => write!(f, "{d}"),
             CellValue::DateTime(dt) => write!(f, "{dt}"),
             CellValue::Error(e) => write!(f, "{}", e.msg),
-            CellValue::Html(s) => write!(f, "{}", s),
-            CellValue::Code(code) => write!(f, "{:?}", code),
-            CellValue::Image(s) => write!(f, "{}", s),
-            CellValue::Import(import) => write!(f, "{:?}", import),
+            CellValue::Html(s) => write!(f, "{s}"),
+            CellValue::Code(code) => write!(f, "{code:?}"),
+            CellValue::Image(s) => write!(f, "{s}"),
+            CellValue::Import(import) => write!(f, "{import:?}"),
         }
     }
 }
@@ -197,7 +197,7 @@ impl CellValue {
         } else {
             CellValue::add_commas(&s)
         };
-        if negative { format!("-{}", n) } else { n }
+        if negative { format!("-{n}") } else { n }
     }
 
     pub fn to_display(&self) -> String {

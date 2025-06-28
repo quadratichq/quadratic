@@ -18,8 +18,8 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
-  AIMessagePrompt,
   AIRequestHelperArgs,
   AISource,
   AIUsage,
@@ -160,14 +160,18 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
   modelKey: OpenAIModelKey | XAIModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse> {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
@@ -280,14 +284,18 @@ export async function parseOpenAIStream(
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
   modelKey: OpenAIModelKey | XAIModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): ParsedAIResponse {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   const message = result.choices[0].message;

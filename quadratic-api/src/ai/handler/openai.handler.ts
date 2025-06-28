@@ -13,6 +13,8 @@ import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../hel
 export const handleOpenAIRequest = async (
   modelKey: OpenAIModelKey | XAIModelKey,
   args: AIRequestHelperArgs,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   openai: OpenAI,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
@@ -45,11 +47,11 @@ export const handleOpenAIRequest = async (
       },
     };
     const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
-    const parsedResponse = await parseOpenAIStream(completion, modelKey, response);
+    const parsedResponse = await parseOpenAIStream(completion, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   } else {
     const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
-    const parsedResponse = parseOpenAIResponse(result, modelKey, response);
+    const parsedResponse = parseOpenAIResponse(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   }
 };

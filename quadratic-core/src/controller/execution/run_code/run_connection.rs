@@ -205,7 +205,7 @@ mod tests {
                 .contains(SheetPos::new(sheet_id, 1, 2), context)
         );
 
-        let code = format!(r#"{{{{'{}1'!A2}}}}"#, SHEET_NAME);
+        let code = format!(r#"{{{{'{SHEET_NAME}1'!A2}}}}"#);
         let result = gc
             .replace_handlebars(&mut transaction, sheet_pos, &code, sheet_id)
             .unwrap();

@@ -167,8 +167,8 @@ impl JsSelection {
             .overlaps_a1_selection(&selection, context.get_context()))
     }
 
-    #[wasm_bindgen(js_name = "bottomRightCell")]
-    pub fn bottom_right_cell(&self, context: &JsA1Context) -> JsCoordinate {
+    #[wasm_bindgen(js_name = "selectionEnd")]
+    pub fn js_selection_end(&self, context: &JsA1Context) -> JsCoordinate {
         JsCoordinate {
             x: self.selection.last_selection_end(context.get_context()).x as u32,
             y: self.selection.last_selection_end(context.get_context()).y as u32,

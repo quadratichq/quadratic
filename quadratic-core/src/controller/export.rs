@@ -93,6 +93,6 @@ mod tests {
             .unwrap();
         let mut selected = A1Selection::test_a1("A1:D13");
         let result = gc.export_csv_selection(&mut selected).unwrap();
-        println!("{}", result);
+        println!("{result}");
     }
 }

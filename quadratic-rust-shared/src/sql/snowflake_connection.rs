@@ -61,7 +61,7 @@ impl SnowflakeConnection {
 /// Since the snowflake api returns arrow data, we don't need some of the
 /// trait functions implemented.
 #[async_trait]
-impl Connection for SnowflakeConnection {
+impl<'a> Connection<'a> for SnowflakeConnection {
     type Conn = SnowflakeApi;
     type Row = Arc<dyn Array>;
     type Column = ArrayRef;
@@ -77,12 +77,12 @@ impl Connection for SnowflakeConnection {
     }
 
     /// Get the name of a column
-    fn column_name(_col: &Self::Column) -> &str {
+    fn column_name(&self, _col: &Self::Column, _index: usize) -> String {
         unimplemented!();
     }
 
     /// Convert a row to an Arrow type
-    fn to_arrow(_row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
+    fn to_arrow(&self, _row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
         unimplemented!();
     }
 
@@ -108,7 +108,7 @@ impl Connection for SnowflakeConnection {
 
     /// Query rows from a Snowflake database
     async fn query(
-        &self,
+        &mut self,
         _client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -129,13 +129,6 @@ impl Connection for SnowflakeConnection {
             not(clippy)
         ))]
         record_stop(scenario, _recording).await;
-
-        #[cfg(all(
-            any(test, feature = "test"),
-            feature = "record-request-mock",
-            not(clippy)
-        ))]
-        println!("query_result: {:?}", query_result);
 
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
             let mut chunks = vec![];
@@ -421,7 +414,7 @@ pub mod tests {
 
     // to record: cargo test --features record-request-mock
     pub async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
-        let connection = new_snowflake_connection();
+        let mut connection = new_snowflake_connection();
         let mut client = connection.connect().await.unwrap();
 
         connection

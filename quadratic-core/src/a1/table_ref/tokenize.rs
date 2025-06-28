@@ -238,16 +238,12 @@ mod tests {
             assert_eq!(
                 TableRef::tokenize(s).unwrap(),
                 vec![expected.clone()],
-                "Expected {:?} for {}",
-                expected,
-                s
+                "Expected {expected:?} for {s}"
             );
             assert_eq!(
                 TableRef::tokenize(s.to_lowercase().as_str()).unwrap(),
                 vec![expected.clone()],
-                "Expected {:?} for {}",
-                expected,
-                s
+                "Expected {expected:?} for {s}"
             );
         }
     }
@@ -276,9 +272,7 @@ mod tests {
             assert_eq!(
                 TableRef::tokenize(s).unwrap(),
                 expected.clone(),
-                "Expected {:?} for {}",
-                expected,
-                s
+                "Expected {expected:?} for {s}"
             );
         }
     }

@@ -31,17 +31,17 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
     if (paymentMethodsTextVisible) {
       // When a new card is added, it becomes the default payment method
       // Assign default payment method *back* to the original Visa card
-      await page.locator(`[data-testid="overflow-menu-button"]`).click();
+      await page.locator(`[data-testid="overflow-menu-button"]`).click({ timeout: 30 * 1000 });
       await page.locator('[data-test="menu-contents"]').waitFor({ state: 'visible' });
-      await page.getByRole(`menuitem`, { name: `Make default` }).click();
+      await page.getByRole(`menuitem`, { name: `Make default` }).click({ timeout: 30 * 1000 });
 
       // Wait for dropdown to be hidden
       await page.waitForTimeout(5 * 1000);
 
       // Remove the newly added payment method (Mastercard)
-      await page.locator(`[data-testid="overflow-menu-button"]`).click();
+      await page.locator(`[data-testid="overflow-menu-button"]`).click({ timeout: 30 * 1000 });
       await page.locator('[data-test="menu-contents"]').waitFor({ state: 'visible' });
-      await page.locator(`[data-test="nonDefaultPaymentInstrumentDeleteButton"]`).click();
+      await page.locator(`[data-test="nonDefaultPaymentInstrumentDeleteButton"]`).click({ timeout: 30 * 1000 });
 
       // Wait for dialog to appear for delete confirmation
       await page.locator(`.Dialog-header`).getByText('Delete payment method').waitFor();
@@ -55,7 +55,9 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
       });
 
       // Click 'Delete payment method' and confirm deletion
-      await page.locator(`[data-test="PaymentInstrumentActionsDetatchModalConfirmButton"]`).click();
+      await page
+        .locator(`[data-test="PaymentInstrumentActionsDetatchModalConfirmButton"]`)
+        .click({ timeout: 30 * 1000 });
 
       // **Assert that payment method was deleted:
       // Wait for page to update
@@ -95,7 +97,7 @@ export const cleanupPaymentMethod = async (page: Page, { paymentMethod }: Cleanu
 export const upgradeToProPlan = async (page: Page) => {
   try {
     // Navigate to the Settings page by clicking the 'Settings' link
-    await page.getByRole('link', { name: 'settings Settings' }).click();
+    await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
     await page.waitForTimeout(5 * 1000);
     await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -124,7 +126,7 @@ export const upgradeToProPlan = async (page: Page) => {
     const proPlanCost = proPlanCostText?.match(/\$(\d+)(?= \/user\/month)/)?.[1];
 
     // Click 'Upgrade to Pro' to upgrade the account
-    await page.getByRole(`button`, { name: `Upgrade to Pro` }).click();
+    await page.getByRole(`button`, { name: `Upgrade to Pro` }).click({ timeout: 30 * 1000 });
 
     // Assert that page was redirected to a Stripe integrated payment page
     await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 30 * 1000 });
@@ -177,7 +179,7 @@ export const upgradeToProPlan = async (page: Page) => {
 
     // Click 'Subscribe' button to upgrade the count to a Pro plan
     const navigationPromise = page.waitForNavigation();
-    await page.locator(`[data-testid="hosted-payment-submit-button"]`).click();
+    await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 30 * 1000 });
 
     // Wait for the page to redirect to the Team files page
     await navigationPromise;
@@ -190,7 +192,7 @@ export const upgradeToProPlan = async (page: Page) => {
     await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
 
     // Navigate to the Settings page by clicking the 'Settings' link
-    await page.getByRole('link', { name: 'settings Settings' }).click();
+    await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
     await page.waitForTimeout(5 * 1000);
     await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -229,15 +231,21 @@ type InviteUserToTeamOptions = {
 
 export const inviteUserToTeam = async (page: Page, { email, permission }: InviteUserToTeamOptions) => {
   // Navigate to Members page
-  await page.locator(`nav :text-is("Members")`).click();
+  await page.locator(`nav :text-is("Members")`).click({ timeout: 30 * 1000 });
   await expect(page.locator(`h1:has-text("Team members")`)).toBeVisible({ timeout: 30 * 1000 });
   await page.locator(`[aria-label="Email"]`).fill(email);
   const currentPermission = await page.locator(`button[role="combobox"]`).first().textContent();
   if (currentPermission !== permission) {
-    await page.locator(`button[role="combobox"]`).first().click();
-    await page.locator(`[role="option"] :text("${permission}")`).last().click();
+    await page
+      .locator(`button[role="combobox"]`)
+      .first()
+      .click({ timeout: 30 * 1000 });
+    await page
+      .locator(`[role="option"] :text("${permission}")`)
+      .last()
+      .click({ timeout: 30 * 1000 });
   }
-  await page.locator(`button:text("Invite")`).click();
+  await page.locator(`button:text("Invite")`).click({ timeout: 30 * 1000 });
   await page.waitForLoadState('networkidle');
   await expect(page.locator(`div.text-sm:has-text("${email}")`)).toBeVisible({ timeout: 30 * 1000 });
 };
@@ -262,7 +270,7 @@ export const deleteMemberFromProPlan = async (
 ) => {
   try {
     // Navigate to the Team Members page by clicking 'Members'
-    await page.getByRole(`link`, { name: `group Members` }).click();
+    await page.getByRole(`link`, { name: `group Members` }).click({ timeout: 30 * 1000 });
 
     // Assert that we've navigated to the team management page
     await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible({ timeout: 30 * 1000 });
@@ -272,18 +280,25 @@ export const deleteMemberFromProPlan = async (
     const isVisible = await page.getByText(additionalUserEmail).first().isVisible();
     if (isVisible) {
       // Click 'Can Edit' to open the dropdown menu
-      await page.locator(`[role="combobox"]`).last().click();
+      await page
+        .locator(`[role="combobox"]`)
+        .last()
+        .click({ timeout: 30 * 1000 });
 
       // Select 'Remove' to delete this user from the team
-      await page.getByRole(`option`, { name: `Remove` }).locator(`span`).first().click();
+      await page
+        .getByRole(`option`, { name: `Remove` })
+        .locator(`span`)
+        .first()
+        .click({ timeout: 30 * 1000 });
 
-      await page.locator('[role="alertdialog"] button:has-text("Remove")').click();
+      await page.locator('[role="alertdialog"] button:has-text("Remove")').click({ timeout: 30 * 1000 });
 
       // Assert that the team member that was added earlier in the WF is now removed
       await expect(page.getByText(additionalUserEmail).first()).not.toBeVisible({ timeout: 30 * 1000 });
 
       // Navigate back to Settings page
-      await page.getByRole(`link`, { name: `settings Settings` }).click();
+      await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 30 * 1000 });
 
       await page.waitForTimeout(5 * 1000);
       await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -297,7 +312,7 @@ export const deleteMemberFromProPlan = async (
       expect(afterCleanupMemberCount).toBe(1);
 
       // Navigate to billing management page
-      await page.getByRole(`button`, { name: `Manage billing` }).click();
+      await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
 
       // Assert the account email address is displayed on the billing page
       await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
@@ -312,7 +327,7 @@ export const deleteMemberFromProPlan = async (
       await expect(page.getByText(`$40.00 per month`)).not.toBeVisible({ timeout: 30 * 1000 });
 
       // Navigate to homepage
-      await page.locator(`[data-testid="return-to-business-link"]`).click();
+      await page.locator(`[data-testid="return-to-business-link"]`).click({ timeout: 30 * 1000 });
 
       await page.waitForLoadState('domcontentloaded');
     }
@@ -330,7 +345,7 @@ export const deleteMemberFromProPlan = async (
 export const resetBillingInformation = async (page: Page) => {
   try {
     // Click 'Update information' to update the billing info
-    await page.getByRole(`button`, { name: `Update information` }).click();
+    await page.getByRole(`button`, { name: `Update information` }).click({ timeout: 30 * 1000 });
 
     // Assert that the page displays 'Billing Information'
     await expect(page.locator(`form`).getByText(`Billing information`)).toBeVisible({ timeout: 30 * 1000 });
@@ -362,13 +377,13 @@ export const resetBillingInformation = async (page: Page) => {
     await page.getByRole(`textbox`, { name: `Address line 1` }).fill(`N/A`);
     await page.getByRole(`textbox`, { name: `Address line 2` }).fill(``);
     await page.getByRole(`textbox`, { name: `City` }).fill(`N/A`);
-    await page.getByLabel(`State`).click();
+    await page.getByLabel(`State`).click({ timeout: 30 * 1000 });
     await page.getByLabel(`State`).type(`Alabama`);
     await page.getByLabel(`State`).press('Enter');
     await page.getByRole(`textbox`, { name: `ZIP` }).fill(`95014`);
 
     // Click 'Save' button to confirm the changes
-    await page.locator(`[data-testid="confirm"]`).click();
+    await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
 
     // Assert that the name is back to the original 'My Team'
     await expect(page.getByText(`NameMy Team`)).toBeVisible({ timeout: 30 * 1000 });
@@ -403,7 +418,7 @@ export const cancelProPlan = async (page: Page) => {
     await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
 
     // Click 'Manage billing' to reach the billing management page
-    await page.getByRole(`button`, { name: `Manage billing` }).click();
+    await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
 
     await page.waitForTimeout(5 * 1000);
     await page.waitForLoadState('domcontentloaded');
@@ -417,7 +432,7 @@ export const cancelProPlan = async (page: Page) => {
     await expect(page.getByText(`Invoice history`)).toBeVisible({ timeout: 30 * 1000 });
 
     // Click 'Cancel subscription' button
-    await page.locator(`[data-test="cancel-subscription"]`).click();
+    await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 30 * 1000 });
 
     // Assert that the page to confirm the cancellation appears
     await expect(page).toHaveTitle(/Cancel subscription/);
@@ -431,7 +446,7 @@ export const cancelProPlan = async (page: Page) => {
     expect(cancelSubscriptionText).toContain('subscription will be canceled');
 
     // Click 'Cancel subscription" to confirm the cancellation
-    await page.locator(`[data-testid="confirm"]`).click();
+    await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
 
     // Wait for the cancellation confirmation dialog to appear
     await page.getByRole(`dialog`).waitFor();
@@ -440,7 +455,7 @@ export const cancelProPlan = async (page: Page) => {
     await expect(page.locator(`[role="dialog"] span`).nth(1)).toHaveText(`Subscription has been canceled`);
 
     // Click 'No thanks' to exit the dialog
-    await page.locator(`[data-testid="cancellation_reason_cancel"]`).click();
+    await page.locator(`[data-testid="cancellation_reason_cancel"]`).click({ timeout: 30 * 1000 });
 
     // Assert that the subscription has been cancelled by checking for 'Renew Subscription' button to appear
     await expect(page.locator(`[data-test="renew-subscription"]`)).toBeVisible({ timeout: 30 * 1000 });
@@ -451,7 +466,7 @@ export const cancelProPlan = async (page: Page) => {
     });
 
     // End cleanup by navigating to the homepage
-    await page.locator(`[data-testid="return-to-business-link"]`).click();
+    await page.locator(`[data-testid="return-to-business-link"]`).click({ timeout: 30 * 1000 });
 
     await page.waitForLoadState('domcontentloaded');
   } catch (error: any) {
