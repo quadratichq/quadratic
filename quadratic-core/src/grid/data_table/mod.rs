@@ -1236,8 +1236,7 @@ pub mod test {
         for name in valid_names {
             assert!(
                 DataTable::validate_column_name(table_name, 10, name, &context).is_ok(),
-                "Expected '{}' to be valid",
-                name
+                "Expected '{name}' to be valid"
             );
         }
 
@@ -1287,14 +1286,12 @@ pub mod test {
             let result = DataTable::validate_column_name(table_name, 10, name, &context);
             assert!(
                 result.is_err(),
-                "Expected '{}' to be invalid, but it was valid",
-                name
+                "Expected '{name}' to be invalid, but it was valid"
             );
             assert_eq!(
                 result.unwrap_err(),
                 expected_error,
-                "Unexpected error message for '{}'",
-                name
+                "Unexpected error message for '{name}'"
             );
         }
 

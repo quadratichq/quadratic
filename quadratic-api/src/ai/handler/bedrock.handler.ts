@@ -8,6 +8,8 @@ import { getBedrockApiArgs, parseBedrockResponse, parseBedrockStream } from '../
 export const handleBedrockRequest = async (
   modelKey: BedrockModelKey,
   args: AIRequestHelperArgs,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   bedrock: BedrockRuntimeClient,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
@@ -37,12 +39,12 @@ export const handleBedrockRequest = async (
 
     const command = new ConverseStreamCommand(apiArgs);
     const chunks = (await bedrock.send(command)).stream ?? [];
-    const parsedResponse = await parseBedrockStream(chunks, modelKey, response);
+    const parsedResponse = await parseBedrockStream(chunks, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   } else {
     const command = new ConverseCommand(apiArgs);
     const result = await bedrock.send(command);
-    const parsedResponse = parseBedrockResponse(result, modelKey, response);
+    const parsedResponse = parseBedrockResponse(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   }
 };

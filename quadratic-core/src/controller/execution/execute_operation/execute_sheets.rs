@@ -687,7 +687,7 @@ mod tests {
         gc.set_code_cell(
             pos![sheet_id!J10],
             CodeCellLanguage::Python,
-            format!("q.cells('{}')", file_name),
+            format!("q.cells('{file_name}')"),
             None,
             None,
         );
@@ -715,12 +715,12 @@ mod tests {
 
         let duplicated_sheet_id = gc.sheet_ids()[1];
         let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
-        assert_eq!(data_table.name().to_string(), format!("{}1", file_name));
+        assert_eq!(data_table.name().to_string(), format!("{file_name}1"));
         assert_eq!(
             gc.sheet(duplicated_sheet_id).cell_value(pos![J10]).unwrap(),
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
-                code: format!("q.cells(\"{}1\")", file_name),
+                code: format!("q.cells(\"{file_name}1\")"),
             })
         );
 

@@ -24,9 +24,9 @@ impl GridController {
             .try_sheet_from_string_id(&sheet_id)
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
         let pos: Pos = serde_json::from_str(&pos)
-            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {e}")))?;
         let direction: Direction = serde_json::from_str(&direction)
-            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {e}")))?;
         Ok(sheet.move_cursor(pos, direction))
     }
 
@@ -42,9 +42,9 @@ impl GridController {
             .try_sheet_from_string_id(&sheet_id)
             .ok_or_else(|| JsValue::from_str("Sheet not found"))?;
         let pos: Pos = serde_json::from_str(&pos)
-            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Invalid current position: {e}")))?;
         let direction: Direction = serde_json::from_str(&direction)
-            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Invalid direction: {e}")))?;
         if jump {
             Ok(sheet.jump_cursor(pos, direction))
         } else {

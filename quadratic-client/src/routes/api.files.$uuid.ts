@@ -143,3 +143,7 @@ export const getActionFileDownload = ({ checkpointDataUrl }: { checkpointDataUrl
     ...(checkpointDataUrl ? { checkpointDataUrl } : {}),
   };
 };
+
+export const Component = () => {
+  return null;
+};

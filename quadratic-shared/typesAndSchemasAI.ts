@@ -64,7 +64,8 @@ export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKey
 const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-pro:thinking-toggle-off',
   'vertexai:gemini-2.5-pro:thinking-toggle-on',
-  'vertexai:gemini-2.5-flash',
+  'vertexai:gemini-2.5-flash:thinking-toggle-off',
+  'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.0-flash',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
@@ -77,8 +78,8 @@ const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-on',
   'bedrock-anthropic:claude:thinking-toggle-off',
   'bedrock-anthropic:claude:thinking-toggle-on',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
@@ -125,6 +126,8 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_write_tokens: z.number(),
 });
 export type AIRates = z.infer<typeof AIRatesSchema>;
+const ModelModeSchema = z.enum(['disabled', 'basic', 'pro']);
+export type ModelMode = z.infer<typeof ModelModeSchema>;
 export const AIModelConfigSchema = z
   .object({
     model: AIModelSchema,
@@ -133,7 +136,7 @@ export const AIModelConfigSchema = z
     max_tokens: z.number(),
     canStream: z.boolean(),
     canStreamWithToolCalls: z.boolean(),
-    enabled: z.boolean(),
+    mode: ModelModeSchema,
     provider: AIProvidersSchema,
     promptCaching: z.boolean(),
     strictParams: z.boolean().optional(),

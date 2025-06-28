@@ -2,7 +2,6 @@ import { Action } from '@/app/actions/actions';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
-  aiAnalystDelaySecondsAtom,
   aiAnalystLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
@@ -32,17 +31,15 @@ export const AIAnalystUserMessageForm = memo(
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
-    const delaySeconds = useRecoilValue(aiAnalystDelaySecondsAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
     const handleSubmit = useCallback(
-      ({ content, onSubmit }: SubmitPromptArgs) => {
+      ({ content }: SubmitPromptArgs) => {
         mixpanel.track('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
         submitPrompt({
           content,
           context,
           messageIndex: props.messageIndex,
-          onSubmit,
         });
       },
       [context, props.messageIndex, submitPrompt, userMessagesCount]
@@ -76,7 +73,6 @@ export const AIAnalystUserMessageForm = memo(
           setContext,
         }}
         waitingOnMessageIndex={waitingOnMessageIndex}
-        delaySeconds={delaySeconds}
         maxHeight="275px"
       />
     );

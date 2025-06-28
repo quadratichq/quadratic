@@ -16,8 +16,7 @@ pub fn assert_cell_value(
 
     assert_eq!(
         value, cell_value,
-        "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-        x, y, value, cell_value
+        "Cell at ({x}, {y}) does not have the value {value:?}, it's actually {cell_value:?}"
     );
 }
 
@@ -125,7 +124,7 @@ pub fn assert_cell_value_row(
         if let Some(cell_value) = value.get(index) {
             assert_display_cell_value(gc, sheet_id, x, y, cell_value);
         } else {
-            panic!("No value at position ({},{})", index, y);
+            panic!("No value at position ({index},{y})");
         }
     }
 }

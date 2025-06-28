@@ -67,6 +67,6 @@ pub mod tests {
         let mut session = get_ssh_config().connect().await.unwrap();
         let result = session.call("ls -la").await.unwrap();
         assert_eq!(result, 0);
-        println!("result: {:?}", result);
+        println!("result: {result:?}");
     }
 }

@@ -12,3 +12,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   const { params } = loaderArgs;
   return redirect(ROUTES.TEAM(activeTeamUuid) + '/' + params['*']);
 };
+
+export const Component = () => {
+  return null;
+};
