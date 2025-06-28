@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    ClearOption, MultiPos, Pos, Rect, SheetPos,
+    ClearOption, Pos, Rect, SheetPos,
     controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{
         CellWrap, Sheet, SheetId,

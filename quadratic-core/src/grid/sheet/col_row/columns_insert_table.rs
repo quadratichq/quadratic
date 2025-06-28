@@ -7,8 +7,8 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, MultiPos,
-    controller::active_transactions::pending_transaction::PendingTransaction, grid::Sheet,
+    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
+    grid::Sheet,
 };
 
 impl Sheet {
