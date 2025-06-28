@@ -432,7 +432,7 @@ impl GridController {
                         CellValue::Html(_) => "chart",
                         _ => "unknown",
                     };
-                    let message = format!("Cannot place {} within a table", cell_type);
+                    let message = format!("Cannot place {cell_type} within a table");
 
                     #[cfg(any(target_family = "wasm", test))]
                     {

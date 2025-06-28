@@ -191,6 +191,11 @@ impl GridController {
                             ConnectionKind::Mysql => "MySQL1",
                             ConnectionKind::Mssql => "MSSQL1",
                             ConnectionKind::Snowflake => "Snowflake1",
+                            ConnectionKind::Cockroachdb => "Cockroachdb1",
+                            ConnectionKind::Bigquery => "Bigquery1",
+                            ConnectionKind::Mariadb => "Mariadb1",
+                            ConnectionKind::Supabase => "Supabase1",
+                            ConnectionKind::Neon => "Neon1",
                         },
                         // this should not happen
                         _ => "Connection 1",
@@ -277,7 +282,7 @@ impl From<Pos> for CellHash {
         let hash_height = CELL_SHEET_HEIGHT as f64;
         let cell_hash_x = (pos.x as f64 / hash_width).floor() as i64;
         let cell_hash_y = (pos.y as f64 / hash_height).floor() as i64;
-        let cell_hash = format!("{},{}", cell_hash_x, cell_hash_y);
+        let cell_hash = format!("{cell_hash_x},{cell_hash_y}");
 
         CellHash(cell_hash)
     }

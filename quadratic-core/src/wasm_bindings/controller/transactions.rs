@@ -16,10 +16,10 @@ impl GridController {
         operations: &[u8],
     ) -> Result<JsValue, JsValue> {
         let transaction_id = Uuid::parse_str(&transaction_id)
-            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {e}")))?;
 
         let operations = Transaction::decompress_and_deserialize::<Vec<Operation>>(operations)
-            .map_err(|e| JsValue::from_str(&format!("Invalid operations: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Invalid operations: {e}")))?;
 
         Ok(serde_wasm_bindgen::to_value(&self.received_transaction(
             transaction_id,
@@ -67,7 +67,7 @@ impl GridController {
         sequence_num: u32,
     ) -> Result<JsValue, JsValue> {
         let transaction_id = Uuid::parse_str(&transaction_id)
-            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {}", e)))?;
+            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {e}")))?;
 
         self.received_transaction(transaction_id, sequence_num as u64, vec![]);
 
@@ -89,8 +89,7 @@ impl GridController {
                 return Ok(serde_wasm_bindgen::to_value(&JsResponse {
                     result: false,
                     error: Some(format!(
-                        "Invalid transaction id: {:?}, error: {:?}",
-                        transaction_id, e
+                        "Invalid transaction id: {transaction_id:?}, error: {e:?}"
                     )),
                 })?);
             }
@@ -111,8 +110,7 @@ impl GridController {
                 Ok(serde_wasm_bindgen::to_value(&JsResponse {
                     result: false,
                     error: Some(format!(
-                        "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {:?}, error: {:?}",
-                        unsaved_transaction, e
+                        "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {unsaved_transaction:?}, error: {e:?}"
                     )),
                 })?)
             }

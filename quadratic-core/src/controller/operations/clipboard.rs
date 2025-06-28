@@ -50,7 +50,7 @@ impl From<&str> for PasteSpecial {
             "None" => PasteSpecial::None,
             "Values" => PasteSpecial::Values,
             "Formats" => PasteSpecial::Formats,
-            _ => panic!("Invalid PasteSpecial: {}", s),
+            _ => panic!("Invalid PasteSpecial: {s}"),
         }
     }
 }
@@ -140,7 +140,7 @@ pub static CLIPBOARD_COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::
 impl Clipboard {
     /// Decode the clipboard html and return a Clipboard struct.
     pub fn decode(html: &str) -> Result<Self> {
-        let error = |e, msg| Error::msg(format!("Clipboard decode {:?}: {:?}", msg, e));
+        let error = |e, msg| Error::msg(format!("Clipboard decode {msg:?}: {e:?}"));
 
         // pull out the sub string
         let data = CLIPBOARD_REGEX
@@ -311,7 +311,7 @@ impl From<Clipboard> for JsClipboard {
                     }
                 }
 
-                html_body.push_str(format!("<td {}>", style).as_str());
+                html_body.push_str(format!("<td {style}>").as_str());
 
                 let display_value = clipboard.values.get(x, y);
                 if let Some(value) = display_value {

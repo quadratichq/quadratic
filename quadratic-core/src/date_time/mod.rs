@@ -225,7 +225,7 @@ pub fn parse_time(value: &str) -> Option<NaiveTime> {
             continue;
         };
         if let Ok(parsed_time) =
-            NaiveTime::parse_from_str(&format!("{}:00 {}", time_number, am_pm), format)
+            NaiveTime::parse_from_str(&format!("{time_number}:00 {am_pm}"), format)
         {
             return Some(parsed_time);
         }

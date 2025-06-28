@@ -10,6 +10,11 @@ export const codeCellsById = {
   MYSQL: { id: 'MYSQL', label: 'MySQL', type: 'connection' },
   MSSQL: { id: 'MSSQL', label: 'MS SQL Server', type: 'connection' },
   SNOWFLAKE: { id: 'SNOWFLAKE', label: 'Snowflake', type: 'connection' },
+  COCKROACHDB: { id: 'COCKROACHDB', label: 'CockroachDB', type: 'connection' },
+  BIGQUERY: { id: 'BIGQUERY', label: 'BigQuery', type: 'connection' },
+  MARIADB: { id: 'MARIADB', label: 'MariaDB', type: 'connection' },
+  SUPABASE: { id: 'SUPABASE', label: 'Supabase', type: 'connection' },
+  NEON: { id: 'NEON', label: 'Neon', type: 'connection' },
 } as const;
 export type CodeCellIds = keyof typeof codeCellsById;
 // type CodeCell = (typeof codeCellsById)[CodeCellIds];

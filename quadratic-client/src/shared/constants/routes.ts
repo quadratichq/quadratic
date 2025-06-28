@@ -64,6 +64,7 @@ export const ROUTES = {
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
+  ACTIVE_TEAM_SETTINGS: `/team/settings`,
   EXAMPLES: '/examples',
   LABS: '/labs',
 

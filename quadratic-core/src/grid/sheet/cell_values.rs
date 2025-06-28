@@ -99,7 +99,7 @@ impl Sheet {
             for y in rect.min.y..=rect.max.y {
                 if let Some(value) = self.rendered_value(Pos { x, y }) {
                     let pos = Pos { x, y }.a1_string();
-                    cells.push(format!("{} is {}", pos, value));
+                    cells.push(format!("{pos} is {value}"));
                 }
             }
         }
@@ -116,7 +116,7 @@ impl Sheet {
             for y in rect.min.y..=rect.max.y {
                 let pos = Pos { x, y };
                 if let Some(format) = self.cell_text_format_as_string(pos) {
-                    formats.push(format!("{} is {:?}; ", pos, format));
+                    formats.push(format!("{pos} is {format:?}; "));
                 }
             }
         }
