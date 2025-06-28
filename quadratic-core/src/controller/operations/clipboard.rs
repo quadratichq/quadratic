@@ -2067,7 +2067,7 @@ mod test {
         };
         gc.finalize_data_table(
             &mut transaction,
-            pos_1_2,
+            pos_1_2.into(),
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
@@ -2078,7 +2078,8 @@ mod test {
                 None,
             )),
             None,
-        );
+        )
+        .unwrap();
 
         // copying A1:A2 and pasting on B1 should rerun the code
         let selection_rect = SheetRect::from_numbers(1, 1, 1, 2, sheet_id);

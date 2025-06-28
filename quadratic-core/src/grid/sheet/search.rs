@@ -269,7 +269,7 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        Array, MultiPos,
+        Array,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     };

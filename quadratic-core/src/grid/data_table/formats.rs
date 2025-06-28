@@ -127,7 +127,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        MultiPos, a1::A1Selection, controller::user_actions::import::tests::simple_csv_at,
+        a1::A1Selection, controller::user_actions::import::tests::simple_csv_at,
         grid::sort::SortDirection,
     };
 

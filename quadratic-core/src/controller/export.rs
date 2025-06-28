@@ -57,7 +57,7 @@ mod tests {
 
     use super::*;
 
-    use crate::{Array, MultiPos, controller::user_actions::import::tests::simple_csv};
+    use crate::{Array, controller::user_actions::import::tests::simple_csv};
 
     #[test]
     fn exports_a_csv() {
