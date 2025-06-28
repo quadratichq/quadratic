@@ -89,7 +89,7 @@ export class UIMultiPlayerCursor extends Graphics {
         });
 
         try {
-          const ranges = player.parsedSelection.getFiniteRefRangeBounds();
+          const ranges = player.parsedSelection.getFiniteRefRangeBounds(sheets.jsA1Context);
           drawFiniteSelection(this, color, FILL_ALPHA, ranges);
         } catch (e) {
           // it's possible for a table to no longer exist, so we don't want to

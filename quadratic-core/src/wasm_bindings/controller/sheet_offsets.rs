@@ -1,33 +1,9 @@
 use uuid::Uuid;
 
-use crate::sheet_offsets::SheetOffsets;
-
 use super::*;
 
 #[wasm_bindgen]
 impl GridController {
-    /// Gets a local copy of SheetOffsets for a sheet.
-    /// Returns a [`SheetOffsets`].
-    #[wasm_bindgen(js_name = "getOffsets")]
-    pub fn js_get_offsets(&self, sheet_id: String) -> SheetOffsets {
-        // todo: should return a result
-        let sheet = self.try_sheet_from_string_id(&sheet_id).unwrap();
-        sheet.offsets.clone()
-    }
-
-    #[wasm_bindgen(js_name = "exportOffsets")]
-    pub fn js_export_offsets(&self, sheet_id: String) -> Result<String, JsValue> {
-        if let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) {
-            if let Ok(offsets) = serde_json::to_string(&sheet.offsets) {
-                Ok(offsets)
-            } else {
-                Err(JsValue::from_str("Failed to serialize offsets"))
-            }
-        } else {
-            Err(JsValue::from_str("Sheet not found"))
-        }
-    }
-
     #[wasm_bindgen(js_name = "commitOffsetsResize")]
     pub fn js_commit_resize(
         &mut self,

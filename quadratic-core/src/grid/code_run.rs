@@ -84,6 +84,11 @@ pub enum ConnectionKind {
     Mysql,
     Mssql,
     Snowflake,
+    Cockroachdb,
+    Bigquery,
+    Mariadb,
+    Supabase,
+    Neon,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {

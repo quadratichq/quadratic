@@ -5,11 +5,11 @@ use quadratic_rust_shared::{
 
 use crate::error::{ConnectionError, Result};
 
-pub(crate) async fn open_ssh_tunnel_for_connection<C>(
+pub(crate) async fn open_ssh_tunnel_for_connection<'a, C>(
     connection: &mut C,
 ) -> Result<Option<SshTunnel>>
 where
-    C: Connection + Clone + UsesSsh,
+    C: Connection<'a> + Clone + UsesSsh + 'a,
     C: TryInto<SshConfig>,
     <C as TryInto<SshConfig>>::Error: Into<ConnectionError>,
 {

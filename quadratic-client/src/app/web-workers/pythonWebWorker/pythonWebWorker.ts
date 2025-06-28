@@ -49,6 +49,7 @@ class PythonWebWorker {
   };
 
   init() {
+    this.worker?.terminate();
     this.worker = new Worker(new URL('./worker/python.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
 
@@ -59,11 +60,8 @@ class PythonWebWorker {
 
   cancelExecution = () => {
     mixpanel.track('[PythonWebWorker].restartFromUser');
-
-    if (!this.worker) throw new Error('Expected worker to be defined in python.ts');
-    this.worker.terminate();
-    quadraticCore.sendCancelExecution('Python');
     this.init();
+    quadraticCore.sendCancelExecution('Python');
     events.emit('pythonState', 'loading');
   };
 }
