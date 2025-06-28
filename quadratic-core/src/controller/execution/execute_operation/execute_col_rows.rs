@@ -37,7 +37,9 @@ impl GridController {
                         });
                         transaction
                             .operations
-                            .push_back(Operation::ComputeCode { sheet_pos });
+                            .push_back(Operation::ComputeCodeMultiPos {
+                                multi_pos: sheet_pos.into(),
+                            });
                     }
                 }
             }
@@ -371,8 +373,8 @@ mod tests {
                     sheet_pos: SheetPos::new(sheet_id, 1, 1),
                     values: single_formula("B$17 + $B18"),
                 },
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 1)
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: MultiPos::new_sheet_pos(sheet_id, 1, 1)
                 },
                 // second formula doesn't change because all Y coordinates are < 2
                 // so no operations needed
@@ -395,8 +397,8 @@ mod tests {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
                     values: single_formula("'Sheet 1'!G1+Other!F1 - Nonexistent!F1"),
                 },
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2)
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: MultiPos::new_sheet_pos(sheet_id, 1, 2)
                 },
             ]
         );

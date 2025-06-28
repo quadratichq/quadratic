@@ -699,7 +699,9 @@ impl GridController {
                     }
 
                     let sheet_pos = SheetPos::new(sheet_id, x, y);
-                    data_table_ops.push(Operation::ComputeCode { sheet_pos });
+                    data_table_ops.push(Operation::ComputeCodeMultiPos {
+                        multi_pos: sheet_pos.into(),
+                    });
 
                     Some(data_table_ops)
                 } else {

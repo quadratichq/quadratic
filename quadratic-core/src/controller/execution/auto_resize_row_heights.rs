@@ -447,7 +447,9 @@ mod tests {
         );
         clear_js_calls();
 
-        let ops = vec![Operation::ComputeCode { sheet_pos }];
+        let ops = vec![Operation::ComputeCodeMultiPos {
+            multi_pos: sheet_pos.into(),
+        }];
         let row_heights = vec![JsRowHeight {
             row: 1,
             height: 40f64,
@@ -879,8 +881,8 @@ mod tests {
         expect_js_request_row_heights(sheet_id, row_heights);
 
         // should trigger auto resize row heights for deleting table having wrap
-        let ops = vec![Operation::DeleteDataTable {
-            sheet_pos: pos.to_sheet_pos(sheet_id),
+        let ops = vec![Operation::DeleteDataTableMultiPos {
+            multi_pos: pos.to_multi_pos(sheet_id),
         }];
         let row_heights = vec![JsRowHeight {
             row: 22,

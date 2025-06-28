@@ -109,8 +109,8 @@ impl GridController {
         let mut code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);
         // update sheet_id in code_run_ops to new sheet id
         code_run_ops.iter_mut().for_each(|op| {
-            if let Operation::ComputeCode { sheet_pos } = op {
-                sheet_pos.sheet_id = new_sheet_id;
+            if let Operation::ComputeCodeMultiPos { multi_pos } = op {
+                multi_pos.set_sheet_id(new_sheet_id);
             }
         });
 

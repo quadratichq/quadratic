@@ -297,8 +297,8 @@ impl GridController {
                 }
 
                 if matches!(clipboard_operation, ClipboardOperation::Copy) {
-                    ops.push(Operation::ComputeCode {
-                        sheet_pos: target_pos,
+                    ops.push(Operation::ComputeCodeMultiPos {
+                        multi_pos: target_pos.into(),
                     });
                 }
             }
@@ -577,8 +577,8 @@ impl GridController {
                 }
 
                 if is_code {
-                    compute_code_ops.push(Operation::ComputeCode {
-                        sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+                    compute_code_ops.push(Operation::ComputeCodeMultiPos {
+                        multi_pos: pos.to_sheet_pos(start_pos.sheet_id).into(),
                     });
                 }
             });

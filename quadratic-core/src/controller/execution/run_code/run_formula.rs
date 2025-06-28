@@ -136,7 +136,9 @@ mod test {
                     sheet_pos,
                     values: CellValues::from(code_cell.clone()),
                 },
-                Operation::ComputeCode { sheet_pos },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: sheet_pos.into(),
+                },
             ],
             None,
             TransactionName::Unknown,

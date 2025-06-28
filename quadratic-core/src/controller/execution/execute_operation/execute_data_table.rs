@@ -832,7 +832,9 @@ impl GridController {
                     sheet_pos,
                     values: old_values.into(),
                 },
-                Operation::DeleteDataTable { sheet_pos },
+                Operation::DeleteDataTableMultiPos {
+                    multi_pos: sheet_pos.into(),
+                },
             ];
             self.data_table_operations(
                 transaction,

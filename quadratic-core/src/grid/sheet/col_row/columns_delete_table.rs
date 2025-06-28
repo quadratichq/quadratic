@@ -173,8 +173,8 @@ impl Sheet {
                     });
                 transaction
                     .reverse_operations
-                    .push(Operation::DeleteDataTable {
-                        sheet_pos: new_pos.to_sheet_pos(self.id),
+                    .push(Operation::DeleteDataTableMultiPos {
+                        multi_pos: new_pos.to_multi_pos(self.id),
                     });
             }
         }
