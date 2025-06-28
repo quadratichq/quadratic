@@ -346,7 +346,7 @@ impl<'a> Connection<'a> for PostgresConnection {
                             "DOUBLE PRECISION" | "FLOAT8" => {
                                 convert_sqlx_array_type!(Vec<f64>, row, index)
                             }
-                            "NUMERIC" => convert_sqlx_array_type!(Vec<BigDecimal>, row, index),
+                            "NUMERIC" => convert_sqlx_array_type!(Vec<Decimal>, row, index),
                             "TIMESTAMP" => convert_sqlx_array_type!(Vec<NaiveDateTime>, row, index),
                             "TIMESTAMPTZ" => {
                                 convert_sqlx_array_type!(Vec<DateTime<Local>>, row, index)
@@ -681,8 +681,8 @@ pub mod tests {
             ArrowType::Int16(32767),
             ArrowType::Int32(2147483647),
             ArrowType::Int64(9223372036854775807),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
+            ArrowType::Decimal(Decimal::from_str("12345.6700").unwrap()),
+            ArrowType::Decimal(Decimal::from_str("12345.6700").unwrap()),
             ArrowType::Float32(123.45),
             ArrowType::Float64(123456789.123456),
             ArrowType::Int32(1),
