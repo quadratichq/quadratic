@@ -123,8 +123,8 @@ impl Sheet {
                     transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                     transaction
                         .reverse_operations
-                        .push(Operation::SetDataTable {
-                            sheet_pos: pos.to_sheet_pos(self.id),
+                        .push(Operation::SetDataTableMultiPos {
+                            multi_pos: pos.to_multi_pos(self.id),
                             data_table: Some(old_dt),
                             index,
                         });

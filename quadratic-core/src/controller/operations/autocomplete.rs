@@ -690,8 +690,8 @@ impl GridController {
                             let new_name = unique_data_table_name(&old_name, false, None, context);
                             data_table.name = new_name.into();
 
-                            data_table_ops.push(Operation::SetDataTable {
-                                sheet_pos: original_pos.to_sheet_pos(sheet_id),
+                            data_table_ops.push(Operation::SetDataTableMultiPos {
+                                multi_pos: original_pos.to_multi_pos(sheet_id),
                                 data_table: Some(data_table),
                                 index: usize::MAX,
                             });

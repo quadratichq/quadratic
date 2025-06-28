@@ -1,6 +1,6 @@
 use crate::{
-    CellValue, ClearOption, MultiPos, Pos, Rect, SheetPos, SheetRect,
-    a1::A1Selection,
+    ArraySize, CellValue, ClearOption, MultiPos, Pos, Rect, SheetPos, SheetRect,
+    a1::{A1Context, A1Selection},
     cell_values::CellValues,
     cellvalue::Import,
     controller::{
@@ -577,139 +577,123 @@ impl GridController {
 
     pub(super) fn execute_flatten_data_table(
         &mut self,
-        _transaction: &mut PendingTransaction,
+        transaction: &mut PendingTransaction,
         op: Operation,
     ) -> Result<()> {
-        if let Operation::FlattenDataTable { .. } = op {
-            todo!();
+        if let Operation::FlattenDataTable { sheet_pos } = op {
+            let sheet_id = sheet_pos.sheet_id;
+            let pos = Pos::from(sheet_pos);
+            let multi_pos: MultiPos = sheet_pos.into();
 
-            // need to update and handle flattening nested code tables
+            // mark old data table as dirty
+            self.mark_data_table_dirty(transaction, sheet_id, pos)?;
 
-            // let sheet_id = sheet_pos.sheet_id;
-            // let pos = Pos::from(sheet_pos);
-            // let sheet = self.try_sheet_result(sheet_id)?;
-            // let data_table_pos = sheet.data_table_pos_that_contains(pos)?;
+            // Pull out the data table via a swap, removing it from the sheet
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let index = sheet.data_table_index_result(multi_pos)?;
+            let (data_table, dirty_rects) = sheet
+                .delete_data_table(multi_pos)
+                .ok_or_else(|| anyhow!("Failed to delete data table at {:?}", multi_pos))?;
 
-            // // mark old data table as dirty
-            // self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+            let table_name = data_table.name.to_display().clone();
+            let cell_value = sheet.cell_value_result(multi_pos)?;
+            let data_table_rect = data_table.output_rect(pos, false).to_sheet_rect(sheet_id);
 
-            // // Pull out the data table via a swap, removing it from the sheet
-            // let sheet = self.try_sheet_mut_result(sheet_id)?;
-            // let index = sheet.data_table_index_result(pos)?;
-            // let (data_table, dirty_rects) = sheet.delete_data_table(data_table_pos)?;
-            // let table_name = data_table.name.to_display().clone();
-            // let cell_value = sheet.cell_value_result(data_table_pos)?;
-            // let data_table_rect = data_table
-            //     .output_rect(data_table_pos, false)
-            //     .to_sheet_rect(sheet_id);
+            let show_name = data_table.get_show_name();
+            let show_columns = data_table.get_show_columns();
 
-            // let show_name = data_table.get_show_name();
-            // let show_columns = data_table.get_show_columns();
+            let mut values = data_table.display_value(false)?.into_array()?;
+            let ArraySize { w, h } = values.size();
 
-            // let mut values = data_table.display_value(false)?.into_array()?;
-            // let ArraySize { w, h } = values.size();
+            if !data_table.header_is_first_row && show_columns {
+                let headers = data_table.column_headers_to_cell_values();
+                values.insert_row(0, headers)?;
+            }
 
-            // if !data_table.header_is_first_row && show_columns {
-            //     let headers = data_table.column_headers_to_cell_values();
-            //     values.insert_row(0, headers)?;
-            // }
+            // delete the heading row if toggled off
+            if data_table.header_is_first_row && !show_columns {
+                values.delete_row(0)?;
+            }
 
-            // // delete the heading row if toggled off
-            // if data_table.header_is_first_row && !show_columns {
-            //     values.delete_row(0)?;
-            // }
+            // insert the heading row if toggled on
+            if show_name {
+                let mut table_row = vec![CellValue::Blank; w.get() as usize];
+                table_row[0] = data_table.name.to_owned();
+                values.insert_row(0, Some(table_row))?;
+            }
 
-            // // insert the heading row if toggled on
-            // if show_name {
-            //     let mut table_row = vec![CellValue::Blank; w.get() as usize];
-            //     table_row[0] = data_table.name.to_owned();
-            //     values.insert_row(0, Some(table_row))?;
-            // }
+            let mut reverse_operations = vec![];
 
-            // let mut reverse_operations = vec![];
+            let values_rect =
+                Rect::from_numbers(pos.x, pos.y, values.width() as i64, values.height() as i64);
+            sheet.set_cell_values(values_rect, values);
 
-            // let values_rect = Rect::from_numbers(
-            //     data_table_pos.x,
-            //     data_table_pos.y,
-            //     values.width() as i64,
-            //     values.height() as i64,
-            // );
-            // sheet.set_cell_values(values_rect, values);
+            let mut sheet_format_updates = SheetFormatUpdates::default();
+            let formats_rect = Rect::from_numbers(
+                pos.x,
+                pos.y + data_table.y_adjustment(true),
+                w.get() as i64,
+                h.get() as i64,
+            );
+            data_table.transfer_formats_to_sheet(pos, formats_rect, &mut sheet_format_updates)?;
+            if !sheet_format_updates.is_default() {
+                sheet.formats.apply_updates(&sheet_format_updates);
+                reverse_operations.push(Operation::SetCellFormatsA1 {
+                    sheet_id,
+                    formats: SheetFormatUpdates::from_selection(
+                        &A1Selection::from_rect(formats_rect.to_sheet_rect(sheet_id)),
+                        FormatUpdate::cleared(),
+                    ),
+                });
+            }
 
-            // let mut sheet_format_updates = SheetFormatUpdates::default();
-            // let formats_rect = Rect::from_numbers(
-            //     data_table_pos.x,
-            //     data_table_pos.y + data_table.y_adjustment(true),
-            //     w.get() as i64,
-            //     h.get() as i64,
-            // );
-            // data_table.transfer_formats_to_sheet(
-            //     data_table_pos,
-            //     formats_rect,
-            //     &mut sheet_format_updates,
-            // )?;
-            // if !sheet_format_updates.is_default() {
-            //     sheet.formats.apply_updates(&sheet_format_updates);
-            //     reverse_operations.push(Operation::SetCellFormatsA1 {
-            //         sheet_id,
-            //         formats: SheetFormatUpdates::from_selection(
-            //             &A1Selection::from_rect(formats_rect.to_sheet_rect(sheet_id)),
-            //             FormatUpdate::cleared(),
-            //         ),
-            //     });
-            // }
+            let values_sheet_rect = values_rect.to_sheet_rect(sheet_id);
 
-            // let values_sheet_rect = values_rect.to_sheet_rect(sheet_id);
+            self.send_updated_bounds(transaction, sheet_id);
 
-            // self.send_updated_bounds(transaction, sheet_id);
+            let sheet = self.try_sheet_result(sheet_id)?;
+            transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+            transaction.add_code_cell(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y));
 
-            // let sheet = self.try_sheet_result(sheet_id)?;
-            // transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-            // transaction.add_code_cell(MultiPos::new_sheet_pos(
-            //     sheet_id,
-            //     data_table_pos.x,
-            //     data_table_pos.y,
-            // ));
+            let forward_operations = vec![op];
+            reverse_operations.push(Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+                cell_value,
+                index: Some(index),
+            });
+            reverse_operations.push(Operation::SetCellValues {
+                sheet_pos,
+                values: CellValues::new(
+                    data_table_rect.width() as u32,
+                    data_table_rect.height() as u32,
+                ),
+            });
+            self.data_table_operations(
+                transaction,
+                forward_operations,
+                reverse_operations,
+                Some(&values_sheet_rect.union(&data_table_rect)),
+            );
+            self.check_deleted_data_tables(transaction, &values_sheet_rect);
 
-            // let forward_operations = vec![op];
-            // reverse_operations.push(Operation::AddDataTable {
-            //     sheet_pos,
-            //     data_table,
-            //     cell_value,
-            //     index: Some(index),
-            // });
-            // reverse_operations.push(Operation::SetCellValues {
-            //     sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-            //     values: CellValues::new(
-            //         data_table_rect.width() as u32,
-            //         data_table_rect.height() as u32,
-            //     ),
-            // });
-            // self.data_table_operations(
-            //     transaction,
-            //     forward_operations,
-            //     reverse_operations,
-            //     Some(&values_sheet_rect.union(&data_table_rect)),
-            // );
-            // self.check_deleted_data_tables(transaction, &values_sheet_rect);
+            // Move any validations that were tied to the table to the sheet
+            let mut a1_context = A1Context::default();
+            if let Some(table) = self.a1_context.try_table(&table_name) {
+                // we only need the table in a separate a1_context (this is
+                // done to avoid borrow issues below)
+                a1_context.table_map.insert(table.clone());
+                let sheet = self.try_sheet_mut_result(sheet_id)?;
+                let reverse_operations = sheet
+                    .validations
+                    .transfer_to_sheet(&table_name, &a1_context);
+                if !reverse_operations.is_empty() {
+                    transaction.reverse_operations.extend(reverse_operations);
+                    transaction.validations.insert(sheet_id);
+                }
+            }
 
-            // // Move any validations that were tied to the table to the sheet
-            // let mut a1_context = A1Context::default();
-            // if let Some(table) = self.a1_context.try_table(&table_name) {
-            //     // we only need the table in a separate a1_context (this is
-            //     // done to avoid borrow issues below)
-            //     a1_context.table_map.insert(table.clone());
-            //     let sheet = self.try_sheet_mut_result(sheet_id)?;
-            //     let reverse_operations = sheet
-            //         .validations
-            //         .transfer_to_sheet(&table_name, &a1_context);
-            //     if !reverse_operations.is_empty() {
-            //         transaction.reverse_operations.extend(reverse_operations);
-            //         transaction.validations.insert(sheet_id);
-            //     }
-            // }
-
-            // return Ok(());
+            return Ok(());
         };
 
         bail!("Expected Operation::FlattenDataTable in execute_flatten_data_table");

@@ -78,8 +78,8 @@ pub fn test_create_code_table_with_values(
         None,
     );
 
-    let op = Operation::AddDataTable {
-        sheet_pos: pos.to_sheet_pos(sheet_id),
+    let op = Operation::AddDataTableMultiPos {
+        multi_pos: pos.to_multi_pos(sheet_id),
         data_table,
         cell_value,
         index: None,

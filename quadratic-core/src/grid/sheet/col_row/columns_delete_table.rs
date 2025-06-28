@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    MultiPos, Pos, Rect, SheetPos,
+    Pos, Rect,
     controller::{
         active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -48,13 +48,13 @@ impl Sheet {
         for pos in dt_to_delete.into_iter() {
             if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_pos(&pos)
             {
-                let multi_pos = MultiPos::SheetPos(SheetPos::new(self.id, pos.x, pos.y));
+                let multi_pos = pos.to_multi_pos(self.id);
                 transaction.add_from_code_run(multi_pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction
                     .reverse_operations
                     .push(Operation::SetDataTableMultiPos {
-                        multi_pos: pos.to_sheet_pos(self.id).into(),
+                        multi_pos,
                         data_table: Some(old_dt),
                         index,
                     });
@@ -134,7 +134,7 @@ impl Sheet {
         // create undo and signal client of changes
         for (index, pos, old_dt) in dt_to_update {
             transaction.add_from_code_run(
-                MultiPos::new_sheet_pos(self.id, pos.x, pos.y),
+                pos.to_multi_pos(self.id),
                 old_dt.is_image(),
                 old_dt.is_html(),
             );
@@ -143,8 +143,8 @@ impl Sheet {
             );
             transaction
                 .reverse_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos: pos.to_sheet_pos(self.id),
+                .push(Operation::SetDataTableMultiPos {
+                    multi_pos: pos.to_multi_pos(self.id),
                     data_table: Some(old_dt),
                     index,
                 });
@@ -154,7 +154,7 @@ impl Sheet {
         for (index, pos, old_dt, new_anchor_x) in dt_to_shift_anchor {
             if let (Some(old_dt), Some(cell_value)) = (old_dt, self.cell_value(pos)) {
                 transaction.add_from_code_run(
-                    MultiPos::new_sheet_pos(self.id, pos.x, pos.y),
+                    pos.to_multi_pos(self.id),
                     old_dt.is_image(),
                     old_dt.is_html(),
                 );
@@ -165,8 +165,8 @@ impl Sheet {
                 self.columns.move_cell_value(&pos, &new_pos);
                 transaction
                     .reverse_operations
-                    .push(Operation::AddDataTable {
-                        sheet_pos: pos.to_sheet_pos(self.id),
+                    .push(Operation::AddDataTableMultiPos {
+                        multi_pos: pos.to_multi_pos(self.id),
                         data_table: old_dt,
                         cell_value,
                         index: Some(index),
@@ -204,7 +204,7 @@ impl Sheet {
                             if min != width {
                                 dt.chart_output = Some((min, height));
                                 transaction.add_from_code_run(
-                                    MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y),
+                                    pos.to_multi_pos(sheet_id),
                                     dt.is_image(),
                                     dt.is_html(),
                                 );
@@ -248,7 +248,7 @@ impl Sheet {
                     transaction
                         .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                     transaction.add_from_code_run(
-                        MultiPos::new_sheet_pos(self.id, pos.x, pos.y),
+                        pos.to_multi_pos(self.id),
                         dt.is_image(),
                         dt.is_html(),
                     );
@@ -256,9 +256,8 @@ impl Sheet {
                     output_rect.translate_in_place(-shift_table, 0);
                     transaction
                         .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
-                    let new_pos = pos.translate(-shift_table, 0, 1, 1);
                     transaction.add_from_code_run(
-                        MultiPos::new_sheet_pos(self.id, new_pos.x, new_pos.y),
+                        pos.translate(-shift_table, 0, 1, 1).to_multi_pos(self.id),
                         dt.is_image(),
                         dt.is_html(),
                     );
@@ -281,11 +280,9 @@ impl Sheet {
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
 
             let new_pos = pos.translate(-shift_table, 0, 1, 1);
-            if let Ok((_, _, dirty_rects)) = self.data_table_insert_before(
-                index,
-                MultiPos::new_sheet_pos(self.id, new_pos.x, new_pos.y),
-                old_dt,
-            ) {
+            if let Ok((_, _, dirty_rects)) =
+                self.data_table_insert_before(index, new_pos.to_multi_pos(self.id), old_dt)
+            {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }

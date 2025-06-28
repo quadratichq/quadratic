@@ -178,8 +178,8 @@ impl GridController {
             }
 
             data_table.apply_first_row_as_header();
-            ops.push(Operation::AddDataTable {
-                sheet_pos,
+            ops.push(Operation::AddDataTableMultiPos {
+                multi_pos: sheet_pos.into(),
                 data_table,
                 cell_value: CellValue::Import(import),
                 index: None,
@@ -413,8 +413,8 @@ impl GridController {
         let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
         data_table.apply_first_row_as_header();
 
-        let ops = vec![Operation::AddDataTable {
-            sheet_pos: SheetPos::from((insert_at, sheet_id)),
+        let ops = vec![Operation::AddDataTableMultiPos {
+            multi_pos: insert_at.to_multi_pos(sheet_id),
             data_table,
             cell_value: CellValue::Import(import),
             index: None,
@@ -427,7 +427,9 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::{CellValue, controller::user_actions::import::tests::simple_csv_at, test_util::*};
+    use crate::{
+        CellValue, MultiPos, controller::user_actions::import::tests::simple_csv_at, test_util::*,
+    };
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     #[test]
@@ -470,14 +472,14 @@ mod test {
         expected_data_table.apply_first_row_as_header();
 
         let data_table = match ops[0].clone() {
-            Operation::AddDataTable { data_table, .. } => data_table,
-            _ => panic!("Expected AddDataTable operation"),
+            Operation::AddDataTableMultiPos { data_table, .. } => data_table,
+            _ => panic!("Expected AddDataTableMultiPos operation"),
         };
         expected_data_table.last_modified = data_table.last_modified;
         expected_data_table.name = CellValue::Text(file_name.to_string());
 
-        let expected = Operation::AddDataTable {
-            sheet_pos: SheetPos::new(sheet_id, 1, 1),
+        let expected = Operation::AddDataTableMultiPos {
+            multi_pos: MultiPos::new_sheet_pos(sheet_id, 1, 1),
             data_table: expected_data_table,
             cell_value,
             index: None,
@@ -511,15 +513,15 @@ mod test {
             .unwrap();
 
         assert_eq!(ops.len(), 1);
-        let (sheet_pos, data_table) = match &ops[0] {
-            Operation::AddDataTable {
-                sheet_pos,
+        let (multi_pos, data_table) = match &ops[0] {
+            Operation::AddDataTableMultiPos {
+                multi_pos,
                 data_table,
                 ..
-            } => (*sheet_pos, data_table.clone()),
-            _ => panic!("Expected AddDataTable operation"),
+            } => (*multi_pos, data_table.clone()),
+            _ => panic!("Expected AddDataTableMultiPos operation"),
         };
-        assert_eq!(sheet_pos.x, 1);
+        assert_eq!(multi_pos.to_pos().x, 1);
         assert_eq!(
             data_table.cell_value_ref_at(0, 1),
             Some(&CellValue::Text("city0".into()))

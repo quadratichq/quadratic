@@ -506,7 +506,7 @@ mod test {
                     Some(true)
                 );
             }
-            _ => panic!("Expected AddDataTable operation"),
+            _ => panic!("Expected AddDataTableMultiPos operation"),
         }
     }
 

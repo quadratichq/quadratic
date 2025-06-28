@@ -289,8 +289,8 @@ impl GridController {
                         data_table.name = new_name.into();
                     }
 
-                    ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos,
+                    ops.push(Operation::SetDataTableMultiPos {
+                        multi_pos: target_pos.into(),
                         data_table: Some(data_table),
                         index: usize::MAX,
                     });
