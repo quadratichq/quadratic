@@ -403,19 +403,13 @@ pub fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsImportProgress(file_name: &str, current: u32, total: u32) {
-    js_call(
-        "jsImportProgress",
-        format!("{file_name},{current},{total}"),
-    );
+    js_call("jsImportProgress", format!("{file_name},{current},{total}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTransactionStart(transaction_id: String, name: String) {
-    js_call(
-        "jsTransactionStart",
-        format!("{transaction_id},{name}",),
-    );
+    js_call("jsTransactionStart", format!("{transaction_id},{name}",));
 }
 
 #[cfg(test)]
@@ -460,9 +454,7 @@ pub fn jsConnection(
 ) -> JsValue {
     js_call(
         "jsConnection",
-        format!(
-            "{transactionId},{x},{y},{sheet_id},{query},{connector_type},{connection_id}"
-        ),
+        format!("{transactionId},{x},{y},{sheet_id},{query},{connector_type},{connection_id}"),
     );
     JsValue::NULL
 }

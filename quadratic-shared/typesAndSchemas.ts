@@ -157,8 +157,9 @@ export const ApiSchemas = {
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).extend({
-      sshPublicKey: z.string(),
+      isOnPaidPlan: z.boolean(),
       settings: TeamSettingsSchema,
+      sshPublicKey: z.string(),
     }),
     userMakingRequest: z.object({
       id: BaseUserSchema.shape.id.optional(),
@@ -463,7 +464,10 @@ export const ApiSchemas = {
    * AI
    */
   '/v0/ai/chat.POST.request': AIRequestBodySchema,
-  '/v0/ai/chat.POST.response': AIMessagePromptSchema,
+  '/v0/ai/chat.POST.response': AIMessagePromptSchema.extend({
+    isOnPaidPlan: z.boolean(),
+    exceededBillingLimit: z.boolean(),
+  }),
 
   '/v0/ai/feedback.PATCH.request': z.object({
     chatId: z.string().uuid(),

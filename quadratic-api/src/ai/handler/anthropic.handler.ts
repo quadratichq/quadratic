@@ -20,6 +20,8 @@ import { getAnthropicApiArgs, parseAnthropicResponse, parseAnthropicStream } fro
 export const handleAnthropicRequest = async (
   modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
   args: AIRequestHelperArgs,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   anthropic: AnthropicVertex | AnthropicBedrock | Anthropic,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
@@ -63,11 +65,11 @@ export const handleAnthropicRequest = async (
     response?.write(`stream\n\n`);
 
     const chunks = await anthropic.messages.create(apiArgs as MessageCreateParamsStreaming);
-    const parsedResponse = await parseAnthropicStream(chunks, modelKey, response);
+    const parsedResponse = await parseAnthropicStream(chunks, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   } else {
     const result = await anthropic.messages.create(apiArgs as MessageCreateParamsNonStreaming);
-    const parsedResponse = parseAnthropicResponse(result, modelKey, response);
+    const parsedResponse = parseAnthropicResponse(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   }
 };

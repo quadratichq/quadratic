@@ -154,26 +154,6 @@ export const aiAssistantWaitingOnMessageIndexAtom = selector<number | undefined>
   },
 });
 
-export const aiAssistantDelaySecondsAtom = selector<number>({
-  key: 'aiAssistantDelaySecondsAtom',
-  get: ({ get }) => get(codeEditorAtom).aiAssistant.delaySeconds,
-  set: ({ set }, newValue) => {
-    set(codeEditorAtom, (prev) => {
-      if (newValue instanceof DefaultValue) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        aiAssistant: {
-          ...prev.aiAssistant,
-          delaySeconds: newValue,
-        },
-      };
-    });
-  },
-});
-
 export const aiAssistantCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAssistantCurrentChatMessagesCountAtom',
   get: ({ get }) => get(aiAssistantMessagesAtom).length,

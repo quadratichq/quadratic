@@ -6,6 +6,7 @@ import {
 import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   DEFAULT_BACKUP_MODEL,
+  DEFAULT_MODEL_FREE,
   DEFAULT_MODEL_ROUTER_MODEL,
   DEFAULT_SQL_MODEL,
   DEFAULT_SQL_MODEL_THINKING,
@@ -15,8 +16,17 @@ import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shar
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { handleAIRequest } from '../handler/ai.handler';
 
-export const getModelKey = async (modelKey: AIModelKey, inputArgs: AIRequestHelperArgs): Promise<AIModelKey> => {
+export const getModelKey = async (
+  modelKey: AIModelKey,
+  inputArgs: AIRequestHelperArgs,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean
+): Promise<AIModelKey> => {
   try {
+    if (!isOnPaidPlan) {
+      return DEFAULT_MODEL_FREE;
+    }
+
     if (inputArgs.source === 'AIAssistant' && inputArgs.language === 'Connection') {
       const thinking = MODELS_CONFIGURATION[modelKey].thinking;
       return thinking ? DEFAULT_SQL_MODEL_THINKING : DEFAULT_SQL_MODEL;
@@ -213,7 +223,7 @@ ${userTextPrompt}
       useQuadraticContext: false,
     };
 
-    const parsedResponse = await handleAIRequest(DEFAULT_MODEL_ROUTER_MODEL, args);
+    const parsedResponse = await handleAIRequest(DEFAULT_MODEL_ROUTER_MODEL, args, isOnPaidPlan, exceededBillingLimit);
 
     const setAIModelToolCall = parsedResponse?.responseMessage.toolCalls.find(
       (toolCall) => toolCall.name === AITool.SetAIModel

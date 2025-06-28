@@ -1,8 +1,7 @@
-import { SubscriptionStatus } from '@prisma/client';
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { getUsersFromAuth0 } from '../../auth/auth0';
+import { getUsers } from '../../auth/auth';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -10,6 +9,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { createCheckoutSession, createCustomer, getMonthlyPriceId } from '../../stripe/stripe';
 import type { RequestWithUser } from '../../types/Request';
+import { getIsOnPaidPlan } from '../../utils/billing';
 
 export default [
   validateRequestSchema(
@@ -38,14 +38,15 @@ async function handler(req: Request, res: Response) {
       .json({ error: { message: 'User does not have permission to access billing for this team.' } });
   }
 
-  if (team?.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE) {
+  const isOnPaidPlan = await getIsOnPaidPlan(team);
+  if (isOnPaidPlan) {
     return res.status(400).json({ error: { message: 'Team already has an active subscription.' } });
   }
 
   // create a stripe customer if one doesn't exist
   if (!team?.stripeCustomerId) {
     // Get user email from Auth0
-    const auth0Record = await getUsersFromAuth0([{ id: userId, auth0Id }]);
+    const auth0Record = await getUsers([{ id: userId, auth0Id }]);
     const auth0User = auth0Record[userId];
 
     // create Stripe customer

@@ -24,6 +24,8 @@ type AIAssistantMessagesProps = {
 };
 
 export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {
+  const { debug, debugFlags } = useDebugFlags();
+
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAssistantLoadingAtom);
@@ -35,7 +37,6 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       behavior: 'smooth',
     });
   }, []);
-  const { getFlag } = useDebugFlags();
 
   const shouldAutoScroll = useRef(true);
   const handleScrollEnd = useCallback((e: Event) => {
@@ -103,7 +104,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
     >
       {messages.map((message, index) => {
         if (
-          !getFlag('debugShowAIInternalContext') &&
+          !debugFlags.getFlag('debugShowAIInternalContext') &&
           !['userPrompt', 'webSearchInternal'].includes(message.contextType)
         ) {
           return null;
@@ -122,7 +123,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {getFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (

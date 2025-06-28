@@ -6,7 +6,7 @@ import useEventListener from '@/shared/hooks/useEventListener';
 
 declare global {
   interface WindowEventMap {
-    'local-storage': CustomEvent;
+    'local-storage': StorageEvent;
     'run-editor-action': CustomEvent;
   }
 }
@@ -57,7 +57,13 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
         setStoredValue(newValue);
 
         // We dispatch a custom event so every useLocalStorage hook are notified
-        window.dispatchEvent(new Event('local-storage'));
+        window.dispatchEvent(
+          new StorageEvent('local-storage', {
+            key,
+            oldValue: JSON.stringify(storedValue),
+            newValue: JSON.stringify(newValue),
+          })
+        );
       } catch (error) {
         throw new Error(`Error setting localStorage key “${key}”`);
       }
@@ -66,12 +72,23 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
   );
 
   useEffect(() => {
+    if (window.localStorage.getItem(key) === null) {
+      setValue(initialValue);
+    }
+  }, [initialValue, key, setValue]);
+
+  useEffect(() => {
     setStoredValue(readValue());
   }, [readValue]);
 
-  const handleStorageChange = useCallback(() => {
-    setStoredValue(readValue());
-  }, [readValue]);
+  const handleStorageChange = useCallback(
+    (e: StorageEvent) => {
+      if (e.key === key) {
+        setStoredValue(readValue());
+      }
+    },
+    [readValue, key]
+  );
 
   // this only works for other documents, not the current one
   useEventListener('storage', handleStorageChange);
