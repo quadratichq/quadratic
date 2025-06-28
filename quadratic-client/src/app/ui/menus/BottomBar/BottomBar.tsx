@@ -56,7 +56,7 @@ export const BottomBar = memo(() => {
             <Coordinates />
           </BottomBarItem>
         )}
-        {getFlag('debugShowTopLeftPosition') && (
+        {debugFlags.getFlag('debugShowTopLeftPosition') && (
           <BottomBarItem>
             <TopLeftPosition />
           </BottomBarItem>
