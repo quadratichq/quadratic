@@ -59,7 +59,6 @@ impl<'ctx> Ctx<'ctx> {
             .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
 
         let a1_context = self.grid_controller.a1_context();
-        dbg!(&range);
         let rect = match &range.cells {
             CellRefRange::Sheet { range } => {
                 sheet.ref_range_bounds_to_rect(range, ignore_formatting)
