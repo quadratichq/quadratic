@@ -281,7 +281,7 @@ impl Sheet {
         match multi_pos {
             MultiPos::SheetPos(sheet_pos) => {
                 if let Some(CellValue::Code(code)) = self.cell_value_ref(sheet_pos.into()) {
-                    Some(&code)
+                    Some(code)
                 } else {
                     None
                 }

@@ -55,7 +55,7 @@ impl GridController {
             #[cfg(feature = "show-first-sheet-operations")]
             println!(
                 "{}",
-                format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+                format!("{op:?}").split('{').next().unwrap_or("Unknown")
             );
 
             match op {
@@ -127,7 +127,7 @@ impl GridController {
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
                 Operation::ComputeCodeMultiPos { .. } => {
-                    self.execute_compute_code_multi_pos(transaction, op)
+                    self.execute_compute_code_multi_pos(transaction, op);
                 }
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {

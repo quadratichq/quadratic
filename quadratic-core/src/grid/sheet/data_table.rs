@@ -118,7 +118,7 @@ impl Sheet {
         pos: &Pos,
         f: impl FnOnce(&mut DataTable) -> Result<()>,
     ) -> Result<(&DataTable, HashSet<Rect>)> {
-        self.data_tables.modify_data_table_at(&pos, f)
+        self.data_tables.modify_data_table_at(pos, f)
     }
 
     /// Returns a mutable DataTable at a Pos
@@ -188,9 +188,7 @@ impl Sheet {
         &mut self,
         pos: &Pos,
     ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
-        self.data_tables
-            .shift_remove_full_pos(pos)
-            .map(|(index, pos, data_table, dirty_rects)| (index, pos, data_table, dirty_rects))
+        self.data_tables.shift_remove_full_pos(pos)
     }
 
     /// Removes a data table at a MultiPos

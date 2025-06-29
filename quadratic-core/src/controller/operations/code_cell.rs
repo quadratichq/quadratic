@@ -118,17 +118,15 @@ impl GridController {
         for (table_pos, dt) in sheet.data_tables.expensive_iter() {
             if dt.code_run().is_some() {
                 code_cell_positions.push(table_pos.to_multi_pos(sheet_id));
-            } else {
-                if let Some(tables) = &dt.tables {
-                    for (pos, _) in tables.expensive_iter_code_runs() {
-                        code_cell_positions.push(MultiPos::new_table_pos(
-                            sheet_id,
-                            table_pos.x,
-                            table_pos.y,
-                            pos.x,
-                            pos.y,
-                        ));
-                    }
+            } else if let Some(tables) = &dt.tables {
+                for (pos, _) in tables.expensive_iter_code_runs() {
+                    code_cell_positions.push(MultiPos::new_table_pos(
+                        sheet_id,
+                        table_pos.x,
+                        table_pos.y,
+                        pos.x,
+                        pos.y,
+                    ));
                 }
             }
         }

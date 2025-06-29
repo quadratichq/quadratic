@@ -49,7 +49,7 @@ impl RegionMap {
         self.pos_to_region
             .entry(pos.sheet_id())
             .or_default()
-            .entry(pos.into())
+            .entry(pos)
             .or_default()
             .push((region_sheet, region_rect));
     }
@@ -86,7 +86,7 @@ impl RegionMap {
             .collect();
         for pos in positions {
             if let Some(map) = self.pos_to_region.get_mut(&pos.sheet_id()) {
-                if let Some(regions) = map.get_mut(&pos.into()) {
+                if let Some(regions) = map.get_mut(&pos) {
                     regions.retain(|&(region_sheet, _region_rect)| region_sheet != sheet_id);
                 }
             }
@@ -98,7 +98,7 @@ impl RegionMap {
         // IIFE to mimic try_block
         (|| {
             let map = self.pos_to_region.get_mut(&pos.sheet_id())?;
-            let regions = map.remove(&pos.into())?;
+            let regions = map.remove(&pos)?;
             for (region_sheet, region_rect) in regions {
                 if let Some(rtree) = self.region_to_pos.get_mut(&region_sheet) {
                     rtree.remove(&GeomWithData::new(region_rect, pos));

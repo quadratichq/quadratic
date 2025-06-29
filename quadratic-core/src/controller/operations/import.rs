@@ -365,7 +365,7 @@ impl GridController {
                             sheet_pos.into(),
                             cell,
                             formula_start_name.as_str(),
-                            sheet_pos.into(),
+                            sheet_pos,
                         );
                         gc.update_a1_context_table_map(&mut transaction);
                     }

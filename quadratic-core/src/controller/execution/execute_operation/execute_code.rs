@@ -160,7 +160,6 @@ impl GridController {
                     multi_pos: MultiPos::SheetPos(sheet_pos),
                 },
             );
-            return;
         }
     }
 

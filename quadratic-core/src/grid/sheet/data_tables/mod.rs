@@ -676,7 +676,7 @@ impl std::fmt::Debug for SheetDataTables {
         writeln!(f, "SheetDataTables {{")?;
         writeln!(f, "  data_tables:")?;
         for (pos, table) in &self.data_tables {
-            writeln!(f, "    {:?}: {:?}", pos, table)?;
+            writeln!(f, "    {pos:?}: {table:?}")?;
         }
         writeln!(f, "}}")
     }

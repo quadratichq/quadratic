@@ -136,7 +136,7 @@ impl GridController {
                     data_table,
                     index,
                 },
-            )
+            );
         }
     }
 

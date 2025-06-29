@@ -341,8 +341,7 @@ pub(crate) fn import_data_table_builder(
             chart_output: data_table.chart_output,
             tables: data_table
                 .tables
-                .map(|tables| import_data_table_builder(tables).ok())
-                .flatten(),
+                .and_then(|tables| import_data_table_builder(tables).ok()),
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -571,7 +570,7 @@ pub(crate) fn export_data_tables(
                 borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
-                tables: data_table.tables.map(|tables| export_data_tables(tables)),
+                tables: data_table.tables.map(export_data_tables),
             };
 
             (current::PosSchema::from(pos), data_table)

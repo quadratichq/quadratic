@@ -63,7 +63,7 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             for multi_pos in data_tables_pos.iter() {
                 // Extract sheet_pos before mutable borrow
-                let sheet_pos = multi_pos.to_sheet_pos(&sheet);
+                let sheet_pos = multi_pos.to_sheet_pos(sheet);
 
                 if let Some(code_cell_value) = sheet
                     .cell_value_multi_mut(*multi_pos)

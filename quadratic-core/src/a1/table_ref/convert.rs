@@ -42,11 +42,15 @@ impl TableRef {
             if self.this_row {
                 y_start = source_cell.y;
                 source_cell.y
+            } else if !self.data {
+                y_start
             } else {
-                if !self.data { y_start } else { y_end }
+                y_end
             }
+        } else if !self.data {
+            y_start
         } else {
-            if !self.data { y_start } else { y_end }
+            y_end
         };
 
         self.finish_convert(table, y_start, y_end, false)
@@ -117,11 +121,15 @@ impl TableRef {
             if self.this_row {
                 y_start = source_cell.y;
                 source_cell.y
+            } else if !self.data {
+                y_start
             } else {
-                if !self.data { y_start } else { y_end }
+                y_end
             }
+        } else if !self.data {
+            y_start
         } else {
-            if !self.data { y_start } else { y_end }
+            y_end
         };
 
         self.finish_convert(table, y_start, y_end, use_unbounded)
