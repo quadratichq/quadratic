@@ -233,8 +233,8 @@ class CoreClient {
       case 'clientCoreSetCodeCellValue':
         const transactionId = await core.setCodeCellValue(
           e.data.sheetId,
-          e.data.x,
-          e.data.y,
+          e.data.pos,
+          e.data.tablePos,
           e.data.language,
           e.data.codeString,
           e.data.codeCellName,

@@ -467,8 +467,8 @@ class InlineEditorHandler {
         if (updatedValue) value = updatedValue;
         quadraticCore.setCodeCellValue({
           sheetId: this.location.sheetId,
-          x: this.location.x,
-          y: this.location.y,
+          pos: { x: this.location.x, y: this.location.y },
+          tablePos: undefined,
           language: 'Formula',
           codeString: value.slice(1),
           cursor: sheets.getCursorPosition(),

@@ -82,8 +82,8 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
 
       quadraticCore.setCodeCellValue({
         sheetId: sheets.current,
-        x: codeCellPos.x,
-        y: codeCellPos.y,
+        pos: codeCellPos,
+        tablePos: undefined,
         codeString: toolArgs.code_string,
         language: toolArgs.code_cell_language,
         cursor: sheets.getCursorPosition(),

@@ -27,8 +27,8 @@ export const CodeEditorDiffButtons = () => {
           const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
           quadraticCore.setCodeCellValue({
             sheetId: codeCell.sheetId,
-            x: codeCell.pos.x,
-            y: codeCell.pos.y,
+            pos: codeCell.pos,
+            tablePos: undefined,
             codeString: diffEditorContent.editorContent ?? '',
             language: codeCell.language,
             cursor: sheets.getCursorPosition(),
@@ -53,8 +53,8 @@ export const CodeEditorDiffButtons = () => {
           const codeCell = await snapshot.getPromise(codeEditorCodeCellAtom);
           quadraticCore.setCodeCellValue({
             sheetId: codeCell.sheetId,
-            x: codeCell.pos.x,
-            y: codeCell.pos.y,
+            pos: codeCell.pos,
+            tablePos: undefined,
             codeString: diffEditorContent.editorContent ?? '',
             language: codeCell.language,
             cursor: sheets.getCursorPosition(),
