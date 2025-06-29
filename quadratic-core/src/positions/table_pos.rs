@@ -24,15 +24,12 @@ impl TablePos {
     /// Properly converts a TablePos to a SheetPos. (This is relative to the
     /// current state of the sheet.)
     pub fn to_sheet_pos(&self, sheet: &Sheet) -> Option<SheetPos> {
-        if let Some(pos) = self.translate_pos(sheet) {
-            Some(SheetPos {
-                x: self.table_sheet_pos.x + pos.x,
-                y: self.table_sheet_pos.y + pos.y,
-                sheet_id: self.table_sheet_pos.sheet_id,
-            })
-        } else {
-            None
-        }
+        let pos = self.translate_pos(sheet)?;
+        Some(SheetPos {
+            x: self.table_sheet_pos.x + pos.x,
+            y: self.table_sheet_pos.y + pos.y,
+            sheet_id: self.table_sheet_pos.sheet_id,
+        })
     }
 
     /// Used by tests as a shortcut to get a sheet pos from a table pos without checking
@@ -48,17 +45,13 @@ impl TablePos {
 
     /// Returns the cell value ref at the table pos.
     pub fn cell_value<'a>(&self, sheet: &'a Sheet) -> Option<&'a CellValue> {
-        let Some(table) = sheet.data_table_at(&self.table_sheet_pos.into()) else {
-            return None;
-        };
+        let table = sheet.data_table_at(&self.table_sheet_pos.into())?;
         table.cell_value_ref_at(self.pos.x as u32, self.pos.y as u32)
     }
 
     /// Returns the code cell at the table pos.
     pub fn code_cell<'a>(&self, sheet: &'a Sheet) -> Option<&'a CodeCellValue> {
-        let Some(cell_value) = self.cell_value(sheet) else {
-            return None;
-        };
+        let cell_value = self.cell_value(sheet)?;
         if let CellValue::Code(code_cell) = cell_value {
             Some(code_cell)
         } else {
@@ -68,9 +61,7 @@ impl TablePos {
 
     /// Returns the translated Pos of the code cell in the table relative to the sheet.
     pub fn translate_pos(&self, sheet: &Sheet) -> Option<Pos> {
-        let Some(table) = sheet.data_table_at(&self.table_sheet_pos.into()) else {
-            return None;
-        };
+        let table = sheet.data_table_at(&self.table_sheet_pos.into())?;
         let x = table.get_display_index_from_column_index(self.pos.x as u32, false);
         let y = table.get_display_index_from_row_index(self.pos.y as u64);
         Some(Pos { x, y: y as i64 })
@@ -78,17 +69,13 @@ impl TablePos {
 
     /// Returns the code cell at the table pos.
     pub fn code_cell_from_gc<'a>(&self, gc: &'a GridController) -> Option<&'a CodeCellValue> {
-        let Some(sheet) = gc.try_sheet(self.table_sheet_pos.sheet_id) else {
-            return None;
-        };
+        let sheet = gc.try_sheet(self.table_sheet_pos.sheet_id)?;
         self.code_cell(sheet)
     }
 
     /// Returns a code table within a table on the sheet.
     pub fn data_table<'a>(&self, sheet: &'a Sheet) -> Option<&'a DataTable> {
-        let Some(table) = sheet.data_table_at(&self.table_sheet_pos.into()) else {
-            return None;
-        };
+        let table = sheet.data_table_at(&self.table_sheet_pos.into())?;
         table
             .tables
             .as_ref()

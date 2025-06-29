@@ -105,7 +105,7 @@ mod tests {
         );
 
         let table_ref = TableRef::parse("Table1[@Column 1]", &context)
-            .unwrap_or_else(|e| panic!("Failed to parse Table1[@Column 1]: {}", e));
+            .unwrap_or_else(|e| panic!("Failed to parse Table1[@Column 1]: {e}"));
         assert_eq!(table_ref.to_string(), "Table1[[#THIS ROW],[Column 1]]");
     }
 }

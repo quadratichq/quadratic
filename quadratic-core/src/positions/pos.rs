@@ -218,7 +218,7 @@ impl Point for Pos {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{grid::SheetId, pos::SheetPos};
+    use crate::{grid::SheetId, positions::SheetPos};
 
     #[test]
     fn test_to_sheet_pos() {
