@@ -17,10 +17,8 @@
 //! - Table1[[#HEADERS], [#DATA]] - table headers and data across entire table
 //! - Table1 or Table1[#DATA] - table data without headers or totals
 //! - Table1[[Column1]:] - column 1 onward (Excel does not have this)
+//! - Table1[@Column1] or Table1[[#This Row],[Column 1]] or Table1[[@],[Column 1]]- this row for Column 1
 //! - (not yet supported) Table1[[#TOTALS], [Column 1]] - reference the total line
-//!
-//! Note Table1[#THIS ROW] and Table1[@Column 1] are not supported (supported in
-//! Excel but not Google Sheets either)
 //!
 //! For purposes of data frames, we'll probably ignore #DATA, since we want to
 //! define the data frame with the headers.
@@ -70,6 +68,7 @@ pub struct TableRef {
     pub headers: bool,
     pub totals: bool,
     pub col_range: ColRange,
+    pub this_row: bool,
 }
 
 impl TableRef {
@@ -80,6 +79,7 @@ impl TableRef {
             headers: false,
             totals: false,
             col_range: ColRange::All,
+            this_row: false,
         }
     }
 
@@ -120,6 +120,7 @@ mod tests {
                 headers: false,
                 totals: false,
                 col_range: ColRange::All,
+                this_row: false,
             }
         );
     }

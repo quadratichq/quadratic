@@ -23,7 +23,7 @@ pub fn table_at<'a>(
         _ => return None,
     };
 
-    context.table_map.table_at(table_pos)
+    context.table_map.table_at(table_pos.into())
 }
 
 /// Determine whether there is a chart at a given position.
@@ -209,7 +209,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
         gc.set_code_cell(
-            pos![sheet_id!D1],
+            pos![sheet_id!D1].into(),
             CodeCellLanguage::Formula,
             "A1".into(),
             None,

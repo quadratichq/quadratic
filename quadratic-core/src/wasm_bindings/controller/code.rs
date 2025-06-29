@@ -34,9 +34,7 @@ impl GridController {
                     "calculationGetCellsA1: Failed to serialize get cells a1 response: {:?}",
                     e
                 ));
-                Err(format!(
-                    "Failed to serialize get cells a1 response: {e:?}"
-                ))
+                Err(format!("Failed to serialize get cells a1 response: {e:?}"))
             }
         }
     }
@@ -59,30 +57,28 @@ impl GridController {
     }
 
     /// Sets the code on a cell
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "setCellCode")]
     pub fn js_set_cell_code(
         &mut self,
         sheet_id: String,
         pos: String,
+        table_pos: Option<String>,
         language: JsValue,
         code_string: String,
         code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> Option<String> {
-        if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
-            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-                if let Ok(language) = serde_wasm_bindgen::from_value(language) {
-                    return Some(self.set_code_cell(
-                        pos.to_sheet_pos(sheet_id),
-                        language,
-                        code_string,
-                        code_cell_name,
-                        cursor,
-                    ));
-                }
-            }
-        }
-        None
+        let pos = serde_json::from_str::<Pos>(&pos).ok()?;
+        let sheet_id = SheetId::from_str(&sheet_id).ok()?;
+        let language = serde_wasm_bindgen::from_value(language).ok()?;
+        let multi_pos = if let Some(table_pos) = table_pos {
+            let table_pos = serde_json::from_str::<Pos>(&table_pos).ok()?;
+            MultiPos::new_table_pos(sheet_id, table_pos.x, table_pos.y, pos.x, pos.y)
+        } else {
+            pos.to_multi_pos(sheet_id)
+        };
+        Some(self.set_code_cell(multi_pos, language, code_string, code_cell_name, cursor))
     }
 
     /// Reruns all code cells in grid.

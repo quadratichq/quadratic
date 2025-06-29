@@ -38,7 +38,7 @@ impl A1Selection {
             }
             CellRefRange::Table { range } => {
                 if let Some(range) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false, None)
                 {
                     other
                         .ranges

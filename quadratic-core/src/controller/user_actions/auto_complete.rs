@@ -105,7 +105,7 @@ mod tests {
 
                 if let Some(code_cell) = code_cells.get(count) {
                     grid_controller.set_code_cell(
-                        sheet_pos,
+                        sheet_pos.into(),
                         code_cell.language.clone(),
                         code_cell.code.clone(),
                         None,
@@ -723,7 +723,7 @@ mod tests {
         let sheet_pos = pos.to_sheet_pos(sheet_id);
         let set_code_cell = |gc: &mut GridController, code: &str| {
             gc.set_code_cell(
-                sheet_pos,
+                sheet_pos.into(),
                 CodeCellLanguage::Python,
                 code.to_string(),
                 None,
@@ -777,7 +777,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![C4].to_sheet_pos(sheet_id),
+            pos![C4].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
             None,

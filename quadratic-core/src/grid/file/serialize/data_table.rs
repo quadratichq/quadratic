@@ -52,6 +52,7 @@ fn import_table_ref(table_ref: current::TableRefSchema) -> TableRef {
         headers: table_ref.headers,
         totals: table_ref.totals,
         col_range: import_col_range(table_ref.col_range),
+        this_row: table_ref.this_row,
     }
 }
 
@@ -216,6 +217,7 @@ pub(crate) fn export_cell_ref_range(range: CellRefRange) -> current::CellRefRang
                 headers: range.headers,
                 totals: range.totals,
                 col_range: export_col_range(range.col_range),
+                this_row: range.this_row,
             })
         }
     }
@@ -337,6 +339,9 @@ pub(crate) fn import_data_table_builder(
             borders: data_table.borders.map(import_borders),
             chart_pixel_output: data_table.chart_pixel_output,
             chart_output: data_table.chart_output,
+            tables: data_table
+                .tables
+                .and_then(|tables| import_data_table_builder(tables).ok()),
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
@@ -565,6 +570,7 @@ pub(crate) fn export_data_tables(
                 borders,
                 chart_pixel_output: data_table.chart_pixel_output,
                 chart_output: data_table.chart_output,
+                tables: data_table.tables.map(export_data_tables),
             };
 
             (current::PosSchema::from(pos), data_table)

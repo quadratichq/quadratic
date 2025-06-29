@@ -742,7 +742,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
         gc.set_code_cell(
-            pos![sheet_id!E3],
+            pos![sheet_id!E3].into(),
             CodeCellLanguage::Formula,
             "A1".into(),
             None,

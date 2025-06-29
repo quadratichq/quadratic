@@ -207,7 +207,7 @@ mod test {
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
     use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
-    use crate::{Array, assert_cell_value, print_table_in_rect};
+    use crate::{Array, MultiPos, assert_cell_value, print_table_in_rect};
     use crate::{
         CellValue, Pos, SheetPos, SheetRect,
         controller::GridController,
@@ -229,7 +229,7 @@ mod test {
         y: i64,
     ) {
         gc.set_code_cell(
-            SheetPos { x, y, sheet_id },
+            MultiPos::new_sheet_pos(sheet_id, x, y),
             language,
             code.into(),
             None,
@@ -1285,7 +1285,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1293,7 +1293,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id),
+            pos![D1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,
@@ -1331,7 +1331,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![C1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1339,7 +1339,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id),
+            pos![D1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,
@@ -1422,7 +1422,7 @@ mod test {
 
         // first row is not header
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.header_is_first_row = false;
                 Ok(())
             })
@@ -1457,7 +1457,7 @@ mod test {
 
         // first row is not header
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.show_name = Some(false);
                 dt.show_columns = Some(false);
                 Ok(())
@@ -1499,7 +1499,7 @@ mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })
@@ -1550,7 +1550,7 @@ mod test {
 
         // hide first column
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[2].display = false;
                 Ok(())

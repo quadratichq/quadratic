@@ -16,7 +16,7 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
     use crate::controller::transaction_types::JsCellValueResult;
 
     gc.set_code_cell(
-        pos.to_sheet_pos(sheet_id),
+        pos.to_sheet_pos(sheet_id).into(),
         CodeCellLanguage::Javascript,
         "code".to_string(),
         None,
@@ -54,7 +54,7 @@ pub fn test_create_html_chart(
     h: u32,
 ) -> DataTable {
     gc.set_code_cell(
-        pos.to_sheet_pos(sheet_id),
+        pos.to_sheet_pos(sheet_id).into(),
         CodeCellLanguage::Python,
         "<html></html>".to_string(),
         None,

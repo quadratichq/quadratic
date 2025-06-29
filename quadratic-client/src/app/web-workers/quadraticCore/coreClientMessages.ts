@@ -415,8 +415,8 @@ export interface CoreClientDeleteCellValues {
 export interface ClientCoreSetCodeCellValue {
   type: 'clientCoreSetCodeCellValue';
   sheetId: string;
-  x: number;
-  y: number;
+  pos: JsCoordinate;
+  tablePos: JsCoordinate | undefined;
   language: CodeCellLanguage;
   codeString: string;
   cursor?: string;

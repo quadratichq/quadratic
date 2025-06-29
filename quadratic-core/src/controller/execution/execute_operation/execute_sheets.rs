@@ -27,17 +27,17 @@ impl GridController {
 
         let data_tables_pos = sheet
             .data_tables
-            .expensive_iter()
-            .map(|(p, _)| p.to_owned())
+            .expensive_iter_with_sub_tables(sheet_id)
+            .map(|(p, _)| p)
             .collect::<Vec<_>>();
         let mut table_names_to_update_in_cell_ref = vec![];
 
         // update table names in data tables in the new sheet
         let sheet = self.try_sheet_mut_result(sheet_id)?;
-        for pos in data_tables_pos.iter() {
-            transaction.add_code_cell(sheet_id, *pos);
+        for multi_pos in data_tables_pos.iter() {
+            transaction.add_code_cell(*multi_pos);
 
-            sheet.modify_data_table_at(pos, |data_table| {
+            sheet.modify_data_table_at(*multi_pos, |data_table| {
                 let old_name = data_table.name().to_string();
                 let unique_name = unique_data_table_name(&old_name, false, None, &context);
                 if old_name != unique_name {
@@ -46,7 +46,7 @@ impl GridController {
                     // update table context for replacing table names in code cells
                     if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
                         let mut new_table_map_entry = old_table_map_entry.to_owned();
-                        new_table_map_entry.sheet_id = sheet_id;
+                        new_table_map_entry.set_sheet_id(sheet_id);
                         new_table_map_entry.table_name = unique_name.to_owned();
                         context.table_map.insert(new_table_map_entry);
                     }
@@ -58,20 +58,25 @@ impl GridController {
             })?;
         }
 
+        // update table names references in code cells in the new sheet
         for (old_name, unique_name) in table_names_to_update_in_cell_ref.into_iter() {
-            // update table names references in code cells in the new sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            for pos in data_tables_pos.iter() {
+            for multi_pos in data_tables_pos.iter() {
+                // Extract sheet_pos before mutable borrow
+                let sheet_pos = multi_pos.to_sheet_pos(sheet);
+
                 if let Some(code_cell_value) = sheet
-                    .cell_value_mut(*pos)
+                    .cell_value_multi_mut(*multi_pos)
                     .and_then(|cv| cv.code_cell_value_mut())
                 {
-                    code_cell_value.replace_table_name_in_cell_references(
-                        &context,
-                        pos.to_sheet_pos(sheet_id),
-                        &old_name,
-                        &unique_name,
-                    );
+                    if let Some(sheet_pos) = sheet_pos {
+                        code_cell_value.replace_table_name_in_cell_references(
+                            &context,
+                            sheet_pos,
+                            &old_name,
+                            &unique_name,
+                        );
+                    }
                 }
             }
         }
@@ -361,7 +366,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, SheetPos,
+        CellValue, MultiPos, SheetPos,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
@@ -444,7 +449,7 @@ mod tests {
             y: 1,
         };
         gc.set_code_cell(
-            sheet_pos,
+            sheet_pos.into(),
             CodeCellLanguage::Formula,
             "A1 + A2".to_string(),
             None,
@@ -597,11 +602,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 1,
-            },
+            MultiPos::new_sheet_pos(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,
@@ -687,7 +688,7 @@ mod tests {
 
         gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
         gc.set_code_cell(
-            pos![sheet_id!J10],
+            pos![sheet_id!J10].into(),
             CodeCellLanguage::Python,
             format!("q.cells('{file_name}')"),
             None,
@@ -701,7 +702,7 @@ mod tests {
         gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
         let quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[0]);
         gc.set_code_cell(
-            pos![sheet_id!T20],
+            pos![sheet_id!T20].into(),
             CodeCellLanguage::Python,
             format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,

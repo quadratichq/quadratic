@@ -252,8 +252,8 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
-        x,
-        y,
+        pos: { x, y },
+        tablePos: undefined,
         codeString: code_string,
         language: code_cell_language,
         codeCellName: code_cell_name,
@@ -296,8 +296,8 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
-        x,
-        y,
+        pos: { x, y },
+        tablePos: undefined,
         codeString: formula_string,
         language: 'Formula',
         cursor: sheets.getCursorPosition(),
@@ -398,8 +398,8 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId: codeCell.sheetId,
-        x: codeCell.pos.x,
-        y: codeCell.pos.y,
+        pos: codeCell.pos,
+        tablePos: undefined,
         codeString: code_string,
         language: codeCell.language,
         cursor: sheets.getCursorPosition(),

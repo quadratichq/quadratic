@@ -143,8 +143,8 @@ export class UrlParamsDev {
       }));
 
       quadraticCore.setCodeCellValue({
-        x,
-        y,
+        pos: { x, y },
+        tablePos: undefined,
         sheetId,
         language,
         codeString,

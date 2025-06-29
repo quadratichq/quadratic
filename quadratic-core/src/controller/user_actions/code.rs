@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    MultiPos, SheetPos,
     a1::A1Selection,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::{CodeCellLanguage, SheetId},
@@ -9,13 +9,13 @@ impl GridController {
     /// Starts a transaction to set a code_cell using user's code_string input
     pub fn set_code_cell(
         &mut self,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         language: CodeCellLanguage,
         code_string: String,
         code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> String {
-        let ops = self.set_code_cell_operations(sheet_pos, language, code_string, code_cell_name);
+        let ops = self.set_code_cell_operations(multi_pos, language, code_string, code_cell_name);
         self.start_user_transaction(ops, cursor, TransactionName::SetCode)
     }
 
@@ -61,14 +61,14 @@ mod tests {
         let sheet_id = g.sheet_ids()[0];
 
         g.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Formula,
             "=2 / {1;2;0}".to_owned(),
             None,
             None,
         );
         g.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![B1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Formula,
             "=A1:A3".to_owned(),
             None,
@@ -101,26 +101,26 @@ mod tests {
 
         // Set a code cell with a table name
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Formula,
             "=SUM(1, 2)".to_owned(),
             Some("MyCode".to_string()),
             None,
         );
 
-        let dt = gc.data_table_at(pos![sheet_id!A1]).unwrap();
+        let dt = gc.data_table_at(pos![sheet_id!A1].into()).unwrap();
         assert_eq!(dt.name(), "MyCode".to_string());
 
         // Set a code cell with a table name
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![A1].to_sheet_pos(sheet_id).into(),
             CodeCellLanguage::Formula,
             "=SUM(1, 2)".to_owned(),
             Some("NameShouldNotChange".to_string()),
             None,
         );
 
-        let dt = gc.data_table_at(pos![sheet_id!A1]).unwrap();
+        let dt = gc.data_table_at(pos![sheet_id!A1].into()).unwrap();
         assert_eq!(dt.name(), "MyCode".to_string());
     }
 }

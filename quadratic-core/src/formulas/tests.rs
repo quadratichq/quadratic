@@ -6,7 +6,9 @@ use itertools::Itertools;
 pub(crate) use super::*;
 use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
 use crate::controller::GridController;
+use crate::grid::CodeCellLanguage;
 pub(crate) use crate::grid::Grid;
+use crate::test_util::*;
 pub(crate) use crate::values::*;
 pub(crate) use crate::{CodeResult, RunError, RunErrorMsg, Spanned, array};
 use crate::{CoerceInto, Pos, SheetPos};
@@ -543,4 +545,46 @@ fn test_syntax_check_ok() {
     assert_check_syntax_succeeds(&g, "{1, 2; 3, 4}");
     assert_check_syntax_succeeds(&g, "XLOOKUP(\"zebra\", A1:Z1, A4:Z6)");
     assert_check_syntax_succeeds(&g, "ABS(({1, 2; 3, 4}, A1:C10))");
+}
+
+#[test]
+fn test_table_this_row() {
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+
+    test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+    gc.set_code_cell(
+        pos![sheet_id!E3].into(),
+        CodeCellLanguage::Formula,
+        "test_table[[#this row],[Column 1]]".to_string(),
+        None,
+        None,
+    );
+
+    print_first_sheet(&gc);
+
+    assert_display_cell_value(&gc, sheet_id, 5, 3, "0");
+    assert_display_cell_value(&gc, sheet_id, 5, 4, "");
+}
+
+#[test]
+fn test_table_this_row_short() {
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+
+    test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+    gc.set_code_cell(
+        pos![sheet_id!E3].into(),
+        CodeCellLanguage::Formula,
+        "test_table[@Column 1]".to_string(),
+        None,
+        None,
+    );
+
+    print_first_sheet(&gc);
+
+    assert_display_cell_value(&gc, sheet_id, 5, 3, "0");
+    assert_display_cell_value(&gc, sheet_id, 5, 4, "");
 }

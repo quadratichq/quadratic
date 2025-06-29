@@ -24,6 +24,7 @@ import type {
   JsCellValue,
   JsClipboard,
   JsCodeCell,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -444,8 +445,8 @@ class QuadraticCore {
 
   setCodeCellValue(options: {
     sheetId: string;
-    x: number;
-    y: number;
+    pos: JsCoordinate;
+    tablePos: JsCoordinate | undefined;
     language: CodeCellLanguage;
     codeString: string;
     codeCellName?: string;
@@ -458,14 +459,8 @@ class QuadraticCore {
       };
       this.send({
         type: 'clientCoreSetCodeCellValue',
-        sheetId: options.sheetId,
-        x: options.x,
-        y: options.y,
-        language: options.language,
-        codeString: options.codeString,
-        cursor: options.cursor,
-        codeCellName: options.codeCellName,
         id,
+        ...options,
       });
     });
   }
