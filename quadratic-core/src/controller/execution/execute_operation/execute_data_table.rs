@@ -341,9 +341,18 @@ impl GridController {
         if let Operation::DeleteDataTableMultiPos { multi_pos } = op {
             let sheet_id = multi_pos.sheet_id();
 
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
+            match multi_pos {
+                MultiPos::SheetPos(data_table_pos) => {
+                    let pos = data_table_pos.into();
+                    self.mark_data_table_dirty(transaction, sheet_id, pos)?;
+                }
+                MultiPos::TablePos(_) => (),
+            }
 
             let index = sheet.data_table_index_result(multi_pos)?;
+
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
             let (data_table, dirty_rects) = sheet
                 .delete_data_table(multi_pos)
                 .ok_or_else(|| anyhow!("Failed to delete data table"))?;
@@ -354,9 +363,8 @@ impl GridController {
             // handle SheetPos changes
             let sheet_rect_for_compute_and_spills =
                 if let MultiPos::SheetPos(data_table_pos) = multi_pos {
-                    let pos = data_table_pos.into();
-                    self.mark_data_table_dirty(transaction, sheet_id, pos)?;
                     let sheet = self.try_sheet_mut_result(sheet_id)?;
+                    let pos = data_table_pos.into();
                     sheet.columns.set_value(&pos, CellValue::Blank);
                     Some(data_table.output_rect(pos, false).to_sheet_rect(sheet_id))
                 } else if let MultiPos::TablePos(_) = multi_pos {
