@@ -21,12 +21,14 @@ let clientPromise: ReturnType<typeof createClient>;
 function getClient(): ReturnType<typeof createClient> {
   if (!clientPromise) {
     clientPromise = createClient(WORKOS_CLIENT_ID, {
+      redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
       onRedirectCallback: (redirectParams) => {
-        const { state } = redirectParams;
+        const state = redirectParams.state;
         if (!!state && typeof state === 'object' && 'redirectTo' in state) {
           const redirectTo = state.redirectTo;
           if (typeof redirectTo === 'string' && !!redirectTo) {
-            window.location.href = redirectTo;
+            window.location.assign(redirectTo);
+            return;
           }
         }
       },
@@ -72,13 +74,15 @@ export const workosClient: AuthClient = {
    */
   async login(redirectTo: string, isSignupFlow: boolean = false) {
     const client = await getClient();
-    const state = {
-      redirectTo:
-        window.location.origin +
-        ROUTES.LOGIN_RESULT +
-        '?' +
-        new URLSearchParams([['redirectTo', redirectTo]]).toString(),
-    };
+    const state = redirectTo
+      ? {
+          redirectTo:
+            window.location.origin +
+            ROUTES.LOGIN_RESULT +
+            '?' +
+            new URLSearchParams([['redirectTo', redirectTo]]).toString(),
+        }
+      : undefined;
     if (isSignupFlow) {
       await client.signUp({ state });
     } else {
@@ -94,8 +98,8 @@ export const workosClient: AuthClient = {
   async handleSigninRedirect() {
     const query = window.location.search;
     if (query.includes('code=') && query.includes('state=')) {
-      const client = await getClient();
-      await client.signIn();
+      await getClient();
+      await waitForAuthClientToRedirect();
     }
   },
 
@@ -120,14 +124,8 @@ export const workosClient: AuthClient = {
       return token;
     } catch (e) {
       const { pathname, search } = new URL(window.location.href);
-      const searchParams = new URLSearchParams(search);
-      const redirectTo = searchParams.get('redirectTo');
-      if (redirectTo) {
-        await this.login(redirectTo);
-      } else {
-        await this.login(pathname + search);
-      }
-      return '';
+      await this.login(pathname + search);
     }
+    return '';
   },
 };

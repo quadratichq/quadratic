@@ -17,7 +17,7 @@ beforeAll(async () => {
     },
   });
 
-  let team = await dbClient.team.create({
+  await dbClient.team.create({
     data: {
       name: 'Test Team 1',
       uuid: '00000000-0000-4000-8000-000000000001',
