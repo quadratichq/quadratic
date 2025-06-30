@@ -111,3 +111,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<A
   console.error('Unknown action intent');
   return { ok: false };
 };
+
+export const Component = () => {
+  return null;
+};

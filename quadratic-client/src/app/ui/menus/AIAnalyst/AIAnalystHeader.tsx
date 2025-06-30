@@ -6,6 +6,7 @@ import {
   aiAnalystCurrentChatUserMessagesCountAtom,
   aiAnalystLoadingAtom,
   aiAnalystShowChatHistoryAtom,
+  aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
@@ -28,6 +29,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
+  const setWaitingOnMessageIndex = useSetRecoilState(aiAnalystWaitingOnMessageIndexAtom);
   const currentUserMessages = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
@@ -64,6 +66,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
                   lastUpdated: Date.now(),
                   messages: [],
                 });
+                setWaitingOnMessageIndex(undefined);
                 textareaRef.current?.focus();
               }}
             >

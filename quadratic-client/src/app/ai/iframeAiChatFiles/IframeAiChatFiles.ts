@@ -66,8 +66,6 @@ class IframeAiChatFiles {
           this.sendMessage({ type: 'delete-files-response', success: false, fileIds: [], error: error }, event.origin);
         }
         break;
-      default:
-        console.log('[IframeAiChatFiles] unhandled message to iframe', event.data);
     }
   };
 

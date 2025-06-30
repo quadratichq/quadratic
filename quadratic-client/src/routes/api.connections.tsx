@@ -170,3 +170,7 @@ export const getToggleShowConnectionDemoAction = (teamUuid: string, showConnecti
     },
   } as const;
 };
+
+export const Component = () => {
+  return null;
+};

@@ -1,6 +1,5 @@
 import {
   aiAssistantAbortControllerAtom,
-  aiAssistantDelaySecondsAtom,
   aiAssistantLoadingAtom,
   aiAssistantWaitingOnMessageIndexAtom,
   codeEditorCodeCellAtom,
@@ -21,16 +20,14 @@ export const AIAssistantUserMessageForm = memo(
     const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
-    const delaySeconds = useRecoilValue(aiAssistantDelaySecondsAtom);
     const { submitPrompt } = useSubmitAIAssistantPrompt();
 
     const handleSubmit = useCallback(
-      ({ content, onSubmit }: SubmitPromptArgs) => {
+      ({ content }: SubmitPromptArgs) => {
         mixpanel.track('[AIAssistant].submitPrompt');
         submitPrompt({
           content,
           messageIndex: props.messageIndex,
-          onSubmit,
         });
       },
       [props.messageIndex, submitPrompt]
@@ -47,7 +44,6 @@ export const AIAssistantUserMessageForm = memo(
         submitPrompt={handleSubmit}
         ctx={{ context: { sheets: [], currentSheet: '', codeCell } }}
         waitingOnMessageIndex={waitingOnMessageIndex}
-        delaySeconds={delaySeconds}
       />
     );
   })
