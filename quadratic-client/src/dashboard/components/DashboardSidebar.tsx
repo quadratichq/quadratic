@@ -7,8 +7,8 @@ import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
+  AIIcon,
   ArrowDropDownIcon,
-  ChatIcon,
   CheckIcon,
   DatabaseIcon,
   DraftIcon,
@@ -97,7 +97,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           </SidebarNavLink>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CHAT(activeTeamUuid, false)}>
-              <ChatIcon className={classNameIcons} />
+              <AIIcon className={classNameIcons} />
               Chat
             </SidebarNavLink>
           )}

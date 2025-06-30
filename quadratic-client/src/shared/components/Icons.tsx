@@ -173,7 +173,7 @@ export const BorderColorIcon: IconComponent = (props) => {
 };
 
 export const ChatIcon: IconComponent = (props) => {
-  return <Icon {...props}>quickreply</Icon>;
+  return <Icon {...props}>chat_bubble</Icon>;
 };
 
 export const CheckBoxEmptyIcon: IconComponent = (props) => {
