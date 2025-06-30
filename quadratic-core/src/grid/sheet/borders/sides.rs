@@ -89,7 +89,7 @@ mod test {
     #[test]
     fn test_debug() {
         let sides = Sides::all();
-        let debug_string = format!("{:?}", sides);
+        let debug_string = format!("{sides:?}");
         assert_eq!(
             debug_string,
             "Sides { left: true, right: true, top: true, bottom: true }"

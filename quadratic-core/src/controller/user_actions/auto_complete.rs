@@ -218,7 +218,7 @@ mod tests {
         let expected_bold = vec![true, false, false, true];
         assert_cell_value_row(&grid, sheet_id, 12, 15, 3, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 3, expected_bold.clone());
-        assert_cell_value_row(&grid, sheet_id, 12, 15, 13, expected.clone());
+        assert_cell_value_row(&grid, sheet_id, 12, 15, 5, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 5, expected_bold.clone());
         assert_cell_value_row(&grid, sheet_id, 12, 15, 11, expected.clone());
         assert_cell_format_bold_row(&grid, sheet_id, 12, 15, 11, expected_bold.clone());
@@ -719,25 +719,56 @@ mod tests {
     fn autocomplete_update_code_cell_references_python() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
+        let pos = pos![C3];
+        let sheet_pos = pos.to_sheet_pos(sheet_id);
+        let set_code_cell = |gc: &mut GridController, code: &str| {
+            gc.set_code_cell(
+                sheet_pos,
+                CodeCellLanguage::Python,
+                code.to_string(),
+                None,
+                None,
+            );
+        };
+        let autocomplete = |gc: &mut GridController| {
+            gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
+                .unwrap();
+        };
 
-        gc.set_code_cell(
-            pos![C3].to_sheet_pos(sheet_id),
-            CodeCellLanguage::Python,
-            r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
-            None,
-            None,
-        );
+        // relative references, expect to increment by 1
+        let base = r#"q.cells("A1:B2", first_row_header=True)"#;
+        set_code_cell(&mut gc, base);
+        autocomplete(&mut gc);
+        let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
+        let expected = r#"q.cells("B1:C2", first_row_header=True)"#;
+        let expected = CellValue::Code(CodeCellValue::new_python(expected.to_string()));
+        assert_eq!(value, expected);
 
-        gc.autocomplete(sheet_id, Rect::new(3, 3, 3, 4), Rect::new(3, 3, 4, 4), None)
-            .unwrap();
+        // start over
+        gc.undo(None);
+        gc.undo(None);
 
-        let sheet = gc.sheet(sheet_id);
-        match sheet.cell_value(pos![D3]) {
-            Some(CellValue::Code(code_cell)) => {
-                assert_eq!(code_cell.code, r#"q.cells("B1:C2", first_row_header=True)"#);
-            }
-            _ => panic!("expected code cell"),
-        }
+        // absolute column references, expect no change
+        let base = r#"q.cells("$A:$B", first_row_header=True)"#;
+        set_code_cell(&mut gc, base);
+        autocomplete(&mut gc);
+        let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
+        let expected = CellValue::Code(CodeCellValue::new_python(base.to_string()));
+        assert_eq!(value, expected);
+
+        // start over
+        gc.undo(None);
+        gc.undo(None);
+
+        println!("** relative column references, expect no change");
+
+        // relative column references, expect no change
+        let base = r#"q.cells("A:B", first_row_header=True)"#;
+        set_code_cell(&mut gc, base);
+        autocomplete(&mut gc);
+        let value = gc.sheet(sheet_id).cell_value(pos![D3]).unwrap();
+        let expected = CellValue::Code(CodeCellValue::new_python(base.to_string()));
+        assert_eq!(value, expected);
     }
 
     #[test]

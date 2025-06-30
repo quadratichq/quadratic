@@ -13,7 +13,6 @@ import { getRangeRectangleFromCellRefRange } from '@/app/gridGL/helpers/selectio
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { JsHashValidationWarnings, RefRangeBounds } from '@/app/quadratic-core-types';
-import { A1SelectionToJsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { ValidationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { validationUIType } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -62,8 +61,9 @@ export class UIValidations extends Container<SpecialSprite> {
       if (v.selection.sheet_id.id !== sheets.current || !type) continue;
 
       try {
-        const jsSelection = A1SelectionToJsSelection(v.selection, sheets.a1Context);
+        const jsSelection = sheets.A1SelectionToJsSelection(v.selection);
         const infiniteRanges: RefRangeBounds[] = jsSelection.getInfiniteRefRangeBounds();
+        jsSelection.free();
         infiniteRanges.forEach((range) => this.drawInfiniteRange(range, type));
       } catch (e) {
         console.log('UIValidations.ts: Error drawing infinite range', e);
@@ -79,8 +79,8 @@ export class UIValidations extends Container<SpecialSprite> {
       return;
     }
 
-    const offsets = sheets.sheet.offsets;
-    const cellsLabels = pixiApp.cellsSheets.current?.cellsLabels;
+    const sheet = sheets.sheet;
+    const offsets = sheet.offsets;
     for (let row = intersection.top; row < intersection.bottom; row++) {
       const yPlacement = offsets.getRowPlacement(row);
       const y = yPlacement.position;
@@ -90,7 +90,7 @@ export class UIValidations extends Container<SpecialSprite> {
         const key = `${column},${row}`;
         // Check if UIValidation has added content to this cell or if
         // CellsTextHash has rendered content in this cell.
-        if (!this.occupied.has(key) && !cellsLabels?.hasCell(column, row)) {
+        if (!this.occupied.has(key) && !sheet.hasContent(column, row)) {
           if (type === 'checkbox') {
             this.addChild(
               drawCheckbox({ x: x + xPlacement.size / 2, y: y + yPlacement.size / 2, column, row, value: false })

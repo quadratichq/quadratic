@@ -16,8 +16,8 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
-  AIMessagePrompt,
   AIRequestHelperArgs,
   AISource,
   AIUsage,
@@ -171,14 +171,18 @@ function getGenAIToolChoice(toolName?: AITool): ToolConfig {
 export async function parseGenAIStream(
   result: AsyncGenerator<GenerateContentResponse, any, any>,
   modelKey: VertexAIModelKey | GeminiAIModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse> {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
@@ -205,20 +209,41 @@ export async function parseGenAIStream(
 
       // text and tool calls
       for (const part of candidate?.content?.parts ?? []) {
-        if (part.text !== undefined) {
-          let currentContent = responseMessage.content.pop();
-          if (currentContent?.type !== 'text') {
-            if (currentContent?.text) {
-              responseMessage.content.push(currentContent);
+        if (part.text) {
+          // thinking text
+          if (part.thought) {
+            let currentContent = responseMessage.content.pop();
+            if (currentContent?.type !== 'google_thinking') {
+              if (currentContent?.text) {
+                responseMessage.content.push(currentContent);
+              }
+              currentContent = {
+                type: 'google_thinking',
+                text: '',
+              };
             }
-            currentContent = {
-              type: 'text',
-              text: '',
-            };
+            currentContent.text += part.text;
+            responseMessage.content.push(currentContent);
           }
-          currentContent.text += part.text;
-          responseMessage.content.push(currentContent);
-        } else if (part.functionCall?.name) {
+          // chat text
+          else {
+            let currentContent = responseMessage.content.pop();
+            if (currentContent?.type !== 'text') {
+              if (currentContent?.text) {
+                responseMessage.content.push(currentContent);
+              }
+              currentContent = {
+                type: 'text',
+                text: '',
+              };
+            }
+            currentContent.text += part.text;
+            responseMessage.content.push(currentContent);
+          }
+        }
+
+        // tool call
+        if (part.functionCall?.name) {
           responseMessage.toolCalls.push({
             id: part.functionCall.id ?? part.functionCall.name,
             name: part.functionCall.name,
@@ -267,14 +292,18 @@ export async function parseGenAIStream(
 export function parseGenAIResponse(
   result: GenerateContentResponse,
   modelKey: VertexAIModelKey | GeminiAIModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): ParsedAIResponse {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   const candidate = result?.candidates?.[0];

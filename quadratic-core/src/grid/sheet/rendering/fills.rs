@@ -384,7 +384,7 @@ mod tests {
         )
         .unwrap();
         gc.set_fill_color(
-            &A1Selection::test_a1_context(&format!("{}[region]", file_name), gc.a1_context()),
+            &A1Selection::test_a1_context(&format!("{file_name}[region]"), gc.a1_context()),
             Some("blue".to_string()),
             None,
         )
@@ -438,7 +438,7 @@ mod tests {
         )
         .unwrap();
         gc.set_fill_color(
-            &A1Selection::test_a1_context(&format!("{}[region]", file_name), gc.a1_context()),
+            &A1Selection::test_a1_context(&format!("{file_name}[region]"), gc.a1_context()),
             Some("blue".to_string()),
             None,
         )
@@ -485,7 +485,7 @@ mod tests {
         .unwrap();
 
         gc.set_fill_color(
-            &A1Selection::test_a1_context(&format!("{}[country]", file_name), gc.a1_context()),
+            &A1Selection::test_a1_context(&format!("{file_name}[country]"), gc.a1_context()),
             Some("yellow".to_string()),
             None,
         )

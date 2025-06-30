@@ -1,4 +1,4 @@
-import { debugShowCellsHashBoxes } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
@@ -100,7 +100,7 @@ export class CellsSheets extends Container<CellsSheet> {
       throw new Error('Expected to find cellsSheet in cellsTextHashClear');
     }
     cellsSheet.cellsLabels.clearCellsTextHash(message);
-    if (debugShowCellsHashBoxes && sheets.current === message.sheetId) {
+    if (debugFlag('debugShowCellsHashBoxes') && sheets.current === message.sheetId) {
       pixiApp.setViewportDirty();
     }
 
@@ -136,7 +136,7 @@ export class CellsSheets extends Container<CellsSheet> {
     if (!cellsSheet) throw new Error('Expected to find cellsSheet in adjustHeadings');
     cellsSheet.cellsLabels.adjustHeadings(column, row, delta);
     if (sheets.current === sheetId) {
-      if (debugShowCellsHashBoxes) {
+      if (debugFlag('debugShowCellsHashBoxes')) {
         const sheet = this.getById(sheetId);
         sheet?.show(pixiApp.viewport.getVisibleBounds());
       }
@@ -186,18 +186,11 @@ export class CellsSheets extends Container<CellsSheet> {
     }
   }
 
-  isCursorOnCodeCell(): boolean {
-    const cellsSheet = this.current;
-    if (!cellsSheet) return false;
-    const cursor = sheets.sheet.cursor.position;
-    return cellsSheet.tables.isWithinCodeCell(cursor.x, cursor.y);
-  }
-
   isCursorOnCodeCellOutput(): boolean {
     const cellsSheet = this.current;
     if (!cellsSheet) return false;
     const cursor = sheets.sheet.cursor.position;
-    return cellsSheet.tables.isTable(cursor.x, cursor.y);
+    return cellsSheet.tables.isTableAnchor(cursor.x, cursor.y);
   }
 
   update = (dirtyViewport: boolean) => {

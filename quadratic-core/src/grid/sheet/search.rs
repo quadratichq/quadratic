@@ -206,7 +206,7 @@ impl Sheet {
     /// current input value.
     pub fn neighbor_text(&self, pos: Pos) -> Vec<String> {
         let mut text = vec![];
-        if let Some((data_table_pos, data_table)) = self.data_table_that_contains(&pos) {
+        if let Some((data_table_pos, data_table)) = self.data_table_that_contains(pos) {
             let Ok(display_column_index) = u32::try_from(pos.x - data_table_pos.x) else {
                 return text;
             };
@@ -739,8 +739,10 @@ mod test {
     }
 
     #[test]
-    fn search_data_tables() {
+    fn test_search_data_tables() {
         let (gc, sheet_id, _, _) = simple_csv_at(pos!(E2));
+
+        print_first_sheet!(&gc);
 
         let sheet = gc.sheet(sheet_id);
 

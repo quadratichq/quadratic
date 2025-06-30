@@ -8,7 +8,7 @@ import {
   codeEditorShowDiffEditorAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debug } from '@/app/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { events } from '@/app/events/events';
 import { codeCellIsAConnection, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
@@ -55,6 +55,8 @@ const registered: Record<Extract<CodeCellLanguage, string>, boolean> = {
 };
 
 export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
+  const { debug } = useDebugFlags();
+
   const { editorInst, setEditorInst } = props;
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);
@@ -62,7 +64,6 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
   const isConnection = useMemo(() => codeCellIsAConnection(codeCell.language), [codeCell.language]);
   const [editorContent, setEditorContent] = useRecoilState(codeEditorEditorContentAtom);
   const { getAICompletion } = useCodeEditorCompletions({ language: codeCell.language });
-
   const showDiffEditor = useRecoilValue(codeEditorShowDiffEditorAtom);
   const diffEditorContent = useRecoilValue(codeEditorDiffEditorContentAtom);
   const loading = useRecoilValue(codeEditorLoadingAtom);
@@ -345,7 +346,7 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
         completionProvider.dispose();
       });
     },
-    [addCommands, getAICompletion, monacoLanguage, setEditorInst]
+    [addCommands, debug, getAICompletion, monacoLanguage, setEditorInst]
   );
 
   const onChange = useCallback(

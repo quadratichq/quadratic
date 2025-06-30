@@ -51,7 +51,7 @@ pub fn parquet_to_array(
 
             for (row_index, value) in values.into_iter().enumerate() {
                 let y = row_index + current_size + 1;
-                cell_values.set(col_index as u32, y as u32, value)?;
+                cell_values.set(col_index as u32, y as u32, value, false)?;
             }
         }
 

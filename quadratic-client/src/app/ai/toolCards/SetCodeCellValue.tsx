@@ -2,7 +2,6 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { stringToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
@@ -34,8 +33,9 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
 
         if (toolArgs.success) {
           try {
-            const selection = stringToSelection(toolArgs.data.code_cell_position, sheets.current, sheets.a1Context);
+            const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheets.current);
             const { x, y } = selection.getCursor();
+            selection.free();
             setCodeCellPos({ x, y });
           } catch (e) {
             console.error('[SetCodeCellValue] Failed to parse args: ', e);

@@ -10,7 +10,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
-import { A1SelectionToJsSelection, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
+import { SheetContentCache, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
 import { v4 } from 'uuid';
@@ -38,6 +38,8 @@ export class Sheet {
   // clamp is the area that the cursor can move around in
   clamp: Rectangle;
 
+  private _contentCache: SheetContentCache;
+
   constructor(sheets: Sheets, info: SheetInfo, testSkipOffsetsLoad = false) {
     this.sheets = sheets;
     this.id = info.sheet_id;
@@ -54,9 +56,30 @@ export class Sheet {
     // this will be imported via SheetInfo in the future
     this.clamp = new Rectangle(1, 1, Infinity, Infinity);
 
+    this._contentCache = SheetContentCache.new_empty();
+
     events.on('sheetBounds', this.updateBounds);
     events.on('sheetValidations', this.sheetValidations);
+    events.on('contentCache', this.updateContentCache);
   }
+
+  destroy() {
+    this.contentCache.free();
+    events.off('sheetBounds', this.updateBounds);
+    events.off('sheetValidations', this.sheetValidations);
+    events.off('contentCache', this.updateContentCache);
+  }
+
+  get contentCache(): SheetContentCache {
+    return this._contentCache;
+  }
+
+  private updateContentCache = (sheetId: string, contentCache: SheetContentCache) => {
+    if (sheetId === this.id) {
+      this.contentCache.free();
+      this._contentCache = contentCache;
+    }
+  };
 
   private sheetValidations = (sheetId: string, sheetValidations: Validation[]) => {
     if (sheetId === this.id) {
@@ -67,8 +90,10 @@ export class Sheet {
   // Returns all validations that intersect with the given point.
   getValidation = (x: number, y: number): Validation[] | undefined => {
     return this.validations.filter((v) => {
-      const selection = A1SelectionToJsSelection(v.selection, this.sheets.a1Context);
-      return selection.contains(x, y);
+      const jsSelection = this.sheets.A1SelectionToJsSelection(v.selection);
+      const contains = jsSelection.contains(x, y, this.sheets.jsA1Context);
+      jsSelection.free();
+      return contains;
     });
   };
 
@@ -89,12 +114,13 @@ export class Sheet {
     }
   };
 
-  updateSheetInfo(info: SheetInfo) {
+  updateSheetInfo = (info: SheetInfo) => {
     this.name = info.name;
     this.order = info.order;
     this.color = info.color ?? undefined;
+    this.offsets.free();
     this.offsets = SheetOffsetsWasm.load(info.offsets);
-  }
+  };
 
   //#endregion
 
@@ -224,5 +250,13 @@ export class Sheet {
       },
     };
     quadraticCore.updateValidation(validation, this.sheets.getCursorPosition());
+  }
+
+  hasContent(col: number, row: number): boolean {
+    return this.contentCache.hasContent(col, row);
+  }
+
+  hasContentInRect(rect: Rectangle): boolean {
+    return this.contentCache.hasContentInRect(rect.x, rect.y, rect.right - 1, rect.bottom - 1);
   }
 }

@@ -2,7 +2,7 @@
  * Communication between multiplayer web worker and the main thread
  */
 
-import { debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type {
   ClientMultiplayerMessage,
   MultiplayerClientMessage,
@@ -28,7 +28,10 @@ class MultiplayerClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientMultiplayerMessage>) => {
-    if (debugWebWorkersMessages && !['clientMultiplayerMouseMove', 'clientMultiplayerViewport'].includes(e.data.type))
+    if (
+      debugFlag('debugWebWorkersMessages') &&
+      !['clientMultiplayerMouseMove', 'clientMultiplayerViewport'].includes(e.data.type)
+    )
       console.log(`[multiplayerClient] message: ${e.data.type}`);
 
     switch (e.data.type) {

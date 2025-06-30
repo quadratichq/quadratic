@@ -193,7 +193,7 @@ impl Sheet {
                         style.push('"');
                     }
 
-                    html_body.push_str(format!("<td {}>", style).as_str());
+                    html_body.push_str(format!("<td {style}>").as_str());
 
                     if let Some(value) = &simple_value {
                         if include_plain_text {

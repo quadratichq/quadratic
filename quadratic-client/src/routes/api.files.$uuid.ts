@@ -58,7 +58,7 @@ export const action = async ({ params, request }: ActionFunctionArgs): Promise<A
       const checkpoint =
         checkpointDataUrl && checkpointVersion ? { dataUrl: checkpointDataUrl, version: checkpointVersion } : undefined;
       const { uuid: newFileUuid } = await apiClient.files.duplicate(uuid, { isPrivate, checkpoint, teamUuid });
-      return redirect ? redirectDocument(ROUTES.FILE(newFileUuid)) : { ok: true };
+      return redirect ? redirectDocument(ROUTES.FILE({ uuid: newFileUuid, searchParams: '' })) : { ok: true };
     } catch (error) {
       return { ok: false };
     }
@@ -142,4 +142,8 @@ export const getActionFileDownload = ({ checkpointDataUrl }: { checkpointDataUrl
     action: 'download' as const,
     ...(checkpointDataUrl ? { checkpointDataUrl } : {}),
   };
+};
+
+export const Component = () => {
+  return null;
 };

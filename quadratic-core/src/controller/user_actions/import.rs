@@ -99,7 +99,7 @@ pub(crate) mod tests {
 
     fn read_test_csv_file(file_name: &str) -> Vec<u8> {
         let path = format!("../quadratic-rust-shared/data/csv/{file_name}");
-        std::fs::read(path).unwrap_or_else(|_| panic!("test csv file not found {}", file_name))
+        std::fs::read(path).unwrap_or_else(|_| panic!("test csv file not found {file_name}"))
     }
 
     // const EXCEL_FILE: &str = "../quadratic-rust-shared/data/excel/temperature.xlsx";
@@ -147,7 +147,7 @@ pub(crate) mod tests {
         // data table should be at `pos`
         assert_eq!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(&pos)
+                .data_table_pos_that_contains(pos)
                 .unwrap(),
             pos
         );
@@ -156,7 +156,7 @@ pub(crate) mod tests {
         assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 1, first_row);
 
         let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 12, last_row);
+        assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 11, last_row);
 
         (gc, sheet_id, pos, file_name)
     }
@@ -195,7 +195,7 @@ pub(crate) mod tests {
 
         for _ in 0..10000 {
             for x in 0..10 {
-                csv.push_str(&format!("{},", x));
+                csv.push_str(&format!("{x},"));
             }
             csv.push_str("done,\n");
         }
@@ -489,13 +489,13 @@ pub(crate) mod tests {
         )
         .unwrap();
 
+        print_first_sheet(&gc);
+
         let sheet = gc.sheet(sheet_id);
-        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "title_row.csv");
-        assert_eq!(sheet.rendered_value(pos![A2]).unwrap(), "Column 1");
-        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "Sample report");
-        assert_eq!(sheet.rendered_value(pos![A5]).unwrap(), "c1");
-        assert_eq!(sheet.rendered_value(pos![B5]).unwrap(), " c2");
-        assert_eq!(sheet.rendered_value(pos![C5]).unwrap(), " Sample column3");
+        assert_eq!(sheet.rendered_value(pos![A1]).unwrap(), "Sample report");
+        assert_eq!(sheet.rendered_value(pos![A3]).unwrap(), "c1");
+        assert_eq!(sheet.rendered_value(pos![B3]).unwrap(), " c2");
+        assert_eq!(sheet.rendered_value(pos![C3]).unwrap(), " Sample column3");
     }
 
     #[test]
@@ -504,7 +504,7 @@ pub(crate) mod tests {
         let csv_file = read_test_csv_file(file_name);
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
 
         gc.import_csv(
             sheet_id,
@@ -517,11 +517,11 @@ pub(crate) mod tests {
         )
         .unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new_span(pos, Pos { x: 3, y: 4 }));
+        print_first_sheet(&gc);
 
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, vec!["Sample report ", "", ""]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 4, vec!["c1", " c2", " Sample column3"]);
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 7, vec!["7", "8", "9"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["Sample report ", "", ""]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, vec!["c1", " c2", " Sample column3"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 6, vec!["7", "8", "9"]);
     }
 
     #[test]
@@ -551,7 +551,7 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            2,
+            3,
             vec!["issue", " test", " value\u{feff}"],
         );
         assert_cell_value_row(
@@ -559,10 +559,10 @@ pub(crate) mod tests {
             sheet_id,
             1,
             3,
-            3,
+            4,
             vec!["0", "1", " Inv\u{feff}alid\u{feff}"],
         );
-        assert_cell_value_row(&gc, sheet_id, 1, 3, 4, vec!["0", "2", " Valid"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 5, vec!["0", "2", " Valid"]);
     }
 
     // #[test]    // fn imports_a_large_parquet() {
@@ -598,6 +598,27 @@ pub(crate) mod tests {
     }
 
     #[test]
+    fn test_csv_special_chars() {
+        let file_name = "test-special-character$.csv";
+        let csv_file = read_test_csv_file(file_name);
+
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "test_special_character_.csv");
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            1,
+            3,
+            2,
+            vec!["test-1", "$HERE!", "now--this!"],
+        );
+    }
+
+    #[test]
     fn imports_a_parquet_with_multiple_batches() {
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
@@ -622,5 +643,16 @@ pub(crate) mod tests {
 
         assert_display_cell_value(&gc, sheet_id, 1, 6, "82");
         assert_display_cell_value(&gc, sheet_id, 1, 1029, "8140");
+    }
+
+    #[test]
+    fn test_import_customers() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file_name = "customers-100.csv";
+        let csv_file = read_test_csv_file(file_name);
+        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+            .unwrap();
+        assert_table_count(&gc, sheet_id, 1);
     }
 }

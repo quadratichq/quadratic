@@ -157,7 +157,7 @@ export function useFileImport() {
             throw new Error('Failed to read file');
           }
 
-          let result: { contents?: ArrayBuffer; version?: string; error?: string } | undefined = undefined;
+          let result: { contents?: ArrayBufferLike; version?: string; error?: string } | undefined = undefined;
 
           if (fileType === 'grid') {
             result = await quadraticCore.upgradeGridFile(arrayBuffer, 0);
@@ -206,8 +206,8 @@ export function useFileImport() {
                 if (openImportedFile) {
                   setFilesImportProgressState((prev) => ({ ...prev, importing: false }));
                   setFilesImportProgressListState({ show: false });
-                  const params = quadraticCore.receivedClientMessage ? `?negative_offsets` : '';
-                  window.location.href = `${ROUTES.FILE(uuid)}${params}`;
+                  const searchParams = quadraticCore.receivedClientMessage ? 'negative_offsets' : '';
+                  window.location.href = `${ROUTES.FILE({ uuid, searchParams })}`;
                 }
               })
               .catch((error) => {

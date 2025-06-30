@@ -40,7 +40,7 @@ export const runDockerImageBashScript = (
   imageTag: string,
   pulumiEscEnvironmentName: string,
   extraEnvVars: EnvVariables,
-  rebuildOnEveryPulumiRun: boolean = false
+  rebuildOnEveryPulumiRun: boolean = false,
 ) => {
   const extraEnvVarsBashCommand = createBashCommandForEnv(extraEnvVars);
 
@@ -65,7 +65,7 @@ esc login
 
 echo 'Setting ENV Vars'
 esc env open quadratic/${pulumiEscEnvironmentName} --format dotenv > .env
-sed -i 's/"//g' .env
+sed -i 's/="\\(.*\\)"$/=\\1/; s/='"'"'\\(.*\\)'"'"'$/=\\1/' .env
 ${extraEnvVarsBashCommand}
 
 echo 'Ensure AWS Cli is installed'

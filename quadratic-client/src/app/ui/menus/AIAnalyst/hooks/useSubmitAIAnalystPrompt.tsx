@@ -11,7 +11,6 @@ import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
   aiAnalystCurrentChatMessagesCountAtom,
-  aiAnalystDelaySecondsAtom,
   aiAnalystLoadingAtom,
   aiAnalystPDFImportAtom,
   aiAnalystPromptSuggestionsAtom,
@@ -20,12 +19,10 @@ import {
   aiAnalystWebSearchAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { debugShowAIInternalContext } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
-import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
@@ -36,7 +33,6 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useRef } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -48,7 +44,6 @@ export type SubmitAIAnalystPromptArgs = {
   content: Content;
   context: Context;
   messageIndex: number;
-  onSubmit?: () => void;
 };
 
 // // Include a screenshot of what the user is seeing
@@ -80,7 +75,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
-  const [modelKey] = useAIModel();
+  const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     () =>
@@ -108,11 +103,9 @@ export function useSubmitAIAnalystPrompt() {
     [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext]
   );
 
-  const delayTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, context, messageIndex, onSubmit }: SubmitAIAnalystPromptArgs) => {
+      async ({ content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -149,29 +142,39 @@ export function useSubmitAIAnalystPrompt() {
           });
         }
 
-        let chatMessages: ChatMessage[] = [];
-        if (!onSubmit) {
-          set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
-            chatMessages = [
-              ...prevMessages,
-              {
-                role: 'user' as const,
-                content,
-                contextType: 'userPrompt' as const,
-                context: {
-                  ...context,
-                  selection: context.selection ?? sheets.sheet.cursor.save(),
-                },
-              },
-            ];
-            return chatMessages;
-          });
-        }
+        const onExceededBillingLimit = (exceededBillingLimit: boolean) => {
+          if (!exceededBillingLimit) {
+            return;
+          }
 
+          set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
+
+          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+            exceededBillingLimit: exceededBillingLimit,
+
+            location: 'AIAnalyst',
+          });
+        };
+
+        let chatMessages: ChatMessage[] = [];
+        set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
+          chatMessages = [
+            ...prevMessages,
+            {
+              role: 'user' as const,
+              content,
+              contextType: 'userPrompt' as const,
+              context: {
+                ...context,
+                selection: context.selection ?? sheets.sheet.cursor.save(),
+              },
+            },
+          ];
+          return chatMessages;
+        });
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
           let prevWaitingOnMessageIndex: number | undefined = undefined;
-          clearTimeout(delayTimerRef.current);
           set(aiAnalystWaitingOnMessageIndexAtom, (prev) => {
             prevWaitingOnMessageIndex = prev;
             return undefined;
@@ -215,69 +218,9 @@ export function useSubmitAIAnalystPrompt() {
             return prevMessages;
           });
 
-          clearTimeout(delayTimerRef.current);
           set(aiAnalystWaitingOnMessageIndexAtom, undefined);
         });
         set(aiAnalystAbortControllerAtom, abortController);
-
-        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
-          await apiClient.teams.billing.aiUsage(teamUuid);
-        if (exceededBillingLimit) {
-          // let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
-          let localDelaySeconds = 999999999;
-          set(aiAnalystDelaySecondsAtom, localDelaySeconds);
-          set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
-
-          mixpanel.track('[Billing].ai.exceededBillingLimit', {
-            exceededBillingLimit: exceededBillingLimit,
-            billingLimit: billingLimit,
-            currentPeriodUsage: currentPeriodUsage,
-            localDelaySeconds: localDelaySeconds,
-            location: 'AIAnalyst',
-          });
-
-          await new Promise<void>((resolve) => {
-            const resolveAfterDelay = () => {
-              localDelaySeconds -= 1;
-              if (localDelaySeconds <= 0) {
-                resolve();
-              } else {
-                set(aiAnalystDelaySecondsAtom, localDelaySeconds);
-                clearTimeout(delayTimerRef.current);
-                delayTimerRef.current = setTimeout(resolveAfterDelay, 1000);
-              }
-            };
-
-            resolveAfterDelay();
-          });
-        }
-        set(aiAnalystWaitingOnMessageIndexAtom, undefined);
-
-        if (abortController.signal.aborted) {
-          set(aiAnalystAbortControllerAtom, undefined);
-          set(aiAnalystLoadingAtom, false);
-          return;
-        }
-
-        if (onSubmit) {
-          onSubmit();
-          set(aiAnalystCurrentChatMessagesAtom, (prevMessages) => {
-            chatMessages = [
-              ...prevMessages,
-              {
-                role: 'user' as const,
-                content,
-                contextType: 'userPrompt' as const,
-                context: {
-                  ...context,
-                  selection: context.selection ?? sheets.sheet.cursor.toA1String(),
-                },
-              },
-            ];
-            return chatMessages;
-          });
-        }
 
         set(aiAnalystLoadingAtom, true);
 
@@ -299,11 +242,27 @@ export function useSubmitAIAnalystPrompt() {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
 
-            if (debugShowAIInternalContext) {
+            if (debugFlag('debugShowAIInternalContext')) {
               console.log('AIAnalyst messages with context:', {
                 context,
                 messagesWithContext,
               });
+            }
+            if (debugFlag('debugPrintAIInternalContext')) {
+              console.log(
+                messagesWithContext
+                  .filter((message) => message.role === 'user' && message.contextType === 'userPrompt')
+                  .map((message) => {
+                    return `${message.role}: ${message.content.map((content) => {
+                      if ('type' in content && content.type === 'text') {
+                        return content.text;
+                      } else {
+                        return 'data';
+                      }
+                    })}`;
+                  })
+                  .join('\n')
+              );
             }
 
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
@@ -311,6 +270,7 @@ export function useSubmitAIAnalystPrompt() {
               chatId,
               source: 'AIAnalyst',
               modelKey,
+              time: new Date().toString(),
               messages: messagesWithContext,
               useStream: USE_STREAM,
               toolName: undefined,
@@ -319,6 +279,7 @@ export function useSubmitAIAnalystPrompt() {
               useQuadraticContext: true,
               setMessages: (updater) => set(aiAnalystCurrentChatMessagesAtom, updater),
               signal: abortController.signal,
+              onExceededBillingLimit,
             });
 
             let nextChatMessages: ChatMessage[] = [];

@@ -58,7 +58,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     rect.y_range().for_each(|y| {
         vals.push(y.to_string());
         rect.x_range().for_each(|x| {
-            let pos: Pos = Pos { x, y };
+            let pos = Pos { x, y };
 
             if sheet.formats.bold.get(pos).is_some_and(|bold| bold) {
                 bolds.push((count_y + 1, count_x + 1));
@@ -70,10 +70,20 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
 
             let cell_value = match display_cell_values {
                 true => sheet.cell_value(pos),
-                false => sheet
-                    .data_table_at(&rect.min)
-                    .unwrap_or_else(|| panic!("Data table not found at {:?}", rect.min))
-                    .cell_value_at(x as u32, y as u32),
+                false => {
+                    if let Some((pos, dt)) = sheet.data_table_that_contains(pos) {
+                        if dt.is_html_or_image() {
+                            Some(CellValue::Text("chart".to_string()))
+                        } else {
+                            Some(
+                                dt.cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
+                                    .unwrap_or(CellValue::Blank),
+                            )
+                        }
+                    } else {
+                        Some(sheet.cell_value(pos).unwrap_or(CellValue::Blank))
+                    }
+                }
             };
 
             let cell_value = match cell_value {
@@ -96,10 +106,22 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
                     format!("{:?} ({})", code_cell.language, value)
                 }
                 Some(CellValue::Import(import)) => import.to_string(),
-                _ => sheet
-                    .display_value(pos)
-                    .unwrap_or(CellValue::Blank)
-                    .to_string(),
+                _ => {
+                    match sheet.display_value(pos) {
+                        None | Some(CellValue::Blank) => {
+                            if sheet
+                                .data_table_that_contains(pos)
+                                .is_some_and(|(_, dt)| dt.is_html_or_image())
+                            {
+                                CellValue::Text("chart".to_string())
+                            } else {
+                                CellValue::Blank
+                            }
+                        }
+                        Some(display_value) => display_value,
+                    }
+                }
+                .to_string(),
             };
 
             vals.push(cell_value);

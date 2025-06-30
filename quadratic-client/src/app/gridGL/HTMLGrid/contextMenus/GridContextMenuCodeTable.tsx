@@ -17,6 +17,8 @@ export function GridContextMenuCodeTable() {
   if (hasSpillError) {
     return (
       <ContextMenuBase>
+        <ContextMenuItemAction action={Action.ExecuteCode} />
+        <DropdownMenuSeparator />
         <ContextMenuItemAction action={Action.Cut} />
         <ContextMenuItemAction action={Action.Copy} />
         <ContextMenuItemAction action={Action.Paste} />
@@ -31,6 +33,8 @@ export function GridContextMenuCodeTable() {
 
   return (
     <ContextMenuBase>
+      <ContextMenuItemAction action={Action.ExecuteCode} />
+      <DropdownMenuSeparator />
       <ContextMenuItemAction action={Action.Cut} />
       <ContextMenuItemAction action={Action.Copy} />
       <ContextMenuItemAction action={Action.Paste} />

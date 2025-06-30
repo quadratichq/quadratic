@@ -16,7 +16,7 @@ jobs:
       pull-requests: write
       issues: write
       deployments: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 5
     outputs:
@@ -113,15 +113,15 @@ jobs:
       matrix:
         include:
           - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: files
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -149,8 +149,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Login to Amazon ECR Private
@@ -241,7 +241,7 @@ jobs:
       pull-requests: write
       issues: write
       deployments: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
     outputs:
@@ -289,8 +289,8 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Wait for stack deployment
@@ -485,7 +485,7 @@ jobs:
   verify_deployed_version:
     name: Verify Version
     needs: [build_images, deploy_images]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 30
     strategy:
@@ -532,13 +532,13 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 15
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     env:
-      matrix_runner: 156
+      matrix_runner: 158
       e2e_url: ${{ needs.deploy_images.outputs.WEBSITE_URL }}
       deploy_time: ${{ needs.deploy_images.outputs.DEPLOY_TIME }}
     steps:
@@ -581,9 +581,9 @@ jobs:
         verify_deployed_version,
         test-e2e-start-comment,
       ]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     container:
-      image: mcr.microsoft.com/playwright:v1.52.0-noble
+      image: mcr.microsoft.com/playwright:v1.53.1-noble
       options: --user root
     if: github.head_ref != 'qa' || github.base_ref != 'main'
     timeout-minutes: 15
@@ -626,7 +626,7 @@ jobs:
       contents: read
       pull-requests: write
       issues: write
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: always() && needs.test-e2e-start-comment.result == 'success' && (github.head_ref != 'qa' || github.base_ref != 'main')
     timeout-minutes: 15
     env:
@@ -690,8 +690,8 @@ jobs:
         if: ${{ !cancelled() }}
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEVELOPMENT }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEVELOPMENT }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PREVIEW }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PREVIEW }}
           aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Upload HTML report to S3
@@ -699,7 +699,7 @@ jobs:
         run: |
           # Upload entire build directory to S3
           aws s3 sync playwright-report s3://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }} \
-            --delete \
+            --delete --force \
             --cache-control "public, max-age=30"
 
       - name: Find Build & Deploy Images Comment
@@ -721,7 +721,7 @@ jobs:
             ## Preview - Build, Deploy & Tests-E2E
             ✅ Build images
             ✅ Deploy images - ${{ env.deploy_time }} - [Preview](https://${{ env.e2e_url }})
-            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](http://${{ env.s3_bucket }}.s3-website-us-west-2.amazonaws.com/pr-${{ github.event.pull_request.number }}/)
+            ${{ needs.test-e2e-matrix-run.result == 'success' && '✅' || '❌' }} Tests-E2E  -  [Report](https://${{ env.s3_bucket }}/pr-${{ github.event.pull_request.number }})
           edit-mode: replace
 
       - name: Update comment on E2E tests end
