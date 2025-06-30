@@ -29,7 +29,7 @@ impl Sheet {
                     let rect = Rect::new(x1, y1, x2, y2);
                     dirty_hashes.extend(rect.to_hashes());
                     if needs_resize {
-                        let rows = self.get_rows_with_wrap_in_rect(&rect, false);
+                        let rows = self.get_rows_with_wrap_in_rect(rect, false);
                         resize_rows.extend(rows);
                     }
                 });

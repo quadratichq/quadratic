@@ -6,7 +6,6 @@ use std::time::Duration;
 use quadratic_core::controller::GridController;
 use quadratic_core::controller::operations::clipboard::{ClipboardOperation, PasteSpecial};
 use quadratic_core::grid::Grid;
-use quadratic_core::grid::js_types::JsClipboard;
 use quadratic_core::{Pos, Rect, SheetRect, a1::A1Selection};
 
 criterion_group!(benches, criterion_benchmark);
@@ -72,20 +71,19 @@ fn criterion_benchmark(c: &mut Criterion) {
             };
 
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let JsClipboard { plain_text, html } = sheet
+            let js_clipboard = sheet
                 .copy_to_clipboard(
                     &A1Selection::from_rect(sheet_rect),
                     gc.a1_context(),
                     ClipboardOperation::Copy,
                     true,
                 )
-                .unwrap();
+                .into();
 
             let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(
                 &A1Selection::from_xy(pos.x, pos.y, sheet_id),
-                Some(plain_text),
-                Some(html),
+                js_clipboard,
                 PasteSpecial::None,
                 None,
             );
@@ -103,20 +101,19 @@ fn criterion_benchmark(c: &mut Criterion) {
             };
 
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let JsClipboard { plain_text, html } = sheet
+            let js_clipboard = sheet
                 .copy_to_clipboard(
                     &A1Selection::from_rect(sheet_rect),
                     gc.a1_context(),
                     ClipboardOperation::Copy,
                     true,
                 )
-                .unwrap();
+                .into();
 
             let pos = Pos { x: 10000, y: 10000 };
             gc.paste_from_clipboard(
                 &A1Selection::from_xy(pos.x, pos.y, sheet_id),
-                Some(plain_text),
-                Some(html),
+                js_clipboard,
                 PasteSpecial::None,
                 None,
             );

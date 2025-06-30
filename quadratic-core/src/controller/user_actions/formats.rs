@@ -4,8 +4,7 @@
 
 use wasm_bindgen::JsValue;
 
-use crate::RefAdjust;
-use crate::a1::{A1Selection, CellRefRange, RefRangeBounds, TableMapEntry};
+use crate::a1::{A1Selection, CellRefRange};
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::operation::Operation;
@@ -26,158 +25,97 @@ impl GridController {
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
-        let context = self.a1_context();
-
-        let add_table_ops = |range: RefRangeBounds,
-                             table: &TableMapEntry,
-                             ops: &mut Vec<Operation>| {
-            // for sheet operation
-            let bounded_range = range.to_bounded(&table.bounds);
-            let bounded_ranges = vec![CellRefRange::Sheet {
-                range: bounded_range,
-            }];
-
-            // pos relative to table pos (top left pos), 1-based for formatting.
-            // ensure coordinates are within bounds later.
-            //
-            // TODO: don't have any negative numbers here, even temporarily,
-            // because that'll break if we switch to `u64`. Just directly
-            // compute the coordinates we actually want.
-            let mut range = range.translate_unchecked(
-                1 - table.bounds.min.x,
-                1 - table.bounds.min.y - table.y_adjustment(true),
-            );
-
-            if !range.start.col.is_unbounded() {
-                // map visible index to actual column index
-                range.start.col.coord = table
-                    .get_column_index_from_display_index(range.start.col.coord as usize - 1)
-                    .unwrap_or(range.start.col.coord as usize - 1)
-                    as i64
-                    + 1;
-            }
-
-            if !range.end.col.is_unbounded() {
-                // map visible index to actual column index
-                range.end.col.coord = table
-                    .get_column_index_from_display_index(range.end.col.coord as usize - 1)
-                    .unwrap_or(range.end.col.coord as usize - 1)
-                    as i64
-                    + 1;
-            }
-
-            let mut ranges = vec![CellRefRange::Sheet { range }];
-
-            // Force the range to be within bounds.
-            // TODO: this should not be necessary
-            let no_op_adjust = RefAdjust::NO_OP;
-            if range.saturating_adjust(no_op_adjust).is_none() {
-                return;
-            };
-
-            if let Some(rect) = range.to_rect() {
-                let Some(sheet) = self.try_sheet(table.sheet_id) else {
-                    dbgjs!(format!(
-                        "[format_ops] invalid sheet ID: {:?}",
-                        table.sheet_id
-                    ));
-                    return;
-                };
-
-                let data_table_pos = table.bounds.min;
-                let Some(data_table) = sheet.data_table_at(&data_table_pos) else {
-                    dbgjs!(format!(
-                        "[format_ops] invalid data table ID: {:?}",
-                        data_table_pos
-                    ));
-                    return;
-                };
-
-                if data_table.display_buffer.is_some() {
-                    ranges.clear();
-                    // y is 1-based
-                    for y in rect.y_range() {
-                        // get actual row index and convert to 1-based
-                        let actual_row =
-                            data_table.get_row_index_from_display_index(y as u64 - 1) + 1;
-                        for x in rect.x_range() {
-                            ranges.push(CellRefRange::new_relative_xy(x, actual_row as i64));
-                        }
-                    }
-                }
-            }
-
-            // add table operation
-            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, context) {
-                let formats = SheetFormatUpdates::from_selection(&selection, format_update.clone());
-                ops.push(Operation::DataTableFormats {
-                    sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
-                    formats,
-                });
-            }
-
-            // clear sheet formatting if needed
-            if let Some(bounded_selection) =
-                A1Selection::from_ranges(bounded_ranges, table.sheet_id, context)
-            {
-                if let Some(cleared) = format_update.only_cleared() {
-                    ops.push(Operation::SetCellFormatsA1 {
-                        sheet_id: table.sheet_id,
-                        formats: SheetFormatUpdates::from_selection(&bounded_selection, cleared),
-                    });
-                }
-            }
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return ops;
         };
 
-        let (sheet_ranges, table_ranges) = selection.separate_table_ranges();
+        let mut sheet_format_update =
+            SheetFormatUpdates::from_selection(selection, format_update.clone());
 
-        // find intersection of sheet selection with tables, apply updates to both sheet and respective table
-        if let Some(mut sheet_selection) =
-            A1Selection::from_sheet_ranges(sheet_ranges.clone(), selection.sheet_id, context)
-        {
-            for sheet_range in sheet_ranges {
-                let rect = sheet_range.to_rect_unbounded();
-                for table in context.iter_tables_in_sheet(selection.sheet_id) {
-                    if let Some(intersection) = table.bounds.intersection(&rect) {
-                        // remove table intersection from the sheet selection
-                        sheet_selection.exclude_cells(
-                            intersection.min,
-                            Some(intersection.max),
-                            context,
-                        );
-                        // residual single cursor selection, clear if it belongs to the table
-                        if let Some(pos) = sheet_selection.try_to_pos(context) {
-                            if table.bounds.contains(pos) {
-                                sheet_selection.ranges.clear();
+        for range in selection.ranges.iter() {
+            match range {
+                CellRefRange::Sheet { range } => {
+                    let rect = range.to_rect_unbounded();
+                    for (output_rect, intersection_rect, data_table) in
+                        sheet.iter_data_tables_intersects_rect(rect)
+                    {
+                        let data_table_pos = output_rect.min;
+
+                        let table_format_updates = data_table
+                            .transfer_formats_from_sheet_format_updates(
+                                data_table_pos,
+                                intersection_rect,
+                                &mut sheet_format_update,
+                            );
+
+                        if let Some(table_format_updates) = table_format_updates {
+                            if !table_format_updates.is_default() {
+                                ops.push(Operation::DataTableFormats {
+                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                    formats: table_format_updates,
+                                });
                             }
                         }
-                        let range = RefRangeBounds::new_relative_rect(intersection);
-                        add_table_ops(range, table, &mut ops);
                     }
                 }
-            }
+                CellRefRange::Table { range } => {
+                    let Some(table) = self.a1_context().try_table(&range.table_name) else {
+                        continue;
+                    };
 
-            if !sheet_selection.ranges.is_empty() {
-                ops.push(Operation::SetCellFormatsA1 {
-                    sheet_id: selection.sheet_id,
-                    // from_selection ignores TableRefs
-                    formats: SheetFormatUpdates::from_selection(
-                        &sheet_selection,
-                        format_update.clone(),
-                    ),
-                });
+                    let data_table_pos = table.bounds.min;
+
+                    let Some(data_table) = sheet.data_table_at(&data_table_pos) else {
+                        continue;
+                    };
+
+                    let y_adjustment = data_table.y_adjustment(true);
+
+                    if let Some(sheet_range) =
+                        range.convert_to_ref_range_bounds(true, self.a1_context(), false, true)
+                    {
+                        let table_range = sheet_range.translate_unchecked(
+                            1 - data_table_pos.x,
+                            1 - data_table_pos.y - y_adjustment,
+                        );
+
+                        let mut format_rect = table_range.to_rect_unbounded();
+
+                        if let Some(column_headers) = &data_table.column_headers {
+                            for column_header in column_headers.iter() {
+                                if !column_header.display {
+                                    let column_index = column_header.value_index as i64;
+                                    if column_index < format_rect.min.x {
+                                        format_rect.min.x += 1;
+                                    }
+                                    if column_index < format_rect.max.x {
+                                        format_rect.max.x += 1;
+                                    }
+                                }
+                            }
+                        }
+
+                        let table_format_updates = SheetFormatUpdates::from_selection(
+                            &A1Selection::from_rect(format_rect.to_sheet_rect(selection.sheet_id)),
+                            format_update.clone(),
+                        );
+
+                        if !table_format_updates.is_default() {
+                            ops.push(Operation::DataTableFormats {
+                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                formats: table_format_updates,
+                            });
+                        }
+                    }
+                }
             }
         }
 
-        // set table formats
-        for table_ref in table_ranges {
-            if let Some(table) = context.try_table(&table_ref.table_name) {
-                if let Some(range) =
-                    table_ref.convert_to_ref_range_bounds(true, context, false, true)
-                {
-                    add_table_ops(range, table, &mut ops);
-                }
-            }
+        if !sheet_format_update.is_default() {
+            ops.push(Operation::SetCellFormatsA1 {
+                sheet_id: selection.sheet_id,
+                formats: sheet_format_update,
+            });
         }
 
         ops
@@ -491,8 +429,8 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::grid::CellWrap;
     use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-    use crate::{Pos, a1::A1Selection};
     use crate::test_util::*;
+    use crate::{Pos, a1::A1Selection};
 
     #[test]
     fn test_set_align_selection() {
