@@ -291,9 +291,14 @@ impl Sheet {
     }
 
     /// Converts a Pos to a MultiPos, checking whether the Pos is a sheet pos or
-    /// a table pos.
+    /// a table pos. Will return a MultiPos::SheetPos for all code tables and
+    /// DataTable anchor cells.
     pub fn convert_to_multi_pos(&self, pos: Pos) -> MultiPos {
         if let Some((table_pos, data_table)) = self.data_table_that_contains(pos) {
+            // if anchor, then return a SheetPos and not a TablePos
+            if data_table.is_code() || table_pos == pos {
+                return MultiPos::SheetPos(pos.to_sheet_pos(self.id));
+            }
             let table_col =
                 data_table.get_display_index_from_column_index((pos.x - table_pos.x) as u32, true);
             let y_adjustment = data_table.y_adjustment(true);
@@ -554,6 +559,21 @@ mod test {
         assert_eq!(
             sheet.convert_to_multi_pos(pos![D6]),
             MultiPos::new_table_pos(sheet_id, 2, 2, 2, 2)
+        );
+
+        // anchor cell of data table
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![B2]),
+            MultiPos::new_sheet_pos(sheet_id, 2, 2)
+        );
+
+        // code table
+        test_create_code_table(&mut gc, sheet_id, pos![E2], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![F3]),
+            MultiPos::new_sheet_pos(sheet_id, 6, 3)
         );
     }
 }

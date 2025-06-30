@@ -688,7 +688,7 @@ mod tests {
 
         gc.test_set_code_run_array_2d(sheet_id, 10, 10, 2, 2, vec!["1", "2", "3", "4"]);
         gc.set_code_cell(
-            pos![sheet_id!J10].into(),
+            pos![sheet_id!J10],
             CodeCellLanguage::Python,
             format!("q.cells('{file_name}')"),
             None,
@@ -702,7 +702,7 @@ mod tests {
         gc.test_set_code_run_array_2d(sheet_id, 20, 20, 2, 2, vec!["1", "2", "3", "4"]);
         let quoted_sheet = crate::a1::quote_sheet_name(gc.sheet_names()[0]);
         gc.set_code_cell(
-            pos![sheet_id!T20].into(),
+            pos![sheet_id!T20],
             CodeCellLanguage::Python,
             format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,

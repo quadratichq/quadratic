@@ -253,6 +253,8 @@ mod tests {
             sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
+        print_first_sheet!(&gc);
+
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
@@ -260,6 +262,8 @@ mod tests {
             None,
             None,
         );
+
+        print_first_sheet!(&gc);
 
         // should be spilled because of the code_cell
         let sheet = gc.sheet(sheet_id);
