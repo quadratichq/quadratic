@@ -261,6 +261,11 @@ export class Control {
     this.restartCore();
   }
 
+  toggleFunctionTimer() {
+    this.cli.options.functionTimer = !this.cli.options.functionTimer;
+    this.restartCore();
+  }
+
   async runCore(restart?: boolean) {
     if (this.quitting) return;
     this.status.core = false;
@@ -278,7 +283,9 @@ export class Control {
         "run",
         this.cli.options.perf
           ? `${this.cli.options.core ? "watch" : "build"}:wasm:perf:javascript`
-          : `${this.cli.options.core ? "watch" : "build"}:wasm:javascript`,
+          : this.cli.options.functionTimer
+            ? `${this.cli.options.core ? "watch" : "build"}:wasm:javascript:function-timer`
+            : `${this.cli.options.core ? "watch" : "build"}:wasm:javascript`,
       ],
       { signal: this.signals.core.signal },
     );
