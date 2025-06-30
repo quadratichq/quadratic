@@ -572,7 +572,6 @@ class Core {
   setCodeCellValue(
     sheetId: string,
     pos: JsCoordinate,
-    tablePos: JsCoordinate | undefined,
     language: CodeCellLanguage,
     codeString: string,
     codeCellName?: string,
@@ -582,15 +581,7 @@ class Core {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
         resolve(
-          this.gridController.setCellCode(
-            sheetId,
-            posToPos(pos.x, pos.y),
-            tablePos ? posToPos(tablePos.x, tablePos.y) : undefined,
-            language,
-            codeString,
-            codeCellName,
-            cursor
-          )
+          this.gridController.setCellCode(sheetId, posToPos(pos.x, pos.y), language, codeString, codeCellName, cursor)
         );
       } catch (e) {
         this.handleCoreError('setCodeCellValue', e);
