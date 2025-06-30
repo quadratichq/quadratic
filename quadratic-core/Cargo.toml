@@ -141,6 +141,11 @@ name = "import_excel"
 harness = false
 required-features = ["function-timer"]
 
+[[bench]]
+name = "import_csv"
+harness = false
+required-features = ["function-timer"]
+
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = ['-Os', '-g'] # TODO: -g seems to fix the name mangling problem
 

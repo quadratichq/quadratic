@@ -17,7 +17,7 @@ const BINCODE_CONFIG: bincode::config::Configuration<
 > = config::standard()
     .with_fixed_int_encoding()
     .with_limit::<MAX_FILE_SIZE>();
-pub const ZSTD_COMPRESSION_LEVEL: i32 = 1;
+pub const ZSTD_COMPRESSION_LEVEL: i32 = 10;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CompressionFormat {
