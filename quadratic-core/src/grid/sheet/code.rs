@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    CellValue, MultiPos, Pos, Rect, Value,
+    CellValue, MultiPos, Pos, Rect, TablePos, Value,
     a1::A1Context,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
@@ -289,6 +289,24 @@ impl Sheet {
             MultiPos::TablePos(table_pos) => table_pos.code_cell(self),
         }
     }
+
+    /// Converts a Pos to a MultiPos, checking whether the Pos is a sheet pos or
+    /// a table pos.
+    pub fn convert_to_multi_pos(&self, pos: Pos) -> MultiPos {
+        if let Some((table_pos, data_table)) = self.data_table_that_contains(pos) {
+            let table_col =
+                data_table.get_display_index_from_column_index((pos.x - table_pos.x) as u32, true);
+            let y_adjustment = data_table.y_adjustment(true);
+            let table_row = data_table
+                .get_row_index_from_display_index((pos.y - y_adjustment - table_pos.y) as u64);
+            MultiPos::TablePos(TablePos::new(
+                table_pos.to_sheet_pos(self.id),
+                Pos::new(table_col as i64, table_row as i64),
+            ))
+        } else {
+            MultiPos::SheetPos(pos.to_sheet_pos(self.id))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -298,6 +316,7 @@ mod test {
         Array, SheetPos, Value,
         controller::GridController,
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
+        test_util::*,
     };
     use std::vec;
 
@@ -391,7 +410,7 @@ mod test {
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{1, 2, 3}".to_string(),
             None,
@@ -514,5 +533,27 @@ mod test {
 
         assert_eq!(sheet.chart_at(pos), Some((pos, &dt)));
         assert_eq!(sheet.chart_at(Pos { x: 2, y: 2 }), Some((pos, &dt)));
+    }
+
+    #[test]
+    fn test_convert_to_multi_pos() {
+        let (mut gc, sheet_id) = test_grid();
+
+        test_create_data_table(&mut gc, sheet_id, Pos { x: 2, y: 2 }, 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![A1]),
+            MultiPos::new_sheet_pos(sheet_id, 1, 1)
+        );
+
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![B4]),
+            MultiPos::new_table_pos(sheet_id, 2, 2, 0, 0)
+        );
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![D6]),
+            MultiPos::new_table_pos(sheet_id, 2, 2, 2, 2)
+        );
     }
 }

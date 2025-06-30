@@ -63,7 +63,6 @@ impl GridController {
         &mut self,
         sheet_id: String,
         pos: String,
-        table_pos: Option<String>,
         language: JsValue,
         code_string: String,
         code_cell_name: Option<String>,
@@ -71,14 +70,9 @@ impl GridController {
     ) -> Option<String> {
         let pos = serde_json::from_str::<Pos>(&pos).ok()?;
         let sheet_id = SheetId::from_str(&sheet_id).ok()?;
+        let sheet_pos = pos.to_sheet_pos(sheet_id);
         let language = serde_wasm_bindgen::from_value(language).ok()?;
-        let multi_pos = if let Some(table_pos) = table_pos {
-            let table_pos = serde_json::from_str::<Pos>(&table_pos).ok()?;
-            MultiPos::new_table_pos(sheet_id, table_pos.x, table_pos.y, pos.x, pos.y)
-        } else {
-            pos.to_multi_pos(sheet_id)
-        };
-        Some(self.set_code_cell(multi_pos, language, code_string, code_cell_name, cursor))
+        Some(self.set_code_cell(sheet_pos, language, code_string, code_cell_name, cursor))
     }
 
     /// Reruns all code cells in grid.

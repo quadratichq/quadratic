@@ -4,6 +4,13 @@ use crate::controller::GridController;
 use crate::grid::{Sheet, SheetId};
 
 #[cfg(test)]
+pub fn test_grid() -> (GridController, SheetId) {
+    let gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+    (gc, sheet_id)
+}
+
+#[cfg(test)]
 pub fn test_create_gc() -> GridController {
     GridController::test()
 }

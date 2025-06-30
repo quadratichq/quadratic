@@ -226,7 +226,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, MultiPos, Pos, SheetPos,
+        CellValue, Pos, SheetPos,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
             operations::operation::Operation,
@@ -244,7 +244,7 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("one".into()));
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Text("two".into()));
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 2, 1),
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -301,7 +301,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
@@ -310,7 +310,7 @@ mod tests {
         expect_js_call_count("jsRunJavascript", 1, true);
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Python,
             "code".to_string(),
             None,

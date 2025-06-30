@@ -207,7 +207,7 @@ mod test {
     use crate::grid::sheet::borders::{BorderSelection, BorderSide, BorderStyle, CellBorderLine};
     use crate::grid::sort::SortDirection;
     use crate::test_util::{assert_code_cell_value, assert_display_cell_value};
-    use crate::{Array, MultiPos, assert_cell_value, print_table_in_rect};
+    use crate::{Array, assert_cell_value, print_table_in_rect};
     use crate::{
         CellValue, Pos, SheetPos, SheetRect,
         controller::GridController,
@@ -229,7 +229,7 @@ mod test {
         y: i64,
     ) {
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, x, y),
+            SheetPos::new(sheet_id, x, y),
             language,
             code.into(),
             None,

@@ -316,7 +316,7 @@ mod tests {
     use crate::grid::js_types::JsHashRenderCells;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::sheet::validations::validation::Validation;
-    use crate::{MultiPos, test_util::*};
+    use crate::{SheetPos, test_util::*};
     use crate::{
         Value,
         a1::A1Selection,
@@ -510,7 +510,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 2),
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,
@@ -592,7 +592,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,

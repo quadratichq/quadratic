@@ -28,7 +28,7 @@ mod tests {
     use crate::grid::js_types::{JsNumber, JsRenderCell, JsRenderCellSpecial};
     use crate::grid::{CellAlign, CellWrap, CodeCellLanguage, CodeRun, DataTable, DataTableKind};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
-    use crate::{Array, CellValue, MultiPos, Pos, Rect, SheetPos, Value};
+    use crate::{Array, CellValue, Pos, Rect, SheetPos, Value};
 
     fn output_spill_error(x: i64, y: i64) -> Vec<JsRenderCell> {
         vec![JsRenderCell {
@@ -69,7 +69,7 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 2, 1),
+            SheetPos::new(sheet_id, 2, 1),
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -103,7 +103,7 @@ mod tests {
 
         // sets code cell that outputs 1,0=1 and 1,1=2
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 2, 1),
+            SheetPos::new(sheet_id, 2, 1),
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -164,7 +164,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -235,7 +235,7 @@ mod tests {
 
         // value to cause the spill
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -254,7 +254,7 @@ mod tests {
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 2),
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "1 + 2".into(),
             None,
@@ -290,7 +290,7 @@ mod tests {
 
         // copies values to copy to 10,10: column: 10-12, rows: 10="1", 11="2", 12="3"
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 11, 11),
+            SheetPos::new(sheet_id, 11, 11),
             CodeCellLanguage::Formula,
             "A1:C3".into(),
             None,
@@ -299,7 +299,7 @@ mod tests {
 
         // output that is spilled column: 11, row: 9 creates a spill (since it's inside the other code_cell)
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 12, 10),
+            SheetPos::new(sheet_id, 12, 10),
             CodeCellLanguage::Formula,
             "A1:A3".into(),
             None,
@@ -374,7 +374,7 @@ mod tests {
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Javascript,
             "".into(),
             None,

@@ -204,7 +204,7 @@ impl Sheet {
 #[cfg(test)]
 mod tests {
     use crate::{
-        MultiPos, Rect, SheetPos,
+        Rect, SheetPos,
         a1::A1Context,
         controller::{
             GridController,
@@ -221,7 +221,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 2),
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Python,
             "<html></html>".to_string(),
             None,

@@ -14,19 +14,16 @@ impl GridController {
     /// Adds operations to compute a CellValue::Code.
     pub fn set_code_cell_operations(
         &self,
-        multi_pos: MultiPos,
+        sheet_pos: SheetPos,
         language: CodeCellLanguage,
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
-        let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) else {
+        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
             return vec![];
         };
 
-        // converted absolute sheet position -- if not available, then nothing more to do here
-        let Some(sheet_pos) = multi_pos.to_sheet_pos(sheet) else {
-            return vec![];
-        };
+        let multi_pos = sheet.convert_to_multi_pos(sheet_pos.into());
 
         let parse_ctx = self.a1_context();
         let code = match language {
@@ -250,7 +247,7 @@ mod test {
         let first = |gc: &mut GridController| {
             let sheet_id = gc.sheet_ids()[0];
             gc.set_code_cell(
-                MultiPos::new_sheet_pos(sheet_id, 1, 1),
+                SheetPos::new(sheet_id, 1, 1),
                 CodeCellLanguage::Formula,
                 "1 + 1".to_string(),
                 None,
@@ -262,7 +259,7 @@ mod test {
         let second = |gc: &mut GridController| {
             let sheet_id = gc.sheet_ids()[0];
             gc.set_code_cell(
-                MultiPos::new_sheet_pos(sheet_id, 2, 2),
+                SheetPos::new(sheet_id, 2, 2),
                 CodeCellLanguage::Formula,
                 "A1".to_string(),
                 None,
@@ -274,7 +271,7 @@ mod test {
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
-                MultiPos::new_sheet_pos(sheet_id_2, 1, 1),
+                SheetPos::new(sheet_id_2, 1, 1),
                 CodeCellLanguage::Formula,
                 format!("'{}1'!A1", SHEET_NAME.to_owned()),
                 None,

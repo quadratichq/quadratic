@@ -224,9 +224,9 @@ pub mod test {
     fn test_display_value_at_html_or_image() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let multi_pos = pos![sheet_id!A1].into();
+        let sheet_pos = pos![sheet_id!A1].into();
         gc.set_code_cell(
-            multi_pos,
+            sheet_pos,
             CodeCellLanguage::Python,
             "code".to_string(),
             None,
@@ -240,12 +240,12 @@ pub mod test {
             ..Default::default()
         })
         .unwrap();
-        gc.set_chart_size(multi_pos.to_sheet_pos_force(), 10, 10, None);
+        gc.set_chart_size(sheet_pos, 10, 10, None);
 
         let sheet = gc.sheet(sheet_id);
 
         assert_eq!(
-            sheet.display_value(multi_pos.into()).unwrap(),
+            sheet.display_value(sheet_pos.into()).unwrap(),
             CellValue::Html("<html></html>".to_string())
         );
 

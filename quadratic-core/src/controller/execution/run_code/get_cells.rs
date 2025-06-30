@@ -201,8 +201,7 @@ impl GridController {
 mod test {
     use super::*;
     use crate::{
-        MultiPos, Pos, Rect, SheetPos, controller::transaction_types::JsCodeResult,
-        grid::CodeCellLanguage,
+        Pos, Rect, SheetPos, controller::transaction_types::JsCodeResult, grid::CodeCellLanguage,
     };
 
     #[test]
@@ -487,7 +486,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 2, 2),
+            SheetPos::new(sheet_id, 2, 2),
             CodeCellLanguage::Javascript,
             "".to_string(),
             None,
@@ -534,7 +533,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -579,7 +578,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 10),
+            SheetPos::new(sheet_id, 1, 10),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -638,7 +637,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 10),
+            SheetPos::new(sheet_id, 1, 10),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -698,7 +697,7 @@ mod test {
         gc.test_set_code_run_array_2d(sheet_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 10),
+            SheetPos::new(sheet_id, 1, 10),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -720,7 +719,7 @@ mod test {
         gc.test_set_code_run_array_2d(sheet1_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet2_id, 1, 1),
+            SheetPos::new(sheet2_id, 1, 1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,

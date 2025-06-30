@@ -159,9 +159,9 @@ mod test {
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 2, 1);
+        let sheet_pos = SheetPos::new(sheet_id, 2, 1);
         gc.set_code_cell(
-            multi_pos,
+            sheet_pos,
             CodeCellLanguage::Formula,
             "A1 + 1".to_string(),
             None,
@@ -175,7 +175,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 3, 1),
+            SheetPos::new(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "B1 + 1".to_string(),
             None,
@@ -228,7 +228,7 @@ mod test {
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 2),
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "A1 + 1".into(),
             None,
@@ -412,7 +412,7 @@ mod test {
 
         // create code that will later have a spill error
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 2, 1),
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "A1:A4".into(),
             None,
@@ -474,10 +474,10 @@ mod test {
     fn test_formula_error() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         let pos: Pos = Pos::new(1, 1);
 
-        gc.set_code_cell(multi_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
+        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(pos),
@@ -491,7 +491,7 @@ mod test {
         assert!(result.code_run().unwrap().std_err.is_some());
 
         gc.set_code_cell(
-            multi_pos,
+            sheet_pos,
             CodeCellLanguage::Formula,
             "{0,1/0;2/0,0}".into(),
             None,

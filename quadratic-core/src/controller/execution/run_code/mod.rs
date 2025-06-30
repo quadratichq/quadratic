@@ -531,6 +531,7 @@ impl GridController {
 mod test {
 
     use super::*;
+    use crate::SheetPos;
     use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
@@ -657,9 +658,9 @@ mod test {
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         gc.set_code_cell(
-            multi_pos,
+            sheet_pos,
             CodeCellLanguage::Javascript,
             "code".to_string(),
             None,
@@ -680,12 +681,12 @@ mod test {
     fn ensure_chart_size_remains_same_if_same_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
 
         let languages = vec![CodeCellLanguage::Javascript, CodeCellLanguage::Python];
 
         for language in languages {
-            gc.set_code_cell(multi_pos, language.clone(), "code".to_string(), None, None);
+            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -696,11 +697,11 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table_at(&multi_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
-            gc.set_code_cell(multi_pos, language, "code".to_string(), None, None);
+            gc.set_code_cell(sheet_pos, language, "code".to_string(), None, None);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -711,7 +712,7 @@ mod test {
             };
             gc.calculation_complete(result).unwrap();
             let sheet = gc.try_sheet(sheet_id).unwrap();
-            let dt = sheet.data_table_at(&multi_pos.into()).unwrap();
+            let dt = sheet.data_table_at(&sheet_pos.into()).unwrap();
             assert_eq!(dt.chart_output, Some((2, 5)));
         }
     }

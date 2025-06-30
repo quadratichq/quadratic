@@ -903,7 +903,7 @@ mod test {
     use crate::grid::{CellWrap, CellsAccessed, CodeCellLanguage, CodeRun, SheetId};
     use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{MultiPos, Rect, Value};
+    use crate::{Rect, Value};
 
     fn paste(gc: &mut GridController, sheet_id: SheetId, x: i64, y: i64, html: String) {
         gc.paste_from_clipboard(
@@ -1123,7 +1123,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 4),
+            SheetPos::new(sheet_id, 1, 4),
             CodeCellLanguage::Formula,
             "SUM(B1:B3)".to_string(),
             None,

@@ -1,5 +1,5 @@
 use crate::{
-    MultiPos, SheetPos,
+    SheetPos,
     a1::A1Selection,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::{CodeCellLanguage, SheetId},
@@ -9,13 +9,13 @@ impl GridController {
     /// Starts a transaction to set a code_cell using user's code_string input
     pub fn set_code_cell(
         &mut self,
-        multi_pos: MultiPos,
+        sheet_pos: SheetPos,
         language: CodeCellLanguage,
         code_string: String,
         code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> String {
-        let ops = self.set_code_cell_operations(multi_pos, language, code_string, code_cell_name);
+        let ops = self.set_code_cell_operations(sheet_pos, language, code_string, code_cell_name);
         self.start_user_transaction(ops, cursor, TransactionName::SetCode)
     }
 

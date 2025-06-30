@@ -50,10 +50,10 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let multi_pos = pos![sheet_id!A1].into();
+        let sheet_pos = pos![sheet_id!A1].into();
         let code = "return 'test';".to_string();
         gc.set_code_cell(
-            multi_pos,
+            sheet_pos,
             CodeCellLanguage::Javascript,
             code.clone(),
             None,
@@ -70,7 +70,7 @@ mod tests {
         .ok();
 
         let sheet = gc.grid.try_sheet_mut(sheet_id).unwrap();
-        let pos = multi_pos.to_pos();
+        let pos = sheet_pos.into();
         let code_cell = sheet.cell_value(pos).unwrap();
         match code_cell {
             CellValue::Code(code_cell) => {

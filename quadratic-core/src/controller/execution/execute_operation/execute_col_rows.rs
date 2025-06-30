@@ -336,14 +336,14 @@ mod tests {
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 16), "1".into(), None);
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 17), "2".into(), None);
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B$16 + $B17".into(),
             None,
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 2),
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "'Sheet 1'!F1+Other!F1 - Nonexistent!F1".into(),
             None,
@@ -649,7 +649,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "C1".into(),
             None,
@@ -699,7 +699,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "A3".into(),
             None,

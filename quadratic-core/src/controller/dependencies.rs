@@ -115,7 +115,7 @@ mod test {
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 2, 1),
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "A1 + 5".to_string(),
             None,

@@ -122,7 +122,7 @@ impl GridController {
 mod tests {
 
     use crate::{
-        MultiPos, Pos, RunError, RunErrorMsg, SheetPos,
+        Pos, RunError, RunErrorMsg, SheetPos,
         constants::SHEET_NAME,
         controller::{
             GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -247,7 +247,7 @@ mod tests {
     fn test_run_connection_sheet_name_error() {
         fn test_error(gc: &mut GridController, code: &str, sheet_id: SheetId) {
             gc.set_code_cell(
-                MultiPos::new_sheet_pos(sheet_id, 10, 10),
+                SheetPos::new(sheet_id, 10, 10),
                 CodeCellLanguage::Connection {
                     kind: ConnectionKind::Postgres,
                     id: "test".to_string(),

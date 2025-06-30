@@ -366,7 +366,7 @@ impl GridController {
 #[cfg(test)]
 mod tests {
     use crate::{
-        CellValue, MultiPos, SheetPos,
+        CellValue, SheetPos,
         controller::{
             GridController, active_transactions::transaction_name::TransactionName,
             operations::operation::Operation, user_actions::import::tests::simple_csv_at,
@@ -602,7 +602,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,

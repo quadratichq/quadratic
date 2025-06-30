@@ -719,7 +719,7 @@ mod tests {
             Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             crate::grid::CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
@@ -1057,21 +1057,21 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 1, 1),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "1".to_string(),
             None,
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 2, 1),
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "2".to_string(),
             None,
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 3, 1),
+            SheetPos::new(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "3".to_string(),
             None,

@@ -81,8 +81,8 @@ mod tests {
 
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::test_util::*;
     use crate::{CellValue, Pos, SheetPos};
-    use crate::{MultiPos, test_util::*};
 
     #[test]
     fn test_set_cell_value() {
@@ -209,7 +209,7 @@ mod tests {
             None,
         );
         gc.set_code_cell(
-            MultiPos::new_sheet_pos(sheet_id, 3, 1),
+            SheetPos::new(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "B1 + 5".to_string(),
             None,
