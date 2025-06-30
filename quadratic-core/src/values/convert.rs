@@ -3,7 +3,7 @@ use itertools::Itertools;
 use rust_decimal::prelude::*;
 
 use super::{CellValue, Duration, IsBlank, Value};
-use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
+use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan, number::round};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
@@ -48,7 +48,7 @@ impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
         match Decimal::try_from(value) {
             Ok(n) => CellValue::Number(if n.scale() > F64_DECIMAL_PRECISION {
-                n.trunc_with_scale(F64_DECIMAL_PRECISION)
+                round(n, F64_DECIMAL_PRECISION as i64 + 1)
             } else {
                 n
             }),
