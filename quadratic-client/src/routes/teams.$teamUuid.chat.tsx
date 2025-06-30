@@ -8,14 +8,11 @@ import {
   AttachFileIcon,
   CloseIcon,
   DatabaseIcon,
-  DraftIcon,
   LightbulbIcon,
-  SearchIcon,
   SpinnerIcon,
 } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { ROUTES } from '@/shared/constants/routes';
-import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -25,8 +22,8 @@ import { Switch } from '@/shared/shadcn/ui/switch';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { useState } from 'react';
-import { Link, useSearchParams } from 'react-router';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router';
 
 export const Component = () => {
   const {
@@ -64,13 +61,30 @@ export const Component = () => {
 
   const disabled = value.length === 0 || loadState !== 'idle';
 
+  // TODO: hacky typewriter effect for the h1
+  const fullText = "Drop any files, ask a question, and I'll help you analyze and visualize your data in a new sheet";
+  const [h1Text, setH1Text] = useState('');
+  useEffect(() => {
+    let currentIndex = 0;
+    const interval = setInterval(() => {
+      if (currentIndex < fullText.length) {
+        setH1Text(fullText.slice(0, currentIndex + 1));
+        currentIndex++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 10);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="flex h-full flex-grow flex-col items-center">
       <div className="flex h-full w-full flex-grow flex-col items-center justify-center gap-4">
-        <div className="flex w-full max-w-sm flex-col items-center gap-4">
+        <div className="flex w-full max-w-md flex-col items-center gap-4">
           <AIIcon className="text-primary" size="xl" />
-          <h1 className="max-w-sm text-center text-base font-medium">
-            Drop your files anywhere, ask a question, and I’ll help you analyze and visualize your data
+          <h1 className="relative text-center text-lg font-medium">
+            <span className="absolute">{h1Text}</span>
+            <span className="invisible">{fullText}</span>
           </h1>
         </div>
         <div className="w-full max-w-lg">
@@ -90,11 +104,10 @@ export const Component = () => {
             </AIPromptControls>
           </AIPromptForm>
         </div>
-        <Examples teamUuid={uuid} isPrivate={isPrivate} />
       </div>
       <div className="mt-auto flex text-sm font-medium">
         <Label className="flex items-center gap-2">
-          <Switch checked={isPrivate} onCheckedChange={setIsPrivate} /> Private to me
+          <Switch checked={isPrivate} onCheckedChange={setIsPrivate} /> Create as a personal file
         </Label>
         {/* <RadioGroup
           className="ml-4 flex gap-4"
@@ -114,48 +127,6 @@ export const Component = () => {
     </div>
   );
 };
-
-function Examples({ teamUuid, isPrivate }: { teamUuid: string; isPrivate: boolean }) {
-  // TODO: how do we want to do this precisely? Pull this from connection details? Or...
-  const dbTo = newNewFileFromStateConnection({
-    isPrivate,
-    teamUuid,
-    query: 'SELECT * FROM "public"."apple_stock_price_1980_2022" LIMIT 100',
-    connectionType: 'POSTGRES',
-    connectionUuid: '00000000-0000-0000-0000-000000000000',
-  });
-  const {
-    activeTeam: {
-      team: { uuid },
-    },
-  } = useDashboardRouteLoaderData();
-  return (
-    <div className="flex w-full flex-wrap justify-center gap-2">
-      <Button variant="outline" size="sm" asChild>
-        <Link
-          to={ROUTES.CREATE_FILE(uuid, {
-            prompt: 'Search the web for the top 10 technology companies by market cap',
-            private: false,
-          })}
-        >
-          <SearchIcon className="mr-1 text-green-600" size="xs" />
-          Top 10 tech companies by market cap
-        </Link>
-      </Button>
-      {/* TODO: only show if the demo connection is available */}
-      <Button variant="outline" size="sm" asChild>
-        <Link to={dbTo}>
-          <DatabaseIcon className="mr-1 text-orange-600" size="xs" />
-          Query Apple’s stock price since 1980
-        </Link>
-      </Button>
-      <Button variant="outline" size="sm" disabled>
-        <DraftIcon className="mr-1 text-red-600" size="xs" />
-        Extract data from Q4 2024 Earnings Release PDF
-      </Button>
-    </div>
-  );
-}
 
 /*
   Consider making this a presentational component, where everything it needs to
@@ -180,7 +151,7 @@ function Examples({ teamUuid, isPrivate }: { teamUuid: string; isPrivate: boolea
 function AIPromptForm({ onSubmit, children }: any) {
   return (
     <form
-      className="w-full rounded border border-border p-2 shadow-sm has-[textarea:focus]:border-primary has-[textarea:focus]:ring-2"
+      className="w-full rounded border border-border bg-accent p-2 shadow-sm has-[textarea:focus]:border-primary has-[textarea:focus]:ring-2"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
@@ -288,7 +259,7 @@ function AIPromptControlThinking() {
       type="button"
       variant="ghost"
       size="sm"
-      className="h-8 rounded-full border-primary bg-accent pl-1.5 pr-2 !text-primary"
+      className="h-8 rounded-full border-primary !bg-border pl-1.5 pr-2 !text-primary"
       onClick={(e) => {
         e.stopPropagation();
         console.log('think', thinking);
@@ -326,7 +297,7 @@ function AIPromptControlConnections() {
         </PopoverTrigger>
       </TooltipPopover>
       <PopoverContent className="w-64 text-xs" side="top" align="start">
-        <p className="font-medium">Chat with your connections, they’re in context!</p>
+        <p className="font-medium">Chat with your connections, they're in context!</p>
         <hr className="my-3" />
         <ul className="flex flex-col gap-2">
           <li className="flex items-center gap-1">

@@ -8,6 +8,7 @@ import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
   ArrowDropDownIcon,
+  ChatIcon,
   CheckIcon,
   DatabaseIcon,
   DraftIcon,
@@ -90,17 +91,21 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           Team
         </Type>
         <div className="grid gap-0.5">
-          <div className="relative">
-            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
-              <DraftIcon className={classNameIcons} />
-              Files
+          <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
+            <DraftIcon className={classNameIcons} />
+            Files
+          </SidebarNavLink>
+          {canEditTeam && (
+            <SidebarNavLink to={ROUTES.TEAM_CHAT(activeTeamUuid, false)}>
+              <ChatIcon className={classNameIcons} />
+              Chat
             </SidebarNavLink>
-            {canEditTeam && (
-              <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
-                New file
-              </SidebarNavLinkCreateButton>
-            )}
-          </div>
+          )}
+          {canEditTeam && (
+            <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
+              New file
+            </SidebarNavLinkCreateButton>
+          )}
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
@@ -311,12 +316,13 @@ function SidebarNavLink({
   const navigation = useNavigation();
   const submit = useSubmit();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const toPathname = new URL(to.startsWith('/') ? window.location.origin + to : to).pathname;
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
-    (to === location.pathname && navigation.state !== 'loading') ||
+    (toPathname === location.pathname && navigation.state !== 'loading') ||
     // We're navigating to this page
-    to === navigation.location?.pathname;
+    toPathname === navigation.location?.pathname;
 
   const isDroppable = dropTarget !== undefined && to !== location.pathname;
   const dropProps = isDroppable
