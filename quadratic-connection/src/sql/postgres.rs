@@ -132,10 +132,7 @@ pub mod tests {
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
     use http::StatusCode;
     use quadratic_rust_shared::{
-        net::ssh::tests::get_ssh_config,
-        sql::postgres_connection::tests::{
-            expected_postgres_arrow_values, expected_postgres_schema,
-        },
+        net::ssh::tests::get_ssh_config, sql::postgres_connection::tests::expected_postgres_schema,
     };
     use tracing_test::traced_test;
     use uuid::Uuid;

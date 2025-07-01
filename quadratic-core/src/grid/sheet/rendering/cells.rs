@@ -735,11 +735,12 @@ mod tests {
             None,
         );
 
+        print_first_sheet(&gc);
+
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(pos![A3]).unwrap(),
             CellValue::Number(2.into())
         );
-        print_first_sheet(&gc);
     }
 }

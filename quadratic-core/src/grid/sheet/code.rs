@@ -118,7 +118,6 @@ impl Sheet {
             (pos.y - data_table_pos.y) as u32,
         );
 
-        dbg!(&cell_value);
         match cell_value.as_ref() {
             Some(CellValue::Code(_)) => {
                 dbg!(&data_table.tables);
