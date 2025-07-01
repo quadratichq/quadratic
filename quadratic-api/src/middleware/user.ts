@@ -94,13 +94,20 @@ export const userOptionalMiddleware = async (req: Request, res: Response, next: 
   const { auth } = req as RequestWithOptionalAuth;
 
   if (auth && auth.sub) {
-    const { user, userCreated } = await getOrCreateUser(auth.sub);
+    const user = await dbClient.user.findUnique({
+      where: {
+        auth0Id: auth.sub,
+      },
+    });
     if (!user) {
       return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
     }
 
     (req as RequestWithUser).user = user;
-    (req as RequestWithUser).userCreated = userCreated === true;
+    // A user will never be created here, because a route where the user is optional
+    // will never result in the user being redirected to the auth service, then
+    // back to that same route (which is what can cause a new user to be created)
+    (req as RequestWithUser).userCreated = false;
   }
 
   next();
