@@ -96,7 +96,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const setModelMode = useCallback(
     (mode: ModelMode) => {
       const nextModel = modelConfigs.find(
-        ([_, modelConfig]) => modelConfig.mode === mode && modelConfig.thinkingToggle === thinkingToggle
+        ([_, modelConfig]) =>
+          modelConfig.mode === mode &&
+          (modelConfig.thinkingToggle === undefined || modelConfig.thinkingToggle === thinkingToggle)
       );
 
       if (nextModel) {
