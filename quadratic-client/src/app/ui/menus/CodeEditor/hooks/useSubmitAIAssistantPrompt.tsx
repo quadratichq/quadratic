@@ -27,13 +27,14 @@ import {
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessage, AIOrigin, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAssistantPromptArgs = {
+  origin: AIOrigin;
   content: Content;
   messageIndex: number;
   codeCell?: CodeCell;
@@ -70,7 +71,7 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, messageIndex, codeCell }: SubmitAIAssistantPromptArgs) => {
+      async ({ origin, content, messageIndex, codeCell }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
@@ -176,6 +177,7 @@ export function useSubmitAIAssistantPrompt() {
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
+              origin: toolCallIterations === 0 ? origin : 'ToolCall',
               source: 'AIAssistant',
               modelKey,
               time: new Date().toString(),

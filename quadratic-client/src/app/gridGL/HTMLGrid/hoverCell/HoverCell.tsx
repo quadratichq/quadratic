@@ -254,6 +254,7 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
               language: codeCellCore.language,
             });
             submitPrompt({
+              origin: 'FixWithAI',
               content: [{ type: 'text', text: 'Fix the error in the code cell' }],
               messageIndex: 0,
               codeCell,

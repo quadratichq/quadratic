@@ -39,6 +39,7 @@ ${JSON.stringify(chatPromptMessages)}
         const abortController = new AbortController();
         const response = await handleAIRequestToAPI({
           chatId: v4(),
+          origin: 'Internal',
           source: 'GetChatName',
           modelKey: DEFAULT_GET_CHAT_NAME_MODEL,
           messages,

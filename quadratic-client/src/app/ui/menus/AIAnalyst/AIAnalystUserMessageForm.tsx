@@ -37,6 +37,7 @@ export const AIAnalystUserMessageForm = memo(
       ({ content }: SubmitPromptArgs) => {
         mixpanel.track('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
         submitPrompt({
+          origin: 'User',
           content,
           context,
           messageIndex: props.messageIndex,

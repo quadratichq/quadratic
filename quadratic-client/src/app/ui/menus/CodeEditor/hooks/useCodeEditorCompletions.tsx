@@ -86,6 +86,7 @@ Never try to insert the following code:
 
       const response = await handleAIRequestToAPI({
         chatId: v4(),
+        origin: 'Internal',
         source: 'CodeEditorCompletions',
         modelKey: DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL,
         messages,

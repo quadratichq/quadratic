@@ -31,7 +31,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   } = req;
 
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, modelKey: clientModelKey, ...args } = body;
+  const { chatId, fileUuid, origin, modelKey: clientModelKey, ...args } = body;
 
   const {
     file: { id: fileId, ownerTeam },
@@ -107,6 +107,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       userId,
       fileId,
       chatId,
+      origin,
       source,
       messages: {
         create: {

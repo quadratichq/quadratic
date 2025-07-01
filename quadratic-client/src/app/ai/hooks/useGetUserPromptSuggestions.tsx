@@ -50,6 +50,7 @@ ${JSON.stringify(chatPromptMessages)}
 
         const response = await handleAIRequestToAPI({
           chatId: v4(),
+          origin: 'Internal',
           source: 'GetUserPromptSuggestions',
           modelKey: DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL,
           messages,

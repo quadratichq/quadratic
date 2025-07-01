@@ -32,7 +32,14 @@ import {
   replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIMessage,
+  AIOrigin,
+  ChatMessage,
+  Content,
+  Context,
+  ToolResultMessage,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -41,6 +48,8 @@ const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAnalystPromptArgs = {
+  chatId?: string;
+  origin: AIOrigin;
   content: Content;
   context: Context;
   messageIndex: number;
@@ -105,7 +114,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
+      async ({ chatId: promptChatId, origin, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -124,7 +133,7 @@ export function useSubmitAIAnalystPrompt() {
         const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         if (messageIndex === 0) {
           set(aiAnalystCurrentChatAtom, {
-            id: v4(),
+            id: promptChatId ?? v4(),
             name: '',
             lastUpdated: Date.now(),
             messages: [],
@@ -134,7 +143,7 @@ export function useSubmitAIAnalystPrompt() {
         else if (messageIndex < currentMessageCount) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
-              id: v4(),
+              id: promptChatId ?? v4(),
               name: '',
               lastUpdated: Date.now(),
               messages: prev.messages.slice(0, messageIndex),
@@ -227,7 +236,7 @@ export function useSubmitAIAnalystPrompt() {
         let lastMessageIndex = -1;
         let chatId = '';
         set(aiAnalystCurrentChatAtom, (prev) => {
-          chatId = prev.id ? prev.id : v4();
+          chatId = prev.id ? prev.id : (promptChatId ?? v4());
           return {
             ...prev,
             id: chatId,
@@ -268,6 +277,7 @@ export function useSubmitAIAnalystPrompt() {
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
+              origin: toolCallIterations === 0 ? origin : 'ToolCall',
               source: 'AIAnalyst',
               modelKey,
               time: new Date().toString(),

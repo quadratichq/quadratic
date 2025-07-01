@@ -437,9 +437,21 @@ const AISourceSchema = z.enum([
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 
+const AIOriginSchema = z.enum([
+  'MarketingSite',
+  'UrlPrompt',
+  'ExamplePrompts',
+  'FixWithAI',
+  'Internal',
+  'ToolCall',
+  'User',
+]);
+export type AIOrigin = z.infer<typeof AIOriginSchema>;
+
 export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
+  origin: AIOriginSchema,
   source: AISourceSchema,
   modelKey: AIModelKeySchema,
   messages: z.array(ChatMessageSchema),
@@ -451,7 +463,7 @@ export const AIRequestBodySchema = z.object({
   time: z.string().optional(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
-export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'modelKey'>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'origin' | 'modelKey'>;
 
 const AIUsageSchema = z.object({
   inputTokens: z.number(),
