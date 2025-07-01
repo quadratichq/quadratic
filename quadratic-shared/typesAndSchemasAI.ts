@@ -441,6 +441,7 @@ export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
   source: AISourceSchema,
+  messageSource: z.string(),
   modelKey: AIModelKeySchema,
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean(),
@@ -451,7 +452,7 @@ export const AIRequestBodySchema = z.object({
   time: z.string().optional(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
-export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'modelKey'>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'messageSource' | 'modelKey'>;
 
 const AIUsageSchema = z.object({
   inputTokens: z.number(),

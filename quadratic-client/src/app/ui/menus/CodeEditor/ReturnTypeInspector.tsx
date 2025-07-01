@@ -62,6 +62,7 @@ export const ReturnTypeInspector = memo(() => {
             language: codeCellRecoil.language,
           });
           submitPrompt({
+            messageSource: 'FixWithAI',
             content: [{ type: 'text', text: 'Fix the error in the code cell' }],
             messageIndex: 0,
             codeCell: codeCellRecoil,
