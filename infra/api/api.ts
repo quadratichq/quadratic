@@ -1,14 +1,13 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+import { databaseUrl } from "../db/db";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import {
   apiAlbSecurityGroup,
   apiEc2SecurityGroup,
-  apiEip1,
-  apiEip2,
   apiPrivateSubnet1,
   apiPrivateSubnet2,
   apiPublicSubnet1,
@@ -47,18 +46,18 @@ const launchTemplate = new aws.ec2.LaunchTemplate("api-lt", {
     name: instanceProfileIAMContainerRegistry.name,
   },
   vpcSecurityGroupIds: [apiEc2SecurityGroup.id],
-  userData: pulumi
-    .all([apiEip1.publicIp, apiEip2.publicIp])
-    .apply(([eip1, eip2]) => {
-      const script = runDockerImageBashScript(
-        apiECRName,
-        dockerImageTag,
-        apiPulumiEscEnvironmentName,
-        {},
-        true,
-      );
-      return Buffer.from(script).toString("base64");
-    }),
+  userData: pulumi.all([databaseUrl]).apply(([dbUrl]) => {
+    const script = runDockerImageBashScript(
+      apiECRName,
+      dockerImageTag,
+      apiPulumiEscEnvironmentName,
+      {
+        DATABASE_URL: dbUrl,
+      },
+      true,
+    );
+    return Buffer.from(script).toString("base64");
+  }),
   tagSpecifications: [
     {
       resourceType: "instance",

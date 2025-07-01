@@ -174,7 +174,7 @@ export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
   },
 );
 
-if (isPreviewEnvironment)
+if (isPreviewEnvironment) {
   new aws.ec2.SecurityGroupRule(`connection-ssh-ingress-rule`, {
     type: "ingress",
     fromPort: 22,
@@ -183,3 +183,4 @@ if (isPreviewEnvironment)
     cidrBlocks: ["0.0.0.0/0"],
     securityGroupId: connectionEc2SecurityGroup.id,
   });
+}

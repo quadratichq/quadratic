@@ -17,11 +17,11 @@ const internetGateway = new aws.ec2.InternetGateway("api-igw", {
 });
 
 // Create Elastic IPs
-export const apiEip1 = new aws.ec2.Eip("api-nat-eip-1", {
+const apiEip1 = new aws.ec2.Eip("api-nat-eip-1", {
   domain: "vpc",
 });
 
-export const apiEip2 = new aws.ec2.Eip("api-nat-eip-2", {
+const apiEip2 = new aws.ec2.Eip("api-nat-eip-2", {
   domain: "vpc",
 });
 
@@ -171,7 +171,7 @@ export const apiEc2SecurityGroup = new aws.ec2.SecurityGroup("api-sg-1", {
   tags: { Name: "api-ec2-security-group" },
 });
 
-if (isPreviewEnvironment)
+if (isPreviewEnvironment) {
   new aws.ec2.SecurityGroupRule(`api-ssh-ingress-rule`, {
     type: "ingress",
     fromPort: 22,
@@ -180,3 +180,4 @@ if (isPreviewEnvironment)
     cidrBlocks: ["0.0.0.0/0"],
     securityGroupId: apiEc2SecurityGroup.id,
   });
+}
