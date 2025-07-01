@@ -222,7 +222,9 @@ export class UrlParamsUser {
     filesFromIframe.dbFiles = [];
 
     // import the files to the grid
-    await this.importDbFilesToGrid(importFiles);
+    await this.importDbFilesToGrid(importFiles).catch((error) => {
+      console.error('Error importing files to grid', error);
+    });
 
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
