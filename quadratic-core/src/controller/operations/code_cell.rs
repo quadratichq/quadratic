@@ -35,14 +35,18 @@ impl GridController {
 
         let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
         if let MultiPos::TablePos(table_pos) = multi_pos {
-            ops.push(Operation::SetDataTableAt {
-                sheet_pos: SheetPos {
-                    x: table_pos.table_sheet_pos.x + table_pos.pos.x,
-                    y: table_pos.table_sheet_pos.y + table_pos.pos.y,
-                    sheet_id: table_pos.table_sheet_pos.sheet_id,
-                },
-                values,
-            });
+            if let Some(data_table) = sheet.data_table_at(&table_pos.table_sheet_pos.into()) {
+                ops.push(Operation::SetDataTableAt {
+                    sheet_pos: SheetPos {
+                        x: table_pos.table_sheet_pos.x + table_pos.pos.x,
+                        y: table_pos.table_sheet_pos.y
+                            + table_pos.pos.y
+                            + data_table.y_adjustment(true),
+                        sheet_id: table_pos.table_sheet_pos.sheet_id,
+                    },
+                    values,
+                });
+            }
         } else {
             ops.push(Operation::SetCellValues { sheet_pos, values });
         }

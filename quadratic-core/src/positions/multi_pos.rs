@@ -49,7 +49,7 @@ impl MultiPos {
     pub fn to_sheet_pos(&self, sheet: &Sheet) -> Option<SheetPos> {
         match self {
             MultiPos::SheetPos(sheet_pos) => Some(*sheet_pos),
-            MultiPos::TablePos(table_pos) => table_pos.to_sheet_pos(sheet),
+            MultiPos::TablePos(table_pos) => sheet.table_pos_to_sheet_pos(*table_pos),
         }
     }
 
@@ -75,7 +75,9 @@ impl MultiPos {
     pub fn translate_pos(&self, sheet: &Sheet) -> Option<Pos> {
         match self {
             MultiPos::SheetPos(sheet_pos) => Some((*sheet_pos).into()),
-            MultiPos::TablePos(table_pos) => table_pos.translate_pos(sheet),
+            MultiPos::TablePos(table_pos) => {
+                sheet.table_pos_to_sheet_pos(*table_pos).map(Into::into)
+            }
         }
     }
 

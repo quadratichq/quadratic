@@ -180,22 +180,17 @@ impl GridController {
 
             let Some(pos) = (match multi_pos {
                 MultiPos::SheetPos(sheet_pos) => Some(sheet_pos.into()),
-                MultiPos::TablePos(table_pos) => table_pos.translate_pos(sheet),
+                MultiPos::TablePos(table_pos) => sheet.table_pos_to_sheet_pos(table_pos),
             }) else {
                 return;
             };
 
             match &code_cell.language {
                 CodeCellLanguage::Python => {
-                    self.run_python(transaction, multi_pos, code_cell.code.clone(), pos);
+                    self.run_python(transaction, multi_pos, code_cell.code.clone(), pos.into());
                 }
                 CodeCellLanguage::Formula => {
-                    self.run_formula(
-                        transaction,
-                        multi_pos,
-                        code_cell.code.clone(),
-                        pos.to_sheet_pos(multi_pos.sheet_id()),
-                    );
+                    self.run_formula(transaction, multi_pos, code_cell.code.clone(), pos);
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     // we currently only support connections on sheet positions
@@ -210,12 +205,7 @@ impl GridController {
                     }
                 }
                 CodeCellLanguage::Javascript => {
-                    self.run_javascript(
-                        transaction,
-                        multi_pos,
-                        code_cell.code.clone(),
-                        pos.to_sheet_pos(multi_pos.sheet_id()),
-                    );
+                    self.run_javascript(transaction, multi_pos, code_cell.code.clone(), pos);
                 }
                 CodeCellLanguage::Import => (), // no-op
             }

@@ -113,10 +113,30 @@ impl Sheet {
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
-        data_table.cell_value_at(
+        let cell_value = data_table.cell_value_at(
             (pos.x - data_table_pos.x) as u32,
             (pos.y - data_table_pos.y) as u32,
-        )
+        );
+
+        dbg!(&cell_value);
+        match cell_value.as_ref() {
+            Some(CellValue::Code(_)) => {
+                dbg!(&data_table.tables);
+                if let Some(tables) = &data_table.tables {
+                    if let Some((inner_code_pos, inner_data_table)) = tables
+                        .get_contains((pos.x - data_table_pos.x, pos.y - data_table_pos.y).into())
+                    {
+                        return inner_data_table.cell_value_at(
+                            (pos.x - inner_code_pos.x) as u32,
+                            (pos.y - inner_code_pos.y) as u32,
+                        );
+                    }
+                }
+                None
+            }
+            Some(cell_value) => Some(cell_value.clone()),
+            None => None,
+        }
     }
 
     /// TODO(ddimaria): move to DataTable code
@@ -286,7 +306,7 @@ impl Sheet {
                     None
                 }
             }
-            MultiPos::TablePos(table_pos) => table_pos.code_cell(self),
+            MultiPos::TablePos(table_pos) => self.table_pos_code_value(table_pos),
         }
     }
 

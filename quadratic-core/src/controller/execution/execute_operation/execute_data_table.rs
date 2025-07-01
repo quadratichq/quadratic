@@ -251,7 +251,7 @@ impl GridController {
                     )
                 }
                 MultiPos::TablePos(table_pos) => {
-                    if let Some(sheet_pos) = table_pos.to_sheet_pos(sheet) {
+                    if let Some(sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos) {
                         if transaction.is_user_undo_redo() {
                             transaction.add_update_selection(A1Selection::table(
                                 sheet_pos,
@@ -270,10 +270,22 @@ impl GridController {
                                     table_pos.pos.y as u32,
                                     cell_value.to_owned(),
                                 );
+
                                 reverse_operations.push(Operation::SetDataTableAt {
                                     sheet_pos,
                                     values: old_value.unwrap_or(CellValue::Blank).into(),
                                 });
+
+                                let tables = if let Some(tables) = table.tables.as_mut() {
+                                    tables
+                                } else {
+                                    table.tables = Some(Default::default());
+                                    table.tables.as_mut().unwrap()
+                                };
+                                let (_index, _, _dirty_rects) =
+                                    tables.insert_full(&table_pos.pos, data_table.to_owned());
+
+                                // the reverse_operation below takes care of removing this code_table
                                 Ok(())
                             },
                         );

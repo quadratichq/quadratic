@@ -42,6 +42,7 @@ pub mod search;
 #[cfg(test)]
 pub mod sheet_test;
 pub mod summarize;
+mod table_pos;
 pub mod validations;
 
 const SHEET_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
