@@ -158,33 +158,6 @@
       "Sid": "VisualEditor4",
       "Effect": "Allow",
       "Action": [
-        "elasticloadbalancing:CreateLoadBalancer",
-        "elasticloadbalancing:DescribeTarget*",
-        "elasticloadbalancing:DescribeTags",
-        "elasticloadbalancing:RegisterTargets",
-        "elasticloadbalancing:CreateTargetGroup",
-        "elasticloadbalancing:DeregisterTargets",
-        "elasticloadbalancing:DeleteTargetGroup",
-        "elasticloadbalancing:DeleteLoadBalancer",
-        "elasticloadbalancing:DescribeLoadBalancerAttributes",
-        "elasticloadbalancing:SetWebAcl",
-        "elasticloadbalancing:DescribeLoadBalancers",
-        "elasticloadbalancing:RemoveTags",
-        "elasticloadbalancing:CreateListener",
-        "elasticloadbalancing:DescribeListeners",
-        "elasticloadbalancing:AddTags",
-        "elasticloadbalancing:SetSecurityGroups",
-        "elasticloadbalancing:ModifyLoadBalancerAttributes",
-        "elasticloadbalancing:ModifyTargetGroupAttributes",
-        "elasticloadbalancing:ModifyTargetGroup",
-        "elasticloadbalancing:DeleteListener"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Sid": "VisualEditor5",
-      "Effect": "Allow",
-      "Action": [
         "iam:CreateInstanceProfile",
         "iam:ListRoleTags",
         "iam:Tag*",
@@ -216,7 +189,7 @@
       "Resource": "*"
     },
     {
-      "Sid": "VisualEditor6",
+      "Sid": "VisualEditor5",
       "Effect": "Allow",
       "Action": [
         "sts:TagSession",
