@@ -38,7 +38,7 @@ export function AIAnalystExamplePrompts() {
           onClick={() => {
             mixpanel.track('[AIAnalyst].submitExamplePrompt', { title });
             submitPrompt({
-              origin: 'ExamplePrompts',
+              messageSource: 'ExamplePrompts',
               content: [{ type: 'text', text: prompt }],
               context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
               messageIndex: 0,

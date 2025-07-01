@@ -254,7 +254,6 @@ model AnalyticsAIChat {
     fileId      Int                      @map("file_id")
     file        File                     @relation(fields: [fileId], references: [id])
     chatId      String                   @unique @map("chat_id")
-    origin      AIChatOrigin?
     source      AIChatSource
     messages    AnalyticsAIChatMessage[]
     createdDate DateTime                 @default(now()) @map("created_date")
@@ -266,16 +265,6 @@ model AnalyticsAIChat {
     @@index([source])
     @@index([createdDate])
     @@index([userId, source, createdDate])
-}
-
-enum AIChatOrigin {
-    MarketingSite  @map("marketing_site")
-    UrlPrompt      @map("url_prompt")
-    ExamplePrompts @map("example_prompts")
-    FixWithAI      @map("fix_with_ai")
-    Internal       @map("internal")
-    ToolCall       @map("tool_call")
-    User           @map("user")
 }
 
 enum AIChatSource {
@@ -303,6 +292,7 @@ model AnalyticsAIChatMessage {
     model            String
     messageIndex     Int                @map("message_index")
     messageType      AIChatMessageType? @map("message_type")
+    source           String?
     s3Key            String?            @map("s3_key")
     like             Boolean?
     undo             Boolean?

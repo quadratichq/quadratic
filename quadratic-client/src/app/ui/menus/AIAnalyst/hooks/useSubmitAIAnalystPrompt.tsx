@@ -32,14 +32,7 @@ import {
   replaceOldGetToolCallResults,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type {
-  AIMessage,
-  AIOrigin,
-  ChatMessage,
-  Content,
-  Context,
-  ToolResultMessage,
-} from 'quadratic-shared/typesAndSchemasAI';
+import type { AIMessage, ChatMessage, Content, Context, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -49,7 +42,7 @@ const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAnalystPromptArgs = {
   chatId?: string;
-  origin: AIOrigin;
+  messageSource: string;
   content: Content;
   context: Context;
   messageIndex: number;
@@ -114,7 +107,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ chatId: promptChatId, origin, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
+      async ({ chatId: promptChatId, messageSource, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -248,6 +241,8 @@ export function useSubmitAIAnalystPrompt() {
           // Handle tool calls
           let toolCallIterations = 0;
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+            toolCallIterations++;
+
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
 
@@ -277,8 +272,8 @@ export function useSubmitAIAnalystPrompt() {
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
-              origin: toolCallIterations === 0 ? origin : 'ToolCall',
               source: 'AIAnalyst',
+              messageSource,
               modelKey,
               time: new Date().toString(),
               messages: messagesWithContext,
@@ -303,7 +298,7 @@ export function useSubmitAIAnalystPrompt() {
               break;
             }
 
-            toolCallIterations++;
+            messageSource = response.toolCalls.map((toolCall) => toolCall.name).join(', ');
 
             // Message containing tool call results
             const toolResultMessage: ToolResultMessage = {

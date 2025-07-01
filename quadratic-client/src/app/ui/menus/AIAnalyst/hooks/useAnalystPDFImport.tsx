@@ -106,8 +106,8 @@ How can I help you?`,
           const chatId = v4();
           const response = await handleAIRequestToAPI({
             chatId,
-            origin: 'ToolCall',
             source: 'PDFImport',
+            messageSource: 'PDFImport',
             modelKey: DEFAULT_PDF_IMPORT_MODEL,
             messages: messagesWithContext,
             useStream: true,

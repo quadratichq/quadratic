@@ -343,7 +343,7 @@ const PromptSuggestions = memo(() => {
           className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
           onClick={() =>
             submitPrompt({
-              origin: 'User',
+              messageSource: 'User',
               content: [
                 {
                   type: 'text',

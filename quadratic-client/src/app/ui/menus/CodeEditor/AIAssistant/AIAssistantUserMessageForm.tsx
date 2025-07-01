@@ -26,7 +26,7 @@ export const AIAssistantUserMessageForm = memo(
       ({ content }: SubmitPromptArgs) => {
         mixpanel.track('[AIAssistant].submitPrompt');
         submitPrompt({
-          origin: 'User',
+          messageSource: 'User',
           content,
           messageIndex: props.messageIndex,
         });
