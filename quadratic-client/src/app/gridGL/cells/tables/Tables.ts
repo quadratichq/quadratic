@@ -171,6 +171,17 @@ export class Tables extends Container<Table> {
 
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
+    // Sort so that None render cells come first, then Some render cells
+    updateCodeCells.sort((a, b) => {
+      if (a.render_code_cell && !b.render_code_cell) {
+        return -1;
+      }
+      if (!a.render_code_cell && b.render_code_cell) {
+        return 1;
+      }
+      return 0;
+    });
+
     for (const updateCodeCell of updateCodeCells) {
       if (updateCodeCell.sheet_id.id !== this.cellsSheet.sheetId) {
         continue;
