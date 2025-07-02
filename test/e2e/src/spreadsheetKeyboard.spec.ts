@@ -10,7 +10,7 @@ test('Keyboard Navigation', async ({ page }) => {
   const fileType = 'grid';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_keyboard_movement` });
+  await logIn(page, { emailPrefix: `e2e_keyboard_navigation` });
 
   // Create a new team
   // const teamName = `Cell Formatting - ${Date.now()}`;
@@ -164,7 +164,7 @@ test('Keyboard Selection', async ({ page }) => {
   const fileType = 'grid';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_keyboard_movement` });
+  await logIn(page, { emailPrefix: `e2e_keyboard_selection` });
 
   // Create a new team
   // const teamName = `Keyboard selection - ${Date.now()}`;

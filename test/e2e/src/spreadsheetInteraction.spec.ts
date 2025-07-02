@@ -66,7 +66,7 @@ test('Appearance Customization', async ({ page }) => {
 
   // Page reload and assert dark mode colors are persisting
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await page.waitForLoadState(`domcontentloaded`);
 
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toContain(darkClassName);
@@ -117,7 +117,7 @@ test('Appearance Customization', async ({ page }) => {
 
   // Page reload and assert light mode colors are persisting
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await page.waitForLoadState(`domcontentloaded`);
 
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toBeNull(); // no classes including dark is applied
@@ -1424,6 +1424,9 @@ test('File - Clear Recent History', async ({ page }) => {
 
   // Click the Clear button
   await page.getByRole(`menuitem`, { name: 'Clear', exact: true }).click({ timeout: 30 * 1000 });
+
+  // Wait for clear to complete
+  await page.waitForTimeout(10 * 1000);
 
   // Click File in the menu bar
   await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 30 * 1000 });
@@ -4317,7 +4320,7 @@ test('Theme Customization', async ({ page }) => {
     // Navigate to the 'Members' page and assert page
     await page.getByRole(`link`, { name: `group Members` }).click({ timeout: 30 * 1000 });
     await page.waitForTimeout(10 * 1000);
-    await page.waitForLoadState(`networkidle`);
+    await page.waitForLoadState(`domcontentloaded`);
     await expect(page).toHaveTitle(/Team members - Quadratic/);
     await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible();
     await expect(page.getByText(`${email} (You)`)).toBeVisible();
@@ -4527,7 +4530,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
 
   // ** Page reload and assert dark mode colors are persisting **
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await page.waitForLoadState(`domcontentloaded`);
 
   // Close AI chat
   await page
@@ -4607,7 +4610,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
 
   // ** Page reload and assert light mode colors are persisting **
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await page.waitForLoadState(`domcontentloaded`);
 
   // Close AI chat
   await page
