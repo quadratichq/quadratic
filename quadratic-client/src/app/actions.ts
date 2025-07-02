@@ -115,17 +115,17 @@ export const provideFeedbackAction = {
 };
 
 export const rerunCellAction = {
-  label: 'Run this code cell',
-  isAvailable: isAvailableBecauseCanEditFile,
-};
-
-export const rerunAction = {
-  label: 'Run all code cells in the file',
+  label: 'Run selected code',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 
 export const rerunSheetAction = {
-  label: 'Run all code cells in the current sheet',
+  label: 'Run all code in sheet',
+  isAvailable: isAvailableBecauseCanEditFile,
+};
+
+export const rerunAllAction = {
+  label: 'Run all code in file',
   isAvailable: isAvailableBecauseCanEditFile,
 };
 

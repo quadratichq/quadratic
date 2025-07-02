@@ -2,14 +2,14 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 18;
+export const DEFAULT_MODEL_VERSION = 19;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL_PRO: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
-export const DEFAULT_MODEL_FREE: AIModelKey = 'vertexai:gemini-2.5-pro:thinking-toggle-off';
+export const DEFAULT_MODEL_FREE: AIModelKey = 'vertexai:gemini-2.5-pro:thinking';
 
 export const DEFAULT_SQL_MODEL: AIModelKey =
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
@@ -42,6 +42,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'pro',
     provider: 'quadratic',
     promptCaching: false,
+    thinking: false,
     thinkingToggle: false,
     ...AI_RATES.gemini_2_0_flash_rate,
   },
@@ -95,7 +96,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'basic',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
@@ -110,11 +111,25 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'basic',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
     thinkingToggle: true,
+    thinkingBudget: 32768,
+    ...AI_RATES.gemini_2_5_pro_rate,
+  },
+  'vertexai:gemini-2.5-pro:thinking': {
+    model: 'gemini-2.5-pro',
+    displayName: 'gemini 2.5 pro',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'basic',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: true,
     thinkingBudget: 32768,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
@@ -157,6 +172,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
+    thinking: false,
     ...AI_RATES.gemini_2_0_flash_rate,
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {
@@ -211,6 +227,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: false,
+    thinking: false,
     thinkingToggle: false,
     ...AI_RATES.claude_sonnet_3_5_20250514_rate,
   },
@@ -238,6 +255,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'bedrock-anthropic',
     promptCaching: true,
+    thinking: false,
     thinkingToggle: false,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
@@ -265,6 +283,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'bedrock',
     promptCaching: false,
+    thinking: false,
     rate_per_million_input_tokens: 1.35,
     rate_per_million_output_tokens: 5.4,
     rate_per_million_cache_read_tokens: 0,
@@ -308,6 +327,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'anthropic',
     promptCaching: true,
+    thinking: false,
     thinkingToggle: false,
     ...AI_RATES.claude_sonnet_3_5_20250514_rate,
   },

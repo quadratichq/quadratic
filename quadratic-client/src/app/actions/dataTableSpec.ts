@@ -1,3 +1,4 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { ContextMenuType } from '@/app/atoms/contextMenuAtom';
@@ -470,23 +471,27 @@ export const dataTableSpec: DataTableSpec = {
   [Action.FlattenTable]: {
     label: () => 'Flatten',
     Icon: FlattenTableIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: flattenDataTable,
   },
   [Action.GridToDataTable]: {
     label: () => 'Convert to table',
     Icon: TableConvertIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: gridToDataTable,
   },
   [Action.ToggleFirstRowAsHeaderTable]: {
     label: () => 'Use first row as column names',
     checkbox: isFirstRowHeader,
-    isAvailable: () => !isCodeCell('Python') && !isCodeCell('Formula'),
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isCodeCell('Python') && !isCodeCell('Formula'),
     run: toggleFirstRowAsHeader,
   },
   [Action.RenameTable]: {
     label: () => 'Rename',
     Icon: FileRenameIcon,
-    isAvailable: () => {
+    isAvailable: (args) => {
+      if (!isAvailableBecauseCanEditFile(args)) return false;
+
       const table = getTable();
       return !!table?.show_name;
     },
@@ -495,21 +500,25 @@ export const dataTableSpec: DataTableSpec = {
   [Action.DeleteDataTable]: {
     label: () => 'Delete',
     Icon: DeleteIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: deleteDataTable,
   },
   [Action.CodeToDataTable]: {
     label: () => 'Convert to table',
     Icon: TableIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: codeToDataTable,
   },
   [Action.SortTable]: {
     label: () => 'Sort',
     Icon: SortIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: sortDataTable,
   },
   [Action.ToggleTableAlternatingColors]: {
     label: () => 'Show alternating colors',
     checkbox: isAlternatingColorsShowing,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: toggleTableAlternatingColors,
   },
   [Action.RenameTableColumn]: {
@@ -517,30 +526,33 @@ export const dataTableSpec: DataTableSpec = {
     labelVerbose: 'Rename column',
     defaultOption: true,
     Icon: FileRenameIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: renameTableColumn,
   },
   [Action.SortTableColumnAscending]: {
     label: () => 'Sort ascending',
     labelVerbose: 'Sort column ascending',
     Icon: SortAscendingIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: sortTableColumnAscending,
   },
   [Action.SortTableColumnDescending]: {
     label: () => 'Sort descending',
     labelVerbose: 'Sort column descending',
     Icon: SortDescendingIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: sortTableColumnDescending,
   },
   [Action.InsertTableColumnLeft]: {
     label: () => 'Insert table column left',
     Icon: AddColumnLeftIcon,
-    isAvailable: () => !isReadOnly() && isWithinTable(),
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(0),
   },
   [Action.InsertTableColumnRight]: {
     label: () => 'Insert table column right',
     Icon: AddColumnRightIcon,
-    isAvailable: () => !isReadOnly() && isWithinTable(),
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isReadOnly() && isWithinTable(),
     run: () => insertTableColumn(1),
   },
   [Action.RemoveTableColumn]: {
@@ -552,9 +564,12 @@ export const dataTableSpec: DataTableSpec = {
       return `Delete ${length} table column${plural}`;
     },
     Icon: DeleteIcon,
-    isAvailable: () => {
+    isAvailable: (args) => {
+      if (!isAvailableBecauseCanEditFile(args)) return false;
+
       const length = sheets.sheet.cursor.getSelectedTableColumnsCount();
       if (length === 0) return false;
+
       return !isReadOnly() && isWithinTable();
     },
     run: () => removeTableColumn(true),
@@ -563,8 +578,8 @@ export const dataTableSpec: DataTableSpec = {
     label: () => 'Hide',
     labelVerbose: 'Hide column',
     Icon: HideIcon,
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isCodeCell('Formula') && !isCodeCell('Python'),
     run: hideTableColumn,
-    isAvailable: () => !isCodeCell('Formula') && !isCodeCell('Python'),
   },
   [Action.ShowAllColumns]: {
     label: () => {
@@ -582,8 +597,9 @@ export const dataTableSpec: DataTableSpec = {
       return `Reveal ${hiddenColumns} hidden column${hiddenColumns > 1 ? 's' : ''}`;
     },
     Icon: ShowIcon,
-    run: showAllTableColumns,
-    isAvailable: () => {
+    isAvailable: (args) => {
+      if (!isAvailableBecauseCanEditFile(args)) return false;
+
       if (isCodeCell('Formula') || isCodeCell('Python')) {
         return false;
       }
@@ -596,17 +612,18 @@ export const dataTableSpec: DataTableSpec = {
 
       return true;
     },
+    run: showAllTableColumns,
   },
   [Action.InsertTableRowAbove]: {
     label: () => 'Insert table row above',
     Icon: AddRowAboveIcon,
-    isAvailable: () => !isReadOnly() && isWithinTable(),
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(0),
   },
   [Action.InsertTableRowBelow]: {
     label: () => 'Insert table row below',
     Icon: AddRowBelowIcon,
-    isAvailable: () => !isReadOnly() && isWithinTable(),
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isReadOnly() && isWithinTable(),
     run: () => insertTableRow(1),
   },
   [Action.RemoveTableRow]: {
@@ -616,24 +633,26 @@ export const dataTableSpec: DataTableSpec = {
       return `Delete ${length} table row${plural}`;
     },
     Icon: DeleteIcon,
-    isAvailable: () => !isReadOnly() && isWithinTable(),
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isReadOnly() && isWithinTable(),
     run: () => removeTableRow(true),
   },
   [Action.EditTableCode]: {
     defaultOption: true,
     label: () => 'Open code editor',
     Icon: EditIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
     run: editTableCode,
   },
   [Action.ToggleTableColumns]: {
     label: () => 'Show column names',
-    isAvailable: () => !isCodeCell('Python') && !isCodeCell('Formula'),
+    isAvailable: (args) => isAvailableBecauseCanEditFile(args) && !isCodeCell('Python') && !isCodeCell('Formula'),
     checkbox: isTableColumnsShowing,
     run: toggleTableColumns,
   },
   [Action.ToggleTableName]: {
     label: () => 'Show name',
-    isAvailable: () => isCodeCell('Python') || isCodeCell('Javascript') || !isSingleCell(),
+    isAvailable: (args) =>
+      isAvailableBecauseCanEditFile(args) && (isCodeCell('Python') || isCodeCell('Javascript') || !isSingleCell()),
     labelVerbose: 'Show table name',
     checkbox: isTableNameShowing,
     run: toggleTableName,
