@@ -1,6 +1,8 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -32,19 +34,35 @@ export const rerunAllCode = () => {
 export const codeActionsSpec: CodeActionSpec = {
   [Action.CancelExecution]: {
     label: () => 'Cancel execution',
-    run: cancelExecution,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      cancelExecution();
+    },
   },
   [Action.ExecuteCode]: {
-    label: () => 'Run code cells',
+    label: () => 'Run code',
     Icon: SaveAndRunIcon,
-    run: executeCode,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      executeCode();
+    },
   },
   [Action.RerunSheetCode]: {
     label: () => 'Run sheet code',
-    run: rerunSheetCode,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      rerunSheetCode();
+    },
   },
   [Action.RerunAllCode]: {
     label: () => 'Run all code',
-    run: rerunAllCode,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      rerunAllCode();
+    },
   },
 };

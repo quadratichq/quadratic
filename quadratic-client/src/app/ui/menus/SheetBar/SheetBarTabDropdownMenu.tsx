@@ -100,7 +100,9 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         >
           Rename
         </DropdownMenuItem>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuItem
           disabled={sheets.getFirst().id === sheets.current}
           onClick={() => {

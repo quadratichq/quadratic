@@ -46,8 +46,8 @@ test('API Calls', async ({ page }) => {
   // Click search icon
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-  // Search for 'run all code cells in the current sheet'
-  await page.keyboard.type('run all code cells in the current sheet');
+  // Search for 'run all code in sheet'
+  await page.keyboard.type('run all code in sheet');
 
   // Select option
   await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -192,8 +192,8 @@ test('Charts', async ({ page }) => {
   // Click search icon
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-  // Search for 'run all code cells in the current sheet'
-  await page.keyboard.type('run all code cells in the current sheet');
+  // Search for 'run all code in sheet'
+  await page.keyboard.type('run all code in sheet');
 
   // Select option
   await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -382,8 +382,8 @@ test('Formatting', async ({ page }) => {
   // Click search icon
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-  // Search for 'run all code cells in the current sheet'
-  await page.keyboard.type('run all code cells in the current sheet');
+  // Search for 'run all code in sheet'
+  await page.keyboard.type('run all code in sheet');
 
   // Select option
   await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -437,8 +437,8 @@ test('Formulas', async ({ page }) => {
   // Click search icon
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-  // Search for 'run all code cells in the current sheet'
-  await page.keyboard.type('run all code cells in the current sheet');
+  // Search for 'run all code in sheet'
+  await page.keyboard.type('run all code in sheet');
 
   // Select option
   await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -574,14 +574,14 @@ test('Javascript Formulas', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Loop to run 5 times, fail the test if even one screenshot assertion fails
-  // This is added due the flakiness of run all code cells in the current sheet, Quadratic is aware of this issue.
+  // This is added due the flakiness of run all code in sheet, Quadratic is aware of this issue.
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       // Click search icon
       await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-      // Search for 'run all code cells in the current sheet'
-      await page.keyboard.type('run all code cells in the current sheet');
+      // Search for 'run all code in sheet'
+      await page.keyboard.type('run all code in sheet');
 
       // Select option
       await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -811,7 +811,7 @@ test('Read JavaScript Output within Formula', async ({ page }) => {
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
   // Fill the search field
-  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code cells in the current sheet`);
+  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code in sheet`);
 
   // Press "Enter" to choose the option
   await page.keyboard.press('Enter');
@@ -879,7 +879,7 @@ test('Read Python Output within Formula', async ({ page }) => {
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
   // Fill the search field
-  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code cells in the current sheet`);
+  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code in sheet`);
 
   // Press "Enter" to choose the option
   await page.keyboard.press('Enter');
@@ -949,14 +949,14 @@ test('References', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-references-pre.png');
 
   // Loop to run 5 times, fail the test if even one screenshot assertion fails
-  // This is added due the flakiness of run all code cells in the current sheet, Quadratic is aware of this issue.
+  // This is added due the flakiness of run all code in sheet, Quadratic is aware of this issue.
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       // Click search icon
       await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-      // Search for 'run all code cells in the current sheet'
-      await page.keyboard.type('run all code cells in the current sheet');
+      // Search for 'run all code in sheet'
+      await page.keyboard.type('run all code in sheet');
 
       // Select option
       await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -1023,8 +1023,8 @@ test('Spills', async ({ page }) => {
   // Click search icon
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-  // Search for 'run all code cells in the current sheet'
-  await page.keyboard.type('run all code cells in the current sheet');
+  // Search for 'run all code in sheet'
+  await page.keyboard.type('run all code in sheet');
 
   // Select option
   await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -1988,13 +1988,13 @@ test('Types: Numbers and Strings', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-numbers-strings-pre.png');
 
   // Loop to run 5 times, fail the test if even one screenshot assertion fails
-  // This is added due the flakiness of run all code cells in the current sheet, Quadratic is aware of this issue.
+  // This is added due the flakiness of run all code in sheet, Quadratic is aware of this issue.
   for (let attempt = 1; attempt <= 5; attempt++) {
     // Click search icon
     await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-    // Search for 'run all code cells in the current sheet'
-    await page.keyboard.type('run all code cells in the current sheet');
+    // Search for 'run all code in sheet'
+    await page.keyboard.type('run all code in sheet');
 
     // Select option
     await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -2062,13 +2062,11 @@ test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
       // Click search icon
       await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-      // Search for 'run all code cells in the current sheet'
-      await page.keyboard.type('run all code cells in the current sheet');
+      // Search for 'run all code in sheet'
+      await page.keyboard.type('run all code in sheet');
 
       // Select option
-      await page
-        .locator(`[role="option"]:has-text("run all code cells in the current sheet")`)
-        .click({ delay: 1000, force: true });
+      await page.locator(`[role="option"]:has-text("run all code in sheet")`).click({ delay: 1000, force: true });
       await page.waitForTimeout(5000);
 
       //--------------------------------
@@ -2150,8 +2148,8 @@ test('Types: Series and Data-Frames', async ({ page }) => {
   // Click search icon
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
-  // Search for 'run all code cells in the current sheet'
-  await page.keyboard.type('run all code cells in the current sheet');
+  // Search for 'run all code in sheet'
+  await page.keyboard.type('run all code in sheet');
 
   // Select option
   await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
