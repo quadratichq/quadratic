@@ -185,12 +185,12 @@ export const ReturnTypeInspector = memo(() => {
     >
       <span style={{ transform: 'scaleX(-1)', display: 'inline-block', fontSize: '10px' }}>⮐</span>
 
-      <span className="leading-snug">
+      <span className="leading-tight">
         {message}
         {lastModified && <span> {lastModified}</span>}
       </span>
 
-      {action && <span className="ml-auto font-sans">{action}</span>}
+      {action && <span className="ml-auto flex-shrink-0 font-sans">{action}</span>}
     </div>
   );
 });
