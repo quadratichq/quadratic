@@ -8,17 +8,21 @@ export function GridContextMenuCodeTableCell() {
 
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.Cut} />
-      <ContextMenuItemAction action={Action.Copy} />
-      <ContextMenuItemAction action={Action.Paste} />
-      <ContextMenuItemAction action={Action.PasteValuesOnly} />
-      <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
-      <ContextMenuItemAction action={Action.DownloadAsCsv} />
+      <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.EditTableCode} />
-      <ContextMenuItemAction action={Action.HideTableColumn} labelOverride={'Hide column'} />
+
+      <ContextMenuItemAction action={Action.EditTableCode} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.HideTableColumn} labelOverride={'Hide column'} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
+
       {/* TODO:(ddimaria) wire this up to show appropriately nested menu for code tables */}
       <ContextMenuCodeTableNested isShowingColumnNames={false} />
     </ContextMenuBase>
