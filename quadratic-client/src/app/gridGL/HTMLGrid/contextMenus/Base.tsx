@@ -1,4 +1,5 @@
 import type { Action } from '@/app/actions/actions';
+import type { ActionArgs } from '@/app/actions/actionsSpec';
 import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { contextMenuAtom } from '@/app/atoms/contextMenuAtom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -103,8 +104,9 @@ export const ContextMenuBase = ({ children }: { children: React.ReactNode }) => 
 /**
  * Component for rendering an Action in a context menu
  */
-export const ContextMenuItemAction = (props: {
-  action: Action;
+export const ContextMenuItemAction = <T extends Action>(props: {
+  action: T;
+  actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
   // allows overriding of the default option (which sets the menu item to bold)
   overrideDefaultOption?: boolean;
   labelOverride?: string;
@@ -128,13 +130,7 @@ export const ContextMenuItemAction = (props: {
   }
 
   return (
-    <DropdownMenuItem
-      onClick={() => {
-        // @ts-expect-error
-        run();
-      }}
-      className="py-1"
-    >
+    <DropdownMenuItem onClick={() => run(props.actionArgs)} className="py-1">
       <ContextMenuItem
         icon={
           <>

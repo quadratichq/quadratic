@@ -15,6 +15,7 @@ import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
 export class UrlParamsUser {
   private pixiAppSettingsInitialized = false;
   private aiAnalystInitialized = false;
+  private chatId?: string;
   private iframeFilesLoaded = false;
   private aiAnalystPromptLoaded = false;
 
@@ -83,6 +84,8 @@ export class UrlParamsUser {
       this.iframeFilesLoaded = true;
       return;
     }
+
+    this.chatId = chatId;
 
     // Remove the `chat-id` param when we're done
     const url = new URL(window.location.href);
@@ -197,6 +200,9 @@ export class UrlParamsUser {
       throw new Error('Expected submitAIAnalystPrompt to be set in urlParams.loadAIAnalystPrompt');
     }
 
+    const chatId = this.chatId;
+    this.chatId = undefined;
+
     const importFiles: DbFile[] = [];
     const aiFiles: FileContent[] = [];
 
@@ -216,11 +222,15 @@ export class UrlParamsUser {
     filesFromIframe.dbFiles = [];
 
     // import the files to the grid
-    await this.importDbFilesToGrid(importFiles);
+    await this.importDbFilesToGrid(importFiles).catch((error) => {
+      console.error('Error importing files to grid', error);
+    });
 
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
+      chatId,
       content: [...aiFiles, { type: 'text', text: prompt }],
+      messageSource: chatId ? 'MarketingSite' : 'UrlPrompt',
       context: {
         sheets: [],
         currentSheet: sheets.sheet.name,

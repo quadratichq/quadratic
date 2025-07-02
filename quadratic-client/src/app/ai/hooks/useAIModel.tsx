@@ -16,43 +16,44 @@ export const useAIModel = (): {
   thinkingToggle: boolean;
   setThinkingToggle: SetValue<boolean>;
 } => {
+  // Clear older versions of the model and thinking toggle from local storage
+  useEffect(() => {
+    window.localStorage.removeItem(MODEL_LOCAL_STORAGE_KEY);
+    window.localStorage.removeItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY);
+    window.localStorage.removeItem(MODEL_VERSION_LOCAL_STORAGE_KEY);
+    for (let i = 0; i < DEFAULT_MODEL_VERSION; i++) {
+      window.localStorage.removeItem(`${MODEL_LOCAL_STORAGE_KEY}-${i}`);
+      window.localStorage.removeItem(`${THINKING_TOGGLE_LOCAL_STORAGE_KEY}-${i}`);
+    }
+  }, []);
+
   const { debug } = useDebugFlags();
 
-  const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL_FREE);
-  const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(THINKING_TOGGLE_LOCAL_STORAGE_KEY, false);
-  const [version, setVersion] = useLocalStorage<number>(MODEL_VERSION_LOCAL_STORAGE_KEY, DEFAULT_MODEL_VERSION);
+  const defaultConfig = useMemo(() => MODELS_CONFIGURATION[DEFAULT_MODEL_FREE], []);
+  if (!defaultConfig) {
+    throw new Error(`Default model ${DEFAULT_MODEL_FREE} not found`);
+  }
 
-  // This is to force update model stored in local storage to the current default model
-  useEffect(() => {
-    if (version !== DEFAULT_MODEL_VERSION) {
-      setModelKey(DEFAULT_MODEL_FREE);
-      setVersion(DEFAULT_MODEL_VERSION);
+  const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(
+    `${MODEL_LOCAL_STORAGE_KEY}-${DEFAULT_MODEL_VERSION}`,
+    DEFAULT_MODEL_FREE
+  );
 
-      const defaultConfig = MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
-      if ('thinkingToggle' in defaultConfig) {
-        setThinkingToggle(!!defaultConfig.thinking);
-      }
-    }
-  }, [setModelKey, setThinkingToggle, setVersion, version]);
+  const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(
+    `${THINKING_TOGGLE_LOCAL_STORAGE_KEY}-${DEFAULT_MODEL_VERSION}`,
+    !!defaultConfig.thinkingToggle
+  );
 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
     const config = MODELS_CONFIGURATION[modelKey];
     if (!config || (!debug && config.mode === 'disabled')) {
       setModelKey(DEFAULT_MODEL_FREE);
-      setVersion(DEFAULT_MODEL_VERSION);
-
-      const defaultConfig = MODELS_CONFIGURATION[DEFAULT_MODEL_FREE];
       if ('thinkingToggle' in defaultConfig) {
-        setThinkingToggle(!!defaultConfig.thinking);
+        setThinkingToggle(!!defaultConfig.thinkingToggle);
       }
     }
-  }, [debug, modelKey, setModelKey, setThinkingToggle, setVersion]);
-
-  const defaultConfig = useMemo(() => MODELS_CONFIGURATION[DEFAULT_MODEL_FREE], []);
-  if (!defaultConfig) {
-    throw new Error(`Default model ${DEFAULT_MODEL_FREE} not found`);
-  }
+  }, [debug, defaultConfig, modelKey, setModelKey, setThinkingToggle]);
 
   const modelConfig = useMemo(() => MODELS_CONFIGURATION[modelKey], [modelKey]);
   if (!modelConfig) {
