@@ -1,23 +1,12 @@
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
-import {
-  AddIcon,
-  AIIcon,
-  ArrowUpwardIcon,
-  AttachFileIcon,
-  CloseIcon,
-  DatabaseIcon,
-  LightbulbIcon,
-  SpinnerIcon,
-} from '@/shared/components/Icons';
-import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { AIIcon, ArrowUpwardIcon, AttachFileIcon, CloseIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Label } from '@/shared/shadcn/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Switch } from '@/shared/shadcn/ui/switch';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -241,65 +230,65 @@ function AIPromptTextarea({ value, onChange, ref, disabled }: any) {
   );
 }
 
-function AIPromptControlThinking() {
-  const [thinking, setThinking] = useState(false);
-  return thinking ? (
-    <Button
-      type="button"
-      variant="ghost"
-      size="sm"
-      className="h-8 rounded-full border-primary !bg-border pl-1.5 pr-2 !text-primary"
-      onClick={(e) => {
-        e.stopPropagation();
-        console.log('think', thinking);
-        setThinking(false);
-      }}
-    >
-      <LightbulbIcon /> Think
-    </Button>
-  ) : (
-    <TooltipPopover label="Think">
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        className="h-8 w-8 rounded-full text-foreground"
-        onClick={(e) => {
-          e.stopPropagation();
-          setThinking(true);
-        }}
-      >
-        <LightbulbIcon />
-      </Button>
-    </TooltipPopover>
-  );
-}
+// function AIPromptControlThinking() {
+//   const [thinking, setThinking] = useState(false);
+//   return thinking ? (
+//     <Button
+//       type="button"
+//       variant="ghost"
+//       size="sm"
+//       className="h-8 rounded-full border-primary !bg-border pl-1.5 pr-2 !text-primary"
+//       onClick={(e) => {
+//         e.stopPropagation();
+//         console.log('think', thinking);
+//         setThinking(false);
+//       }}
+//     >
+//       <LightbulbIcon /> Think
+//     </Button>
+//   ) : (
+//     <TooltipPopover label="Think">
+//       <Button
+//         type="button"
+//         variant="ghost"
+//         size="sm"
+//         className="h-8 w-8 rounded-full text-foreground"
+//         onClick={(e) => {
+//           e.stopPropagation();
+//           setThinking(true);
+//         }}
+//       >
+//         <LightbulbIcon />
+//       </Button>
+//     </TooltipPopover>
+//   );
+// }
 
-function AIPromptControlConnections() {
-  return (
-    <Popover>
-      <TooltipPopover label="Connections">
-        <PopoverTrigger asChild>
-          <Button type="button" variant="ghost" size="sm" className="h-8 w-8 rounded-full text-foreground">
-            <DatabaseIcon />
-          </Button>
-        </PopoverTrigger>
-      </TooltipPopover>
-      <PopoverContent className="w-64 text-xs" side="top" align="start">
-        <p className="font-medium">Chat with your connections, they're in context!</p>
-        <hr className="my-3" />
-        <ul className="flex flex-col gap-2">
-          <li className="flex items-center gap-1">
-            <LanguageIcon language="postgres" /> [Demo] Quadratic public data
-          </li>
-          <li className="flex items-center gap-1 text-muted-foreground">
-            <AddIcon size="sm" /> Add connection…
-          </li>
-        </ul>
-      </PopoverContent>
-    </Popover>
-  );
-}
+// function AIPromptControlConnections() {
+//   return (
+//     <Popover>
+//       <TooltipPopover label="Connections">
+//         <PopoverTrigger asChild>
+//           <Button type="button" variant="ghost" size="sm" className="h-8 w-8 rounded-full text-foreground">
+//             <DatabaseIcon />
+//           </Button>
+//         </PopoverTrigger>
+//       </TooltipPopover>
+//       <PopoverContent className="w-64 text-xs" side="top" align="start">
+//         <p className="font-medium">Chat with your connections, they're in context!</p>
+//         <hr className="my-3" />
+//         <ul className="flex flex-col gap-2">
+//           <li className="flex items-center gap-1">
+//             <LanguageIcon language="postgres" /> [Demo] Quadratic public data
+//           </li>
+//           <li className="flex items-center gap-1 text-muted-foreground">
+//             <AddIcon size="sm" /> Add connection…
+//           </li>
+//         </ul>
+//       </PopoverContent>
+//     </Popover>
+//   );
+// }
 
 function AIPromptControlSubmit({ disabled, isLoading }: { disabled: boolean; isLoading: boolean }) {
   return (
