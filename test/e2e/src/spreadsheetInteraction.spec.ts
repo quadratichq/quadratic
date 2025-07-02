@@ -66,7 +66,7 @@ test('Appearance Customization', async ({ page }) => {
 
   // Page reload and assert dark mode colors are persisting
   await page.reload();
-  await expect(page.locator(`nav a svg`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
 
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toContain(darkClassName);
@@ -117,7 +117,7 @@ test('Appearance Customization', async ({ page }) => {
 
   // Page reload and assert light mode colors are persisting
   await page.reload();
-  await expect(page.locator(`nav a svg`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
 
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toBeNull(); // no classes including dark is applied
@@ -4289,7 +4289,7 @@ test('Theme Customization', async ({ page }) => {
   for (const theme of expectedThemes) {
     await page.waitForTimeout(500);
 
-    // Click theme toggle button (identified by constract icon)
+    // Click theme toggle button
     await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 30 * 1000 });
 
     // Click accent color
@@ -4319,9 +4319,7 @@ test('Theme Customization', async ({ page }) => {
 
     // Navigate to the 'Members' page and assert page
     await page.getByRole(`link`, { name: `group Members` }).click({ timeout: 30 * 1000 });
-    await page.waitForTimeout(10 * 1000);
-    await expect(page.locator(`nav a svg`)).toBeVisible({ timeout: 60 * 1000 });
-    await expect(page).toHaveTitle(/Team members - Quadratic/);
+    await expect(page).toHaveTitle(/Team members - Quadratic/, { timeout: 60 * 1000 });
     await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible();
     await expect(page.getByText(`${email} (You)`)).toBeVisible();
 

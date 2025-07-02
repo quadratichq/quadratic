@@ -811,7 +811,7 @@ test('Read JavaScript Output within Formula', async ({ page }) => {
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
   // Fill the search field
-  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code cells in the current sheet`);
+  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code in sheet`);
 
   // Press "Enter" to choose the option
   await page.keyboard.press('Enter');
@@ -879,7 +879,7 @@ test('Read Python Output within Formula', async ({ page }) => {
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
   // Fill the search field
-  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code cells in the current sheet`);
+  await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code in sheet`);
 
   // Press "Enter" to choose the option
   await page.keyboard.press('Enter');
