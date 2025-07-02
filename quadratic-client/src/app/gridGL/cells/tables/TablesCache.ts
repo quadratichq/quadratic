@@ -35,14 +35,8 @@ export class TablesCache {
     this.xyIndex[key] = table;
   };
 
-  updateTableNameOrXY = (table: Table, name: string, x: number, y: number) => {
-    if (table.codeCell.name !== name) {
-      delete this.nameIndex[table.codeCell.name];
-      this.nameIndex[name] = table;
-    } else if (table.codeCell.x !== x || table.codeCell.y !== y) {
-      delete this.xyIndex[`${table.codeCell.x},${table.codeCell.y}`];
-      const key = `${x},${y}`;
-      this.xyIndex[key] = table;
-    }
+  update = (table: Table) => {
+    this.remove(table);
+    this.add(table);
   };
 }

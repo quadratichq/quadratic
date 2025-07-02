@@ -193,11 +193,11 @@ export class Tables extends Container<Table> {
           this.singleCellUpdate(x, y, render_code_cell);
         } else {
           delete this.singleCellTables[key];
-          const table = this.getTable(x, y) || this.getTableFromName(render_code_cell.name);
+          const table = this.getTable(x, y);
           if (table) {
             // updating an existing table
-            this.tablesCache.updateTableNameOrXY(table, render_code_cell.name, x, y);
             table.updateCodeCell(render_code_cell);
+            this.tablesCache.update(table);
             if (this.isActive(table)) {
               table.showActive();
             }
@@ -561,7 +561,7 @@ export class Tables extends Container<Table> {
     const codeCell = this.getSingleCodeCell(cell.x, cell.y);
     if (codeCell) return codeCell;
     const table = this.getTableIntersects(cell);
-    if (table) return table.codeCell;
+    return table?.codeCell;
   };
 
   /// Returns a table by its name.
