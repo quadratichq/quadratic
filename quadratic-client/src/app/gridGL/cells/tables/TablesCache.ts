@@ -35,10 +35,8 @@ export class TablesCache {
     this.xyIndex[key] = table;
   };
 
-  updateTableName = (table: Table, name: string) => {
-    if (table.codeCell.name !== name) {
-      delete this.nameIndex[table.codeCell.name];
-      this.nameIndex[name] = table;
-    }
+  update = (table: Table) => {
+    this.remove(table);
+    this.add(table);
   };
 }
