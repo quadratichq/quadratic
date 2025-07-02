@@ -1,6 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { editorInteractionStateIsOnPaidPlanAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -22,7 +22,6 @@ import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
-import { useRecoilValue } from 'recoil';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
@@ -112,7 +111,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [selectedModelMode]
   );
 
-  const isOnPaidPlan = useRecoilValue(editorInteractionStateIsOnPaidPlanAtom);
+  const { isOnPaidPlan } = useIsOnPaidPlan();
   useEffect(() => {
     if (debug || isOnPaidPlan) {
       return;
