@@ -7,6 +7,9 @@ pub mod memory;
 
 #[async_trait]
 pub trait Cache<'a, K, V> {
+    // Get all keys in the cache
+    async fn keys(&self) -> Vec<&K>;
+
     // Create a value in the cache
     ///
     /// If the key already exists, the value is overwritten and the old value is returned.

@@ -1,8 +1,7 @@
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use http::HeaderMap;
 use quadratic_rust_shared::{
-    quadratic_api::Connection as ApiConnection,
-    sql::{Connection, snowflake_connection::SnowflakeConnection},
+    quadratic_api::Connection as ApiConnection, sql::snowflake_connection::SnowflakeConnection,
 };
 use uuid::Uuid;
 
@@ -15,7 +14,7 @@ use crate::{
     state::State,
 };
 
-use super::{Schema, query_generic};
+use super::{Schema, query_generic, schema_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(
@@ -41,7 +40,7 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
-) -> Result<(SnowflakeConnection, ApiConnection<SnowflakeConnection>)> {
+) -> Result<ApiConnection<SnowflakeConnection>> {
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
     } else {
@@ -63,17 +62,7 @@ async fn get_connection(
         }
     };
 
-    let snowflake_connection = SnowflakeConnection::new(
-        connection.type_details.account_identifier.to_owned(),
-        connection.type_details.username.to_owned(),
-        connection.type_details.password.to_owned(),
-        None,
-        connection.type_details.database.to_owned(),
-        None,
-        None,
-    );
-
-    Ok((snowflake_connection, connection))
+    Ok(connection)
 }
 
 /// Query the database and return the results as a parquet file.
@@ -84,10 +73,8 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
-        .await?
-        .0;
-    query_generic::<SnowflakeConnection>(connection, state, sql_query).await
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    query_generic::<SnowflakeConnection>(connection.type_details, state, sql_query).await
 }
 
 /// Get the schema of the database
@@ -98,18 +85,9 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
-    let mut pool = connection.connect().await?;
-    let database_schema = connection.schema(&mut pool).await?;
-    let schema = Schema {
-        id: api_connection.uuid,
-        name: api_connection.name,
-        r#type: api_connection.r#type,
-        database: api_connection.type_details.database,
-        tables: database_schema.tables.into_values().collect(),
-    };
+    let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
 
-    Ok(Json(schema))
+    schema_generic(api_connection, state).await
 }
 
 #[cfg(test)]
