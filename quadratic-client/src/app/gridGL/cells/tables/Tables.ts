@@ -561,7 +561,7 @@ export class Tables extends Container<Table> {
     const codeCell = this.getSingleCodeCell(cell.x, cell.y);
     if (codeCell) return codeCell;
     const table = this.getTableIntersects(cell);
-    if (table) return table.codeCell;
+    return table?.codeCell;
   };
 
   /// Returns a table by its name.
