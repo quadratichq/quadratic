@@ -193,10 +193,10 @@ export class Tables extends Container<Table> {
           this.singleCellUpdate(x, y, render_code_cell);
         } else {
           delete this.singleCellTables[key];
-          const table = this.getTable(x, y);
+          const table = this.getTable(x, y) || this.getTableFromName(render_code_cell.name);
           if (table) {
             // updating an existing table
-            this.tablesCache.updateTableName(table, render_code_cell.name);
+            this.tablesCache.updateTableNameOrXY(table, render_code_cell.name, x, y);
             table.updateCodeCell(render_code_cell);
             if (this.isActive(table)) {
               table.showActive();
