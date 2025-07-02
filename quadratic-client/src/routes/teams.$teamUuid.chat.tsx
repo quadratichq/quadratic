@@ -22,7 +22,7 @@ import { Switch } from '@/shared/shadcn/ui/switch';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 export const Component = () => {
@@ -61,30 +61,13 @@ export const Component = () => {
 
   const disabled = value.length === 0 || loadState !== 'idle';
 
-  // TODO: hacky typewriter effect for the h1
-  const fullText = "Drop any files, ask a question, and I'll help you analyze and visualize your data in a new sheet";
-  const [h1Text, setH1Text] = useState('');
-  useEffect(() => {
-    let currentIndex = 0;
-    const interval = setInterval(() => {
-      if (currentIndex < fullText.length) {
-        setH1Text(fullText.slice(0, currentIndex + 1));
-        currentIndex++;
-      } else {
-        clearInterval(interval);
-      }
-    }, 10);
-    return () => clearInterval(interval);
-  }, []);
-
   return (
     <div className="flex h-full flex-grow flex-col items-center">
       <div className="flex h-full w-full flex-grow flex-col items-center justify-center gap-4">
         <div className="flex w-full max-w-md flex-col items-center gap-4">
           <AIIcon className="text-primary" size="xl" />
           <h1 className="relative text-center text-lg font-medium">
-            <span className="absolute">{h1Text}</span>
-            <span className="invisible">{fullText}</span>
+            Drop files, ask a question, and I’ll help you analyze and visualize your data in a new sheet
           </h1>
         </div>
         <div className="w-full max-w-lg">
@@ -98,8 +81,9 @@ export const Component = () => {
             <AIPromptTextarea value={value} onChange={setValue} disabled={loadState !== 'idle'} />
             <AIPromptControls>
               <AIPromptControlAttachFile onClick={handleAttachFile} />
-              <AIPromptControlConnections />
-              <AIPromptControlThinking />
+              {/* <AIPromptControlConnections /> */}
+              {/* <AIPromptControlThinking /> */}
+              <AIPromptControlModel />
               <AIPromptControlSubmit disabled={disabled} isLoading={loadState === 'loading'} />
             </AIPromptControls>
           </AIPromptForm>
@@ -187,6 +171,11 @@ function AIPromptControls({ children }: { children: React.ReactNode }) {
       <div className="flex w-full items-center gap-1 text-xs text-muted-foreground">{children}</div>
     </div>
   );
+}
+
+// Maybe we just skip this? Let the app decide how it will submit the prompt when they get into the file...
+function AIPromptControlModel() {
+  return <div className="ml-auto">Model</div>;
 }
 
 function AIPromptControlAttachFile({ onClick }: { onClick: () => void }) {
@@ -314,19 +303,17 @@ function AIPromptControlConnections() {
 
 function AIPromptControlSubmit({ disabled, isLoading }: { disabled: boolean; isLoading: boolean }) {
   return (
-    <div className="ml-auto">
-      <ConditionalWrapper
-        condition={!disabled}
-        Wrapper={({ children }) => (
-          <TooltipPopover label="Submit" shortcut={KeyboardSymbols.Enter}>
-            {children as React.ReactElement}
-          </TooltipPopover>
-        )}
-      >
-        <Button size="icon-sm" className="h-8 w-8 rounded-full" type="submit" disabled={disabled}>
-          {isLoading ? <SpinnerIcon /> : <ArrowUpwardIcon />}
-        </Button>
-      </ConditionalWrapper>
-    </div>
+    <ConditionalWrapper
+      condition={!disabled}
+      Wrapper={({ children }) => (
+        <TooltipPopover label="Submit" shortcut={KeyboardSymbols.Enter}>
+          {children as React.ReactElement}
+        </TooltipPopover>
+      )}
+    >
+      <Button size="icon-sm" className="h-8 w-8 rounded-full" type="submit" disabled={disabled}>
+        {isLoading ? <SpinnerIcon /> : <ArrowUpwardIcon />}
+      </Button>
+    </ConditionalWrapper>
   );
 }
