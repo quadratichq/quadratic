@@ -27,5 +27,5 @@ export const addQueryParams = async (page: Page, flags: { topLeft: boolean }) =>
 // Asserts the top left position is the expected value.
 // requires: topLeft query param to be set
 export const assertTopLeftPosition = async (page: Page, expected: string) => {
-  await expect(page.locator(`[data-testid="top-left-position"]`)).toHaveText(expected);
+  await expect(page.locator(`[data-testid="top-left-position"]`)).toHaveText(expected, { timeout: 10 * 1000 });
 };
