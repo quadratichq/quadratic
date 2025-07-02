@@ -308,9 +308,14 @@ export class PixiApp {
   };
 
   // called before and after a render
-  prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+  prepareForCopying = async (options?: {
+    sheetId?: string;
+    gridLines?: boolean;
+    cull?: Rectangle;
+    ai?: boolean;
+  }): Promise<Container> => {
     // this is expensive, so we do it first, before blocking the canvas renderer
-    await this.htmlPlaceholders.prepare(options?.cull);
+    await this.htmlPlaceholders.prepare({ sheetId: options?.sheetId, cull: options?.cull });
 
     // this blocks the canvas renderer
     this.copying = true;

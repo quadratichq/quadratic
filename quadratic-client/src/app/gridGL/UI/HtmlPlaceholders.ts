@@ -56,14 +56,15 @@ export class HtmlPlaceholders extends Graphics {
     }
   };
 
-  prepare = async (cull?: Rectangle) => {
+  prepare = async ({ sheetId, cull }: { sheetId?: string; cull?: Rectangle }) => {
     this.removeChildren();
     this.clear();
-    const firstId = sheets.getFirst().id;
+
+    const htmlSheetId = sheetId ?? sheets.getFirst().id;
 
     const drawPlaceholderPromises = htmlCellsHandler.getCells().map((cell) => {
       if (
-        cell.sheet.id === firstId &&
+        cell.sheet.id === htmlSheetId &&
         (!cull || cull.intersects(cell.sheet.getScreenRectangleFromRectangle(cell.gridBounds)))
       ) {
         return this.drawPlaceholder(cell);
