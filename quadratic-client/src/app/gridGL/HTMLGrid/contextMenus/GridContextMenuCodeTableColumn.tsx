@@ -6,18 +6,21 @@ import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 export function GridContextMenuCodeTableColumn() {
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.Cut} />
-      <ContextMenuItemAction action={Action.Copy} />
-      <ContextMenuItemAction action={Action.Paste} />
-      <ContextMenuItemAction action={Action.PasteValuesOnly} />
-      <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
-      <ContextMenuItemAction action={Action.DownloadAsCsv} />
+      <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.EditTableCode} />
-      <ContextMenuItemAction action={Action.SortTableColumnAscending} />
-      <ContextMenuItemAction action={Action.SortTableColumnDescending} />
-      <ContextMenuItemAction action={Action.HideTableColumn} />
+
+      <ContextMenuItemAction action={Action.EditTableCode} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.SortTableColumnAscending} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.SortTableColumnDescending} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.HideTableColumn} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
 
       {/* TODO:(ddimaria) wire this up to show appropriately nested menu for code tables */}
