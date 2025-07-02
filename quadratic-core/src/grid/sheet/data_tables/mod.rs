@@ -213,6 +213,7 @@ impl SheetDataTables {
             data_table.spill_data_table = spill_current_data_table;
 
             let new_spilled_output_rect = data_table.output_rect(*pos, false);
+
             if new_spilled_output_rect.len() == 1 {
                 self.cache.single_cell_tables.set(*pos, Some(true));
             } else {
@@ -289,12 +290,11 @@ impl SheetDataTables {
     ) -> Result<(&DataTable, HashSet<Rect>)> {
         let err = || anyhow!("Data table not found at {:?} in modify_data_table_at", pos);
         let (index, _, data_table) = self.data_tables.get_full_mut(pos).ok_or_else(err)?;
-        let old_output_rect = Some(data_table.output_rect(*pos, false));
 
+        let old_output_rect = Some(data_table.output_rect(*pos, false));
         f(data_table)?;
 
         let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rect);
-
         let data_table = self.data_tables.get(pos).ok_or_else(err)?;
         Ok((data_table, dirty_rects))
     }

@@ -161,24 +161,28 @@ impl Sheet {
             MultiPos::TablePos(table_pos) => {
                 // For TablePos, we need to insert into the sub-tables of the parent data table
                 let mut result = None;
-                self.data_tables.modify_data_sub_table_at(table_pos, |dt| {
-                    // Check if the data table has sub-tables
-                    if let Some(tables) = &mut dt.tables {
-                        // Insert the data table into the sub-tables
-                        let (index, old_data_table, dirty_rects) =
-                            tables.insert_before(index, &table_pos.pos, data_table);
-                        result = Some((index, old_data_table, dirty_rects));
-                        Ok(())
-                    } else {
-                        // If no sub-tables exist, create them and insert
-                        let mut tables = SheetDataTables::new();
-                        let (index, old_data_table, dirty_rects) =
-                            tables.insert_before(index, &table_pos.pos, data_table);
-                        dt.tables = Some(tables);
-                        result = Some((index, old_data_table, dirty_rects));
-                        Ok(())
-                    }
-                })?;
+                self.data_tables
+                    .modify_data_table_at(&table_pos.table_sheet_pos.into(), |dt| {
+                        // Check if the data table has sub-tables
+                        if let Some(tables) = &mut dt.tables {
+                            // Insert the data table into the sub-tables
+                            let (index, old_data_table, dirty_rects) = tables.insert_before(
+                                index,
+                                &table_pos.pos.translate(1, 1, 0, 0),
+                                data_table,
+                            );
+                            result = Some((index, old_data_table, dirty_rects));
+                            Ok(())
+                        } else {
+                            // If no sub-tables exist, create them and insert
+                            let mut tables = SheetDataTables::new();
+                            let (index, old_data_table, dirty_rects) =
+                                tables.insert_before(index, &table_pos.pos, data_table);
+                            dt.tables = Some(tables);
+                            result = Some((index, old_data_table, dirty_rects));
+                            Ok(())
+                        }
+                    })?;
                 result.ok_or_else(|| anyhow!("Failed to insert data table into sub-table"))
             }
         }

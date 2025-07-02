@@ -120,11 +120,15 @@ impl Sheet {
 
         match cell_value.as_ref() {
             Some(CellValue::Code(_)) => {
-                dbg!(&data_table.tables);
                 if let Some(tables) = &data_table.tables {
-                    if let Some((inner_code_pos, inner_data_table)) = tables
-                        .get_contains((pos.x - data_table_pos.x, pos.y - data_table_pos.y).into())
+                    // offset needs to be 1-based b/c of limitations of Contiguous2D
+                    let inner_pos = Pos::new(
+                        pos.x - data_table_pos.x + 1,
+                        pos.y - data_table_pos.y - data_table.y_adjustment(true) + 1,
+                    );
+                    if let Some((inner_code_pos, inner_data_table)) = tables.get_contains(inner_pos)
                     {
+                        dbg!(1);
                         return inner_data_table.cell_value_at(
                             (pos.x - inner_code_pos.x) as u32,
                             (pos.y - inner_code_pos.y) as u32,
