@@ -48,9 +48,9 @@ export const ReturnTypeInspector = memo(() => {
   if (consoleOutput?.stdErr) {
     hasError = true;
     message = (
-      <p>
+      <span>
         Returned <ReturnType isError>error</ReturnType>{' '}
-      </p>
+      </span>
     );
     action = (
       <Button
@@ -76,9 +76,9 @@ export const ReturnTypeInspector = memo(() => {
   } else if (spillError) {
     hasError = true;
     message = (
-      <p>
+      <span>
         Returned <ReturnType isError>error</ReturnType> (spill)
-      </p>
+      </span>
     );
     action = <FixSpillError codeCell={codeCellRecoil} evaluationResult={evaluationResult ?? {}} />;
   } else if (mode === 'Python') {
