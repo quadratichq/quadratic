@@ -3,7 +3,8 @@ import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CorePythonMessage,
-  PythonCoreGetCellsA1,
+  PythonCoreGetCellsA1Data,
+  PythonCoreGetCellsA1Length,
   PythonCoreMessage,
 } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
@@ -15,6 +16,8 @@ declare var self: WorkerGlobalScope &
 
 class CorePython {
   private corePythonPort?: MessagePort;
+  private id = 0;
+  private getCellsResponses: Record<number, Uint8Array> = {};
 
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
@@ -32,8 +35,12 @@ class CorePython {
         core.calculationComplete(e.data.jsCodeResultBuffer);
         break;
 
-      case 'pythonCoreGetCellsA1':
-        this.sendGetCellsA1(e.data);
+      case 'pythonCoreGetCellsA1Length':
+        this.sendGetCellsA1Length(e.data);
+        break;
+
+      case 'pythonCoreGetCellsA1Data':
+        this.sendGetCellsA1Data(e.data);
         break;
 
       default:
@@ -49,26 +56,45 @@ class CorePython {
     this.corePythonPort.postMessage(message);
   }
 
-  private sendGetCellsA1 = ({ sharedBuffer, transactionId, a1 }: PythonCoreGetCellsA1) => {
-    const int32View = new Int32Array(sharedBuffer, 0, 1);
+  private sendGetCellsA1Length = ({ sharedBuffer, transactionId, a1 }: PythonCoreGetCellsA1Length) => {
+    const int32View = new Int32Array(sharedBuffer, 0, 3);
 
     let responseUint8Array: Uint8Array;
     try {
       responseUint8Array = core.getCellsA1(transactionId, a1);
-    } catch (error: any) {
+    } catch (e: any) {
       const cellA1Response: JsCellsA1Response = {
         values: null,
         error: {
-          core_error: `Failed to parse getCellsA1 response: ${error}`,
+          core_error: e,
         },
       };
       responseUint8Array = toUint8Array(cellA1Response);
     }
-
     const byteLength = responseUint8Array.byteLength;
-    sharedBuffer.grow(4 + byteLength);
-    const uint8View = new Uint8Array(sharedBuffer, 4, responseUint8Array.byteLength);
-    uint8View.set(responseUint8Array);
+    Atomics.store(int32View, 1, byteLength);
+
+    if (byteLength !== 0) {
+      const id = this.id++;
+      this.getCellsResponses[id] = responseUint8Array;
+      Atomics.store(int32View, 2, id);
+    }
+
+    Atomics.store(int32View, 0, 1);
+    Atomics.notify(int32View, 0, 1);
+  };
+
+  private sendGetCellsA1Data = ({ id, sharedBuffer }: PythonCoreGetCellsA1Data) => {
+    const int32View = new Int32Array(sharedBuffer, 0, 1);
+
+    const responseUint8View = this.getCellsResponses[id];
+    delete this.getCellsResponses[id];
+    if (responseUint8View === undefined) {
+      console.warn('[corePython] No cells found for id:', id);
+    } else {
+      const uint8View = new Uint8Array(sharedBuffer, 4, responseUint8View.byteLength);
+      uint8View.set(responseUint8View);
+    }
 
     Atomics.store(int32View, 0, 1);
     Atomics.notify(int32View, 0, 1);

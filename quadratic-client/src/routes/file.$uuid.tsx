@@ -47,7 +47,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const isVersionHistoryPreview = checkpointId !== null;
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
-  let data;
+  let data: ApiTypes['/v0/files/:uuid.GET.response'];
   try {
     data = await apiClient.files.get(uuid);
   } catch (error: any) {
