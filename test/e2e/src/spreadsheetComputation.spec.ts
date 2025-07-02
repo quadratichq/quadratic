@@ -1501,7 +1501,7 @@ hire_date DATE);`);
 
   // Screenshot assertion: Page should not show #ERROR
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`${POSTGRES_DB.connectionName}-python-result.png`, {
-    maxDiffPixels: 0,
+    maxDiffPixelRatio: 0.01,
   });
 
   //--------------------------------

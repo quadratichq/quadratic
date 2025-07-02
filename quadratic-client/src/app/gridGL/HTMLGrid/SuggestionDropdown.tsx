@@ -105,9 +105,9 @@ export const SuggestionDropDown = () => {
     };
   }, [filteredList, list]);
 
-  const changeValue = useCallback((value: string) => {
+  const changeValue = useCallback((value: string, moveRight: boolean) => {
     inlineEditorEvents.emit('replaceText', value, 0);
-    inlineEditorHandler.close(0, 1, false);
+    inlineEditorHandler.close(moveRight ? 1 : 0, moveRight ? 0 : 1, false);
     setAutocompleteShowingList(false);
     setIndex(-1);
   }, []);
@@ -126,9 +126,9 @@ export const SuggestionDropDown = () => {
         });
       } else if (key === 'Enter') {
         if (index >= 0) {
-          changeValue(filteredList[index]);
+          changeValue(filteredList[index], false);
         } else {
-          changeValue(inlineEditorMonaco.get());
+          changeValue(inlineEditorMonaco.get(), false);
         }
       } else if (key === 'Escape') {
         setIndex(-1);
@@ -136,9 +136,9 @@ export const SuggestionDropDown = () => {
         setFilteredList(undefined);
       } else if (key === 'Tab') {
         if (index >= 0) {
-          changeValue(filteredList[index]);
+          changeValue(filteredList[index], true);
         } else {
-          changeValue(inlineEditorMonaco.get());
+          changeValue(inlineEditorMonaco.get(), true);
         }
       }
     };
@@ -171,7 +171,7 @@ export const SuggestionDropDown = () => {
           <div
             className={cn('block w-full whitespace-nowrap px-1 hover:bg-accent', i === index ? 'bg-accent' : '')}
             key={item}
-            onClick={() => changeValue(item)}
+            onClick={() => changeValue(item, false)}
           >
             {item}
           </div>
