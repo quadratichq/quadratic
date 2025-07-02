@@ -91,21 +91,35 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
           Team
         </Type>
         <div className="grid gap-0.5">
-          <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
-            <DraftIcon className={classNameIcons} />
-            Files
-          </SidebarNavLink>
-          {canEditTeam && (
-            <SidebarNavLink to={ROUTES.TEAM_CHAT(activeTeamUuid, false)}>
-              <AIIcon className={classNameIcons} />
-              Chat
+          <div className="relative">
+            <SidebarNavLink to={ROUTES.TEAM(activeTeamUuid)} dropTarget={canEditTeam ? null : undefined}>
+              <DraftIcon className={classNameIcons} />
+              Files
             </SidebarNavLink>
-          )}
-          {canEditTeam && (
-            <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
-              New file
-            </SidebarNavLinkCreateButton>
-          )}
+
+            {canEditTeam && (
+              <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
+                New file
+              </SidebarNavLinkCreateButton>
+            )}
+            {canEditTeam && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute right-9 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
+                  >
+                    <Link to={ROUTES.TEAM_CHAT(activeTeamUuid, false)}>
+                      <AIIcon size="xs" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>New file from chat</TooltipContent>
+              </Tooltip>
+            )}
+          </div>
           {canEditTeam && (
             <SidebarNavLink to={ROUTES.TEAM_CONNECTIONS(activeTeamUuid)}>
               <DatabaseIcon className={classNameIcons} />
