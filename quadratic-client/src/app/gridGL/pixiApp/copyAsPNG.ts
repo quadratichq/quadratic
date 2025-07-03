@@ -28,6 +28,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   const rect = sheets.sheet.cursor.getLargestRectangle();
   if (!rect) return null;
 
+  const sheetId = sheets.current;
   const screenRect = sheets.sheet.getScreenRectangle(rect.x, rect.y, rect.width, rect.height);
 
   // captures bottom-right border size
@@ -48,7 +49,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  await pixiApp.prepareForCopying({ cull: screenRect });
+  await pixiApp.prepareForCopying({ sheetId, cull: screenRect });
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);
