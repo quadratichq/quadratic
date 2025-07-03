@@ -9,6 +9,7 @@ const payload: AIRequestBody = {
   chatId: '00000000-0000-0000-0000-000000000000',
   fileUuid: '11111111-1111-1111-1111-111111111111',
   source: 'AIAnalyst',
+  messageSource: 'User',
   modelKey: 'bedrock-anthropic:claude:thinking-toggle-off',
   messages: [
     {

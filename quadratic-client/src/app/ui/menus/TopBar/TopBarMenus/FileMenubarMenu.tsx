@@ -24,7 +24,7 @@ import {
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
 import type { RecentFile } from '@/shared/utils/updateRecentFiles';
-import { clearRecentFiles, RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
+import { RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
 import { useMemo } from 'react';
 import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
@@ -42,37 +42,11 @@ export const FileMenubarMenu = () => {
   const confirmFn = useConfirmDialog('deleteFile', { name });
   const isAvailableArgs = useIsAvailableArgs();
 
-  const [recentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
-  const recentFilesMenuItems = useMemo(() => {
-    if (recentFiles.length <= 1) return null;
-
-    return (
-      <>
-        <MenubarSeparator />
-        <MenubarSub>
-          <MenubarSubTrigger>
-            <FileOpenIcon /> Open recent
-          </MenubarSubTrigger>
-          <MenubarSubContent>
-            {recentFiles
-              .filter((file) => file.uuid !== fileUuid && file.name.trim().length > 0)
-              .map((file) => (
-                <MenubarItem
-                  onClick={() => {
-                    window.location.href = ROUTES.FILE({ uuid: file.uuid, searchParams: '' });
-                  }}
-                  key={file.uuid}
-                >
-                  {file.name}
-                </MenubarItem>
-              ))}
-            <MenubarSeparator />
-            <MenubarItem onClick={clearRecentFiles}>Clear</MenubarItem>
-          </MenubarSubContent>
-        </MenubarSub>
-      </>
-    );
-  }, [fileUuid, recentFiles]);
+  const [recentFiles, setRecentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
+  const recentFilesWithoutCurrentFile = useMemo(
+    () => recentFiles.filter((file) => file.uuid !== fileUuid && file.name.trim().length > 0),
+    [recentFiles, fileUuid]
+  );
 
   if (!isAuthenticated) return null;
 
@@ -96,7 +70,30 @@ export const FileMenubarMenu = () => {
         )}
         <MenubarItemAction action={Action.FileVersionHistory} actionArgs={{ uuid: fileUuid }} />
 
-        {recentFilesMenuItems}
+        {recentFilesWithoutCurrentFile.length > 0 && (
+          <>
+            <MenubarSeparator />
+            <MenubarSub>
+              <MenubarSubTrigger>
+                <FileOpenIcon /> Open recent
+              </MenubarSubTrigger>
+              <MenubarSubContent>
+                {recentFilesWithoutCurrentFile.map((file) => (
+                  <MenubarItem
+                    onClick={() => {
+                      window.location.href = ROUTES.FILE({ uuid: file.uuid, searchParams: '' });
+                    }}
+                    key={file.uuid}
+                  >
+                    {file.name}
+                  </MenubarItem>
+                ))}
+                <MenubarSeparator />
+                <MenubarItem onClick={() => setRecentFiles([])}>Clear</MenubarItem>
+              </MenubarSubContent>
+            </MenubarSub>
+          </>
+        )}
 
         <MenubarSeparator />
 

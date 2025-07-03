@@ -72,42 +72,6 @@ export class TableColumnHeader extends Container {
     this.columnName.position.set(OPEN_SANS_FIX.x, OPEN_SANS_FIX.y);
   }
 
-  // Called when the CodeCell is updated
-  updateHeader = (options: {
-    x: number;
-    width: number;
-    height: number;
-    name: string;
-    sort?: DataTableSort;
-    dirtySort: boolean;
-    columnY: number;
-  }) => {
-    const { x, width, height, name, sort, dirtySort, columnY } = options;
-
-    // need to maintain any adjusted y position
-    // todo: this fn is called too often (this is needed for rename column name)
-    if (this.columnHeaderBounds) {
-      this.columnHeaderBounds.x = this.table.tableBounds.x + x;
-      this.columnHeaderBounds.y = this.table.tableBounds.y + columnY;
-      this.columnHeaderBounds.width = width;
-      this.columnHeaderBounds.height = height;
-    } else {
-      this.columnHeaderBounds = new Rectangle(
-        this.table.tableBounds.x + x,
-        this.table.tableBounds.y + columnY,
-        width,
-        height
-      );
-    }
-    this.w = width;
-    this.h = height;
-    this.dirtySort = dirtySort;
-    this.position.set(x, 0);
-    this.columnName.text = name;
-    this.clipName(name, width);
-    this.updateSortButton(width, height, sort);
-  };
-
   // tests the width of the text and clips it if it is too wide
   private clipName = (name: string, width: number) => {
     let clippedName = name;
