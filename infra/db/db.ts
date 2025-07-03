@@ -111,7 +111,7 @@ const dbCluster = new aws.rds.Cluster(
     availabilityZones: ["us-west-2a", "us-west-2b", "us-west-2c"],
 
     // Backup and maintenance
-    backupRetentionPeriod: 7,
+    backupRetentionPeriod: 30,
     preferredBackupWindow: "03:00-04:00",
     preferredMaintenanceWindow: "sun:04:00-sun:05:00",
 
