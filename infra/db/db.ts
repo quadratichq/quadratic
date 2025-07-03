@@ -125,7 +125,7 @@ const dbCluster = new aws.rds.Cluster(
     // Delete protection
     deletionProtection: true,
     skipFinalSnapshot: false,
-    finalSnapshotIdentifier: pulumi.interpolate`db-postgresql-cluster-final-snapshot-${Date.now()}`,
+    finalSnapshotIdentifier: `db-postgresql-cluster-final-snapshot-${pulumi.getStack()}`,
 
     applyImmediately: false,
   },

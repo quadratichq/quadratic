@@ -1,7 +1,5 @@
 import * as aws from "@pulumi/aws";
 
-import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
-
 // Create a new VPC
 export const connectionVPC = new aws.ec2.Vpc("connection-vpc", {
   cidrBlock: "10.0.0.0/16",
@@ -173,14 +171,3 @@ export const connectionEc2SecurityGroup = new aws.ec2.SecurityGroup(
     ],
   },
 );
-
-if (isPreviewEnvironment) {
-  new aws.ec2.SecurityGroupRule(`connection-ssh-ingress-rule`, {
-    type: "ingress",
-    fromPort: 22,
-    toPort: 22,
-    protocol: "tcp",
-    cidrBlocks: ["0.0.0.0/0"],
-    securityGroupId: connectionEc2SecurityGroup.id,
-  });
-}

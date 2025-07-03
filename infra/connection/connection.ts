@@ -37,7 +37,7 @@ const desiredCapacity = config.getNumber("connection-lb-desired-capacity") ?? 2;
 
 // Create an Launch Template
 const launchTemplate = new aws.ec2.LaunchTemplate("connection-lt", {
-  name: `connection-lt-${connectionSubdomain}-${Math.random().toString(36).substring(2, 8)}`,
+  name: `connection-lt-${connectionSubdomain}`,
   imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
   iamInstanceProfile: {
@@ -97,6 +97,7 @@ const targetGroup = new aws.lb.TargetGroup("connection-nlb-tg", {
   deregistrationDelay: 30,
 });
 
+// Create Auto Scaling Group
 const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
   tags: [
     {
@@ -105,6 +106,7 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
       propagateAtLaunch: true,
     },
   ],
+
   vpcZoneIdentifiers: [
     connectionPrivateSubnet1.id,
     connectionPrivateSubnet2.id,
@@ -117,6 +119,7 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
   maxSize,
   desiredCapacity,
   targetGroupArns: [targetGroup.arn],
+
   instanceRefresh: {
     strategy: "Rolling",
     preferences: {
@@ -124,6 +127,8 @@ const autoScalingGroup = new aws.autoscaling.Group("connection-asg", {
       instanceWarmup: "60",
     },
   },
+
+  // Add auto-scaling metrics collection
   enabledMetrics: [
     "GroupMinSize",
     "GroupMaxSize",
