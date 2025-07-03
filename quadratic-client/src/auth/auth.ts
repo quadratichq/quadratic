@@ -1,5 +1,6 @@
 import { auth0Client } from '@/auth/auth0';
 import { oryClient } from '@/auth/ory';
+import { workosClient } from '@/auth/workos';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
 
@@ -30,6 +31,8 @@ const getAuthClient = () => {
       return auth0Client;
     case 'ory':
       return oryClient;
+    case 'workos':
+      return workosClient;
     default:
       throw new Error(`Unsupported auth type in getAuthClient(): ${AUTH_TYPE}`);
   }

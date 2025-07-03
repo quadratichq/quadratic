@@ -11,7 +11,7 @@ import {
   AUTH0_ISSUER,
   AUTH0_JWKS_URI,
 } from '../env-vars';
-import type { ByEmailUser } from './auth';
+import type { ByEmailUser, User } from './auth';
 
 // Guide to Setting up on Auth0
 // 1. Create an Auth0 Machine to Machine Application
@@ -23,7 +23,6 @@ import type { ByEmailUser } from './auth';
 // https://auth0.com/docs/customize/extensions/account-link-extension
 
 let auth0: ManagementClient | undefined;
-
 const getAuth0 = () => {
   if (!auth0) {
     auth0 = auth0 = new ManagementClient({
@@ -33,7 +32,6 @@ const getAuth0 = () => {
       scope: 'read:users',
     });
   }
-
   return auth0;
 };
 
@@ -56,7 +54,7 @@ const getAuth0 = () => {
  *     }
  *   }
  */
-export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]) => {
+export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]): Promise<Record<number, User>> => {
   // If we got nothing, we return an empty object
   if (users.length === 0) {
     return {};
@@ -72,16 +70,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
   const auth0UserMap = new Map(auth0Users.map((u) => [u.user_id, u]));
 
   // Map the users we found by their Quadratic ID
-  const usersById: Record<
-    number,
-    {
-      id: number;
-      auth0Id: string;
-      email: string;
-      name?: string;
-      picture?: string;
-    }
-  > = {};
+  const usersById: Record<number, User> = {};
 
   const promises = users.map(async ({ id, auth0Id }) => {
     let auth0User = auth0UserMap.get(auth0Id);
@@ -131,7 +120,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
   return usersById;
 };
 
-export const lookupUsersFromAuth0ByEmail = async (email: string): Promise<ByEmailUser[]> => {
+export const getUsersFromAuth0ByEmail = async (email: string): Promise<ByEmailUser[]> => {
   const auth0Users = await getAuth0().getUsersByEmail(email);
   return auth0Users;
 };
