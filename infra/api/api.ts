@@ -1,18 +1,19 @@
 import * as aws from "@pulumi/aws";
 import * as pulumi from "@pulumi/pulumi";
 
+import { databaseUrl } from "../db/db";
 import { latestAmazonLinuxAmi } from "../helpers/latestAmazonAmi";
 import { runDockerImageBashScript } from "../helpers/runDockerImageBashScript";
 import { instanceProfileIAMContainerRegistry } from "../shared/instanceProfileIAMContainerRegistry";
 import {
   apiAlbSecurityGroup,
   apiEc2SecurityGroup,
-  apiEip1,
-  apiEip2,
   apiPrivateSubnet1,
   apiPrivateSubnet2,
+  apiPrivateSubnet3,
   apiPublicSubnet1,
   apiPublicSubnet2,
+  apiPublicSubnet3,
   apiVPC,
 } from "./api_network";
 
@@ -40,25 +41,25 @@ const requestCountTarget =
 
 // Create an Launch Template
 const launchTemplate = new aws.ec2.LaunchTemplate("api-lt", {
-  name: `api-lt-${apiSubdomain}-${Math.random().toString(36).substring(2, 8)}`,
+  name: `api-lt-${apiSubdomain}`,
   imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
   iamInstanceProfile: {
     name: instanceProfileIAMContainerRegistry.name,
   },
   vpcSecurityGroupIds: [apiEc2SecurityGroup.id],
-  userData: pulumi
-    .all([apiEip1.publicIp, apiEip2.publicIp])
-    .apply(([eip1, eip2]) => {
-      const script = runDockerImageBashScript(
-        apiECRName,
-        dockerImageTag,
-        apiPulumiEscEnvironmentName,
-        {},
-        true,
-      );
-      return Buffer.from(script).toString("base64");
-    }),
+  userData: pulumi.all([databaseUrl]).apply(([dbUrl]) => {
+    const script = runDockerImageBashScript(
+      apiECRName,
+      dockerImageTag,
+      apiPulumiEscEnvironmentName,
+      {
+        DATABASE_URL: dbUrl,
+      },
+      true,
+    );
+    return Buffer.from(script).toString("base64");
+  }),
   tagSpecifications: [
     {
       resourceType: "instance",
@@ -103,7 +104,7 @@ const targetGroup = new aws.lb.TargetGroup("api-alb-tg", {
   },
 });
 
-// Create Auto Scaling Group with warm pool
+// Create Auto Scaling Group
 const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   tags: [
     {
@@ -113,7 +114,11 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
     },
   ],
 
-  vpcZoneIdentifiers: [apiPrivateSubnet1.id, apiPrivateSubnet2.id],
+  vpcZoneIdentifiers: [
+    apiPrivateSubnet1.id,
+    apiPrivateSubnet2.id,
+    apiPrivateSubnet3.id,
+  ],
   launchTemplate: {
     id: launchTemplate.id,
     version: launchTemplate.latestVersion.apply((v) => v.toString()),
@@ -156,7 +161,7 @@ const alb = new aws.lb.LoadBalancer("api-alb", {
   name: `alb-${apiSubdomain}`,
   internal: false,
   loadBalancerType: "application",
-  subnets: [apiPublicSubnet1.id, apiPublicSubnet2.id],
+  subnets: [apiPublicSubnet1.id, apiPublicSubnet2.id, apiPublicSubnet3.id],
   securityGroups: [apiAlbSecurityGroup.id],
   enableHttp2: true,
   enableCrossZoneLoadBalancing: true,

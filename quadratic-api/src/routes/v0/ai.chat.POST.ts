@@ -113,6 +113,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           model,
           messageIndex,
           messageType,
+          source: messageSource,
           inputTokens: parsedResponse?.usage.inputTokens,
           outputTokens: parsedResponse?.usage.outputTokens,
           cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
