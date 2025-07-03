@@ -55,10 +55,10 @@ export const COMPONENTS = {
     },
     shared: {
         color: "gray",
-        dark: 'gray',
-        shortcut: 's',
-        name: 'Shared',
-    }
+        dark: "gray",
+        shortcut: "s",
+        name: "Shared",
+    },
 };
 export const SPACE = "     ";
 export const DONE = "✓";
@@ -68,4 +68,5 @@ export const ANIMATE_STATUS = ["◐", "◓", "◑", "◒"];
 export const WATCH = "👀";
 export const NO_LOGS = "🙈"; // AI picked this awesome character
 export const PERF = "🚀";
+export const FUNCTION_TIMER = "🕒";
 export const ANIMATION_INTERVAL = 100;

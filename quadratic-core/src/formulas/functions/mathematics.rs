@@ -1,4 +1,6 @@
-use bigdecimal::BigDecimal;
+use rust_decimal::prelude::*;
+
+use crate::number::{round, round_down, round_up, sum, truncate};
 
 use super::*;
 
@@ -40,8 +42,9 @@ fn get_functions() -> Vec<FormulaFunction> {
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
                 let numbers =
-                    criteria.iter_matching_coerced::<f64>(eval_range, sum_range.as_ref())?;
-                numbers.sum::<CodeResult<f64>>()
+                    criteria.iter_matching_coerced::<Decimal>(eval_range, sum_range.as_ref())?;
+                let result = numbers.collect::<CodeResult<Vec<Decimal>>>()?;
+                Ok(sum(result))
             }
         ),
         formula_fn!(
@@ -64,18 +67,18 @@ fn get_functions() -> Vec<FormulaFunction> {
                     criteria1,
                     more_eval_ranges_and_criteria,
                     |_ctx, eval_ranges_and_criteria| {
-                        // Same as `SUMIF`
-                        let numbers = Criterion::iter_matching_multi_coerced::<f64>(
+                        let numbers = Criterion::iter_matching_multi_coerced::<Decimal>(
                             &eval_ranges_and_criteria,
                             &sum_range,
                         )?;
-                        Ok(numbers.sum::<CodeResult<f64>>()?.into())
+                        let result = numbers.collect::<CodeResult<Vec<Decimal>>>()?;
+                        Ok(sum(result).into())
                     },
                 )?
             }
         ),
         formula_fn!(
-            /// Multiplies all values.
+            /// Multiplies all values.  
             /// Returns `1` if given no values.
             #[examples("PRODUCT(B2:C6, 0.002, E1)")]
             fn PRODUCT(numbers: (Iter<f64>)) {
@@ -251,8 +254,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// `ROUND(50, -2)` rounds to `100`.
             #[examples("ROUND(6.553, 2)")]
             #[zip_map]
-            fn ROUND([number]: BigDecimal, [digits]: (Option<i64>)) {
-                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::HalfUp)
+            fn ROUND([number]: Decimal, [digits]: (Option<i64>)) {
+                round(number, digits.unwrap_or(0))
             }
         ),
         formula_fn!(
@@ -269,8 +272,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   a multiple of 100.
             #[examples("ROUNDUP(6.553, 2)")]
             #[zip_map]
-            fn ROUNDUP([number]: BigDecimal, [digits]: (Option<i64>)) {
-                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Up)
+            fn ROUNDUP([number]: Decimal, [digits]: (Option<i64>)) {
+                round_up(number, digits.unwrap_or(0))
             }
         ),
         formula_fn!(
@@ -288,8 +291,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   to a multiple of 100.
             #[examples("ROUNDDOWN(6.553, 2)")]
             #[zip_map]
-            fn ROUNDDOWN([number]: BigDecimal, [digits]: (Option<i64>)) {
-                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Down)
+            fn ROUNDDOWN([number]: Decimal, [digits]: (Option<i64>)) {
+                round_down(number, digits.unwrap_or(0))
             }
         ),
         formula_fn!(
@@ -307,8 +310,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///   multiple of 100.
             #[examples("TRUNC(6.553, 2)")]
             #[zip_map]
-            fn TRUNC([number]: BigDecimal, [digits]: (Option<i64>)) {
-                number.with_scale_round(digits.unwrap_or(0), bigdecimal::RoundingMode::Down)
+            fn TRUNC([number]: Decimal, [digits]: (Option<i64>)) {
+                truncate(number, digits.unwrap_or(0))
             }
         ),
         // Other operators

@@ -542,7 +542,7 @@ time.sleep(20)
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`).click({ timeout: 30 * 1000 });
 
   // Type in a sleep function in Python editor
-  await page.keyboard.type(pythonCode);
+  await page.keyboard.type(pythonCode, { delay: 100 });
 
   // Click the blue play arrow to 'Save and run'
   await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });

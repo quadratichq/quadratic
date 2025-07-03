@@ -132,6 +132,7 @@ fn arc_cotangent(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
+
     use crate::util::assert_f64_approx_eq;
     use crate::{controller::GridController, formulas::tests::*};
 
@@ -506,5 +507,11 @@ mod tests {
             RunErrorMsg::DivideByZero,
             eval_to_err(&g, "ATAN2(0, 0)").msg,
         );
+    }
+
+    #[test]
+    fn test_acos_degrees() {
+        let g = GridController::new();
+        assert_eq!("60", eval_to_string(&g, "DEGREES(ACOS(0.5))"));
     }
 }
