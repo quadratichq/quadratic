@@ -192,14 +192,35 @@ impl Sheet {
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         let mut code_pos = pos;
-        let cell_value = if let Some(cell_value) = self.cell_value(pos) {
+        let cell_value = if let Some(cell_value) = self.cell_value_ref(pos) {
             Some(cell_value)
         } else {
             match self.data_table_pos_that_contains(pos) {
                 Ok(data_table_pos) => {
-                    if let Some(code_value) = self.cell_value(data_table_pos) {
-                        code_pos = data_table_pos;
-                        Some(code_value)
+                    if let Some(code_value) = self.cell_value_ref(data_table_pos) {
+                        // check for an inner code cell
+                        if matches!(code_value, CellValue::Import(_)) {
+                            if let Some(data_table) = self.data_table_at(&data_table_pos) {
+                                let code_cell = data_table.code_value_at(
+                                    (pos.x - data_table_pos.x) as u32,
+                                    (pos.y - data_table_pos.y - data_table.y_adjustment(true))
+                                        as u32,
+                                );
+                                if let Some(code_cell) = code_cell {
+                                    code_pos = data_table_pos;
+                                    Some(code_cell)
+                                } else {
+                                    code_pos = data_table_pos;
+                                    Some(code_value)
+                                }
+                            } else {
+                                code_pos = data_table_pos;
+                                Some(code_value)
+                            }
+                        } else {
+                            code_pos = data_table_pos;
+                            Some(code_value)
+                        }
                     } else {
                         None
                     }
