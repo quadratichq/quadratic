@@ -233,6 +233,8 @@ export class Tables extends Container<Table> {
   /// Creates new Tables for each code cell. This expects all data structures to
   /// be empty.
   private completeRenderCodeCells = (codeCells: JsRenderCodeCell[]) => {
+    console.log(codeCells);
+
     codeCells.forEach((codeCell) => {
       if (this.isCodeCellSingle(codeCell)) {
         this.singleCellTables[`${codeCell.x},${codeCell.y}`] = codeCell;

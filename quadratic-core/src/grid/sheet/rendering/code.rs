@@ -57,8 +57,12 @@ impl Sheet {
     }
 
     // Returns data for rendering a code cell.
-    fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
-        let code = self.cell_value(pos)?;
+    fn render_code_cell(
+        &self,
+        pos: Pos,
+        code: &CellValue,
+        data_table: &DataTable,
+    ) -> Option<JsRenderCodeCell> {
         let output_size = data_table.output_size();
         let (state, w, h, spill_error) = if data_table.has_spill() {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
@@ -88,8 +92,9 @@ impl Sheet {
             && !data_table.is_html()
             && data_table.alternating_colors;
 
+        dbgjs!(&code);
         let language = match code {
-            CellValue::Code(code) => code.language,
+            CellValue::Code(code) => code.language.clone(),
             CellValue::Import(_) => CodeCellLanguage::Import,
             _ => return None,
         };
@@ -119,7 +124,8 @@ impl Sheet {
     // Returns a single code cell for rendering.
     pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
         let data_table = self.data_table_at(&pos)?;
-        self.render_code_cell(pos, data_table)
+        let code = self.cell_value_ref(pos)?;
+        self.render_code_cell(pos, code, data_table)
     }
 
     /// Sends all sheet code cells for rendering to client
@@ -131,7 +137,45 @@ impl Sheet {
         let code = self
             .data_tables
             .expensive_iter()
-            .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
+            .flat_map(|(pos, data_table)| {
+                let mut code_cells = vec![];
+                if let Some(code) = self.cell_value_ref(*pos) {
+                    if let Some(code_cell) = self.render_code_cell(*pos, code, data_table) {
+                        code_cells.push(code_cell);
+                    }
+                }
+                if data_table.is_data_table() {
+                    if let Some(tables) = &data_table.tables {
+                        tables
+                            .expensive_iter()
+                            .for_each(|(inner_pos, inner_data_table)| {
+                                let inner_pos = inner_pos.translate(-1, -1, 0, 0);
+                                dbgjs!(&inner_pos);
+                                if let Some(code) = inner_data_table
+                                    .cell_value_ref_at(inner_pos.x as u32, inner_pos.y as u32)
+                                {
+                                    let y_adjustment = data_table.y_adjustment(true);
+                                    let inner_absolute_pos = Pos::new(
+                                        pos.x + inner_pos.x,
+                                        pos.y + inner_pos.y + y_adjustment,
+                                    );
+                                    dbgjs!("inner pos");
+                                    dbgjs!(&inner_absolute_pos);
+                                    if let Some(code_cell) = self.render_code_cell(
+                                        inner_absolute_pos,
+                                        code,
+                                        inner_data_table,
+                                    ) {
+                                        code_cells.push(code_cell);
+                                    } else {
+                                        dbgjs!("did not work");
+                                    }
+                                }
+                            });
+                    }
+                }
+                code_cells
+            })
             .collect::<Vec<_>>();
 
         if !code.is_empty() {
