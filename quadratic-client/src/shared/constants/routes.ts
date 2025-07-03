@@ -18,8 +18,8 @@ export const ROUTES = {
     searchParams: {
       state?: UrlParamsDevState['insertAndRunCodeInNewSheet'];
       prompt?: string | null;
-      private?: boolean;
       chatId?: string | null;
+      private?: boolean;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -28,13 +28,13 @@ export const ROUTES = {
       url.searchParams.set('state', btoa(JSON.stringify({ insertAndRunCodeInNewSheet: searchParams.state })));
     }
     if (searchParams.prompt) {
-      url.searchParams.set('prompt', searchParams.prompt);
-    }
-    if (searchParams.private) {
-      url.searchParams.set('private', 'true');
+      url.searchParams.set('prompt', encodeURIComponent(searchParams.prompt));
     }
     if (searchParams.chatId) {
       url.searchParams.set('chat-id', searchParams.chatId);
+    }
+    if (searchParams.private) {
+      url.searchParams.set('private', 'true');
     }
 
     return url.toString();

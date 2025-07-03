@@ -1,3 +1,7 @@
+import { SelectAIModelMenu } from '@/app/ai/components/SelectAIModelMenu';
+import { IframeIndexeddb } from '@/app/ai/iframeAiChatFiles/IframeIndexeddb';
+import { useIframeAIChatFiles } from '@/app/ai/iframeAiChatFiles/useIframeAIChatFiles';
+import { getExtension } from '@/app/helpers/files';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -11,7 +15,7 @@ import { Switch } from '@/shared/shadcn/ui/switch';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import { useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router';
 
 export const Component = () => {
@@ -20,64 +24,68 @@ export const Component = () => {
       team: { uuid },
     },
   } = useDashboardRouteLoaderData();
-  const [searchParams] = useSearchParams();
 
-  // TODO: wire this up to wheverever we want to store it
+  // TODO: wire this up to wherever we want to store it
+  const [searchParams] = useSearchParams();
   const [isPrivate, setIsPrivate] = useState(searchParams.get('private') === 'true');
-  const [value, setValue] = useState('');
-  const [contexts, setContexts] = useState<Array<{ id: string; label: string; sublabel?: string }>>([]);
-  const [loadState, setLoadState] = useState<'idle' | 'loading' | 'error'>('idle');
   useUpdateQueryStringValueWithoutNavigation('private', isPrivate ? 'true' : 'false');
 
-  // TODO: drag and drop on screen
+  const [loading, setLoading] = useState(false);
+  const [value, setValue] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // TODO: wire all these up
-  const onSubmit = async () => {
-    setLoadState('loading');
+  const chatId = useMemo(() => crypto.randomUUID(), []);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const { files, handleUploadFiles, handleDeleteFiles, dragging } = useIframeAIChatFiles(iframeRef, chatId);
 
-    // TODO: handle file uploads, either here or in router action
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  const handleSubmit = useCallback(() => {
+    if (loading || !value.trim()) return;
+    setLoading(true);
+    window.location.href = ROUTES.CREATE_FILE(uuid, { prompt: value, chatId, private: isPrivate });
+  }, [chatId, isPrivate, loading, uuid, value]);
 
-    window.location.href = ROUTES.CREATE_FILE(uuid, { prompt: value, private: isPrivate });
-    // setLoadState('idle');
-  };
-  const handleAttachFile = () => {
-    setContexts((prev) => [
-      ...prev,
-      { id: new Date().toISOString(), label: `my_file_name_${prev.length + 1}.pdf`, sublabel: 'PDF' },
-    ]);
-  };
-
-  const disabled = value.length === 0 || loadState !== 'idle';
+  const disabled = useMemo(() => value.length === 0 || loading, [value, loading]);
 
   return (
     <div className="flex h-full flex-grow flex-col items-center">
       <div className="flex h-full w-full flex-grow flex-col items-center justify-center gap-4">
         <div className="flex w-full max-w-md flex-col items-center gap-4">
           <AIIcon className="text-primary" size="xl" />
+
           <h1 className="relative text-center text-lg font-medium">
             Drop files, ask a question, and I’ll help you analyze and visualize your data in a new sheet
           </h1>
         </div>
-        <div className="w-full max-w-lg">
-          <AIPromptForm onSubmit={onSubmit} disabled={disabled}>
+
+        <div className="relative w-full max-w-lg">
+          <AIPromptForm disabled={disabled} onSubmit={handleSubmit}>
+            <AIPromptFilesDropZone dragging={dragging} />
+
             <AIPromptContext
-              pills={contexts.map((c) => ({
-                ...c,
-                handleRemove: () => setContexts((prev) => prev.filter((prevItem) => prevItem.id !== c.id)),
+              pills={files.map((file) => ({
+                label: file.name,
+                subLabel: getExtension(file.name),
+                handleRemove: () => handleDeleteFiles([file.fileId]),
               }))}
             />
-            <AIPromptTextarea value={value} onChange={setValue} disabled={loadState !== 'idle'} />
+
+            <AIPromptTextarea textareaRef={textareaRef} value={value} onChange={setValue} disabled={loading} />
+
             <AIPromptControls>
-              <AIPromptControlAttachFile onClick={handleAttachFile} />
+              <AIPromptControlAttachFile onClick={handleUploadFiles} />
+
               {/* <AIPromptControlConnections /> */}
-              {/* <AIPromptControlThinking /> */}
-              <AIPromptControlModel />
-              <AIPromptControlSubmit disabled={disabled} isLoading={loadState === 'loading'} />
+
+              <SelectAIModelMenu loading={loading} textareaRef={textareaRef} />
+
+              <AIPromptControlSubmit loading={loading} disabled={disabled} />
             </AIPromptControls>
           </AIPromptForm>
+
+          <IframeIndexeddb iframeRef={iframeRef} />
         </div>
       </div>
+
       <div className="mt-auto flex text-sm font-medium">
         <Label className="flex items-center gap-2">
           <Switch checked={isPrivate} onCheckedChange={setIsPrivate} /> Create as a personal file
@@ -121,7 +129,13 @@ export const Component = () => {
   </AIPrompt.Form>
 
 */
-function AIPromptForm({ onSubmit, children }: any) {
+
+interface AIPromptFormProps {
+  disabled: boolean;
+  onSubmit: () => void;
+  children: React.ReactNode;
+}
+const AIPromptForm = memo(({ disabled, onSubmit, children }: AIPromptFormProps) => {
   return (
     <form
       className="w-full rounded border border-border bg-accent p-2 shadow-sm has-[textarea:focus]:border-primary has-[textarea:focus]:ring-2"
@@ -145,9 +159,33 @@ function AIPromptForm({ onSubmit, children }: any) {
         /> */}
     </form>
   );
-}
+});
 
-function AIPromptControls({ children }: { children: React.ReactNode }) {
+interface AIPromptFilesDropZoneProps {
+  dragging: boolean;
+}
+const AIPromptFilesDropZone = memo(({ dragging }: AIPromptFilesDropZoneProps) => {
+  if (!dragging) return null;
+
+  return (
+    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-blue-50/95">
+      <div className="text-center">
+        <AttachFileIcon className="mx-auto mb-2 h-6 w-6 -rotate-45 text-blue-500" />
+
+        <p className="text-lg font-semibold text-blue-700">Drop files here</p>
+
+        <p className="text-sm text-blue-600">Image, PDF, Excel, CSV, or Parquet files</p>
+      </div>
+
+      <div className="absolute inset-2 z-10 flex items-center justify-center rounded-md border-4 border-dashed border-blue-600/20 bg-transparent"></div>
+    </div>
+  );
+});
+
+interface AIPromptControlsProps {
+  children: React.ReactNode;
+}
+const AIPromptControls = memo(({ children }: AIPromptControlsProps) => {
   return (
     <div
       className={cn(
@@ -160,14 +198,12 @@ function AIPromptControls({ children }: { children: React.ReactNode }) {
       <div className="flex w-full items-center gap-1 text-xs text-muted-foreground">{children}</div>
     </div>
   );
-}
+});
 
-// Maybe we just skip this? Let the app decide how it will submit the prompt when they get into the file...
-function AIPromptControlModel() {
-  return <div className="ml-auto">Model</div>;
+interface AIPromptControlAttachFileProps {
+  onClick: () => void;
 }
-
-function AIPromptControlAttachFile({ onClick }: { onClick: () => void }) {
+const AIPromptControlAttachFile = memo(({ onClick }: AIPromptControlAttachFileProps) => {
   return (
     <TooltipPopover label="Attach file">
       <Button
@@ -175,40 +211,50 @@ function AIPromptControlAttachFile({ onClick }: { onClick: () => void }) {
         variant="ghost"
         size="sm"
         className="h-8 w-8 rounded-full text-foreground"
-        onClick={onClick}
+        onClick={(e) => {
+          e.preventDefault();
+          onClick();
+        }}
       >
         <AttachFileIcon />
       </Button>
     </TooltipPopover>
   );
-}
+});
 
-function AIPromptContext({ pills }: { pills: Array<{ label: string; sublabel?: string; handleRemove?: () => void }> }) {
+interface AIPromptContextProps {
+  pills: Array<{ label: string; subLabel?: string; handleRemove: () => void }>;
+}
+const AIPromptContext = memo(({ pills }: AIPromptContextProps) => {
   return (
     <div className="flex flex-wrap gap-1 pb-1">
-      {pills.map(({ label, sublabel, handleRemove }, i) => (
-        <Badge key={i} variant="outline">
-          {label} {sublabel && <span className="ml-1 text-xs font-normal text-muted-foreground">{sublabel}</span>}
-          {handleRemove && (
-            <button
-              type="button"
-              className="-mr-1 ml-1 flex items-center rounded-full text-muted-foreground opacity-50 hover:opacity-100"
-              onClick={handleRemove}
-            >
-              <CloseIcon size="xs" />
-            </button>
-          )}
+      {pills.map(({ label, subLabel, handleRemove }, i) => (
+        <Badge key={`${i}-${label}-${subLabel}`} variant="outline">
+          {label} {subLabel && <span className="ml-1 text-xs font-normal text-muted-foreground">{subLabel}</span>}
+          <button
+            type="button"
+            className="-mr-1 ml-1 flex items-center rounded-full text-muted-foreground opacity-50 hover:opacity-100"
+            onClick={handleRemove}
+          >
+            <CloseIcon size="xs" />
+          </button>
         </Badge>
       ))}
     </div>
   );
-}
+});
 
-function AIPromptTextarea({ value, onChange, ref, disabled }: any) {
+interface AIPromptTextareaProps {
+  textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  value: string;
+  onChange: (value: string) => void;
+  disabled: boolean;
+}
+const AIPromptTextarea = memo(({ value, onChange, disabled, textareaRef }: AIPromptTextareaProps) => {
   return (
     <Textarea
       autoFocus={true}
-      ref={ref}
+      ref={textareaRef}
       // value={value}
       className={cn(
         // text-md dashboard, text-sm app?
@@ -228,7 +274,7 @@ function AIPromptTextarea({ value, onChange, ref, disabled }: any) {
       disabled={disabled}
     />
   );
-}
+});
 
 // function AIPromptControlThinking() {
 //   const [thinking, setThinking] = useState(false);
@@ -290,7 +336,11 @@ function AIPromptTextarea({ value, onChange, ref, disabled }: any) {
 //   );
 // }
 
-function AIPromptControlSubmit({ disabled, isLoading }: { disabled: boolean; isLoading: boolean }) {
+interface AIPromptControlSubmitProps {
+  loading: boolean;
+  disabled: boolean;
+}
+const AIPromptControlSubmit = memo(({ loading, disabled }: AIPromptControlSubmitProps) => {
   return (
     <ConditionalWrapper
       condition={!disabled}
@@ -301,8 +351,8 @@ function AIPromptControlSubmit({ disabled, isLoading }: { disabled: boolean; isL
       )}
     >
       <Button size="icon-sm" className="h-8 w-8 rounded-full" type="submit" disabled={disabled}>
-        {isLoading ? <SpinnerIcon /> : <ArrowUpwardIcon />}
+        {loading ? <SpinnerIcon /> : <ArrowUpwardIcon />}
       </Button>
     </ConditionalWrapper>
   );
-}
+});
