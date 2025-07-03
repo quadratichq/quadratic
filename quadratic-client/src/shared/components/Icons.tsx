@@ -20,11 +20,12 @@ if (document.fonts) {
 }
 
 const sizes = {
-  sm: '20',
+  xs: '16',
+  sm: '20', // Default
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
   lg: '40',
-  // xl: '48',
+  xl: '48',
   '2xl': '64',
 } as const;
 
@@ -169,6 +170,10 @@ export const BorderStyleIcon: IconComponent = (props) => {
 
 export const BorderColorIcon: IconComponent = (props) => {
   return <Icon {...props}>border_color</Icon>;
+};
+
+export const ChatIcon: IconComponent = (props) => {
+  return <Icon {...props}>chat_bubble</Icon>;
 };
 
 export const CheckBoxEmptyIcon: IconComponent = (props) => {
