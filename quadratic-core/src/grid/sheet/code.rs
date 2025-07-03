@@ -128,7 +128,6 @@ impl Sheet {
                     );
                     if let Some((inner_code_pos, inner_data_table)) = tables.get_contains(inner_pos)
                     {
-                        dbg!(1);
                         return inner_data_table.cell_value_at(
                             (pos.x - inner_code_pos.x) as u32,
                             (pos.y - inner_code_pos.y) as u32,
