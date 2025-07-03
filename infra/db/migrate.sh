@@ -95,11 +95,3 @@ pg_restore \
 
 echo "✓ Restore completed." | tee -a "$LOG_FILE"
 show_duration $start_time
-
-# Keep dump file for backup instead of deleting
-mkdir -p migration_backups
-mv "$HEROKU_DUMP_FILE" migration_backups/
-echo "✓ Dump file moved to migration_backups/" | tee -a "$LOG_FILE"
-
-echo "Migration finished successfully!" | tee -a "$LOG_FILE"
-echo "Log file: $LOG_FILE"

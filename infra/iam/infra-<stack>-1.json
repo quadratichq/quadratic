@@ -148,6 +148,7 @@
         "elasticloadbalancing:DescribeListenerAttributes",
         "elasticloadbalancing:AddTags",
         "elasticloadbalancing:SetSecurityGroups",
+        "elasticloadbalancing:SetSubnets",
         "elasticloadbalancing:ModifyLoadBalancerAttributes",
         "elasticloadbalancing:ModifyTargetGroupAttributes",
         "elasticloadbalancing:ModifyTargetGroup",

@@ -10,8 +10,10 @@ import {
   apiEc2SecurityGroup,
   apiPrivateSubnet1,
   apiPrivateSubnet2,
+  apiPrivateSubnet3,
   apiPublicSubnet1,
   apiPublicSubnet2,
+  apiPublicSubnet3,
   apiVPC,
 } from "./api_network";
 
@@ -112,7 +114,11 @@ const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
     },
   ],
 
-  vpcZoneIdentifiers: [apiPrivateSubnet1.id, apiPrivateSubnet2.id],
+  vpcZoneIdentifiers: [
+    apiPrivateSubnet1.id,
+    apiPrivateSubnet2.id,
+    apiPrivateSubnet3.id,
+  ],
   launchTemplate: {
     id: launchTemplate.id,
     version: launchTemplate.latestVersion.apply((v) => v.toString()),
@@ -155,7 +161,7 @@ const alb = new aws.lb.LoadBalancer("api-alb", {
   name: `alb-${apiSubdomain}`,
   internal: false,
   loadBalancerType: "application",
-  subnets: [apiPublicSubnet1.id, apiPublicSubnet2.id],
+  subnets: [apiPublicSubnet1.id, apiPublicSubnet2.id, apiPublicSubnet3.id],
   securityGroups: [apiAlbSecurityGroup.id],
   enableHttp2: true,
   enableCrossZoneLoadBalancing: true,

@@ -4,16 +4,15 @@ import {
   apiEc2SecurityGroup,
   apiPrivateSubnet1,
   apiPrivateSubnet2,
+  apiPrivateSubnet3,
   apiVPC,
 } from "../api/api_network";
 
 const config = new pulumi.Config();
 
 // Database configuration
-const dbInstanceClass = config.get("db-instance-size") ?? "db.m5d.large";
-const dbAllocatedStorage = config.getNumber("db-allocated-storage") ?? 100;
-const dbMaxAllocatedStorage =
-  config.getNumber("db-max-allocated-storage") ?? 2000;
+const dbInstanceClass = config.get("db-instance-size") ?? "db.r8g.large";
+const dbInstanceCount = config.getNumber("db-instance-count") ?? 1;
 const dbName = config.get("db-name") ?? "quadratic";
 const dbUsername = config.get("db-username") ?? "postgres";
 const dbPassword = config.get("db-password") ?? "postgres";
@@ -65,72 +64,129 @@ const dbSecurityGroup = new aws.ec2.SecurityGroup(
         securityGroups: [apiEc2SecurityGroup.id],
       },
     ],
-    // No egress rules - database doesn't need to initiate outbound connections
     tags: { Name: "db-postgresql-security-group" },
   },
 );
 
-// Create DB Subnet Group using private subnets only
+// Create DB Subnet Group using private api subnets only
 const dbSubnetGroup = new aws.rds.SubnetGroup("db-postgresql-subnet-group", {
-  subnetIds: [apiPrivateSubnet1.id, apiPrivateSubnet2.id],
+  subnetIds: [apiPrivateSubnet1.id, apiPrivateSubnet2.id, apiPrivateSubnet3.id],
   tags: {
-    Name: `db-postgresql-subnet-group`,
+    Name: `db-postgresql-limitless-subnet-group`,
   },
 });
 
-// Create PostgreSQL RDS instance
-const db = new aws.rds.Instance("db-postgresql", {
-  identifier: "db-postgresql-quadratic",
+// Create Aurora PostgreSQL cluster
+const dbCluster = new aws.rds.Cluster(
+  "db-postgresql-cluster",
+  {
+    clusterIdentifier: "db-postgresql-quadratic-cluster",
 
-  tags: {
-    Name: `db-postgresql-quadratic`,
+    tags: {
+      Name: `db-postgresql-quadratic-cluster`,
+    },
+
+    // Database configuration - Aurora PostgreSQL
+    engine: "aurora-postgresql",
+    engineVersion: "17.4",
+
+    // Version upgrade settings
+    allowMajorVersionUpgrade: true,
+
+    // Aurora I/O-Optimized storage
+    storageType: "aurora-iopt1",
+    storageEncrypted: true,
+
+    // Database credentials
+    databaseName: dbName,
+    masterUsername: dbUsername,
+    masterPassword: dbPassword,
+
+    // Network configuration
+    vpcSecurityGroupIds: [dbSecurityGroup.id],
+    dbSubnetGroupName: dbSubnetGroup.name,
+
+    // High Availability - Aurora automatically distributes instances across
+    // the AZs in the subnet group for fault tolerance and automatic failover
+    availabilityZones: ["us-west-2a", "us-west-2b", "us-west-2c"],
+
+    // Backup and maintenance
+    backupRetentionPeriod: 7,
+    preferredBackupWindow: "03:00-04:00",
+    preferredMaintenanceWindow: "sun:04:00-sun:05:00",
+
+    // Performance Insights
+    performanceInsightsEnabled: true,
+    performanceInsightsRetentionPeriod: 7,
+
+    // CloudWatch logs exports
+    enabledCloudwatchLogsExports: ["postgresql"],
+
+    // Delete protection
+    deletionProtection: true,
+    skipFinalSnapshot: false,
+    finalSnapshotIdentifier: pulumi.interpolate`db-postgresql-cluster-final-snapshot-${Date.now()}`,
+
+    applyImmediately: false,
   },
+  {
+    dependsOn: [rdsMonitoringPolicyAttachment],
+  },
+);
 
-  // Database configuration - Latest PostgreSQL version
-  engine: "postgres",
-  engineVersion: "17.5",
-  instanceClass: dbInstanceClass,
-  allocatedStorage: dbAllocatedStorage,
-  maxAllocatedStorage: dbMaxAllocatedStorage,
-  storageType: "gp3",
-  storageEncrypted: true,
+// Create Aurora PostgreSQL cluster instances
+const dbClusterInstances: aws.rds.ClusterInstance[] = [];
+for (let i = 0; i < dbInstanceCount; i++) {
+  const dbClusterInstance = new aws.rds.ClusterInstance(
+    `db-postgresql-instance-${i + 1}`,
+    {
+      identifier: `db-postgresql-instance-${i + 1}`,
+      tags: {
+        Name: `db-postgresql-instance-${i + 1}`,
+      },
 
-  // Database credentials
-  dbName: dbName,
-  username: dbUsername,
-  password: dbPassword,
+      clusterIdentifier: dbCluster.clusterIdentifier,
+      instanceClass: dbInstanceClass,
+      engine: "aurora-postgresql",
+      engineVersion: dbCluster.engineVersion,
 
-  // Network configuration - locked to API VPC private subnets only
-  vpcSecurityGroupIds: [dbSecurityGroup.id],
-  dbSubnetGroupName: dbSubnetGroup.name,
-  publiclyAccessible: false, // Ensure no public access
-  multiAz: false,
+      // Performance insights
+      performanceInsightsEnabled: true,
+      performanceInsightsRetentionPeriod: 7,
 
-  // Backup and maintenance
-  backupRetentionPeriod: 7,
-  backupWindow: "03:00-04:00",
-  maintenanceWindow: "sun:04:00-sun:05:00",
-  autoMinorVersionUpgrade: true, // Automatically get latest PostgreSQL 17.x minor versions
+      // Monitoring
+      monitoringInterval: 60,
+      monitoringRoleArn: rdsMonitoringRole.arn,
+    },
+  );
+  dbClusterInstances.push(dbClusterInstance);
+}
 
-  // Performance and monitoring
-  performanceInsightsEnabled: true,
-  performanceInsightsRetentionPeriod: 7,
-  monitoringInterval: 60,
-  monitoringRoleArn: rdsMonitoringRole.arn,
-  enabledCloudwatchLogsExports: ["postgresql", "upgrade"],
+// Cluster endpoints
+const clusterEndpoint = dbCluster.endpoint;
+const clusterReaderEndpoint = dbCluster.readerEndpoint;
 
-  // Delete protection
-  deletionProtection: true,
-  skipFinalSnapshot: false,
-  finalSnapshotIdentifier: pulumi.interpolate`db-postgresql-quadratic-final-snapshot-${Date.now()}`,
-
-  // Apply changes immediately (be careful with this in production)
-  applyImmediately: false,
-});
-
-// Create database URL for connection string with password
+// Export database URL (read/write)
 export const databaseUrl = pulumi
-  .all([db.username, db.password, db.endpoint, db.dbName])
+  .all([
+    dbCluster.masterUsername,
+    dbCluster.masterPassword,
+    clusterEndpoint,
+    dbCluster.databaseName,
+  ])
+  .apply(
+    ([username, password, endpoint, dbName]) =>
+      `postgresql://${username}:${password}@${endpoint}/${dbName}`,
+  );
+
+// Export database URL (read only)
+export const databaseReaderUrl = pulumi
+  .all([
+    dbCluster.masterUsername,
+    dbCluster.masterPassword,
+    clusterReaderEndpoint,
+    dbCluster.databaseName,
+  ])
   .apply(
     ([username, password, endpoint, dbName]) =>
       `postgresql://${username}:${password}@${endpoint}/${dbName}`,
