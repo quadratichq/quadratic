@@ -17,11 +17,15 @@ const internetGateway = new aws.ec2.InternetGateway("api-igw", {
 });
 
 // Create Elastic IPs
-export const apiEip1 = new aws.ec2.Eip("api-nat-eip-1", {
+const apiEip1 = new aws.ec2.Eip("api-nat-eip-1", {
   domain: "vpc",
 });
 
-export const apiEip2 = new aws.ec2.Eip("api-nat-eip-2", {
+const apiEip2 = new aws.ec2.Eip("api-nat-eip-2", {
+  domain: "vpc",
+});
+
+const apiEip3 = new aws.ec2.Eip("api-nat-eip-3", {
   domain: "vpc",
 });
 
@@ -42,6 +46,14 @@ export const apiPublicSubnet2 = new aws.ec2.Subnet("api-public-subnet-2", {
   tags: { Name: "api-public-subnet-2" },
 });
 
+export const apiPublicSubnet3 = new aws.ec2.Subnet("api-public-subnet-3", {
+  vpcId: apiVPC.id,
+  cidrBlock: "10.0.5.0/24",
+  availabilityZone: "us-west-2c",
+  mapPublicIpOnLaunch: true,
+  tags: { Name: "api-public-subnet-3" },
+});
+
 // Create a NAT Gateway in each public subnet
 const natGateway1 = new aws.ec2.NatGateway("api-nat-gateway-1", {
   allocationId: apiEip1.id,
@@ -53,6 +65,12 @@ const natGateway2 = new aws.ec2.NatGateway("api-nat-gateway-2", {
   allocationId: apiEip2.id,
   subnetId: apiPublicSubnet2.id,
   tags: { Name: "api-nat-gateway-2" },
+});
+
+const natGateway3 = new aws.ec2.NatGateway("api-nat-gateway-3", {
+  allocationId: apiEip3.id,
+  subnetId: apiPublicSubnet3.id,
+  tags: { Name: "api-nat-gateway-3" },
 });
 
 // Create private subnets
@@ -68,6 +86,13 @@ export const apiPrivateSubnet2 = new aws.ec2.Subnet("api-private-subnet-2", {
   cidrBlock: "10.0.4.0/24",
   availabilityZone: "us-west-2b",
   tags: { Name: "api-private-subnet-2" },
+});
+
+export const apiPrivateSubnet3 = new aws.ec2.Subnet("api-private-subnet-3", {
+  vpcId: apiVPC.id,
+  cidrBlock: "10.0.6.0/24",
+  availabilityZone: "us-west-2c",
+  tags: { Name: "api-private-subnet-3" },
 });
 
 // Create route tables
@@ -104,6 +129,17 @@ const privateRouteTable2 = new aws.ec2.RouteTable("api-private-route-table-2", {
   tags: { Name: "api-private-route-table-2" },
 });
 
+const privateRouteTable3 = new aws.ec2.RouteTable("api-private-route-table-3", {
+  vpcId: apiVPC.id,
+  routes: [
+    {
+      cidrBlock: "0.0.0.0/0",
+      natGatewayId: natGateway3.id,
+    },
+  ],
+  tags: { Name: "api-private-route-table-3" },
+});
+
 // Associate subnets with route tables
 new aws.ec2.RouteTableAssociation("api-public-route-table-association-1", {
   subnetId: apiPublicSubnet1.id,
@@ -123,6 +159,11 @@ new aws.ec2.RouteTableAssociation("api-private-route-table-association-1", {
 new aws.ec2.RouteTableAssociation("api-private-route-table-association-2", {
   subnetId: apiPrivateSubnet2.id,
   routeTableId: privateRouteTable2.id,
+});
+
+new aws.ec2.RouteTableAssociation("api-private-route-table-association-3", {
+  subnetId: apiPrivateSubnet3.id,
+  routeTableId: privateRouteTable3.id,
 });
 
 // Create a Security Group for the Api ALB
@@ -171,7 +212,7 @@ export const apiEc2SecurityGroup = new aws.ec2.SecurityGroup("api-sg-1", {
   tags: { Name: "api-ec2-security-group" },
 });
 
-if (isPreviewEnvironment)
+if (isPreviewEnvironment) {
   new aws.ec2.SecurityGroupRule(`api-ssh-ingress-rule`, {
     type: "ingress",
     fromPort: 22,
@@ -180,3 +221,4 @@ if (isPreviewEnvironment)
     cidrBlocks: ["0.0.0.0/0"],
     securityGroupId: apiEc2SecurityGroup.id,
   });
+}
