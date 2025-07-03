@@ -7,7 +7,7 @@ pub mod auth;
 #[cfg(feature = "aws")]
 pub mod aws;
 
-// #[cfg(feature = "cache")]
+#[cfg(feature = "cache")]
 pub mod cache;
 
 #[cfg(feature = "crypto")]

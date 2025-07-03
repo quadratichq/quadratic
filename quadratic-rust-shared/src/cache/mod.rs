@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::time::{Duration, Instant};
 
 pub mod error;
-// #[cfg(feature = "memory")]
+#[cfg(feature = "memory")]
 pub mod memory;
 
 #[async_trait]

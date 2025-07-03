@@ -1,6 +1,7 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
@@ -104,10 +105,11 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
     const partialJson = parsePartialJson(args);
     if (partialJson && 'code_cell_language' in partialJson) {
       const { code_cell_language: language, code_cell_position: position } = partialJson;
+
       return (
         <ToolCard
           icon={<LanguageIcon language={language} />}
-          label={language}
+          label={getConnectionKind(language)}
           description={
             `${estimatedNumberOfLines} line` +
             (estimatedNumberOfLines === 1 ? '' : 's') +
@@ -129,7 +131,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
   return (
     <ToolCard
       icon={<LanguageIcon language={code_cell_language} />}
-      label={code_cell_name || code_cell_language}
+      label={code_cell_name || getConnectionKind(code_cell_language)}
       description={
         `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
       }

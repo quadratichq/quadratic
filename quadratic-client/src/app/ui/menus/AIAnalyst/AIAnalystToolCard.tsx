@@ -2,6 +2,7 @@ import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
+import { GetDatabaseSchemas } from '@/app/ai/toolCards/GetDatabaseSchemas';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
@@ -55,6 +56,8 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <ConvertToTable args={args} loading={loading} />;
     case AITool.WebSearch:
       return <WebSearch args={args} loading={loading} />;
+    case AITool.GetDatabaseSchemas:
+      return <GetDatabaseSchemas args={args} loading={loading} />;
     default:
       console.error(`Unknown tool: ${name}`);
       return null;

@@ -160,6 +160,7 @@ const InternalContextTypeSchema = z.enum([
   'tables',
   'files',
   'modelRouter',
+  'sqlSchemas',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
@@ -434,6 +435,7 @@ const AISourceSchema = z.enum([
   'PDFImport',
   'ModelRouter',
   'WebSearch',
+  'GetDatabaseSchemas',
 ]);
 export type AISource = z.infer<typeof AISourceSchema>;
 

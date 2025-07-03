@@ -21,6 +21,7 @@ export enum AITool {
   ConvertToTable = 'convert_to_table',
   WebSearch = 'web_search',
   WebSearchInternal = 'web_search_internal',
+  GetDatabaseSchemas = 'get_database_schemas',
 }
 
 export const AIToolSchema = z.enum([
@@ -42,6 +43,7 @@ export const AIToolSchema = z.enum([
   AITool.ConvertToTable,
   AITool.WebSearch,
   AITool.WebSearchInternal,
+  AITool.GetDatabaseSchemas,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -198,6 +200,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.WebSearchInternal]: z.object({
     query: z.string(),
+  }),
+  [AITool.GetDatabaseSchemas]: z.object({
+    connection_ids: z.array(z.string()).optional(),
   }),
 } as const;
 
@@ -418,7 +423,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     description: `
-Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
+Sets the value of a code cell and runs it in the current open sheet, requires the language (Python, Javascript, or SQL Connection), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
@@ -426,7 +431,7 @@ Provide a name for the output of the code cell. The name cannot contain spaces o
 Note: only name the code cell if it is new.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
-This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
+This tool is for Python, Javascript, and SQL Connection code. For formulas, use set_formula_cell_value.\n
 `,
     parameters: {
       type: 'object',
@@ -441,9 +446,9 @@ This tool is for Python and Javascript code only. For formulas, use set_formula_
             'What to name the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed). First letter capitalized is preferred.',
         },
         code_cell_language: {
-          type: 'string',
+          type: ['string', 'object'],
           description:
-            'The language of the code cell, this can be one of Python or Javascript. This is case sensitive.',
+            'The language of the code cell. For Python/Javascript, use strings: "Python" or "Javascript". For SQL connections, use object format: {"Connection": {"kind": "POSTGRES|MYSQL|MSSQL|SNOWFLAKE", "id": "connection-uuid"}}. This is case sensitive.',
         },
         code_cell_position: {
           type: 'string',
@@ -464,8 +469,14 @@ You should use the set_code_cell_value function to set this code cell value. Use
 Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
-Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
-This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
+Always refer to the cells on sheet by its position in a1 notation, using q.cells function for Python/Javascript. Don't add values manually in code cells.\n
+This tool is for Python, Javascript, and SQL Connection code. For formulas, use set_formula_cell_value.\n
+For SQL Connection code cells:\n
+- Use the Connection language format: {"Connection": {"kind": "POSTGRES|MYSQL|MSSQL|SNOWFLAKE", "id": "connection-uuid"}}\n
+- The connection ID must be from an available database connection in the team\n
+- Write SQL queries that reference the database tables and schemas provided in context\n
+- Follow database-specific syntax rules (quotes for Postgres, backticks for MySQL, etc.)\n
+
 
 Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
@@ -976,6 +987,44 @@ It requires the query to search for.\n
     prompt: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for.\n
+`,
+  },
+  [AITool.GetDatabaseSchemas]: {
+    sources: ['AIAnalyst'],
+    description: `
+Retrieves detailed database table schemas including column names, data types, and constraints.\n
+Use this tool when you need detailed column information beyond the table names already available in context.\n
+Essential for writing accurate SQL queries that reference specific columns and their data types.\n
+If connection_ids is not provided, it will return detailed schemas for all available team connections.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        connection_ids: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description:
+            'Optional array of specific connection IDs to get schemas for. If not provided, returns schemas for all team connections.',
+        },
+      },
+      required: [],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
+    prompt: `
+Use this tool to retrieve detailed database table schemas when you need column-level information for SQL queries.\n
+You already have table names in context - use this tool when you need:\n
+- Column names and their data types\n
+- Constraints and nullable information\n
+- Detailed schema structure for writing accurate SQL queries\n
+Call this tool when:\n
+- User asks for specific column information or data types\n
+- You need to write SQL queries that reference specific columns\n
+- User wants detailed database schema information\n
+- You need to understand column relationships and constraints\n
+The tool returns comprehensive schema information including column names, data types, constraints, and nullable flags.\n
 `,
   },
 } as const;
