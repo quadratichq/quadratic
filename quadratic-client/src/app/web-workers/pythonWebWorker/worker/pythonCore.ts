@@ -7,21 +7,21 @@ import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 export class PythonCore {
   private coreMessagePort?: MessagePort;
 
-  init(messagePort: MessagePort) {
+  init = (messagePort: MessagePort) => {
     this.coreMessagePort = messagePort;
     this.coreMessagePort.onmessage = this.handleMessage;
 
     if (debugFlag('debugWebWorkers')) console.log('[pythonCore] initialized');
-  }
+  };
 
-  private send(message: PythonCoreMessage, transfer?: Transferable[]) {
+  private send = (message: PythonCoreMessage, transfer?: Transferable[]) => {
     if (!this.coreMessagePort) throw new Error('coreMessagePort not initialized');
     if (transfer) {
       this.coreMessagePort.postMessage(message, transfer);
     } else {
       this.coreMessagePort.postMessage(message);
     }
-  }
+  };
 
   private handleMessage = async (e: MessageEvent<CorePythonMessage>) => {
     if (debugFlag('debugWebWorkersMessages')) console.log(`[pythonCore] message: ${e.data.type}`);
@@ -30,19 +30,20 @@ export class PythonCore {
       case 'corePythonRun':
         python.runPython(e.data);
         return;
+      default:
+        console.warn('[pythonCore] Unhandled message type', e.data);
     }
   };
 
-  sendPythonResults(transactionId: string, jsCodeResultBuffer: ArrayBuffer) {
+  sendPythonResults = (jsCodeResultBuffer: ArrayBuffer) => {
     this.send(
       {
         type: 'pythonCoreResults',
-        transactionId,
         jsCodeResultBuffer,
       },
       [jsCodeResultBuffer]
     );
-  }
+  };
 
   sendGetCellsA1 = (transactionId: string, a1: string): JsCellsA1Response => {
     try {

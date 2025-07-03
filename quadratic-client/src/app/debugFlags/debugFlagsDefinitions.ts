@@ -1,7 +1,7 @@
 //! Definitions and display settings for all debug flags. These are accessible
 //! in the app via the Cmd+Option+Shift+I (Ctrl+Alt+Shift+I in windows) menu.
 
-export const debugFlagGroups = ['Rendering', 'Transactions', 'Misc.', 'UI', 'WebWorkers', 'AI'];
+export const debugFlagGroups = ['Rendering', 'Transactions', 'Misc.', 'UI', 'WebWorkers', 'AI', 'Playwright'];
 
 export type DebugFlagGroup = (typeof debugFlagGroups)[number];
 
@@ -24,12 +24,6 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     initial: false,
     title: 'Show FPS in the bottom bar',
     description: 'Shows FPS meter & renderer light in bottom bar',
-    group: 'Rendering',
-  },
-  debugShowCoordinates: {
-    initial: false,
-    title: 'Show viewport coordinates in the bottom bar',
-    description: 'Use coordinates to create E2E tests',
     group: 'Rendering',
   },
   debugShowWhyRendering: {
@@ -167,6 +161,18 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     title: 'Print readable AI Context',
     description: 'Prints the AI Context to the console in a readable form',
     group: 'AI',
+  },
+
+  debugShowTopLeftPosition: {
+    initial: false,
+    title: 'Show Top Left position in footer',
+    group: 'Playwright',
+  },
+  debugShowCoordinates: {
+    initial: false,
+    title: 'Show viewport coordinates in the bottom bar',
+    description: 'Use coordinates to create E2E tests',
+    group: 'Playwright',
   },
 };
 

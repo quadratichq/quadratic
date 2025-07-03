@@ -8,38 +8,34 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 export function GridContextMenuCodeTable() {
   const contextMenu = useRecoilValue(contextMenuAtom);
-  const hasSpillError = Boolean(contextMenu.table?.spill_error);
-
-  if (hasSpillError) {
-    return (
-      <ContextMenuBase>
-        <ContextMenuItemAction action={Action.Cut} />
-        <ContextMenuItemAction action={Action.Copy} />
-        <ContextMenuItemAction action={Action.Paste} />
-        <ContextMenuItemAction action={Action.PasteValuesOnly} />
-        <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-        <DropdownMenuSeparator />
-        <ContextMenuItemAction action={Action.EditTableCode} />
-        <ContextMenuCodeTableItems />
-      </ContextMenuBase>
-    );
-  }
+  const hasSpillError = useMemo(() => !!contextMenu.table?.spill_error, [contextMenu.table?.spill_error]);
 
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.Cut} />
-      <ContextMenuItemAction action={Action.Copy} />
-      <ContextMenuItemAction action={Action.Paste} />
-      <ContextMenuItemAction action={Action.PasteValuesOnly} />
-      <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
-      <ContextMenuItemAction action={Action.DownloadAsCsv} />
+      <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.EditTableCode} />
+
+      <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
+      {!hasSpillError && (
+        <>
+          <ContextMenuItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+          <ContextMenuItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
+        </>
+      )}
+
+      <DropdownMenuSeparator />
+
+      <ContextMenuItemAction action={Action.EditTableCode} actionArgs={undefined} />
       <ContextMenuCodeTableItems />
     </ContextMenuBase>
   );
@@ -66,16 +62,18 @@ export const ContextMenuCodeTableNested = ({ isShowingColumnNames }: { isShowing
 export function ContextMenuCodeTableItems({ showUseFirstRowAsHeader }: { showUseFirstRowAsHeader?: boolean }) {
   return (
     <>
-      <ContextMenuItemAction action={Action.RenameTable} />
-      <ContextMenuItemAction action={Action.SortTable} />
-      <ContextMenuItemAction action={Action.ShowAllColumns} />
-      <ContextMenuItemAction action={Action.FlattenTable} />
-      <ContextMenuItemAction action={Action.CodeToDataTable} />
+      <ContextMenuItemAction action={Action.RenameTable} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.SortTable} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ShowAllColumns} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.FlattenTable} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.CodeToDataTable} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
-      <ContextMenuItemAction action={Action.ToggleTableName} />
-      <ContextMenuItemAction action={Action.ToggleTableColumns} />
-      <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />
+
+      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ToggleTableName} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ToggleTableColumns} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} actionArgs={undefined} />
     </>
   );
 }

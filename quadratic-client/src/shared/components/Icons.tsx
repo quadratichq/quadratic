@@ -431,6 +431,10 @@ export const HistoryIcon: IconComponent = (props) => {
   return <Icon {...props}>history</Icon>;
 };
 
+export const InfoIcon: IconComponent = (props) => {
+  return <Icon {...props}>info</Icon>;
+};
+
 export const ImportIcon: IconComponent = (props) => {
   return <Icon {...props}>login</Icon>;
 };
@@ -689,6 +693,10 @@ export const FileOpenIcon: IconComponent = (props) => {
 
 export const ArrowRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
+};
+
+export const ArrowBackIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_back</Icon>;
 };
 
 export const ArrowDoubleRightIcon: IconComponent = (props) => {

@@ -75,23 +75,25 @@ export class PointerDown {
       if (!cursor.contains(column, row)) {
         cursor.moveTo(column, row);
       }
-      const tableName = cursor.getSingleTableSelection();
-      if (tableName) {
-        const table = pixiApp.cellsSheet().tables.getTableFromName(tableName);
-        if (table) {
-          events.emit('contextMenu', { type: ContextMenuType.Table, world, column, row, table: table.codeCell });
-          return;
-        }
+      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
+      if (codeCell && codeCell?.language !== 'Import') {
+        events.emit('contextMenu', {
+          type: ContextMenuType.Grid,
+          world,
+          column: codeCell.x,
+          row: codeCell.y,
+          table: codeCell,
+        });
+      } else {
+        events.emit('contextMenu', {
+          type: ContextMenuType.Grid,
+          world,
+          column,
+          row,
+          // _could_ have an associated table if it's a cell inside a table on the grid
+          table: pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor.position),
+        });
       }
-
-      events.emit('contextMenu', {
-        type: ContextMenuType.Grid,
-        world,
-        column,
-        row,
-        // _could_ have an associated table if it's a cell inside a table on the grid
-        table: pixiApp.cellsSheet().cursorOnDataTable(),
-      });
       return;
     }
 
@@ -111,9 +113,9 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(column, row);
-        if (table) {
-          doubleClickCell({ column, row });
+        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
+        if (codeCell) {
+          doubleClickCell({ column: codeCell.x, row: codeCell.y });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.current, column, row);
           doubleClickCell({ column, row, cell, cursorMode: cell ? CursorMode.Edit : CursorMode.Enter });

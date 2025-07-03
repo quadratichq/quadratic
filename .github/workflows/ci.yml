@@ -78,6 +78,7 @@ jobs:
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
+          BIGQUERY_CREDENTIALS: "${{ secrets.BIGQUERY_CREDENTIALS }}"
         run: |
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
@@ -264,9 +265,8 @@ jobs:
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
 
-      - name: Run cargo clippy in quadratic-core
+      - name: Run cargo clippy
         run: |
-          cd quadratic-core
           cargo clippy -- -D warnings
 
   lint_typescript:

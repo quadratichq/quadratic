@@ -697,6 +697,7 @@ export function InviteForm({
       </div>
 
       <Button
+        data-testid="share-file-invite-button"
         type="submit"
         onClick={() => {
           inputRef.current?.focus();

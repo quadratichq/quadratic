@@ -51,6 +51,7 @@ export class Javascript {
 
   private getCellsA1 = async (transactionId: string, a1: string): Promise<ArrayBuffer> => {
     let responseBuffer: ArrayBuffer;
+
     try {
       responseBuffer = await javascriptCore.sendGetCellsA1(transactionId, a1);
     } catch (error: any) {
@@ -162,34 +163,43 @@ export class Javascript {
           return this.next();
         } else if (e.data.type === 'getCellsA1Length') {
           const { sharedBuffer, a1 } = e.data;
-          this.getCellsA1(message.transactionId, a1).then((cellsBuffer) => {
-            const int32View = new Int32Array(sharedBuffer, 0, 3);
-            if (cellsBuffer) {
-              const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
-              const byteLength = cellsUint8Array.byteLength;
-              Atomics.store(int32View, 1, byteLength);
-              const id = this.id++;
-              this.getCellsResponses[id] = cellsUint8Array;
-              Atomics.store(int32View, 2, id);
+          const int32View = new Int32Array(sharedBuffer, 0, 3);
+          this.getCellsA1(message.transactionId, a1)
+            .then((cellsBuffer) => {
+              if (cellsBuffer) {
+                const cellsUint8Array = new Uint8Array(cellsBuffer, 0, cellsBuffer.byteLength);
+                const byteLength = cellsUint8Array.byteLength;
+                Atomics.store(int32View, 1, byteLength);
+
+                if (byteLength !== 0) {
+                  const id = this.id++;
+                  this.getCellsResponses[id] = cellsUint8Array;
+                  Atomics.store(int32View, 2, id);
+                }
+              } else {
+                Atomics.store(int32View, 1, 0);
+              }
+            })
+            .catch((error) => {
+              console.error('[javascript] getCellsA1 error:', error);
+            })
+            .finally(() => {
               Atomics.store(int32View, 0, 1);
               Atomics.notify(int32View, 0, 1);
-            } else {
-              Atomics.store(int32View, 1, 0);
-              Atomics.store(int32View, 0, 1);
-              Atomics.notify(int32View, 0, 1);
-            }
-          });
+            });
         } else if (e.data.type === 'getCellsData') {
           const { id, sharedBuffer } = e.data;
+          const int32View = new Int32Array(sharedBuffer, 0, 1);
+
           const cellsUint8Array = this.getCellsResponses[id];
           delete this.getCellsResponses[id];
-          const int32View = new Int32Array(sharedBuffer, 0, 1);
           if (cellsUint8Array === undefined) {
             console.error('[javascript] No cells found for id:', e.data.id);
           } else {
-            const uint8View = new Uint8Array(e.data.sharedBuffer, 4, cellsUint8Array.length);
+            const uint8View = new Uint8Array(e.data.sharedBuffer, 4, cellsUint8Array.byteLength);
             uint8View.set(cellsUint8Array);
           }
+
           Atomics.store(int32View, 0, 1);
           Atomics.notify(int32View, 0, 1);
         } else if (e.data.type === 'error') {

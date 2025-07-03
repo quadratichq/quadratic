@@ -15,6 +15,12 @@ extern "C" {
     // `log(..)`
     #[wasm_bindgen(js_namespace = console)]
     pub(crate) fn log(s: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    pub(crate) fn time(name: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    pub(crate) fn timeEnd(name: &str);
 }
 
 #[cfg(not(test))]
@@ -105,6 +111,9 @@ extern "C" {
     pub fn jsClientMessage(message: String, error: String);
 
     pub fn jsA1Context(context: Vec<u8> /* A1Context */);
+
+    pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */);
+    pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
 }
 
 #[cfg(test)]
@@ -394,19 +403,13 @@ pub fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsImportProgress(file_name: &str, current: u32, total: u32) {
-    js_call(
-        "jsImportProgress",
-        format!("{file_name},{current},{total}"),
-    );
+    js_call("jsImportProgress", format!("{file_name},{current},{total}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTransactionStart(transaction_id: String, name: String) {
-    js_call(
-        "jsTransactionStart",
-        format!("{transaction_id},{name}",),
-    );
+    js_call("jsTransactionStart", format!("{transaction_id},{name}",));
 }
 
 #[cfg(test)]
@@ -451,9 +454,7 @@ pub fn jsConnection(
 ) -> JsValue {
     js_call(
         "jsConnection",
-        format!(
-            "{transactionId},{x},{y},{sheet_id},{query},{connector_type},{connection_id}"
-        ),
+        format!("{transactionId},{x},{y},{sheet_id},{query},{connector_type},{connection_id}"),
     );
     JsValue::NULL
 }
@@ -526,4 +527,16 @@ pub fn jsClientMessage(message: String, severity: String) {
 #[allow(non_snake_case)]
 pub fn jsA1Context(context: Vec<u8> /* A1Context */) {
     js_call("jsA1Context", format!("{context:?}"));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */) {
+    js_call("jsSendDataTablesCache", format!("{sheet_id},{cache:?}"));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */) {
+    js_call("jsSendContentCache", format!("{sheet_id},{cache:?}"));
 }

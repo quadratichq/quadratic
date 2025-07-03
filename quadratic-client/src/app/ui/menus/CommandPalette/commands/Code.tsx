@@ -1,4 +1,4 @@
-import { rerunAction, rerunCellAction, rerunSheetAction } from '@/app/actions';
+import { rerunAllAction, rerunCellAction, rerunSheetAction } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
@@ -16,12 +16,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() =>
-              quadraticCore.rerunCodeCells(
-                sheets.current,
-                sheets.sheet.cursor.position.x,
-                sheets.sheet.cursor.position.y,
-                sheets.getCursorPosition()
-              )
+              quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.toA1String(), sheets.getCursorPosition())
             }
             shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Command]}
@@ -36,9 +31,7 @@ const commands: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() =>
-              quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition())
-            }
+            action={() => quadraticCore.rerunCodeCells(sheets.current, undefined, sheets.getCursorPosition())}
             shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
           />
@@ -46,13 +39,13 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: rerunAction.label,
-      isAvailable: rerunAction.isAvailable,
+      label: rerunAllAction.label,
+      isAvailable: rerunAllAction.isAvailable,
       Component: (props) => {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition())}
+            action={() => quadraticCore.rerunCodeCells(undefined, undefined, sheets.getCursorPosition())}
             shortcut={KeyboardSymbols.Enter}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Alt, KeyboardSymbols.Command]}
           />
