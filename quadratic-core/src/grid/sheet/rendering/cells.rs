@@ -152,19 +152,19 @@ impl Sheet {
                         if let Some(mut value) = value {
                             // converts inner code values to display values
                             if value.is_code() {
+                                dbgjs!("code");
                                 let multi_pos = MultiPos::new_table_pos(
                                     self.id,
                                     code_rect.min.x,
                                     code_rect.min.y,
                                     pos.x,
-                                    pos.y,
+                                    pos.y - y_adjustment,
                                 );
+                                dbgjs!(&multi_pos);
                                 if let Some(code_table) = self.data_table_multi_pos(&multi_pos) {
-                                    dbgjs!(2);
                                     if let Ok(inner_value) =
                                         code_table.display_value_at((0, 0).into())
                                     {
-                                        dbgjs!(3);
                                         value = inner_value.clone();
                                     }
                                 }
