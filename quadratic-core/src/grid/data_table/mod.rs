@@ -836,20 +836,6 @@ impl DataTable {
         rows
     }
 
-    // todo...
-    /// Returns the position of a a nested code cell within a data table.
-    pub fn inner_code_cell_value(&self, _data_table_pos: Pos, _cell_value_pos: Pos) -> Option<Pos> {
-        if !self.is_data_table() {
-            return None;
-        }
-
-        // has_code.get(Pos::new(
-        //     (cell_value_pos.x - data_table_pos.x + 1) as i64,
-        //     (cell_value_pos.y - data_table_pos.y + 1) as i64,
-        // ))
-        None
-    }
-
     /// Returns a mutable reference to the cell value at Pos. This should be
     /// used carefully, as it allows the cell value to be modified in place.
     pub fn get_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {

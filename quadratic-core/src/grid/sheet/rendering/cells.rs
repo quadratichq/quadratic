@@ -730,7 +730,7 @@ mod tests {
         gc.set_code_cell(
             pos![sheet_id!A3],
             CodeCellLanguage::Formula,
-            "1 + 1".to_string(),
+            "5 + 5".to_string(),
             None,
             None,
         );
@@ -740,7 +740,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(pos![A3]).unwrap(),
-            CellValue::Number(2.into())
+            CellValue::Number(10.into())
         );
     }
 }

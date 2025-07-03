@@ -93,7 +93,8 @@ impl SheetDataTables {
                 let pos = table_pos.table_sheet_pos.into();
                 if let Some(data_table) = self.get_at(&pos) {
                     if let Some(tables) = &data_table.tables {
-                        tables.data_tables.get_index_of(&table_pos.pos)
+                        let pos = table_pos.pos.translate(1, 1, 0, 0);
+                        tables.data_tables.get_index_of(&pos)
                     } else {
                         None
                     }
@@ -108,10 +109,11 @@ impl SheetDataTables {
     fn get_table_pos(&self, table_pos: &TablePos) -> Option<&DataTable> {
         let data_table_pos: Pos = table_pos.table_sheet_pos.into();
         if let Some(data_table) = self.data_tables.get(&data_table_pos) {
+            let pos = table_pos.pos.translate(1, 1, 0, 0);
             data_table
                 .tables
                 .as_ref()
-                .and_then(|tables| tables.data_tables.get(&table_pos.pos))
+                .and_then(|tables| tables.data_tables.get(&pos))
         } else {
             None
         }
@@ -317,11 +319,12 @@ impl SheetDataTables {
             .get_mut(&Pos::from(table_pos.table_sheet_pos))
             .ok_or_else(err)?;
 
+        let pos = table_pos.pos.translate(1, 1, 0, 0);
         data_table
             .tables
             .as_mut()
             .ok_or_else(err)?
-            .modify_data_table_at(&table_pos.pos, f)
+            .modify_data_table_at(&pos, f)
     }
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
@@ -589,10 +592,14 @@ impl SheetDataTables {
                 let pos: Pos = table_pos.table_sheet_pos.into();
                 let data_table = self.data_tables.get_mut(&pos)?;
 
+                let pos_to_remove = table_pos
+                    .pos
+                    .translate(1, 1, 0, 0)
+                    .to_multi_pos(multi_pos.sheet_id());
                 data_table
                     .tables
                     .as_mut()?
-                    .shift_remove_full(&table_pos.pos.to_multi_pos(multi_pos.sheet_id()))
+                    .shift_remove_full(&pos_to_remove)
             }
         }
     }

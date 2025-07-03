@@ -168,7 +168,7 @@ impl Sheet {
                             // Insert the data table into the sub-tables
                             let (index, old_data_table, dirty_rects) = tables.insert_before(
                                 index,
-                                &table_pos.pos.translate(1, 1, 0, 0),
+                                &table_pos.pos.translate(1, 1, 1, 1),
                                 data_table,
                             );
                             result = Some((index, old_data_table, dirty_rects));
@@ -176,8 +176,11 @@ impl Sheet {
                         } else {
                             // If no sub-tables exist, create them and insert
                             let mut tables = SheetDataTables::new();
-                            let (index, old_data_table, dirty_rects) =
-                                tables.insert_before(index, &table_pos.pos, data_table);
+                            let (index, old_data_table, dirty_rects) = tables.insert_before(
+                                index,
+                                &table_pos.pos.translate(1, 1, 1, 1),
+                                data_table,
+                            );
                             dt.tables = Some(tables);
                             result = Some((index, old_data_table, dirty_rects));
                             Ok(())
