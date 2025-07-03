@@ -1285,7 +1285,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id).into(),
+            pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1293,7 +1293,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id).into(),
+            pos![D1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,
@@ -1331,7 +1331,7 @@ mod test {
         assert_cell_values(&gc, sheet_id, &[(2, 1, 1)]);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id).into(),
+            pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1")"#.to_string(),
             None,
@@ -1339,7 +1339,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            pos![D1].to_sheet_pos(sheet_id).into(),
+            pos![D1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1");"#.to_string(),
             None,

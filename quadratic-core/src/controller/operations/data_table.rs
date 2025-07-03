@@ -543,7 +543,7 @@ mod test {
         // convert one of the cells to a formula
         let formula_pos = SheetPos::new(sheet_id, 1, 2);
         gc.set_code_cell(
-            formula_pos.into(),
+            formula_pos,
             CodeCellLanguage::Formula,
             "=1+1".into(),
             None,

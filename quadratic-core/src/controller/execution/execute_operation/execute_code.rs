@@ -179,7 +179,7 @@ impl GridController {
             };
 
             let Some(pos) = (match multi_pos {
-                MultiPos::SheetPos(sheet_pos) => Some(sheet_pos.into()),
+                MultiPos::SheetPos(sheet_pos) => Some(sheet_pos),
                 MultiPos::TablePos(table_pos) => sheet.table_pos_to_sheet_pos(table_pos),
             }) else {
                 return;

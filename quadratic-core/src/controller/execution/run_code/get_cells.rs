@@ -226,7 +226,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos!(sheet_id!A1).into(),
+            pos!(sheet_id!A1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -245,7 +245,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos!(sheet_id!A1).into(),
+            pos!(sheet_id!A1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -295,7 +295,7 @@ mod test {
         );
         // async python
         gc.set_code_cell(
-            pos!(sheet_id!B1).into(),
+            pos!(sheet_id!B1),
             crate::grid::CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -336,7 +336,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            pos!(sheet_id!B1).into(),
+            pos!(sheet_id!B1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -412,7 +412,7 @@ mod test {
 
         // create a code cell so we can get a transaction_id
         gc.set_code_cell(
-            pos!(sheet_id!B1).into(),
+            pos!(sheet_id!B1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,

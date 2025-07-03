@@ -607,6 +607,6 @@ mod tests {
         assert_eq!(inner_code.language, CodeCellLanguage::Formula);
         assert_eq!(inner_code.state, JsRenderCodeCellState::Success);
         assert_eq!(inner_code.name, "Formula1".to_string());
-        assert_eq!(inner_code.show_name, false);
+        assert!(!inner_code.show_name);
     }
 }

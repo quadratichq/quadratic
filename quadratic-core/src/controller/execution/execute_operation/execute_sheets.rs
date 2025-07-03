@@ -449,7 +449,7 @@ mod tests {
             y: 1,
         };
         gc.set_code_cell(
-            sheet_pos.into(),
+            sheet_pos,
             CodeCellLanguage::Formula,
             "A1 + A2".to_string(),
             None,

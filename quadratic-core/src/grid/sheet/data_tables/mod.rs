@@ -701,7 +701,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
 
         gc.set_code_cell(
-            pos![sheet_id!A3].into(),
+            pos![sheet_id!A3],
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,

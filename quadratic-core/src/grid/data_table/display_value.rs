@@ -224,7 +224,7 @@ pub mod test {
     fn test_display_value_at_html_or_image() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = pos![sheet_id!A1].into();
+        let sheet_pos = pos![sheet_id!A1];
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Python,

@@ -162,7 +162,7 @@ mod tests {
             sheet_id,
         };
         gc.set_code_cell(
-            sheet_pos.into(),
+            sheet_pos,
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,

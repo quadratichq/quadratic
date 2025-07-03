@@ -98,7 +98,7 @@ pub fn test_create_formula(
     formula: &str,
 ) -> DataTable {
     gc.set_code_cell(
-        sheet_pos.into(),
+        sheet_pos,
         CodeCellLanguage::Formula,
         formula.to_string(),
         None,

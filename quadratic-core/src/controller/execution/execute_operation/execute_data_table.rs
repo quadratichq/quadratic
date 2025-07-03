@@ -2488,7 +2488,7 @@ mod tests {
         // create a formula cell in the grid data table
         let formula_pos = SheetPos::new(sheet_id, 1, 3);
         gc.set_code_cell(
-            formula_pos.into(),
+            formula_pos,
             CodeCellLanguage::Formula,
             "=1+1".into(),
             None,
@@ -2803,14 +2803,14 @@ mod tests {
         let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
 
         gc.set_code_cell(
-            pos!(sheet_id!F14).into(),
+            pos!(sheet_id!F14),
             CodeCellLanguage::Formula,
             "1+1".to_string(),
             None,
             None,
         );
         gc.set_code_cell(
-            pos!(sheet_id!I5).into(),
+            pos!(sheet_id!I5),
             CodeCellLanguage::Formula,
             "2+2".to_string(),
             None,

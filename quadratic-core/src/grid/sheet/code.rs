@@ -349,7 +349,7 @@ impl Sheet {
                 .get_row_index_from_display_index((pos.y - y_adjustment - table_pos.y) as u64);
             MultiPos::TablePos(TablePos::new(
                 table_pos.to_sheet_pos(self.id),
-                Pos::new(table_col as i64, table_row as i64),
+                Pos::new(table_col, table_row as i64),
             ))
         } else {
             MultiPos::SheetPos(pos.to_sheet_pos(self.id))

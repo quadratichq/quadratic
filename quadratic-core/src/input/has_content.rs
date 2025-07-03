@@ -209,7 +209,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
         gc.set_code_cell(
-            pos![sheet_id!D1].into(),
+            pos![sheet_id!D1],
             CodeCellLanguage::Formula,
             "A1".into(),
             None,

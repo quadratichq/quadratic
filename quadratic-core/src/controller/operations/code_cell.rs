@@ -218,7 +218,7 @@ mod test {
         sheet.set_cell_value(pos, CellValue::Text("delete me".to_string()));
 
         let operations = gc.set_code_cell_operations(
-            pos.to_sheet_pos(sheet_id).into(),
+            pos.to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "print('hello world')".to_string(),
             None,
@@ -407,7 +407,7 @@ mod test {
             sheet_id,
         };
         gc.set_code_cell(
-            sheet_pos.into(),
+            sheet_pos,
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,

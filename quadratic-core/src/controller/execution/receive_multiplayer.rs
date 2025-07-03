@@ -797,7 +797,7 @@ mod tests {
             Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id).into(),
+            pos![A1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
@@ -865,7 +865,7 @@ mod tests {
     fn create_multiple_calculations_1(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id).into(),
+            pos![B1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells(\"A1\") + 1".into(),
             None,
@@ -891,7 +891,7 @@ mod tests {
     fn create_multiple_calculations_2(gc: &mut GridController) -> (Uuid, Vec<Operation>) {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id).into(),
+            pos![C1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             "q.cells(\"B1\") + 1".into(),
             None,

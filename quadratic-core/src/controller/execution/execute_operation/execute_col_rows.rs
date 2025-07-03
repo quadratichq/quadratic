@@ -434,7 +434,7 @@ mod tests {
         };
 
         gc.set_code_cell(
-            sheet_pos.into(),
+            sheet_pos,
             CodeCellLanguage::Python,
             r#"q.cells("B1:B2")"#.into(),
             None,
@@ -519,7 +519,7 @@ mod tests {
         };
 
         gc.set_code_cell(
-            sheet_pos.into(),
+            sheet_pos,
             CodeCellLanguage::Javascript,
             r#"return q.cells("B1:B2");"#.into(),
             None,
@@ -739,7 +739,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![sheet_id!J10].into(), // 10,10
+            pos![sheet_id!J10], // 10,10
             CodeCellLanguage::Formula,
             "$F6".into(),
             None,

@@ -1178,7 +1178,7 @@ mod test {
         assert_ne!(s1, s2);
 
         gc.set_code_cell(
-            pos![sheet1!A4].into(),
+            pos![sheet1!A4],
             CodeCellLanguage::Formula,
             format!("SUM(B1:B3, B4:B6, '{s1}'!C4, '{s2}'!C4)"),
             None,
@@ -1488,7 +1488,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![C3].to_sheet_pos(sheet_id).into(),
+            pos![C3].to_sheet_pos(sheet_id),
             CodeCellLanguage::Python,
             r#"q.cells("A1:B2", first_row_header=True)"#.to_string(),
             None,
@@ -1592,7 +1592,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            pos![C3].to_sheet_pos(sheet_id).into(),
+            pos![C3].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return q.cells("A1:B2");"#.to_string(),
             None,
@@ -1629,7 +1629,7 @@ mod test {
         let (mut gc, sheet_id, _, _) = simple_csv_at(pos![A1]);
 
         gc.set_code_cell(
-            pos![J1].to_sheet_pos(sheet_id).into(),
+            pos![J1].to_sheet_pos(sheet_id),
             CodeCellLanguage::Javascript,
             r#"return "test";"#.to_string(),
             None,
