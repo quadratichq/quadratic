@@ -41,7 +41,7 @@ const requestCountTarget =
 
 // Create an Launch Template
 const launchTemplate = new aws.ec2.LaunchTemplate("api-lt", {
-  name: `api-lt-${apiSubdomain}-${Math.random().toString(36).substring(2, 8)}`,
+  name: `api-lt-${apiSubdomain}`,
   imageId: latestAmazonLinuxAmi.id,
   instanceType: instanceSize,
   iamInstanceProfile: {
@@ -104,7 +104,7 @@ const targetGroup = new aws.lb.TargetGroup("api-alb-tg", {
   },
 });
 
-// Create Auto Scaling Group with warm pool
+// Create Auto Scaling Group
 const autoScalingGroup = new aws.autoscaling.Group("api-asg", {
   tags: [
     {

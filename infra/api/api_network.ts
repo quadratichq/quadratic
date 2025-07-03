@@ -1,7 +1,5 @@
 import * as aws from "@pulumi/aws";
 
-import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
-
 // Create a new VPC
 export const apiVPC = new aws.ec2.Vpc("api-vpc", {
   cidrBlock: "10.0.0.0/16",
@@ -151,6 +149,11 @@ new aws.ec2.RouteTableAssociation("api-public-route-table-association-2", {
   routeTableId: publicRouteTable.id,
 });
 
+new aws.ec2.RouteTableAssociation("api-public-route-table-association-3", {
+  subnetId: apiPublicSubnet3.id,
+  routeTableId: publicRouteTable.id,
+});
+
 new aws.ec2.RouteTableAssociation("api-private-route-table-association-1", {
   subnetId: apiPrivateSubnet1.id,
   routeTableId: privateRouteTable1.id,
@@ -211,14 +214,3 @@ export const apiEc2SecurityGroup = new aws.ec2.SecurityGroup("api-sg-1", {
   ],
   tags: { Name: "api-ec2-security-group" },
 });
-
-if (isPreviewEnvironment) {
-  new aws.ec2.SecurityGroupRule(`api-ssh-ingress-rule`, {
-    type: "ingress",
-    fromPort: 22,
-    toPort: 22,
-    protocol: "tcp",
-    cidrBlocks: ["0.0.0.0/0"],
-    securityGroupId: apiEc2SecurityGroup.id,
-  });
-}
