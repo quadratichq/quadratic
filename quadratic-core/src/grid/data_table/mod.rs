@@ -845,6 +845,28 @@ impl DataTable {
             Value::Tuple(_) => None,
         }
     }
+
+    /// Returns the code value inside the data table at the given position.
+    pub fn code_value_at(&self, x: u32, y: u32) -> Option<&CellValue> {
+        if self.has_spill() || self.has_error() {
+            None
+        } else {
+            let value = match &self.value {
+                Value::Array(a) => a.get(x, y).ok(),
+                Value::Single(v) => Some(v),
+                Value::Tuple(_) => None,
+            };
+            if let Some(v) = value {
+                if matches!(v, CellValue::Code(_)) {
+                    Some(v)
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+    }
 }
 
 #[cfg(test)]
