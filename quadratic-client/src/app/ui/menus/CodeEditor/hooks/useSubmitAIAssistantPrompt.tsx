@@ -34,6 +34,7 @@ import { v4 } from 'uuid';
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAssistantPromptArgs = {
+  messageSource: string;
   content: Content;
   messageIndex: number;
   codeCell?: CodeCell;
@@ -70,7 +71,7 @@ export function useSubmitAIAssistantPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, messageIndex, codeCell }: SubmitAIAssistantPromptArgs) => {
+      async ({ messageSource, content, messageIndex, codeCell }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
@@ -171,12 +172,15 @@ export function useSubmitAIAssistantPrompt() {
           // Handle tool calls
           let toolCallIterations = 0;
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+            toolCallIterations++;
+
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ codeCell });
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAssistant',
+              messageSource,
               modelKey,
               time: new Date().toString(),
               messages: messagesWithContext,
@@ -194,7 +198,7 @@ export function useSubmitAIAssistantPrompt() {
               break;
             }
 
-            toolCallIterations++;
+            messageSource = response.toolCalls.map((toolCall) => toolCall.name).join(', ');
 
             // Message containing tool call results
             const toolResultMessage: ToolResultMessage = {

@@ -1,4 +1,4 @@
-import { rerunAction, rerunCellAction, rerunSheetAction } from '@/app/actions';
+import { rerunAllAction, rerunCellAction, rerunSheetAction } from '@/app/actions';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
@@ -39,8 +39,8 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: rerunAction.label,
-      isAvailable: rerunAction.isAvailable,
+      label: rerunAllAction.label,
+      isAvailable: rerunAllAction.isAvailable,
       Component: (props) => {
         return (
           <CommandPaletteListItem
