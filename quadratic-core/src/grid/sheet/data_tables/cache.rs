@@ -2,10 +2,10 @@
 //! SheetDataTables and the client. Only SheetDataTables can modify the cache.
 
 use crate::{
-    Pos, Rect, SheetPos, TablePos,
+    Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     grid::{
-        Block, CodeCellLanguage, Contiguous2D,
+        CodeCellLanguage, Contiguous2D,
         sheet::data_tables::{
             in_table_code_cache::InTableCodeTables, multi_cell_tables_cache::MultiCellTablesCache,
         },
@@ -163,25 +163,25 @@ impl SheetDataTablesCache {
     }
 
     // Merges the multi-cell data tables into the parent cache.
-    pub fn merge_multi_cell(
-        &self,
-        sheet_pos: SheetPos,
-        parent_multi_cell: &mut Contiguous2D<Option<TablePos>>,
-    ) {
-        // self.multi_cell_tables
-        //     .to_rects()
-        //     .for_each(|(x0, y0, x1, y1, _)| {
-        //         let x1 = x1.unwrap_or(x0);
-        //         let y1 = y1.unwrap_or(y0);
-        //         parent_multi_cell.set_rect(
-        //             sheet_pos.x + x0 - 1,
-        //             sheet_pos.y + y0 - 1,
-        //             Some(sheet_pos.x + x1 - 1),
-        //             Some(sheet_pos.y + y1 - 1),
-        //             Some(sheet_pos.into()),
-        //         );
-        //     });
-    }
+    // pub fn merge_multi_cell(
+    //     &self,
+    //     sheet_pos: SheetPos,
+    //     parent_multi_cell: &mut Contiguous2D<Option<TablePos>>,
+    // ) {
+    // self.multi_cell_tables
+    //     .to_rects()
+    //     .for_each(|(x0, y0, x1, y1, _)| {
+    //         let x1 = x1.unwrap_or(x0);
+    //         let y1 = y1.unwrap_or(y0);
+    //         parent_multi_cell.set_rect(
+    //             sheet_pos.x + x0 - 1,
+    //             sheet_pos.y + y0 - 1,
+    //             Some(sheet_pos.x + x1 - 1),
+    //             Some(sheet_pos.y + y1 - 1),
+    //             Some(sheet_pos.into()),
+    //         );
+    //     });
+    // }
 }
 
 #[cfg(test)]
