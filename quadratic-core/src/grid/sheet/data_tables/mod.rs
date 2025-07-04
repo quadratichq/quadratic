@@ -12,6 +12,9 @@ use crate::{
 use anyhow::{Result, anyhow};
 
 pub mod cache;
+pub(crate) mod in_table_code_cache;
+pub(crate) mod multi_cell_tables_cache;
+
 use cache::SheetDataTablesCache;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
@@ -44,15 +47,26 @@ impl IntoIterator for SheetDataTables {
     }
 }
 
-impl From<IndexMap<Pos, DataTable>> for SheetDataTables {
-    fn from(mut data_tables: IndexMap<Pos, DataTable>) -> Self {
+impl From<(IndexMap<Pos, DataTable>, SheetId)> for SheetDataTables {
+    fn from((mut data_tables, sheet_id): (IndexMap<Pos, DataTable>, SheetId)) -> Self {
+        let mut sheet_data_tables = Self::new();
+
         let mut data_tables_pos = Vec::new();
         data_tables.iter_mut().for_each(|(pos, dt)| {
             dt.spill_data_table = false;
             data_tables_pos.push(*pos);
+
+            if let Some(tables) = &dt.tables {
+                if !tables.data_tables.is_empty() {
+                    sheet_data_tables
+                        .cache
+                        .in_table_code_tables
+                        .get_or_insert_default()
+                        .add_table(pos.to_sheet_pos(sheet_id), tables);
+                }
+            }
         });
 
-        let mut sheet_data_tables = Self::new();
         sheet_data_tables.data_tables = data_tables;
         for (index, pos) in data_tables_pos.iter().enumerate() {
             sheet_data_tables.update_spill_and_cache(index, pos, None);

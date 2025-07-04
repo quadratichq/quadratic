@@ -269,6 +269,7 @@ fn import_code_run_builder(code_run: current::CodeRunSchema) -> Result<CodeRun> 
 
 pub(crate) fn import_data_table_builder(
     data_tables: Vec<(current::PosSchema, current::DataTableSchema)>,
+    sheet_id: SheetId,
 ) -> Result<SheetDataTables> {
     let mut new_data_tables = IndexMap::new();
 
@@ -341,13 +342,13 @@ pub(crate) fn import_data_table_builder(
             chart_output: data_table.chart_output,
             tables: data_table
                 .tables
-                .and_then(|tables| import_data_table_builder(tables).ok()),
+                .and_then(|tables| import_data_table_builder(tables, sheet_id).ok()),
         };
 
         new_data_tables.insert(Pos { x: pos.x, y: pos.y }, data_table);
     }
 
-    Ok(new_data_tables.into())
+    Ok((new_data_tables, sheet_id).into())
 }
 
 fn export_run_error_msg(run_error_msg: RunErrorMsg) -> current::RunErrorMsgSchema {

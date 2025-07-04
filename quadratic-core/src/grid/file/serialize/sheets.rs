@@ -18,8 +18,9 @@ use super::{
 };
 
 pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
+    let sheet_id = SheetId::from_str(&sheet.id.id)?;
     Ok(Sheet {
-        id: SheetId::from_str(&sheet.id.id)?,
+        id: sheet_id,
         name: sheet.name,
         color: sheet.color,
         order: sheet.order,
@@ -29,7 +30,7 @@ pub fn import_sheet(sheet: current::SheetSchema) -> Result<Sheet> {
         rows_resize: import_rows_resize(sheet.rows_resize),
         validations: import_validations(sheet.validations),
         columns: import_column_builder(sheet.columns),
-        data_tables: import_data_table_builder(sheet.data_tables)?,
+        data_tables: import_data_table_builder(sheet.data_tables, sheet_id)?,
         data_bounds: GridBounds::Empty,
         format_bounds: GridBounds::Empty,
     })
