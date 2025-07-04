@@ -22,13 +22,6 @@ pub struct MultiCellTablesCache {
 }
 
 impl MultiCellTablesCache {
-    pub fn new() -> Self {
-        Self {
-            multi_cell_tables: Contiguous2D::new(),
-            multi_cell_tables_empty: Contiguous2D::new(),
-        }
-    }
-
     /// Returns anchor position of the data table whose output rect contains the given position
     pub fn get(&self, pos: Pos) -> Option<Pos> {
         self.multi_cell_tables.get(pos)
