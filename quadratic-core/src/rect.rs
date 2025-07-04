@@ -380,7 +380,21 @@ impl RTreeObject for Rect {
     type Envelope = AABB<Pos>;
 
     fn envelope(&self) -> Self::Envelope {
-        AABB::from_corners(self.min, self.max)
+        // Clamp coordinates to prevent overflow in R-tree calculations
+        // while preserving the original coordinates everywhere else
+        const MAX_SAFE_COORD: i64 = i32::MAX as i64;
+        const MIN_SAFE_COORD: i64 = -(i32::MAX as i64);
+
+        let safe_min = Pos {
+            x: self.min.x.clamp(MIN_SAFE_COORD, MAX_SAFE_COORD),
+            y: self.min.y.clamp(MIN_SAFE_COORD, MAX_SAFE_COORD),
+        };
+        let safe_max = Pos {
+            x: self.max.x.clamp(MIN_SAFE_COORD, MAX_SAFE_COORD),
+            y: self.max.y.clamp(MIN_SAFE_COORD, MAX_SAFE_COORD),
+        };
+
+        AABB::from_corners(safe_min, safe_max)
     }
 }
 

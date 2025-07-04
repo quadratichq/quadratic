@@ -190,8 +190,8 @@ export const editActionsSpec: EditActionSpec = {
         const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
         if (codeCell) {
           doubleClickCell({
-            column: codeCell.x,
-            row: codeCell.y,
+            column: cursor.x,
+            row: cursor.y,
             cell: '',
             cursorMode: CursorMode.Edit,
           });

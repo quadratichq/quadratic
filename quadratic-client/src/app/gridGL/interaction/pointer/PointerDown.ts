@@ -115,7 +115,7 @@ export class PointerDown {
         event.preventDefault();
         const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
         if (codeCell) {
-          doubleClickCell({ column: codeCell.x, row: codeCell.y });
+          doubleClickCell({ column, row });
         } else {
           const cell = await quadraticCore.getEditCell(sheets.current, column, row);
           doubleClickCell({ column, row, cell, cursorMode: cell ? CursorMode.Edit : CursorMode.Enter });
