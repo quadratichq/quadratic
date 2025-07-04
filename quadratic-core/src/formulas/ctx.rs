@@ -59,13 +59,12 @@ impl<'ctx> Ctx<'ctx> {
             .ok_or(RunErrorMsg::BadCellReference.with_span(span))?;
 
         let a1_context = self.grid_controller.a1_context();
-
         let rect = match &range.cells {
             CellRefRange::Sheet { range } => {
                 sheet.ref_range_bounds_to_rect(range, ignore_formatting)
             }
             CellRefRange::Table { range } => sheet
-                .table_ref_to_rect(range, false, false, a1_context)
+                .table_ref_to_rect(range, false, false, a1_context, Some(self.sheet_pos.into()))
                 .ok_or(RunErrorMsg::BadCellReference.with_span(span))?,
         };
 

@@ -161,7 +161,7 @@ impl Sheet {
         data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in data_tables_to_move_right {
             if let Some((index, old_pos, data_table, _)) =
-                self.data_tables.shift_remove_full(&old_pos)
+                self.data_tables.shift_remove_full_pos(&old_pos)
             {
                 let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
                 self.data_tables.insert_before(index, &new_pos, data_table);
@@ -199,7 +199,7 @@ impl Sheet {
         data_tables_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in data_tables_to_move {
             if let Some((index, old_pos, data_table, _)) =
-                self.data_tables.shift_remove_full(&old_pos)
+                self.data_tables.shift_remove_full_pos(&old_pos)
             {
                 let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);
                 self.data_tables.insert_before(index, &new_pos, data_table);

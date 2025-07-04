@@ -50,6 +50,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
 
         // Intersecting rectangle
@@ -68,6 +69,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
 
         // Position within column A

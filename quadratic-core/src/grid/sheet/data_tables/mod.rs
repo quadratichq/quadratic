@@ -5,8 +5,8 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Pos, Rect,
-    grid::{CodeRun, DataTable, SheetRegionMap},
+    MultiPos, Pos, Rect, TablePos,
+    grid::{CodeRun, DataTable, SheetId, SheetRegionMap},
 };
 
 use anyhow::{Result, anyhow};
@@ -14,7 +14,7 @@ use anyhow::{Result, anyhow};
 pub mod cache;
 use cache::SheetDataTablesCache;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, PartialEq)]
 pub struct SheetDataTables {
     #[serde(with = "crate::util::indexmap_serde")]
     data_tables: IndexMap<Pos, DataTable>,
@@ -81,9 +81,50 @@ impl SheetDataTables {
         self.data_tables.len()
     }
 
-    /// Returns the index (position in indexmap) of the data table at the given position, if it exists.
-    pub fn get_index_of(&self, pos: &Pos) -> Option<usize> {
-        self.data_tables.get_index_of(pos)
+    /// Returns the index of either a Table or a sub-Table at the given
+    /// multi-pos, if it exists.
+    pub fn get_multi_pos_index_of(&self, multi_pos: &MultiPos) -> Option<usize> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                let pos: Pos = (*sheet_pos).into();
+                self.data_tables.get_index_of(&pos)
+            }
+            MultiPos::TablePos(table_pos) => {
+                let pos = table_pos.table_sheet_pos.into();
+                if let Some(data_table) = self.get_at(&pos) {
+                    if let Some(tables) = &data_table.tables {
+                        let pos = table_pos.pos.translate(1, 1, 0, 0);
+                        tables.data_tables.get_index_of(&pos)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    /// Returns the table position of the data table at the given position, if it exists.
+    fn get_table_pos(&self, table_pos: &TablePos) -> Option<&DataTable> {
+        let data_table_pos: Pos = table_pos.table_sheet_pos.into();
+        if let Some(data_table) = self.data_tables.get(&data_table_pos) {
+            let pos = table_pos.pos.translate(1, 1, 0, 0);
+            data_table
+                .tables
+                .as_ref()
+                .and_then(|tables| tables.data_tables.get(&pos))
+        } else {
+            None
+        }
+    }
+
+    /// Returns the data table at the given position, if it exists.
+    pub fn get_multi_pos(&self, multi_pos: &MultiPos) -> Option<&DataTable> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => self.get_at(&(*sheet_pos).into()),
+            MultiPos::TablePos(table_pos) => self.get_table_pos(table_pos),
+        }
     }
 
     /// Returns the data table at the given position, if it exists.
@@ -96,16 +137,25 @@ impl SheetDataTables {
         self.data_tables.get(pos)
     }
 
+    /// Returns a mutable reference to the DataTable. This should be used with
+    /// caution, as it allows the DataTable to be modified in place.
+    pub fn get_at_mut(&mut self, pos: &Pos) -> Option<&mut DataTable> {
+        self.data_tables.get_mut(pos)
+    }
+
     /// Returns the data table at the given position, if it exists, along with its index and position.
     pub fn get_full(&self, pos: &Pos) -> Option<(usize, &Pos, &DataTable)> {
         self.data_tables.get_full(pos)
     }
 
-    /// Updates mutual spill and cache for the data table at the given index and position.
+    /// Updates mutual spill and cache for the data table at the given index and
+    /// position.
     ///
-    /// This function only updates spill due to another data table, not due to cell values in columns.
+    /// This function only updates spill due to another data table, not due to
+    /// cell values in columns.
     ///
-    /// Returns set of dirty rectangle
+    /// Returns set of dirty rectangle, which are the rects that need to be
+    /// rendered due to the spill calculation.
     fn update_spill_and_cache(
         &mut self,
         index: usize,
@@ -165,6 +215,7 @@ impl SheetDataTables {
             data_table.spill_data_table = spill_current_data_table;
 
             let new_spilled_output_rect = data_table.output_rect(*pos, false);
+
             if new_spilled_output_rect.len() == 1 {
                 self.cache.single_cell_tables.set(*pos, Some(true));
             } else {
@@ -241,14 +292,39 @@ impl SheetDataTables {
     ) -> Result<(&DataTable, HashSet<Rect>)> {
         let err = || anyhow!("Data table not found at {:?} in modify_data_table_at", pos);
         let (index, _, data_table) = self.data_tables.get_full_mut(pos).ok_or_else(err)?;
-        let old_output_rect = Some(data_table.output_rect(*pos, false));
 
+        let old_output_rect = Some(data_table.output_rect(*pos, false));
         f(data_table)?;
 
         let dirty_rects = self.update_spill_and_cache(index, pos, old_output_rect);
-
         let data_table = self.data_tables.get(pos).ok_or_else(err)?;
         Ok((data_table, dirty_rects))
+    }
+
+    /// Modifies the sub-data table at the given position. This will find the
+    /// parent data table, and then attempt to modify its sub-code table.
+    pub fn modify_data_sub_table_at(
+        &mut self,
+        table_pos: TablePos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<(&DataTable, HashSet<Rect>)> {
+        let err = || {
+            anyhow!(
+                "Data table not found at {:?} in modify_data_sub_table_at",
+                table_pos
+            )
+        };
+        let data_table = self
+            .data_tables
+            .get_mut(&Pos::from(table_pos.table_sheet_pos))
+            .ok_or_else(err)?;
+
+        let pos = table_pos.pos.translate(1, 1, 0, 0);
+        data_table
+            .tables
+            .as_mut()
+            .ok_or_else(err)?
+            .modify_data_table_at(&pos, f)
     }
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
@@ -316,14 +392,40 @@ impl SheetDataTables {
         &self,
         rect: Rect,
         ignore_spill_error: bool,
-    ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
+        sheet_id: SheetId,
+        include_child_code_runs: bool,
+    ) -> impl Iterator<Item = (usize, MultiPos, &CodeRun)> {
         self.iter_pos_in_rect(rect, ignore_spill_error)
-            .filter_map(|pos| {
-                self.data_tables
-                    .get_full(&pos)
-                    .and_then(|(index, _, data_table)| {
-                        data_table.code_run().map(|code_run| (index, pos, code_run))
-                    })
+            .flat_map(move |table_pos| {
+                let mut results = Vec::new();
+                if let Some((index, _, data_table)) = self.data_tables.get_full(&table_pos) {
+                    // Add the code run from the main data table if it exists
+                    if let Some(code_run) = data_table.code_run() {
+                        results.push((index, table_pos.to_multi_pos(sheet_id), code_run));
+                    }
+
+                    // Add code runs from sub-tables if enabled
+                    if include_child_code_runs {
+                        if let Some(tables) = &data_table.tables {
+                            for pos in tables.iter_pos_in_rect(rect, ignore_spill_error) {
+                                if let Some(code_run) = data_table.code_run() {
+                                    results.push((
+                                        index,
+                                        MultiPos::new_table_pos(
+                                            sheet_id,
+                                            table_pos.x,
+                                            table_pos.y,
+                                            pos.x,
+                                            pos.y,
+                                        ),
+                                        code_run,
+                                    ));
+                                }
+                            }
+                        }
+                    }
+                }
+                results.into_iter()
             })
     }
 
@@ -342,8 +444,10 @@ impl SheetDataTables {
         &self,
         rect: Rect,
         ignore_spill_error: bool,
-    ) -> impl Iterator<Item = (usize, Pos, &CodeRun)> {
-        self.get_code_runs_in_rect(rect, ignore_spill_error)
+        sheet_id: SheetId,
+        include_child_code_runs: bool,
+    ) -> impl Iterator<Item = (usize, MultiPos, &CodeRun)> {
+        self.get_code_runs_in_rect(rect, ignore_spill_error, sheet_id, include_child_code_runs)
             .sorted_by(|a, b| a.0.cmp(&b.0))
     }
 
@@ -461,7 +565,7 @@ impl SheetDataTables {
     }
 
     /// Removes a data table at the given position, updating mutual spill and cache.
-    pub fn shift_remove_full(
+    pub fn shift_remove_full_pos(
         &mut self,
         pos: &Pos,
     ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
@@ -474,9 +578,36 @@ impl SheetDataTables {
         Some((index, *pos, old_data_table, dirty_rects))
     }
 
+    pub fn shift_remove_full(
+        &mut self,
+        multi_pos: &MultiPos,
+    ) -> Option<(usize, MultiPos, DataTable, HashSet<Rect>)> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                let pos = (*sheet_pos).into();
+                self.shift_remove_full_pos(&pos)
+                    .map(|full| (full.0, MultiPos::SheetPos(*sheet_pos), full.2, full.3))
+            }
+            MultiPos::TablePos(table_pos) => {
+                let pos: Pos = table_pos.table_sheet_pos.into();
+                let data_table = self.data_tables.get_mut(&pos)?;
+
+                let pos_to_remove = table_pos
+                    .pos
+                    .translate(1, 1, 0, 0)
+                    .to_multi_pos(multi_pos.sheet_id());
+                data_table
+                    .tables
+                    .as_mut()?
+                    .shift_remove_full(&pos_to_remove)
+            }
+        }
+    }
+
     /// Removes a data table at the given position, updating mutual spill and cache.
-    pub fn shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
-        self.shift_remove_full(pos).map(|full| (full.2, full.3))
+    pub fn shift_remove(&mut self, multi_pos: &MultiPos) -> Option<(DataTable, HashSet<Rect>)> {
+        self.shift_remove_full(multi_pos)
+            .map(|full| (full.2, full.3))
     }
 
     /// Returns the bounds of the column at the given index.
@@ -497,6 +628,26 @@ impl SheetDataTables {
     /// Returns an iterator over all data tables in the sheet data tables.
     pub fn expensive_iter(&self) -> impl Iterator<Item = (&Pos, &DataTable)> {
         self.data_tables.iter()
+    }
+
+    /// Returns an iterator over all data tables in the sheet data tables, including sub-tables.
+    pub fn expensive_iter_with_sub_tables(
+        &self,
+        sheet_id: SheetId,
+    ) -> impl Iterator<Item = (MultiPos, &DataTable)> {
+        let mut results = vec![];
+        self.data_tables.iter().for_each(|(table_pos, data_table)| {
+            results.push((table_pos.to_multi_pos(sheet_id), data_table));
+            if let Some(tables) = &data_table.tables {
+                tables.data_tables.iter().for_each(|(pos, data_table)| {
+                    results.push((
+                        MultiPos::new_table_pos(sheet_id, table_pos.x, table_pos.y, pos.x, pos.y),
+                        data_table,
+                    ));
+                });
+            }
+        });
+        results.into_iter()
     }
 
     /// Returns an iterator over all code runs in the sheet data tables.
@@ -523,5 +674,38 @@ impl SheetDataTables {
     /// Exports the cache of data tables.
     pub fn cache_ref(&self) -> &SheetDataTablesCache {
         &self.cache
+    }
+}
+
+// Custom Debug implementation for SheetDataTables
+impl std::fmt::Debug for SheetDataTables {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        writeln!(f, "SheetDataTables {{")?;
+        writeln!(f, "  data_tables:")?;
+        for (pos, table) in &self.data_tables {
+            writeln!(f, "    {pos:?}: {table:?}")?;
+        }
+        writeln!(f, "}}")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{grid::CodeCellLanguage, test_util::*};
+
+    #[test]
+    fn test_spill_in_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        gc.set_code_cell(
+            pos![sheet_id!A3],
+            CodeCellLanguage::Formula,
+            "1 + 1".to_string(),
+            None,
+            None,
+        );
     }
 }

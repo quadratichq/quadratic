@@ -9,6 +9,8 @@ use crate::{
     grid::{DataTable, Sheet},
 };
 
+// todo: need to handle array-sized code tables within data tables
+
 impl Sheet {
     /// Deletes all data table where either all columns are part of the deleted
     /// columns, or its a code cell where the first column is in the deleted
@@ -44,14 +46,15 @@ impl Sheet {
         }
 
         for pos in dt_to_delete.into_iter() {
-            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
+            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_pos(&pos)
             {
-                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                let multi_pos = pos.to_multi_pos(self.id);
+                transaction.add_from_code_run(multi_pos, old_dt.is_image(), old_dt.is_html());
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 transaction
                     .reverse_operations
-                    .push(Operation::SetDataTable {
-                        sheet_pos: pos.to_sheet_pos(self.id),
+                    .push(Operation::SetDataTableMultiPos {
+                        multi_pos,
                         data_table: Some(old_dt),
                         index,
                     });
@@ -76,7 +79,7 @@ impl Sheet {
         let all_pos_intersecting_columns =
             self.data_tables.get_pos_in_columns_sorted(columns, false);
         for (index, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
                 if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
                     return Ok(());
                 }
@@ -130,14 +133,18 @@ impl Sheet {
 
         // create undo and signal client of changes
         for (index, pos, old_dt) in dt_to_update {
-            transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+            transaction.add_from_code_run(
+                pos.to_multi_pos(self.id),
+                old_dt.is_image(),
+                old_dt.is_html(),
+            );
             transaction.add_dirty_hashes_from_sheet_rect(
                 old_dt.output_rect(pos, false).to_sheet_rect(self.id),
             );
             transaction
                 .reverse_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos: pos.to_sheet_pos(self.id),
+                .push(Operation::SetDataTableMultiPos {
+                    multi_pos: pos.to_multi_pos(self.id),
                     data_table: Some(old_dt),
                     index,
                 });
@@ -146,7 +153,11 @@ impl Sheet {
         // ensure anchor cell survives by shifting it to the right of the deleted columns
         for (index, pos, old_dt, new_anchor_x) in dt_to_shift_anchor {
             if let (Some(old_dt), Some(cell_value)) = (old_dt, self.cell_value(pos)) {
-                transaction.add_from_code_run(self.id, pos, old_dt.is_image(), old_dt.is_html());
+                transaction.add_from_code_run(
+                    pos.to_multi_pos(self.id),
+                    old_dt.is_image(),
+                    old_dt.is_html(),
+                );
                 transaction.add_dirty_hashes_from_sheet_rect(
                     old_dt.output_rect(pos, false).to_sheet_rect(self.id),
                 );
@@ -154,16 +165,16 @@ impl Sheet {
                 self.columns.move_cell_value(&pos, &new_pos);
                 transaction
                     .reverse_operations
-                    .push(Operation::AddDataTable {
-                        sheet_pos: pos.to_sheet_pos(self.id),
+                    .push(Operation::AddDataTableMultiPos {
+                        multi_pos: pos.to_multi_pos(self.id),
                         data_table: old_dt,
                         cell_value,
                         index: Some(index),
                     });
                 transaction
                     .reverse_operations
-                    .push(Operation::DeleteDataTable {
-                        sheet_pos: new_pos.to_sheet_pos(self.id),
+                    .push(Operation::DeleteDataTableMultiPos {
+                        multi_pos: new_pos.to_multi_pos(self.id),
                     });
             }
         }
@@ -180,7 +191,7 @@ impl Sheet {
         let all_pos_intersecting_columns =
             self.data_tables.get_pos_in_columns_sorted(columns, false);
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
                 if !dt.has_spill() && dt.is_html_or_image() {
                     let output_rect = dt.output_rect(pos, false);
                     let count = columns
@@ -193,8 +204,7 @@ impl Sheet {
                             if min != width {
                                 dt.chart_output = Some((min, height));
                                 transaction.add_from_code_run(
-                                    sheet_id,
-                                    pos,
+                                    pos.to_multi_pos(sheet_id),
                                     dt.is_image(),
                                     dt.is_html(),
                                 );
@@ -237,14 +247,17 @@ impl Sheet {
                 if shift_table > 0 {
                     transaction
                         .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
-                    transaction.add_from_code_run(self.id, pos, dt.is_image(), dt.is_html());
+                    transaction.add_from_code_run(
+                        pos.to_multi_pos(self.id),
+                        dt.is_image(),
+                        dt.is_html(),
+                    );
 
                     output_rect.translate_in_place(-shift_table, 0);
                     transaction
                         .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                     transaction.add_from_code_run(
-                        self.id,
-                        pos.translate(-shift_table, 0, 1, 1),
+                        pos.translate(-shift_table, 0, 1, 1).to_multi_pos(self.id),
                         dt.is_image(),
                         dt.is_html(),
                     );
@@ -256,7 +269,7 @@ impl Sheet {
 
         dt_to_shift_left.sort_by(|(a, _), (b, _)| a.x.cmp(&b.x));
         for (pos, shift_table) in dt_to_shift_left {
-            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
+            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_pos(&pos)
             else {
                 dbgjs!(format!(
                     "Error in check_delete_tables_columns: cannot shift left data table\n{:?}",
@@ -267,8 +280,11 @@ impl Sheet {
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
 
             let new_pos = pos.translate(-shift_table, 0, 1, 1);
-            let dirty_rects = self.data_table_insert_before(index, &new_pos, old_dt).2;
-            transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+            if let Ok((_, _, dirty_rects)) =
+                self.data_table_insert_before(index, new_pos.to_multi_pos(self.id), old_dt)
+            {
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+            }
         }
     }
 }
@@ -441,14 +457,20 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
+        print_first_sheet!(&gc);
+
         // Delete first column (which contains the data table anchor cell)
         gc.delete_columns(sheet_id, vec![1], None);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 1, 2, false);
 
+        print_first_sheet!(&gc);
+
         gc.undo(None);
         assert_table_count(&gc, sheet_id, 1);
         assert_data_table_size(&gc, sheet_id, pos![A1], 2, 2, false);
+
+        print_first_sheet!(&gc);
 
         gc.redo(None);
         assert_table_count(&gc, sheet_id, 1);

@@ -26,8 +26,8 @@ export const useSaveAndRunCell = () => {
         const codeString = editorContent ?? '';
         quadraticCore.setCodeCellValue({
           sheetId,
-          x: pos.x,
-          y: pos.y,
+          pos,
+          tablePos: undefined,
           codeString,
           language,
           cursor: sheets.getCursorPosition(),

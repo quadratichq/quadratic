@@ -212,11 +212,11 @@ class InlineEditorHandler {
         }
       }
 
-      if (this.codeCell?.language === 'Import' && changeToFormula) {
-        pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
-        this.closeIfOpen();
-        return;
-      }
+      // if (this.codeCell?.language === 'Import' && changeToFormula) {
+      //   pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
+      //   this.closeIfOpen();
+      //   return;
+      // }
 
       if (cursorMode === undefined) {
         if (changeToFormula) {
@@ -396,11 +396,11 @@ class InlineEditorHandler {
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
-    if (this.codeCell?.language === 'Import' && formula) {
-      pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
-      this.closeIfOpen();
-      return;
-    }
+    // if (this.codeCell?.language === 'Import' && formula) {
+    //   pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
+    //   this.closeIfOpen();
+    //   return;
+    // }
     this.formula = formula;
     if (formula) {
       inlineEditorMonaco.setLanguage('Formula');
@@ -467,8 +467,8 @@ class InlineEditorHandler {
         if (updatedValue) value = updatedValue;
         quadraticCore.setCodeCellValue({
           sheetId: this.location.sheetId,
-          x: this.location.x,
-          y: this.location.y,
+          pos: { x: this.location.x, y: this.location.y },
+          tablePos: undefined,
           language: 'Formula',
           codeString: value.slice(1),
           cursor: sheets.getCursorPosition(),

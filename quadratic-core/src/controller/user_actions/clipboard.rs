@@ -229,7 +229,7 @@ mod test {
         y: i64,
     ) {
         gc.set_code_cell(
-            SheetPos { x, y, sheet_id },
+            SheetPos::new(sheet_id, x, y),
             language,
             code.into(),
             None,
@@ -1422,7 +1422,7 @@ mod test {
 
         // first row is not header
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.header_is_first_row = false;
                 Ok(())
             })
@@ -1457,7 +1457,7 @@ mod test {
 
         // first row is not header
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.show_name = Some(false);
                 dt.show_columns = Some(false);
                 Ok(())
@@ -1499,7 +1499,7 @@ mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })
@@ -1550,7 +1550,7 @@ mod test {
 
         // hide first column
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[2].display = false;
                 Ok(())

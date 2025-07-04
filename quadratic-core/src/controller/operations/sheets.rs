@@ -109,8 +109,8 @@ impl GridController {
         let mut code_run_ops = self.rerun_sheet_code_cells_operations(sheet_id);
         // update sheet_id in code_run_ops to new sheet id
         code_run_ops.iter_mut().for_each(|op| {
-            if let Operation::ComputeCode { sheet_pos } = op {
-                sheet_pos.sheet_id = new_sheet_id;
+            if let Operation::ComputeCodeMultiPos { multi_pos } = op {
+                multi_pos.set_sheet_id(new_sheet_id);
             }
         });
 
@@ -210,9 +210,9 @@ mod test {
 
         for (pos, data_table) in data_tables.into_iter() {
             let name = data_table.name().to_string();
-            let sheet_pos = pos.to_sheet_pos(duplicate_sheet_id);
+            let multi_pos = pos.to_multi_pos(duplicate_sheet_id);
             gc.grid
-                .update_data_table_name(sheet_pos, &name, &name, &context, false)
+                .update_data_table_name(multi_pos, &name, &name, &context, false)
                 .unwrap();
         }
 

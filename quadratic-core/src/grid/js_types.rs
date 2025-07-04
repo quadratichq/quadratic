@@ -309,7 +309,7 @@ pub struct JsCodeCell {
     pub last_modified: i64,
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Clone, Serialize, Debug, PartialEq, TS)]
 pub struct JsRenderCodeCell {
     pub x: i32,
     pub y: i32,

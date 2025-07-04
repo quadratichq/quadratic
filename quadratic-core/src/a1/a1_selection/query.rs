@@ -219,7 +219,7 @@ impl A1Selection {
                 CellRefRange::Table { range } => {
                     let name = range.table_name.clone();
                     if let Some(range) =
-                        range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                        range.convert_to_ref_range_bounds(false, a1_context, false, false, None)
                     {
                         if self.cursor.x == range.end.col() && self.cursor.y == range.end.row() {
                             // we adjust the y to step over the table name so we
@@ -507,7 +507,7 @@ impl A1Selection {
                     }
                 }
                 CellRefRange::Table { range } => {
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false, None)
                 }
             })
             .collect()
@@ -640,8 +640,8 @@ impl A1Selection {
             .filter_map(|range| match range {
                 CellRefRange::Table { range: table_range } => {
                     if table_range.table_name == *table_name {
-                        if let Some(new_range) =
-                            table_range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                        if let Some(new_range) = table_range
+                            .convert_to_ref_range_bounds(false, a1_context, false, false, None)
                         {
                             found = true;
                             Some(CellRefRange::Sheet { range: new_range })
@@ -673,7 +673,7 @@ impl A1Selection {
             .iter()
             .filter_map(|range| match range {
                 CellRefRange::Table { range } => range
-                    .convert_to_ref_range_bounds(false, a1_context, false, true)
+                    .convert_to_ref_range_bounds(false, a1_context, false, true, None)
                     .map(|range| CellRefRange::Sheet { range }),
                 _ => Some(range.clone()),
             })

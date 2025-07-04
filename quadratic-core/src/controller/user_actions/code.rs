@@ -108,7 +108,7 @@ mod tests {
             None,
         );
 
-        let dt = gc.data_table_at(pos![sheet_id!A1]).unwrap();
+        let dt = gc.data_table_at(pos![sheet_id!A1].into()).unwrap();
         assert_eq!(dt.name(), "MyCode".to_string());
 
         // Set a code cell with a table name
@@ -120,7 +120,7 @@ mod tests {
             None,
         );
 
-        let dt = gc.data_table_at(pos![sheet_id!A1]).unwrap();
+        let dt = gc.data_table_at(pos![sheet_id!A1].into()).unwrap();
         assert_eq!(dt.name(), "MyCode".to_string());
     }
 }

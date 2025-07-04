@@ -2,12 +2,12 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    CellValue, Pos, Rect, Value,
+    CellValue, MultiPos, Pos, Rect, TablePos, Value,
     a1::A1Context,
     cell_values::CellValues,
     formulas::convert_rc_to_a1,
     grid::{
-        CodeCellLanguage, DataTableKind,
+        CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
     },
@@ -113,10 +113,32 @@ impl Sheet {
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
-        data_table.cell_value_at(
+        let cell_value = data_table.cell_value_at(
             (pos.x - data_table_pos.x) as u32,
             (pos.y - data_table_pos.y) as u32,
-        )
+        );
+
+        match cell_value.as_ref() {
+            Some(CellValue::Code(_)) => {
+                if let Some(tables) = &data_table.tables {
+                    // offset needs to be 1-based b/c of limitations of Contiguous2D
+                    let inner_pos = Pos::new(
+                        pos.x - data_table_pos.x + 1,
+                        pos.y - data_table_pos.y - data_table.y_adjustment(true) + 1,
+                    );
+                    if let Some((inner_code_pos, inner_data_table)) = tables.get_contains(inner_pos)
+                    {
+                        return inner_data_table.cell_value_at(
+                            (pos.x - inner_code_pos.x) as u32,
+                            (pos.y - inner_code_pos.y) as u32,
+                        );
+                    }
+                }
+                None
+            }
+            Some(cell_value) => Some(cell_value.clone()),
+            None => None,
+        }
     }
 
     /// TODO(ddimaria): move to DataTable code
@@ -170,14 +192,35 @@ impl Sheet {
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         let mut code_pos = pos;
-        let cell_value = if let Some(cell_value) = self.cell_value(pos) {
+        let cell_value = if let Some(cell_value) = self.cell_value_ref(pos) {
             Some(cell_value)
         } else {
             match self.data_table_pos_that_contains(pos) {
                 Ok(data_table_pos) => {
-                    if let Some(code_value) = self.cell_value(data_table_pos) {
-                        code_pos = data_table_pos;
-                        Some(code_value)
+                    if let Some(code_value) = self.cell_value_ref(data_table_pos) {
+                        // check for an inner code cell
+                        if matches!(code_value, CellValue::Import(_)) {
+                            if let Some(data_table) = self.data_table_at(&data_table_pos) {
+                                let code_cell = data_table.code_value_at(
+                                    (pos.x - data_table_pos.x) as u32,
+                                    (pos.y - data_table_pos.y - data_table.y_adjustment(true))
+                                        as u32,
+                                );
+                                if let Some(code_cell) = code_cell {
+                                    code_pos = data_table_pos;
+                                    Some(code_cell)
+                                } else {
+                                    code_pos = data_table_pos;
+                                    Some(code_value)
+                                }
+                            } else {
+                                code_pos = data_table_pos;
+                                Some(code_value)
+                            }
+                        } else {
+                            code_pos = data_table_pos;
+                            Some(code_value)
+                        }
                     } else {
                         None
                     }
@@ -268,6 +311,50 @@ impl Sheet {
             _ => None,
         }
     }
+
+    /// Returns whether the position in inside a data table.
+    pub fn code_in_table(&self, pos: Pos) -> Option<Pos> {
+        self.data_table_that_contains(pos)
+            .filter(|(_, table)| table.is_data_table())
+            .map(|(table_pos, _)| table_pos)
+    }
+
+    /// Returns the code cell value at the MultiPos.
+    pub fn code_value(&self, multi_pos: MultiPos) -> Option<&CodeCellValue> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                if let Some(CellValue::Code(code)) = self.cell_value_ref(sheet_pos.into()) {
+                    Some(code)
+                } else {
+                    None
+                }
+            }
+            MultiPos::TablePos(table_pos) => self.table_pos_code_value(table_pos),
+        }
+    }
+
+    /// Converts a Pos to a MultiPos, checking whether the Pos is a sheet pos or
+    /// a table pos. Will return a MultiPos::SheetPos for all code tables and
+    /// DataTable anchor cells.
+    pub fn convert_to_multi_pos(&self, pos: Pos) -> MultiPos {
+        if let Some((table_pos, data_table)) = self.data_table_that_contains(pos) {
+            // if anchor, then return a SheetPos and not a TablePos
+            if data_table.is_code() || table_pos == pos {
+                return MultiPos::SheetPos(pos.to_sheet_pos(self.id));
+            }
+            let table_col =
+                data_table.get_display_index_from_column_index((pos.x - table_pos.x) as u32, true);
+            let y_adjustment = data_table.y_adjustment(true);
+            let table_row = data_table
+                .get_row_index_from_display_index((pos.y - y_adjustment - table_pos.y) as u64);
+            MultiPos::TablePos(TablePos::new(
+                table_pos.to_sheet_pos(self.id),
+                Pos::new(table_col, table_row as i64),
+            ))
+        } else {
+            MultiPos::SheetPos(pos.to_sheet_pos(self.id))
+        }
+    }
 }
 
 #[cfg(test)]
@@ -277,6 +364,7 @@ mod test {
         Array, SheetPos, Value,
         controller::GridController,
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
+        test_util::*,
     };
     use std::vec;
 
@@ -370,11 +458,7 @@ mod test {
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{1, 2, 3}".to_string(),
             None,
@@ -497,5 +581,42 @@ mod test {
 
         assert_eq!(sheet.chart_at(pos), Some((pos, &dt)));
         assert_eq!(sheet.chart_at(Pos { x: 2, y: 2 }), Some((pos, &dt)));
+    }
+
+    #[test]
+    fn test_convert_to_multi_pos() {
+        let (mut gc, sheet_id) = test_grid();
+
+        test_create_data_table(&mut gc, sheet_id, Pos { x: 2, y: 2 }, 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![A1]),
+            MultiPos::new_sheet_pos(sheet_id, 1, 1)
+        );
+
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![B4]),
+            MultiPos::new_table_pos(sheet_id, 2, 2, 0, 0)
+        );
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![D6]),
+            MultiPos::new_table_pos(sheet_id, 2, 2, 2, 2)
+        );
+
+        // anchor cell of data table
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![B2]),
+            MultiPos::new_sheet_pos(sheet_id, 2, 2)
+        );
+
+        // code table
+        test_create_code_table(&mut gc, sheet_id, pos![E2], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![F3]),
+            MultiPos::new_sheet_pos(sheet_id, 6, 3)
+        );
     }
 }

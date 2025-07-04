@@ -27,17 +27,17 @@ impl GridController {
 
         let data_tables_pos = sheet
             .data_tables
-            .expensive_iter()
-            .map(|(p, _)| p.to_owned())
+            .expensive_iter_with_sub_tables(sheet_id)
+            .map(|(p, _)| p)
             .collect::<Vec<_>>();
         let mut table_names_to_update_in_cell_ref = vec![];
 
         // update table names in data tables in the new sheet
         let sheet = self.try_sheet_mut_result(sheet_id)?;
-        for pos in data_tables_pos.iter() {
-            transaction.add_code_cell(sheet_id, *pos);
+        for multi_pos in data_tables_pos.iter() {
+            transaction.add_code_cell(*multi_pos);
 
-            sheet.modify_data_table_at(pos, |data_table| {
+            sheet.modify_data_table_at(*multi_pos, |data_table| {
                 let old_name = data_table.name().to_string();
                 let unique_name = unique_data_table_name(&old_name, false, None, &context);
                 if old_name != unique_name {
@@ -46,7 +46,7 @@ impl GridController {
                     // update table context for replacing table names in code cells
                     if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
                         let mut new_table_map_entry = old_table_map_entry.to_owned();
-                        new_table_map_entry.sheet_id = sheet_id;
+                        new_table_map_entry.set_sheet_id(sheet_id);
                         new_table_map_entry.table_name = unique_name.to_owned();
                         context.table_map.insert(new_table_map_entry);
                     }
@@ -58,20 +58,25 @@ impl GridController {
             })?;
         }
 
+        // update table names references in code cells in the new sheet
         for (old_name, unique_name) in table_names_to_update_in_cell_ref.into_iter() {
-            // update table names references in code cells in the new sheet
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            for pos in data_tables_pos.iter() {
+            for multi_pos in data_tables_pos.iter() {
+                // Extract sheet_pos before mutable borrow
+                let sheet_pos = multi_pos.to_sheet_pos(sheet);
+
                 if let Some(code_cell_value) = sheet
-                    .cell_value_mut(*pos)
+                    .cell_value_multi_mut(*multi_pos)
                     .and_then(|cv| cv.code_cell_value_mut())
                 {
-                    code_cell_value.replace_table_name_in_cell_references(
-                        &context,
-                        pos.to_sheet_pos(sheet_id),
-                        &old_name,
-                        &unique_name,
-                    );
+                    if let Some(sheet_pos) = sheet_pos {
+                        code_cell_value.replace_table_name_in_cell_references(
+                            &context,
+                            sheet_pos,
+                            &old_name,
+                            &unique_name,
+                        );
+                    }
                 }
             }
         }
@@ -597,11 +602,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 1,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "10 + 10".to_string(),
             None,

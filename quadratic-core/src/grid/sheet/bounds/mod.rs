@@ -680,11 +680,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -700,11 +696,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -720,11 +712,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -740,11 +728,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -779,7 +763,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
         gc.set_code_cell(
-            (2, 1, sheet_id).into(),
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "[['c','d']]".into(),
             None,

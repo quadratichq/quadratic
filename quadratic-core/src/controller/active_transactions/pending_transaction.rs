@@ -9,7 +9,7 @@ use std::collections::{HashMap, HashSet, VecDeque};
 use uuid::Uuid;
 
 use crate::{
-    Pos, Rect, SheetPos, SheetRect,
+    MultiPos, Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
         execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
@@ -57,7 +57,7 @@ pub struct PendingTransaction {
     pub cells_accessed: CellsAccessed,
 
     /// save code_cell info for async calls
-    pub current_sheet_pos: Option<SheetPos>,
+    pub current_multi_pos: Option<MultiPos>,
 
     /// whether we are awaiting an async call
     pub waiting_for_async: Option<CodeCellValue>,
@@ -87,10 +87,10 @@ pub struct PendingTransaction {
     pub sheet_borders: HashSet<SheetId>,
 
     /// code cells to update in a1_context
-    pub code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
+    pub code_cells_a1_context: HashMap<SheetId, HashSet<MultiPos>>,
 
     /// code cells to update
-    pub code_cells: HashMap<SheetId, HashSet<Pos>>,
+    pub code_cells: HashMap<SheetId, HashSet<MultiPos>>,
 
     /// html cells to update
     pub html_cells: HashMap<SheetId, HashSet<Pos>>,
@@ -131,7 +131,7 @@ impl Default for PendingTransaction {
             forward_operations: Vec::new(),
             has_async: 0,
             cells_accessed: Default::default(),
-            current_sheet_pos: None,
+            current_multi_pos: None,
             waiting_for_async: None,
             complete: false,
             generate_thumbnail: false,
@@ -300,11 +300,13 @@ impl PendingTransaction {
 
         for dirty_rect in dirty_rects {
             self.add_dirty_hashes_from_sheet_rect(dirty_rect.to_sheet_rect(sheet.id));
+            let multi_pos =
+                MultiPos::SheetPos(SheetPos::new(sheet.id, dirty_rect.min.x, dirty_rect.min.y));
             if let Some(dt) = sheet.data_table_at(&dirty_rect.min) {
                 dt.add_dirty_fills_and_borders(self, sheet.id);
-                self.add_from_code_run(sheet.id, dirty_rect.min, dt.is_image(), dt.is_html());
+                self.add_from_code_run(multi_pos, dt.is_image(), dt.is_html());
             } else {
-                self.add_code_cell(sheet.id, dirty_rect.min);
+                self.add_code_cell(multi_pos);
             }
         }
     }
@@ -386,43 +388,49 @@ impl PendingTransaction {
     }
 
     /// Adds a code cell to the transaction
-    pub fn add_code_cell(&mut self, sheet_id: SheetId, pos: Pos) {
+    pub fn add_code_cell(&mut self, multi_pos: MultiPos) {
         self.code_cells_a1_context
-            .entry(sheet_id)
+            .entry(multi_pos.sheet_id())
             .or_default()
-            .insert(pos);
+            .insert(multi_pos);
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
 
-        self.sheet_data_tables_cache.insert(sheet_id);
+        self.sheet_data_tables_cache.insert(multi_pos.sheet_id());
 
-        self.code_cells.entry(sheet_id).or_default().insert(pos);
+        self.code_cells
+            .entry(multi_pos.sheet_id())
+            .or_default()
+            .insert(multi_pos);
     }
 
     /// Adds a code cell, html cell and image cell to the transaction from a
     /// CodeRun. If the code_cell no longer exists, then it sends the empty code
     /// cell so the client can remove it.
-    pub fn add_from_code_run(
-        &mut self,
-        sheet_id: SheetId,
-        pos: Pos,
-        is_image: bool,
-        is_html: bool,
-    ) {
-        self.add_code_cell(sheet_id, pos);
+    pub fn add_from_code_run(&mut self, multi_pos: MultiPos, is_image: bool, is_html: bool) {
+        self.add_code_cell(multi_pos);
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || self.is_server() {
             return;
         }
 
-        if is_html {
-            self.html_cells.entry(sheet_id).or_default().insert(pos);
-        }
+        // charts must be sheet_pos
+        if let MultiPos::SheetPos(sheet_pos) = multi_pos {
+            if is_html {
+                self.html_cells
+                    .entry(multi_pos.sheet_id())
+                    .or_default()
+                    .insert(sheet_pos.into());
+            }
 
-        if is_image {
-            self.image_cells.entry(sheet_id).or_default().insert(pos);
+            if is_image {
+                self.image_cells
+                    .entry(multi_pos.sheet_id())
+                    .or_default()
+                    .insert(sheet_pos.into());
+            }
         }
     }
 
@@ -665,8 +673,9 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
         let pos = Pos { x: 0, y: 0 };
+        let multi_pos = MultiPos::SheetPos(SheetPos::new(sheet_id, pos.x, pos.y));
 
-        transaction.add_from_code_run(sheet_id, pos, false, false);
+        transaction.add_from_code_run(multi_pos, false, false);
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 0);
         assert_eq!(transaction.image_cells.len(), 0);
@@ -692,7 +701,9 @@ mod tests {
             Some(true),
             None,
         );
-        transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
+
+        let multi_pos = MultiPos::SheetPos(SheetPos::new(sheet_id, pos.x, pos.y));
+        transaction.add_from_code_run(multi_pos, data_table.is_image(), data_table.is_html());
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 0);
@@ -718,7 +729,9 @@ mod tests {
             Some(true),
             None,
         );
-        transaction.add_from_code_run(sheet_id, pos, data_table.is_image(), data_table.is_html());
+
+        let multi_pos = MultiPos::SheetPos(SheetPos::new(sheet_id, pos.x, pos.y));
+        transaction.add_from_code_run(multi_pos, data_table.is_image(), data_table.is_html());
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.html_cells.len(), 1);
         assert_eq!(transaction.image_cells.len(), 1);
@@ -728,11 +741,12 @@ mod tests {
     fn test_add_code_cell() {
         let mut transaction = PendingTransaction::default();
         let sheet_id = SheetId::new();
-        let pos = Pos { x: 0, y: 0 };
-        transaction.add_code_cell(sheet_id, pos);
+        let pos = Pos { x: 1, y: 1 };
+        let multi_pos = MultiPos::SheetPos(SheetPos::new(sheet_id, pos.x, pos.y));
+        transaction.add_code_cell(multi_pos);
         assert_eq!(transaction.code_cells.len(), 1);
         assert_eq!(transaction.code_cells[&sheet_id].len(), 1);
-        assert!(transaction.code_cells[&sheet_id].contains(&pos));
+        assert!(transaction.code_cells[&sheet_id].contains(&multi_pos));
     }
 
     #[test]

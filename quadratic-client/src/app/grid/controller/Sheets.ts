@@ -5,6 +5,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type {
   A1Selection,
   CellRefRange,
+  JsCoordinate,
   JsOffset,
   JsTableInfo,
   Rect,
@@ -431,8 +432,18 @@ export class Sheets {
     return A1SelectionToJsSelection(a1);
   };
 
-  cellRefRangeToRefRangeBounds = (cellRefRange: CellRefRange, isPython: boolean): RefRangeBounds => {
-    return cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange, bigIntReplacer), isPython, this.jsA1Context);
+  cellRefRangeToRefRangeBounds = (
+    cellRefRange: CellRefRange,
+    isPython: boolean,
+    sourceCell?: JsCoordinate
+  ): RefRangeBounds => {
+    return cellRefRangeToRefRangeBounds(
+      JSON.stringify(cellRefRange, bigIntReplacer),
+      isPython,
+      this.jsA1Context,
+      sourceCell?.x,
+      sourceCell?.y
+    );
   };
 
   selectionToSheetRect = (sheetId: string, selection: string): string => {

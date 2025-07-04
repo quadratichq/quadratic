@@ -114,7 +114,13 @@ impl JsSelection {
                     {
                         return None;
                     }
-                    range.convert_to_ref_range_bounds(false, context.get_context(), false, true)
+                    range.convert_to_ref_range_bounds(
+                        false,
+                        context.get_context(),
+                        false,
+                        true,
+                        None,
+                    )
                 }
             })
             .collect::<Vec<_>>();

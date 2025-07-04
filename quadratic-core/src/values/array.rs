@@ -251,6 +251,10 @@ impl Array {
                 .collect()
         })
     }
+    /// Returns an iterator over the values in the array.
+    pub fn values_iter(&self) -> impl Iterator<Item = &CellValue> {
+        self.values.iter()
+    }
     /// Constructs an array from rows (if `axis` is `Axis::Y`) or columns (if
     /// `axis` is `Axis::X`). All rows/columns must have the same length, or
     /// else the result is undefined. Returns `None` if `slices` is empty or if
@@ -730,6 +734,13 @@ impl Array {
         self.empty_values_cache
             .as_ref()
             .and_then(|cache| cache.get_cache_cloned())
+    }
+
+    /// Returns a mutable reference to the cell value at Pos. This should be
+    /// used carefully, as it allows the cell value to be modified in place.
+    pub fn get_mut(&mut self, pos: &Pos) -> Option<&mut CellValue> {
+        let i = self.size().flatten_index(pos.x as u32, pos.y as u32).ok()?;
+        Some(&mut self.values[i])
     }
 }
 

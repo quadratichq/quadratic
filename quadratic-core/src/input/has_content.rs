@@ -23,7 +23,7 @@ pub fn table_at<'a>(
         _ => return None,
     };
 
-    context.table_map.table_at(table_pos)
+    context.table_map.table_at(table_pos.into())
 }
 
 /// Determine whether there is a chart at a given position.

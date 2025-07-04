@@ -208,7 +208,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        ArraySize, CellValue, Pos, SheetPos,
+        ArraySize, CellValue, Pos,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -224,11 +224,7 @@ pub mod test {
     fn test_display_value_at_html_or_image() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A1];
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Python,
