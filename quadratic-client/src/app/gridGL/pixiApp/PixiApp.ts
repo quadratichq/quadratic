@@ -308,28 +308,31 @@ export class PixiApp {
   };
 
   // called before and after a render
-  prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+  prepareForCopying = async (options: {
+    sheetId: string;
+    cull: Rectangle;
+    gridLines?: boolean;
+    ai?: boolean;
+  }): Promise<Container> => {
     // this is expensive, so we do it first, before blocking the canvas renderer
-    await this.htmlPlaceholders.prepare(options?.cull);
+    await this.htmlPlaceholders.prepare({ sheetId: options.sheetId, cull: options.cull });
 
     // this blocks the canvas renderer
     this.copying = true;
 
-    this.gridLines.visible = options?.gridLines ?? false;
-    this.cursor.visible = options?.ai ?? false;
+    this.gridLines.visible = options.gridLines ?? false;
+    this.cursor.visible = options.ai ?? false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
-    this.headings.visible = options?.ai ?? false;
+    this.headings.visible = options.ai ?? false;
     this.boxCells.visible = false;
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
-    if (options?.cull) {
-      this.cellsSheets.cull(options.cull);
-    }
+    this.cellsSheets.cull(options.cull);
     return this.viewportContents;
   };
 
-  cleanUpAfterCopying(culled?: boolean): void {
+  cleanUpAfterCopying = (): void => {
     this.gridLines.visible = true;
     this.cursor.visible = true;
     this.cellHighlights.visible = true;
@@ -339,11 +342,9 @@ export class PixiApp {
     this.htmlPlaceholders.hide();
     this.cellsSheets.toggleOutlines();
     this.copy.visible = true;
-    if (culled) {
-      this.cellsSheets.cull(this.viewport.getVisibleBounds());
-    }
+    this.cellsSheets.cull(this.viewport.getVisibleBounds());
     this.copying = false;
-  }
+  };
 
   render(): void {
     this.renderer.render(this.stage);

@@ -1,0 +1,7 @@
+.dropdown-separator {
+  display: none;
+}
+
+.dropdown-separator-neighbor + .dropdown-separator:has(+ .dropdown-separator-neighbor) {
+  display: block;
+}

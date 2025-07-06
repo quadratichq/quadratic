@@ -41,6 +41,8 @@ const USE_STREAM = true;
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAnalystPromptArgs = {
+  chatId?: string;
+  messageSource: string;
   content: Content;
   context: Context;
   messageIndex: number;
@@ -105,7 +107,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
+      async ({ chatId: promptChatId, messageSource, content, context, messageIndex }: SubmitAIAnalystPromptArgs) => {
         set(showAIAnalystAtom, true);
         set(aiAnalystShowChatHistoryAtom, false);
 
@@ -124,7 +126,7 @@ export function useSubmitAIAnalystPrompt() {
         const currentMessageCount = await snapshot.getPromise(aiAnalystCurrentChatMessagesCountAtom);
         if (messageIndex === 0) {
           set(aiAnalystCurrentChatAtom, {
-            id: v4(),
+            id: promptChatId ?? v4(),
             name: '',
             lastUpdated: Date.now(),
             messages: [],
@@ -134,7 +136,7 @@ export function useSubmitAIAnalystPrompt() {
         else if (messageIndex < currentMessageCount) {
           set(aiAnalystCurrentChatAtom, (prev) => {
             return {
-              id: v4(),
+              id: promptChatId ?? v4(),
               name: '',
               lastUpdated: Date.now(),
               messages: prev.messages.slice(0, messageIndex),
@@ -227,7 +229,7 @@ export function useSubmitAIAnalystPrompt() {
         let lastMessageIndex = -1;
         let chatId = '';
         set(aiAnalystCurrentChatAtom, (prev) => {
-          chatId = prev.id ? prev.id : v4();
+          chatId = prev.id ? prev.id : (promptChatId ?? v4());
           return {
             ...prev,
             id: chatId,
@@ -239,6 +241,8 @@ export function useSubmitAIAnalystPrompt() {
           // Handle tool calls
           let toolCallIterations = 0;
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+            toolCallIterations++;
+
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
 
@@ -269,6 +273,7 @@ export function useSubmitAIAnalystPrompt() {
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
+              messageSource,
               modelKey,
               time: new Date().toString(),
               messages: messagesWithContext,
@@ -293,7 +298,7 @@ export function useSubmitAIAnalystPrompt() {
               break;
             }
 
-            toolCallIterations++;
+            messageSource = response.toolCalls.map((toolCall) => toolCall.name).join(', ');
 
             // Message containing tool call results
             const toolResultMessage: ToolResultMessage = {
