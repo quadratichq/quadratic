@@ -1,7 +1,8 @@
+import type { Request, Response } from 'express';
 import { AUTH_TYPE } from '../env-vars';
 import { getUsersFromAuth0, getUsersFromAuth0ByEmail, jwtConfigAuth0 } from './auth0';
 import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
-import { getUsersFromWorkos, getUsersFromWorkosByEmail, jwtConfigWorkos } from './workos';
+import { getUsersFromWorkos, getUsersFromWorkosByEmail, jwtConfigWorkos, signupCallbackWorkos } from './workos';
 
 export type UsersRequest = {
   id: number;
@@ -56,5 +57,18 @@ export const jwtConfig = () => {
       return jwtConfigWorkos;
     default:
       throw new Error(`Unsupported auth type in jwtConfig(): ${AUTH_TYPE}`);
+  }
+};
+
+export const signupCallback = async (req: Request, res: Response) => {
+  switch (AUTH_TYPE) {
+    case 'auth0':
+    case 'ory':
+      res.status(200).end();
+      return;
+    case 'workos':
+      return await signupCallbackWorkos(req, res);
+    default:
+      throw new Error(`Unsupported auth type in signupCallback(): ${AUTH_TYPE}`);
   }
 };

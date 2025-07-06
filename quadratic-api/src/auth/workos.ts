@@ -1,8 +1,9 @@
 import * as Sentry from '@sentry/node';
-import { WorkOS } from '@workos-inc/node';
+import { WorkOS, type UserRegistrationActionResponseData } from '@workos-inc/node';
+import type { Request, Response } from 'express';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
-import { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../env-vars';
+import { WORKOS_ACTIONS_SECRET, WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../env-vars';
 import type { ByEmailUser, User } from './auth';
 
 let workos: WorkOS | undefined;
@@ -36,7 +37,7 @@ export const getUsersFromWorkos = async (users: { id: number; auth0Id: string }[
       // if user is not found, log the error
       console.error(e);
       Sentry.captureException({
-        message: 'Failed to retrieve user info from Workos',
+        message: 'Failed to retrieve users from Workos',
         level: 'error',
         extra: {
           auth0IdInOurDb: auth0Id,
@@ -45,7 +46,7 @@ export const getUsersFromWorkos = async (users: { id: number; auth0Id: string }[
       });
 
       // and throw an error back to exit from the request
-      throw new Error('Failed to retrieve all user info from Workos');
+      throw new Error('Failed to retrieve all users from Workos');
     }
   });
 
@@ -75,4 +76,47 @@ export const jwtConfigWorkos = {
     jwksUri: WORKOS_JWKS_URI,
   }) as GetVerificationKey,
   algorithms: ['RS256'] as Algorithm[],
+};
+
+export const signupCallbackWorkos = async (req: Request, res: Response) => {
+  let responsePayload: UserRegistrationActionResponseData = {
+    type: 'user_registration',
+    verdict: 'Deny',
+  };
+
+  try {
+    const payload = req.body;
+    const sigHeader = req.headers['workos-signature'];
+
+    if (!!sigHeader && typeof sigHeader === 'string') {
+      const action = await getWorkos().actions.constructAction({
+        payload: payload,
+        sigHeader: sigHeader,
+        secret: WORKOS_ACTIONS_SECRET,
+      });
+
+      await getWorkos().userManagement.updateUser({
+        userId: action.id,
+        emailVerified: true,
+      });
+
+      responsePayload = {
+        type: 'user_registration',
+        verdict: 'Allow',
+      };
+    }
+  } catch (error) {
+    console.error(error);
+    Sentry.captureException({
+      message: '[signupCallbackWorkos] error: ',
+      level: 'error',
+      extra: {
+        error,
+      },
+    });
+  }
+
+  const response = await getWorkos().actions.signResponse(responsePayload, WORKOS_ACTIONS_SECRET);
+
+  res.json(response);
 };
