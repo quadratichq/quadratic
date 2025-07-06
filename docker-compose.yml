@@ -75,7 +75,7 @@ services:
 
   quadratic-client:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-client
     container_name: client
     environment:
@@ -122,7 +122,7 @@ services:
 
   quadratic-api:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-api
     container_name: api
     environment:
@@ -183,7 +183,7 @@ services:
 
   quadratic-multiplayer:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-multiplayer
     container_name: multiplayer
     environment:
@@ -222,7 +222,7 @@ services:
 
   quadratic-files:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-files
     container_name: files
     environment:
@@ -272,7 +272,7 @@ services:
 
   quadratic-connection:
     extends:
-      file: docker-compose.${ECR_OR_BUILD}.yml
+      file: docker-compose.${ECR_OR_BUILD:-build}.yml
       service: quadratic-connection
     container_name: connection
     environment:

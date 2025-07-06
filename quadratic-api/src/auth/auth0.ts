@@ -25,7 +25,7 @@ import type { ByEmailUser, User } from './auth';
 let auth0: ManagementClient | undefined;
 const getAuth0 = () => {
   if (!auth0) {
-    auth0 = auth0 = new ManagementClient({
+    auth0 = new ManagementClient({
       domain: AUTH0_DOMAIN,
       clientId: AUTH0_CLIENT_ID,
       clientSecret: AUTH0_CLIENT_SECRET,

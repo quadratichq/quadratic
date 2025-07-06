@@ -86,7 +86,9 @@ export const signupCallbackWorkos = async (req: Request, res: Response) => {
 
   try {
     const payload = req.body;
+    console.log(payload);
     const sigHeader = req.headers['workos-signature'];
+    console.log(sigHeader);
 
     if (!!sigHeader && typeof sigHeader === 'string') {
       const action = await getWorkos().actions.constructAction({
@@ -94,6 +96,12 @@ export const signupCallbackWorkos = async (req: Request, res: Response) => {
         sigHeader: sigHeader,
         secret: WORKOS_ACTIONS_SECRET,
       });
+      console.log(action);
+      console.log(action.id);
+      console.log(action.object);
+      if (action.object === 'user_registration_action_context') {
+        console.log(action.userData);
+      }
 
       await getWorkos().userManagement.updateUser({
         userId: action.id,

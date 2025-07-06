@@ -42,7 +42,7 @@ export const workosClient: AuthClient = {
   /**
    * Return whether the user is authenticated and the session is valid.
    */
-  async isAuthenticated() {
+  async isAuthenticated(): Promise<boolean> {
     const client = await getClient();
     const user = client.getUser();
     return !!user;
