@@ -389,6 +389,15 @@ impl GridController {
             }
         }
         if !update_code_cells.is_empty() {
+            // Sort so that None render cells come first, then Some render cells
+            update_code_cells.sort_by(|a, b| {
+                match (a.render_code_cell.is_none(), b.render_code_cell.is_none()) {
+                    (true, false) => std::cmp::Ordering::Less,
+                    (false, true) => std::cmp::Ordering::Greater,
+                    _ => std::cmp::Ordering::Equal,
+                }
+            });
+
             if let Ok(update_code_cells) = serde_json::to_vec(&update_code_cells) {
                 crate::wasm_bindings::js::jsUpdateCodeCells(update_code_cells);
             }
