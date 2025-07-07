@@ -574,8 +574,6 @@ impl GridController {
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
             let deleted_inner_code_cells = old_values.find_code_cells();
-            dbgjs!(&old_values);
-            dbgjs!(&deleted_inner_code_cells);
 
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SetDataTableAt {
@@ -605,12 +603,10 @@ impl GridController {
                                 0,
                             ),
                         ));
-                        dbgjs!(&multi_pos);
                         transaction.add_code_cell(multi_pos);
                         if let Some((index, _, data_table, _)) =
                             tables.shift_remove_full(&multi_pos)
                         {
-                            dbgjs!(&data_table);
                             transaction
                                 .reverse_operations
                                 .push(Operation::SetDataTableMultiPos {

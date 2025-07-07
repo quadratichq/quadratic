@@ -121,20 +121,19 @@ impl Sheet {
 
         // cell_value is a code cell (sub table)
         if cell_value.is_code() {
-            // offset needs to be 1-based b/c of limitations of Contiguous2D
-            let inner_pos = Pos::new(
-                pos.x - data_table_pos.x + 1,
-                pos.y - data_table_pos.y - data_table.y_adjustment(true) + 1,
+            let sub_table_pos = Pos::new(
+                pos.x - data_table_pos.x,
+                pos.y - data_table_pos.y - data_table.y_adjustment(true),
             );
 
-            let (inner_code_pos, inner_data_table) = data_table
+            let (sub_data_table_pos, sub_data_table) = data_table
                 .tables
                 .as_ref()
-                .and_then(|tables| tables.get_contains(inner_pos))?;
+                .and_then(|tables| tables.get_contains(sub_table_pos))?;
 
-            inner_data_table.cell_value_at(
-                u32::try_from(pos.x - inner_code_pos.x).ok()?,
-                u32::try_from(pos.y - inner_code_pos.y).ok()?,
+            sub_data_table.cell_value_at(
+                u32::try_from(pos.x - sub_data_table_pos.x).ok()?,
+                u32::try_from(pos.y - sub_data_table_pos.y).ok()?,
             )
         } else {
             Some(cell_value.to_owned())

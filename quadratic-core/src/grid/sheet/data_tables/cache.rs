@@ -169,10 +169,10 @@ impl SheetDataTablesCache {
             let y1 = y1.unwrap_or(y0);
             in_table_code.set_single_cell_code(
                 Rect::new(
-                    sheet_pos.x + x0 - 1,
-                    sheet_pos.y + y0 - 1 + y_adjustment,
-                    sheet_pos.x + x1 - 1,
-                    sheet_pos.y + y1 - 1 + y_adjustment,
+                    sheet_pos.x + x0,
+                    sheet_pos.y + y0 + y_adjustment,
+                    sheet_pos.x + x1,
+                    sheet_pos.y + y1 + y_adjustment,
                 ),
                 sheet_pos.into(),
             );

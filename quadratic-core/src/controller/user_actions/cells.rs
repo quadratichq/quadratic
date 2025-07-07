@@ -24,7 +24,7 @@ impl GridController {
                     self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
                 }
             }
-            Err(e) => dbgjs!(e),
+            Err(e) => dbgjs!(format!("[set_cell_values] Error: {e:?}")),
         }
     }
 

@@ -137,8 +137,6 @@ impl Sheet {
                 if data_table.is_data_table() {
                     if let Some(tables) = &data_table.tables {
                         tables.expensive_iter().for_each(|(inner_pos, _)| {
-                            let inner_pos = inner_pos.translate(-1, -1, 0, 0);
-
                             if let Some(code_cell) =
                                 self.get_render_code_cell(MultiPos::new_table_pos(
                                     self.id,
