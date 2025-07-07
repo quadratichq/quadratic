@@ -328,17 +328,19 @@ impl SheetDataTables {
                 table_pos
             )
         };
+
         let data_table = self
             .data_tables
             .get_mut(&Pos::from(table_pos.table_sheet_pos))
             .ok_or_else(err)?;
 
-        let pos = table_pos.pos.translate(1, 1, 0, 0);
+        let sub_table_pos = table_pos.pos.translate(1, 1, 0, 0);
+
         data_table
             .tables
             .as_mut()
             .ok_or_else(err)?
-            .modify_data_table_at(&pos, f)
+            .modify_data_table_at(&sub_table_pos, f)
     }
 
     /// Returns the anchor position of the data table which contains the given position, if it exists.
