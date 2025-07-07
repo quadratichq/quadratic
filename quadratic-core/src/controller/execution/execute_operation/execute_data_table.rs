@@ -1,5 +1,5 @@
 use crate::{
-    ArraySize, CellValue, ClearOption, MultiPos, Pos, Rect, SheetPos, SheetRect,
+    ArraySize, CellValue, ClearOption, MultiPos, Pos, Rect, SheetPos, SheetRect, TablePos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     cellvalue::Import,
@@ -573,17 +573,55 @@ impl GridController {
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
+            let deleted_inner_code_cells = old_values.find_code_cells();
+            dbgjs!(&old_values);
+            dbgjs!(&deleted_inner_code_cells);
+
             let forward_operations = vec![op];
             let reverse_operations = vec![Operation::SetDataTableAt {
                 sheet_pos,
                 values: old_values,
             }];
+
             self.data_table_operations(
                 transaction,
                 forward_operations,
                 reverse_operations,
                 Some(&rect.to_sheet_rect(sheet_id)),
             );
+
+            // Remove any inner code cells that were deleted
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            if let Some(data_table) = sheet.data_tables.get_at_mut(&data_table_pos) {
+                let y_adjustment = data_table.y_adjustment(true);
+                if let Some(tables) = data_table.tables.as_mut() {
+                    for code_cell in deleted_inner_code_cells {
+                        let multi_pos = MultiPos::TablePos(TablePos::new(
+                            data_table_pos.to_sheet_pos(sheet_id),
+                            code_cell.translate(
+                                sheet_pos.x - data_table_pos.x,
+                                sheet_pos.y - data_table_pos.y - y_adjustment,
+                                0,
+                                0,
+                            ),
+                        ));
+                        dbgjs!(&multi_pos);
+                        transaction.add_code_cell(multi_pos);
+                        if let Some((index, _, data_table, _)) =
+                            tables.shift_remove_full(&multi_pos)
+                        {
+                            dbgjs!(&data_table);
+                            transaction
+                                .reverse_operations
+                                .push(Operation::SetDataTableMultiPos {
+                                    multi_pos,
+                                    data_table: Some(data_table.to_owned()),
+                                    index,
+                                });
+                        }
+                    }
+                }
+            }
 
             return Ok(());
         };
