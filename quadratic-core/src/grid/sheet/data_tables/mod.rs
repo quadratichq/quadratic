@@ -5,13 +5,16 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    MultiPos, Pos, Rect, TablePos,
+    MultiPos, Pos, Rect, SheetPos, TablePos,
     grid::{CodeRun, DataTable, SheetId, SheetRegionMap},
 };
 
 use anyhow::{Result, anyhow};
 
 pub mod cache;
+pub(crate) mod in_table_code;
+pub(crate) mod multi_cell_tables_cache;
+
 use cache::SheetDataTablesCache;
 
 #[derive(Serialize, Deserialize, Clone, PartialEq)]
@@ -44,15 +47,26 @@ impl IntoIterator for SheetDataTables {
     }
 }
 
-impl From<IndexMap<Pos, DataTable>> for SheetDataTables {
-    fn from(mut data_tables: IndexMap<Pos, DataTable>) -> Self {
+impl From<(IndexMap<Pos, DataTable>, SheetId)> for SheetDataTables {
+    fn from((mut data_tables, sheet_id): (IndexMap<Pos, DataTable>, SheetId)) -> Self {
+        let mut sheet_data_tables = Self::new();
+
         let mut data_tables_pos = Vec::new();
         data_tables.iter_mut().for_each(|(pos, dt)| {
             dt.spill_data_table = false;
             data_tables_pos.push(*pos);
+
+            if let Some(tables) = &dt.tables {
+                if !tables.data_tables.is_empty() {
+                    sheet_data_tables.cache.merge_single_cell(
+                        pos.to_sheet_pos(sheet_id),
+                        tables.cache.single_cell_tables.clone(),
+                        dt.y_adjustment(true),
+                    );
+                }
+            }
         });
 
-        let mut sheet_data_tables = Self::new();
         sheet_data_tables.data_tables = data_tables;
         for (index, pos) in data_tables_pos.iter().enumerate() {
             sheet_data_tables.update_spill_and_cache(index, pos, None);
@@ -674,6 +688,27 @@ impl SheetDataTables {
     /// Exports the cache of data tables.
     pub fn cache_ref(&self) -> &SheetDataTablesCache {
         &self.cache
+    }
+
+    /// Clears any in-table code output for the sheet.
+    pub fn clear_in_table_code(&mut self, rect: Rect) {
+        self.cache.in_table_code.as_mut().map(|in_table_code| {
+            in_table_code.clear_table(rect);
+        });
+    }
+
+    pub fn update_in_table_code(&mut self, sheet_pos: SheetPos, y_adjustment: i64) {
+        let Some(tables) = self
+            .get_at(&sheet_pos.into())
+            .and_then(|table| table.tables.as_ref())
+        else {
+            return;
+        };
+
+        // TODO: would love to do away with this clone
+        let table_single_cell_code = tables.cache.single_cell_tables.clone();
+        self.cache
+            .merge_single_cell(sheet_pos, table_single_cell_code, y_adjustment);
     }
 }
 

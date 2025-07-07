@@ -159,10 +159,14 @@ impl Sheet {
                 Ok(self.data_tables.insert_before(index, &pos, data_table))
             }
             MultiPos::TablePos(table_pos) => {
+                let mut y_adjustment = 0;
+
                 // For TablePos, we need to insert into the sub-tables of the parent data table
                 let mut result = None;
                 self.data_tables
                     .modify_data_table_at(&table_pos.table_sheet_pos.into(), |dt| {
+                        y_adjustment = dt.y_adjustment(true);
+
                         // Check if the data table has sub-tables
                         if let Some(tables) = &mut dt.tables {
                             // Insert the data table into the sub-tables
@@ -186,6 +190,17 @@ impl Sheet {
                             Ok(())
                         }
                     })?;
+
+                // clear any in-table output for the old data table
+                if let Some((_, Some(old_data_table), _)) = result.as_ref() {
+                    let old_output_rect =
+                        old_data_table.output_rect(table_pos.table_sheet_pos.into(), false);
+                    self.data_tables.clear_in_table_code(old_output_rect);
+                }
+
+                self.data_tables
+                    .update_in_table_code(table_pos.table_sheet_pos.into(), y_adjustment);
+
                 result.ok_or_else(|| anyhow!("Failed to insert data table into sub-table"))
             }
         }
