@@ -339,7 +339,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns the upper bound on the finite regions in the given column.
-    /// Returns 0 if there are no values.
+    /// Returns -1 if there are no values.
     pub fn col_max(&self, column: i64) -> i64 {
         let Some(column) = convert_coord(column) else {
             return -1;
@@ -364,7 +364,7 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns the upper bound on the finite regions in the given row. Returns
-    /// 0 if there are no values.
+    /// -1 if there are no values.
     pub fn row_max(&self, row: i64) -> i64 {
         let Some(row) = convert_coord(row) else {
             return -1;
@@ -380,17 +380,13 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
             .find_map(|column_block| {
                 let column_data = &column_block.value;
                 (*column_data.get(row)? != default)
-                    .then(|| column_block.finite_max().try_into().unwrap_or(-1))
+                    .then(|| column_block.finite_max().try_into().unwrap_or(UNBOUNDED))
             })
             .unwrap_or(-1)
-            // `.try_into()` will only fail if there are finite values beyond
-            // `i64::MAX`. In that case there's no correct answer.
-            .try_into()
-            .unwrap_or(UNBOUNDED)
     }
 
     /// Returns the lower bound on the finite regions in the given row. Returns
-    /// 0 if there are no values.
+    /// -1 if there are no values.
     pub fn row_min(&self, row: i64) -> i64 {
         let Some(row) = convert_coord(row) else {
             return -1;

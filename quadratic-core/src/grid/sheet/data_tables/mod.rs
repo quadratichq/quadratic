@@ -694,9 +694,9 @@ impl SheetDataTables {
 
     /// Clears any in-table code output for the sheet.
     pub fn clear_in_table_code(&mut self, rect: Rect) {
-        self.cache.in_table_code.as_mut().map(|in_table_code| {
+        if let Some(in_table_code) = self.cache.in_table_code.as_mut() {
             in_table_code.clear_table(rect);
-        });
+        }
     }
 
     pub fn update_in_table_code(&mut self, sheet_pos: SheetPos, y_adjustment: i64) {
