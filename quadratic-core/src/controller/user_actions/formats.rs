@@ -936,7 +936,7 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         let formats =
-            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A1:"), format_update);
+            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A0:"), format_update);
 
         assert_eq!(
             ops[0],

@@ -25,7 +25,7 @@ pub struct ContiguousBlocks<T>(
 );
 impl<T: Default> Default for ContiguousBlocks<T> {
     fn default() -> Self {
-        Self(BTreeMap::from_iter([(1, Block::new_total(T::default()))]))
+        Self(BTreeMap::from_iter([(0, Block::new_total(T::default()))]))
     }
 }
 impl<T> IntoIterator for ContiguousBlocks<T> {
@@ -106,8 +106,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
             return Err("invariant broken due to empty block");
         }
 
-        // Every coordinate from `1` to `u64::MAX` is covered by exactly one block
-        let mut last_index = 1;
+        // Every coordinate from `0` to `u64::MAX` is covered by exactly one block
+        let mut last_index = 0;
         while last_index < u64::MAX {
             let Some(block) = self.0.get(&last_index) else {
                 return Err("invariant broken due to missing coordinate");
@@ -149,23 +149,25 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
 
     /// Returns the coordinate of the last non-default value. If the infinite
     /// block at the end is non-default, then its starting coordinate is
-    /// returned. If all values are default, then `0` is returned.
-    pub fn finite_max(&self) -> u64
+    /// returned. If all values are default, then `-1` is returned.
+    pub fn finite_max(&self) -> i64
     where
         T: Default,
     {
         self.non_default_blocks()
             .last()
-            .map(|block| block.finite_max())
-            .unwrap_or(0)
+            .map(|block| block.finite_max() as i64)
+            .unwrap_or(-1)
     }
 
     /// Returns the maximum coordinate with a value, or `None` if there is an
-    /// infinite block. Returns 0 if there are no values.
-    pub fn max(&self) -> Option<u64> {
+    /// infinite block. Returns -1 if there are no values.
+    pub fn max(&self) -> Option<i64> {
         match self.0.last_key_value() {
-            Some((_, block)) => (block.end < u64::MAX).then_some(block.end.saturating_sub(1)),
-            None => Some(0), // no values
+            Some((_, block)) => {
+                (block.end < u64::MAX).then_some(block.end.saturating_sub(1) as i64)
+            }
+            None => Some(-1), // no values
         }
     }
 
@@ -190,10 +192,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
     /// Adds a block to the data structure. **This breaks the invariant that
     /// every key is covered exactly once.**
-    fn add_block(&mut self, mut block: Block<T>) {
-        if block.start < 1 {
-            block.start = 1;
-        }
+    fn add_block(&mut self, block: Block<T>) {
         if block.is_empty() {
             return;
         }
@@ -353,8 +352,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         to_return
     }
 
-    /// Sets the value at `coordinate` and returns the old value. Returns `None`
-    /// if `coordinate == 0`.
+    /// Sets the value at `coordinate` and returns the old value.
     pub fn set(&mut self, coordinate: u64, value: T) -> Option<T> {
         let reverse_blocks = self.set_block(Block {
             start: coordinate,
@@ -365,7 +363,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         reverse_blocks.into_iter().next().map(|block| block.value)
     }
     /// Updates the value at `coordinate` using `f` and returns data to perform
-    /// the reverse operation. Returns `None` if `coordinate == 0`.
+    /// the reverse operation.
     ///
     /// - `R` is the data required to perform the reverse operation.
     pub fn update<R>(&mut self, coordinate: u64, f: impl FnOnce(&mut T) -> R) -> Option<R> {
@@ -517,8 +515,6 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Shifts everything from `start` onwards by `end-start` and then sets the
     /// values `start..end`.
     pub fn shift_insert(&mut self, start: u64, end: u64, value: T) {
-        let start = start.max(1);
-        let end = end.max(1);
         let Some(offset) = end.checked_sub(start) else {
             return;
         };
@@ -532,8 +528,6 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     /// Removes the values `start..end` and shifts everything from `end` onwards
     /// by `start-end`.
     pub fn shift_remove(&mut self, start: u64, end: u64) {
-        let start = start.max(1);
-        let end = end.max(1);
         let Some(offset) = end.checked_sub(start) else {
             return;
         };
@@ -553,8 +547,8 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
         T: Default,
     {
         match delta {
-            ..0 => self.shift_remove(1, (1 - delta) as u64),
-            1.. => self.shift_insert(1, (1 + delta) as u64, T::default()),
+            ..0 => self.shift_remove(0, -delta as u64),
+            1.. => self.shift_insert(0, delta as u64, T::default()),
             0 => (),
         }
     }
@@ -718,13 +712,13 @@ mod tests {
                     }
                     TestOp::ShiftInsert { start, end, value } => {
                         actual.shift_insert(start as u64, end as u64, value);
-                        for i in start.max(1)..end.max(1) {
+                        for i in start..end {
                             expected.insert(i as usize, value);
                         }
                     }
                     TestOp::ShiftRemove { start, end } => {
                         actual.shift_remove(start as u64, end as u64);
-                        for _ in start.max(1)..end.max(1) {
+                        for _ in start..end {
                             expected.remove(start as usize);
                         }
                     }
@@ -760,9 +754,9 @@ mod tests {
             expected.pop();
         }
         let expected_finite_max = if infinity == 0 {
-            expected.len() as u64 // finite values only
+            expected.len() as i64 // finite values only
         } else {
-            expected.len() as u64 + 1 // infinite values starting at last block
+            expected.len() as i64 + 1 // infinite values starting at last block
         };
         assert_eq!(expected_finite_max, actual.finite_max(), "wrong finite max");
 
