@@ -15,11 +15,17 @@ pub struct MemoryCache<K, V> {
     cache: HashMap<K, (Option<Instant>, V)>,
 }
 
-impl<K, V> MemoryCache<K, V> {
-    pub fn new() -> Self {
+impl<K, V> Default for MemoryCache<K, V> {
+    fn default() -> Self {
         Self {
             cache: HashMap::new(),
         }
+    }
+}
+
+impl<K, V> MemoryCache<K, V> {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub async fn start_executor(cache: Arc<Mutex<Self>>, interval: Duration) -> JoinHandle<()>
@@ -129,8 +135,7 @@ where
     async fn is_expired(&self, key: &K) -> Option<bool> {
         self.cache
             .get(key)
-            .map(|(expires, _)| expires.map(|e| e < Instant::now()))
-            .flatten()
+            .and_then(|(expires, _)| expires.map(|e| e < Instant::now()))
     }
 
     /// Set the expiration time of a value
@@ -139,7 +144,9 @@ where
     async fn set_expires(&mut self, key: &K, duration: Option<Duration>) {
         let expires = duration.map(|d| Self::duration_to_expires(d));
 
-        self.cache.get_mut(key).map(|(e, _)| *e = expires);
+        if let Some((e, _)) = self.cache.get_mut(key) {
+            *e = expires;
+        }
     }
 }
 

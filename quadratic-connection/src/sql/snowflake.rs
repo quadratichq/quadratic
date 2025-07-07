@@ -44,21 +44,14 @@ async fn get_connection(
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
     } else {
+        let config = new_snowflake_connection();
         ApiConnection {
             uuid: Uuid::new_v4(),
             name: "".into(),
             r#type: "".into(),
             created_date: "".into(),
             updated_date: "".into(),
-            type_details: SnowflakeConnection {
-                account_identifier: "TEST".into(),
-                username: "TEST".into(),
-                password: "TEST".into(),
-                database: "ALL_NATIVE_DATA_TYPES".into(),
-                warehouse: None,
-                schema: None,
-                role: None,
-            },
+            type_details: config,
         }
     };
 
@@ -90,33 +83,32 @@ pub(crate) async fn schema(
     schema_generic(api_connection, state).await
 }
 
+use std::sync::{LazyLock, Mutex};
+pub static SNOWFLAKE_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
+    dotenv::from_filename(".env").ok();
+    let credentials = std::env::var("SNOWFLAKE_CREDENTIALS").unwrap();
+
+    Mutex::new(credentials)
+});
+pub fn new_snowflake_connection() -> SnowflakeConnection {
+    let credentials = SNOWFLAKE_CREDENTIALS.lock().unwrap().to_string();
+    serde_json::from_str::<SnowflakeConnection>(&credentials).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use crate::test_util::{get_claims, new_state, new_team_id_with_header, response_bytes};
+    use crate::num_vec;
+    use crate::test_util::{
+        get_claims, new_state, new_team_id_with_header, response_bytes, str_vec, validate_parquet,
+    };
+    use arrow_schema::{DataType, TimeUnit};
     use bytes::Bytes;
     use http::StatusCode;
-    use quadratic_rust_shared::parquet::utils::compare_parquet_file_with_bytes;
-    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
-    use quadratic_rust_shared::test::get_snowflake_parquet_path;
+    use quadratic_rust_shared::sql::snowflake_connection::tests::expected_snowflake_schema;
     use tracing_test::traced_test;
     use uuid::Uuid;
-
-    // TODO(ddimaria): removing this test for now until we can record different queries (only single for now)
-    // #[tokio::test]
-    // #[traced_test]
-    // async fn snowflake_test_connection() {
-    //     let state = Extension(new_state().await);
-    //     let connection_id = Uuid::new_v4();
-    //     let claims = get_claims();
-    //     let (snowflake_connection, _) = get_connection(&state, &claims, &connection_id)
-    //         .await
-    //         .unwrap();
-    //     let response = test(state, axum::Json(snowflake_connection)).await;
-
-    //     assert!(response.0.connected);
-    // }
 
     #[tokio::test]
     #[traced_test]
@@ -127,111 +119,10 @@ mod tests {
         let response = schema(Path(connection_id), headers, state, get_claims())
             .await
             .unwrap();
+        let schema = response.0;
+        let columns = &schema.tables[0].columns;
 
-        let expected = Schema {
-            id: response.0.id,
-            name: "".into(),
-            r#type: "".into(),
-            database: "ALL_NATIVE_DATA_TYPES".into(),
-            tables: vec![SchemaTable {
-                name: "ALL_NATIVE_DATA_TYPES".into(),
-                schema: "PUBLIC".into(),
-                columns: vec![
-                    SchemaColumn {
-                        name: "INTEGER_COL".into(),
-                        r#type: "NUMBER".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "FLOAT_COL".into(),
-                        r#type: "FLOAT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "NUMBER_COL".into(),
-                        r#type: "NUMBER".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "DECIMAL_COL".into(),
-                        r#type: "NUMBER".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "BOOLEAN_COL".into(),
-                        r#type: "BOOLEAN".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "VARCHAR_COL".into(),
-                        r#type: "TEXT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "CHAR_COL".into(),
-                        r#type: "TEXT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "STRING_COL".into(),
-                        r#type: "TEXT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "BINARY_COL".into(),
-                        r#type: "BINARY".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "DATE_COL".into(),
-                        r#type: "DATE".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIME_COL".into(),
-                        r#type: "TIME".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIMESTAMP_NTZ_COL".into(),
-                        r#type: "TIMESTAMP_NTZ".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIMESTAMP_LTZ_COL".into(),
-                        r#type: "TIMESTAMP_LTZ".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIMESTAMP_TZ_COL".into(),
-                        r#type: "TIMESTAMP_TZ".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "VARIANT_COL".into(),
-                        r#type: "VARIANT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "OBJECT_COL".into(),
-                        r#type: "OBJECT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "ARRAY_COL".into(),
-                        r#type: "ARRAY".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "GEOGRAPHY_COL".into(),
-                        r#type: "GEOGRAPHY".into(),
-                        is_nullable: true,
-                    },
-                ],
-            }],
-        };
-
-        assert_eq!(response.0, expected);
+        assert_eq!(columns, &expected_snowflake_schema());
     }
 
     #[tokio::test]
@@ -239,7 +130,9 @@ mod tests {
     async fn snowflake_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
-            query: "select * from all_native_data_types;".into(),
+            query:
+                "select * from ALL_NATIVE_DATA_TYPES.ALL_NATIVE_DATA_TYPES.ALL_NATIVE_DATA_TYPES;"
+                    .into(),
             connection_id,
         };
         let state = Extension(new_state().await);
@@ -249,11 +142,41 @@ mod tests {
             .unwrap();
         let response = data.into_response();
 
-        assert!(compare_parquet_file_with_bytes(
-            &get_snowflake_parquet_path(),
-            response_bytes(response).await
-        ));
-        // assert_eq!(response.status(), 200);
+        let expected = vec![
+            (DataType::Int64, num_vec!(4_i64)),
+            (DataType::Utf8, str_vec("Sample Text 4")),
+            (DataType::Utf8, str_vec("YmluYXJ5IGRhdGEgNA==")),
+            (DataType::Int64, num_vec!(4000_i64)),
+            (DataType::Float64, num_vec!(4.56789_f64)),
+            (DataType::Float64, num_vec!(456.78_f64)),
+            (
+                DataType::Float64,
+                num_vec!(6666666666666666666.6666666666_f64),
+            ),
+            (DataType::Boolean, num_vec!(0_u8)),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                vec![192, 150, 14, 2, 151, 1, 0, 0],
+            ),
+            (DataType::Date32, vec![8, 79, 0, 0]),
+            (DataType::Time32(TimeUnit::Second), vec![184, 161, 0, 0]),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                vec![192, 150, 14, 2, 151, 1, 0, 0],
+            ),
+            (DataType::Utf8, str_vec(r#"{"key":"value4","number":45}"#)),
+            (DataType::Utf8, vec![49, 48, 44, 49, 49, 44, 49, 50]),
+            (
+                DataType::Utf8,
+                vec![
+                    91, 123, 34, 110, 97, 109, 101, 34, 58, 34, 65, 108, 105, 99, 101, 34, 125, 44,
+                    123, 34, 118, 97, 108, 117, 101, 34, 58, 34, 52, 48, 48, 34, 125, 93,
+                ],
+            ),
+            (DataType::Utf8, str_vec("0-0 4 0:0:0")),
+        ];
+
+        validate_parquet(response, expected).await;
     }
 
     #[tokio::test]
