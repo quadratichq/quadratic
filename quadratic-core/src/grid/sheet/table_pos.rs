@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, SheetPos, TablePos,
+    CellValue, Pos, SheetPos, TablePos,
     grid::{CodeCellValue, Sheet},
 };
 
@@ -17,6 +17,30 @@ impl Sheet {
             y: table_sheet_pos.y + y,
             sheet_id: table_sheet_pos.sheet_id,
         })
+    }
+
+    /// Converts a display_pos to a table_pos
+    pub fn display_pos_to_table_pos(&self, display_pos: Pos) -> Option<TablePos> {
+        let (data_table_pos, data_table) = self.data_table_that_contains(display_pos)?;
+
+        // if anchor, then return a SheetPos and not a TablePos
+        if data_table.is_code() || data_table_pos == display_pos {
+            return None;
+        }
+
+        let table_col = data_table.get_column_index_from_display_index(
+            u32::try_from(display_pos.x - data_table_pos.x).ok()?,
+            true,
+        );
+
+        let table_row = data_table.get_row_index_from_display_index(
+            u64::try_from(display_pos.y - data_table_pos.y - data_table.y_adjustment(true)).ok()?,
+        );
+
+        Some(TablePos::new(
+            data_table_pos.to_sheet_pos(self.id),
+            Pos::new(table_col as i64, table_row as i64),
+        ))
     }
 
     /// Returns the code cell value at the table pos.

@@ -19,8 +19,10 @@ impl GridController {
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
+        let mut ops = vec![];
+
         let Some(sheet) = self.grid.try_sheet(sheet_pos.sheet_id) else {
-            return vec![];
+            return ops;
         };
 
         let multi_pos = sheet.convert_to_multi_pos(sheet_pos.into());
@@ -30,45 +32,33 @@ impl GridController {
             _ => code,
         };
 
-        let mut ops = vec![];
-
         let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
-        if let MultiPos::TablePos(table_pos) = multi_pos {
-            if let Some(data_table) = sheet.data_table_at(&table_pos.table_sheet_pos.into()) {
-                ops.push(Operation::SetDataTableAt {
-                    sheet_pos: SheetPos {
-                        x: table_pos.table_sheet_pos.x + table_pos.pos.x,
-                        y: table_pos.table_sheet_pos.y
-                            + table_pos.pos.y
-                            + data_table.y_adjustment(true),
-                        sheet_id: table_pos.table_sheet_pos.sheet_id,
-                    },
-                    values,
-                });
-            }
+
+        if multi_pos.is_table_pos() {
+            ops.push(Operation::SetDataTableAt { sheet_pos, values });
+            ops.push(Operation::ComputeCodeMultiPos { multi_pos });
         } else {
             ops.push(Operation::SetCellValues { sheet_pos, values });
-        }
-        ops.push(Operation::ComputeCodeMultiPos { multi_pos });
+            ops.push(Operation::ComputeCodeMultiPos { multi_pos });
 
-        // change the code cell name if it is provided and the code cell doesn't
-        // already have a name. Note: this is only for non-table code cells.
-        if !multi_pos.is_table_pos() {
-            if let Some(code_cell_name) = code_cell_name {
-                if self.data_table_at(multi_pos).is_none() {
-                    ops.push(Operation::DataTableMeta {
-                        sheet_pos,
-                        name: Some(code_cell_name),
-                        alternating_colors: None,
-                        columns: None,
-                        show_ui: None,
-                        show_name: None,
-                        show_columns: None,
-                        readonly: None,
-                    });
-                }
+            // change the code cell name if it is provided and the code cell doesn't
+            // already have a name. Note: this is only for non-table code cells.
+            if let (Some(code_cell_name), true) =
+                (code_cell_name, self.data_table_at(multi_pos).is_none())
+            {
+                ops.push(Operation::DataTableMeta {
+                    sheet_pos,
+                    name: Some(code_cell_name),
+                    alternating_colors: None,
+                    columns: None,
+                    show_ui: None,
+                    show_name: None,
+                    show_columns: None,
+                    readonly: None,
+                });
             }
         }
+
         ops
     }
 

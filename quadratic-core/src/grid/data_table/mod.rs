@@ -576,18 +576,14 @@ impl DataTable {
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
-        if self.has_spill() || self.has_error() {
-            Some(CellValue::Blank)
-        } else {
-            self.display_value_at((x, y).into()).ok().cloned()
-        }
+        self.cell_value_ref_at(x, y).cloned()
     }
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
+    /// A spill or error returns [`CellValue::Blank`] ref. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.has_spill() || self.has_error() {
-            None
+            Some(&CellValue::Blank)
         } else {
             self.display_value_at((x, y).into()).ok()
         }
@@ -853,11 +849,13 @@ impl DataTable {
 
     /// Returns the code value inside the data table at the given position.
     pub fn code_value_at(&self, x: u32, y: u32) -> Option<&CellValue> {
-        if self.has_spill() || self.has_error() {
+        if self.is_code() || self.has_spill() || self.has_error() {
             None
         } else {
             let value = match &self.value {
-                Value::Array(a) => a.get(x, y).ok(),
+                Value::Array(a) => a
+                    .get(x, u32::try_from(y as i64 - self.y_adjustment(true)).ok()?)
+                    .ok(),
                 Value::Single(v) => Some(v),
                 Value::Tuple(_) => None,
             };

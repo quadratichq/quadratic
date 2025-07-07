@@ -367,7 +367,7 @@ impl GridController {
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let (data_table, dirty_rects) = sheet
                 .delete_data_table(multi_pos)
-                .ok_or_else(|| anyhow!("Failed to delete data table"))?;
+                .ok_or_else(|| anyhow!("Failed to delete data table {multi_pos:?}"))?;
 
             let sheet = self.try_sheet_result(sheet_id)?;
             let old_cell_value = sheet.cell_value_result(multi_pos)?;
@@ -609,7 +609,7 @@ impl GridController {
             let index = sheet.data_table_index_result(multi_pos)?;
             let (data_table, dirty_rects) = sheet
                 .delete_data_table(multi_pos)
-                .ok_or_else(|| anyhow!("Failed to delete data table at {:?}", multi_pos))?;
+                .ok_or_else(|| anyhow!("Failed to delete data table at {multi_pos:?}"))?;
 
             let table_name = data_table.name.to_display().clone();
             let cell_value = sheet.cell_value_result(multi_pos)?;

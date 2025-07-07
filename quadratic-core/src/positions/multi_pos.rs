@@ -49,16 +49,6 @@ impl MultiPos {
         }
     }
 
-    /// Converts a MultiPos to a SheetPos. This is only used in tests as it
-    /// assumes its a SheetPos.
-    #[cfg(test)]
-    pub fn to_sheet_pos_force(&self) -> SheetPos {
-        match self {
-            MultiPos::SheetPos(sheet_pos) => *sheet_pos,
-            MultiPos::TablePos(_) => panic!("TablePos cannot be converted to SheetPos"),
-        }
-    }
-
     pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
         match self {
             MultiPos::SheetPos(sheet_pos) => sheet_pos.sheet_id = sheet_id,
@@ -94,11 +84,8 @@ impl MultiPos {
     }
 
     #[cfg(test)]
-    pub fn to_pos(&self) -> Pos {
-        match self {
-            MultiPos::SheetPos(sheet_pos) => (*sheet_pos).into(),
-            MultiPos::TablePos(_) => panic!("TablePos cannot be converted to Pos"),
-        }
+    pub fn to_pos(self) -> Pos {
+        self.into()
     }
 }
 
@@ -114,36 +101,26 @@ impl From<TablePos> for MultiPos {
     }
 }
 
-/// This should not be used in production code, since TablePos -> Pos cannot be
-/// determined without Sheet information (but this is fine in most tests).
 #[cfg(test)]
 impl From<MultiPos> for Pos {
     fn from(multi_pos: MultiPos) -> Self {
         match multi_pos {
             MultiPos::SheetPos(sheet_pos) => sheet_pos.into(),
-            MultiPos::TablePos(table_pos) => Pos::from(table_pos),
+            MultiPos::TablePos(_) => panic!("TablePos cannot be converted to Pos"),
         }
     }
 }
 
-/// This should not be used in production code, since TablePos -> Pos cannot be
-/// determined without Sheet information (but this is fine in most tests).
 #[cfg(test)]
 impl From<MultiPos> for SheetRect {
     fn from(multi_pos: MultiPos) -> Self {
-        use crate::SheetRect;
-
         match multi_pos {
             MultiPos::SheetPos(sheet_pos) => SheetRect {
                 min: sheet_pos.into(),
                 max: sheet_pos.into(),
                 sheet_id: sheet_pos.sheet_id,
             },
-            MultiPos::TablePos(table_pos) => SheetRect {
-                min: Pos::from(table_pos),
-                max: Pos::from(table_pos),
-                sheet_id: table_pos.sheet_id(),
-            },
+            MultiPos::TablePos(_) => panic!("TablePos cannot be converted to SheetRect"),
         }
     }
 }

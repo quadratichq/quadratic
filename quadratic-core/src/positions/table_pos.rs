@@ -17,35 +17,12 @@ impl TablePos {
         }
     }
 
-    /// Used by tests as a shortcut to get a sheet pos from a table pos without checking
-    /// the sheet.
-    #[cfg(test)]
-    pub fn to_absolute_sheet_pos(&self) -> SheetPos {
-        SheetPos {
-            x: self.table_sheet_pos.x + self.pos.x,
-            y: self.table_sheet_pos.y + self.pos.y,
-            sheet_id: self.table_sheet_pos.sheet_id,
-        }
-    }
-
     pub fn sheet_id(&self) -> SheetId {
         self.table_sheet_pos.sheet_id
     }
 
     pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
         self.table_sheet_pos.sheet_id = sheet_id;
-    }
-}
-
-/// This should not be used in production code, since TablePos -> Pos cannot be
-/// determined without Sheet information (but this is fine in most tests).
-#[cfg(test)]
-impl From<TablePos> for Pos {
-    fn from(table_pos: TablePos) -> Self {
-        Pos {
-            x: table_pos.pos.x + table_pos.table_sheet_pos.x,
-            y: table_pos.pos.y + table_pos.table_sheet_pos.y,
-        }
     }
 }
 
