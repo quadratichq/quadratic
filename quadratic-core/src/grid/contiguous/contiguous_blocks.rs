@@ -115,11 +115,6 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
             last_index = block.end;
         }
 
-        // There is no block that covers the coordinate `0`
-        if self.0.contains_key(&0) {
-            return Err("block contains 0");
-        }
-
         Ok(())
     }
 
@@ -670,7 +665,7 @@ mod tests {
                             expected.push(infinity);
                         }
                         let old_value = actual.set(index as u64, value);
-                        let expected_old_value = (index > 0).then_some(expected[index as usize]);
+                        let expected_old_value = Some(expected[index as usize]);
                         assert_eq!(expected_old_value, old_value, "wrong old value");
                         expected[index as usize] = value;
                     }
@@ -679,7 +674,7 @@ mod tests {
                             *n = n.wrapping_add(1);
                             42
                         });
-                        assert_eq!((index > 0).then_some(42), ret);
+                        assert_eq!(Some(42), ret);
                         expected[index as usize] = expected[index as usize].wrapping_add(1);
                     }
                     TestOp::IncrementRange { start, end } => {
@@ -732,20 +727,14 @@ mod tests {
     fn assert_matches_vec(mut expected: Vec<u8>, infinity: u8, actual: ContiguousBlocks<u8>) {
         actual.check_validity().unwrap();
 
-        assert_eq!(None, actual.get(0));
-        for i in 1..expected.len() {
+        for i in 0..expected.len() {
             assert_eq!(expected.get(i), actual.get(i as u64), "wrong value at {i}");
         }
         assert_eq!(
             Some(&infinity),
-            actual.get(expected.len().max(1) as u64),
+            actual.get(expected.len() as u64),
             "wrong value at infinity",
         );
-
-        // remove index 0 from `expected` because `actual` skips index 0
-        if !expected.is_empty() {
-            expected.remove(0);
-        }
 
         let is_all_default = expected.iter().all(|&val| val == 0) && infinity == 0;
         assert_eq!(is_all_default, actual.is_all_default());
@@ -754,9 +743,9 @@ mod tests {
             expected.pop();
         }
         let expected_finite_max = if infinity == 0 {
-            expected.len() as i64 // finite values only
+            expected.len() as i64 - 1 // finite values only
         } else {
-            expected.len() as i64 + 1 // infinite values starting at last block
+            expected.len() as i64 // infinite values starting at last block
         };
         assert_eq!(expected_finite_max, actual.finite_max(), "wrong finite max");
 
@@ -783,14 +772,14 @@ mod tests {
     #[test]
     fn test_translate() {
         let mut blocks = ContiguousBlocks::new();
-        blocks.set(1, "hello");
+        blocks.set(0, "hello");
         blocks.set(5, "world");
 
         blocks.translate_in_place(10);
         blocks.check_validity().unwrap();
 
         let mut expected = ContiguousBlocks::new();
-        expected.set(11, "hello");
+        expected.set(10, "hello");
         expected.set(15, "world");
         assert_eq!(blocks, expected);
 

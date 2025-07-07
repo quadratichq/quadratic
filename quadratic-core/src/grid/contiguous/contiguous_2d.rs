@@ -737,13 +737,13 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
 }
 
 /// Casts an `i64` position to a `u64` position. Returns `None` if the
-/// coordinate is out of range (i.e., either coordinate is **less than 1**).
+/// coordinate is out of range (i.e., either coordinate is **less than 0**).
 fn convert_pos(pos: Pos) -> Option<(u64, u64)> {
     Some((convert_coord(pos.x)?, convert_coord(pos.y)?))
 }
 
 /// Casts an `i64` coordinate to a `u64` coordinate. Returns `None` if the
-/// coordinate is out of range (i.e., it is **less than 1**).
+/// coordinate is out of range (i.e., it is **less than 0**).
 fn convert_coord(x: i64) -> Option<u64> {
     x.try_into().ok()
 }
