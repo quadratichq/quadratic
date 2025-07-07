@@ -124,6 +124,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_schema() {
         let connection_id = Uuid::new_v4();
         let (_, headers) = new_team_id_with_header().await;
@@ -139,6 +141,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
@@ -192,6 +196,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
