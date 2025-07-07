@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 mod multi_pos;
@@ -11,8 +13,8 @@ pub use pos::*;
 pub use sheet_pos::*;
 pub use table_pos::*;
 
-#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone, ts_rs::TS)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[derive(Serialize, Deserialize, Debug, Default, Copy, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct ScreenRect {
     pub x: f64,
     pub y: f64,

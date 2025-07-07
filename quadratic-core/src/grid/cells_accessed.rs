@@ -3,13 +3,13 @@ use std::{
     collections::{HashMap, HashSet},
     str::FromStr,
 };
-use ts_rs::TS;
 
 use super::SheetId;
 use crate::a1::{A1Context, CellRefRange, SheetCellRefRange};
 use crate::{Rect, SheetPos, SheetRect};
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsCellsAccessed {
     pub sheet_id: String,

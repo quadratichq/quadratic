@@ -6,6 +6,8 @@ use crate::{
     grid::SheetId,
     wasm_bindings::js_selection::JsSelection,
 };
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use super::js_a1_context::JsA1Context;

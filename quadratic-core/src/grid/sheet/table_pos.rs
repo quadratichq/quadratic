@@ -9,11 +9,12 @@ impl Sheet {
         let table_sheet_pos = table_pos.table_sheet_pos;
         let table = self.data_table_at(&table_sheet_pos.into())?;
         let pos = table_pos.pos;
-        let x = table.get_display_index_from_column_index(pos.x as u32, false);
-        let y = table.get_display_index_from_row_index(pos.y as u64);
+        let x = table.get_display_index_from_column_index(u32::try_from(pos.x).ok()?, false);
+        let y = table.get_display_index_from_row_index(u64::try_from(pos.y).ok()?) as i64
+            + table.y_adjustment(true);
         Some(SheetPos {
             x: table_sheet_pos.x + x,
-            y: table_sheet_pos.y + y as i64,
+            y: table_sheet_pos.y + y,
             sheet_id: table_sheet_pos.sheet_id,
         })
     }
@@ -21,17 +22,17 @@ impl Sheet {
     /// Returns the code cell value at the table pos.
     pub fn table_pos_code_value(&self, table_pos: TablePos) -> Option<&CodeCellValue> {
         let table_sheet_pos = table_pos.table_sheet_pos;
+        let inner_table_sheet_pos = self.table_pos_to_sheet_pos(table_pos)?;
         let table = self.data_table_at(&table_sheet_pos.into())?;
-        let pos = table_pos.pos;
-        let x = table.get_display_index_from_column_index(pos.x as u32, false);
-        let y =
-            table.get_display_index_from_row_index(pos.y as u64) + table.y_adjustment(true) as u64;
-        let cell_value = table.cell_value_ref_at(x as u32, y as u32)?;
-        if let CellValue::Code(code_cell) = cell_value {
-            Some(code_cell)
-        } else {
-            None
-        }
+        table
+            .cell_value_ref_at(
+                u32::try_from(inner_table_sheet_pos.x - table_sheet_pos.x).ok()?,
+                u32::try_from(inner_table_sheet_pos.y - table_sheet_pos.y).ok()?,
+            )
+            .and_then(|cell_value| match cell_value {
+                CellValue::Code(code_cell) => Some(code_cell),
+                _ => None,
+            })
     }
 }
 
@@ -53,7 +54,7 @@ mod tests {
         let table_pos = TablePos::new(pos![sheet_id!A1], Pos::new(0, 0));
         assert_eq!(
             sheet.table_pos_to_sheet_pos(table_pos),
-            Some(pos![sheet_id!A1])
+            Some(pos![sheet_id!A3])
         );
     }
 

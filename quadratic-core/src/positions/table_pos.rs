@@ -28,45 +28,6 @@ impl TablePos {
         }
     }
 
-    // /// Returns the cell value ref at the table pos.
-    // pub fn cell_value<'a>(&self, sheet: &'a Sheet) -> Option<&'a CellValue> {
-    //     let table = sheet.data_table_at(&self.table_sheet_pos.into())?;
-    //     table.cell_value_ref_at(self.pos.x as u32, self.pos.y as u32)
-    // }
-
-    // /// Returns the code cell at the table pos.
-    // pub fn code_cell<'a>(&self, sheet: &'a Sheet) -> Option<&'a CodeCellValue> {
-    //     let cell_value = self.cell_value(sheet)?;
-    //     if let CellValue::Code(code_cell) = cell_value {
-    //         Some(code_cell)
-    //     } else {
-    //         None
-    //     }
-    // }
-
-    // /// Returns the translated Pos of the code cell in the table relative to the sheet.
-    // pub fn translate_pos(&self, sheet: &Sheet) -> Option<Pos> {
-    //     let table = sheet.data_table_at(&self.table_sheet_pos.into())?;
-    //     let x = table.get_display_index_from_column_index(self.pos.x as u32, false);
-    //     let y = table.get_display_index_from_row_index(self.pos.y as u64);
-    //     Some(Pos { x, y: y as i64 })
-    // }
-
-    // /// Returns the code cell at the table pos.
-    // pub fn code_cell_from_gc<'a>(&self, gc: &'a GridController) -> Option<&'a CodeCellValue> {
-    //     let sheet = gc.try_sheet(self.table_sheet_pos.sheet_id)?;
-    //     self.code_cell(sheet)
-    // }
-
-    // /// Returns a code table within a table on the sheet.
-    // pub fn data_table<'a>(&self, sheet: &'a Sheet) -> Option<&'a DataTable> {
-    //     let table = sheet.data_table_at(&self.table_sheet_pos.into())?;
-    //     table
-    //         .tables
-    //         .as_ref()
-    //         .and_then(|tables| tables.get_at(&self.pos))
-    // }
-
     pub fn sheet_id(&self) -> SheetId {
         self.table_sheet_pos.sheet_id
     }

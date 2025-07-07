@@ -425,29 +425,9 @@ mod tests {
     fn test_undo_delete_sheet_code_rerun() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 1,
-            },
-            "1".to_string(),
-            None,
-        );
-        gc.set_cell_value(
-            SheetPos {
-                sheet_id,
-                x: 1,
-                y: 2,
-            },
-            "1".to_string(),
-            None,
-        );
-        let sheet_pos = SheetPos {
-            sheet_id,
-            x: 2,
-            y: 1,
-        };
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 1), "1".to_string(), None);
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 2), "1".to_string(), None);
+        let sheet_pos = SheetPos::new(sheet_id, 2, 1);
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Formula,

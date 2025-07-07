@@ -8,11 +8,11 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::a1::TableMapEntry;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub enum ColRange {
     All,

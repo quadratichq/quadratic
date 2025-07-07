@@ -1,9 +1,9 @@
 //! Code and html/image output for client rendering.
 
 use crate::{
-    CellValue, Pos, Value,
+    CellValue, MultiPos, Pos, Value,
     grid::{
-        CodeCellLanguage, DataTable, Sheet,
+        CodeCellLanguage, Sheet,
         js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
     },
 };
@@ -56,14 +56,13 @@ impl Sheet {
             .collect()
     }
 
-    // Returns data for rendering a code cell.
-    fn render_code_cell(
-        &self,
-        pos: Pos,
-        code: &CellValue,
-        data_table: &DataTable,
-    ) -> Option<JsRenderCodeCell> {
+    // Returns a single code cell for rendering.
+    pub fn get_render_code_cell(&self, multi_pos: MultiPos) -> Option<JsRenderCodeCell> {
+        let pos = multi_pos.to_sheet_pos(self)?.into();
+        let code = self.cell_value_multi_pos(multi_pos)?;
+        let data_table = self.data_table_multi_pos(&multi_pos)?;
         let output_size = data_table.output_size();
+
         let (state, w, h, spill_error) = if data_table.has_spill() {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
             (
@@ -86,6 +85,7 @@ impl Sheet {
             };
             (state, output_size.w.get(), output_size.h.get(), None)
         };
+
         let alternating_colors = !data_table.has_spill()
             && !data_table.has_error()
             && !data_table.is_image()
@@ -97,6 +97,7 @@ impl Sheet {
             CellValue::Import(_) => CodeCellLanguage::Import,
             _ => return None,
         };
+
         Some(JsRenderCodeCell {
             x: pos.x as i32,
             y: pos.y as i32,
@@ -120,51 +121,40 @@ impl Sheet {
         })
     }
 
-    // Returns a single code cell for rendering.
-    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let data_table = self.data_table_at(&pos)?;
-        let code = self.cell_value_ref(pos)?;
-        self.render_code_cell(pos, code, data_table)
-    }
-
     /// Returns all code cells for rendering.
     fn all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.data_tables
             .expensive_iter()
             .flat_map(|(pos, data_table)| {
-                let mut code_cells = vec![];
-                if let Some(code) = self.cell_value_ref(*pos) {
-                    if let Some(code_cell) = self.render_code_cell(*pos, code, data_table) {
-                        code_cells.push(code_cell);
-                    }
+                let mut render_code_cells = vec![];
+
+                if let Some(code_cell) =
+                    self.get_render_code_cell(MultiPos::new_sheet_pos(self.id, pos.x, pos.y))
+                {
+                    render_code_cells.push(code_cell);
                 }
+
                 if data_table.is_data_table() {
                     if let Some(tables) = &data_table.tables {
-                        tables
-                            .expensive_iter()
-                            .for_each(|(inner_pos, inner_data_table)| {
-                                let inner_pos = inner_pos.translate(-1, -1, 0, 0);
-                                if let Some(code) =
-                                    data_table.code_value_at(inner_pos.x as u32, inner_pos.y as u32)
-                                {
-                                    let y_adjustment = data_table.y_adjustment(true);
-                                    let inner_absolute_pos = Pos::new(
-                                        pos.x + inner_pos.x,
-                                        pos.y + inner_pos.y + y_adjustment,
-                                    );
+                        tables.expensive_iter().for_each(|(inner_pos, _)| {
+                            let inner_pos = inner_pos.translate(-1, -1, 0, 0);
 
-                                    if let Some(code_cell) = self.render_code_cell(
-                                        inner_absolute_pos,
-                                        code,
-                                        inner_data_table,
-                                    ) {
-                                        code_cells.push(code_cell);
-                                    }
-                                }
-                            });
+                            if let Some(code_cell) =
+                                self.get_render_code_cell(MultiPos::new_table_pos(
+                                    self.id,
+                                    pos.x,
+                                    pos.y,
+                                    inner_pos.x,
+                                    inner_pos.y,
+                                ))
+                            {
+                                render_code_cells.push(code_cell);
+                            }
+                        });
                     }
                 }
-                code_cells
+
+                render_code_cells
             })
             .collect::<Vec<_>>()
     }
@@ -253,7 +243,7 @@ mod tests {
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
-        grid::{CodeCellValue, CodeRun, DataTableKind, js_types::JsNumber},
+        grid::{CodeCellValue, CodeRun, DataTable, DataTableKind, js_types::JsNumber},
         test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
@@ -467,7 +457,7 @@ mod tests {
 
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
-        let rendering = sheet.get_render_code_cell(pos);
+        let rendering = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y));
         let last_modified = rendering.as_ref().unwrap().last_modified;
         assert_eq!(
             rendering,
@@ -599,6 +589,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let code_cells = sheet.all_render_code_cells();
         assert_eq!(code_cells.len(), 2);
+
         let inner_code = code_cells[1].clone();
         assert_eq!(inner_code.x, 1);
         assert_eq!(inner_code.y, 3);

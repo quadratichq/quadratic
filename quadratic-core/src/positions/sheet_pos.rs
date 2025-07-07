@@ -35,11 +35,7 @@ impl SheetPos {
 
     #[cfg(test)]
     pub fn test() -> Self {
-        Self {
-            x: 1,
-            y: 1,
-            sheet_id: SheetId::TEST,
-        }
+        Self::new(SheetId::TEST, 1, 1)
     }
 }
 
@@ -57,11 +53,7 @@ impl From<(i64, i64, SheetId)> for SheetPos {
 
 impl From<(Pos, SheetId)> for SheetPos {
     fn from((pos, sheet_id): (Pos, SheetId)) -> Self {
-        Self {
-            x: pos.x,
-            y: pos.y,
-            sheet_id,
-        }
+        Self::new(sheet_id, pos.x, pos.y)
     }
 }
 
@@ -95,38 +87,22 @@ mod test {
         assert_eq!(pos, Pos { x: 1, y: 2 });
 
         let sheet_id = SheetId::new();
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos = SheetPos::new(sheet_id, 1, 2);
         let check_pos: Pos = sheet_pos.into();
         assert_eq!(check_pos, Pos { x: 1, y: 2 });
 
         let pos: Pos = (1, 2).into();
         assert_eq!(pos, Pos { x: 1, y: 2 });
 
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos = SheetPos::new(sheet_id, 1, 2);
         let pos: Pos = sheet_pos.into();
         assert_eq!(pos, Pos { x: 1, y: 2 });
     }
 
     #[test]
     fn test_sheet_rect_new_pos_span() {
-        let pos1 = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id: SheetId::new(),
-        };
-        let pos2 = SheetPos {
-            x: 3,
-            y: 4,
-            sheet_id: SheetId::new(),
-        };
+        let pos1 = SheetPos::new(SheetId::new(), 1, 2);
+        let pos2 = SheetPos::new(SheetId::new(), 3, 4);
         let rect = SheetRect::new_span(pos1, pos2);
         assert_eq!(rect.min, Pos { x: 1, y: 2 });
         assert_eq!(rect.max, Pos { x: 3, y: 4 });
@@ -135,11 +111,7 @@ mod test {
     #[test]
     fn sheet_pos_from_str() {
         let sheet_id = SheetId::new();
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos = SheetPos::new(sheet_id, 1, 2);
         let sheet_pos_str = serde_json::to_string(&sheet_pos).unwrap();
         let parsed_sheet_pos: SheetPos = sheet_pos_str.parse().unwrap();
         assert_eq!(parsed_sheet_pos, sheet_pos);

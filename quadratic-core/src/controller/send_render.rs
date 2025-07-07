@@ -383,7 +383,7 @@ impl GridController {
                     update_code_cells.push(JsUpdateCodeCell {
                         sheet_id: sheet.id,
                         pos: pos.into(),
-                        render_code_cell: sheet.get_render_code_cell(pos.into()),
+                        render_code_cell: sheet.get_render_code_cell(multi_pos),
                     });
                 }
             }

@@ -6,7 +6,10 @@ use crate::{
     grid::{CodeCellLanguage, DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
+
 pub mod active_transactions;
 pub mod dependencies;
 pub mod execution;

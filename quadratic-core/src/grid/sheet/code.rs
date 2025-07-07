@@ -337,18 +337,18 @@ impl Sheet {
     /// a table pos. Will return a MultiPos::SheetPos for all code tables and
     /// DataTable anchor cells.
     pub fn convert_to_multi_pos(&self, pos: Pos) -> MultiPos {
-        if let Some((table_pos, data_table)) = self.data_table_that_contains(pos) {
+        if let Some((data_table_pos, data_table)) = self.data_table_that_contains(pos) {
             // if anchor, then return a SheetPos and not a TablePos
-            if data_table.is_code() || table_pos == pos {
+            if data_table.is_code() || data_table_pos == pos {
                 return MultiPos::SheetPos(pos.to_sheet_pos(self.id));
             }
-            let table_col =
-                data_table.get_display_index_from_column_index((pos.x - table_pos.x) as u32, true);
+            let table_col = data_table
+                .get_display_index_from_column_index((pos.x - data_table_pos.x) as u32, true);
             let y_adjustment = data_table.y_adjustment(true);
             let table_row = data_table
-                .get_row_index_from_display_index((pos.y - y_adjustment - table_pos.y) as u64);
+                .get_row_index_from_display_index((pos.y - y_adjustment - data_table_pos.y) as u64);
             MultiPos::TablePos(TablePos::new(
-                table_pos.to_sheet_pos(self.id),
+                data_table_pos.to_sheet_pos(self.id),
                 Pos::new(table_col, table_row as i64),
             ))
         } else {

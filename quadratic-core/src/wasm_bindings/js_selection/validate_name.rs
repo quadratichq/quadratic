@@ -1,5 +1,6 @@
 use std::str::FromStr;
 
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::{SheetPos, grid::SheetId, wasm_bindings::js_a1_context::JsA1Context};

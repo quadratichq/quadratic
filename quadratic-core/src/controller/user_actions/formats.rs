@@ -2,6 +2,7 @@
 //! Grid. These functions use the newer Operation::SetCellFormatsSelection,
 //! which provide formats for a user-defined selection.
 
+#[cfg(feature = "js")]
 use wasm_bindgen::JsValue;
 
 use crate::RefAdjust;

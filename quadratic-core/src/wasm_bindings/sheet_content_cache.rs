@@ -3,6 +3,8 @@
 //! Cache modifications should be done through the quadratic-core struct only.
 
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 #[cfg(test)]

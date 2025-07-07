@@ -1,5 +1,7 @@
 use std::str::FromStr;
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+
+#[cfg(feature = "js")]
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::{
     Rect, controller::GridController, grid::SheetId, wasm_bindings::error::handle_core_result,

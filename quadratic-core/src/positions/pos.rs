@@ -7,15 +7,14 @@ use crate::{
 use rstar::Point;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use ts_rs::TS;
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 /// Cell position {x, y}.
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[derive(
-    Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone, TS,
-)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[derive(Serialize, Deserialize, PartialEq, Eq, Hash, Ord, PartialOrd, Default, Copy, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct Pos {
     /// Column
     #[cfg_attr(test, proptest(strategy = "crate::a1::PROPTEST_COORDINATE_I64"))]
@@ -38,11 +37,7 @@ impl Pos {
     }
 
     pub fn to_sheet_pos(&self, sheet_id: SheetId) -> SheetPos {
-        SheetPos {
-            x: self.x,
-            y: self.y,
-            sheet_id,
-        }
+        SheetPos::new(sheet_id, self.x, self.y)
     }
 
     pub fn to_multi_pos(&self, sheet_id: SheetId) -> MultiPos {

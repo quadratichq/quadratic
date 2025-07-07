@@ -150,16 +150,16 @@ impl Sheet {
         self.columns.migration_regenerate_has_cell_value();
     }
     fn migration_adjust_insert_tables_columns(&mut self, column: i64) {
-        let mut data_tables_to_move_right = Vec::new();
+        let mut data_tables_to_move = Vec::new();
 
         for (pos, _) in self.data_tables.expensive_iter() {
             if pos.x >= column {
-                data_tables_to_move_right.push(*pos);
+                data_tables_to_move.push(*pos);
             }
         }
 
-        data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
-        for old_pos in data_tables_to_move_right {
+        data_tables_to_move.sort_by(|a, b| b.x.cmp(&a.x));
+        for old_pos in data_tables_to_move {
             if let Some((index, old_pos, data_table, _)) =
                 self.data_tables.shift_remove_full_pos(&old_pos)
             {

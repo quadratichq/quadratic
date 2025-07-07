@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
@@ -10,14 +9,16 @@ use crate::{
 
 use super::rules::ValidationRule;
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationMessage {
     pub show: bool,
     pub title: Option<String>,
     pub message: Option<String>,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum ValidationStyle {
     #[default]
     Stop,
@@ -25,7 +26,8 @@ pub enum ValidationStyle {
     Information,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationError {
     pub show: bool,
     pub style: ValidationStyle,
@@ -33,7 +35,8 @@ pub struct ValidationError {
     pub message: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsValidation {
     pub id: Uuid,
     pub selection: String,
@@ -42,7 +45,8 @@ pub struct JsValidation {
     pub error: ValidationError,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct Validation {
     pub id: Uuid,
     pub selection: A1Selection,
@@ -85,7 +89,8 @@ impl Validation {
 }
 
 /// Used to render a validation on the sheet.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationDisplay {
     pub range: CellRefRange,
     pub checkbox: bool,
@@ -100,7 +105,8 @@ impl ValidationDisplay {
 
 /// Used for sheet-level validations (ie, Selection.all, Selection.columns, or
 /// Selection.rows).
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationDisplaySheet {
     pub displays: Vec<ValidationDisplay>,
 }

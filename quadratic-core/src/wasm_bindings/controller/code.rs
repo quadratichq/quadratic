@@ -57,7 +57,6 @@ impl GridController {
     }
 
     /// Sets the code on a cell
-    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "setCellCode")]
     pub fn js_set_cell_code(
         &mut self,

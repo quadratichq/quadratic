@@ -54,13 +54,13 @@ mod tokenize;
 pub use range::*;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::ArraySize;
 
 use super::{A1Context, A1Error};
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct TableRef {
     pub table_name: String,

@@ -4,7 +4,6 @@
 
 use std::borrow::Cow;
 use std::fmt;
-use ts_rs::TS;
 
 use serde::{Deserialize, Serialize};
 
@@ -42,7 +41,8 @@ impl RunError {
 }
 
 /// Information about the type of error that occurred.
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS, Hash)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum RunErrorMsg {
     CodeRunError(Cow<'static, str>),
 
@@ -348,7 +348,8 @@ macro_rules! internal_error {
 }
 
 /// Cell reference out-of-bounds error, similar to Excel.
-#[derive(Serialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct RefError;
 impl From<RefError> for RunErrorMsg {
     fn from(RefError: RefError) -> Self {

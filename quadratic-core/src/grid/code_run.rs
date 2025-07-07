@@ -7,6 +7,8 @@
 use crate::RunError;
 use serde::{Deserialize, Serialize};
 use strum_macros::Display;
+
+#[cfg(feature = "js")]
 use wasm_bindgen::{JsValue, convert::IntoWasmAbi};
 
 use super::cells_accessed::CellsAccessed;

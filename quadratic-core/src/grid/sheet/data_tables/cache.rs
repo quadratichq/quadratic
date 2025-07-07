@@ -10,6 +10,8 @@ use crate::{
 };
 
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]

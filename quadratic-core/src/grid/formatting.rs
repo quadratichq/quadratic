@@ -2,7 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
-use ts_rs::TS;
 
 use crate::RunLengthEncoding;
 
@@ -18,7 +17,8 @@ pub struct Underline;
 pub struct StrikeThrough;
 
 // TODO(ddimaria): deprecated, can be removed once SetCellFormatsSelection is removed 12/2024
-#[derive(Default, Debug, Clone, Eq, PartialEq, Serialize, Deserialize, TS)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct RenderSize {
     pub w: String,
@@ -45,9 +45,8 @@ impl CellAlign {
     }
 }
 
-#[derive(
-    Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString, ts_rs::TS,
-)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellVerticalAlign {
@@ -67,19 +66,9 @@ impl CellVerticalAlign {
 }
 
 #[derive(
-    Serialize,
-    Deserialize,
-    Debug,
-    Default,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Display,
-    EnumString,
-    ts_rs::TS,
+    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString,
 )]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "camelCase")]
 pub enum CellWrap {
@@ -99,7 +88,8 @@ impl CellWrap {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct NumericFormat {
     #[serde(rename = "type")]
@@ -108,19 +98,9 @@ pub struct NumericFormat {
 }
 
 #[derive(
-    Default,
-    Serialize,
-    Deserialize,
-    Debug,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Display,
-    EnumString,
-    ts_rs::TS,
+    Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, Display, EnumString,
 )]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(rename_all = "UPPERCASE")]
 #[strum(ascii_case_insensitive)]
@@ -132,7 +112,8 @@ pub enum NumericFormatKind {
     Exponential,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, ts_rs::TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct DateTimeFormatting;
 

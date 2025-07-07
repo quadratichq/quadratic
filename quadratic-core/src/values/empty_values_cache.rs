@@ -1,4 +1,6 @@
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use smallvec::SmallVec;

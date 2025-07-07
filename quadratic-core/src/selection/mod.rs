@@ -4,12 +4,12 @@ use std::{collections::HashSet, str::FromStr};
 
 use crate::{Pos, Rect, SheetPos, SheetRect, grid::SheetId};
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 mod selection_create;
 
 /// **Deprecated** Nov 2024 in favor of [`crate::A1Selection`].
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct OldSelection {
     pub sheet_id: SheetId,
 

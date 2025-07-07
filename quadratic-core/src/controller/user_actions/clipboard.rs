@@ -1,3 +1,4 @@
+use crate::MultiPos;
 use crate::a1::CellRefRange;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
@@ -120,7 +121,7 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
         let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell((x, y).into())?;
+        let code_cell = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, x, y))?;
         if sheet_end {
             if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
                 dest = if reverse {
@@ -165,7 +166,7 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
         let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell((x, y).into())?;
+        let code_cell = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, x, y))?;
         if sheet_end {
             if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
                 dest = if reverse {

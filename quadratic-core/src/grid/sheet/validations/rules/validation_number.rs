@@ -1,17 +1,18 @@
 use bigdecimal::ToPrimitive;
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::CellValue;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum NumberRange {
     Range(Option<f64>, Option<f64>),
     Equal(Vec<f64>),
     NotEqual(Vec<f64>),
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationNumber {
     pub ignore_blank: bool,
 

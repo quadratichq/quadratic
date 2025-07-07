@@ -1,3 +1,4 @@
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 pub mod a1;

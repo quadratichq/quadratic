@@ -1,4 +1,3 @@
-use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
@@ -6,13 +5,15 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Response {
     pub values: Option<JsCellsA1Values>,
     pub error: Option<JsCellsA1Error>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Values {
     pub cells: Vec<JsCellsA1Value>,
     pub x: i32,
@@ -24,7 +25,8 @@ pub struct JsCellsA1Values {
     pub has_headers: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Value {
     pub x: i32,
     pub y: i32,
@@ -32,7 +34,8 @@ pub struct JsCellsA1Value {
     pub t: u8,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Error {
     pub core_error: String,
 }

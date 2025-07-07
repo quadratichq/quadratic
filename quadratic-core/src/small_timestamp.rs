@@ -19,7 +19,6 @@
 use chrono::{DateTime, TimeZone, Utc};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 // the unwrap is safe because the timestamp is hardcoded in the binary and will
 // never change (and there's not a great way to handle this error b/c of
@@ -28,7 +27,8 @@ lazy_static! {
     static ref BASE_DATE: DateTime<Utc> = Utc.timestamp_opt(1704067200, 0).unwrap();
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, TS)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SmallTimestamp(u32);
 
 impl Default for SmallTimestamp {

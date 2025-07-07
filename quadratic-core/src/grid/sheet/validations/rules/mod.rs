@@ -4,7 +4,6 @@
 use crate::{CellValue, a1::A1Context};
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use validation_date_time::ValidationDateTime;
 use validation_list::ValidationList;
 use validation_logical::ValidationLogical;
@@ -19,7 +18,8 @@ pub mod validation_logical;
 pub mod validation_number;
 pub mod validation_text;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum ValidationRule {
     None,
     List(ValidationList),

@@ -19,15 +19,14 @@ impl GridController {
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
-        let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) else {
+        let Some(sheet) = self.grid.try_sheet(sheet_pos.sheet_id) else {
             return vec![];
         };
 
         let multi_pos = sheet.convert_to_multi_pos(sheet_pos.into());
 
-        let parse_ctx = self.a1_context();
         let code = match language {
-            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
+            CodeCellLanguage::Formula => convert_rc_to_a1(&code, &self.a1_context, sheet_pos),
             _ => code,
         };
 

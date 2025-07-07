@@ -2,6 +2,7 @@
 //! This is meant for querying only, not for modifying the cache.
 //! Cache modifications should be done through the SheetDataTables struct only.
 
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::{

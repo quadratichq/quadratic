@@ -297,7 +297,10 @@ impl Sheet {
             MultiPos::TablePos(table_pos) => {
                 if let Some(data_table) = self.data_tables.get_at(&table_pos.table_sheet_pos.into())
                 {
-                    data_table.cell_value_at(table_pos.pos.x as u32, table_pos.pos.y as u32)
+                    data_table.cell_value_at(
+                        u32::try_from(table_pos.pos.x).ok()?,
+                        u32::try_from(table_pos.pos.y + data_table.y_adjustment(true)).ok()?,
+                    )
                 } else {
                     None
                 }
@@ -321,21 +324,8 @@ impl Sheet {
 
     /// Returns the cell value at a position, or an error if the cell value is not found.
     pub fn cell_value_result(&self, multi_pos: MultiPos) -> Result<CellValue> {
-        match multi_pos {
-            MultiPos::SheetPos(sheet_pos) => self
-                .cell_value(sheet_pos.into())
-                .ok_or_else(|| anyhow!("Cell value not found at {:?}", sheet_pos)),
-            MultiPos::TablePos(table_pos) => {
-                if let Some(data_table) = self.data_tables.get_at(&table_pos.table_sheet_pos.into())
-                {
-                    data_table
-                        .cell_value_at(table_pos.pos.x as u32, table_pos.pos.y as u32)
-                        .ok_or_else(|| anyhow!("Cell value not found at {:?}", table_pos))
-                } else {
-                    Err(anyhow!("Data table not found at {:?}", table_pos))
-                }
-            }
-        }
+        self.cell_value_multi_pos(multi_pos)
+            .ok_or_else(|| anyhow!("Cell value not found at {:?}", multi_pos))
     }
 
     /// Returns a mutable reference to the cell value at the MultiPos. This

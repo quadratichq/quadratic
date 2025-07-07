@@ -1,7 +1,9 @@
 use crate::{CopyFormats, Pos, Rect, ScreenRect, THUMBNAIL_HEIGHT, THUMBNAIL_WIDTH};
 use serde::{Deserialize, Serialize};
 use std::ops::Range;
-use wasm_bindgen::prelude::wasm_bindgen;
+
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
 
 use self::{offsets::Offsets, resize_transient::TransientResize};
 

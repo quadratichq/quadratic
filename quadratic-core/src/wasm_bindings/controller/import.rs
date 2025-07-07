@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use wasm_bindgen::JsValue;
-use wasm_bindgen::prelude::wasm_bindgen;
+#[cfg(feature = "js")]
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::Pos;
 use crate::controller::GridController;
@@ -99,9 +99,7 @@ impl GridController {
                 error: None,
             })?),
             Err(e) => {
-                let error = format!(
-                    "Error importing Excel file: {file_name:?}, error: {e:?}"
-                );
+                let error = format!("Error importing Excel file: {file_name:?}, error: {e:?}");
                 dbgjs!(&error);
                 Ok(serde_wasm_bindgen::to_value(&JsResponse {
                     result: false,

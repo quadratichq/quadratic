@@ -1,3 +1,4 @@
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::{a1::CellRefRange, grid::sheet::data_tables::cache::SheetDataTablesCache};

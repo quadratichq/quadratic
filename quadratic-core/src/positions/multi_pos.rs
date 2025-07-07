@@ -16,19 +16,15 @@ pub enum MultiPos {
 impl MultiPos {
     /// Creates a new SheetPos.
     pub fn new_sheet_pos(sheet_id: SheetId, x: i64, y: i64) -> Self {
-        MultiPos::SheetPos(SheetPos { sheet_id, x, y })
+        MultiPos::SheetPos(SheetPos::new(sheet_id, x, y))
     }
 
     /// Creates a new TablePos.
     pub fn new_table_pos(sheet_id: SheetId, parent_x: i64, parent_y: i64, x: i64, y: i64) -> Self {
-        MultiPos::TablePos(TablePos {
-            table_sheet_pos: SheetPos {
-                sheet_id,
-                x: parent_x,
-                y: parent_y,
-            },
-            pos: Pos { x, y },
-        })
+        MultiPos::TablePos(TablePos::new(
+            SheetPos::new(sheet_id, parent_x, parent_y),
+            Pos { x, y },
+        ))
     }
 
     /// Returns the sheet_id of the MultiPos.

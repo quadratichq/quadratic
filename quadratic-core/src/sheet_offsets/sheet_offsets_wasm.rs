@@ -1,7 +1,9 @@
 use super::SheetOffsets;
 use crate::{Rect, ScreenRect};
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::wasm_bindgen;
+
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
 
 #[cfg_attr(feature = "js", wasm_bindgen, derive(ts_rs::TS))]
 pub struct Placement {
