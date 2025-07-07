@@ -25,7 +25,7 @@ httpmock = { git = "https://github.com/quadratichq/httpmock", version = "0.8.0-a
   "https",
   "proxy",
   "record",
-] }
+], optional = true }
 jsonwebtoken = { version = "9.2.0", optional = true }
 parquet = { version = "=54.2.1", default-features = false, features = ["arrow", "arrow-array", "flate2", "snap"], optional = true }
 prost = { version = "0.13.5", optional = true, default-features = false }
@@ -85,7 +85,7 @@ sql = [
 ]
 storage = ["aws", "crypto", "tokio"]
 benchmark = ["criterion", "tabled"]
-test = ["criterion", "tabled"]
+test = ["httpmock", "criterion", "tabled"]
 
 [dev-dependencies]
 arrow = { version = "=54.2.1", features = ["prettyprint"] }
