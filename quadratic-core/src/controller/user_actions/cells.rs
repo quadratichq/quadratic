@@ -5,7 +5,16 @@ use crate::{SheetPos, a1::A1Selection};
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
     pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
-        self.set_cell_values(sheet_pos, vec![vec![value]], cursor);
+        match self.set_cell_values_operations(sheet_pos, vec![vec![value]], true) {
+            Ok((ops, data_table_ops)) => {
+                self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
+
+                if !data_table_ops.is_empty() {
+                    self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+                }
+            }
+            Err(e) => dbgjs!(e),
+        }
     }
 
     /// Starts a transaction to set cell values using a 2d array of user's &str input where [[1, 2, 3], [4, 5, 6]] creates a grid of width 3 and height 2.
@@ -16,7 +25,7 @@ impl GridController {
         cursor: Option<String>,
     ) {
         // TODO(ddimaria): implement actual error bubbling and remove this dbgjs! and return a Result
-        match self.set_cell_values_operations(sheet_pos, values) {
+        match self.set_cell_values_operations(sheet_pos, values, false) {
             Ok((ops, data_table_ops)) => {
                 self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
 

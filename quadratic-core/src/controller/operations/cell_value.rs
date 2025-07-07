@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::DataTableKind;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::{DataTableKind, NumericFormatKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
@@ -26,6 +26,9 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
+
+        // if this is true, then we handle percentage conversions differently
+        from_user_input: bool,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
@@ -69,12 +72,24 @@ impl GridController {
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
-                    let (cell_value, format_update) = CellValue::string_to_cell_value(&value, true);
+                    let (mut cell_value, format_update) =
+                        CellValue::string_to_cell_value(&value, true);
 
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
+                    if from_user_input
+                        && sheet
+                            .cell_format(pos)
+                            .numeric_format
+                            .is_some_and(|format| format.kind == NumericFormatKind::Percentage)
+                    {
+                        if let CellValue::Number(number) = cell_value {
+                            cell_value = CellValue::Number(number / 100);
+                        }
+                    }
+
                     let data_table_pos = existing_data_tables
                         .iter()
                         .find(|rect| rect.contains(pos))

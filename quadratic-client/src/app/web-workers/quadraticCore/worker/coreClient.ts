@@ -129,6 +129,7 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellValue':
+        console.log('set cell value');
         await core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
         return;
 
