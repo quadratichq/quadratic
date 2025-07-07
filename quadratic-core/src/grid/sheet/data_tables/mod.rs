@@ -5,14 +5,14 @@ use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    MultiPos, Pos, Rect, TablePos,
+    MultiPos, Pos, Rect, SheetPos, TablePos,
     grid::{CodeRun, DataTable, SheetId, SheetRegionMap},
 };
 
 use anyhow::{Result, anyhow};
 
 pub mod cache;
-pub(crate) mod in_table_code_cache;
+pub(crate) mod in_table_code;
 pub(crate) mod multi_cell_tables_cache;
 
 use cache::SheetDataTablesCache;
@@ -58,11 +58,11 @@ impl From<(IndexMap<Pos, DataTable>, SheetId)> for SheetDataTables {
 
             if let Some(tables) = &dt.tables {
                 if !tables.data_tables.is_empty() {
-                    sheet_data_tables
-                        .cache
-                        .in_table_code_tables
-                        .get_or_insert_default()
-                        .add_table(pos.to_sheet_pos(sheet_id), tables);
+                    sheet_data_tables.cache.merge_single_cell(
+                        pos.to_sheet_pos(sheet_id),
+                        tables.cache.single_cell_tables.clone(),
+                        dt.y_adjustment(true),
+                    );
                 }
             }
         });
@@ -688,6 +688,27 @@ impl SheetDataTables {
     /// Exports the cache of data tables.
     pub fn cache_ref(&self) -> &SheetDataTablesCache {
         &self.cache
+    }
+
+    /// Clears any in-table code output for the sheet.
+    pub fn clear_in_table_code(&mut self, rect: Rect) {
+        self.cache.in_table_code.as_mut().map(|in_table_code| {
+            in_table_code.clear_table(rect);
+        });
+    }
+
+    pub fn update_in_table_code(&mut self, sheet_pos: SheetPos, y_adjustment: i64) {
+        let Some(tables) = self
+            .get_at(&sheet_pos.into())
+            .and_then(|table| table.tables.as_ref())
+        else {
+            return;
+        };
+
+        // TODO: would love to do away with this clone
+        let table_single_cell_code = tables.cache.single_cell_tables.clone();
+        self.cache
+            .merge_single_cell(sheet_pos, table_single_cell_code, y_adjustment);
     }
 }
 

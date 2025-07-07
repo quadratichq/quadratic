@@ -7,7 +7,7 @@ use crate::{
     grid::{
         CodeCellLanguage, Contiguous2D,
         sheet::data_tables::{
-            in_table_code_cache::InTableCodeTables, multi_cell_tables_cache::MultiCellTablesCache,
+            in_table_code::InTableCode, multi_cell_tables_cache::MultiCellTablesCache,
         },
     },
 };
@@ -27,7 +27,7 @@ pub struct SheetDataTablesCache {
     pub(crate) multi_cell_tables: MultiCellTablesCache,
 
     // cache of code tables that are in a table
-    pub(crate) in_table_code_tables: Option<InTableCodeTables>,
+    pub(crate) in_table_code: Option<InTableCode>,
 }
 
 impl SheetDataTablesCache {
@@ -136,6 +136,13 @@ impl SheetDataTablesCache {
                         }
                     }
                 }
+
+                // check in-table code tables
+                if let Some(tables) = &self.in_table_code {
+                    if tables.has_code_in_rect(rect) {
+                        return true;
+                    }
+                }
             }
         }
         false
@@ -143,50 +150,37 @@ impl SheetDataTablesCache {
 
     /// Merges the single cell data table into the parent cache.
     pub fn merge_single_cell(
-        &self,
+        &mut self,
         sheet_pos: SheetPos,
-        parent_single_cell: &mut Contiguous2D<Option<Pos>>,
+        single_cell_code: Contiguous2D<Option<bool>>,
+        y_adjustment: i64,
     ) {
-        self.single_cell_tables
-            .to_rects()
-            .for_each(|(x0, y0, x1, y1, _)| {
-                let x1 = x1.unwrap_or(x0);
-                let y1 = y1.unwrap_or(y0);
-                parent_single_cell.set_rect(
+        let in_table_code = if let Some(in_table_code) = self.in_table_code.as_mut() {
+            in_table_code
+        } else {
+            let in_table_code = InTableCode::default();
+            self.in_table_code = Some(in_table_code);
+            &mut *self.in_table_code.as_mut().unwrap()
+        };
+        single_cell_code.to_rects().for_each(|(x0, y0, x1, y1, _)| {
+            let x1 = x1.unwrap_or(x0);
+            let y1 = y1.unwrap_or(y0);
+            in_table_code.set_single_cell_code(
+                Rect::new(
                     sheet_pos.x + x0 - 1,
-                    sheet_pos.y + y0 - 1,
-                    Some(sheet_pos.x + x1 - 1),
-                    Some(sheet_pos.y + y1 - 1),
-                    Some(sheet_pos.into()),
-                );
-            });
+                    sheet_pos.y + y0 - 1 + y_adjustment,
+                    sheet_pos.x + x1 - 1,
+                    sheet_pos.y + y1 - 1 + y_adjustment,
+                ),
+                sheet_pos.into(),
+            );
+        });
     }
-
-    // Merges the multi-cell data tables into the parent cache.
-    // pub fn merge_multi_cell(
-    //     &self,
-    //     sheet_pos: SheetPos,
-    //     parent_multi_cell: &mut Contiguous2D<Option<TablePos>>,
-    // ) {
-    // self.multi_cell_tables
-    //     .to_rects()
-    //     .for_each(|(x0, y0, x1, y1, _)| {
-    //         let x1 = x1.unwrap_or(x0);
-    //         let y1 = y1.unwrap_or(y0);
-    //         parent_multi_cell.set_rect(
-    //             sheet_pos.x + x0 - 1,
-    //             sheet_pos.y + y0 - 1,
-    //             Some(sheet_pos.x + x1 - 1),
-    //             Some(sheet_pos.y + y1 - 1),
-    //             Some(sheet_pos.into()),
-    //         );
-    //     });
-    // }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::A1Selection, test_util::*};
+    use crate::{a1::A1Selection, grid::CodeCellLanguage, test_util::*};
 
     #[test]
     fn test_has_content_ignore_blank_table() {
@@ -265,5 +259,19 @@ mod tests {
         // Test selection with no code tables
         let selection = A1Selection::test_a1("A1");
         assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
+    }
+
+    #[test]
+    fn test_code_in_selection_with_in_table_code() {
+        let (mut gc, sheet_id) = test_grid();
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        gc.set_code_cell(
+            pos![sheet_id!A3],
+            CodeCellLanguage::Formula,
+            "123".to_string(),
+            None,
+            None,
+        );
     }
 }

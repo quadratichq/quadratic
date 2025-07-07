@@ -12,7 +12,7 @@ import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandl
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell } from '@/app/quadratic-core-types';
+import type { JsCoordinate, JsHtmlOutput, JsRenderCodeCell, JsUpdateCodeCell, Pos } from '@/app/quadratic-core-types';
 import type { SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -586,24 +586,14 @@ export class Tables extends Container<Table> {
   };
 
   // Returns single cell code cells that are in the given cell-based rectangle.
-  getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
+  getSingleCellTablesInRectangle = (cellRectangle: Rectangle): Pos[] => {
     if (!this.dataTablesCache) return [];
-    const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
+    return this.dataTablesCache.getSingleCellTablesInRect(
       cellRectangle.x,
       cellRectangle.y,
       cellRectangle.right,
       cellRectangle.bottom
     );
-    if (!tablePositions) return [];
-
-    return tablePositions?.flatMap((pos) => {
-      const codeCell = this.singleCellTables[`${pos.x},${pos.y}`];
-      if (codeCell) {
-        return [codeCell];
-      } else {
-        return [];
-      }
-    });
   };
 
   /// Returns all Tables (ie, not single-cell code cells) that are within the
