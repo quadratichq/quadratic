@@ -644,11 +644,16 @@ impl DataTable {
     ///
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
-        if let Some((w, h)) = self.chart_output {
-            if w == 0 || h == 0 {
-                ArraySize::_1X1
-            } else {
-                ArraySize::new(w, h + 1).unwrap_or(ArraySize::_1X1)
+        if self.is_html_or_image() {
+            match self.chart_output {
+                Some((w, h)) => {
+                    if w == 0 || h == 0 {
+                        ArraySize::_1X1
+                    } else {
+                        ArraySize::new(w, h + 1).unwrap_or(ArraySize::_1X1)
+                    }
+                }
+                None => ArraySize::_1X1,
             }
         } else {
             match &self.value {

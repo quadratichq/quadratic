@@ -53,23 +53,21 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
           const newValue = value instanceof Function ? value(oldValue) : value;
           const newValueString = JSON.stringify(newValue);
 
-          if (window.localStorage.getItem(key) === newValueString) {
-            return oldValue;
+          const oldValueString = window.localStorage.getItem(key);
+
+          if (newValueString !== oldValueString) {
+            // Save to local storage
+            window.localStorage.setItem(key, newValueString);
+
+            // We dispatch a custom event so every useLocalStorage hook are notified
+            window.dispatchEvent(
+              new StorageEvent('local-storage', {
+                key,
+                newValue: newValueString,
+                oldValue: oldValueString,
+              })
+            );
           }
-
-          // Save to local storage
-          window.localStorage.setItem(key, newValueString);
-
-          const oldValueString = JSON.stringify(oldValue);
-
-          // We dispatch a custom event so every useLocalStorage hook are notified
-          window.dispatchEvent(
-            new StorageEvent('local-storage', {
-              key,
-              newValue: newValueString,
-              oldValue: oldValueString,
-            })
-          );
 
           return newValue;
         });
