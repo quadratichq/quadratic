@@ -339,35 +339,35 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     }
 
     /// Returns the upper bound on the finite regions in the given column.
-    /// Returns 0 if there are no values.
+    /// Returns -1 if there are no values.
     pub fn col_max(&self, column: i64) -> i64 {
         let Some(column) = convert_coord(column) else {
-            return 0;
+            return -1;
         };
         let Some(column_data) = self.0.get(column) else {
-            return 0;
+            return -1;
         };
-
-        // `.try_into()` will only fail if there are finite values beyond
-        // `i64::MAX`. In that case there's no correct answer.
-        column_data.finite_max().try_into().unwrap_or(UNBOUNDED)
+        column_data.finite_max()
     }
 
     pub fn col_min(&self, column: i64) -> i64 {
         let Some(column) = convert_coord(column) else {
-            return 0;
+            return -1;
         };
         let Some(column_data) = self.0.get(column) else {
-            return 0;
+            return -1;
         };
-        column_data.min().unwrap_or(0) as i64
+        column_data
+            .min()
+            .map(|min| min.try_into().unwrap_or(-1))
+            .unwrap_or(-1)
     }
 
     /// Returns the upper bound on the finite regions in the given row. Returns
-    /// 0 if there are no values.
+    /// -1 if there are no values.
     pub fn row_max(&self, row: i64) -> i64 {
         let Some(row) = convert_coord(row) else {
-            return 0;
+            return -1;
         };
 
         let default = T::default();
@@ -379,20 +379,17 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
             .rev()
             .find_map(|column_block| {
                 let column_data = &column_block.value;
-                (*column_data.get(row)? != default).then(|| column_block.finite_max())
+                (*column_data.get(row)? != default)
+                    .then(|| column_block.finite_max().try_into().unwrap_or(UNBOUNDED))
             })
-            .unwrap_or(0)
-            // `.try_into()` will only fail if there are finite values beyond
-            // `i64::MAX`. In that case there's no correct answer.
-            .try_into()
-            .unwrap_or(UNBOUNDED)
+            .unwrap_or(-1)
     }
 
     /// Returns the lower bound on the finite regions in the given row. Returns
-    /// 0 if there are no values.
+    /// -1 if there are no values.
     pub fn row_min(&self, row: i64) -> i64 {
         let Some(row) = convert_coord(row) else {
-            return 0;
+            return -1;
         };
         // Find the first block of columns that has a non-default value at the
         // given row, then return `min()` for that block.
@@ -400,9 +397,10 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
             .iter()
             .find_map(|column_block| {
                 let column_data = &column_block.value;
-                (*column_data.get(row)? != T::default()).then_some(column_block.start)
+                (*column_data.get(row)? != T::default())
+                    .then_some(column_block.start.try_into().unwrap_or(-1))
             })
-            .unwrap_or(0) as i64
+            .unwrap_or(-1)
     }
 
     /// Removes a column and returns the values that used to inhabit it. Returns
@@ -439,9 +437,9 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
         // This is required when migrating versions < 1.7.1 having negative
         // column offsets. When inserting a column at a negative offset, we need
-        // insert at column 1 with no copy.
-        if column < 1 {
-            self.0.shift_insert(1, 2, ContiguousBlocks::default());
+        // insert at column 0 with no copy.
+        if column < 0 {
+            self.0.shift_insert(0, 1, ContiguousBlocks::default());
             return;
         }
 
@@ -486,10 +484,10 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     pub fn insert_row(&mut self, row: i64, copy_formats: CopyFormats) {
         // This is required when migrating versions < 1.7.1 having negative
         // row offsets. When inserting a row at a negative offset, we need
-        // insert at row 1 with no copy.
-        if row < 1 {
+        // insert at row 0 with no copy.
+        if row < 0 {
             self.0.update_all(|column_data| {
-                column_data.shift_insert(1, 2, T::default());
+                column_data.shift_insert(0, 1, T::default());
                 None::<()> // no return value needed
             });
             return;
@@ -735,15 +733,15 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
 }
 
 /// Casts an `i64` position to a `u64` position. Returns `None` if the
-/// coordinate is out of range (i.e., either coordinate is **less than 1**).
+/// coordinate is out of range (i.e., either coordinate is **less than 0**).
 fn convert_pos(pos: Pos) -> Option<(u64, u64)> {
     Some((convert_coord(pos.x)?, convert_coord(pos.y)?))
 }
 
 /// Casts an `i64` coordinate to a `u64` coordinate. Returns `None` if the
-/// coordinate is out of range (i.e., it is **less than 1**).
+/// coordinate is out of range (i.e., it is **less than 0**).
 fn convert_coord(x: i64) -> Option<u64> {
-    x.try_into().ok().filter(|&x| x >= 1)
+    x.try_into().ok()
 }
 
 /// Returns `[x1, x2, y1, y2]` for `range`.
@@ -768,7 +766,7 @@ fn range_to_rect(range: RefRangeBounds) -> [u64; 4] {
 
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that
 /// INCLUDES the starts and EXCLUDES the ends. Clamps the results to greater
-/// than 1. Returns `None` if there is no part of the rectangle that intersects
+/// than 0. Returns `None` if there is no part of the rectangle that intersects
 /// the valid region. `u64::MAX` represents infinity.
 ///
 /// Returns `(x1, y1, x2, y2)`.
@@ -785,13 +783,13 @@ fn convert_rect(
     let (x1, x2) = sort_bounds(x1, x2);
     let (y1, y2) = sort_bounds(y1, y2);
 
-    let x1 = x1.try_into().unwrap_or(0).max(1);
+    let x1 = x1.try_into().unwrap_or(0);
     let x2 = x2
         .map(|x| x.try_into().unwrap_or(0))
         .unwrap_or(u64::MAX)
         .saturating_add(1);
 
-    let y1 = y1.try_into().unwrap_or(0).max(1);
+    let y1 = y1.try_into().unwrap_or(0);
     let y2 = y2
         .map(|y| y.try_into().unwrap_or(0))
         .unwrap_or(u64::MAX)
@@ -1147,20 +1145,20 @@ mod tests {
     fn test_col_min() {
         let mut c = Contiguous2D::<Option<bool>>::new();
         c.set_rect(5, 2, Some(10), Some(3), Some(true));
-        assert_eq!(c.col_min(1), 0);
+        assert_eq!(c.col_min(1), -1);
         assert_eq!(c.col_min(5), 2);
         assert_eq!(c.col_min(10), 2);
-        assert_eq!(c.col_min(11), 0);
+        assert_eq!(c.col_min(11), -1);
     }
 
     #[test]
     fn test_row_min() {
         let mut c = Contiguous2D::<Option<bool>>::new();
         c.set_rect(5, 2, Some(10), Some(3), Some(true));
-        assert_eq!(c.row_min(1), 0);
+        assert_eq!(c.row_min(1), -1);
         assert_eq!(c.row_min(2), 5);
         assert_eq!(c.row_min(3), 5);
-        assert_eq!(c.row_min(4), 0);
+        assert_eq!(c.row_min(4), -1);
     }
 
     #[test]

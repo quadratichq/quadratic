@@ -41,11 +41,11 @@ impl SheetContentCache {
     /// content.
     pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
         let min = self.has_cell_value.col_min(column);
-        if min == 0 {
+        if min < 0 {
             return None;
         }
         let max = self.has_cell_value.col_max(column);
-        if max == 0 {
+        if max < 0 {
             return None;
         }
         Some((min, max))
@@ -54,11 +54,11 @@ impl SheetContentCache {
     /// Returns the bounds of the row or None if the row is empty of content.
     pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         let min = self.has_cell_value.row_min(row);
-        if min == 0 {
+        if min < 0 {
             return None;
         }
         let max = self.has_cell_value.row_max(row);
-        if max == 0 {
+        if max < 0 {
             return None;
         }
         Some((min, max))

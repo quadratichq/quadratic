@@ -23,10 +23,10 @@ pub fn add_import_offset_to_contiguous_2d_rect(
     x2: Option<i64>,
     y2: Option<i64>,
 ) -> (i64, i64, Option<i64>, Option<i64>) {
-    let x1 = x1.saturating_add(IMPORT_OFFSET).max(1);
-    let y1 = y1.saturating_add(IMPORT_OFFSET).max(1);
-    let x2 = x2.map(|x| x.saturating_add(IMPORT_OFFSET).max(1));
-    let y2 = y2.map(|y| y.saturating_add(IMPORT_OFFSET).max(1));
+    let x1 = x1.saturating_add(IMPORT_OFFSET).max(0);
+    let y1 = y1.saturating_add(IMPORT_OFFSET).max(0);
+    let x2 = x2.map(|x| x.saturating_add(IMPORT_OFFSET).max(0));
+    let y2 = y2.map(|y| y.saturating_add(IMPORT_OFFSET).max(0));
     (x1, y1, x2, y2)
 }
 

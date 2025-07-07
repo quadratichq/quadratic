@@ -42,8 +42,7 @@ impl MultiCellTablesCache {
                     if let Some(column_headers) = &data_table.column_headers {
                         for column_header in column_headers.iter() {
                             if !column_header.display {
-                                empty_values_cache
-                                    .remove_column(column_header.value_index as i64 + 1);
+                                empty_values_cache.remove_column(column_header.value_index as i64);
                             }
                         }
                     }
@@ -52,9 +51,7 @@ impl MultiCellTablesCache {
                     if let Some(display_buffer) = &data_table.display_buffer {
                         let mut sorted_empty_values_cache = Contiguous2D::new();
                         for (display_row, &actual_row) in display_buffer.iter().enumerate() {
-                            if let Some(mut row) =
-                                empty_values_cache.copy_row(actual_row as i64 + 1)
-                            {
+                            if let Some(mut row) = empty_values_cache.copy_row(actual_row as i64) {
                                 row.translate_in_place(0, display_row as i64 - actual_row as i64);
                                 sorted_empty_values_cache.set_from(&row);
                             }
@@ -63,7 +60,7 @@ impl MultiCellTablesCache {
                     }
 
                     // convert to sheet coordinates
-                    empty_values_cache.translate_in_place(x1 - 1, y1 - 1 + y_adjustment);
+                    empty_values_cache.translate_in_place(x1, y1 + y_adjustment);
                     self.multi_cell_tables_empty.set_from(&empty_values_cache);
 
                     // mark table name and column headers as non-empty

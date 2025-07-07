@@ -199,7 +199,7 @@ impl Sheet {
                 }
 
                 self.data_tables
-                    .update_in_table_code(table_pos.table_sheet_pos.into(), y_adjustment);
+                    .update_in_table_code(table_pos.table_sheet_pos, y_adjustment);
 
                 result.ok_or_else(|| anyhow!("Failed to insert data table into sub-table"))
             }
