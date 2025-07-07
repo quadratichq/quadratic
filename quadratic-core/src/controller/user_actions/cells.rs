@@ -66,11 +66,8 @@ mod test {
         CellValue, Pos, Rect, SheetPos,
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
-        grid::{NumericFormat, SheetId, sort::SortDirection},
-        test_util::{
-            assert_cell_value_col, assert_cell_value_row, assert_display_cell_value_pos,
-            print_sheet, print_table_in_rect, str_vec_to_string_vec,
-        },
+        grid::{NumericFormat, SheetId, formats::FormatUpdate, sort::SortDirection},
+        test_util::*,
     };
     use std::str::FromStr;
 
@@ -792,5 +789,39 @@ mod test {
 
         assert_cell_value_col(&gc, sheet_id, 5, 3, 5, vec!["a", "b", "c"]);
         assert_cell_value_col(&gc, sheet_id, 6, 3, 5, vec!["d", "e", "f"]);
+    }
+
+    #[test]
+    fn test_set_cell_value_percentages() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None);
+
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Number(BigDecimal::from_str("10").unwrap()),
+        );
+
+        gc.set_formats(
+            &A1Selection::test_a1("A1"),
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat::percentage())),
+                ..Default::default()
+            },
+        );
+
+        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None);
+
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Number(BigDecimal::from_str("0.1").unwrap()),
+        );
     }
 }

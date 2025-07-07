@@ -18,7 +18,7 @@ impl GridController {
         value: &str,
         allow_code: bool,
     ) -> (CellValue, FormatUpdate) {
-        CellValue::string_to_cell_value(value, allow_code)
+        CellValue::string_to_cell_value(value, allow_code, false)
     }
 
     /// Generate operations for a user-initiated change to a cell value
@@ -27,7 +27,8 @@ impl GridController {
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
 
-        // if this is true, then we handle percentage conversions differently
+        // whether this was inputted directly by a user (which currently handles
+        // percentage conversions differently)
         from_user_input: bool,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
@@ -72,23 +73,19 @@ impl GridController {
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
-                    let (mut cell_value, format_update) =
-                        CellValue::string_to_cell_value(&value, true);
-
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
-                    let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
-
-                    let is_code = matches!(cell_value, CellValue::Code(_));
-                    if from_user_input
+                    let user_enter_percent = from_user_input
                         && sheet
                             .cell_format(pos)
                             .numeric_format
-                            .is_some_and(|format| format.kind == NumericFormatKind::Percentage)
-                    {
-                        if let CellValue::Number(number) = cell_value {
-                            cell_value = CellValue::Number(number / 100);
-                        }
-                    }
+                            .is_some_and(|format| format.kind == NumericFormatKind::Percentage);
+
+                    let (cell_value, format_update) =
+                        CellValue::string_to_cell_value(&value, true, user_enter_percent);
+
+                    let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
+
+                    let is_code = matches!(cell_value, CellValue::Code(_));
 
                     let data_table_pos = existing_data_tables
                         .iter()
