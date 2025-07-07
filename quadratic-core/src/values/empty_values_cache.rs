@@ -52,11 +52,17 @@ impl From<(&ArraySize, &SmallVec<[CellValue; 1]>)> for EmptyValuesCache {
         let mut cache = Contiguous2D::new();
 
         // mark all cells (array rect) as Some(None) -> non-empty
-        cache.set_rect(1, 1, Some(width as i64), Some(height as i64), Some(None));
+        cache.set_rect(
+            0,
+            0,
+            Some(width as i64 - 1),
+            Some(height as i64 - 1),
+            Some(None),
+        );
 
         // then mark empty cells as Some(Some(true))
         for pos in empty {
-            cache.set(pos.translate(1, 1, 1, 1), Some(Some(true)));
+            cache.set(pos, Some(Some(true)));
         }
 
         Self { cache: Some(cache) }
@@ -90,14 +96,14 @@ impl EmptyValuesCache {
 
         if let Some(cache) = self.cache.as_mut() {
             let val = if blank { Some(Some(true)) } else { Some(None) };
-            cache.set(pos.translate(1, 1, 1, 1), val);
+            cache.set(pos, val);
         } else {
             let width = array_size.w.get() as i64;
             let height = array_size.h.get() as i64;
 
             let mut cache = Contiguous2D::new();
-            cache.set_rect(1, 1, Some(width), Some(height), Some(None));
-            cache.set(pos.translate(1, 1, 1, 1), Some(Some(true)));
+            cache.set_rect(0, 0, Some(width - 1), Some(height - 1), Some(None));
+            cache.set(pos, Some(Some(true)));
             self.cache = Some(cache);
         }
 
@@ -113,7 +119,7 @@ impl EmptyValuesCache {
             return;
         }
 
-        self.cache.as_mut().map(|cache| cache.remove_row(row + 1));
+        self.cache.as_mut().map(|cache| cache.remove_row(row));
 
         self.check_and_remove_cache(array_size);
     }
@@ -125,7 +131,7 @@ impl EmptyValuesCache {
 
         let can_remove = self.cache.as_ref().is_some_and(|cache| {
             cache
-                .unique_values_in_rect(Rect::new(1, 1, width, height))
+                .unique_values_in_rect(Rect::new(0, 0, width - 1, height - 1))
                 .iter()
                 .all(|val| val == &Some(None))
         });
