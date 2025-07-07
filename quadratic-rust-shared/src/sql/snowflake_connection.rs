@@ -115,7 +115,7 @@ impl<'a> Connection<'a> for SnowflakeConnection {
     ) -> Result<(Bytes, bool, usize)> {
         let query_error = |e: String| SharedError::Sql(SqlError::Query(e));
 
-        #[cfg(all(any(test, feature = "test"), not(clippy)))]
+        #[cfg(any(test, feature = "test"))]
         let (mut _client, _recording) = tests::get_mocked(self, "snowflake-connection").await;
 
         let query_result = _client
@@ -208,7 +208,7 @@ impl<'a> Connection<'a> for SnowflakeConnection {
                 col.ordinal_position;"
         );
 
-        #[cfg(all(any(test, feature = "test"), not(clippy)))]
+        #[cfg(any(test, feature = "test"))]
         let (mut _client, _recording) =
             tests::get_mocked(self, "snowflake-connection-schema").await;
 
