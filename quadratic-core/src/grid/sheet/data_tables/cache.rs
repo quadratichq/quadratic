@@ -150,7 +150,8 @@ impl SheetDataTablesCache {
         false
     }
 
-    pub fn remove_from_in_table_code(&mut self, old_spilled_output_rect: Rect) {
+    /// Removes the in-table code tables that are within the given rect.
+    pub(super) fn remove_from_in_table_code(&mut self, old_spilled_output_rect: Rect) {
         let Some(in_table_code) = self.in_table_code.as_mut() else {
             return;
         };
@@ -168,24 +169,45 @@ impl SheetDataTablesCache {
     }
 
     /// Merges the single cell data table into the parent cache.
-    pub fn add_to_in_table_code(&mut self, data_table_pos: Pos, data_table: &DataTable) {
+    pub(super) fn add_to_in_table_code(&mut self, data_table_pos: Pos, data_table: &DataTable) {
         let Some(sub_tables) = data_table.tables.as_ref() else {
             return;
         };
 
         let y_adjustment = data_table.y_adjustment(true);
 
-        sub_tables
-            .cache
-            .single_cell_tables
+        let mut single_cell_tables = sub_tables.cache.single_cell_tables.to_owned();
+
+        // handle hidden columns
+        if let Some(column_headers) = &data_table.column_headers {
+            for column_header in column_headers.iter() {
+                if !column_header.display {
+                    single_cell_tables.remove_column(column_header.value_index as i64);
+                }
+            }
+        }
+
+        // handle sorted rows
+        if let Some(display_buffer) = &data_table.display_buffer {
+            let mut sorted_single_cell_tables = Contiguous2D::new();
+            for (display_row, &actual_row) in display_buffer.iter().enumerate() {
+                if let Some(mut row) = single_cell_tables.copy_row(actual_row as i64) {
+                    row.translate_in_place(0, display_row as i64 - actual_row as i64);
+                    sorted_single_cell_tables.set_from(&row);
+                }
+            }
+            std::mem::swap(&mut single_cell_tables, &mut sorted_single_cell_tables);
+        }
+
+        // convert to sheet coordinates
+        single_cell_tables.translate_in_place(data_table_pos.x, data_table_pos.y + y_adjustment);
+
+        single_cell_tables
             .nondefault_rects_in_rect(Rect::new(0, 0, i64::MAX, i64::MAX))
             .for_each(|(rect, _)| {
                 self.in_table_code
                     .get_or_insert_default()
-                    .set_single_cell_code(
-                        rect.translate(data_table_pos.x, data_table_pos.y + y_adjustment),
-                        data_table_pos,
-                    );
+                    .set_single_cell_code(rect, data_table_pos);
             });
 
         if self
