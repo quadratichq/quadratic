@@ -152,6 +152,11 @@ export async function doubleClickCell(options: {
         annotationState: `calendar${value.kind === 'date time' ? '-time' : ''}`,
       });
     }
-    pixiAppSettings.changeInput(true, cell, cursorMode);
+
+    // remove extraneous parts of the number value
+    if (value?.kind === 'number') {
+      value.value = parseFloat(value.value).toString();
+    }
+    pixiAppSettings.changeInput(true, value?.value ?? cell, cursorMode);
   }
 }

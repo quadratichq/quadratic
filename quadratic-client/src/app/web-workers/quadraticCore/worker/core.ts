@@ -1165,7 +1165,9 @@ class Core {
   getCellValue(sheetId: string, x: number, y: number): JsCellValue | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      return this.gridController.getCellValue(sheetId, posToPos(x, y));
+      const value = this.gridController.getCellValue(sheetId, posToPos(x, y));
+      console.log(value);
+      return value;
     } catch (e) {
       this.handleCoreError('getCellValue', e);
       return undefined;

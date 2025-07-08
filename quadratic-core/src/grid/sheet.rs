@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use anyhow::{Result, anyhow};
-use bigdecimal::RoundingMode;
+use bigdecimal::{BigDecimal, RoundingMode};
 use borders::Borders;
 use columns::SheetColumns;
 use data_tables::SheetDataTables;
@@ -232,25 +232,46 @@ impl Sheet {
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
+        let is_percent = self.cell_numeric_format_kind(pos) == NumericFormatKind::Percentage;
+
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
             if !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
             ) {
+                if is_percent {
+                    if let CellValue::Number(n) = cell_value {
+                        let n: BigDecimal = n * 100;
+                        dbgjs!(&n.to_plain_string());
+                        return Some(CellValue::Number(n));
+                    }
+                }
                 return Some(cell_value.clone());
             }
         }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
-        self.get_code_cell_value(pos)
+        if let Some(cell_value) = self.get_code_cell_value(pos) {
+            if is_percent {
+                if let CellValue::Number(n) = cell_value {
+                    return Some(CellValue::Number(n * 100));
+                }
+            }
+            return Some(cell_value.clone());
+        } else {
+            None
+        }
     }
 
     /// Returns the JsCellValue at a position
     pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
-        self.display_value(pos).map(|value| JsCellValue {
-            value: value.to_string(),
-            kind: value.type_name().to_string(),
+        self.display_value(pos).map(|value| {
+            dbgjs!(&value.to_string());
+            JsCellValue {
+                value: value.to_string(),
+                kind: value.type_name().to_string(),
+            }
         })
     }
 
