@@ -1,55 +1,17 @@
 import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { cn } from '@/shared/shadcn/utils';
 import type { ImgHTMLAttributes } from 'react';
-import React, { forwardRef, useCallback, useMemo } from 'react';
+import React, { forwardRef, memo, useCallback, useMemo } from 'react';
 
 interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {
   size?: 'xs' | 'small' | 'medium' | 'large';
   children?: string | React.ReactNode;
 }
-export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
-  ({ src, alt, size, style, className, children, ...rest }, ref) => {
+export const Avatar = memo(
+  forwardRef<HTMLImageElement, AvatarProps>(({ src, alt, size, style, className, children, ...rest }, ref) => {
     const [error, setError] = React.useState(false);
 
-    const stylePreset = useMemo(
-      () => ({
-        width:
-          size === 'xs'
-            ? '20px'
-            : size === 'small'
-              ? '24px'
-              : size === 'medium'
-                ? '32px'
-                : size === 'large'
-                  ? '40px'
-                  : '24px',
-        height:
-          size === 'xs'
-            ? '20px'
-            : size === 'small'
-              ? '24px'
-              : size === 'medium'
-                ? '32px'
-                : size === 'large'
-                  ? '40px'
-                  : '24px',
-        fontSize:
-          size === 'xs'
-            ? '0.625rem'
-            : size === 'small'
-              ? '0.75rem'
-              : size === 'medium'
-                ? '1rem'
-                : size === 'large'
-                  ? '1.125rem'
-                  : '0.8125rem',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }),
-      [size]
-    );
+    const stylePreset = useMemo(() => getStylePreset(size), [size]);
 
     const handleError = useCallback(() => {
       setError(true);
@@ -57,7 +19,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
 
     return (
       <>
-        {error ? (
+        {error || !src ? (
           <span
             ref={ref}
             className={cn(className, 'bg-muted-foreground text-background')}
@@ -80,8 +42,47 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
         )}
       </>
     );
-  }
+  })
 );
+
+function getStylePreset(size: AvatarProps['size']) {
+  return {
+    width:
+      size === 'xs'
+        ? '20px'
+        : size === 'small'
+          ? '24px'
+          : size === 'medium'
+            ? '32px'
+            : size === 'large'
+              ? '40px'
+              : '24px',
+    height:
+      size === 'xs'
+        ? '20px'
+        : size === 'small'
+          ? '24px'
+          : size === 'medium'
+            ? '32px'
+            : size === 'large'
+              ? '40px'
+              : '24px',
+    fontSize:
+      size === 'xs'
+        ? '0.625rem'
+        : size === 'small'
+          ? '0.75rem'
+          : size === 'medium'
+            ? '1rem'
+            : size === 'large'
+              ? '1.125rem'
+              : '0.8125rem',
+    borderRadius: '50%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+}
 
 function getLettersFromString(str: string) {
   let [first, last] = str.split(' ');
