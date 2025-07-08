@@ -85,6 +85,7 @@ export class Tables extends Container<Table> {
     events.off('updateCodeCells', this.updateCodeCells);
 
     events.off('cursorPosition', this.cursorPosition);
+    events.on('a1ContextUpdated', this.cursorPosition);
     events.off('sheetOffsets', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
@@ -371,6 +372,7 @@ export class Tables extends Container<Table> {
   // that table active while the context menu is open)
   private contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
+      this.actionDataTable.hideActive();
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
     }
