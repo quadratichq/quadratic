@@ -158,13 +158,10 @@ impl Sheet {
                 Ok(self.data_tables.insert_before(index, &pos, data_table))
             }
             MultiPos::TablePos(table_pos) => {
-                let mut y_adjustment = 0;
-
                 let mut result = None;
+
                 self.data_tables
                     .modify_data_table_at(&table_pos.table_sheet_pos.into(), |dt| {
-                        y_adjustment = dt.y_adjustment(true);
-
                         result = Some(dt.tables.get_or_insert_default().insert_before(
                             index,
                             &table_pos.pos,
@@ -173,16 +170,6 @@ impl Sheet {
 
                         Ok(())
                     })?;
-
-                // clear any in-table output for the old data table
-                if let Some((_, Some(old_data_table), _)) = result.as_ref() {
-                    let old_output_rect =
-                        old_data_table.output_rect(table_pos.table_sheet_pos.into(), false);
-                    self.data_tables.clear_in_table_code(old_output_rect);
-                }
-
-                self.data_tables
-                    .update_in_table_code(table_pos.table_sheet_pos, y_adjustment);
 
                 result.ok_or_else(|| anyhow!("Failed to insert data table into sub-table"))
             }

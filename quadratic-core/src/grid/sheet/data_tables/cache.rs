@@ -2,10 +2,10 @@
 //! SheetDataTables and the client. Only SheetDataTables can modify the cache.
 
 use crate::{
-    Pos, Rect, SheetPos,
+    Pos, Rect,
     a1::{A1Context, A1Selection},
     grid::{
-        CodeCellLanguage, Contiguous2D,
+        CodeCellLanguage, Contiguous2D, DataTable,
         sheet::data_tables::{
             in_table_code::InTableCode, multi_cell_tables_cache::MultiCellTablesCache,
         },
@@ -150,33 +150,52 @@ impl SheetDataTablesCache {
         false
     }
 
-    /// Merges the single cell data table into the parent cache.
-    pub fn merge_single_cell(
-        &mut self,
-        sheet_pos: SheetPos,
-        single_cell_code: Contiguous2D<Option<bool>>,
-        y_adjustment: i64,
-    ) {
-        let in_table_code = if let Some(in_table_code) = self.in_table_code.as_mut() {
-            in_table_code
-        } else {
-            let in_table_code = InTableCode::default();
-            self.in_table_code = Some(in_table_code);
-            &mut *self.in_table_code.as_mut().unwrap()
+    pub fn remove_from_in_table_code(&mut self, old_spilled_output_rect: Rect) {
+        let Some(in_table_code) = self.in_table_code.as_mut() else {
+            return;
         };
-        single_cell_code.to_rects().for_each(|(x0, y0, x1, y1, _)| {
-            let x1 = x1.unwrap_or(x0);
-            let y1 = y1.unwrap_or(y0);
-            in_table_code.set_single_cell_code(
-                Rect::new(
-                    sheet_pos.x + x0,
-                    sheet_pos.y + y0 + y_adjustment,
-                    sheet_pos.x + x1,
-                    sheet_pos.y + y1 + y_adjustment,
-                ),
-                sheet_pos.into(),
-            );
-        });
+
+        in_table_code.clear_table(old_spilled_output_rect);
+
+        if self
+            .in_table_code
+            .as_ref()
+            .map(|in_table_code| in_table_code.is_all_default())
+            .unwrap_or(false)
+        {
+            self.in_table_code = None;
+        }
+    }
+
+    /// Merges the single cell data table into the parent cache.
+    pub fn add_to_in_table_code(&mut self, data_table_pos: Pos, data_table: &DataTable) {
+        let Some(sub_tables) = data_table.tables.as_ref() else {
+            return;
+        };
+
+        let y_adjustment = data_table.y_adjustment(true);
+
+        sub_tables
+            .cache
+            .single_cell_tables
+            .nondefault_rects_in_rect(Rect::new(0, 0, i64::MAX, i64::MAX))
+            .for_each(|(rect, _)| {
+                self.in_table_code
+                    .get_or_insert_default()
+                    .set_single_cell_code(
+                        rect.translate(data_table_pos.x, data_table_pos.y + y_adjustment),
+                        data_table_pos,
+                    );
+            });
+
+        if self
+            .in_table_code
+            .as_ref()
+            .map(|in_table_code| in_table_code.is_all_default())
+            .unwrap_or(false)
+        {
+            self.in_table_code = None;
+        }
     }
 }
 

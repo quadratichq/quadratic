@@ -127,13 +127,8 @@ export class Tables extends Container<Table> {
     }
   };
 
-  get sheet(): Sheet {
-    const sheet = sheets.getById(this.cellsSheet.sheetId);
-    if (!sheet) {
-      debugger;
-      throw new Error(`Sheet ${this.cellsSheet.sheetId} not found in Tables.ts`);
-    }
-    return sheet;
+  get sheet(): Sheet | undefined {
+    return sheets.getById(this.cellsSheet.sheetId);
   }
 
   /// Returns true if the code cell has no UI and is 1x1.
@@ -146,7 +141,7 @@ export class Tables extends Container<Table> {
     const table = this.getTable(x, y);
     if (table) {
       if (table.codeCell.alternating_colors) {
-        const cellsSheet = pixiApp.cellsSheets.getById(this.sheet.id);
+        const cellsSheet = pixiApp.cellsSheets.getById(this.cellsSheet.sheetId);
         if (cellsSheet) {
           cellsSheet.cellsFills.updateAlternatingColors(x, y, undefined);
         }
@@ -159,10 +154,15 @@ export class Tables extends Container<Table> {
 
   // Updates the cells markers for a single cell table
   private singleCellUpdate = (x: number, y: number, codeCell?: JsRenderCodeCell) => {
-    const cellsMarkers = pixiApp.cellsSheets.getById(this.sheet.id)?.cellsMarkers;
+    const sheet = this.sheet;
+    if (!sheet) {
+      return;
+    }
+
+    const cellsMarkers = pixiApp.cellsSheets.getById(this.cellsSheet.sheetId)?.cellsMarkers;
     if (!cellsMarkers) return;
     if (codeCell?.state === 'RunError' || codeCell?.state === 'SpillError') {
-      const box = this.sheet.getCellOffsets(x, y);
+      const box = sheet.getCellOffsets(x, y);
       cellsMarkers.add(box, codeCell);
     } else {
       cellsMarkers.remove(x, y);
@@ -171,6 +171,11 @@ export class Tables extends Container<Table> {
 
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
+    const sheet = this.sheet;
+    if (!sheet) {
+      return;
+    }
+
     // Sort so that None render cells come first, then Some render cells
     updateCodeCells.sort((a, b) => {
       if (!a.render_code_cell && b.render_code_cell) {
@@ -183,7 +188,7 @@ export class Tables extends Container<Table> {
     });
 
     for (const updateCodeCell of updateCodeCells) {
-      if (updateCodeCell.sheet_id.id !== this.cellsSheet.sheetId) {
+      if (updateCodeCell.sheet_id.id !== sheet.id) {
         continue;
       }
 
@@ -214,7 +219,7 @@ export class Tables extends Container<Table> {
             }
           } else {
             // adding a new table
-            const table = this.addChild(new Table(this.sheet, render_code_cell));
+            const table = this.addChild(new Table(sheet, render_code_cell));
             this.tablesCache.add(table);
           }
         }
@@ -244,13 +249,18 @@ export class Tables extends Container<Table> {
   /// Creates new Tables for each code cell. This expects all data structures to
   /// be empty.
   private completeRenderCodeCells = (codeCells: JsRenderCodeCell[]) => {
+    const sheet = this.sheet;
+    if (!sheet) {
+      return;
+    }
+
     codeCells.forEach((codeCell) => {
       if (this.isCodeCellSingle(codeCell)) {
         this.singleCellTables[`${codeCell.x},${codeCell.y}`] = codeCell;
         this.singleCellUpdate(codeCell.x, codeCell.y, codeCell);
         return;
       } else {
-        const table = this.addChild(new Table(this.sheet, codeCell));
+        const table = this.addChild(new Table(sheet, codeCell));
         this.tablesCache.add(table);
       }
     });
@@ -290,7 +300,7 @@ export class Tables extends Container<Table> {
 
   // Updates the active table when the cursor moves.
   private cursorPosition = () => {
-    if (this.sheet.id !== sheets.current) {
+    if (this.cellsSheet.sheetId !== sheets.current) {
       return;
     }
 
@@ -325,7 +335,7 @@ export class Tables extends Container<Table> {
 
   // Redraw the headings if the offsets change.
   sheetOffsets = (sheetId: string) => {
-    if (sheetId === this.sheet.id) {
+    if (sheetId === this.cellsSheet.sheetId) {
       this.children.map((table) => table.updateCodeCell());
     }
     pixiApp.setViewportDirty();
@@ -339,7 +349,12 @@ export class Tables extends Container<Table> {
   // clicked). Otherwise it handles TableName. We ignore the table name if the
   // table is not active to allow the user to select the row above the table.
   pointerDown = (world: Point): TablePointerDownResult | undefined => {
-    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const sheet = this.sheet;
+    if (!sheet) {
+      return;
+    }
+
+    const cell = sheet.getColumnRow(world.x, world.y);
     const table = this.getTableIntersects(cell);
     if (!table) return;
     const result = table.intersectsTableName(world);
@@ -354,7 +369,12 @@ export class Tables extends Container<Table> {
   };
 
   pointerMove = (world: Point): boolean => {
-    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const sheet = this.sheet;
+    if (!sheet) {
+      return false;
+    }
+
+    const cell = sheet.getColumnRow(world.x, world.y);
     const table = this.getTableIntersects(cell);
     if (!table) return false;
     const result = table.pointerMove(world);
@@ -510,7 +530,12 @@ export class Tables extends Container<Table> {
   // Checks whether we're hovering a code cell with either an error or peek
   // (excluding charts)
   hoverCodeCell = (world: Point): JsRenderCodeCell | undefined => {
-    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const sheet = this.sheet;
+    if (!sheet) {
+      return;
+    }
+
+    const cell = sheet.getColumnRow(world.x, world.y);
     const codeCell = this.getCodeCellIntersects(cell);
     if (!codeCell) return;
     if (pixiAppSettings.showCodePeek || codeCell.state === 'SpillError' || codeCell.state === 'RunError') {
@@ -521,7 +546,7 @@ export class Tables extends Container<Table> {
   };
 
   private updateDataTablesCache = (sheetId: string, dataTablesCache: SheetDataTablesCache) => {
-    if (sheetId === this.sheet.id) {
+    if (sheetId === this.cellsSheet.sheetId) {
       this.dataTablesCache?.free();
       this.dataTablesCache = dataTablesCache;
       if (sheetId === sheets.current) {
@@ -563,7 +588,12 @@ export class Tables extends Container<Table> {
 
   /// Returns the table that the pointer intersects (excludes single cell tables).
   getTableIntersectsWorld = (world: Point): Table | undefined => {
-    const cell = this.sheet.getColumnRow(world.x, world.y);
+    const sheet = this.sheet;
+    if (!sheet) {
+      return;
+    }
+
+    const cell = sheet.getColumnRow(world.x, world.y);
     return this.getTableIntersects(cell);
   };
 

@@ -47,10 +47,7 @@ impl SheetDataTablesCache {
 
         // Get positions from in-table code cells if they exist
         if let Some(in_table_code) = &self.in_table_code {
-            for (rect, _) in in_table_code
-                .single_cell_code
-                .nondefault_rects_in_rect(rect)
-            {
+            for (rect, _) in in_table_code.nondefault_rects_in_rect(rect) {
                 for x in rect.x_range() {
                     for y in rect.y_range() {
                         positions.push(Pos { x, y });
