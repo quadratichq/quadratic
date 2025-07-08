@@ -4,6 +4,7 @@ import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateUserAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
@@ -25,6 +26,9 @@ export function QuadraticApp() {
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [searchParams] = useSearchParams();
   const checkpointId = useMemo(() => searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY), [searchParams]);
+
+  // ensure GridSettings are loaded before app starts
+  useRecoilValue(gridSettingsAtom);
 
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
