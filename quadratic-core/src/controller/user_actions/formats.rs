@@ -491,8 +491,8 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::grid::CellWrap;
     use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-    use crate::{Pos, a1::A1Selection};
     use crate::test_util::*;
+    use crate::{Pos, a1::A1Selection};
 
     #[test]
     fn test_set_align_selection() {

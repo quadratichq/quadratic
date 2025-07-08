@@ -857,11 +857,6 @@ mod test {
             },
         );
 
-        let sheet = gc.sheet(sheet_id);
-        dbg!(&sheet.formats.numeric_format);
-
-        print_first_sheet(&gc);
-
         assert_eq!(
             gc.sheet(sheet_id).cell_numeric_format_kind(pos![A3]),
             NumericFormatKind::Percentage
