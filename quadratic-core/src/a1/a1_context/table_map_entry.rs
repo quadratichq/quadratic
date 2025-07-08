@@ -213,7 +213,7 @@ impl TableMapEntry {
             c.iter().map(|c| c.to_string()).collect()
         });
         TableMapEntry {
-            multi_pos: MultiPos::new_sheet_pos(SheetId::TEST, bounds.min.x, bounds.min.y),
+            multi_pos: MultiPos::new_sheet_pos(SheetId::TEST, bounds.min),
             table_name: table_name.to_string(),
             visible_columns,
             all_columns,

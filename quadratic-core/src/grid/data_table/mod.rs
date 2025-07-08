@@ -573,22 +573,6 @@ impl DataTable {
             .and_then(|code_run| code_run.error.to_owned())
     }
 
-    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns [`CellValue::Blank`] ref. Note: this assumes a [`CellValue::Code`] exists at the location.
-    pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
-        if self.has_spill() || self.has_error() {
-            Some(&CellValue::Blank)
-        } else {
-            self.display_value_at((x, y).into()).ok()
-        }
-    }
-
-    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
-    pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
-        self.cell_value_ref_at(x, y).cloned()
-    }
-
     /// Returns the cell value at a relative location (0-indexed) into the code
     /// run output, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
@@ -614,24 +598,24 @@ impl DataTable {
     /// Sets the cell value at a relative location (0-indexed) into the code.
     /// Returns `false` if the value cannot be set.
     pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> bool {
-        if !self.has_spill() && !self.has_error() {
-            match self.value {
-                Value::Single(_) => {
-                    self.value = Value::Single(value);
-                }
-                Value::Array(ref mut a) => {
-                    if let Err(error) = a.set(x, y, value, true) {
-                        dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
-                        return false;
-                    }
-                }
-                Value::Tuple(_) => {}
-            }
-
-            return true;
+        if self.has_spill() || self.has_error() {
+            return false;
         }
 
-        false
+        match self.value {
+            Value::Single(_) => {
+                self.value = Value::Single(value);
+            }
+            Value::Array(ref mut a) => {
+                if let Err(error) = a.set(x, y, value, true) {
+                    dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
+                    return false;
+                }
+            }
+            Value::Tuple(_) => {}
+        }
+
+        true
     }
 
     /// Returns the size of the output array, or defaults to `_1X1` (since

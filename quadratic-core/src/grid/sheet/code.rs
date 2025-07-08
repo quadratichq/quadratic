@@ -94,9 +94,9 @@ impl Sheet {
         self.data_table_that_contains(pos)
             .is_some_and(|(code_cell_pos, data_table)| {
                 data_table
-                        .cell_value_ref_at(
-                            (pos.x - code_cell_pos.x) as u32,
-                            (pos.y - code_cell_pos.y) as u32,
+                        .display_value_ref_at(
+                            (pos.x - code_cell_pos.x,
+                            pos.y - code_cell_pos.y).into(),
                         )
                         .is_some_and(|cell_value| {
                             !cell_value.is_blank_or_empty_string()
@@ -114,26 +114,27 @@ impl Sheet {
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
 
-        let cell_value = data_table.cell_value_ref_at(
-            u32::try_from(pos.x - data_table_pos.x).ok()?,
-            u32::try_from(pos.y - data_table_pos.y).ok()?,
-        )?;
+        let cell_value = data_table
+            .display_value_ref_at((pos.x - data_table_pos.x, pos.y - data_table_pos.y).into())?;
 
         // cell_value is a code cell (sub table)
         if cell_value.is_code() {
-            let sub_table_pos = Pos::new(
+            let pos_relative_to_data_table = Pos::new(
                 pos.x - data_table_pos.x,
                 pos.y - data_table_pos.y - data_table.y_adjustment(true),
             );
 
-            let (sub_data_table_pos, sub_data_table) = data_table
+            let (sub_table_pos, sub_data_table) = data_table
                 .tables
                 .as_ref()
-                .and_then(|tables| tables.get_contains(sub_table_pos))?;
+                .and_then(|tables| tables.get_contains(pos_relative_to_data_table))?;
 
-            sub_data_table.cell_value_at(
-                u32::try_from(sub_table_pos.x - sub_data_table_pos.x).ok()?,
-                u32::try_from(sub_table_pos.y - sub_data_table_pos.y).ok()?,
+            sub_data_table.display_value_at(
+                (
+                    pos_relative_to_data_table.x - sub_table_pos.x,
+                    pos_relative_to_data_table.y - sub_table_pos.y,
+                )
+                    .into(),
             )
         } else {
             Some(cell_value.to_owned())
@@ -151,9 +152,9 @@ impl Sheet {
                         rect.x_range()
                             .map(|x| {
                                 data_table
-                                    .cell_value_at(
-                                        (x - data_table_rect.min.x) as u32,
-                                        (y - data_table_rect.min.y) as u32,
+                                    .display_value_at(
+                                        (x - data_table_rect.min.x, y - data_table_rect.min.y)
+                                            .into(),
                                     )
                                     .unwrap_or(CellValue::Blank)
                             })
@@ -194,7 +195,7 @@ impl Sheet {
             // check for code cell on the sheet
             if let Some(cell_value) = self.cell_value_ref(pos) {
                 (pos.to_multi_pos(self.id), cell_value.code_cell_value()?)
-            } 
+            }
             // check for code cell within a table
             else if let Some((table_pos, Some(code_cell_value))) =
                 self.display_pos_to_table_pos(pos).map(|table_pos| {
@@ -206,7 +207,7 @@ impl Sheet {
                 })
             {
                 (table_pos, code_cell_value)
-            } 
+            }
             // return the code table that contains the pos
             else {
                 let data_table_pos = self.data_table_pos_that_contains(pos).ok()?;
@@ -550,7 +551,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.convert_to_multi_pos(pos![A1]),
-            MultiPos::new_sheet_pos(sheet_id, 1, 1)
+            MultiPos::new_sheet_pos(sheet_id, (1, 1).into())
         );
 
         assert_eq!(
@@ -565,7 +566,7 @@ mod test {
         // anchor cell of data table
         assert_eq!(
             sheet.convert_to_multi_pos(pos![B2]),
-            MultiPos::new_sheet_pos(sheet_id, 2, 2)
+            MultiPos::new_sheet_pos(sheet_id, (2, 2).into())
         );
 
         // code table
@@ -574,7 +575,7 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.convert_to_multi_pos(pos![F3]),
-            MultiPos::new_sheet_pos(sheet_id, 6, 3)
+            MultiPos::new_sheet_pos(sheet_id, (6, 3).into())
         );
     }
 }

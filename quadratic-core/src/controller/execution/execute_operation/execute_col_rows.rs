@@ -376,7 +376,7 @@ mod tests {
                     values: single_formula("B$17 + $B18"),
                 },
                 Operation::ComputeCodeMultiPos {
-                    multi_pos: MultiPos::new_sheet_pos(sheet_id, 1, 1)
+                    multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 1).into())
                 },
                 // second formula doesn't change because all Y coordinates are < 2
                 // so no operations needed
@@ -400,7 +400,7 @@ mod tests {
                     values: single_formula("'Sheet 1'!G1+Other!F1 - Nonexistent!F1"),
                 },
                 Operation::ComputeCodeMultiPos {
-                    multi_pos: MultiPos::new_sheet_pos(sheet_id, 1, 2)
+                    multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 2).into())
                 },
             ]
         );

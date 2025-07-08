@@ -339,10 +339,9 @@ impl Sheet {
                 // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
-                        if let Some(value) = data_table.cell_value_at(
-                            (x - data_table_pos.x) as u32,
-                            (y - data_table_pos.y) as u32,
-                        ) {
+                        if let Some(value) = data_table
+                            .display_value_at((x - data_table_pos.x, y - data_table_pos.y).into())
+                        {
                             let pos = Pos {
                                 x: x - rect.min.x,
                                 y: y - rect.min.y,
@@ -754,19 +753,19 @@ mod test {
 
         // Test that the data table index is 0 for the first data table
         assert_eq!(
-            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, 1, 1)),
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, (1, 1).into())),
             Some(0)
         );
 
         // Test that a non-existent data table returns None
         assert_eq!(
-            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, 2, 2)),
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, (2, 2).into())),
             None
         );
 
         // The second data table should have index 1
         assert_eq!(
-            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, 5, 2)),
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, (5, 2).into())),
             Some(1)
         );
     }

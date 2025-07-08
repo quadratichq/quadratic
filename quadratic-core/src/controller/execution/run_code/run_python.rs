@@ -91,7 +91,7 @@ mod tests {
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
-            data_table.cell_value_at(0, 1),
+            data_table.absolute_value_at((0, 0).into()),
             Some(CellValue::Text("test".to_string()))
         );
         assert!(!data_table.has_spill());

@@ -14,7 +14,7 @@ impl Sheet {
         if !dt.is_html() {
             return None;
         }
-        let output = dt.cell_value_at(0, 0)?;
+        let output = dt.display_value_at((0, 0).into())?;
 
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
@@ -35,7 +35,7 @@ impl Sheet {
         self.data_tables
             .expensive_iter()
             .filter_map(|(pos, dt)| {
-                let output = dt.cell_value_at(0, 0)?;
+                let output = dt.display_value_at((0, 0).into())?;
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
@@ -128,11 +128,9 @@ impl Sheet {
             .flat_map(|(data_table_pos, data_table)| {
                 let mut render_code_cells = vec![];
 
-                if let Some(code_cell) = self.get_render_code_cell(MultiPos::new_sheet_pos(
-                    self.id,
-                    data_table_pos.x,
-                    data_table_pos.y,
-                )) {
+                if let Some(code_cell) =
+                    self.get_render_code_cell(MultiPos::new_sheet_pos(self.id, *data_table_pos))
+                {
                     render_code_cells.push(code_cell);
                 }
 
@@ -180,7 +178,7 @@ impl Sheet {
         self.data_tables
             .expensive_iter()
             .for_each(|(pos, data_table)| {
-                if let Some(CellValue::Image(image)) = data_table.cell_value_at(0, 0) {
+                if let Some(CellValue::Image(image)) = data_table.display_value_at((0, 0).into()) {
                     let cell_size = data_table.chart_output;
                     crate::wasm_bindings::js::jsSendImage(
                         self.id.to_string(),
@@ -202,7 +200,7 @@ impl Sheet {
 
         let mut sent = false;
         if let Some(table) = self.data_table_at(&pos) {
-            if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
+            if let Some(CellValue::Image(image)) = table.display_value_at((0, 0).into()) {
                 let output_size = table.chart_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
@@ -451,7 +449,7 @@ mod tests {
 
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
-        let rendering = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, pos.x, pos.y));
+        let rendering = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, pos));
         let last_modified = rendering.as_ref().unwrap().last_modified;
         assert_eq!(
             rendering,

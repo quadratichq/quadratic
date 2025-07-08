@@ -639,7 +639,7 @@ mod test {
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
         assert_eq!(
-            data_table.cell_value_at(3, 2),
+            data_table.display_value_at((3, 2).into()),
             Some(CellValue::Text("test1".into()))
         );
 
@@ -670,7 +670,7 @@ mod test {
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 14));
         assert_eq!(
-            data_table.cell_value_at(1, 12),
+            data_table.display_value_at((1, 12).into()),
             Some(CellValue::Text("test3".into()))
         );
 

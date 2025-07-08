@@ -80,7 +80,7 @@ impl DataTable {
     fn has_content_in_row(&self, row: i64) -> bool {
         let data_table_rect = self.output_rect((0, 0).into(), false);
         for x in data_table_rect.x_range() {
-            if let Some(cell_value) = self.cell_value_at(x as u32, row as u32) {
+            if let Some(cell_value) = self.display_value_at((x, row).into()) {
                 if !cell_value.is_blank_or_empty_string() {
                     return true;
                 }
@@ -103,7 +103,7 @@ impl DataTable {
             for x in rect.x_range() {
                 let check_value = include_blanks
                     || self
-                        .cell_value_at((x - data_table_pos.x) as u32, (y - data_table_pos.y) as u32)
+                        .display_value_at((x - data_table_pos.x, y - data_table_pos.y).into())
                         .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string());
 
                 let check_wrap = self.formats.as_ref().is_some_and(|formats| {

@@ -83,7 +83,7 @@ impl GridController {
         );
 
         let op = Operation::AddDataTableMultiPos {
-            multi_pos: MultiPos::new_sheet_pos(sheet_id, x, y),
+            multi_pos: MultiPos::new_sheet_pos(sheet_id, (x, y).into()),
             data_table,
             cell_value,
             index: None,

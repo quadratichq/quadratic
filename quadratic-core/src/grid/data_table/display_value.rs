@@ -109,12 +109,16 @@ impl DataTable {
         }
     }
 
-    /// Get the display value at a given position.
-    pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
+    /// Get the display value at a given display position.
+    pub fn display_value_ref_at(&self, mut pos: Pos) -> Option<&CellValue> {
+        if self.has_spill() || self.has_error() {
+            return Some(&CellValue::Blank);
+        }
+
         // the source cell is HTML or image, then display the first cell or blank
         if self.is_html_or_image() {
-            return Ok(if pos.x == 0 && pos.y == 0 {
-                self.value.get(0, 0)?
+            return Some(if pos.x == 0 && pos.y == 0 {
+                self.value.get(0, 0).ok()?
             } else {
                 &CellValue::Blank
             });
@@ -125,7 +129,7 @@ impl DataTable {
 
         // if the position is the first cell and the name and ui are shown, return the name
         if pos.x == 0 && pos.y == 0 && show_name {
-            return Ok(self.name.as_ref());
+            return Some(self.name.as_ref());
         }
 
         let header_y = if show_name { 1 } else { 0 };
@@ -133,16 +137,43 @@ impl DataTable {
         // if the position is the first cell and the header is shown, return the header
         if pos.y == header_y && show_columns {
             if let Some(header) = self.display_header_at(pos.x as u32) {
-                return Ok(header.name.as_ref());
+                return Some(header.name.as_ref());
             }
         }
 
         pos.y -= self.y_adjustment(true);
 
         match self.display_buffer {
-            Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
-            None => self.display_value_from_value_at(pos),
+            Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos).ok(),
+            None => self.display_value_from_value_at(pos).ok(),
         }
+    }
+
+    /// Get the display value at a given display position.
+    pub fn display_value_at(&self, pos: Pos) -> Option<CellValue> {
+        self.display_value_ref_at(pos).cloned()
+    }
+
+    /// Get the value ref at a given absolute position.
+    pub fn absolute_value_ref_at(&self, pos: Pos) -> Option<&CellValue> {
+        match &self.value {
+            Value::Single(v) => {
+                if pos.x == 0 && pos.y == 0 {
+                    Some(v)
+                } else {
+                    None
+                }
+            }
+            Value::Array(a) => a
+                .get(u32::try_from(pos.x).ok()?, u32::try_from(pos.y).ok()?)
+                .ok(),
+            Value::Tuple(_) => None,
+        }
+    }
+
+    /// Get the value at a given absolute position.
+    pub fn absolute_value_at(&self, pos: Pos) -> Option<CellValue> {
+        self.absolute_value_ref_at(pos).cloned()
     }
 
     /// Get the indices of the columns to show.

@@ -270,7 +270,7 @@ mod test {
             ..Default::default()
         };
         let mut transaction = PendingTransaction::default();
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, (1, 1).into());
 
         // need the result to ensure last_modified is the same
         let result = gc
@@ -328,7 +328,7 @@ mod test {
             ..Default::default()
         };
 
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, (1, 1).into());
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
         array
             .set(

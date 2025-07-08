@@ -15,8 +15,8 @@ pub enum MultiPos {
 
 impl MultiPos {
     /// Creates a new SheetPos.
-    pub fn new_sheet_pos(sheet_id: SheetId, x: i64, y: i64) -> Self {
-        MultiPos::SheetPos(SheetPos::new(sheet_id, x, y))
+    pub fn new_sheet_pos(sheet_id: SheetId, pos: Pos) -> Self {
+        MultiPos::SheetPos(pos.to_sheet_pos(sheet_id))
     }
 
     /// Creates a new TablePos.

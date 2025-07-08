@@ -393,11 +393,11 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
-            data_table.cell_value_at(0, 2),
+            data_table.display_value_at((0, 2).into()),
             Some(CellValue::Text("Southborough".to_string()))
         );
         assert_eq!(
-            data_table.cell_value_at(0, 4),
+            data_table.display_value_at((0, 4).into()),
             Some(CellValue::Text("Westborough".to_string()))
         );
         let fills = sheet.get_all_render_fills();
@@ -417,7 +417,7 @@ mod tests {
         let data_table = data_table.clone();
         let sheet: &mut Sheet = gc.sheet_mut(sheet_id);
         assert_eq!(
-            data_table.cell_value_at(0, 8),
+            data_table.display_value_at((0, 8).into()),
             Some(CellValue::Text("Southborough".to_string()))
         );
         let fills = sheet.get_all_render_fills();
@@ -447,7 +447,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
-            data_table.cell_value_at(0, 2),
+            data_table.display_value_at((0, 2).into()),
             Some(CellValue::Text("Southborough".to_string()))
         );
         let fills = sheet.get_all_render_fills();
@@ -469,7 +469,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
-            data_table.cell_value_at(0, 2),
+            data_table.display_value_at((0, 2).into()),
             Some(CellValue::Text("MA".to_string()))
         );
         let fills = sheet.get_all_render_fills();

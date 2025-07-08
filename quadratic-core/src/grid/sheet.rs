@@ -296,10 +296,7 @@ impl Sheet {
             MultiPos::SheetPos(sheet_pos) => self.cell_value_ref(sheet_pos.into()),
             MultiPos::TablePos(table_pos) => {
                 let data_table = self.data_tables.get_at(&table_pos.table_sheet_pos.into())?;
-                data_table.cell_value_ref_at(
-                    u32::try_from(table_pos.pos.x).ok()?,
-                    u32::try_from(table_pos.pos.y + data_table.y_adjustment(true)).ok()?,
-                )
+                data_table.absolute_value_ref_at(table_pos.pos)
             }
         }
     }

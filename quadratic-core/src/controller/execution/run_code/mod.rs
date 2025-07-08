@@ -541,7 +541,7 @@ mod test {
         let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
 
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, 1, 1);
+        let multi_pos = MultiPos::new_sheet_pos(sheet_id, (1, 1).into());
 
         // manually set the CellValue::Code
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();

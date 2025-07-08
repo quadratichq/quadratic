@@ -26,7 +26,7 @@ pub fn output_pretty_print_data_table(
     max: Option<usize>,
 ) -> String {
     if data_table.is_single_value() {
-        let value = data_table.cell_value_at(0, 0).unwrap();
+        let value = data_table.display_value_at((0, 0).into()).unwrap();
         return format!(
             "{title} with single value: {value}",
             title = title.unwrap_or("Data Table"),

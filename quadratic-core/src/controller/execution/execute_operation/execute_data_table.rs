@@ -263,8 +263,7 @@ impl GridController {
                         let _ = sheet.modify_data_table_at_pos(
                             &table_pos.table_sheet_pos.into(),
                             |table| {
-                                let old_value = table
-                                    .cell_value_at(table_pos.pos.x as u32, table_pos.pos.y as u32);
+                                let old_value = table.absolute_value_at(table_pos.pos);
                                 table.set_cell_value_at(
                                     table_pos.pos.x as u32,
                                     table_pos.pos.y as u32,

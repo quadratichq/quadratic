@@ -76,7 +76,7 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
                             Some(CellValue::Text("chart".to_string()))
                         } else {
                             Some(
-                                dt.cell_value_at((x - pos.x) as u32, (y - pos.y) as u32)
+                                dt.display_value_at((x - pos.x, y - pos.y).into())
                                     .unwrap_or(CellValue::Blank),
                             )
                         }

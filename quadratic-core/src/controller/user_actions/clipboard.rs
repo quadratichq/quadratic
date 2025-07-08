@@ -121,7 +121,8 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
         let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, x, y))?;
+        let code_cell =
+            sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, (x, y).into()))?;
         if sheet_end {
             if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
                 dest = if reverse {
@@ -166,7 +167,8 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
         let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, x, y))?;
+        let code_cell =
+            sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, (x, y).into()))?;
         if sheet_end {
             if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
                 dest = if reverse {

@@ -133,6 +133,7 @@ impl Sheet {
                 ));
             } else if let Some(intersection) = code_rect.intersection(render_rect) {
                 let y_adjustment = data_table.y_adjustment(false);
+
                 for y in intersection.y_range() {
                     // We now render the header row to ensure clipping works
                     // properly to the left of the header since we rely on the
@@ -147,7 +148,7 @@ impl Sheet {
                             y: y - code_rect.min.y,
                         };
 
-                        let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
+                        let value = data_table.display_value_at(pos);
 
                         if let Some(mut value) = value {
                             // converts inner code values to display values
@@ -157,9 +158,7 @@ impl Sheet {
                                     .and_then(|table_pos| {
                                         self.data_table_multi_pos(&MultiPos::TablePos(table_pos))
                                     })
-                                    .and_then(|code_table| {
-                                        code_table.display_value_at((0, 0).into()).ok()
-                                    })
+                                    .and_then(|sub_table| sub_table.display_value_at((0, 0).into()))
                                 {
                                     value = inner_value.clone();
                                 }

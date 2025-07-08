@@ -48,13 +48,9 @@ impl Sheet {
     /// Returns the code cell value at the table pos.
     pub fn table_pos_code_value(&self, table_pos: TablePos) -> Option<&CodeCellValue> {
         let table_sheet_pos = table_pos.table_sheet_pos;
-        let inner_table_sheet_pos = self.table_pos_to_sheet_pos(table_pos)?;
         let table = self.data_table_at(&table_sheet_pos.into())?;
         table
-            .cell_value_ref_at(
-                u32::try_from(inner_table_sheet_pos.x - table_sheet_pos.x).ok()?,
-                u32::try_from(inner_table_sheet_pos.y - table_sheet_pos.y).ok()?,
-            )
+            .absolute_value_ref_at(table_pos.pos)
             .and_then(|cell_value| match cell_value {
                 CellValue::Code(code_cell) => Some(code_cell),
                 _ => None,
