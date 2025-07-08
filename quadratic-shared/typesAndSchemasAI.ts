@@ -64,6 +64,7 @@ export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKey
 const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-pro:thinking-toggle-off',
   'vertexai:gemini-2.5-pro:thinking-toggle-on',
+  'vertexai:gemini-2.5-pro:thinking',
   'vertexai:gemini-2.5-flash:thinking-toggle-off',
   'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.0-flash',

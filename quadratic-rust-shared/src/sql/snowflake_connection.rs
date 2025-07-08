@@ -452,6 +452,8 @@ pub mod tests {
     }
 
     #[tokio::test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn test_snowflake_connection() {
         let (_, client) = setup().await;
 
@@ -459,6 +461,8 @@ pub mod tests {
     }
 
     #[tokio::test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn test_snowflake_query() {
         let (rows, over_the_limit, num_records) = test_query(None).await;
 
@@ -478,6 +482,8 @@ pub mod tests {
 
     // to record: cargo test test_snowflake_schema --features record-request-mock
     #[tokio::test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn test_snowflake_schema() {
         let connection = new_snowflake_connection();
         let mut client = connection.connect().await.unwrap();

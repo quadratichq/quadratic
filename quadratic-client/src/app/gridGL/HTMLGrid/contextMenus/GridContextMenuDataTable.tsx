@@ -18,22 +18,24 @@ export const GridContextMenuDataTable = () => {
   if (hasSpillError) {
     return (
       <ContextMenuBase>
-        <ContextMenuItemAction action={Action.Cut} />
-        <ContextMenuItemAction action={Action.Copy} />
+        <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+        <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
       </ContextMenuBase>
     );
   }
 
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.Cut} />
-      <ContextMenuItemAction action={Action.Copy} />
-      <ContextMenuItemAction action={Action.Paste} />
-      <ContextMenuItemAction action={Action.PasteValuesOnly} />
-      <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
-      <ContextMenuItemAction action={Action.DownloadAsCsv} />
+      <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
+
       <ContextMenuDataTableItems highlightDefault={true} />
     </ContextMenuBase>
   );
@@ -61,17 +63,25 @@ export const ContextMenuDataTableNested = ({ isShowingColumnNames }: { isShowing
 export const ContextMenuDataTableItems = ({ highlightDefault }: { highlightDefault?: boolean }) => {
   return (
     <>
-      <ContextMenuItemAction action={Action.RenameTable} overrideDefaultOption={highlightDefault} />
-      <ContextMenuItemAction action={Action.SortTable} />
-      <ContextMenuItemAction action={Action.ShowAllColumns} />
-      <ContextMenuItemAction action={Action.FlattenTable} />
+      <ContextMenuItemAction
+        action={Action.RenameTable}
+        actionArgs={undefined}
+        overrideDefaultOption={highlightDefault}
+      />
+      <ContextMenuItemAction action={Action.SortTable} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ShowAllColumns} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.FlattenTable} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} />
-      <ContextMenuItemAction action={Action.ToggleTableName} />
-      <ContextMenuItemAction action={Action.ToggleTableColumns} />
-      <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} />
+
+      <ContextMenuItemAction action={Action.ToggleFirstRowAsHeaderTable} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ToggleTableName} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ToggleTableColumns} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.ToggleTableAlternatingColors} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.DeleteDataTable} />
+
+      <ContextMenuItemAction action={Action.DeleteDataTable} actionArgs={undefined} />
     </>
   );
 };

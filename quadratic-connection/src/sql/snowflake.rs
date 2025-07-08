@@ -3,6 +3,7 @@ use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection, sql::snowflake_connection::SnowflakeConnection,
 };
+
 use uuid::Uuid;
 
 use crate::{
@@ -95,6 +96,18 @@ pub fn new_snowflake_connection() -> SnowflakeConnection {
     serde_json::from_str::<SnowflakeConnection>(&credentials).unwrap()
 }
 
+use std::sync::{LazyLock, Mutex};
+pub static SNOWFLAKE_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
+    dotenv::from_filename(".env").ok();
+    let credentials = std::env::var("SNOWFLAKE_CREDENTIALS").unwrap();
+
+    Mutex::new(credentials)
+});
+pub fn new_snowflake_connection() -> SnowflakeConnection {
+    let credentials = SNOWFLAKE_CREDENTIALS.lock().unwrap().to_string();
+    serde_json::from_str::<SnowflakeConnection>(&credentials).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -112,6 +125,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_schema() {
         let connection_id = Uuid::new_v4();
         let (_, headers) = new_team_id_with_header().await;
@@ -127,6 +142,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
@@ -143,37 +160,36 @@ mod tests {
         let response = data.into_response();
 
         let expected = vec![
-            (DataType::Int64, num_vec!(4_i64)),
-            (DataType::Utf8, str_vec("Sample Text 4")),
-            (DataType::Utf8, str_vec("YmluYXJ5IGRhdGEgNA==")),
-            (DataType::Int64, num_vec!(4000_i64)),
-            (DataType::Float64, num_vec!(4.56789_f64)),
-            (DataType::Float64, num_vec!(456.78_f64)),
-            (
-                DataType::Float64,
-                num_vec!(6666666666666666666.6666666666_f64),
-            ),
-            (DataType::Boolean, num_vec!(0_u8)),
-            (
-                DataType::Timestamp(TimeUnit::Millisecond, None),
-                vec![192, 150, 14, 2, 151, 1, 0, 0],
-            ),
-            (DataType::Date32, vec![8, 79, 0, 0]),
-            (DataType::Time32(TimeUnit::Second), vec![184, 161, 0, 0]),
+            (DataType::Int64, num_vec!(321_i64)),
+            (DataType::Float64, num_vec!(111111111111111111_f64)),
+            (DataType::Int64, num_vec!(321_i64)),
+            (DataType::Float64, num_vec!(321654.78_f64)),
+            (DataType::Boolean, str_vec("FALSE")),
+            (DataType::Utf8, str_vec("Snowflake")),
+            (DataType::Utf8, str_vec("B")),
+            (DataType::Utf8, str_vec("Sample text")),
+            (DataType::Binary, str_vec("DEADBEEF")),
+            (DataType::Date32, vec![120, 10, 0, 0]),
+            (DataType::Time32(TimeUnit::Second), vec![12, 34, 56, 0]),
             (
                 DataType::Timestamp(TimeUnit::Millisecond, None),
-                vec![192, 150, 14, 2, 151, 1, 0, 0],
+                vec![171, 90, 14, 2, 151, 1, 0, 0],
             ),
-            (DataType::Utf8, str_vec(r#"{"key":"value4","number":45}"#)),
-            (DataType::Utf8, vec![49, 48, 44, 49, 49, 44, 49, 50]),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                vec![171, 90, 14, 2, 151, 1, 0, 0],
+            ),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                vec![171, 90, 14, 2, 151, 1, 0, 0],
+            ),
+            (DataType::Utf8, str_vec("{\"key\": \"value\"}")),
             (
                 DataType::Utf8,
-                vec![
-                    91, 123, 34, 110, 97, 109, 101, 34, 58, 34, 65, 108, 105, 99, 101, 34, 125, 44,
-                    123, 34, 118, 97, 108, 117, 101, 34, 58, 34, 52, 48, 48, 34, 125, 93,
-                ],
+                str_vec("{\"name\": \"Jones\", \"age\": 42}"),
             ),
-            (DataType::Utf8, str_vec("0-0 4 0:0:0")),
+            (DataType::Utf8, str_vec("[1, 2, 3]")),
+            (DataType::Utf8, str_vec("POINT(-122.4194 37.7749)")),
         ];
 
         validate_parquet(response, expected).await;
@@ -181,6 +197,8 @@ mod tests {
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
