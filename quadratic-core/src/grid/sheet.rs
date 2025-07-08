@@ -242,9 +242,7 @@ impl Sheet {
             ) {
                 if is_percent {
                     if let CellValue::Number(n) = cell_value {
-                        let n: BigDecimal = n * 100;
-                        dbgjs!(&n.to_plain_string());
-                        return Some(CellValue::Number(n));
+                        return Some(CellValue::Number(n * 100));
                     }
                 }
                 return Some(cell_value.clone());
