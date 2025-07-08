@@ -266,12 +266,9 @@ impl Sheet {
 
     /// Returns the JsCellValue at a position
     pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
-        self.display_value(pos).map(|value| {
-            dbgjs!(&value.to_string());
-            JsCellValue {
-                value: value.to_string(),
-                kind: value.type_name().to_string(),
-            }
+        self.display_value(pos).map(|value| JsCellValue {
+            value: value.to_string(),
+            kind: value.type_name().to_string(),
         })
     }
 

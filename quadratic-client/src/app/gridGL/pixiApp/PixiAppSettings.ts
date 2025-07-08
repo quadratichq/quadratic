@@ -250,7 +250,7 @@ export class PixiAppSettings {
       this._input = { show: false };
     }
     this.setDirty({ cursor: true });
-    console.log({ initialValue });
+
     // this is used by CellInput to control visibility
     events.emit('changeInput', input, initialValue, cursorMode);
   }
