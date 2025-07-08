@@ -129,6 +129,10 @@ interface EventTypes {
 
   // use this only if you need to immediately get the viewport's value (ie, from React)
   viewportChangedReady: () => void;
+
+  // use this to get the viewport's value after an update is complete
+  viewportReadyAfterUpdate: () => void;
+
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
   recentFiles: (url: string, name: string, loaded: boolean) => void;
