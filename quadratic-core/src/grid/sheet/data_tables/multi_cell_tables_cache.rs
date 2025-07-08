@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -40,7 +41,10 @@ impl MultiCellTablesCache {
 
                     // handle hidden columns
                     if let Some(column_headers) = &data_table.column_headers {
-                        for column_header in column_headers.iter() {
+                        for column_header in column_headers
+                            .iter()
+                            .sorted_by(|a, b| b.value_index.cmp(&a.value_index))
+                        {
                             if !column_header.display {
                                 empty_values_cache.remove_column(column_header.value_index as i64);
                             }
