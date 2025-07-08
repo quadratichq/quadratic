@@ -16,19 +16,19 @@ import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSearchParams } from 'react-router';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
 
 export function QuadraticApp() {
+  // ensure GridSettings are loaded before app starts
+  useSetRecoilState(gridSettingsAtom);
+
   const didMount = useRef<boolean>(false);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [searchParams] = useSearchParams();
   const checkpointId = useMemo(() => searchParams.get(SEARCH_PARAMS.CHECKPOINT.KEY), [searchParams]);
-
-  // ensure GridSettings are loaded before app starts
-  useRecoilValue(gridSettingsAtom);
 
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
