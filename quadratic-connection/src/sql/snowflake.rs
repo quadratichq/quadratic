@@ -96,18 +96,6 @@ pub fn new_snowflake_connection() -> SnowflakeConnection {
     serde_json::from_str::<SnowflakeConnection>(&credentials).unwrap()
 }
 
-use std::sync::{LazyLock, Mutex};
-pub static SNOWFLAKE_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
-    dotenv::from_filename(".env").ok();
-    let credentials = std::env::var("SNOWFLAKE_CREDENTIALS").unwrap();
-
-    Mutex::new(credentials)
-});
-pub fn new_snowflake_connection() -> SnowflakeConnection {
-    let credentials = SNOWFLAKE_CREDENTIALS.lock().unwrap().to_string();
-    serde_json::from_str::<SnowflakeConnection>(&credentials).unwrap()
-}
-
 #[cfg(test)]
 mod tests {
 
