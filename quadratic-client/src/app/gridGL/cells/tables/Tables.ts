@@ -379,6 +379,7 @@ export class Tables extends Container<Table> {
   // that table active while the context menu is open)
   private contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
+      this.actionDataTable.hideActive();
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
     }
