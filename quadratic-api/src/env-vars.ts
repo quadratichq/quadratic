@@ -23,7 +23,6 @@ export const ORY_ADMIN_HOST = process.env.ORY_ADMIN_HOST as string;
 export const WORKOS_CLIENT_ID = process.env.WORKOS_CLIENT_ID as string;
 export const WORKOS_API_KEY = process.env.WORKOS_API_KEY as string;
 export const WORKOS_JWKS_URI = process.env.WORKOS_JWKS_URI as string;
-export const WORKOS_ACTIONS_SECRET = process.env.WORKOS_ACTIONS_SECRET as string;
 export const QUADRATIC_FILE_URI = process.env.QUADRATIC_FILE_URI as string;
 export const QUADRATIC_FILE_URI_PUBLIC = process.env.QUADRATIC_FILE_URI_PUBLIC as string;
 export const AWS_S3_REGION = process.env.AWS_S3_REGION as string;

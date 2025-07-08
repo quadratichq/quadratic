@@ -2,7 +2,7 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { FilesList } from '@/dashboard/components/FilesList';
 import { FilesListEmptyState } from '@/dashboard/components/FilesListEmptyState';
-import NewFileButton from '@/dashboard/components/NewFileButton';
+import { NewFileButton } from '@/dashboard/components/NewFileButton';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';

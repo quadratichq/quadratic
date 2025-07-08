@@ -1,9 +1,8 @@
 import * as Sentry from '@sentry/node';
-import { WorkOS, type UserRegistrationActionResponseData } from '@workos-inc/node';
-import type { Request, Response } from 'express';
+import { WorkOS } from '@workos-inc/node';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
-import { WORKOS_ACTIONS_SECRET, WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../env-vars';
+import { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../env-vars';
 import type { ByEmailUser, User } from './auth';
 
 let workos: WorkOS | undefined;
@@ -76,55 +75,4 @@ export const jwtConfigWorkos = {
     jwksUri: WORKOS_JWKS_URI,
   }) as GetVerificationKey,
   algorithms: ['RS256'] as Algorithm[],
-};
-
-export const signupCallbackWorkos = async (req: Request, res: Response) => {
-  let responsePayload: UserRegistrationActionResponseData = {
-    type: 'user_registration',
-    verdict: 'Deny',
-  };
-
-  try {
-    const payload = req.body;
-    console.log(payload);
-    const sigHeader = req.headers['workos-signature'];
-    console.log(sigHeader);
-
-    if (!!sigHeader && typeof sigHeader === 'string') {
-      const action = await getWorkos().actions.constructAction({
-        payload: payload,
-        sigHeader: sigHeader,
-        secret: WORKOS_ACTIONS_SECRET,
-      });
-      console.log(action);
-      console.log(action.id);
-      console.log(action.object);
-      if (action.object === 'user_registration_action_context') {
-        console.log(action.userData);
-      }
-
-      await getWorkos().userManagement.updateUser({
-        userId: action.id,
-        emailVerified: true,
-      });
-
-      responsePayload = {
-        type: 'user_registration',
-        verdict: 'Allow',
-      };
-    }
-  } catch (error) {
-    console.error(error);
-    Sentry.captureException({
-      message: '[signupCallbackWorkos] error: ',
-      level: 'error',
-      extra: {
-        error,
-      },
-    });
-  }
-
-  const response = await getWorkos().actions.signResponse(responsePayload, WORKOS_ACTIONS_SECRET);
-
-  res.json(response);
 };

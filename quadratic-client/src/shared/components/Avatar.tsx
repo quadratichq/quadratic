@@ -1,53 +1,59 @@
 import { getAuth0AvatarSrc } from '@/app/helpers/links';
 import { cn } from '@/shared/shadcn/utils';
 import type { ImgHTMLAttributes } from 'react';
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useCallback, useMemo } from 'react';
 
 interface AvatarProps extends ImgHTMLAttributes<HTMLImageElement> {
   size?: 'xs' | 'small' | 'medium' | 'large';
   children?: string | React.ReactNode;
 }
-
 export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
   ({ src, alt, size, style, className, children, ...rest }, ref) => {
     const [error, setError] = React.useState(false);
 
-    const stylePreset = {
-      width:
-        size === 'xs'
-          ? '20px'
-          : size === 'small'
-            ? '24px'
-            : size === 'medium'
-              ? '32px'
-              : size === 'large'
-                ? '40px'
-                : '24px',
-      height:
-        size === 'xs'
-          ? '20px'
-          : size === 'small'
-            ? '24px'
-            : size === 'medium'
-              ? '32px'
-              : size === 'large'
-                ? '40px'
-                : '24px',
-      fontSize:
-        size === 'xs'
-          ? '0.625rem'
-          : size === 'small'
-            ? '0.75rem'
-            : size === 'medium'
-              ? '1rem'
-              : size === 'large'
-                ? '1.125rem'
-                : '0.8125rem',
-      borderRadius: '50%',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-    };
+    const stylePreset = useMemo(
+      () => ({
+        width:
+          size === 'xs'
+            ? '20px'
+            : size === 'small'
+              ? '24px'
+              : size === 'medium'
+                ? '32px'
+                : size === 'large'
+                  ? '40px'
+                  : '24px',
+        height:
+          size === 'xs'
+            ? '20px'
+            : size === 'small'
+              ? '24px'
+              : size === 'medium'
+                ? '32px'
+                : size === 'large'
+                  ? '40px'
+                  : '24px',
+        fontSize:
+          size === 'xs'
+            ? '0.625rem'
+            : size === 'small'
+              ? '0.75rem'
+              : size === 'medium'
+                ? '1rem'
+                : size === 'large'
+                  ? '1.125rem'
+                  : '0.8125rem',
+        borderRadius: '50%',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }),
+      [size]
+    );
+
+    const handleError = useCallback(() => {
+      setError(true);
+    }, []);
 
     return (
       <>
@@ -64,9 +70,9 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
           <img
             alt={alt}
             ref={ref}
-            src={getAuth0AvatarSrc(src) ?? ''}
+            src={getAuth0AvatarSrc(src)}
             crossOrigin="anonymous"
-            onError={() => setError(true)}
+            onError={handleError}
             style={{ ...stylePreset, ...style }}
             className={className}
             {...rest}
