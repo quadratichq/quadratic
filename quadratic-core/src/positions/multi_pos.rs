@@ -20,10 +20,10 @@ impl MultiPos {
     }
 
     /// Creates a new TablePos.
-    pub fn new_table_pos(sheet_id: SheetId, parent_x: i64, parent_y: i64, x: i64, y: i64) -> Self {
+    pub fn new_table_pos(sheet_id: SheetId, parent_pos: &Pos, sub_table_pos: Pos) -> Self {
         MultiPos::TablePos(TablePos::new(
-            SheetPos::new(sheet_id, parent_x, parent_y),
-            Pos { x, y },
+            parent_pos.to_sheet_pos(sheet_id),
+            sub_table_pos,
         ))
     }
 

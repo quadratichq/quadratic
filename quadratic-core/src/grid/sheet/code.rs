@@ -555,11 +555,11 @@ mod test {
 
         assert_eq!(
             sheet.convert_to_multi_pos(pos![B4]),
-            MultiPos::new_table_pos(sheet_id, 2, 2, 0, 0)
+            MultiPos::new_table_pos(sheet_id, &pos![2, 2], pos![0, 0])
         );
         assert_eq!(
             sheet.convert_to_multi_pos(pos![D6]),
-            MultiPos::new_table_pos(sheet_id, 2, 2, 2, 2)
+            MultiPos::new_table_pos(sheet_id, &pos![2, 2], pos![2, 2])
         );
 
         // anchor cell of data table

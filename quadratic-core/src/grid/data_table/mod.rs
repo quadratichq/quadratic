@@ -574,12 +574,6 @@ impl DataTable {
     }
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
-    pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
-        self.cell_value_ref_at(x, y).cloned()
-    }
-
-    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
     /// A spill or error returns [`CellValue::Blank`] ref. Note: this assumes a [`CellValue::Code`] exists at the location.
     pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
         if self.has_spill() || self.has_error() {
@@ -587,6 +581,12 @@ impl DataTable {
         } else {
             self.display_value_at((x, y).into()).ok()
         }
+    }
+
+    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
+    /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
+    pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
+        self.cell_value_ref_at(x, y).cloned()
     }
 
     /// Returns the cell value at a relative location (0-indexed) into the code

@@ -73,7 +73,7 @@ impl GridController {
             rects.iter().for_each(|rect| {
                 sheet
                     .data_tables
-                    .get_code_runs_in_rect(*rect, false, sheet_id, true)
+                    .get_code_runs_in_rect(*rect, sheet_id, false, true, None)
                     .for_each(|(_, multi_pos, _)| {
                         ops.push(Operation::ComputeCodeMultiPos { multi_pos });
                     });
@@ -91,8 +91,8 @@ impl GridController {
     pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
-            for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                code_cell_positions.push(pos.to_multi_pos(*sheet_id));
+            for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs(*sheet_id) {
+                code_cell_positions.push(multi_pos);
             }
         }
 
@@ -105,20 +105,8 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = Vec::new();
-        for (table_pos, dt) in sheet.data_tables.expensive_iter() {
-            if dt.code_run().is_some() {
-                code_cell_positions.push(table_pos.to_multi_pos(sheet_id));
-            } else if let Some(tables) = &dt.tables {
-                for (pos, _) in tables.expensive_iter_code_runs() {
-                    code_cell_positions.push(MultiPos::new_table_pos(
-                        sheet_id,
-                        table_pos.x,
-                        table_pos.y,
-                        pos.x,
-                        pos.y,
-                    ));
-                }
-            }
+        for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs(sheet_id) {
+            code_cell_positions.push(multi_pos);
         }
 
         self.get_code_run_ops_from_positions(code_cell_positions)
@@ -173,7 +161,7 @@ impl GridController {
             if let Some(sheet) = self.try_sheet(sheet_id) {
                 for (_, multi_pos, _) in sheet
                     .data_tables
-                    .get_code_runs_in_sorted(rect, false, sheet_id, true)
+                    .get_code_runs_in_sorted(rect, sheet_id, false, true)
                 {
                     if !seen.contains(&multi_pos) {
                         parent_nodes.push(multi_pos);

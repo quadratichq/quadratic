@@ -291,28 +291,22 @@ impl Sheet {
     }
 
     /// Returns the cell_value at the MultiPos.
-    pub fn cell_value_multi_pos(&self, multi_pos: MultiPos) -> Option<CellValue> {
+    pub fn cell_value_multi_pos_ref(&self, multi_pos: MultiPos) -> Option<&CellValue> {
         match multi_pos {
-            MultiPos::SheetPos(sheet_pos) => self.cell_value(sheet_pos.into()),
+            MultiPos::SheetPos(sheet_pos) => self.cell_value_ref(sheet_pos.into()),
             MultiPos::TablePos(table_pos) => {
-                if let Some(data_table) = self.data_tables.get_at(&table_pos.table_sheet_pos.into())
-                {
-                    data_table.cell_value_at(
-                        u32::try_from(table_pos.pos.x).ok()?,
-                        u32::try_from(table_pos.pos.y + data_table.y_adjustment(true)).ok()?,
-                    )
-                } else {
-                    None
-                }
+                let data_table = self.data_tables.get_at(&table_pos.table_sheet_pos.into())?;
+                data_table.cell_value_ref_at(
+                    u32::try_from(table_pos.pos.x).ok()?,
+                    u32::try_from(table_pos.pos.y + data_table.y_adjustment(true)).ok()?,
+                )
             }
         }
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check
-    /// or return results within code_runs.
-    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y).cloned()
+    /// Returns the cell_value at the MultiPos.
+    pub fn cell_value_multi_pos(&self, multi_pos: MultiPos) -> Option<CellValue> {
+        self.cell_value_multi_pos_ref(multi_pos).cloned()
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does
@@ -320,6 +314,12 @@ impl Sheet {
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
         let column = self.get_column(pos.x)?;
         column.values.get(&pos.y)
+    }
+
+    /// Returns the cell_value at the Pos in column.values. This does not check
+    /// or return results within code_runs.
+    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
+        self.cell_value_ref(pos).cloned()
     }
 
     /// Returns the cell value at a position, or an error if the cell value is not found.

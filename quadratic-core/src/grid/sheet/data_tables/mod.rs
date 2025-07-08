@@ -397,40 +397,45 @@ impl SheetDataTables {
     pub fn get_code_runs_in_rect(
         &self,
         rect: Rect,
-        ignore_spill_error: bool,
         sheet_id: SheetId,
+        ignore_spill_error: bool,
         include_child_code_runs: bool,
+        parent_pos: Option<Pos>,
     ) -> impl Iterator<Item = (usize, MultiPos, &CodeRun)> {
         self.iter_pos_in_rect(rect, ignore_spill_error)
-            .flat_map(move |table_pos| {
+            .flat_map(move |data_table_pos| {
                 let mut results = Vec::new();
-                if let Some((index, _, data_table)) = self.data_tables.get_full(&table_pos) {
-                    // Add the code run from the main data table if it exists
+
+                if let Some((index, _, data_table)) = self.data_tables.get_full(&data_table_pos) {
+                    // Add the code run from parent data table if it exists
                     if let Some(code_run) = data_table.code_run() {
-                        results.push((index, table_pos.to_multi_pos(sheet_id), code_run));
+                        let multi_pos = parent_pos
+                            .map(|parent_pos| {
+                                MultiPos::new_table_pos(sheet_id, &parent_pos, data_table_pos)
+                            })
+                            .unwrap_or(data_table_pos.to_multi_pos(sheet_id));
+
+                        results.push((index, multi_pos, code_run));
                     }
 
                     // Add code runs from sub-tables if enabled
                     if include_child_code_runs {
-                        if let Some(tables) = &data_table.tables {
-                            for pos in tables.iter_pos_in_rect(rect, ignore_spill_error) {
-                                if let Some(code_run) = data_table.code_run() {
-                                    results.push((
-                                        index,
-                                        MultiPos::new_table_pos(
-                                            sheet_id,
-                                            table_pos.x,
-                                            table_pos.y,
-                                            pos.x,
-                                            pos.y,
-                                        ),
-                                        code_run,
-                                    ));
-                                }
-                            }
-                        }
+                        data_table.tables.as_ref().map(|sub_tables| {
+                            sub_tables
+                                .get_code_runs_in_rect(
+                                    rect.translate(-data_table_pos.x, -data_table_pos.y),
+                                    sheet_id,
+                                    ignore_spill_error,
+                                    include_child_code_runs,
+                                    Some(data_table_pos),
+                                )
+                                .for_each(|(sub_index, sub_table_pos, sub_code_run)| {
+                                    results.push((sub_index, sub_table_pos, sub_code_run));
+                                });
+                        });
                     }
                 }
+
                 results.into_iter()
             })
     }
@@ -449,12 +454,18 @@ impl SheetDataTables {
     pub fn get_code_runs_in_sorted(
         &self,
         rect: Rect,
-        ignore_spill_error: bool,
         sheet_id: SheetId,
+        ignore_spill_error: bool,
         include_child_code_runs: bool,
     ) -> impl Iterator<Item = (usize, MultiPos, &CodeRun)> {
-        self.get_code_runs_in_rect(rect, ignore_spill_error, sheet_id, include_child_code_runs)
-            .sorted_by(|a, b| a.0.cmp(&b.0))
+        self.get_code_runs_in_rect(
+            rect,
+            sheet_id,
+            ignore_spill_error,
+            include_child_code_runs,
+            None,
+        )
+        .sorted_by(|a, b| a.0.cmp(&b.0))
     }
 
     /// Returns a Vec of (index, position) for all data tables in the sheet data tables that intersect with given columns, sorted by index.
@@ -643,7 +654,7 @@ impl SheetDataTables {
             if let Some(tables) = &data_table.tables {
                 tables.data_tables.iter().for_each(|(pos, data_table)| {
                     results.push((
-                        MultiPos::new_table_pos(sheet_id, table_pos.x, table_pos.y, pos.x, pos.y),
+                        MultiPos::new_table_pos(sheet_id, table_pos, *pos),
                         data_table,
                     ));
                 });
@@ -653,10 +664,35 @@ impl SheetDataTables {
     }
 
     /// Returns an iterator over all code runs in the sheet data tables.
-    pub fn expensive_iter_code_runs(&self) -> impl Iterator<Item = (Pos, &CodeRun)> {
+    pub fn expensive_iter_code_runs(
+        &self,
+        sheet_id: SheetId,
+    ) -> impl Iterator<Item = (MultiPos, &CodeRun)> {
         self.data_tables
             .iter()
-            .flat_map(|(pos, data_table)| data_table.code_run().map(|code_run| (*pos, code_run)))
+            .flat_map(move |(data_table_pos, data_table)| {
+                data_table
+                    .code_run()
+                    .into_iter()
+                    .map(move |code_run| (data_table_pos.to_multi_pos(sheet_id), code_run))
+                    .chain(data_table.tables.iter().flat_map(move |tables| {
+                        tables
+                            .data_tables
+                            .iter()
+                            .flat_map(move |(sub_table_pos, sub_table)| {
+                                sub_table.code_run().map(|sub_code_run| {
+                                    (
+                                        MultiPos::new_table_pos(
+                                            sheet_id,
+                                            data_table_pos,
+                                            *sub_table_pos,
+                                        ),
+                                        sub_code_run,
+                                    )
+                                })
+                            })
+                    }))
+            })
     }
 
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates

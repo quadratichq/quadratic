@@ -125,27 +125,23 @@ impl Sheet {
     fn all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
         self.data_tables
             .expensive_iter()
-            .flat_map(|(pos, data_table)| {
+            .flat_map(|(data_table_pos, data_table)| {
                 let mut render_code_cells = vec![];
 
-                if let Some(code_cell) =
-                    self.get_render_code_cell(MultiPos::new_sheet_pos(self.id, pos.x, pos.y))
-                {
+                if let Some(code_cell) = self.get_render_code_cell(MultiPos::new_sheet_pos(
+                    self.id,
+                    data_table_pos.x,
+                    data_table_pos.y,
+                )) {
                     render_code_cells.push(code_cell);
                 }
 
                 if data_table.is_data_table() {
                     if let Some(tables) = &data_table.tables {
-                        tables.expensive_iter().for_each(|(inner_pos, _)| {
-                            if let Some(code_cell) =
-                                self.get_render_code_cell(MultiPos::new_table_pos(
-                                    self.id,
-                                    pos.x,
-                                    pos.y,
-                                    inner_pos.x,
-                                    inner_pos.y,
-                                ))
-                            {
+                        tables.expensive_iter().for_each(|(sub_table_pos, _)| {
+                            if let Some(code_cell) = self.get_render_code_cell(
+                                MultiPos::new_table_pos(self.id, data_table_pos, *sub_table_pos),
+                            ) {
                                 render_code_cells.push(code_cell);
                             }
                         });

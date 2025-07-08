@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    CellValue, CopyFormats, RefAdjust,
+    CellValue, CopyFormats, MultiPos, RefAdjust,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -18,28 +18,30 @@ impl GridController {
         adjustments: &[RefAdjust],
     ) {
         for sheet in self.grid.sheets().values() {
-            for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                if let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos) {
-                    let sheet_pos = pos.to_sheet_pos(sheet.id);
-                    let mut new_code = code.clone();
-                    for &adj in adjustments {
-                        new_code.adjust_references(
-                            sheet_pos.sheet_id,
-                            &self.a1_context,
-                            sheet_pos,
-                            adj,
-                        );
-                    }
-                    if code.code != new_code.code {
-                        transaction.operations.push_back(Operation::SetCellValues {
-                            sheet_pos,
-                            values: CellValue::Code(new_code).into(),
-                        });
-                        transaction
-                            .operations
-                            .push_back(Operation::ComputeCodeMultiPos {
-                                multi_pos: sheet_pos.into(),
-                            });
+            for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs(sheet.id) {
+                if let Some(CellValue::Code(code)) = sheet.cell_value_multi_pos_ref(multi_pos) {
+                    match multi_pos {
+                        MultiPos::SheetPos(sheet_pos) => {
+                            let mut new_code = code.clone();
+                            for &adj in adjustments {
+                                new_code.adjust_references(
+                                    sheet_pos.sheet_id,
+                                    &self.a1_context,
+                                    sheet_pos,
+                                    adj,
+                                );
+                            }
+                            if code.code != new_code.code {
+                                transaction.operations.push_back(Operation::SetCellValues {
+                                    sheet_pos,
+                                    values: CellValue::Code(new_code).into(),
+                                });
+                                transaction
+                                    .operations
+                                    .push_back(Operation::ComputeCodeMultiPos { multi_pos });
+                            }
+                        }
+                        MultiPos::TablePos(_table_pos) => todo!(),
                     }
                 }
             }
