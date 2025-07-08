@@ -1129,8 +1129,15 @@ mod test {
         assert!(sheet.has_content(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content(Pos { x: 3, y: 2 }));
 
-        let mut dt = dt.clone();
-        dt.chart_output = Some((5, 5));
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Single(CellValue::Image("Image".to_string())),
+            false,
+            Some(true),
+            Some(true),
+            Some((5, 5)),
+        );
         let pos2 = Pos { x: 10, y: 10 };
         sheet.data_table_insert_full(&pos2, dt);
         assert!(sheet.has_content(pos2));
@@ -1455,11 +1462,18 @@ mod test {
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 13, y: 10 }));
 
         // Chart output should still count as content
-        let mut dt_chart = dt.clone();
-        dt_chart.chart_output = Some((5, 5));
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Single(CellValue::Html("Html".to_string())),
+            false,
+            Some(true),
+            Some(true),
+            Some((5, 5)),
+        );
         let pos3 = Pos { x: 20, y: 20 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos3, dt_chart);
+        sheet.data_table_insert_full(&pos3, dt);
 
         let a1_context = gc.a1_context().clone();
         gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);

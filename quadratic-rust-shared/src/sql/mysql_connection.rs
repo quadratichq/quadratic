@@ -383,10 +383,10 @@ mod tests {
         assert_eq!(to_arrow(11), ArrowType::Utf8("varchar_data".into()));
         assert_eq!(to_arrow(12), ArrowType::Unsupported);
         assert_eq!(to_arrow(13), ArrowType::Unsupported);
-        assert_eq!(to_arrow(14), ArrowType::Unsupported);
-        assert_eq!(to_arrow(15), ArrowType::Unsupported);
-        assert_eq!(to_arrow(16), ArrowType::Unsupported);
-        assert_eq!(to_arrow(17), ArrowType::Unsupported);
+        assert_eq!(to_arrow(14), ArrowType::Null);
+        assert_eq!(to_arrow(15), ArrowType::Null);
+        assert_eq!(to_arrow(16), ArrowType::Null);
+        assert_eq!(to_arrow(17), ArrowType::Null);
         assert_eq!(to_arrow(18), ArrowType::Utf8("tinytext_data".into()));
         assert_eq!(to_arrow(19), ArrowType::Utf8("text_data".into()));
         assert_eq!(to_arrow(20), ArrowType::Utf8("mediumtext_data".into()));
