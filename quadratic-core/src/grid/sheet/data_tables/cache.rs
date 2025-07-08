@@ -158,14 +158,7 @@ impl SheetDataTablesCache {
 
         in_table_code.clear_table(old_spilled_output_rect);
 
-        if self
-            .in_table_code
-            .as_ref()
-            .map(|in_table_code| in_table_code.is_all_default())
-            .unwrap_or(false)
-        {
-            self.in_table_code = None;
-        }
+        self.check_and_remove_in_table_code();
     }
 
     /// Merges the single cell data table into the parent cache.
@@ -210,6 +203,10 @@ impl SheetDataTablesCache {
                     .set_single_cell_code(rect, data_table_pos);
             });
 
+        self.check_and_remove_in_table_code();
+    }
+
+    fn check_and_remove_in_table_code(&mut self) {
         if self
             .in_table_code
             .as_ref()
