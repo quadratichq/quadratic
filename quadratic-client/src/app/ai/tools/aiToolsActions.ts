@@ -22,6 +22,29 @@ import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import type { z } from 'zod';
 
+const convertToCodeCellLanguage = (language: any): any => {
+  if (typeof language === 'string') {
+    return language;
+  }
+  if (language?.Connection?.kind) {
+    // convert connection kind to proper enum values
+    const kindMap: Record<string, string> = {
+      Postgres: 'POSTGRES',
+      Mysql: 'MYSQL',
+      Mssql: 'MSSQL',
+      Snowflake: 'SNOWFLAKE',
+      Bigquery: 'BIGQUERY',
+      Cockroachdb: 'COCKROACHDB',
+      Mariadb: 'MARIADB',
+      Neon: 'NEON',
+      Supabase: 'SUPABASE',
+    };
+    const convertedKind = kindMap[language.Connection.kind] || language.Connection.kind;
+    return { Connection: { kind: convertedKind, id: language.Connection.id } };
+  }
+  return language;
+};
+
 const waitForSetCodeCellValue = (transactionId: string) => {
   return new Promise((resolve) => {
     const isTransactionRunning = pixiAppSettings.editorInteractionState.transactionsInfo.some(
@@ -255,7 +278,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         x,
         y,
         codeString: code_string,
-        language: code_cell_language,
+        language: convertToCodeCellLanguage(code_cell_language),
         codeCellName: code_cell_name,
         cursor: sheets.getCursorPosition(),
       });

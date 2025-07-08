@@ -15,15 +15,12 @@ export function useSqlContextMessages() {
     }
 
     try {
-      // Get all team connections
+      // get all team connections
       let connections;
       try {
         connections = await apiClient.connections.list(teamUuid);
-      } catch (connectionError) {
-        console.warn(
-          '[SQL Context] Failed to fetch team connections, connection service may be unavailable:',
-          connectionError
-        );
+      } catch (error) {
+        console.warn('[SQL Context] Failed to fetch team connections, API may be unavailable:', error);
         return [];
       }
 
@@ -32,7 +29,8 @@ export function useSqlContextMessages() {
         return [];
       }
 
-      // Get only table names for each connection (lightweight)
+      // package team connections
+      // get only table names for each connection to keep context light
       const connectionTableInfo = await Promise.all(
         connections.map(async (connection) => {
           try {
@@ -60,7 +58,7 @@ export function useSqlContextMessages() {
         })
       );
 
-      // Filter out failed connections
+      // filter out failed connections
       const validConnections = connectionTableInfo.filter((conn) => !conn.error);
 
       if (validConnections.length === 0) {
@@ -68,12 +66,12 @@ export function useSqlContextMessages() {
         return [];
       }
 
-      // Format as lightweight context message
+      // format as lightweight context message
       const contextText = validConnections
         .map((conn) => {
           const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 
-          return `Connection: ${conn.connectionName} (${conn.connectionType})\nDatabase: ${conn.database}\nTables: ${tablesText}`;
+          return `Connection: ${conn.connectionName} (${conn.connectionType}), id: ${conn.connectionId}\nDatabase: ${conn.database}\nTables: ${tablesText}`;
         })
         .join('\n\n');
 

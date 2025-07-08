@@ -98,7 +98,44 @@ const cellLanguageSchema = z
   .transform((val) => val.toLowerCase())
   .pipe(z.enum(['python', 'javascript']))
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-  .pipe(z.enum(['Python', 'Javascript']));
+  .pipe(z.enum(['Python', 'Javascript']))
+  .or(
+    z.object({
+      Connection: z.object({
+        kind: z
+          .string()
+          .transform((val) => val.toLowerCase())
+          .pipe(
+            z.enum([
+              'postgres',
+              'mysql',
+              'mssql',
+              'snowflake',
+              'bigquery',
+              'cockroachdb',
+              'mariadb',
+              'neon',
+              'supabase',
+            ])
+          )
+          .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
+          .pipe(
+            z.enum([
+              'Postgres',
+              'Mysql',
+              'Mssql',
+              'Snowflake',
+              'Bigquery',
+              'Cockroachdb',
+              'Mariadb',
+              'Neon',
+              'Supabase',
+            ])
+          ),
+        id: z.string(),
+      }),
+    })
+  );
 
 const modelRouterModels = z
   .string()
@@ -472,10 +509,18 @@ set_code_cell_value function requires language, codeString, and the cell positio
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function for Python/Javascript. Don't add values manually in code cells.\n
 This tool is for Python, Javascript, and SQL Connection code. For formulas, use set_formula_cell_value.\n
 For SQL Connection code cells:\n
-- Use the Connection language format: {"Connection": {"kind": "POSTGRES|MYSQL|MSSQL|SNOWFLAKE", "id": "connection-uuid"}}\n
+- Use the Connection language format: {"Connection": {"kind": "postgres|mysql|mssql|snowflake|bigquery|cockroachdb|mariadb|neon|supabase", "id": "connection-uuid"}}\n
 - The connection ID must be from an available database connection in the team\n
+- Use the GetDatabaseSchemas tool to get the database schemas for the connection\n
 - Write SQL queries that reference the database tables and schemas provided in context\n
-- Follow database-specific syntax rules (quotes for Postgres, backticks for MySQL, etc.)\n
+- Follow database-specific syntax rules (quotes for Postgres, backticks for MySQL, Schema scoping in Bigquery, etc.)\n
+- POSTGRES uses advanced features like arrays, JSON operations, and custom data types with the most SQL standard compliance\n
+- MYSQL employs backticks for identifier quoting and has unique storage engine syntax (MyISAM, InnoDB) with more relaxed SQL standards\n
+- MSSQL uses square brackets for identifiers and T-SQL extensions like TOP clause, OUTPUT clause, and proprietary functions\n
+- SNOWFLAKE features cloud-native syntax with VARIANT data type for semi-structured data and unique clustering/warehouse scaling commands\n
+- BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
+- COCKROACHDB, NEON, and SUPABASE have the same syntax as Postgres\n
+- MARIADB has the same syntax as MySQL\n
 
 
 Code cell (Python and Javascript) placement instructions:\n
