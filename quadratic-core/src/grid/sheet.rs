@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use anyhow::{Result, anyhow};
-use bigdecimal::{BigDecimal, RoundingMode};
+use bigdecimal::RoundingMode;
 use borders::Borders;
 use columns::SheetColumns;
 use data_tables::SheetDataTables;
@@ -362,10 +362,25 @@ impl Sheet {
 
     /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
     pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
-        match self.formats.numeric_format.get(pos) {
-            Some(format) => format.kind,
-            None => NumericFormatKind::Number,
+        // check sheet format first (since it takes precedence)
+        if let Some(numeric_format) = self.formats.numeric_format.get(pos) {
+            return numeric_format.kind;
         }
+
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains(pos) {
+            if let Some(data_table) = self.data_table_at(&data_table_pos) {
+                if !data_table.has_spill() && !data_table.has_error() {
+                    // pos relative to data table pos (top left pos)
+                    let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
+                    if let Some(formats) = &data_table.formats {
+                        if let Some(numeric_format) = formats.numeric_format.get(format_pos) {
+                            return numeric_format.kind;
+                        }
+                    }
+                }
+            }
+        }
+        NumericFormatKind::Number
     }
 
     /// Returns the format of a cell taking into account the sheet and data_tables formatting.
@@ -638,10 +653,11 @@ mod test {
     use super::*;
     use crate::a1::A1Selection;
     use crate::controller::GridController;
+    use crate::grid::formats::FormatUpdate;
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };
-    use crate::test_util::print_table_in_rect;
+    use crate::test_util::*;
     use crate::{Array, SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -824,6 +840,45 @@ mod test {
         assert_eq!(
             sheet.cell_numeric_format_kind(pos![A1]),
             NumericFormatKind::Percentage
+        );
+    }
+
+    #[test]
+    fn test_cell_numeric_format_kind_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![a1], 2, 2);
+
+        gc.set_formats(
+            &A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat::percentage())),
+                ..Default::default()
+            },
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        dbg!(&sheet.formats.numeric_format);
+
+        print_first_sheet(&gc);
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_numeric_format_kind(pos![A3]),
+            NumericFormatKind::Percentage
+        );
+
+        gc.set_formats(
+            &A1Selection::test_a1("A4"),
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat::number())),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_numeric_format_kind(pos![A4]),
+            NumericFormatKind::Number
         );
     }
 

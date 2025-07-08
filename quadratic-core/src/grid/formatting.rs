@@ -115,6 +115,14 @@ impl NumericFormat {
             symbol: None,
         }
     }
+
+    /// Returns a NumericFormat with the kind set to Number.
+    pub fn number() -> Self {
+        Self {
+            kind: NumericFormatKind::Number,
+            symbol: None,
+        }
+    }
 }
 
 #[derive(
