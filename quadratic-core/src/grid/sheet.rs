@@ -372,10 +372,9 @@ impl Sheet {
                 if !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
                     let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    if let Some(formats) = &data_table.formats {
-                        if let Some(numeric_format) = formats.numeric_format.get(format_pos) {
-                            return numeric_format.kind;
-                        }
+                    let table_format = data_table.get_format(format_pos);
+                    if let Some(numeric_format) = table_format.numeric_format {
+                        return numeric_format.kind;
                     }
                 }
             }
