@@ -232,7 +232,7 @@ impl Sheet {
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
-        let is_percent = self.cell_numeric_format_kind(pos) == NumericFormatKind::Percentage;
+        let is_percent = self.cell_format_numeric_kind(pos) == NumericFormatKind::Percentage;
 
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
@@ -256,7 +256,7 @@ impl Sheet {
                     return Some(CellValue::Number(n * 100));
                 }
             }
-            return Some(cell_value.clone());
+            Some(cell_value.clone())
         } else {
             None
         }
@@ -360,28 +360,6 @@ impl Sheet {
         }
     }
 
-    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
-    pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
-        // check sheet format first (since it takes precedence)
-        if let Some(numeric_format) = self.formats.numeric_format.get(pos) {
-            return numeric_format.kind;
-        }
-
-        if let Ok(data_table_pos) = self.data_table_pos_that_contains(pos) {
-            if let Some(data_table) = self.data_table_at(&data_table_pos) {
-                if !data_table.has_spill() && !data_table.has_error() {
-                    // pos relative to data table pos (top left pos)
-                    let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    let table_format = data_table.get_format(format_pos);
-                    if let Some(numeric_format) = table_format.numeric_format {
-                        return numeric_format.kind;
-                    }
-                }
-            }
-        }
-        NumericFormatKind::Number
-    }
-
     /// Returns the format of a cell taking into account the sheet and data_tables formatting.
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
@@ -399,6 +377,14 @@ impl Sheet {
         }
 
         sheet_format
+    }
+
+    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
+    pub fn cell_format_numeric_kind(&self, pos: Pos) -> NumericFormatKind {
+        self.cell_format(pos)
+            .numeric_format
+            .map(|nf| nf.kind)
+            .unwrap_or(NumericFormatKind::Number)
     }
 
     /// Returns a string representation of the format of a cell for use by AI.
@@ -825,7 +811,7 @@ mod test {
     }
 
     #[test]
-    fn test_cell_numeric_format_kind() {
+    fn test_cell_format_numeric_kind() {
         let mut sheet = Sheet::test();
 
         sheet.formats.numeric_format.set(
@@ -837,13 +823,13 @@ mod test {
         );
 
         assert_eq!(
-            sheet.cell_numeric_format_kind(pos![A1]),
+            sheet.cell_format_numeric_kind(pos![A1]),
             NumericFormatKind::Percentage
         );
     }
 
     #[test]
-    fn test_cell_numeric_format_kind_data_table() {
+    fn test_cell_format_numeric_kind_data_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
@@ -858,7 +844,7 @@ mod test {
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).cell_numeric_format_kind(pos![A3]),
+            gc.sheet(sheet_id).cell_format_numeric_kind(pos![A3]),
             NumericFormatKind::Percentage
         );
 
@@ -871,7 +857,7 @@ mod test {
         );
 
         assert_eq!(
-            gc.sheet(sheet_id).cell_numeric_format_kind(pos![A4]),
+            gc.sheet(sheet_id).cell_format_numeric_kind(pos![A4]),
             NumericFormatKind::Number
         );
     }
