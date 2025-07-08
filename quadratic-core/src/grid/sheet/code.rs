@@ -132,8 +132,8 @@ impl Sheet {
                 .and_then(|tables| tables.get_contains(sub_table_pos))?;
 
             sub_data_table.cell_value_at(
-                u32::try_from(pos.x - sub_data_table_pos.x).ok()?,
-                u32::try_from(pos.y - sub_data_table_pos.y).ok()?,
+                u32::try_from(sub_table_pos.x - sub_data_table_pos.x).ok()?,
+                u32::try_from(sub_table_pos.y - sub_data_table_pos.y).ok()?,
             )
         } else {
             Some(cell_value.to_owned())

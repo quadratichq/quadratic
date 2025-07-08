@@ -8,10 +8,12 @@ impl Sheet {
     pub fn table_pos_to_sheet_pos(&self, table_pos: TablePos) -> Option<SheetPos> {
         let table_sheet_pos = table_pos.table_sheet_pos;
         let table = self.data_table_at(&table_sheet_pos.into())?;
+
         let pos = table_pos.pos;
         let x = table.get_display_index_from_column_index(u32::try_from(pos.x).ok()?, false);
         let y = table.get_display_index_from_row_index(u64::try_from(pos.y).ok()?) as i64
             + table.y_adjustment(true);
+
         Some(SheetPos {
             x: table_sheet_pos.x + x,
             y: table_sheet_pos.y + y,

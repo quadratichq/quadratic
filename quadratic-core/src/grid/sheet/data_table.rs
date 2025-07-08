@@ -9,7 +9,6 @@ use crate::{
         CodeCellLanguage, CodeCellValue, DataTableKind,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
-        sheet::data_tables::SheetDataTables,
     },
 };
 
@@ -161,28 +160,18 @@ impl Sheet {
             MultiPos::TablePos(table_pos) => {
                 let mut y_adjustment = 0;
 
-                // For TablePos, we need to insert into the sub-tables of the parent data table
                 let mut result = None;
                 self.data_tables
                     .modify_data_table_at(&table_pos.table_sheet_pos.into(), |dt| {
                         y_adjustment = dt.y_adjustment(true);
 
-                        // Check if the data table has sub-tables
-                        if let Some(tables) = &mut dt.tables {
-                            // Insert the data table into the sub-tables
-                            let (index, old_data_table, dirty_rects) =
-                                tables.insert_before(index, &table_pos.pos, data_table);
-                            result = Some((index, old_data_table, dirty_rects));
-                            Ok(())
-                        } else {
-                            // If no sub-tables exist, create them and insert
-                            let mut tables = SheetDataTables::new();
-                            let (index, old_data_table, dirty_rects) =
-                                tables.insert_before(index, &table_pos.pos, data_table);
-                            dt.tables = Some(tables);
-                            result = Some((index, old_data_table, dirty_rects));
-                            Ok(())
-                        }
+                        result = Some(dt.tables.get_or_insert_default().insert_before(
+                            index,
+                            &table_pos.pos,
+                            data_table,
+                        ));
+
+                        Ok(())
                     })?;
 
                 // clear any in-table output for the old data table
