@@ -517,6 +517,8 @@ impl GridController {
                     .get(&source_pos)
                     .and_then(|data_table| data_table.cells_accessed(start_pos.sheet_id));
 
+                dbg!(&cells_accessed);
+
                 cells_accessed.as_ref().is_some_and(|ranges| {
                     ranges.iter().any(|range| {
                         let cut_intersects = cut_rects
@@ -1084,16 +1086,15 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use super::{PasteSpecial, *};
+    use crate::Rect;
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
-    use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::active_transactions::transaction_name::TransactionName;
     use crate::controller::user_actions::import::tests::{simple_csv, simple_csv_at};
     use crate::grid::js_types::{JsClipboard, JsSnackbarSeverity};
     use crate::grid::sheet::validations::rules::ValidationRule;
-    use crate::grid::{CellWrap, CellsAccessed, CodeCellLanguage, CodeRun, SheetId};
+    use crate::grid::{CellWrap, CodeCellLanguage, SheetId};
     use crate::test_util::*;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{Rect, Value};
 
     fn paste(
         gc: &mut GridController,
@@ -2241,38 +2242,9 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let pos_1_1 = SheetPos::new(sheet_id, 1, 1);
         let pos_1_2 = SheetPos::new(sheet_id, 1, 2);
-        let sheet_rect = SheetRect::from_numbers(1, 1, 1, 1, sheet_id);
 
         gc.set_cell_value(pos_1_1, "1".to_string(), None);
-
-        let mut transaction = PendingTransaction::default();
-        let mut cells_accessed = CellsAccessed::default();
-        cells_accessed.add_sheet_rect(sheet_rect);
-        let code_run = CodeRun {
-            language: CodeCellLanguage::Formula,
-            code: "A1 + 5".into(),
-            std_err: None,
-            std_out: None,
-            error: None,
-            return_type: Some("number".into()),
-            line_number: None,
-            output_type: None,
-            cells_accessed: cells_accessed.clone(),
-        };
-        gc.finalize_data_table(
-            &mut transaction,
-            pos_1_2,
-            Some(DataTable::new(
-                DataTableKind::CodeRun(code_run),
-                "Table 1",
-                Value::Single(CellValue::Number(6.into())),
-                false,
-                Some(false),
-                Some(false),
-                None,
-            )),
-            None,
-        );
+        gc.set_cell_value(pos_1_2, "=A1+1".to_string(), None);
 
         // copying A1:A2 and pasting on B1 should rerun the code
         let selection_rect = SheetRect::from_numbers(1, 1, 1, 2, sheet_id);
