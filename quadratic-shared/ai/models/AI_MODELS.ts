@@ -2,7 +2,7 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 19;
+export const DEFAULT_MODEL_VERSION = 20;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
@@ -126,7 +126,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'basic',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
@@ -155,6 +155,21 @@ export const MODELS_CONFIGURATION: {
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
+    provider: 'vertexai',
+    promptCaching: false,
+    thinking: true,
+    thinkingToggle: true,
+    thinkingBudget: 24576,
+    ...AI_RATES.gemini_2_5_flash_rate,
+  },
+  'vertexai:gemini-2.5-flash:thinking': {
+    model: 'gemini-2.5-flash',
+    displayName: 'gemini 2.5 flash',
+    temperature: 0,
+    max_tokens: 65535,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'basic',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
