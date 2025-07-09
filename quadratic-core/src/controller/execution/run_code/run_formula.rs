@@ -104,7 +104,7 @@ mod test {
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-        number::from_str,
+        number::decimal_from_str,
         test_util::pretty_print_data_table,
     };
 
@@ -342,13 +342,28 @@ mod test {
         };
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
         array
-            .set(0, 0, CellValue::Number(from_str("1.1").unwrap()), false)
+            .set(
+                0,
+                0,
+                CellValue::Number(decimal_from_str("1.1").unwrap()),
+                false,
+            )
             .unwrap();
         array
-            .set(1, 0, CellValue::Number(from_str("0.2").unwrap()), false)
+            .set(
+                1,
+                0,
+                CellValue::Number(decimal_from_str("0.2").unwrap()),
+                false,
+            )
             .unwrap();
         array
-            .set(0, 1, CellValue::Number(from_str("3").unwrap()), false)
+            .set(
+                0,
+                1,
+                CellValue::Number(decimal_from_str("3").unwrap()),
+                false,
+            )
             .unwrap();
         array
             .set(1, 1, CellValue::Text("Hello".into()), false)

@@ -595,7 +595,7 @@ impl Sheet {
     /// Should only be used for testing (as it will not propagate in multiplayer)
     #[cfg(test)]
     pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
-        use crate::number::from_str;
+        use crate::number::decimal_from_str;
         use rand::Rng;
 
         self.columns.clear();
@@ -603,7 +603,7 @@ impl Sheet {
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let value = rng.random_range(-10000..=10000).to_string();
-                self.set_cell_value((x, y).into(), CellValue::Number(from_str(&value).unwrap()));
+                self.set_cell_value((x, y).into(), CellValue::Number(decimal_from_str(&value).unwrap()));
             }
         }
         self.recalculate_bounds(a1_context);
@@ -623,7 +623,7 @@ mod test {
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };
-    use crate::number::from_str;
+    use crate::number::decimal_from_str;
     use crate::test_util::*;
     use crate::{Array, SheetPos, SheetRect, Value};
 
@@ -661,7 +661,7 @@ mod test {
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
-        let _ = sheet.set_cell_value(pos, CellValue::Number(from_str(value).unwrap()));
+        let _ = sheet.set_cell_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
         assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
@@ -782,7 +782,7 @@ mod test {
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Number(from_str("11.100000000000000000").unwrap()),
+            CellValue::Number(decimal_from_str("11.100000000000000000").unwrap()),
         );
 
         // expect a single decimal place
@@ -850,8 +850,8 @@ mod test {
         let vals = vec!["a", "1", "$1.11"];
         let expected = [
             CellValue::Text("a".into()),
-            CellValue::Number(from_str("1").unwrap()),
-            CellValue::Number(from_str("1.11").unwrap()),
+            CellValue::Number(decimal_from_str("1").unwrap()),
+            CellValue::Number(decimal_from_str("1.11").unwrap()),
         ];
         let (grid, sheet_id) = test_setup(&selected, &vals);
 

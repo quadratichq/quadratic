@@ -60,7 +60,7 @@ pub fn sum(numbers: Vec<Decimal>) -> Decimal {
 }
 
 /// Converts a string to a `Decimal`.
-pub fn from_str(s: &str) -> Result<Decimal> {
+pub fn decimal_from_str(s: &str) -> Result<Decimal> {
     Ok(Decimal::from_str(s)?)
 }
 

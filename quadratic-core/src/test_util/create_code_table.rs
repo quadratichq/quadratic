@@ -32,7 +32,7 @@ pub fn test_create_code_table_with_values(
     h: u32,
     values: &[&str],
 ) -> DataTable {
-    use crate::number::from_str;
+    use crate::number::decimal_from_str;
 
     let cell_value = CellValue::Code(CodeCellValue {
         language: CodeCellLanguage::Python,
@@ -43,7 +43,7 @@ pub fn test_create_code_table_with_values(
     let mut array = Array::new_empty(array_size);
     for (i, s) in values.iter().enumerate() {
         if !s.is_empty() {
-            let value = if let Ok(bd) = from_str(s) {
+            let value = if let Ok(bd) = decimal_from_str(s) {
                 CellValue::Number(bd)
             } else {
                 CellValue::Text(s.to_string())
@@ -105,7 +105,7 @@ pub fn test_create_formula(
 
 #[cfg(test)]
 mod tests {
-    use crate::{number::from_str, test_util::*};
+    use crate::{number::decimal_from_str, test_util::*};
 
     use super::*;
 
@@ -126,7 +126,7 @@ mod tests {
             assert_eq!(array.height(), 2);
             assert_eq!(
                 array.get(0, 0).unwrap(),
-                &CellValue::Number(from_str("1").unwrap())
+                &CellValue::Number(decimal_from_str("1").unwrap())
             );
         } else {
             panic!("Expected array value");
@@ -160,7 +160,7 @@ mod tests {
             );
             assert_eq!(
                 array.get(0, 1).unwrap(),
-                &CellValue::Number(from_str("3.14").unwrap())
+                &CellValue::Number(decimal_from_str("3.14").unwrap())
             );
             // Fourth cell should be empty
             assert_eq!(array.get(1, 1).unwrap(), &CellValue::Blank);

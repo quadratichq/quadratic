@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::{CellValue, number::from_str};
+use super::{CellValue, number::decimal_from_str};
 
 impl CellValue {
     // Converts a JS Date to a Date
@@ -79,7 +79,7 @@ impl CellValue {
                     // length by using 2 if currency is set by default.
 
                     CellValue::Number(number)
-                } else if let Ok(number) = from_str(&value) {
+                } else if let Ok(number) = decimal_from_str(&value) {
                     CellValue::Number(number)
                 } else if let Some(number) = CellValue::unpack_percentage(&value) {
                     let numeric_format = NumericFormat {

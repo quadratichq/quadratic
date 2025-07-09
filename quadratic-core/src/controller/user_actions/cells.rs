@@ -67,7 +67,7 @@ mod test {
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{NumericFormat, SheetId, formats::FormatUpdate, sort::SortDirection},
-        number::from_str,
+        number::decimal_from_str,
         test_util::*,
     };
 
@@ -135,7 +135,7 @@ mod test {
         let value = String::from("$123.123");
         assert_eq!(
             CellValue::unpack_currency(&value),
-            Some((String::from("$"), from_str("123.123").unwrap()))
+            Some((String::from("$"), decimal_from_str("123.123").unwrap()))
         );
 
         let value = String::from("test");
@@ -189,7 +189,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "$1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(from_str("1.22").unwrap())
+            CellValue::Number(decimal_from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_commas(&gc), None);
         assert_eq!(
@@ -205,7 +205,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(from_str("1.22").unwrap())
+            CellValue::Number(decimal_from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_decimals(&gc), None);
 
@@ -213,7 +213,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(from_str("10.55").unwrap())
+            CellValue::Number(decimal_from_str("10.55").unwrap())
         );
         assert_eq!(
             get_cell_numeric_format(&gc),
@@ -801,7 +801,7 @@ mod test {
             sheet_id,
             1,
             1,
-            CellValue::Number(from_str("10").unwrap()),
+            CellValue::Number(decimal_from_str("10").unwrap()),
         );
 
         gc.set_formats(
@@ -819,7 +819,7 @@ mod test {
             sheet_id,
             1,
             1,
-            CellValue::Number(from_str("0.1").unwrap()),
+            CellValue::Number(decimal_from_str("0.1").unwrap()),
         );
     }
 }
