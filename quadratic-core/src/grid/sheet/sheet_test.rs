@@ -6,7 +6,7 @@ use crate::{
     Array, ArraySize, CellValue, Pos, Value,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
-    number::from_str,
+    number::decimal_from_str,
 };
 
 #[cfg(test)]
@@ -16,7 +16,7 @@ impl Sheet {
         if s.is_empty() {
             return;
         }
-        let value = if let Ok(bd) = from_str(s) {
+        let value = if let Ok(bd) = decimal_from_str(s) {
             CellValue::Number(bd)
         } else {
             CellValue::Text(s.to_string())
@@ -82,7 +82,7 @@ impl Sheet {
 
     /// Sets a code run and CellValue::Code with an empty code string and a single value from_str(n) result.
     pub fn test_set_code_run_number(&mut self, x: i64, y: i64, n: &str) {
-        self.test_set_code_run_single(x, y, CellValue::Number(from_str(n).unwrap()));
+        self.test_set_code_run_single(x, y, CellValue::Number(decimal_from_str(n).unwrap()));
     }
 
     /// Sets a code run array with code string of "" and an array output of the given values.
@@ -95,7 +95,7 @@ impl Sheet {
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
             if !s.is_empty() {
-                let value = if let Ok(bd) = from_str(s) {
+                let value = if let Ok(bd) = decimal_from_str(s) {
                     CellValue::Number(bd)
                 } else {
                     CellValue::Text(s.to_string())
@@ -156,7 +156,7 @@ impl Sheet {
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
             if !s.is_empty() {
-                let value = if let Ok(bd) = from_str(s) {
+                let value = if let Ok(bd) = decimal_from_str(s) {
                     CellValue::Number(bd)
                 } else {
                     CellValue::Text(s.to_string())
@@ -295,7 +295,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use crate::{CellValue, Pos, grid::Sheet, number::from_str};
+    use crate::{CellValue, Pos, grid::Sheet, number::decimal_from_str};
 
     #[test]
     fn test_set_value() {
@@ -408,7 +408,7 @@ mod tests {
         sheet.test_set_code_run_number(1, 1, "11");
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(from_str("11").unwrap()))
+            Some(CellValue::Number(decimal_from_str("11").unwrap()))
         );
     }
 

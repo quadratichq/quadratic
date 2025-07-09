@@ -516,7 +516,7 @@ mod test {
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
-    use crate::number::from_str;
+    use crate::number::decimal_from_str;
     use crate::test_util::*;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
@@ -588,20 +588,20 @@ mod test {
         assert!(format_update.is_default());
 
         let (value, format_update) = gc.string_to_cell_value("123.45", true);
-        assert_eq!(value, CellValue::Number(from_str("123.45").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("123.45").unwrap()));
         assert!(format_update.is_default());
 
         let (value, format_update) = gc.string_to_cell_value("123,456.78", true);
-        assert_eq!(value, CellValue::Number(from_str("123456.78").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456.78").unwrap()));
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         let (value, format_update) = gc.string_to_cell_value("123,456,789.01", true);
-        assert_eq!(value, CellValue::Number(from_str("123456789.01").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456789.01").unwrap()));
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         // currency with comma
         let (value, format_update) = gc.string_to_cell_value("$123,456", true);
-        assert_eq!(value, CellValue::Number(from_str("123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -612,7 +612,7 @@ mod test {
 
         // parentheses with comma
         let (value, format_update) = gc.string_to_cell_value("(123,456)", true);
-        assert_eq!(value, CellValue::Number(from_str("-123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         // parentheses with -ve
@@ -622,7 +622,7 @@ mod test {
 
         // currency with a space
         let (value, format_update) = gc.string_to_cell_value("$ 123,456", true);
-        assert_eq!(value, CellValue::Number(from_str("123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -633,7 +633,7 @@ mod test {
 
         // currency with a space and -ve outside
         let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
-        assert_eq!(value, CellValue::Number(from_str("-123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -644,7 +644,7 @@ mod test {
 
         // currency with a space and -ve inside
         let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
-        assert_eq!(value, CellValue::Number(from_str("-123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -655,7 +655,7 @@ mod test {
 
         // currency with parentheses outside
         let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
-        assert_eq!(value, CellValue::Number(from_str("-123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -666,7 +666,7 @@ mod test {
 
         // currency with parentheses inside
         let (value, format_update) = gc.string_to_cell_value("$(123,456)", true);
-        assert_eq!(value, CellValue::Number(from_str("-123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -677,7 +677,7 @@ mod test {
 
         // currency with parentheses and space
         let (value, format_update) = gc.string_to_cell_value("$ ( 123,456)", true);
-        assert_eq!(value, CellValue::Number(from_str("-123456").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -693,7 +693,7 @@ mod test {
 
         // percent with a space
         let (value, format_update) = gc.string_to_cell_value("123456 %", true);
-        assert_eq!(value, CellValue::Number(from_str("1234.56").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("1234.56").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -704,7 +704,7 @@ mod test {
 
         // percent with a comma
         let (value, format_update) = gc.string_to_cell_value("123,456%", true);
-        assert_eq!(value, CellValue::Number(from_str("1234.56").unwrap()));
+        assert_eq!(value, CellValue::Number(decimal_from_str("1234.56").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {

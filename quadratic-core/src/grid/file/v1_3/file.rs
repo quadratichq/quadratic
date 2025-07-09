@@ -6,7 +6,7 @@ use super::schema::{Any, ArrayOutput, Cell};
 use crate::color::Rgba;
 use crate::grid::file::v1_3::schema::GridSchema;
 use crate::grid::file::v1_4::schema as v1_4;
-use crate::number::from_str;
+use crate::number::decimal_from_str;
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<v1_4::GridSchema> {
     let sheet = upgrade_sheet(schema)?;
@@ -32,7 +32,7 @@ pub fn language_conversion(language: &str) -> String {
 impl From<Any> for v1_4::OutputValueValue {
     fn from(val: Any) -> Self {
         match val {
-            Any::Number(n) => match from_str(n.to_string().as_str()).ok() {
+            Any::Number(n) => match decimal_from_str(n.to_string().as_str()).ok() {
                 Some(n) => Self {
                     type_field: "NUMBER".into(),
                     value: n.to_string(),
@@ -42,7 +42,7 @@ impl From<Any> for v1_4::OutputValueValue {
                     value: n.to_string(),
                 },
             },
-            Any::String(s) => match from_str(&s) {
+            Any::String(s) => match decimal_from_str(&s) {
                 Ok(n) => Self {
                     type_field: "NUMBER".into(),
                     value: n.to_string(),
@@ -96,7 +96,7 @@ impl SheetBuilder {
         let column = self.column(x);
 
         if type_field == "text" {
-            let type_field = match from_str(value) {
+            let type_field = match decimal_from_str(value) {
                 Ok(_) => "NUMBER",
                 Err(_) => "TEXT",
             };
