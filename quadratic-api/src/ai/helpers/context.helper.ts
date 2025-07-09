@@ -114,7 +114,7 @@ export const getCurrentDateContext = (time: string): ChatMessage[] => {
       content: [
         {
           type: 'text',
-          text: `I understand the current data and user locale.`,
+          text: `I understand the current date and user locale.`,
         },
       ],
       contextType: 'currentDate',
