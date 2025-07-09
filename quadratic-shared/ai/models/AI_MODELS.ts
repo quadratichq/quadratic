@@ -173,7 +173,6 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
-    thinkingToggle: true,
     thinkingBudget: 24576,
     ...AI_RATES.gemini_2_5_flash_rate,
   },
