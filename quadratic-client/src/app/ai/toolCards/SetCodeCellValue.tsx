@@ -1,6 +1,7 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
@@ -62,7 +63,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
             codeCell: {
               sheetId: sheets.current,
               pos: codeCellPos,
-              language: toolArgs.code_cell_language,
+              language: convertToCodeCellLanguage(toolArgs.code_cell_language),
               lastModified: 0,
             },
             showCellTypeMenu: false,
@@ -85,7 +86,7 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
         x: codeCellPos.x,
         y: codeCellPos.y,
         codeString: toolArgs.code_string,
-        language: toolArgs.code_cell_language,
+        language: convertToCodeCellLanguage(toolArgs.code_cell_language),
         cursor: sheets.getCursorPosition(),
       });
     },
@@ -100,14 +101,48 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
     }
   }, [toolArgs, args]);
 
+  const getLanguageString = (language: any): string => {
+    if (typeof language === 'string') {
+      return language;
+    }
+    if (language?.Connection?.kind) {
+      return language.Connection.kind;
+    }
+    return '';
+  };
+
+  const convertToCodeCellLanguage = (language: any): any => {
+    if (typeof language === 'string') {
+      return language;
+    }
+    if (language?.Connection?.kind) {
+      // Convert connection kind to proper enum values
+      const kindMap: Record<string, string> = {
+        Postgres: 'postgres',
+        Mysql: 'mysql',
+        Mssql: 'mssql',
+        Snowflake: 'snowflake',
+        Bigquery: 'bigquery',
+        Cockroachdb: 'cockroachdb',
+        Mariadb: 'mariadb',
+        Neon: 'neon',
+        Supabase: 'supabase',
+      };
+      const convertedKind = kindMap[language.Connection.kind] || language.Connection.kind;
+      return { Connection: { kind: convertedKind, id: language.Connection.id } };
+    }
+    return language;
+  };
+
   if (loading && estimatedNumberOfLines) {
     const partialJson = parsePartialJson(args);
     if (partialJson && 'code_cell_language' in partialJson) {
       const { code_cell_language: language, code_cell_position: position } = partialJson;
+
       return (
         <ToolCard
-          icon={<LanguageIcon language={language} />}
-          label={language}
+          icon={<LanguageIcon language={getLanguageString(language)} />}
+          label={getConnectionKind(convertToCodeCellLanguage(language))}
           description={
             `${estimatedNumberOfLines} line` +
             (estimatedNumberOfLines === 1 ? '' : 's') +
@@ -128,8 +163,8 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
   const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
   return (
     <ToolCard
-      icon={<LanguageIcon language={code_cell_language} />}
-      label={code_cell_name || code_cell_language}
+      icon={<LanguageIcon language={getLanguageString(code_cell_language)} />}
+      label={code_cell_name || getConnectionKind(convertToCodeCellLanguage(code_cell_language))}
       description={
         `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
       }

@@ -64,6 +64,16 @@ export const getLanguageForMonaco = (language?: CodeCellLanguage): string => {
         return 'sql';
       case 'SNOWFLAKE':
         return 'sql';
+      case 'BIGQUERY':
+        return 'sql';
+      case 'COCKROACHDB':
+        return 'pgsql';
+      case 'MARIADB':
+        return 'mysql';
+      case 'SUPABASE':
+        return 'pgsql';
+      case 'NEON':
+        return 'pgsql';
     }
   }
 

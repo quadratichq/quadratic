@@ -1,8 +1,7 @@
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use http::HeaderMap;
 use quadratic_rust_shared::{
-    quadratic_api::Connection as ApiConnection,
-    sql::{Connection, postgres_connection::PostgresConnection},
+    quadratic_api::Connection as ApiConnection, sql::postgres_connection::PostgresConnection,
 };
 use uuid::Uuid;
 
@@ -16,7 +15,7 @@ use crate::{
     state::State,
 };
 
-use super::{Schema, query_generic};
+use super::{Schema, query_generic, schema_generic_with_ssh};
 
 /// Test the connection to the database.
 // #[axum::debug_handler]
@@ -44,10 +43,10 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
-) -> Result<(PostgresConnection, ApiConnection<PostgresConnection>)> {
+) -> Result<ApiConnection<PostgresConnection>> {
     let connection = get_api_connection(state, "", &claims.sub, connection_id, team_id).await?;
 
-    Ok(((&connection).into(), connection))
+    Ok(connection)
 }
 
 /// Query the database and return the results as a parquet file.
@@ -58,11 +57,9 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
-        .await?
-        .0;
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
 
-    query_with_connection(state, sql_query, connection).await
+    query_with_connection(state, sql_query, connection.type_details).await
 }
 
 /// Query the database and return the results as a parquet file.
@@ -89,33 +86,9 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
 
-    schema_with_connection(connection, api_connection).await
-}
-
-/// Get the schema of the database
-pub(crate) async fn schema_with_connection(
-    mut connection: PostgresConnection,
-    api_connection: ApiConnection<PostgresConnection>,
-) -> Result<Json<Schema>> {
-    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
-    let mut pool = connection.connect().await?;
-    let database_schema = connection.schema(&mut pool).await?;
-
-    if let Some(mut tunnel) = tunnel {
-        tunnel.close().await?;
-    }
-
-    let schema = Schema {
-        id: api_connection.uuid,
-        name: api_connection.name,
-        r#type: api_connection.r#type,
-        database: api_connection.type_details.database,
-        tables: database_schema.tables.into_values().collect(),
-    };
-
-    Ok(Json(schema))
+    schema_generic_with_ssh(api_connection, state).await
 }
 
 #[cfg(test)]
@@ -188,9 +161,10 @@ pub mod tests {
     #[tokio::test]
     #[traced_test]
     async fn postgres_schema() {
+        let state = new_state().await;
         let api_connection = get_connection(false);
-        let connection = (&api_connection).into();
-        let response = schema_with_connection(connection, api_connection)
+        let api_connection_id = api_connection.uuid;
+        let response = schema_generic_with_ssh(api_connection, Extension(state.clone()))
             .await
             .unwrap();
         let columns = &response
@@ -202,7 +176,13 @@ pub mod tests {
             .columns;
 
         let expected = expected_postgres_schema();
-        assert_eq!(columns, &expected)
+        assert_eq!(columns, &expected);
+
+        // check that the schema was added to the cache
+        assert_eq!(
+            state.cache.get_schema(api_connection_id).await.unwrap(),
+            response.0
+        );
     }
 
     #[tokio::test]

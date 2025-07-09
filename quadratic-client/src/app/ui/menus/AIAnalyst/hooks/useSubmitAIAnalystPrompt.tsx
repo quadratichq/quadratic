@@ -3,6 +3,7 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -77,18 +78,20 @@ export function useSubmitAIAnalystPrompt() {
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
+  const { getSqlContext } = useSqlContextMessages();
   const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, filesContext] =
+        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, filesContext, sqlContext] =
           await Promise.all([
             getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
             getFilesContext({ chatMessages }),
+            getSqlContext(),
           ]);
 
         const messagesWithContext: ChatMessage[] = [
@@ -97,12 +100,13 @@ export function useSubmitAIAnalystPrompt() {
           ...currentSheetContext,
           ...visibleContext,
           ...filesContext,
+          ...sqlContext,
           ...getPromptMessagesForAI(chatMessages),
         ];
 
         return messagesWithContext;
       },
-    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext]
+    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext, getSqlContext]
   );
 
   const submitPrompt = useRecoilCallback(

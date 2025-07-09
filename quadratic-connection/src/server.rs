@@ -14,10 +14,10 @@ use http::{
     HeaderName, HeaderValue,
     header::{CACHE_CONTROL, PRAGMA},
 };
-use quadratic_rust_shared::auth::jwt::get_jwks;
 use quadratic_rust_shared::sql::Connection;
+use quadratic_rust_shared::{auth::jwt::get_jwks, cache::memory::MemoryCache};
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+use std::{sync::Arc, time::Duration};
 use tokio::time;
 use tower_http::{
     cors::{Any, CorsLayer},
@@ -44,6 +44,7 @@ use crate::{
 };
 
 const STATS_INTERVAL_S: u64 = 5;
+pub(crate) const CACHE_DURATION_S: Duration = Duration::from_secs(60 * 30); // 30 minutes
 
 #[derive(Serialize, Deserialize)]
 pub(crate) struct SqlQuery {
@@ -216,6 +217,11 @@ pub(crate) async fn serve() -> Result<()> {
     let local_addr = listener
         .local_addr()
         .map_err(|e| ConnectionError::InternalServer(e.to_string()))?;
+
+    // start the cache executor
+    let cache = Arc::clone(&state.cache.schema);
+    let executor = MemoryCache::start_executor(cache, Duration::from_secs(30)).await;
+    println!("started cache executor: {executor:?}");
 
     // log stats in a separate thread
     tokio::spawn({
