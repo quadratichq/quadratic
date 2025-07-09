@@ -17,7 +17,7 @@ export const Toolbar = () => {
         {permissions.includes('FILE_EDIT') && <FormattingBar />}
       </div>
 
-      <div className="flex items-center justify-end">
+      <div className="flex items-center justify-end xl:w-64 2xl:w-80">
         <ZoomMenu />
       </div>
     </div>
