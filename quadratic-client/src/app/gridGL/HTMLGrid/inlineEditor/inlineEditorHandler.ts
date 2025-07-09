@@ -203,12 +203,24 @@ class InlineEditorHandler {
         changeToFormula = value[0] === '=';
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
+
         if (formula?.language === 'Formula') {
-          value = '=' + formula.code_string;
           changeToFormula = true;
+
+          value = '=' + formula.code_string;
         } else {
-          value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
           changeToFormula = false;
+
+          const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
+          value = jsCellValue?.kind === 'number' ? parseFloat(jsCellValue?.value).toString() : jsCellValue?.value || '';
+
+          // open the calendar pick if the cell is a date
+          if (jsCellValue && ['date', 'date time'].includes(jsCellValue.kind)) {
+            pixiAppSettings.setEditorInteractionState?.({
+              ...pixiAppSettings.editorInteractionState,
+              annotationState: `calendar${jsCellValue.kind === 'date time' ? '-time' : ''}`,
+            });
+          }
         }
       }
 
