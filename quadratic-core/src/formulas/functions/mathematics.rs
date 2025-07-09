@@ -337,9 +337,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the result of raising `base` to the power of `exponent`.
             #[examples("POWER(2, 32)", "POWER(1.1, 7)")]
             #[zip_map]
-            fn POWER(span: Span, [base]: Decimal, [exponent]: Decimal) {
-                base.checked_powd(exponent)
-                    .ok_or(RunErrorMsg::NaN.with_span(span))
+            fn POWER([base]: f64, [exponent]: f64) {
+                base.powf(exponent)
             }
         ),
         formula_fn!(
@@ -350,7 +349,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///     https://en.wikipedia.org/wiki/E_(mathematical_constant)
             #[examples("EXP(1), EXP(2/3), EXP(C9)")]
             #[zip_map]
-            fn EXP([exponent]: Decimal) {
+            fn EXP([exponent]: f64) {
                 exponent.exp()
             }
         ),
@@ -851,7 +850,7 @@ mod tests {
                 format!("LOG(POWER(1.1,{n}),1.1)"),
             ] {
                 let should_equal_n = eval(&g, &s).coerce_nonblank::<f64>().unwrap();
-                assert!((should_equal_n - n.abs() < 0.01));
+                 assert!((should_equal_n - n).abs() < 0.01);
             }
         }
     }
@@ -894,9 +893,7 @@ mod tests {
         assert_eq!("-8", eval_to_string(&g, "(-2)^3"));
         assert_eq!("16", eval_to_string(&g, "POWER(-2, 4)"));
         assert_eq!("16", eval_to_string(&g, "(-2)^4"));
-
-        // TODO(ddimaria): This is not supported by rust_decimal as it's permissive
-        // assert_eq!(e, eval_to_err(&g, "POWER(-2, 1.5)").msg);
+        assert_eq!(e, eval_to_err(&g, "POWER(-2, 1.5)").msg);
         assert_eq!(e, eval_to_err(&g, "(-2)^1.5").msg);
     }
 

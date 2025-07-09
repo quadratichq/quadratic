@@ -586,9 +586,7 @@ pub mod tests {
 
         let mut connection = new_connection().await;
 
-        let sql = format!(
-            "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10"
-        );
+        let sql = "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10".to_string();
         let results = connection.raw_query(&sql, None).await.unwrap();
         println!("{results:?}");
     }
@@ -606,7 +604,7 @@ pub mod tests {
     async fn test_bigquery_query_over_limit() {
         let mut connection = new_connection().await;
         let sql = "select * from `quadratic-development.all_native_data_types.all_data_types`";
-        let results = connection.raw_query(&sql, Some(1)).await.unwrap();
+        let results = connection.raw_query(sql, Some(1)).await.unwrap();
 
         assert_eq!(results, (Vec::new(), true, 0));
     }

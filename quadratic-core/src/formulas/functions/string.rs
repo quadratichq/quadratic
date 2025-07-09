@@ -1,3 +1,5 @@
+use rust_decimal::Decimal;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -448,10 +450,10 @@ fn get_functions() -> Vec<FormulaFunction> {
                     .collect::<String>();
 
                 if actual_number_string.is_empty() && !seen_decimal_sep {
-                    Ok(0.0)
+                    Ok(Decimal::from(0))
                 } else {
                     actual_number_string
-                        .parse::<f64>()
+                        .parse::<Decimal>()
                         .map_err(|_| RunErrorMsg::InvalidArgument.with_span(s.span))
                 }
             }

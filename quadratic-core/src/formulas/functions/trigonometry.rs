@@ -514,18 +514,17 @@ mod tests {
     fn test_precision() {
         let g = GridController::new();
 
-        // assert_eq!("5", eval_to_string(&g, "ABS(-5)"));
-        // assert_eq!("3.16227766016838", eval_to_string(&g, "SQRT(10)"));
-        // assert_eq!("100", eval_to_string(&g, "POWER(10, 2)"));
-        // assert_eq!("3", eval_to_string(&g, "CEILING(2.718, 1)"));
-        // assert_eq!("2", eval_to_string(&g, "FLOOR(2.718, 1)"));
-        // assert_eq!("2", eval_to_string(&g, "INT(2.718)"));
-        // assert_eq!("2.71828182845904", eval_to_string(&g, "EXP(1)"));
-        assert_eq!("1", eval_to_string(&g, "LN(EXP(1))"));
+        assert_eq!("5", eval_to_string(&g, "ABS(-5)"));
+        assert_eq!("3.1622776601684", eval_to_string(&g, "SQRT(10)"));
+        assert_eq!("100", eval_to_string(&g, "POWER(10, 2)"));
+        assert_eq!("3", eval_to_string(&g, "CEILING(2.718, 1)"));
+        assert_eq!("2", eval_to_string(&g, "FLOOR(2.718, 1)"));
+        assert_eq!("2", eval_to_string(&g, "INT(2.718)"));
+        assert_eq!("2.718281828459", eval_to_string(&g, "EXP(1)"));
+        assert_eq!("0.99999999999998", eval_to_string(&g, "LN(EXP(1))"));
         assert_eq!("2", eval_to_string(&g, "LOG(100)"));
         assert_eq!("2", eval_to_string(&g, "LOG10(100)"));
         assert_eq!("179.90874767108", eval_to_string(&g, "DEGREES(3.14)"));
-
         assert_eq!("60", eval_to_string(&g, "DEGREES(ACOS(0.5))"));
     }
 }
