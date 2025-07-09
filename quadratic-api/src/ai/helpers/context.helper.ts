@@ -6,7 +6,7 @@ import { JavascriptDocs } from '../docs/JavascriptDocs';
 import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
 
-export const getQuadraticContext = (language?: CodeCellType, time?: string): ChatMessage[] => [
+export const getQuadraticContext = (language?: CodeCellType): ChatMessage[] => [
   {
     role: 'user',
     content: [
@@ -17,8 +17,9 @@ You are a helpful assistant inside of a spreadsheet application called Quadratic
 Be minimally verbose in your explanations of the code and data you produce.\n
 You are an agent - please keep going until the user's query is completely resolved, before ending your turn and yielding back to the user. Only terminate your turn when you are sure that the problem is solved.\n
 If you are not sure about sheet data content pertaining to the user's request, use your tools to read data and gather the relevant information: do NOT guess or make up an answer.\n
-Be proactive. When the user makes a request, use your tools to solve it. Don't ask the user for clarifying information before trying to solve the user's query. If you don't see the data you need, use your tool for retrieving relevant data and then solve the problem.\n
-The current date is ${time || new Date().toString()}.\n
+Be proactive. When the user makes a request, use your tools to solve it.\n
+IMPORTANT: Don't ask the user for clarifying information before trying to solve the user's query. If you don't see the data you need, use your tools for retrieving relevant data and then solve the problem.\n
+Do what you think is most appropriate instead of asking for clarifying details. The user will correct you if what you do is incorrect. The user will be displeased if you ask for clarifying details.\n
 This is the documentation for Quadratic:\n
 ${QuadraticDocs}\n\n
 ${language === 'Python' || language === undefined ? PythonDocs : ''}\n
@@ -92,6 +93,31 @@ ${Object.entries(aiToolsSpec)
         },
       ],
       contextType: 'toolUse',
+    },
+  ];
+};
+
+export const getCurrentDateContext = (time: string): ChatMessage[] => {
+  return [
+    {
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `The current date is ${time || new Date().toString()}.`,
+        },
+      ],
+      contextType: 'currentDate',
+    },
+    {
+      role: 'assistant',
+      content: [
+        {
+          type: 'text',
+          text: `I understand the current date and user locale.`,
+        },
+      ],
+      contextType: 'currentDate',
     },
   ];
 };
