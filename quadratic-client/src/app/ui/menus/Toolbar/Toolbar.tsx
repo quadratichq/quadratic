@@ -9,7 +9,7 @@ export const Toolbar = () => {
 
   return (
     <div className="hidden h-8 select-none justify-between border-b border-border md:flex">
-      <div className="w-48 flex-shrink-0 border-r border-border">
+      <div className="w-48 flex-shrink-0 border-r border-border xl:w-64 2xl:w-80">
         <CursorPosition />
       </div>
 
