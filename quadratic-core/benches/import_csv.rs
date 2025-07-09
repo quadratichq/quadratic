@@ -43,9 +43,9 @@ fn execute(file: &[u8], file_name: &str) {
 
 /// Benchmark for importing csv files
 fn criterion_benchmark(c: &mut Criterion) {
-    let file_name = "customers-1000000.csv";
+    let file_name = "customers-100000.csv";
     let bench_name = format!("import_csv: {file_name}");
-    let csv_file = include_bytes!("test_files/customers-1000000.csv");
+    let csv_file = include_bytes!("test_files/customers-100000.csv");
     let function = || execute(csv_file, file_name);
 
     #[cfg(feature = "function-timer")]

@@ -107,6 +107,24 @@ pub struct NumericFormat {
     pub symbol: Option<String>,
 }
 
+impl NumericFormat {
+    /// Returns a NumericFormat with the kind set to Percentage.
+    pub fn percentage() -> Self {
+        Self {
+            kind: NumericFormatKind::Percentage,
+            symbol: None,
+        }
+    }
+
+    /// Returns a NumericFormat with the kind set to Number.
+    pub fn number() -> Self {
+        Self {
+            kind: NumericFormatKind::Number,
+            symbol: None,
+        }
+    }
+}
+
 #[derive(
     Default,
     Serialize,

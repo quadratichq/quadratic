@@ -4,6 +4,7 @@ use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
     sql::{Connection, snowflake_connection::SnowflakeConnection},
 };
+
 use uuid::Uuid;
 
 use crate::{
@@ -41,39 +42,22 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
-) -> Result<(SnowflakeConnection, ApiConnection<SnowflakeConnection>)> {
+) -> Result<ApiConnection<SnowflakeConnection>> {
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
     } else {
+        let config = new_snowflake_connection();
         ApiConnection {
             uuid: Uuid::new_v4(),
             name: "".into(),
             r#type: "".into(),
             created_date: "".into(),
             updated_date: "".into(),
-            type_details: SnowflakeConnection {
-                account_identifier: "TEST".into(),
-                username: "TEST".into(),
-                password: "TEST".into(),
-                database: "ALL_NATIVE_DATA_TYPES".into(),
-                warehouse: None,
-                schema: None,
-                role: None,
-            },
+            type_details: config,
         }
     };
 
-    let snowflake_connection = SnowflakeConnection::new(
-        connection.type_details.account_identifier.to_owned(),
-        connection.type_details.username.to_owned(),
-        connection.type_details.password.to_owned(),
-        None,
-        connection.type_details.database.to_owned(),
-        None,
-        None,
-    );
-
-    Ok((snowflake_connection, connection))
+    Ok(connection)
 }
 
 /// Query the database and return the results as a parquet file.
@@ -84,10 +68,8 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
-        .await?
-        .0;
-    query_generic::<SnowflakeConnection>(connection, state, sql_query).await
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    query_generic::<SnowflakeConnection>(connection.type_details, state, sql_query).await
 }
 
 /// Get the schema of the database
@@ -98,50 +80,52 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
+    let connection = api_connection.type_details;
     let mut pool = connection.connect().await?;
     let database_schema = connection.schema(&mut pool).await?;
     let schema = Schema {
         id: api_connection.uuid,
         name: api_connection.name,
         r#type: api_connection.r#type,
-        database: api_connection.type_details.database,
+        database: connection.database,
         tables: database_schema.tables.into_values().collect(),
     };
 
     Ok(Json(schema))
 }
 
+use std::sync::{LazyLock, Mutex};
+pub static SNOWFLAKE_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
+    dotenv::from_filename(".env").ok();
+    let credentials = std::env::var("SNOWFLAKE_CREDENTIALS").unwrap();
+
+    Mutex::new(credentials)
+});
+pub fn new_snowflake_connection() -> SnowflakeConnection {
+    let credentials = SNOWFLAKE_CREDENTIALS.lock().unwrap().to_string();
+    serde_json::from_str::<SnowflakeConnection>(&credentials).unwrap()
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
-    use crate::test_util::{get_claims, new_state, new_team_id_with_header, response_bytes};
+    use crate::num_vec;
+    use crate::test_util::{
+        get_claims, new_state, new_team_id_with_header, response_bytes, str_vec, validate_parquet,
+    };
+    use arrow_schema::{DataType, TimeUnit};
     use bytes::Bytes;
     use http::StatusCode;
-    use quadratic_rust_shared::parquet::utils::compare_parquet_file_with_bytes;
-    use quadratic_rust_shared::sql::schema::{SchemaColumn, SchemaTable};
-    use quadratic_rust_shared::test::get_snowflake_parquet_path;
+    use quadratic_rust_shared::sql::snowflake_connection::tests::expected_snowflake_schema;
     use tracing_test::traced_test;
     use uuid::Uuid;
 
-    // TODO(ddimaria): removing this test for now until we can record different queries (only single for now)
-    // #[tokio::test]
-    // #[traced_test]
-    // async fn snowflake_test_connection() {
-    //     let state = Extension(new_state().await);
-    //     let connection_id = Uuid::new_v4();
-    //     let claims = get_claims();
-    //     let (snowflake_connection, _) = get_connection(&state, &claims, &connection_id)
-    //         .await
-    //         .unwrap();
-    //     let response = test(state, axum::Json(snowflake_connection)).await;
-
-    //     assert!(response.0.connected);
-    // }
-
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_schema() {
         let connection_id = Uuid::new_v4();
         let (_, headers) = new_team_id_with_header().await;
@@ -149,119 +133,22 @@ mod tests {
         let response = schema(Path(connection_id), headers, state, get_claims())
             .await
             .unwrap();
+        let schema = response.0;
+        let columns = &schema.tables[0].columns;
 
-        let expected = Schema {
-            id: response.0.id,
-            name: "".into(),
-            r#type: "".into(),
-            database: "ALL_NATIVE_DATA_TYPES".into(),
-            tables: vec![SchemaTable {
-                name: "ALL_NATIVE_DATA_TYPES".into(),
-                schema: "PUBLIC".into(),
-                columns: vec![
-                    SchemaColumn {
-                        name: "INTEGER_COL".into(),
-                        r#type: "NUMBER".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "FLOAT_COL".into(),
-                        r#type: "FLOAT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "NUMBER_COL".into(),
-                        r#type: "NUMBER".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "DECIMAL_COL".into(),
-                        r#type: "NUMBER".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "BOOLEAN_COL".into(),
-                        r#type: "BOOLEAN".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "VARCHAR_COL".into(),
-                        r#type: "TEXT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "CHAR_COL".into(),
-                        r#type: "TEXT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "STRING_COL".into(),
-                        r#type: "TEXT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "BINARY_COL".into(),
-                        r#type: "BINARY".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "DATE_COL".into(),
-                        r#type: "DATE".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIME_COL".into(),
-                        r#type: "TIME".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIMESTAMP_NTZ_COL".into(),
-                        r#type: "TIMESTAMP_NTZ".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIMESTAMP_LTZ_COL".into(),
-                        r#type: "TIMESTAMP_LTZ".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "TIMESTAMP_TZ_COL".into(),
-                        r#type: "TIMESTAMP_TZ".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "VARIANT_COL".into(),
-                        r#type: "VARIANT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "OBJECT_COL".into(),
-                        r#type: "OBJECT".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "ARRAY_COL".into(),
-                        r#type: "ARRAY".into(),
-                        is_nullable: true,
-                    },
-                    SchemaColumn {
-                        name: "GEOGRAPHY_COL".into(),
-                        r#type: "GEOGRAPHY".into(),
-                        is_nullable: true,
-                    },
-                ],
-            }],
-        };
-
-        assert_eq!(response.0, expected);
+        assert_eq!(columns, &expected_snowflake_schema());
     }
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_query_all_data_types() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {
-            query: "select * from all_native_data_types;".into(),
+            query:
+                "select * from ALL_NATIVE_DATA_TYPES.ALL_NATIVE_DATA_TYPES.ALL_NATIVE_DATA_TYPES;"
+                    .into(),
             connection_id,
         };
         let state = Extension(new_state().await);
@@ -271,15 +158,46 @@ mod tests {
             .unwrap();
         let response = data.into_response();
 
-        assert!(compare_parquet_file_with_bytes(
-            &get_snowflake_parquet_path(),
-            response_bytes(response).await
-        ));
-        // assert_eq!(response.status(), 200);
+        let expected = vec![
+            (DataType::Int64, num_vec!(321_i64)),
+            (DataType::Float64, num_vec!(111111111111111111_f64)),
+            (DataType::Int64, num_vec!(321_i64)),
+            (DataType::Float64, num_vec!(321654.78_f64)),
+            (DataType::Boolean, str_vec("FALSE")),
+            (DataType::Utf8, str_vec("Snowflake")),
+            (DataType::Utf8, str_vec("B")),
+            (DataType::Utf8, str_vec("Sample text")),
+            (DataType::Binary, str_vec("DEADBEEF")),
+            (DataType::Date32, vec![120, 10, 0, 0]),
+            (DataType::Time32(TimeUnit::Second), vec![12, 34, 56, 0]),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                vec![171, 90, 14, 2, 151, 1, 0, 0],
+            ),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                vec![171, 90, 14, 2, 151, 1, 0, 0],
+            ),
+            (
+                DataType::Timestamp(TimeUnit::Millisecond, None),
+                vec![171, 90, 14, 2, 151, 1, 0, 0],
+            ),
+            (DataType::Utf8, str_vec("{\"key\": \"value\"}")),
+            (
+                DataType::Utf8,
+                str_vec("{\"name\": \"Jones\", \"age\": 42}"),
+            ),
+            (DataType::Utf8, str_vec("[1, 2, 3]")),
+            (DataType::Utf8, str_vec("POINT(-122.4194 37.7749)")),
+        ];
+
+        validate_parquet(response, expected).await;
     }
 
     #[tokio::test]
     #[traced_test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
     async fn snowflake_query_max_response_bytes() {
         let connection_id = Uuid::new_v4();
         let sql_query = SqlQuery {

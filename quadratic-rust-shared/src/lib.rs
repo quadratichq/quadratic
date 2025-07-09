@@ -38,7 +38,7 @@ pub mod storage;
 
 pub mod utils;
 
-#[cfg(any(test, feature = "test", feature = "benchmark", feature = "sql"))]
+#[cfg(any(test, feature = "test", feature = "benchmark"))]
 pub mod test;
 
 // pub use aws::*;
