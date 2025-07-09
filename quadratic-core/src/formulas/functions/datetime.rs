@@ -1,5 +1,5 @@
-use bigdecimal::num_traits::ToPrimitive;
 use chrono::{Datelike, Months, NaiveDate, Timelike};
+use rust_decimal::prelude::*;
 
 use super::*;
 
@@ -299,10 +299,13 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn DAY([date]: (Spanned<CellValue>)) {
                 match &date.inner {
                     CellValue::Blank => 0,
-                    CellValue::Number(n) => n
-                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
-                        .to_i64()
-                        .ok_or(RunErrorMsg::Overflow.with_span(date.span))?,
+                    CellValue::Number(n) => {
+                        let mut rounded = *n;
+                        rounded.rescale(0);
+                        rounded
+                            .to_i64()
+                            .ok_or(RunErrorMsg::Overflow.with_span(date.span))?
+                    }
                     CellValue::DateTime(dt) => dt.day() as i64,
                     CellValue::Date(d) => d.day() as i64,
                     CellValue::Time(_t) => 0,
@@ -347,8 +350,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn HOUR([time]: (Spanned<CellValue>)) {
                 match &time.inner {
                     CellValue::Blank => 0,
-                    CellValue::Number(n) => (n * 24_i32)
-                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+                    CellValue::Number(n) => (n * Decimal::from(24))
+                        .floor()
                         .to_i64()
                         .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
                         .rem_euclid(24) as u32,
@@ -396,8 +399,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn MINUTE([time]: (Spanned<CellValue>)) {
                 match &time.inner {
                     CellValue::Blank => 0,
-                    CellValue::Number(n) => (n * 1_440_i32)
-                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+                    CellValue::Number(n) => (n * Decimal::from(1_440))
+                        .floor()
                         .to_i64()
                         .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
                         .rem_euclid(60) as u32,
@@ -445,8 +448,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             fn SECOND([time]: (Spanned<CellValue>)) {
                 match &time.inner {
                     CellValue::Blank => 0,
-                    CellValue::Number(n) => (n * 86_400_i32)
-                        .with_scale_round(0, bigdecimal::RoundingMode::Floor)
+                    CellValue::Number(n) => (n * Decimal::from(86_400))
+                        .floor()
                         .to_i64()
                         .ok_or(RunErrorMsg::Overflow.with_span(time.span))?
                         .rem_euclid(60) as u32,
