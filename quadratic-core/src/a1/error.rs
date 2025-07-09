@@ -1,9 +1,9 @@
 use serde::Serialize;
-use ts_rs::TS;
 
 use crate::RefError;
 
-#[derive(Serialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type", content = "error")]
 pub enum A1Error {
     InvalidCellReference(String),

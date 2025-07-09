@@ -1,7 +1,7 @@
 //! CellValues is a 2D array of CellValue used for Operation::SetCellValues.
 //! The width and height may grow as needed.
 
-use crate::{Array, ArraySize, CellValue, Rect};
+use crate::{Array, ArraySize, CellValue, Pos, Rect};
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
@@ -190,6 +190,22 @@ impl CellValues {
             }
         }
         vec
+    }
+
+    /// Finds all CellValue::Code in the CellValues.
+    pub fn find_code_cells(&self) -> Vec<Pos> {
+        let mut code_cells = Vec::new();
+        for (x, col) in self.columns.iter().enumerate() {
+            for (y, value) in col.iter() {
+                if matches!(value, &CellValue::Code(_)) {
+                    code_cells.push(Pos {
+                        x: x as i64,
+                        y: *y as i64,
+                    });
+                }
+            }
+        }
+        code_cells
     }
 
     #[cfg(test)]

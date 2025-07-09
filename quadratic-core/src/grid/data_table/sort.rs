@@ -3,18 +3,19 @@
 use anyhow::{Ok, Result};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use super::DataTable;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum SortDirection {
     Ascending,
     Descending,
     None,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct DataTableSort {
     pub column_index: usize,
     pub direction: SortDirection,

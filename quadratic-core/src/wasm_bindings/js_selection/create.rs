@@ -1,6 +1,7 @@
 //! Utility functions to creates selections for use in JS via quadratic-client's
 //! local core (without access to the grid).
 
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use super::*;

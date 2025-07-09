@@ -1,19 +1,19 @@
-use ts_rs::TS;
 use uuid::Uuid;
 
 use crate::{
-    CellValue, a1::CellRefRange, controller::GridController, error_core::CoreError,
-    grid::CodeCellLanguage,
+    a1::CellRefRange, controller::GridController, error_core::CoreError, grid::CodeCellLanguage,
 };
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Response {
     pub values: Option<JsCellsA1Values>,
     pub error: Option<JsCellsA1Error>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Values {
     pub cells: Vec<JsCellsA1Value>,
     pub x: i32,
@@ -25,7 +25,8 @@ pub struct JsCellsA1Values {
     pub has_headers: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Value {
     pub x: i32,
     pub y: i32,
@@ -33,7 +34,8 @@ pub struct JsCellsA1Value {
     pub t: u8,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellsA1Error {
     pub core_error: String,
 }
@@ -70,12 +72,12 @@ impl GridController {
             ));
         }
 
-        let Some(code_sheet_pos) = transaction.current_sheet_pos else {
+        let Some(code_multi_pos) = transaction.current_multi_pos else {
             return map_error(CoreError::TransactionNotFound(
                 "Transaction's position not found".into(),
             ));
         };
-        let selection = match self.a1_selection_from_string(&a1, code_sheet_pos.sheet_id) {
+        let selection = match self.a1_selection_from_string(&a1, code_multi_pos.sheet_id()) {
             Ok(selection) => selection,
             Err(e) => {
                 // unable to parse A1 string
@@ -85,9 +87,18 @@ impl GridController {
 
         let context = self.a1_context();
 
+        let Some(sheet) = self.try_sheet(code_multi_pos.sheet_id()) else {
+            return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
+        };
+        let Some(sheet_pos) = code_multi_pos.to_sheet_pos(sheet) else {
+            return map_error(CoreError::CodeCellSheetError(
+                "Table not found in sheet".to_string(),
+            ));
+        };
+
         // ensure that the selection is not a direct self reference
-        if selection.sheet_id == code_sheet_pos.sheet_id
-            && selection.might_contain_pos(code_sheet_pos.into(), context)
+        if selection.sheet_id == code_multi_pos.sheet_id()
+            && selection.might_contain_pos(sheet_pos.into(), context)
         {
             return map_error(CoreError::A1Error("Self reference not allowed".to_string()));
         }
@@ -95,19 +106,20 @@ impl GridController {
         let Some(selection_sheet) = self.try_sheet(selection.sheet_id) else {
             return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
-        let Some(code_sheet) = self.try_sheet(code_sheet_pos.sheet_id) else {
+        let Some(code_sheet) = self.try_sheet(code_multi_pos.sheet_id()) else {
             return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
         // get the original code cell
-        let Some(CellValue::Code(code)) = code_sheet.cell_value(code_sheet_pos.into()) else {
+        let Some(code) = code_sheet.code_value(code_multi_pos) else {
             return map_error(CoreError::CodeCellSheetError(
                 "Code cell not found".to_string(),
             ));
         };
+        let language = code.language.clone();
 
         let force_columns = matches!(
-            code.language,
+            language,
             CodeCellLanguage::Python | CodeCellLanguage::Javascript
         );
 
@@ -117,6 +129,7 @@ impl GridController {
             false,
             true,
             &self.a1_context,
+            Some(sheet_pos.into()),
         );
         if rects.len() > 1 {
             return map_error(CoreError::A1Error(
@@ -155,7 +168,7 @@ impl GridController {
             };
 
             let cells = selection_sheet.get_cells_response(*rect);
-            let is_python = matches!(code.language, CodeCellLanguage::Python);
+            let is_python = matches!(language, CodeCellLanguage::Python);
 
             JsCellsA1Values {
                 cells,
@@ -216,11 +229,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            pos!(sheet_id!A1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -228,7 +237,7 @@ mod test {
         );
 
         let transactions = gc.transactions.async_transactions_mut();
-        transactions[0].current_sheet_pos = None;
+        transactions[0].current_multi_pos = None;
         let transaction_id = transactions[0].id.to_string();
         let result = gc.calculation_get_cells_a1(transaction_id, "A1".to_string());
         assert!(result.error.is_some());
@@ -239,11 +248,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            pos!(sheet_id!A1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -293,11 +298,7 @@ mod test {
         );
         // async python
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos!(sheet_id!B1),
             crate::grid::CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -338,11 +339,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos!(sheet_id!B1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -418,11 +415,7 @@ mod test {
 
         // create a code cell so we can get a transaction_id
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            pos!(sheet_id!B1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,
@@ -729,11 +722,7 @@ mod test {
         gc.test_set_code_run_array_2d(sheet1_id, 1, 1, 2, 2, vec!["1", "2", "3", "4"]);
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id: sheet2_id,
-            },
+            SheetPos::new(sheet2_id, 1, 1),
             CodeCellLanguage::Python,
             "".to_string(),
             None,

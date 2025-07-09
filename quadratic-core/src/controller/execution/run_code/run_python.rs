@@ -1,5 +1,5 @@
 use crate::{
-    SheetPos,
+    MultiPos, Pos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     grid::{CodeCellLanguage, CodeCellValue},
 };
@@ -8,20 +8,21 @@ impl GridController {
     pub(crate) fn run_python(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         code: String,
+        pos: Pos,
     ) {
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             crate::wasm_bindings::js::jsRunPython(
                 transaction.id.to_string(),
-                sheet_pos.x as i32,
-                sheet_pos.y as i32,
-                sheet_pos.sheet_id.to_string(),
+                pos.x as i32,
+                pos.y as i32,
+                multi_pos.sheet_id().to_string(),
                 code.clone(),
             );
         }
         // stop the computation cycle until async returns
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_multi_pos = Some(multi_pos);
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Python,
             code,
@@ -49,7 +50,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let sheet_pos = pos![A1].to_sheet_pos(sheet_id);
+        let sheet_pos = pos![sheet_id!A1];
         let code = "print('test')".to_string();
         gc.set_code_cell(
             sheet_pos,
@@ -90,7 +91,7 @@ mod tests {
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
-            data_table.cell_value_at(0, 1),
+            data_table.absolute_value_at((0, 0).into()),
             Some(CellValue::Text("test".to_string()))
         );
         assert!(!data_table.has_spill());
@@ -105,7 +106,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1],
             CodeCellLanguage::Python,
             "print('hello world')".into(),
             None,
@@ -143,7 +144,7 @@ mod tests {
 
         // create a python program at A2 that adds A1 + 1
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![sheet_id!A2],
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
@@ -210,7 +211,7 @@ mod tests {
 
         // create a javascript program at A2 that adds A1 + 1
         gc.set_code_cell(
-            pos![A2].to_sheet_pos(sheet_id),
+            pos![sheet_id!A2],
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
@@ -295,7 +296,7 @@ mod tests {
 
         // creates a python program that outputs an array of length 10 from A1 -> C1
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1],
             CodeCellLanguage::Python,
             "create an array output".into(),
             None,
@@ -345,7 +346,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1],
             CodeCellLanguage::Python,
             "dummy calculation".into(),
             None,
@@ -381,7 +382,7 @@ mod tests {
 
         // creates a python program that outputs a string
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1],
             CodeCellLanguage::Python,
             "print('original output')".into(),
             None,
@@ -409,7 +410,7 @@ mod tests {
             Some(CellValue::Text("original output".into()))
         );
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1],
             CodeCellLanguage::Python,
             "print('new output')".into(),
             None,
@@ -443,7 +444,7 @@ mod tests {
             Some(CellValue::Text("new output".into()))
         );
         gc.set_code_cell(
-            pos![A1].to_sheet_pos(sheet_id),
+            pos![sheet_id!A1],
             CodeCellLanguage::Python,
             "print('new output second time')".into(),
             None,
@@ -489,7 +490,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "1".to_string(), None);
         gc.set_code_cell(
-            pos![B1].to_sheet_pos(sheet_id),
+            pos![sheet_id!B1],
             CodeCellLanguage::Python,
             "q.cells('A1') + 1".into(),
             None,
@@ -520,7 +521,7 @@ mod tests {
         // assert!(result.ok().unwrap().generate_thumbnail);
 
         gc.set_code_cell(
-            pos![C1].to_sheet_pos(sheet_id),
+            pos![sheet_id!C1],
             CodeCellLanguage::Python,
             "q.cells('B2') + 1".into(),
             None,

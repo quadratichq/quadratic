@@ -311,6 +311,7 @@ pub mod test {
             chart_pixel_output: None,
             spill_value: false,
             spill_data_table: false,
+            tables: None,
         };
         sheet.set_cell_value(
             pos,
@@ -323,7 +324,7 @@ pub mod test {
         );
 
         sheet
-            .modify_data_table_at(&(1, 1).into(), |dt| {
+            .modify_data_table_at_pos(&(1, 1).into(), |dt| {
                 dt.toggle_first_row_as_header(false);
                 Ok(())
             })
@@ -369,6 +370,7 @@ pub mod test {
             chart_pixel_output: None,
             spill_value: false,
             spill_data_table: false,
+            tables: None,
         };
         t.apply_default_header();
         sheet.set_cell_value(
@@ -383,7 +385,7 @@ pub mod test {
 
         // make first row a header
         sheet
-            .modify_data_table_at(&(1, 1).into(), |dt| {
+            .modify_data_table_at_pos(&(1, 1).into(), |dt| {
                 dt.toggle_first_row_as_header(true);
                 Ok(())
             })
@@ -395,7 +397,7 @@ pub mod test {
 
         // hide first column
         sheet
-            .modify_data_table_at(&(1, 1).into(), |dt| {
+            .modify_data_table_at_pos(&(1, 1).into(), |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[0].display = false;
                 Ok(())

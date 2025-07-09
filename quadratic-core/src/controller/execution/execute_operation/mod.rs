@@ -126,12 +126,24 @@ impl GridController {
                     );
                 }
                 Operation::ComputeCode { .. } => self.execute_compute_code(transaction, op),
+                Operation::ComputeCodeMultiPos { .. } => {
+                    self.execute_compute_code_multi_pos(transaction, op);
+                }
                 Operation::SetCellFormats { .. } => {}
                 Operation::SetCellFormatsSelection { .. } => {
                     self.execute_set_cell_formats_selection(transaction, op);
                 }
                 Operation::SetDataTable { .. } => {
                     self.execute_set_data_table(transaction, op);
+                }
+                Operation::SetDataTableMultiPos { .. } => {
+                    self.execute_set_data_table_multi_pos(transaction, op);
+                }
+                Operation::AddDataTableMultiPos { .. } => {
+                    let _ = self.execute_add_data_table_multi_pos(transaction, op);
+                }
+                Operation::DeleteDataTableMultiPos { .. } => {
+                    let _ = self.execute_delete_data_table_multi_pos(transaction, op);
                 }
                 Operation::SetCellFormatsA1 { .. } => {
                     self.execute_set_cell_formats_a1(transaction, op);

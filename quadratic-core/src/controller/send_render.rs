@@ -378,12 +378,14 @@ impl GridController {
                 continue;
             };
 
-            for pos in positions.into_iter() {
-                update_code_cells.push(JsUpdateCodeCell {
-                    sheet_id: sheet.id,
-                    pos,
-                    render_code_cell: sheet.get_render_code_cell(pos),
-                });
+            for multi_pos in positions.into_iter() {
+                if let Some(pos) = multi_pos.to_sheet_pos(sheet) {
+                    update_code_cells.push(JsUpdateCodeCell {
+                        sheet_id: sheet.id,
+                        pos: pos.into(),
+                        render_code_cell: sheet.get_render_code_cell(multi_pos),
+                    });
+                }
             }
         }
         if !update_code_cells.is_empty() {
@@ -717,7 +719,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            (1, 1, sheet_id).into(),
+            SheetPos::new(sheet_id, 1, 1),
             crate::grid::CodeCellLanguage::Python,
             "test".to_string(),
             None,

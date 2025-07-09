@@ -605,7 +605,7 @@ export class CellLabel {
   /** Adds the glyphs to the CellsLabels */
   updateLabelMesh = (labelMeshes: LabelMeshes): Bounds | undefined => {
     if (!this.visible) return;
-    if (this.columnHeader) return;
+    if (this.tableName || this.columnHeader) return;
 
     const data = this.cellsLabels.bitmapFonts[this.fontName];
     if (!data) throw new Error('Expected BitmapFont to be defined in CellLabel.updateLabelMesh');

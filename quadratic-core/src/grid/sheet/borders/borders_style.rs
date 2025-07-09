@@ -6,9 +6,9 @@ use crate::color::Rgba;
 use crate::small_timestamp::SmallTimestamp;
 use serde::{Deserialize, Serialize};
 use strum_macros::{Display, EnumString};
-use ts_rs::TS;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
 pub enum BorderSelection {
     All,
@@ -37,8 +37,8 @@ pub enum BorderSelection {
     Ord,
     Display,
     EnumString,
-    TS,
 )]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
 #[strum(serialize_all = "lowercase")]
 pub enum CellBorderLine {
@@ -69,7 +69,8 @@ impl CellBorderLine {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum BorderSide {
     Top,
     Bottom,
@@ -77,13 +78,15 @@ pub enum BorderSide {
     Right,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct BorderStyle {
     pub color: Rgba,
     pub line: CellBorderLine,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct BorderStyleTimestamp {
     pub color: Rgba,
     pub line: CellBorderLine,
@@ -144,7 +147,8 @@ impl From<BorderStyleTimestamp> for BorderStyle {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct BorderStyleCell {
     pub top: Option<BorderStyleTimestamp>,
     pub bottom: Option<BorderStyleTimestamp>,
@@ -167,7 +171,8 @@ impl BorderStyleCell {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsBorder {
     pub color: Rgba,
     pub line: CellBorderLine,
@@ -192,7 +197,8 @@ impl JsBorder {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsBorderHorizontal {
     pub color: Rgba,
     pub line: CellBorderLine,
@@ -211,7 +217,8 @@ impl JsBorderHorizontal {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsBorderVertical {
     pub color: Rgba,
     pub line: CellBorderLine,
@@ -230,7 +237,8 @@ impl JsBorderVertical {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, TS)]
+#[derive(Default, Serialize, Deserialize, Debug)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsBordersSheet {
     pub horizontal: Option<Vec<JsBorderHorizontal>>,
     pub vertical: Option<Vec<JsBorderVertical>>,

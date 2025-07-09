@@ -731,6 +731,16 @@ impl Array {
             .as_ref()
             .and_then(|cache| cache.get_cache_cloned())
     }
+
+    /// Returns a mutable reference to the cell value at Pos. This should be
+    /// used carefully, as it allows the cell value to be modified in place.
+    pub fn get_mut(&mut self, pos: &Pos) -> Option<&mut CellValue> {
+        let i = self
+            .size()
+            .flatten_index(u32::try_from(pos.x).ok()?, u32::try_from(pos.y).ok()?)
+            .ok()?;
+        Some(&mut self.values[i])
+    }
 }
 
 impl Spanned<Array> {

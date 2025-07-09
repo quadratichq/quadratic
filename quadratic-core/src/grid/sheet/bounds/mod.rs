@@ -144,11 +144,6 @@ impl Sheet {
                 found = true;
             }
         }
-        if let Some(code_bounds) = self.code_columns_bounds(column_start, column_end) {
-            min = min.min(code_bounds.start);
-            max = max.max(code_bounds.end - 1);
-            found = true;
-        }
         if found { Some((min, max)) } else { None }
     }
 
@@ -161,11 +156,13 @@ impl Sheet {
     pub fn row_bounds(&self, row: i64, ignore_formatting: bool) -> Option<(i64, i64)> {
         let (mut min, mut max) = match self.columns.row_bounds(row) {
             Some((min, max)) => (
-                if min > 0 { Some(min) } else { None },
-                if max > 0 { Some(max) } else { None },
+                if min >= 0 { Some(min) } else { None },
+                if max >= 0 { Some(max) } else { None },
             ),
             None => (None, None),
         };
+
+        let code_range = self.code_rows_bounds(row, row);
 
         if !ignore_formatting {
             min = match self.formats.row_min(row) {
@@ -178,11 +175,10 @@ impl Sheet {
             };
         }
 
-        let code_range = self.code_rows_bounds(row, row);
-
         if min.is_none() && code_range.is_none() {
             return None;
         }
+
         if let (Some(min), Some(max), Some(code_range)) = (min, max, &code_range) {
             Some((min.min(code_range.start), max.max(code_range.end - 1)))
         } else if let (Some(min), Some(max)) = (min, max) {
@@ -226,11 +222,6 @@ impl Sheet {
                 max = max.max(bounds.1);
                 found = true;
             }
-        }
-        if let Some(code_bounds) = self.code_rows_bounds(row_start, row_end) {
-            min = min.min(code_bounds.start);
-            max = max.max(code_bounds.end - 1);
-            found = true;
         }
         if found { Some((min, max)) } else { None }
     }
@@ -680,11 +671,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -700,11 +687,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -720,11 +703,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -740,11 +719,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "{1, 2, 3; 4, 5, 6}".to_string(),
             None,
@@ -779,7 +754,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value((1, 1, sheet_id).into(), "a".to_string(), None);
         gc.set_code_cell(
-            (2, 1, sheet_id).into(),
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "[['c','d']]".into(),
             None,

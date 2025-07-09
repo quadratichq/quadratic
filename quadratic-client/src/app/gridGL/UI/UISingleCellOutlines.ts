@@ -53,7 +53,6 @@ export class UISingleCellOutlines extends Graphics {
     const boundsCells = sheets.sheet.getRectangleFromScreen(bounds);
 
     const singleCellTables = tables.getSingleCellTablesInRectangle(boundsCells);
-
     this.lineStyle({ color: getCSSVariableTint('muted-foreground'), width: 1, alignment: 0.5 });
     for (const table of singleCellTables) {
       const offsets = sheets.sheet.getCellOffsets(table.x, table.y);

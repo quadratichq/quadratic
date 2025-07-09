@@ -1,12 +1,12 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::{
     CellValue,
     date_time::{naive_date_to_i64, naive_time_to_i32},
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum DateTimeRange {
     DateRange(Option<i64>, Option<i64>),
     DateEqual(Vec<i64>),
@@ -17,7 +17,8 @@ pub enum DateTimeRange {
     TimeNotEqual(Vec<i32>),
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationDateTime {
     pub ignore_blank: bool,
 

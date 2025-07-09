@@ -3,7 +3,9 @@ use std::str::FromStr;
 use crate::SheetPos;
 use crate::a1::A1Selection;
 use crate::{Pos, controller::GridController, grid::SheetId};
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+
+#[cfg(feature = "js")]
+use wasm_bindgen::{JsValue, prelude::*};
 
 #[wasm_bindgen]
 impl GridController {
@@ -130,9 +132,7 @@ impl GridController {
         match &self.get_ai_cells(selection, page as u32) {
             Ok(ai_cells) => serde_json::to_string(ai_cells)
                 .map_err(|_| JsValue::from_str("Unable to parse AICells")),
-            Err(e) => Err(JsValue::from_str(&format!(
-                "Unable to parse AICells: {e}"
-            ))),
+            Err(e) => Err(JsValue::from_str(&format!("Unable to parse AICells: {e}"))),
         }
     }
 

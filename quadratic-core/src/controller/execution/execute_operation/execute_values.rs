@@ -81,6 +81,7 @@ mod tests {
 
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::test_util::*;
     use crate::{CellValue, Pos, SheetPos};
 
     #[test]
@@ -196,32 +197,29 @@ mod tests {
 
     #[test]
     fn dependencies_properly_trigger_on_set_cell_values() {
-        let mut gc = GridController::test();
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id: gc.sheet_ids()[0],
+                x: 2,
+                y: 1,
+                sheet_id,
             },
             "1".to_string(),
             None,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 0,
-                sheet_id: gc.sheet_ids()[0],
-            },
+            SheetPos::new(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
-            "A0 + 5".to_string(),
+            "B1 + 5".to_string(),
             None,
             None,
         );
         gc.set_cell_value(
             SheetPos {
-                x: -1,
-                y: 0,
-                sheet_id: gc.sheet_ids()[0],
+                x: 1,
+                y: 1,
+                sheet_id,
             },
             "2".to_string(),
             None,

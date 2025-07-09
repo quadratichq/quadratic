@@ -1,6 +1,5 @@
 #[cfg(not(test))]
 use wasm_bindgen::prelude::*;
-// TODO: replace this whole file with `bytemuck`
 
 use crate::{Pos, grid::SheetId};
 

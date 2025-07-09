@@ -142,7 +142,7 @@ fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
 
 /// Casts an `i64` rectangle that INCLUDES both bounds to a `u64` rectangle that
 /// INCLUDES the starts and EXCLUDES the ends. Clamps the results to greater
-/// than 1. Returns `None` if there is no part of the rectangle that intersects
+/// than 0. Returns `None` if there is no part of the rectangle that intersects
 /// the valid region. `u64::MAX` represents infinity.
 ///
 /// TODO: when doing `i64 -> u64` refactor, consider making `Rect` do this
@@ -157,13 +157,13 @@ fn convert_rect(
     let (x1, x2) = sort_bounds(x1, x2);
     let (y1, y2) = sort_bounds(y1, y2);
 
-    let x1 = x1.try_into().unwrap_or(0).max(1);
+    let x1 = x1.try_into().unwrap_or(0);
     let x2 = x2
         .map(|x| x.try_into().unwrap_or(0))
         .unwrap_or(u64::MAX)
         .saturating_add(1);
 
-    let y1 = y1.try_into().unwrap_or(0).max(1);
+    let y1 = y1.try_into().unwrap_or(0);
     let y2 = y2
         .map(|y| y.try_into().unwrap_or(0))
         .unwrap_or(u64::MAX)
@@ -179,14 +179,14 @@ fn convert_rect(
 ///
 /// - For each `(key, block)` pair, `key == block.start`
 /// - All blocks are nonempty (`block.start < block.end`)
-/// - Every coordinate from `1` to `u64::MAX` is covered by exactly one block
+/// - Every coordinate from `0` to `u64::MAX` is covered by exactly one block
 /// - There is no block that covers the coordinate `0`
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct ContiguousBlocks<T>(BTreeMap<u64, BlockSchema<T>>);
 impl<T: Default> Default for ContiguousBlocks<T> {
     fn default() -> Self {
         Self(BTreeMap::from_iter([(
-            1,
+            0,
             BlockSchema::new_total(T::default()),
         )]))
     }
@@ -268,10 +268,7 @@ impl<T: Clone + PartialEq> ContiguousBlocks<T> {
     }
     /// Adds a block to the data structure. **This breaks the invariant that
     /// every key is covered exactly once.**
-    fn add_block(&mut self, mut block: BlockSchema<T>) {
-        if block.start < 1 {
-            block.start = 1;
-        }
+    fn add_block(&mut self, block: BlockSchema<T>) {
         if block.is_empty() {
             return;
         }
@@ -485,7 +482,7 @@ impl<T> BlockSchema<T> {
     /// Return a block that covers the entire space
     fn new_total(value: T) -> Self {
         Self {
-            start: 1,
+            start: 0,
             end: u64::MAX,
             value,
         }

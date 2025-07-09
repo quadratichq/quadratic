@@ -1,15 +1,21 @@
 //! This is a subset of the cache of data tables that is used by both
 //! SheetDataTables and the client. Only SheetDataTables can modify the cache.
 
-use std::collections::HashSet;
-
 use crate::{
-    Pos, Rect, Value,
-    a1::{A1Context, A1Selection, RefRangeBounds},
-    grid::{CodeCellLanguage, Contiguous2D, DataTable},
+    Pos, Rect,
+    a1::{A1Context, A1Selection},
+    grid::{
+        CodeCellLanguage, Contiguous2D, DataTable,
+        sheet::data_tables::{
+            in_table_code::InTableCode, multi_cell_tables_cache::MultiCellTablesCache,
+        },
+    },
 };
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -22,6 +28,9 @@ pub struct SheetDataTablesCache {
 
     // cache of output rect and empty values for multi-cell data tables
     pub(crate) multi_cell_tables: MultiCellTablesCache,
+
+    // cache of code tables that are in a table
+    pub(crate) in_table_code: Option<InTableCode>,
 }
 
 impl SheetDataTablesCache {
@@ -29,7 +38,7 @@ impl SheetDataTablesCache {
     pub fn column_bounds(&self, column: i64) -> Option<(i64, i64)> {
         let single_cell_min = self.single_cell_tables.col_min(column);
         let multi_cell_min = self.multi_cell_tables.col_min(column);
-        let min = match (single_cell_min > 0, multi_cell_min > 0) {
+        let min = match (single_cell_min >= 0, multi_cell_min >= 0) {
             (true, true) => single_cell_min.min(multi_cell_min),
             (true, false) => single_cell_min,
             (false, true) => multi_cell_min,
@@ -38,7 +47,7 @@ impl SheetDataTablesCache {
 
         let single_cell_max = self.single_cell_tables.col_max(column);
         let multi_cell_max = self.multi_cell_tables.col_max(column);
-        let max = match (single_cell_max > 0, multi_cell_max > 0) {
+        let max = match (single_cell_max >= 0, multi_cell_max >= 0) {
             (true, true) => single_cell_max.max(multi_cell_max),
             (true, false) => single_cell_max,
             (false, true) => multi_cell_max,
@@ -52,7 +61,7 @@ impl SheetDataTablesCache {
     pub fn row_bounds(&self, row: i64) -> Option<(i64, i64)> {
         let single_cell_min = self.single_cell_tables.row_min(row);
         let multi_cell_min = self.multi_cell_tables.row_min(row);
-        let min = match (single_cell_min > 0, multi_cell_min > 0) {
+        let min = match (single_cell_min >= 0, multi_cell_min >= 0) {
             (true, true) => single_cell_min.min(multi_cell_min),
             (true, false) => single_cell_min,
             (false, true) => multi_cell_min,
@@ -61,7 +70,7 @@ impl SheetDataTablesCache {
 
         let single_cell_max = self.single_cell_tables.row_max(row);
         let multi_cell_max = self.multi_cell_tables.row_max(row);
-        let max = match (single_cell_max > 0, multi_cell_max > 0) {
+        let max = match (single_cell_max >= 0, multi_cell_max >= 0) {
             (true, true) => single_cell_max.max(multi_cell_max),
             (true, false) => single_cell_max,
             (false, true) => multi_cell_max,
@@ -130,161 +139,92 @@ impl SheetDataTablesCache {
                         }
                     }
                 }
+
+                // check in-table code tables
+                if let Some(tables) = &self.in_table_code {
+                    if tables.has_code_in_rect(rect) {
+                        return true;
+                    }
+                }
             }
         }
         false
     }
-}
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct MultiCellTablesCache {
-    /// position map indicating presence of multi-cell data table at a position
-    /// each position value is the root cell position of the data table
-    /// this accounts for table spills hence values cannot overlap
-    multi_cell_tables: Contiguous2D<Option<Pos>>,
+    /// Removes the in-table code tables that are within the given rect.
+    pub(super) fn remove_from_in_table_code(&mut self, old_spilled_output_rect: Rect) {
+        let Some(in_table_code) = self.in_table_code.as_mut() else {
+            return;
+        };
 
-    /// position map indicating presence of empty cells within a multi-cell data table
-    /// this is used to assist with finding the next cell with content
-    /// NOTE: the bool cannot be false
-    multi_cell_tables_empty: Contiguous2D<Option<bool>>,
-}
+        in_table_code.clear_table(old_spilled_output_rect);
 
-impl MultiCellTablesCache {
-    pub fn new() -> Self {
-        Self {
-            multi_cell_tables: Contiguous2D::new(),
-            multi_cell_tables_empty: Contiguous2D::new(),
-        }
+        self.check_and_remove_in_table_code();
     }
 
-    /// Returns anchor position of the data table whose output rect contains the given position
-    pub fn get(&self, pos: Pos) -> Option<Pos> {
-        self.multi_cell_tables.get(pos)
-    }
+    /// Merges the single cell data table into the parent cache.
+    pub(super) fn add_to_in_table_code(&mut self, data_table_pos: Pos, data_table: &DataTable) {
+        let Some(sub_tables) = data_table.tables.as_ref() else {
+            return;
+        };
 
-    pub fn set_rect(&mut self, x1: i64, y1: i64, x2: i64, y2: i64, data_table: Option<&DataTable>) {
-        if let Some(data_table) = data_table {
-            // Update output rect
-            self.multi_cell_tables
-                .set_rect(x1, y1, Some(x2), Some(y2), Some((x1, y1).into()));
+        let y_adjustment = data_table.y_adjustment(true);
 
-            // Multi Value, update empty values cache
-            if let Value::Array(array) = &data_table.value {
-                if let Some(mut empty_values_cache) = array.empty_values_cache_owned() {
-                    let y_adjustment = data_table.y_adjustment(true);
+        let mut single_cell_tables = sub_tables.cache.single_cell_tables.to_owned();
 
-                    // handle hidden columns
-                    if let Some(column_headers) = &data_table.column_headers {
-                        for column_header in column_headers.iter() {
-                            if !column_header.display {
-                                empty_values_cache
-                                    .remove_column(column_header.value_index as i64 + 1);
-                            }
-                        }
-                    }
-
-                    // handle sorted rows
-                    if let Some(display_buffer) = &data_table.display_buffer {
-                        let mut sorted_empty_values_cache = Contiguous2D::new();
-                        for (display_row, &actual_row) in display_buffer.iter().enumerate() {
-                            if let Some(mut row) =
-                                empty_values_cache.copy_row(actual_row as i64 + 1)
-                            {
-                                row.translate_in_place(0, display_row as i64 - actual_row as i64);
-                                sorted_empty_values_cache.set_from(&row);
-                            }
-                        }
-                        std::mem::swap(&mut empty_values_cache, &mut sorted_empty_values_cache);
-                    }
-
-                    // convert to sheet coordinates
-                    empty_values_cache.translate_in_place(x1 - 1, y1 - 1 + y_adjustment);
-                    self.multi_cell_tables_empty.set_from(&empty_values_cache);
-
-                    // mark table name and column headers as non-empty
-                    if y_adjustment > 0 {
-                        self.multi_cell_tables_empty.set_rect(
-                            x1,
-                            y1,
-                            Some(x2),
-                            Some(y1 - 1 + y_adjustment),
-                            None,
-                        );
-                    }
-                } else {
-                    // empty_values_cache is None, all cells are non-empty
-                    self.multi_cell_tables_empty
-                        .set_rect(x1, y1, Some(x2), Some(y2), None);
+        // handle hidden columns
+        if let Some(column_headers) = &data_table.column_headers {
+            for column_header in column_headers
+                .iter()
+                .sorted_by(|a, b| b.value_index.cmp(&a.value_index))
+            {
+                if !column_header.display {
+                    single_cell_tables.remove_column(column_header.value_index as i64);
                 }
             }
         }
-        // table is removed, set all to None
-        else {
-            self.multi_cell_tables
-                .set_rect(x1, y1, Some(x2), Some(y2), None);
 
-            self.multi_cell_tables_empty
-                .set_rect(x1, y1, Some(x2), Some(y2), None);
+        // handle sorted rows
+        if let Some(display_buffer) = &data_table.display_buffer {
+            let mut sorted_single_cell_tables = Contiguous2D::new();
+            for (display_row, &actual_row) in display_buffer.iter().enumerate() {
+                if let Some(mut row) = single_cell_tables.copy_row(actual_row as i64) {
+                    row.translate_in_place(0, display_row as i64 - actual_row as i64);
+                    sorted_single_cell_tables.set_from(&row);
+                }
+            }
+            std::mem::swap(&mut single_cell_tables, &mut sorted_single_cell_tables);
         }
+
+        // convert to sheet coordinates
+        single_cell_tables.translate_in_place(data_table_pos.x, data_table_pos.y + y_adjustment);
+
+        single_cell_tables
+            .nondefault_rects_in_rect(Rect::new(0, 0, i64::MAX, i64::MAX))
+            .for_each(|(rect, _)| {
+                self.in_table_code
+                    .get_or_insert_default()
+                    .set_single_cell_code(rect, data_table_pos);
+            });
+
+        self.check_and_remove_in_table_code();
     }
 
-    /// Returns true if all cells in the rect do not have a table output
-    pub fn is_all_default_in_rect(&self, rect: Rect) -> bool {
-        self.multi_cell_tables.is_all_default_in_rect(rect)
-    }
-
-    /// Return rects which have table output
-    pub fn nondefault_rects_in_rect(
-        &self,
-        rect: Rect,
-    ) -> impl Iterator<Item = (Rect, Option<Pos>)> {
-        self.multi_cell_tables.nondefault_rects_in_rect(rect)
-    }
-
-    /// Returns the unique table anchor positions in rect
-    pub fn unique_values_in_rect(&self, rect: Rect) -> HashSet<Option<Pos>> {
-        self.multi_cell_tables.unique_values_in_rect(rect)
-    }
-
-    /// Returns the unique table anchor positions in range
-    pub fn unique_values_in_range(&self, range: RefRangeBounds) -> HashSet<Option<Pos>> {
-        self.multi_cell_tables.unique_values_in_range(range)
-    }
-
-    /// Returns the minimum column index of the multi-cell data tables
-    pub fn col_min(&self, column: i64) -> i64 {
-        self.multi_cell_tables.col_min(column)
-    }
-
-    /// Returns the maximum column index of the multi-cell data tables
-    pub fn col_max(&self, column: i64) -> i64 {
-        self.multi_cell_tables.col_max(column)
-    }
-
-    /// Returns the minimum row index of the multi-cell data tables
-    pub fn row_min(&self, row: i64) -> i64 {
-        self.multi_cell_tables.row_min(row)
-    }
-
-    /// Returns the maximum row index of the multi-cell data tables
-    pub fn row_max(&self, row: i64) -> i64 {
-        self.multi_cell_tables.row_max(row)
-    }
-
-    /// Returns the finite bounds of the multi-cell data tables
-    pub fn finite_bounds(&self) -> Option<Rect> {
-        self.multi_cell_tables.finite_bounds()
-    }
-
-    /// Returns true if the cell has an empty value
-    pub fn has_empty_value(&self, pos: Pos) -> bool {
-        self.multi_cell_tables_empty.get(pos).is_some()
+    fn check_and_remove_in_table_code(&mut self) {
+        if self
+            .in_table_code
+            .as_ref()
+            .map(|in_table_code| in_table_code.is_all_default())
+            .unwrap_or(false)
+        {
+            self.in_table_code = None;
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::A1Selection, test_util::*};
+    use crate::{a1::A1Selection, grid::CodeCellLanguage, test_util::*};
 
     #[test]
     fn test_has_content_ignore_blank_table() {
@@ -363,5 +303,19 @@ mod tests {
         // Test selection with no code tables
         let selection = A1Selection::test_a1("A1");
         assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
+    }
+
+    #[test]
+    fn test_code_in_selection_with_in_table_code() {
+        let (mut gc, sheet_id) = test_grid();
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        gc.set_code_cell(
+            pos![sheet_id!A3],
+            CodeCellLanguage::Formula,
+            "123".to_string(),
+            None,
+            None,
+        );
     }
 }

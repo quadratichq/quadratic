@@ -7,7 +7,7 @@ use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::DataTabl
 #[track_caller]
 #[cfg(test)]
 pub fn assert_data_table_at(dt: &DataTable, col: i64, row: i64, value: &str) {
-    let cell_value = dt.cell_value_at(col as u32, row as u32 + dt.y_adjustment(true) as u32);
+    let cell_value = dt.display_value_at((col, row + dt.y_adjustment(true)).into());
     assert_eq!(
         cell_value,
         if value.is_empty() {
@@ -96,9 +96,7 @@ pub fn assert_data_table_size(
     };
     match cell_value {
         CellValue::Import(_) | CellValue::Code(_) => (),
-        _ => panic!(
-            "Anchor for data table at {pos} is not a code or import cell"
-        ),
+        _ => panic!("Anchor for data table at {pos} is not a code or import cell"),
     }
 
     if data_table.is_html_or_image() {

@@ -2,6 +2,7 @@
 //! Grid. These functions use the newer Operation::SetCellFormatsSelection,
 //! which provide formats for a user-defined selection.
 
+#[cfg(feature = "js")]
 use wasm_bindgen::JsValue;
 
 use crate::RefAdjust;
@@ -76,10 +77,10 @@ impl GridController {
             };
 
             if let Some(rect) = range.to_rect() {
-                let Some(sheet) = self.try_sheet(table.sheet_id) else {
+                let Some(sheet) = self.try_sheet(table.sheet_id()) else {
                     dbgjs!(format!(
                         "[format_ops] invalid sheet ID: {:?}",
-                        table.sheet_id
+                        table.sheet_id()
                     ));
                     return;
                 };
@@ -108,21 +109,21 @@ impl GridController {
             }
 
             // add table operation
-            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id, context) {
+            if let Some(selection) = A1Selection::from_ranges(ranges, table.sheet_id(), context) {
                 let formats = SheetFormatUpdates::from_selection(&selection, format_update.clone());
                 ops.push(Operation::DataTableFormats {
-                    sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id),
+                    sheet_pos: table.bounds.min.to_sheet_pos(table.sheet_id()),
                     formats,
                 });
             }
 
             // clear sheet formatting if needed
             if let Some(bounded_selection) =
-                A1Selection::from_ranges(bounded_ranges, table.sheet_id, context)
+                A1Selection::from_ranges(bounded_ranges, table.sheet_id(), context)
             {
                 if let Some(cleared) = format_update.only_cleared() {
                     ops.push(Operation::SetCellFormatsA1 {
-                        sheet_id: table.sheet_id,
+                        sheet_id: table.sheet_id(),
                         formats: SheetFormatUpdates::from_selection(&bounded_selection, cleared),
                     });
                 }
@@ -173,7 +174,7 @@ impl GridController {
         for table_ref in table_ranges {
             if let Some(table) = context.try_table(&table_ref.table_name) {
                 if let Some(range) =
-                    table_ref.convert_to_ref_range_bounds(true, context, false, true)
+                    table_ref.convert_to_ref_range_bounds(true, context, false, true, None)
                 {
                     add_table_ops(range, table, &mut ops);
                 }
@@ -935,7 +936,7 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         let formats =
-            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A1:"), format_update);
+            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A0:"), format_update);
 
         assert_eq!(
             ops[0],

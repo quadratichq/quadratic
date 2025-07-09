@@ -23,10 +23,10 @@ pub fn add_import_offset_to_contiguous_2d_rect(
     x2: Option<i64>,
     y2: Option<i64>,
 ) -> (i64, i64, Option<i64>, Option<i64>) {
-    let x1 = x1.saturating_add(IMPORT_OFFSET).max(1);
-    let y1 = y1.saturating_add(IMPORT_OFFSET).max(1);
-    let x2 = x2.map(|x| x.saturating_add(IMPORT_OFFSET).max(1));
-    let y2 = y2.map(|y| y.saturating_add(IMPORT_OFFSET).max(1));
+    let x1 = x1.saturating_add(IMPORT_OFFSET).max(0);
+    let y1 = y1.saturating_add(IMPORT_OFFSET).max(0);
+    let x2 = x2.map(|x| x.saturating_add(IMPORT_OFFSET).max(0));
+    let y2 = y2.map(|y| y.saturating_add(IMPORT_OFFSET).max(0));
     (x1, y1, x2, y2)
 }
 
@@ -150,18 +150,18 @@ impl Sheet {
         self.columns.migration_regenerate_has_cell_value();
     }
     fn migration_adjust_insert_tables_columns(&mut self, column: i64) {
-        let mut data_tables_to_move_right = Vec::new();
+        let mut data_tables_to_move = Vec::new();
 
         for (pos, _) in self.data_tables.expensive_iter() {
             if pos.x >= column {
-                data_tables_to_move_right.push(*pos);
+                data_tables_to_move.push(*pos);
             }
         }
 
-        data_tables_to_move_right.sort_by(|a, b| b.x.cmp(&a.x));
-        for old_pos in data_tables_to_move_right {
+        data_tables_to_move.sort_by(|a, b| b.x.cmp(&a.x));
+        for old_pos in data_tables_to_move {
             if let Some((index, old_pos, data_table, _)) =
-                self.data_tables.shift_remove_full(&old_pos)
+                self.data_tables.shift_remove_full_pos(&old_pos)
             {
                 let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
                 self.data_tables.insert_before(index, &new_pos, data_table);
@@ -199,7 +199,7 @@ impl Sheet {
         data_tables_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in data_tables_to_move {
             if let Some((index, old_pos, data_table, _)) =
-                self.data_tables.shift_remove_full(&old_pos)
+                self.data_tables.shift_remove_full_pos(&old_pos)
             {
                 let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);
                 self.data_tables.insert_before(index, &new_pos, data_table);

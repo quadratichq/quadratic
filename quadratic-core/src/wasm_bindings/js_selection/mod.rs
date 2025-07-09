@@ -2,6 +2,7 @@
 
 use std::str::FromStr;
 
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::{

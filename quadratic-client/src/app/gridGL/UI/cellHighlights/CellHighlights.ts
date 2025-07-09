@@ -6,7 +6,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/UI/cellHighlights/cellHighlightsDraw';
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
-import type { CellRefRange, JsCellsAccessed, RefRangeBounds } from '@/app/quadratic-core-types';
+import type { CellRefRange, JsCellsAccessed, JsCoordinate, RefRangeBounds } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
@@ -22,6 +22,7 @@ export class CellHighlights extends Container {
   private march = 0;
   private marchLastTime = 0;
   private isPython = false;
+  private location?: JsCoordinate;
 
   dirty = false;
 
@@ -56,10 +57,11 @@ export class CellHighlights extends Container {
 
   private convertCellRefRangeToRefRangeBounds(
     cellRefRange: CellRefRange,
-    isPython: boolean
+    isPython: boolean,
+    sourceCell?: JsCoordinate
   ): RefRangeBounds | undefined {
     try {
-      return sheets.cellRefRangeToRefRangeBounds(cellRefRange, isPython);
+      return sheets.cellRefRangeToRefRangeBounds(cellRefRange, isPython, sourceCell);
     } catch (e) {
       console.log(`Error converting CellRefRange to RefRangeBounds: ${e}`);
     }
@@ -77,7 +79,7 @@ export class CellHighlights extends Container {
       if (inlineEditorHandler.cursorIsMoving && index === this.selectedCellIndex) return;
 
       ranges.forEach((range, i) => {
-        const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, this.isPython);
+        const refRangeBounds = this.convertCellRefRangeToRefRangeBounds(range, this.isPython, this.location);
         if (refRangeBounds) {
           drawDashedRectangle({
             g: this.highlights,
@@ -157,7 +159,8 @@ export class CellHighlights extends Container {
     return this.dirty || inlineEditorHandler.cursorIsMoving;
   };
 
-  fromCellsAccessed = (cellsAccessed: JsCellsAccessed[] | null, isPython: boolean) => {
+  fromCellsAccessed = (location: JsCoordinate, cellsAccessed: JsCellsAccessed[] | null, isPython: boolean) => {
+    this.location = location;
     this.cellsAccessed = cellsAccessed ?? [];
     this.isPython = isPython;
     this.dirty = true;

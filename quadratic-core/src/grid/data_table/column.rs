@@ -228,7 +228,7 @@ pub mod test {
         assert_eq!(data_table.output_size(), expected_size);
 
         // there is no data at position (0, 5)
-        assert!(data_table.cell_value_at(0, 5).is_none());
+        assert!(data_table.display_value_at((0, 5).into()).is_none());
 
         // ensure the value_index is set correctly
         for (index, header) in data_table
@@ -275,7 +275,7 @@ pub mod test {
 
         // there is no data at position (0, 1)
         assert_eq!(
-            data_table.cell_value_at(0, 1).unwrap(),
+            data_table.display_value_at((0, 1).into()).unwrap(),
             CellValue::Text("region".into())
         );
 
@@ -293,7 +293,7 @@ pub mod test {
 
         // there is no data at position (0, 1)
         assert_eq!(
-            data_table.cell_value_at(0, 1).unwrap(),
+            data_table.display_value_at((0, 1).into()).unwrap(),
             CellValue::Text("city".into())
         );
 

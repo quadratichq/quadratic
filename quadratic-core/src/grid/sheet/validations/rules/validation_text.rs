@@ -9,17 +9,18 @@
 //! sensitive or insensitive.
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::CellValue;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum TextCase {
     CaseInsensitive(Vec<String>),
     CaseSensitive(Vec<String>),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum TextMatch {
     Exactly(TextCase),
 
@@ -30,7 +31,8 @@ pub enum TextMatch {
     TextLength { min: Option<i16>, max: Option<i16> },
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationText {
     pub ignore_blank: bool,
     pub text_match: Vec<TextMatch>,

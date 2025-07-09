@@ -1,5 +1,6 @@
 //! RefRangeBounds selection methods, eg, selectRow, selectColumn, moveTo, etc.
 
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use super::*;

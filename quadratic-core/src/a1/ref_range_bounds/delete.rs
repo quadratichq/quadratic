@@ -23,7 +23,7 @@ impl RefRangeBounds {
             CellRefRange::Sheet { range } => self.delete_ref_range_bounds(range),
             CellRefRange::Table { range } => {
                 if let Some(bounds) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false, None)
                 {
                     self.delete_ref_range_bounds(&bounds)
                 } else {

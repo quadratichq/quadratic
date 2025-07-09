@@ -136,8 +136,8 @@ impl GridController {
                     }
 
                     if is_code {
-                        compute_code_ops.push(Operation::ComputeCode {
-                            sheet_pos: current_sheet_pos,
+                        compute_code_ops.push(Operation::ComputeCodeMultiPos {
+                            multi_pos: current_sheet_pos.into(),
                         });
                     }
                 }
@@ -193,6 +193,7 @@ impl GridController {
                 force_table_bounds,
                 true,
                 &self.a1_context,
+                None,
             );
 
             // reverse the order to delete from right to left
@@ -319,8 +320,8 @@ impl GridController {
                 }
 
                 delete_data_tables.iter().for_each(|data_table_pos| {
-                    ops.push(Operation::DeleteDataTable {
-                        sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                    ops.push(Operation::DeleteDataTableMultiPos {
+                        multi_pos: data_table_pos.to_multi_pos(selection.sheet_id),
                     });
                 });
 

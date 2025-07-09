@@ -18,7 +18,7 @@ use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, A1Selection, CellRefRange};
 use crate::sheet_offsets::SheetOffsets;
-use crate::{CellValue, Pos, Rect};
+use crate::{CellValue, MultiPos, Pos, Rect};
 
 pub mod a1_context;
 pub mod a1_selection;
@@ -42,6 +42,7 @@ pub mod search;
 #[cfg(test)]
 pub mod sheet_test;
 pub mod summarize;
+mod table_pos;
 pub mod validations;
 
 const SHEET_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
@@ -305,10 +306,20 @@ impl Sheet {
         rect_values
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
-    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y).cloned()
+    /// Returns the cell_value at the MultiPos.
+    pub fn cell_value_multi_pos_ref(&self, multi_pos: MultiPos) -> Option<&CellValue> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => self.cell_value_ref(sheet_pos.into()),
+            MultiPos::TablePos(table_pos) => {
+                let data_table = self.data_tables.get_at(&table_pos.table_sheet_pos.into())?;
+                data_table.absolute_value_ref_at(table_pos.pos)
+            }
+        }
+    }
+
+    /// Returns the cell_value at the MultiPos.
+    pub fn cell_value_multi_pos(&self, multi_pos: MultiPos) -> Option<CellValue> {
+        self.cell_value_multi_pos_ref(multi_pos).cloned()
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does
@@ -318,13 +329,40 @@ impl Sheet {
         column.values.get(&pos.y)
     }
 
-    /// Returns the cell value at a position, or an error if the cell value is not found.
-    pub fn cell_value_result(&self, pos: Pos) -> Result<CellValue> {
-        self.cell_value(pos)
-            .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
+    /// Returns the cell_value at the Pos in column.values. This does not check
+    /// or return results within code_runs.
+    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
+        self.cell_value_ref(pos).cloned()
     }
 
-    /// Returns a mutable reference to the cell value at the Pos in column.values.
+    /// Returns the cell value at a position, or an error if the cell value is not found.
+    pub fn cell_value_result(&self, multi_pos: MultiPos) -> Result<CellValue> {
+        self.cell_value_multi_pos(multi_pos)
+            .ok_or_else(|| anyhow!("Cell value not found at {:?}", multi_pos))
+    }
+
+    /// Returns a mutable reference to the cell value at the MultiPos. This
+    /// should be used with caution, as it allows the cell value to be modified
+    /// in place.
+    pub fn cell_value_multi_mut(&mut self, multi_pos: MultiPos) -> Option<&mut CellValue> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => self.cell_value_mut(sheet_pos.into()),
+            MultiPos::TablePos(table_pos) => {
+                if let Some(data_table) = self
+                    .data_tables
+                    .get_at_mut(&table_pos.table_sheet_pos.into())
+                {
+                    data_table.get_value_mut(table_pos.pos)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
+    /// Returns a mutable reference to the cell value at the Pos in
+    /// column.values. This should be used with caution, as it allows the cell
+    /// value to be modified in place.
     pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
         self.columns.get_value_mut(&pos)
     }
@@ -587,7 +625,7 @@ impl Sheet {
                     Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
                 }
                 CellRefRange::Table { range } => {
-                    self.table_ref_to_rect(range, false, false, a1_context)
+                    self.table_ref_to_rect(range, false, false, a1_context, None)
                 }
             } {
                 let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);

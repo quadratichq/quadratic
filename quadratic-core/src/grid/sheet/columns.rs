@@ -180,7 +180,7 @@ impl SheetColumns {
 
     /// Clears the sheet columns.
     pub fn clear(&mut self) {
-        self.has_cell_value.set_rect(1, 1, None, None, None);
+        self.has_cell_value.set_rect(0, 0, None, None, None);
         self.columns.clear();
     }
 
@@ -303,7 +303,7 @@ impl SheetColumns {
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
     /// and Contiguous2d cache does not work for -ve coordinates
     pub fn migration_regenerate_has_cell_value(&mut self) {
-        self.has_cell_value.set_rect(1, 1, None, None, None);
+        self.has_cell_value.set_rect(0, 0, None, None, None);
         for (&x, column) in &self.columns {
             if let Some(range) = column.range() {
                 for y in range {

@@ -4,7 +4,6 @@
 //! named ranges.
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 mod sheet_map;
 mod table_map;
@@ -27,7 +26,8 @@ pub struct A1Context {
 }
 
 // Used by the client to get table information.
-#[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsTableInfo {
     pub name: String,
     pub sheet_id: String,
@@ -93,9 +93,9 @@ impl A1Context {
             let range = CellRefRange::Sheet {
                 range: RefRangeBounds::new_relative_rect(table.bounds),
             };
-            if current_sheet_id == table.sheet_id {
+            if current_sheet_id == table.sheet_id() {
                 Ok(format!("{range}"))
-            } else if let Some(sheet_name) = self.sheet_map.try_sheet_id(table.sheet_id) {
+            } else if let Some(sheet_name) = self.sheet_map.try_sheet_id(table.sheet_id()) {
                 Ok(format!("{sheet_name}!{range}"))
             } else {
                 Err("Sheet not found".to_string())

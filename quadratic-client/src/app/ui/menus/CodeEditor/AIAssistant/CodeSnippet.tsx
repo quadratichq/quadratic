@@ -161,8 +161,8 @@ const CodeSnippetRunButton = memo(
 
           quadraticCore.setCodeCellValue({
             sheetId: codeCell.sheetId,
-            x: codeCell.pos.x,
-            y: codeCell.pos.y,
+            pos: codeCell.pos,
+            tablePos: undefined,
             codeString: text ?? '',
             language: codeCell.language,
             cursor: sheets.getCursorPosition(),

@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::{
     Pos, Span, Spanned,
@@ -9,7 +8,8 @@ use crate::{
 
 use super::parse_formula;
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsFormulaParseResult {
     pub parse_error_msg: Option<String>,
     pub parse_error_span: Option<Span>,

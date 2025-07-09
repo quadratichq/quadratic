@@ -1,5 +1,5 @@
 use crate::{
-    CellValue, Pos, Rect, RunError, RunErrorMsg,
+    CellValue, MultiPos, Pos, Rect, RunError, RunErrorMsg,
     a1::A1Context,
     grid::{
         CellAlign, CellWrap, CodeCellLanguage, DataTable, Format, Sheet,
@@ -133,6 +133,7 @@ impl Sheet {
                 ));
             } else if let Some(intersection) = code_rect.intersection(render_rect) {
                 let y_adjustment = data_table.y_adjustment(false);
+
                 for y in intersection.y_range() {
                     // We now render the header row to ensure clipping works
                     // properly to the left of the header since we rely on the
@@ -147,9 +148,22 @@ impl Sheet {
                             y: y - code_rect.min.y,
                         };
 
-                        let value = data_table.cell_value_at(pos.x as u32, pos.y as u32);
+                        let value = data_table.display_value_at(pos);
 
-                        if let Some(value) = value {
+                        if let Some(mut value) = value {
+                            // converts inner code values to display values
+                            if value.is_code() {
+                                if let Some(inner_value) = self
+                                    .display_pos_to_table_pos((x, y).into())
+                                    .and_then(|table_pos| {
+                                        self.data_table_multi_pos(&MultiPos::TablePos(table_pos))
+                                    })
+                                    .and_then(|sub_table| sub_table.display_value_at((0, 0).into()))
+                                {
+                                    value = inner_value.clone();
+                                }
+                            }
+
                             let mut format = if is_header {
                                 // column headers are always clipped and bold
                                 Format {
@@ -308,9 +322,9 @@ mod tests {
     use crate::grid::js_types::JsHashRenderCells;
     use crate::grid::sheet::validations::rules::ValidationRule;
     use crate::grid::sheet::validations::validation::Validation;
-    use crate::test_util::*;
+    use crate::{SheetPos, test_util::*};
     use crate::{
-        SheetPos, Value,
+        Value,
         a1::A1Selection,
         controller::GridController,
         grid::{CellVerticalAlign, CellWrap, CodeCellValue, CodeRun, DataTableKind},
@@ -502,11 +516,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "1 + 1".to_string(),
             None,
@@ -588,7 +598,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            (1, 1, sheet_id).into(),
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,
@@ -704,5 +714,28 @@ mod tests {
         let special = None;
         Sheet::ensure_lists_are_clipped(&mut format, &special);
         assert_eq!(format.wrap, None);
+    }
+
+    #[test]
+    fn test_get_render_code_cells_inner_code() {
+        let (mut gc, sheet_id) = test_grid();
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+        gc.set_code_cell(
+            pos![sheet_id!A3],
+            CodeCellLanguage::Formula,
+            "5 + 5".to_string(),
+            None,
+            None,
+        );
+
+        print_first_sheet(&gc);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.display_value(pos![A3]).unwrap(),
+            CellValue::Number(10.into())
+        );
     }
 }

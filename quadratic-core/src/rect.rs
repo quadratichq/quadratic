@@ -3,6 +3,8 @@ use std::{collections::HashSet, ops::RangeInclusive};
 use rstar::{AABB, RTreeObject};
 use serde::{Deserialize, Serialize};
 use smallvec::{SmallVec, smallvec};
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::{ArraySize, Pos, SheetRect, cell_values::CellValues, grid::SheetId};
@@ -11,20 +13,9 @@ use crate::{ArraySize, Pos, SheetRect, cell_values::CellValues, grid::SheetId};
 
 /// Rectangular region of cells.
 #[derive(
-    Serialize,
-    Deserialize,
-    Debug,
-    Default,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    Hash,
-    Ord,
-    PartialOrd,
-    ts_rs::TS,
+    Serialize, Deserialize, Debug, Default, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd,
 )]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct Rect {
     /// Upper-left corner.
     pub min: Pos,

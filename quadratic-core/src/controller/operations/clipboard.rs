@@ -288,8 +288,8 @@ impl GridController {
                         data_table.name = new_name.into();
                     }
 
-                    ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos,
+                    ops.push(Operation::SetDataTableMultiPos {
+                        multi_pos: target_pos.into(),
                         data_table: Some(data_table),
                         index: usize::MAX,
                     });
@@ -302,8 +302,8 @@ impl GridController {
                     self.clipboard_code_operations_should_rerun(clipboard, source_pos, start_pos);
 
                 if should_rerun {
-                    ops.push(Operation::ComputeCode {
-                        sheet_pos: target_pos,
+                    ops.push(Operation::ComputeCodeMultiPos {
+                        multi_pos: target_pos.into(),
                     });
                 }
             }
@@ -615,8 +615,8 @@ impl GridController {
                 }
 
                 if is_code {
-                    compute_code_ops.push(Operation::ComputeCode {
-                        sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+                    compute_code_ops.push(Operation::ComputeCodeMultiPos {
+                        multi_pos: pos.to_sheet_pos(start_pos.sheet_id).into(),
                     });
                 }
             });
@@ -1123,11 +1123,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 4,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 4),
             CodeCellLanguage::Formula,
             "SUM(B1:B3)".to_string(),
             None,
@@ -1342,6 +1338,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::Col("city".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
@@ -1376,6 +1373,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::ColRange("city".to_string(), "region".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
@@ -1410,6 +1408,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::ColRange("country".to_string(), "population".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
@@ -2068,7 +2067,7 @@ mod test {
         };
         gc.finalize_data_table(
             &mut transaction,
-            pos_1_2,
+            pos_1_2.into(),
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
@@ -2079,7 +2078,8 @@ mod test {
                 None,
             )),
             None,
-        );
+        )
+        .unwrap();
 
         // copying A1:A2 and pasting on B1 should rerun the code
         let selection_rect = SheetRect::from_numbers(1, 1, 1, 2, sheet_id);

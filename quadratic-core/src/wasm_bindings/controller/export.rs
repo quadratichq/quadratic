@@ -1,4 +1,5 @@
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+#[cfg(feature = "js")]
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::a1::A1Selection;
 use crate::controller::GridController;

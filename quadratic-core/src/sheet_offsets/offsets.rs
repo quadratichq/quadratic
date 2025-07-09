@@ -12,7 +12,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::ops::Range;
 
 #[cfg(feature = "js")]
-use wasm_bindgen::prelude::wasm_bindgen;
+use wasm_bindgen::prelude::*;
 
 use itertools::Itertools;
 
