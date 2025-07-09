@@ -152,6 +152,7 @@ export class Update {
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
       thumbnail.rendererBusy();
+      events.emit('viewportReadyAfterUpdate');
     } else {
       debugRendererLight(false);
       thumbnail.check();

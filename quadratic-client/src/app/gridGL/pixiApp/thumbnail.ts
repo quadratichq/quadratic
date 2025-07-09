@@ -1,5 +1,6 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { debugTimeCheck, debugTimeReset } from '@/app/gridGL/helpers/debugPerformance';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -68,11 +69,12 @@ class Thumbnail {
 
   /** returns a dataURL to a copy of the selected cells */
   private generate = async (): Promise<Blob | null> => {
+    const sheetId = sheets.getFirst().id;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
-    await pixiApp.prepareForCopying({ gridLines: true, cull: rectangle });
+    await pixiApp.prepareForCopying({ sheetId, cull: rectangle, gridLines: true, thumbnail: true });
     pixiApp.gridLines.update(rectangle, undefined, true);
     this.renderer.render(pixiApp.viewportContents);
-    pixiApp.cleanUpAfterCopying(true);
+    pixiApp.cleanUpAfterCopying();
     pixiApp.gridLines.update(undefined, undefined, true);
     return new Promise((resolve) => {
       this.renderer.view.toBlob?.((blob) => resolve(blob));

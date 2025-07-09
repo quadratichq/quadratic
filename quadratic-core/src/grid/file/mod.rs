@@ -320,6 +320,7 @@ fn import_json(file_contents: String) -> Result<Grid> {
     grid
 }
 
+#[function_timer::function_timer]
 pub fn export(grid: Grid) -> Result<Vec<u8>> {
     let version = FileVersion {
         version: CURRENT_VERSION.into(),

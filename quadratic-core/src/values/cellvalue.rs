@@ -635,7 +635,11 @@ impl CellValue {
     }
 
     /// Convert string to a cell_value and generate necessary operations
-    pub fn string_to_cell_value(value: &str, allow_code: bool) -> (CellValue, FormatUpdate) {
+    pub fn string_to_cell_value(
+        value: &str,
+        allow_code: bool,
+        user_entered_percent: bool,
+    ) -> (CellValue, FormatUpdate) {
         let mut format_update = FormatUpdate::default();
 
         let cell_value = if value.is_empty() {
@@ -672,7 +676,11 @@ impl CellValue {
                         ..Default::default()
                     };
                 }
-                CellValue::Number(bd)
+                if user_entered_percent {
+                    CellValue::Number(bd / Decimal::from(100))
+                } else {
+                    CellValue::Number(bd)
+                }
             }
         } else if let Some(percent) = CellValue::unpack_percentage(value) {
             format_update = FormatUpdate {

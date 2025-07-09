@@ -47,28 +47,35 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
       }
 
       try {
-        // Allow value to be a function so we have the same API as useState
-        const newValue = value instanceof Function ? value(storedValue) : value;
-
-        // Save to local storage
-        window.localStorage.setItem(key, JSON.stringify(newValue));
-
         // Save state
-        setStoredValue(newValue);
+        setStoredValue((oldValue) => {
+          // Allow value to be a function so we have the same API as useState
+          const newValue = value instanceof Function ? value(oldValue) : value;
+          const newValueString = JSON.stringify(newValue);
 
-        // We dispatch a custom event so every useLocalStorage hook are notified
-        window.dispatchEvent(
-          new StorageEvent('local-storage', {
-            key,
-            oldValue: JSON.stringify(storedValue),
-            newValue: JSON.stringify(newValue),
-          })
-        );
+          const oldValueString = window.localStorage.getItem(key);
+
+          if (newValueString !== oldValueString) {
+            // Save to local storage
+            window.localStorage.setItem(key, newValueString);
+
+            // We dispatch a custom event so every useLocalStorage hook are notified
+            window.dispatchEvent(
+              new StorageEvent('local-storage', {
+                key,
+                newValue: newValueString,
+                oldValue: oldValueString,
+              })
+            );
+          }
+
+          return newValue;
+        });
       } catch (error) {
         throw new Error(`Error setting localStorage key “${key}”`);
       }
     },
-    [key, storedValue]
+    [key]
   );
 
   useEffect(() => {

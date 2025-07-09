@@ -18,12 +18,14 @@ use rust_decimal::prelude::*;
 /// assert_eq!(rounded, Decimal::from(123456789));
 /// ```
 pub fn round_with_strategy(number: Decimal, digits: i64, strategy: RoundingStrategy) -> Decimal {
-    if digits >= 0 {
+    let rounded = if digits >= 0 {
         number.round_dp_with_strategy(digits as u32, strategy)
     } else {
         let factor = Decimal::from(10i64.pow((-digits) as u32));
         (number / factor).round_dp_with_strategy(0, strategy) * factor
-    }
+    };
+
+    rounded.normalize()
 }
 
 /// Rounds a number to the specified number of digits after the decimal point.

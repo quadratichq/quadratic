@@ -87,8 +87,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "0".to_string(),
@@ -97,14 +97,14 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
+            sheet.display_value(Pos { x: 1, y: 1 }),
             Some(CellValue::Number(0.into()))
         );
 
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "1".to_string(),
@@ -113,7 +113,7 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
+            sheet.display_value(Pos { x: 2, y: 1 }),
             Some(CellValue::Number(1.into()))
         );
     }

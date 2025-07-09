@@ -85,6 +85,7 @@ export class Tables extends Container<Table> {
     events.off('updateCodeCells', this.updateCodeCells);
 
     events.off('cursorPosition', this.cursorPosition);
+    events.off('a1ContextUpdated', this.cursorPosition);
     events.off('sheetOffsets', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
@@ -171,6 +172,17 @@ export class Tables extends Container<Table> {
 
   /// Updates the tables based on the updateCodeCells message.
   private updateCodeCells = (updateCodeCells: JsUpdateCodeCell[]) => {
+    // Sort so that None render cells come first, then Some render cells
+    updateCodeCells.sort((a, b) => {
+      if (!a.render_code_cell && b.render_code_cell) {
+        return -1;
+      }
+      if (a.render_code_cell && !b.render_code_cell) {
+        return 1;
+      }
+      return 0;
+    });
+
     for (const updateCodeCell of updateCodeCells) {
       if (updateCodeCell.sheet_id.id !== this.cellsSheet.sheetId) {
         continue;
@@ -196,8 +208,8 @@ export class Tables extends Container<Table> {
           const table = this.getTable(x, y);
           if (table) {
             // updating an existing table
-            this.tablesCache.updateTableName(table, render_code_cell.name);
             table.updateCodeCell(render_code_cell);
+            this.tablesCache.update(table);
             if (this.isActive(table)) {
               table.showActive();
             }
@@ -248,8 +260,8 @@ export class Tables extends Container<Table> {
   };
 
   /// Returns the tables that are visible in the viewport.
-  private getVisibleTables = (): Table[] => {
-    const bounds = pixiApp.viewport.getVisibleBounds();
+  private getVisibleTables = (forceBounds?: Rectangle): Table[] => {
+    const bounds = forceBounds ?? pixiApp.viewport.getVisibleBounds();
     const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
     const tables = this.dataTablesCache?.getLargeTablesInRect(
       cellBounds.x,
@@ -266,6 +278,13 @@ export class Tables extends Container<Table> {
         return [];
       }) ?? []
     );
+  };
+
+  /// Forces an update of all tables to the given bounds (used by thumbnail generation)
+  forceUpdate = (bounds: Rectangle) => {
+    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+    const visibleTables = this.getVisibleTables(bounds);
+    visibleTables?.forEach((table) => table.update(bounds, gridHeading));
   };
 
   update = (dirtyViewport: boolean) => {
@@ -360,6 +379,7 @@ export class Tables extends Container<Table> {
   // that table active while the context menu is open)
   private contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
+      this.actionDataTable.hideActive();
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
     }
@@ -561,7 +581,7 @@ export class Tables extends Container<Table> {
     const codeCell = this.getSingleCodeCell(cell.x, cell.y);
     if (codeCell) return codeCell;
     const table = this.getTableIntersects(cell);
-    if (table) return table.codeCell;
+    return table?.codeCell;
   };
 
   /// Returns a table by its name.

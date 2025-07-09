@@ -1,7 +1,5 @@
-import {
-  editorInteractionStateFileUuidAtom,
-  editorInteractionStateIsOnPaidPlanAtom,
-} from '@/app/atoms/editorInteractionStateAtom';
+import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
@@ -19,6 +17,8 @@ type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
 };
 
 export function useAIRequestToAPI() {
+  const { isOnPaidPlan, setIsOnPaidPlan } = useIsOnPaidPlan();
+
   const handleAIRequestToAPI = useRecoilCallback(
     ({ set, snapshot }) =>
       async ({
@@ -31,7 +31,6 @@ export function useAIRequestToAPI() {
         content: AIMessagePrompt['content'];
         toolCalls: AIMessagePrompt['toolCalls'];
       }> => {
-        const isOnPaidPlan = await snapshot.getPromise(editorInteractionStateIsOnPaidPlanAtom);
         let responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
           role: 'assistant',
           content: [],
@@ -128,7 +127,7 @@ export function useAIRequestToAPI() {
             responseMessage = newResponseMessage;
           }
 
-          set(editorInteractionStateIsOnPaidPlanAtom, responseMessage.isOnPaidPlan);
+          setIsOnPaidPlan(responseMessage.isOnPaidPlan);
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
           return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
@@ -156,7 +155,7 @@ export function useAIRequestToAPI() {
           }
         }
       },
-    []
+    [isOnPaidPlan, setIsOnPaidPlan]
   );
 
   return { handleAIRequestToAPI };

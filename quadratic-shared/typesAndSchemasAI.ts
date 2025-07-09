@@ -64,6 +64,7 @@ export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKey
 const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-pro:thinking-toggle-off',
   'vertexai:gemini-2.5-pro:thinking-toggle-on',
+  'vertexai:gemini-2.5-pro:thinking',
   'vertexai:gemini-2.5-flash:thinking-toggle-off',
   'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.0-flash',
@@ -160,6 +161,7 @@ const InternalContextTypeSchema = z.enum([
   'tables',
   'files',
   'modelRouter',
+  'currentDate',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
@@ -441,6 +443,7 @@ export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
   source: AISourceSchema,
+  messageSource: z.string(),
   modelKey: AIModelKeySchema,
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean(),
@@ -451,7 +454,7 @@ export const AIRequestBodySchema = z.object({
   time: z.string().optional(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
-export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'modelKey'>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'messageSource' | 'modelKey'>;
 
 const AIUsageSchema = z.object({
   inputTokens: z.number(),

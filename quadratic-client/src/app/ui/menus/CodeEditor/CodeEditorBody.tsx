@@ -426,8 +426,10 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
             language={monacoLanguage}
             original={diffEditorContent?.isApplied ? diffEditorContent.editorContent : editorContent}
             originalLanguage={monacoLanguage}
+            keepCurrentOriginalModel={true}
             modified={diffEditorContent?.isApplied ? editorContent : diffEditorContent?.editorContent}
             modifiedLanguage={monacoLanguage}
+            keepCurrentModifiedModel={true}
             onMount={onMountDiff}
             loading={<SpinnerIcon className="text-primary" />}
             theme="light"

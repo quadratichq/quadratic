@@ -40,33 +40,33 @@ export function GridContextMenuCell() {
 
   return (
     <ContextMenuBase>
-      {canRunSelection && (
-        <>
-          <ContextMenuItemAction action={Action.ExecuteCode} />
-          <DropdownMenuSeparator />
-        </>
-      )}
-      <ContextMenuItemAction action={Action.Cut} />
-      <ContextMenuItemAction action={Action.Copy} />
-      <ContextMenuItemAction action={Action.Paste} />
-      <ContextMenuItemAction action={Action.PasteValuesOnly} />
-      <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
-      <ContextMenuItemAction action={Action.DownloadAsCsv} />
+      {canRunSelection && <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />}
+
       <DropdownMenuSeparator />
-      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} />}
-      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnRight} />}
-      <ContextMenuItemAction action={Action.DeleteColumn} />
-      {columnAvailable && (rowAvailable || canConvertToDataTable) && <DropdownMenuSeparator />}
-      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} />}
-      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} />}
-      <ContextMenuItemAction action={Action.DeleteRow} />
-      {canConvertToDataTable && (
-        <>
-          <DropdownMenuSeparator />
-          <ContextMenuItemAction action={Action.GridToDataTable} />
-        </>
-      )}
+
+      <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
+
+      <DropdownMenuSeparator />
+
+      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} actionArgs={undefined} />}
+      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnRight} actionArgs={undefined} />}
+      <ContextMenuItemAction action={Action.DeleteColumn} actionArgs={undefined} />
+
+      <DropdownMenuSeparator />
+
+      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} actionArgs={undefined} />}
+      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} actionArgs={undefined} />}
+      <ContextMenuItemAction action={Action.DeleteRow} actionArgs={undefined} />
+
+      <DropdownMenuSeparator />
+
+      {canConvertToDataTable && <ContextMenuItemAction action={Action.GridToDataTable} actionArgs={undefined} />}
     </ContextMenuBase>
   );
 }

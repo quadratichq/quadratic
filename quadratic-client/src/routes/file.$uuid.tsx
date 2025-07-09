@@ -5,6 +5,7 @@ import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
 import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareVersions';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { QuadraticAppDebugSettings } from '@/app/ui/QuadraticAppDebugSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -20,7 +21,7 @@ import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
 import { Link, Outlet, isRouteErrorResponse, redirect, useLoaderData, useParams, useRouteError } from 'react-router';
 import type { MutableSnapshot } from 'recoil';
@@ -46,7 +47,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   const isVersionHistoryPreview = checkpointId !== null;
 
   // Fetch the file. If it fails because of permissions, redirect to login. Otherwise throw.
-  let data;
+  let data: ApiTypes['/v0/files/:uuid.GET.response'];
   try {
     data = await apiClient.files.get(uuid);
   } catch (error: any) {
@@ -158,11 +159,15 @@ export const Component = () => {
         user: loggedInUser,
         fileUuid,
         teamUuid,
-        isOnPaidPlan,
       }));
     },
-    [filePermissions, fileUuid, isOnPaidPlan, loggedInUser, teamSettings, teamUuid]
+    [filePermissions, fileUuid, loggedInUser, teamSettings, teamUuid]
   );
+
+  const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  useEffect(() => {
+    setIsOnPaidPlan(isOnPaidPlan);
+  }, [isOnPaidPlan, setIsOnPaidPlan]);
 
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed

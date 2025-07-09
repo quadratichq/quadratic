@@ -50,17 +50,12 @@ impl GridController {
     pub fn execute_operation(&mut self, transaction: &mut PendingTransaction) {
         if let Some(op) = transaction.operations.pop_front() {
             #[cfg(feature = "show-operations")]
-            if cfg!(target_family = "wasm") {
-                crate::wasm_bindings::js::time("execute_operation");
-            }
-
-            #[cfg(feature = "show-operations")]
-            dbgjs!(&format!("[Operation] {:?}", &op));
+            dbgjs!(&format!("[Operation] {op:?}"));
 
             #[cfg(feature = "show-first-sheet-operations")]
             println!(
                 "{}",
-                format!("{:?}", op).split('{').next().unwrap_or("Unknown")
+                format!("{op:?}").split('{').next().unwrap_or("Unknown")
             );
 
             match op {

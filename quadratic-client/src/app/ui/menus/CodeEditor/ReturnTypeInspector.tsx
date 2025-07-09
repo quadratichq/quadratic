@@ -48,9 +48,9 @@ export const ReturnTypeInspector = memo(() => {
   if (consoleOutput?.stdErr) {
     hasError = true;
     message = (
-      <p>
+      <span>
         Returned <ReturnType isError>error</ReturnType>{' '}
-      </p>
+      </span>
     );
     action = (
       <Button
@@ -62,6 +62,7 @@ export const ReturnTypeInspector = memo(() => {
             language: codeCellRecoil.language,
           });
           submitPrompt({
+            messageSource: 'FixWithAI',
             content: [{ type: 'text', text: 'Fix the error in the code cell' }],
             messageIndex: 0,
             codeCell: codeCellRecoil,
@@ -75,9 +76,9 @@ export const ReturnTypeInspector = memo(() => {
   } else if (spillError) {
     hasError = true;
     message = (
-      <p>
+      <span>
         Returned <ReturnType isError>error</ReturnType> (spill)
-      </p>
+      </span>
     );
     action = <FixSpillError codeCell={codeCellRecoil} evaluationResult={evaluationResult ?? {}} />;
   } else if (mode === 'Python') {
@@ -184,12 +185,12 @@ export const ReturnTypeInspector = memo(() => {
     >
       <span style={{ transform: 'scaleX(-1)', display: 'inline-block', fontSize: '10px' }}>⮐</span>
 
-      <span className="leading-snug">
+      <span className="leading-tight">
         {message}
         {lastModified && <span> {lastModified}</span>}
       </span>
 
-      {action && <span className="ml-auto font-sans">{action}</span>}
+      {action && <span className="ml-auto flex-shrink-0 font-sans">{action}</span>}
     </div>
   );
 });

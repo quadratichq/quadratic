@@ -46,6 +46,7 @@ export const useAnalystWebSearch = () => {
         const response = await handleAIRequestToAPI({
           chatId,
           source: 'WebSearch',
+          messageSource: 'WebSearch',
           modelKey: DEFAULT_SEARCH_MODEL,
           messages,
           useStream: false,

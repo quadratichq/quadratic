@@ -17,7 +17,7 @@ const BINCODE_CONFIG: bincode::config::Configuration<
 > = config::standard()
     .with_fixed_int_encoding()
     .with_limit::<MAX_FILE_SIZE>();
-pub const ZSTD_COMPRESSION_LEVEL: i32 = 1;
+pub const ZSTD_COMPRESSION_LEVEL: i32 = 4;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum CompressionFormat {
@@ -32,6 +32,7 @@ pub enum SerializationFormat {
     Json,
 }
 
+#[function_timer::function_timer(dbgjs)]
 pub fn serialize_and_compress<T>(
     serialization_format: &SerializationFormat,
     compression_format: &CompressionFormat,
@@ -44,6 +45,7 @@ where
     compress(compression_format, serialized)
 }
 
+#[function_timer::function_timer(dbgjs)]
 pub fn decompress_and_deserialize<T>(
     serialization_format: &SerializationFormat,
     compression_format: &CompressionFormat,

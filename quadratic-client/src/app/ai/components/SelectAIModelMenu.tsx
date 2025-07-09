@@ -1,6 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { editorInteractionStateIsOnPaidPlanAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -22,7 +22,6 @@ import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
-import { useRecoilValue } from 'recoil';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
@@ -72,18 +71,18 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   );
 
   const handleThinkingToggle = useCallback(
-    (thinkingToggle: boolean) => {
-      const nextModelKey = thinkingToggle
+    (nextThinkingToggle: boolean) => {
+      const nextModelKey = nextThinkingToggle
         ? selectedModel.replace(':thinking-toggle-off', ':thinking-toggle-on')
         : selectedModel.replace(':thinking-toggle-on', ':thinking-toggle-off');
 
       const nextModel = modelConfigs.find(
-        ([modelKey, modelConfig]) => modelKey === nextModelKey && modelConfig.thinkingToggle === thinkingToggle
+        ([modelKey, modelConfig]) => modelKey === nextModelKey && modelConfig.thinkingToggle === nextThinkingToggle
       );
 
       if (nextModel) {
         setSelectedModel(nextModel[0]);
-        setThinkingToggle(thinkingToggle);
+        setThinkingToggle(nextThinkingToggle);
       }
     },
     [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
@@ -96,7 +95,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const setModelMode = useCallback(
     (mode: ModelMode) => {
       const nextModel = modelConfigs.find(
-        ([_, modelConfig]) => modelConfig.mode === mode && modelConfig.thinkingToggle === thinkingToggle
+        ([_, modelConfig]) =>
+          modelConfig.mode === mode &&
+          (modelConfig.thinkingToggle === undefined || modelConfig.thinkingToggle === thinkingToggle)
       );
 
       if (nextModel) {
@@ -110,7 +111,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [selectedModelMode]
   );
 
-  const isOnPaidPlan = useRecoilValue(editorInteractionStateIsOnPaidPlanAtom);
+  const { isOnPaidPlan } = useIsOnPaidPlan();
   useEffect(() => {
     if (debug || isOnPaidPlan) {
       return;
@@ -129,7 +130,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             aria-label="Extended thinking"
             size="sm"
             disabled={loading}
-            onClick={() => handleThinkingToggle(!thinkingToggle)}
+            onClick={() => handleThinkingToggle(!thinking)}
             className={cn(
               thinking && '!bg-border !text-primary',
               !thinking && 'w-7 hover:text-foreground',

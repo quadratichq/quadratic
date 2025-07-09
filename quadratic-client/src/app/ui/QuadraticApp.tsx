@@ -4,6 +4,7 @@ import {
   editorInteractionStatePermissionsAtom,
   editorInteractionStateUserAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
@@ -15,10 +16,13 @@ import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSearchParams } from 'react-router';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
 
 export function QuadraticApp() {
+  // ensure GridSettings are loaded before app starts
+  useSetRecoilState(gridSettingsAtom);
+
   const didMount = useRef<boolean>(false);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
