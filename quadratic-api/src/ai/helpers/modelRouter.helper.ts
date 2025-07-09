@@ -23,6 +23,10 @@ export const getModelKey = async (
   exceededBillingLimit: boolean
 ): Promise<AIModelKey> => {
   try {
+    if (!['AIAnalyst', 'AIAssistant'].includes(inputArgs.source)) {
+      return modelKey;
+    }
+
     if (!isOnPaidPlan) {
       return DEFAULT_MODEL_FREE;
     }

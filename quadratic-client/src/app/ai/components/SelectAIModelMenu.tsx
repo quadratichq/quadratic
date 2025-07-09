@@ -71,18 +71,18 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   );
 
   const handleThinkingToggle = useCallback(
-    (thinkingToggle: boolean) => {
-      const nextModelKey = thinkingToggle
+    (nextThinkingToggle: boolean) => {
+      const nextModelKey = nextThinkingToggle
         ? selectedModel.replace(':thinking-toggle-off', ':thinking-toggle-on')
         : selectedModel.replace(':thinking-toggle-on', ':thinking-toggle-off');
 
       const nextModel = modelConfigs.find(
-        ([modelKey, modelConfig]) => modelKey === nextModelKey && modelConfig.thinkingToggle === thinkingToggle
+        ([modelKey, modelConfig]) => modelKey === nextModelKey && modelConfig.thinkingToggle === nextThinkingToggle
       );
 
       if (nextModel) {
         setSelectedModel(nextModel[0]);
-        setThinkingToggle(thinkingToggle);
+        setThinkingToggle(nextThinkingToggle);
       }
     },
     [modelConfigs, selectedModel, setSelectedModel, setThinkingToggle]
@@ -130,7 +130,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             aria-label="Extended thinking"
             size="sm"
             disabled={loading}
-            onClick={() => handleThinkingToggle(!thinkingToggle)}
+            onClick={() => handleThinkingToggle(!thinking)}
             className={cn(
               thinking && '!bg-border !text-primary',
               !thinking && 'w-7 hover:text-foreground',

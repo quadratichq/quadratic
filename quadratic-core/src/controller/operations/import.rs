@@ -106,7 +106,7 @@ impl GridController {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
-        let converted_file = clean_csv_file(&file)?;
+        let converted_file = clean_csv_file(file)?;
 
         let (d, width, height, is_table) = find_csv_info(&converted_file);
         let delimiter = delimiter.unwrap_or(d);

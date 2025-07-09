@@ -100,25 +100,6 @@ export class TableColumnHeader extends Container {
     this.sortIcon.scale.y = this.sortIcon.scale.x;
   };
 
-  private updateSortButton = (width: number, height: number, sort: DataTableSort | undefined) => {
-    this.sortButtonStart = this.columnHeaderBounds.right - SORT_BUTTON_RADIUS * 2 - SORT_BUTTON_PADDING * 2;
-    if (!this.sortButton) {
-      throw new Error('Expected sortButton to be defined in updateSortButton');
-    }
-    this.sortButton.position.set(width - SORT_BUTTON_RADIUS - SORT_BUTTON_PADDING, height / 2);
-    this.updateSortButtonVisibility(this.sortButton.visible);
-
-    if (!this.sortIcon) {
-      throw new Error('Expected sortIcon to be defined in updateSortButton');
-    }
-    this.sortIcon.position = this.sortButton.position;
-    this.sortIcon.texture = sort
-      ? Texture.from(sort.direction === 'Descending' ? 'sort-descending' : 'sort-ascending')
-      : Texture.EMPTY;
-    this.sortIcon.width = SORT_ICON_SIZE;
-    this.sortIcon.scale.y = this.sortIcon.scale.x;
-  };
-
   updateSortButtonVisibility = (visible: boolean) => {
     if (!this.sortButton) {
       return;
