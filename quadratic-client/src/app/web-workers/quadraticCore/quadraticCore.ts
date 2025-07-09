@@ -470,7 +470,6 @@ class QuadraticCore {
     });
   }
 
-  // todo: we should probably only have getFormatCell and not this one...
   getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
     const id = this.id++;
     return new Promise((resolve) => {

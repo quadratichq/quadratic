@@ -251,6 +251,19 @@ class Core {
     });
   }
 
+  getFormatSelection(selection: string): Promise<CellFormatSummary | undefined> {
+    return new Promise((resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        const format = this.gridController.getFormatSelection(selection);
+        resolve(format);
+      } catch (e) {
+        this.handleCoreError('getFormatSelection', e);
+        resolve(undefined);
+      }
+    });
+  }
+
   receiveSequenceNum(sequenceNum: number) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

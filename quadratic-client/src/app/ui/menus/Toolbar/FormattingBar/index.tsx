@@ -1,3 +1,4 @@
+import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import {
   AlignmentFormatting,
   Clear,
@@ -7,6 +8,7 @@ import {
   NumberFormatting,
   TextFormatting,
 } from '@/app/ui/menus/Toolbar/FormattingBar/panels';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
@@ -85,6 +87,19 @@ export const FormattingBar = () => {
     measurementContainer.style.pointerEvents = 'none';
     document.body.appendChild(measurementContainer);
   }
+
+  const [formatSummary, setFormatSummary] = useState<CellFormatSummary | undefined>(undefined);
+  useEffect(() => {
+    const updateFormatSummary = async () => {
+      const summary = await quadraticCore.getCellFormatSummary();
+      setFormatSummary(summary);
+    };
+    updateFormatSummary();
+    quadraticCore.onCellFormatSummaryChange(updateFormatSummary);
+    return () => {
+      quadraticCore.offCellFormatSummaryChange(updateFormatSummary);
+    };
+  }, []);
 
   return (
     <>
