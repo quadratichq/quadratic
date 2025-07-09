@@ -8,16 +8,16 @@ export const Toolbar = () => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
 
   return (
-    <div className="hidden h-8 flex-shrink-0 select-none justify-between border-b border-border md:flex">
-      <div className="w-48 border-r border-border xl:w-64 2xl:w-80">
+    <div className="hidden h-8 select-none justify-between border-b border-border md:flex">
+      <div className="w-48 flex-shrink-0 border-r border-border">
         <CursorPosition />
       </div>
 
-      <div className="no-scrollbar flex flex-grow items-stretch overflow-y-hidden overflow-x-scroll xl:justify-center">
+      <div className="no-scrollbar flex items-stretch overflow-y-hidden overflow-x-scroll">
         {permissions.includes('FILE_EDIT') && <FormattingBar />}
       </div>
 
-      <div className="flex items-center justify-end xl:w-64 2xl:w-80">
+      <div className="flex items-center justify-end">
         <ZoomMenu />
       </div>
     </div>

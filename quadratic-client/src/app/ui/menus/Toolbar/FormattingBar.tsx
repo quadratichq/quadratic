@@ -22,6 +22,7 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import { ToggleGroup } from 'radix-ui';
 import { forwardRef, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
@@ -29,12 +30,11 @@ import { forwardRef, useEffect, useRef, useState, type ReactNode, type RefObject
 const NumberFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
-    className="flex select-none text-sm"
+    className={cn('flex select-none text-sm', props.className)}
     onValueChange={() => {
       focusGrid();
     }}
     ref={ref}
-    {...props}
   >
     <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
     <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
@@ -49,12 +49,11 @@ const NumberFormatting = forwardRef<HTMLDivElement | null, { className?: string 
 const DateFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
-    className="flex select-none text-sm"
+    className={cn('flex select-none text-sm', props.className)}
     onValueChange={() => {
       focusGrid();
     }}
     ref={ref}
-    {...props}
   >
     <FormatDateAndTimePickerButton />
     <Separator />
@@ -64,12 +63,11 @@ const DateFormatting = forwardRef<HTMLDivElement | null, { className?: string }>
 const TextFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
-    className="flex select-none text-sm"
+    className={cn('flex select-none text-sm', props.className)}
     onValueChange={() => {
       focusGrid();
     }}
     ref={ref}
-    {...props}
   >
     <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
     <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
@@ -83,12 +81,11 @@ const TextFormatting = forwardRef<HTMLDivElement | null, { className?: string }>
 const FillAndBorderFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
-    className="flex select-none text-sm"
+    className={cn('flex select-none text-sm', props.className)}
     onValueChange={() => {
       focusGrid();
     }}
     ref={ref}
-    {...props}
   >
     <FormatColorPickerButton action={Action.FormatFillColor} />
     <FormatButtonPopover tooltipLabel="Borders" Icon={BorderAllIcon} className="flex flex-row flex-wrap">
@@ -101,12 +98,11 @@ const FillAndBorderFormatting = forwardRef<HTMLDivElement | null, { className?: 
 const AlignmentFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
-    className="flex select-none text-sm"
+    className={cn('flex select-none text-sm', props.className)}
     onValueChange={() => {
       focusGrid();
     }}
     ref={ref}
-    {...props}
   >
     <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
       <FormatButtonDropdownActions
@@ -137,7 +133,7 @@ const AlignmentFormatting = forwardRef<HTMLDivElement | null, { className?: stri
 const Clear = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
-    className="flex select-none text-sm"
+    className={cn('flex select-none text-sm', props.className)}
     onValueChange={() => {
       focusGrid();
     }}
@@ -211,32 +207,35 @@ export const FormattingBar = () => {
   }, []);
 
   return (
-    <div ref={menuRef} className="flex select-none overflow-hidden text-sm">
-      <NumberFormatting
-        ref={numberFormattingRef}
-        className={hiddenItems.includes('NumberFormatting') ? 'hidden' : ''}
-      />
-      <DateFormatting ref={dateFormattingRef} className={hiddenItems.includes('DateFormatting') ? 'hidden' : ''} />
-      <TextFormatting ref={textFormattingRef} className={hiddenItems.includes('TextFormatting') ? 'hidden' : ''} />
-      <FillAndBorderFormatting
-        ref={fillAndBorderFormattingRef}
-        className={hiddenItems.includes('FillAndBorderFormatting') ? 'hidden' : ''}
-      />
-      <AlignmentFormatting
-        ref={alignmentFormattingRef}
-        className={hiddenItems.includes('AlignmentFormatting') ? 'hidden' : ''}
-      />
-      <Clear ref={clearRef} className={hiddenItems.includes('Clear') ? 'hidden' : ''} />
-
+    <div className="flex w-full flex-grow">
+      <div ref={menuRef} className="flex flex-shrink select-none text-sm">
+        <NumberFormatting
+          ref={numberFormattingRef}
+          className={hiddenItems.includes('NumberFormatting') ? 'invisible' : ''}
+        />
+        <DateFormatting ref={dateFormattingRef} className={hiddenItems.includes('DateFormatting') ? 'invisible' : ''} />
+        <TextFormatting ref={textFormattingRef} className={hiddenItems.includes('TextFormatting') ? 'invisible' : ''} />
+        <FillAndBorderFormatting
+          ref={fillAndBorderFormattingRef}
+          className={hiddenItems.includes('FillAndBorderFormatting') ? 'invisible' : ''}
+        />
+        <AlignmentFormatting
+          ref={alignmentFormattingRef}
+          className={hiddenItems.includes('AlignmentFormatting') ? 'invisible' : ''}
+        />
+        <Clear ref={clearRef} className={hiddenItems.includes('Clear') ? 'invisible' : ''} />
+      </div>
       <ToggleGroup.Root type="multiple" className="flex select-none text-sm" ref={moreButtonRef}>
-        <div className={hiddenItems.length === 0 ? 'hidden' : ''}>
+        <div className={hiddenItems.length === 0 ? 'invisible' : ''}>
           <FormatButtonDropdown Icon={MoreVertIcon} tooltipLabel="More" className="grid grid-cols-1 gap-1 p-1">
-            {hiddenItems.includes('NumberFormatting') && <NumberFormatting />}
-            {hiddenItems.includes('DateFormatting') && <DateFormatting />}
-            {hiddenItems.includes('TextFormatting') && <TextFormatting />}
-            {hiddenItems.includes('FillAndBorderFormatting') && <FillAndBorderFormatting />}
-            {hiddenItems.includes('AlignmentFormatting') && <AlignmentFormatting />}
-            {hiddenItems.includes('Clear') && <Clear />}
+            <div className="flex select-none overflow-hidden text-sm">
+              {hiddenItems.includes('NumberFormatting') && <NumberFormatting />}
+              {hiddenItems.includes('DateFormatting') && <DateFormatting />}
+              {hiddenItems.includes('TextFormatting') && <TextFormatting />}
+              {hiddenItems.includes('FillAndBorderFormatting') && <FillAndBorderFormatting />}
+              {hiddenItems.includes('AlignmentFormatting') && <AlignmentFormatting />}
+              {hiddenItems.includes('Clear') && <Clear />}
+            </div>
           </FormatButtonDropdown>
         </div>
       </ToggleGroup.Root>
