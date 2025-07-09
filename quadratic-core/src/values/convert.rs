@@ -39,6 +39,7 @@ impl From<&str> for CellValue {
         CellValue::Text(value.to_string())
     }
 }
+
 impl From<Decimal> for CellValue {
     fn from(value: Decimal) -> Self {
         CellValue::Number(
