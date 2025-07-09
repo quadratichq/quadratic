@@ -1,9 +1,9 @@
 import { filesImportProgressAtom } from '@/dashboard/atoms/filesImportProgressAtom';
-import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
+import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const ImportProgress = () => {
+export const ImportProgress = memo(() => {
   const { importing, files, currentFileIndex } = useRecoilValue(filesImportProgressAtom);
   if (!importing || currentFileIndex === undefined) return;
 
@@ -11,7 +11,6 @@ export const ImportProgress = () => {
   const totalFiles = files.length;
   const name = files[currentFileIndex].name;
   const progress = files[currentFileIndex].progress;
-  const abortController = files[currentFileIndex].abortController;
 
   return (
     <div className="absolute bottom-4 left-4 z-50 w-96 select-none rounded border border-border bg-background pb-2 pl-4 pr-4 pt-2 tracking-tight shadow-lg">
@@ -25,18 +24,9 @@ export const ImportProgress = () => {
             {name}
           </div>
         </div>
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={abortController === undefined}
-          onClick={() => abortController?.abort()}
-        >
-          Cancel
-        </Button>
       </div>
 
       <Progress key={fileNo} value={progress} />
     </div>
   );
-};
+});
