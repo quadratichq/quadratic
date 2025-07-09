@@ -3,11 +3,11 @@ use itertools::Itertools;
 use rust_decimal::prelude::*;
 
 use super::{CellValue, Duration, IsBlank, Value};
-use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan, number::round};
+use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
-const F64_DECIMAL_PRECISION: u32 = 14; // just enough to not lose information
+const DECIMAL_PRECISION: u32 = 14; // just enough to not lose information
 
 /*
  * CONVERSIONS (specific type -> Value)
@@ -39,21 +39,22 @@ impl From<&str> for CellValue {
         CellValue::Text(value.to_string())
     }
 }
+
 impl From<Decimal> for CellValue {
     fn from(value: Decimal) -> Self {
-        CellValue::Number(value)
+        CellValue::Number(
+            value
+                .round_sf(DECIMAL_PRECISION)
+                .unwrap_or(value)
+                .normalize(),
+        )
     }
 }
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
-        match Decimal::try_from(value) {
-            Ok(n) => CellValue::Number(if n.scale() > F64_DECIMAL_PRECISION {
-                round(n, F64_DECIMAL_PRECISION as i64 + 1)
-            } else {
-                n
-            }),
-            // TODO: add span information
-            Err(_) => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
+        match Decimal::from_f64_retain(value) {
+            Some(n) => n.into(),
+            None => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         }
     }
 }
