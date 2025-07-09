@@ -25,7 +25,7 @@ pub enum JsRenderCellSpecial {
     List,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 pub struct JsNumber {
     pub decimals: Option<i16>,
     pub commas: Option<bool>,
@@ -267,7 +267,7 @@ pub enum CellType {
     DateTime,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
 #[serde(rename_all = "camelCase")]
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
@@ -286,6 +286,8 @@ pub struct CellFormatSummary {
 
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
+
+    pub number: Option<JsNumber>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]

@@ -232,34 +232,18 @@ impl Sheet {
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
-        let is_percent = self.cell_format_numeric_kind(pos) == NumericFormatKind::Percentage;
-
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
             if !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
             ) {
-                if is_percent {
-                    if let CellValue::Number(n) = cell_value {
-                        return Some(CellValue::Number(n * 100));
-                    }
-                }
                 return Some(cell_value.clone());
             }
         }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
-        if let Some(cell_value) = self.get_code_cell_value(pos) {
-            if is_percent {
-                if let CellValue::Number(n) = cell_value {
-                    return Some(CellValue::Number(n * 100));
-                }
-            }
-            Some(cell_value.clone())
-        } else {
-            None
-        }
+        self.get_code_cell_value(pos)
     }
 
     /// Returns the JsCellValue at a position
@@ -442,32 +426,6 @@ impl Sheet {
             }
 
             Some(values.join(", "))
-        }
-    }
-
-    /// Returns a summary of formatting in a region.
-    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.cell_format(pos);
-        let cell_type = self
-            .display_value(pos)
-            .and_then(|cell_value| match cell_value {
-                CellValue::Date(_) => Some(CellType::Date),
-                CellValue::DateTime(_) => Some(CellType::DateTime),
-                _ => None,
-            });
-        CellFormatSummary {
-            bold: format.bold,
-            italic: format.italic,
-            text_color: format.text_color,
-            fill_color: format.fill_color,
-            commas: format.numeric_commas,
-            align: format.align,
-            vertical_align: format.vertical_align,
-            wrap: format.wrap,
-            date_time: format.date_time,
-            cell_type,
-            underline: format.underline,
-            strike_through: format.strike_through,
         }
     }
 

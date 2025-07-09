@@ -1,12 +1,52 @@
 use crate::{
     clear_option::ClearOption,
     controller::operations::operation::Operation,
-    grid::formats::{SheetFormatUpdates, SheetFormatUpdatesType},
+    grid::{
+        formats::{SheetFormatUpdates, SheetFormatUpdatesType},
+        js_types::JsNumber,
+    },
 };
 
 use super::*;
 
 impl Sheet {
+    /// Returns a summary of formatting in a region.
+    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
+        let format = self.cell_format(pos);
+        let cell_type = self
+            .display_value(pos)
+            .and_then(|cell_value| match cell_value {
+                CellValue::Date(_) => Some(CellType::Date),
+                CellValue::DateTime(_) => Some(CellType::DateTime),
+                _ => None,
+            });
+
+        let cell_value = self.display_value(pos);
+        let mut number = None;
+        if matches!(cell_value, Some(CellValue::Number(_))) || format.numeric_format.is_some() {
+            number = Some(JsNumber {
+                decimals: format.numeric_decimals,
+                commas: format.numeric_commas,
+                format: format.numeric_format,
+            });
+        }
+        CellFormatSummary {
+            bold: format.bold,
+            italic: format.italic,
+            text_color: format.text_color,
+            fill_color: format.fill_color,
+            commas: format.numeric_commas,
+            align: format.align,
+            vertical_align: format.vertical_align,
+            wrap: format.wrap,
+            date_time: format.date_time,
+            cell_type,
+            underline: format.underline,
+            strike_through: format.strike_through,
+            number,
+        }
+    }
+
     fn format_transaction_changes<T: std::fmt::Debug + Clone + PartialEq>(
         &self,
         format: SheetFormatUpdatesType<T>,

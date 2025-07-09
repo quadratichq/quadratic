@@ -198,9 +198,27 @@ class InlineEditorHandler {
       this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
       let value: string;
       let changeToFormula = false;
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
+        this.location.sheetId,
+        this.location.x,
+        this.location.y
+      );
       if (initialValue) {
         value = initialValue;
-        changeToFormula = value[0] === '=';
+        if (value[0] === '=') {
+          changeToFormula = true;
+        } else {
+          if (this.formatSummary?.number) {
+            const numberType = this.formatSummary.number.format?.type;
+            if (numberType === 'PERCENTAGE') {
+              try {
+                const number = parseFloat(value);
+                value = (number * 100).toString() + '%';
+              } catch (e) {}
+            }
+          }
+          this.formatSummary.align = this.formatSummary.align ?? 'right';
+        }
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
         if (formula?.language === 'Formula') {
@@ -230,11 +248,6 @@ class InlineEditorHandler {
         editMode: cursorMode === CursorMode.Edit,
       }));
 
-      this.formatSummary = await quadraticCore.getCellFormatSummary(
-        this.location.sheetId,
-        this.location.x,
-        this.location.y
-      );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       this.temporaryUnderline = this.formatSummary?.underline || undefined;
