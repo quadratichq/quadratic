@@ -25,9 +25,7 @@ export const NumberFormatting = forwardRef<HTMLDivElement | null, { className?: 
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => {
-      focusGrid();
-    }}
+    onValueChange={() => focusGrid()}
     ref={ref}
   >
     <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
@@ -44,9 +42,7 @@ export const DateFormatting = forwardRef<HTMLDivElement | null, { className?: st
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => {
-      focusGrid();
-    }}
+    onValueChange={() => focusGrid()}
     ref={ref}
   >
     <FormatDateAndTimePickerButton />
@@ -58,9 +54,7 @@ export const TextFormatting = forwardRef<HTMLDivElement | null, { className?: st
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => {
-      focusGrid();
-    }}
+    onValueChange={() => focusGrid()}
     ref={ref}
   >
     <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
@@ -76,9 +70,7 @@ export const FillAndBorderFormatting = forwardRef<HTMLDivElement | null, { class
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => {
-      focusGrid();
-    }}
+    onValueChange={() => focusGrid()}
     ref={ref}
   >
     <FormatColorPickerButton action={Action.FormatFillColor} />
@@ -93,9 +85,7 @@ export const AlignmentFormatting = forwardRef<HTMLDivElement | null, { className
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => {
-      focusGrid();
-    }}
+    onValueChange={() => focusGrid()}
     ref={ref}
   >
     <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
@@ -128,9 +118,7 @@ export const Clear = forwardRef<HTMLDivElement | null, { className?: string }>((
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => {
-      focusGrid();
-    }}
+    onValueChange={() => focusGrid()}
     ref={ref}
     {...props}
   >
@@ -138,21 +126,16 @@ export const Clear = forwardRef<HTMLDivElement | null, { className?: string }>((
   </ToggleGroup.Root>
 ));
 
-export const FormatMoreButton = ({
-  setShowMore,
-  showMore,
-}: {
-  setShowMore: (showMore: boolean) => void;
-  showMore: boolean;
-}) => {
-  return (
-    <ToggleGroup.Item
-      aria-label="More"
-      value="More"
-      className="relative flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
-      onClick={() => setShowMore(!showMore)}
-    >
-      <MoreVertIcon />
-    </ToggleGroup.Item>
-  );
-};
+export const FormatMoreButton = forwardRef<
+  HTMLDivElement | null,
+  { setShowMore: (showMore: boolean) => void; showMore: boolean }
+>((props, ref) => (
+  <ToggleGroup.Root
+    type="multiple"
+    className="relative flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
+    onValueChange={() => props.setShowMore(!props.showMore)}
+    ref={ref}
+  >
+    <MoreVertIcon />
+  </ToggleGroup.Root>
+));
