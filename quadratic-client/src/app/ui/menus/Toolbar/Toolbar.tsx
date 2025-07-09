@@ -13,7 +13,7 @@ export const Toolbar = () => {
         <CursorPosition />
       </div>
 
-      <div className="no-scrollbar flex items-stretch overflow-y-hidden overflow-x-scroll">
+      <div className="no-scrollbar flex flex-1 items-center justify-center overflow-y-hidden overflow-x-scroll">
         {permissions.includes('FILE_EDIT') && <FormattingBar />}
       </div>
 
