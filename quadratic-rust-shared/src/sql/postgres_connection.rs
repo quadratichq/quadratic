@@ -717,7 +717,7 @@ pub mod tests {
             ArrowType::Utf8("1,2,3".into()),
             ArrowType::Utf8("32767,16384,8192".into()),
             ArrowType::Utf8("9223372036854775807,4611686018427387903,2305843009213693951".into()),
-            ArrowType::Utf8("123.4500,67.8900,12.3400".into()),
+            ArrowType::Utf8("123.45,67.89,12.34".into()),
             ArrowType::Utf8("123.45,67.89,12.34".into()),
             ArrowType::Utf8("123456789.123456,987654321.987654,555555555.555555".into()),
             ArrowType::Utf8("text1,text2,text3".into()),
