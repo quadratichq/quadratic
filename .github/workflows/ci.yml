@@ -267,7 +267,7 @@ jobs:
 
       - name: Run cargo clippy
         run: |
-          cargo clippy -- -D warnings
+          cargo clippy --all-targets --all-features --allow-dirty -- -D warnings
 
   lint_typescript:
     runs-on: blacksmith-4vcpu-ubuntu-2404
