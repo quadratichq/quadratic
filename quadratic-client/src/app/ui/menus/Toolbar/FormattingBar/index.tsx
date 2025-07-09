@@ -73,6 +73,7 @@ export const FormattingBar = () => {
     };
   }, []);
 
+  // create a container to measure the size of the panels of the formatting bar
   let measurementContainer: HTMLDivElement | null = document.querySelector('#measurement-container');
   if (!measurementContainer) {
     measurementContainer = document.createElement('div') as HTMLDivElement;
@@ -102,12 +103,14 @@ export const FormattingBar = () => {
       <div className="flex w-full flex-grow" ref={menuRef}>
         <div className="flex w-full justify-center">
           <div className="flex flex-shrink select-none">
-            {!hiddenItems.includes('NumberFormatting') && <NumberFormatting />}
-            {!hiddenItems.includes('DateFormatting') && <DateFormatting />}
-            {!hiddenItems.includes('TextFormatting') && <TextFormatting />}
-            {!hiddenItems.includes('FillAndBorderFormatting') && <FillAndBorderFormatting />}
-            {!hiddenItems.includes('AlignmentFormatting') && <AlignmentFormatting />}
-            {!hiddenItems.includes('Clear') && <Clear />}
+            {!hiddenItems.includes('NumberFormatting') && <NumberFormatting key="main-number-formatting" />}
+            {!hiddenItems.includes('DateFormatting') && <DateFormatting key="main-date-formatting" />}
+            {!hiddenItems.includes('TextFormatting') && <TextFormatting key="main-text-formatting" />}
+            {!hiddenItems.includes('FillAndBorderFormatting') && (
+              <FillAndBorderFormatting key="main-fill-and-border-formatting" />
+            )}
+            {!hiddenItems.includes('AlignmentFormatting') && <AlignmentFormatting key="main-alignment-formatting" />}
+            {!hiddenItems.includes('Clear') && <Clear key="main-clear" />}
           </div>
           {hiddenItems.length > 0 && (
             <Popover>
@@ -118,12 +121,16 @@ export const FormattingBar = () => {
               </PopoverTrigger>
               <PopoverContent className="w-fit" align="start">
                 <div className="flex gap-1 text-sm">
-                  {hiddenItems.includes('NumberFormatting') && <NumberFormatting />}
-                  {hiddenItems.includes('DateFormatting') && <DateFormatting />}
-                  {hiddenItems.includes('TextFormatting') && <TextFormatting />}
-                  {hiddenItems.includes('FillAndBorderFormatting') && <FillAndBorderFormatting />}
-                  {hiddenItems.includes('AlignmentFormatting') && <AlignmentFormatting />}
-                  {hiddenItems.includes('Clear') && <Clear />}
+                  {hiddenItems.includes('NumberFormatting') && <NumberFormatting key="hidden-number-formatting" />}
+                  {hiddenItems.includes('DateFormatting') && <DateFormatting key="hidden-date-formatting" />}
+                  {hiddenItems.includes('TextFormatting') && <TextFormatting key="hidden-text-formatting" />}
+                  {hiddenItems.includes('FillAndBorderFormatting') && (
+                    <FillAndBorderFormatting key="hidden-fill-and-border-formatting" />
+                  )}
+                  {hiddenItems.includes('AlignmentFormatting') && (
+                    <AlignmentFormatting key="hidden-alignment-formatting" />
+                  )}
+                  {hiddenItems.includes('Clear') && <Clear key="hidden-clear" />}
                 </div>
               </PopoverContent>
             </Popover>
