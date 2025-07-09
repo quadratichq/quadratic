@@ -1,3 +1,5 @@
+use rust_decimal::prelude::*;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -23,28 +25,28 @@ fn get_functions() -> Vec<FormulaFunction> {
         /// Returns the negative of the payment amount (since it represents money you pay out).
         #[examples("PMT(0.08/12, 12*5, 10000)", "PMT(0.06/12, 24, 5000, 0, 1)")]
         fn PMT(
-            rate: (f64),
-            nper: (f64),
-            pv: (f64),
-            fv: (Option<f64>),
-            payment_type: (Option<f64>),
+            rate: (Decimal),
+            nper: (Decimal),
+            pv: (Decimal),
+            fv: (Option<Decimal>),
+            payment_type: (Option<Decimal>),
         ) {
-            let fv = fv.unwrap_or(0.0);
-            let payment_type = if payment_type.unwrap_or(0.0) == 1.0 {
-                1.0
+            let fv = fv.unwrap_or(Decimal::zero());
+            let payment_type = if payment_type.unwrap_or(Decimal::zero()) == Decimal::one() {
+                Decimal::one()
             } else {
-                0.0
+                Decimal::zero()
             };
 
-            let payment = if rate == 0.0 {
+            let payment = if rate == Decimal::zero() {
                 // For zero interest rate, it's just the principal divided by the number of payments
                 -(pv + fv) / nper
             } else {
                 // PMT = (rate * (PV + FV * (1 + rate)^-n)) / (1 - (1 + rate)^-n)
-                let pvif = (1.0 + rate).powf(nper);
-                let pmt = rate * (pv * pvif + fv) / (pvif - 1.0);
+                let pvif = (Decimal::one() + rate).powd(nper);
+                let pmt = rate * (pv * pvif + fv) / (pvif - Decimal::one());
                 // Adjust for payments at the beginning of the period
-                -pmt / (1.0 + rate * payment_type)
+                -pmt / (Decimal::one() + rate * payment_type)
             };
 
             Ok(CellValue::from(payment))
@@ -56,6 +58,7 @@ mod tests {
     use crate::controller::GridController;
     use crate::formulas::tests::*;
     use crate::util::assert_f64_approx_eq;
+    use rust_decimal::prelude::*;
 
     #[test]
     fn test_pmt() {
@@ -65,7 +68,7 @@ mod tests {
         assert_f64_approx_eq(
             -202.76394,
             eval_to_string(&g, "PMT(0.08/12, 12*5, 10000)")
-                .parse::<f64>()
+                .parse::<Decimal>()
                 .unwrap(),
             "Basic loan payment",
         );
@@ -74,7 +77,7 @@ mod tests {
         assert_f64_approx_eq(
             -260.92366,
             eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000)")
-                .parse::<f64>()
+                .parse::<Decimal>()
                 .unwrap(),
             "Payment with future value",
         );
@@ -83,7 +86,7 @@ mod tests {
         assert_f64_approx_eq(
             -259.62553,
             eval_to_string(&g, "PMT(0.06/12, 24, 5000, 1000, 1)")
-                .parse::<f64>()
+                .parse::<Decimal>()
                 .unwrap(),
             "Payment at beginning",
         );
@@ -92,7 +95,7 @@ mod tests {
         assert_f64_approx_eq(
             -100.0,
             eval_to_string(&g, "PMT(0, 12, 1200)")
-                .parse::<f64>()
+                .parse::<Decimal>()
                 .unwrap(),
             "Zero interest rate",
         );
@@ -101,7 +104,7 @@ mod tests {
         assert_f64_approx_eq(
             -136.09727,
             eval_to_string(&g, "PMT(0.08/12, -12*5, -10000)")
-                .parse::<f64>()
+                .parse::<Decimal>()
                 .unwrap(),
             "Negative periods",
         );

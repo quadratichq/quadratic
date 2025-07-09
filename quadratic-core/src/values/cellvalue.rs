@@ -1014,11 +1014,7 @@ impl CellValue {
 
         let v = match (&a, &b) {
             (CellValue::Number(n1), CellValue::Number(n2)) => {
-                CellValue::from(crate::formulas::util::checked_div(
-                    span,
-                    n1.to_f64().unwrap_or(0.0),
-                    n2.to_f64().unwrap_or(0.0),
-                )?)
+                CellValue::from(crate::formulas::util::checked_div(span, *n1, *n2)?)
             }
             (CellValue::Duration(d), CellValue::Number(n)) => {
                 let recip = n.to_f64().unwrap_or(1.0).recip();
@@ -1046,17 +1042,17 @@ impl CellValue {
     /// there are no values. Ignores blank values.
     pub fn average(
         span: Span,
-        values: impl IntoIterator<Item = CodeResult<f64>>,
-    ) -> CodeResult<f64> {
+        values: impl IntoIterator<Item = CodeResult<Decimal>>,
+    ) -> CodeResult<Decimal> {
         // This may someday be generalized to work with dates as well, but it's
         // important that it still ignores blanks.
-        let mut sum = 0.0;
-        let mut count = 0;
+        let mut sum = Decimal::zero();
+        let mut count = Decimal::zero();
         for n in values {
             sum += n?;
-            count += 1;
+            count += Decimal::one();
         }
-        crate::formulas::util::checked_div(span, sum, count as f64)
+        crate::formulas::util::checked_div(span, sum, count)
     }
 
     pub fn code_cell_value(&self) -> Option<CodeCellValue> {

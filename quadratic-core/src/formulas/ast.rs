@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use itertools::Itertools;
+use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use smallvec::smallvec;
 
@@ -32,7 +33,7 @@ pub enum AstNodeContents {
     CellRef(Option<SheetId>, RefRangeBounds),
     RangeRef(SheetCellRefRange),
     String(String),
-    Number(f64),
+    Number(Decimal),
     Bool(bool),
     Error(RunErrorMsg),
 }
@@ -161,6 +162,12 @@ impl AstNode {
             AstNodeContents::Error(e) => {
                 Value::Single(CellValue::Error(Box::new(e.clone().with_span(self.span))))
             }
+        };
+
+        // normalize the value
+        let value = match value {
+            Value::Single(CellValue::Number(n)) => Value::Single(CellValue::Number(n.normalize())),
+            _ => value,
         };
 
         Ok(Spanned {

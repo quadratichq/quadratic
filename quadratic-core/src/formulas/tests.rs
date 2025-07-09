@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use itertools::Itertools;
-use rust_decimal::prelude::*;
 
 pub(crate) use super::*;
 use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
@@ -81,14 +80,11 @@ pub(crate) fn check_syntax_to_err(grid: &GridController, s: &str) -> RunError {
 #[track_caller]
 pub(crate) fn assert_f64_eval(grid: &GridController, expected: f64, s: &str) {
     let output = eval(grid, s).into_cell_value().unwrap();
+
     let CellValue::Number(n) = output else {
         panic!("expected number; got {output}");
     };
-    crate::util::assert_f64_approx_eq(
-        expected,
-        n.to_f64().unwrap(),
-        &format!("wrong result for formula {s:?}"),
-    );
+    crate::util::assert_f64_approx_eq(expected, n, &format!("wrong result for formula {s:?}"));
 }
 
 /// Parses a date from a string such as `2024-12-31`.

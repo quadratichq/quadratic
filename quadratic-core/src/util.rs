@@ -6,6 +6,9 @@ use itertools::Itertools;
 use lazy_static::lazy_static;
 use regex::Regex;
 
+#[cfg(test)]
+use rust_decimal::prelude::*;
+
 use crate::RefError;
 use crate::a1::UNBOUNDED;
 
@@ -417,11 +420,12 @@ macro_rules! print_first_sheet {
 
 #[cfg(test)]
 #[track_caller]
-pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
-    const EPSILON: f64 = 0.0001;
+pub(crate) fn assert_f64_approx_eq(expected: f64, actual: Decimal, message: &str) {
+    let epsilon = Decimal::from_f64(0.0001).unwrap();
+    let expected_decimal = Decimal::from_f64(expected).unwrap();
 
     assert!(
-        (expected - actual).abs() < EPSILON,
+        (expected_decimal - actual).abs() < epsilon,
         "{message}: expected {expected} but got {actual}"
     );
 }

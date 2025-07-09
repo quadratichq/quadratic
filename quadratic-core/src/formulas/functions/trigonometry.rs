@@ -135,6 +135,7 @@ mod tests {
 
     use crate::util::assert_f64_approx_eq;
     use crate::{controller::GridController, formulas::tests::*};
+    use rust_decimal::prelude::*;
 
     fn test_trig_fn(name: &str, input_output_pairs: &[(f64, f64)]) {
         let g = GridController::new();
@@ -143,7 +144,7 @@ mod tests {
             assert_f64_approx_eq(
                 expected_output,
                 eval_to_string(&g, &format!("{name}({input})"))
-                    .parse::<f64>()
+                    .parse::<Decimal>()
                     .unwrap(),
                 &format!("Testing {name}({input})"),
             );
@@ -159,7 +160,7 @@ mod tests {
         assert_f64_approx_eq(
             -4.0,
             eval_to_string(&g, "RADIANS(-720) / PI()")
-                .parse::<f64>()
+                .parse::<Decimal>()
                 .unwrap(),
             "Testing RADIANS(-720) / PI()",
         );
@@ -167,7 +168,7 @@ mod tests {
         assert_f64_approx_eq(
             -720.0,
             eval_to_string(&g, "DEGREES(-PI() * 4)")
-                .parse::<f64>()
+                .parse::<Decimal>()
                 .unwrap(),
             "Testing DEGREES(-PI() * 4)",
         );
@@ -510,8 +511,21 @@ mod tests {
     }
 
     #[test]
-    fn test_acos_degrees() {
+    fn test_precision() {
         let g = GridController::new();
+
+        // assert_eq!("5", eval_to_string(&g, "ABS(-5)"));
+        // assert_eq!("3.16227766016838", eval_to_string(&g, "SQRT(10)"));
+        // assert_eq!("100", eval_to_string(&g, "POWER(10, 2)"));
+        // assert_eq!("3", eval_to_string(&g, "CEILING(2.718, 1)"));
+        // assert_eq!("2", eval_to_string(&g, "FLOOR(2.718, 1)"));
+        // assert_eq!("2", eval_to_string(&g, "INT(2.718)"));
+        // assert_eq!("2.71828182845904", eval_to_string(&g, "EXP(1)"));
+        assert_eq!("1", eval_to_string(&g, "LN(EXP(1))"));
+        assert_eq!("2", eval_to_string(&g, "LOG(100)"));
+        assert_eq!("2", eval_to_string(&g, "LOG10(100)"));
+        assert_eq!("179.90874767108", eval_to_string(&g, "DEGREES(3.14)"));
+
         assert_eq!("60", eval_to_string(&g, "DEGREES(ACOS(0.5))"));
     }
 }

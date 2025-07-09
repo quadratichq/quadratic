@@ -1,3 +1,5 @@
+use rust_decimal::prelude::*;
+
 use crate::{
     RefError,
     a1::{A1Error, SheetCellRefRange},
@@ -37,7 +39,7 @@ impl SyntaxRule for NumericLiteral {
     fn consume_match(&self, p: &mut Parser<'_>) -> CodeResult<Self::Output> {
         match p.next() {
             Some(Token::NumericLiteral) => {
-                let Ok(n) = p.token_str().parse::<f64>() else {
+                let Ok(n) = p.token_str().parse::<Decimal>() else {
                     return Err(RunErrorMsg::BadNumber.with_span(p.span()));
                 };
                 Ok(AstNode {

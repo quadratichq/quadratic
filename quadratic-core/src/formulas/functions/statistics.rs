@@ -1,3 +1,5 @@
+use rust_decimal::prelude::*;
+
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {
@@ -13,7 +15,7 @@ fn get_functions() -> Vec<FormulaFunction> {
         formula_fn!(
             /// Returns the arithmetic mean of all values.
             #[examples("AVERAGE(A1:A6)", "AVERAGE(A1, A3, A5, B1:B6)")]
-            fn AVERAGE(span: Span, numbers: (Iter<f64>)) {
+            fn AVERAGE(span: Span, numbers: (Iter<Decimal>)) {
                 CellValue::average(span, numbers)
             }
         ),
@@ -37,8 +39,8 @@ fn get_functions() -> Vec<FormulaFunction> {
                 numbers_range: (Option<Spanned<Array>>),
             ) {
                 let criteria = Criterion::try_from(*criteria)?;
-                let numbers =
-                    criteria.iter_matching_coerced::<f64>(eval_range, numbers_range.as_ref())?;
+                let numbers = criteria
+                    .iter_matching_coerced::<Decimal>(eval_range, numbers_range.as_ref())?;
                 CellValue::average(*span, numbers)
             }
         ),

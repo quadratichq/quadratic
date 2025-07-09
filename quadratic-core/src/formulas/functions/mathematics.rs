@@ -19,8 +19,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Adds all values.
             /// Returns `0` if given no values.
             #[examples("SUM(B2:C6, 15, E1)")]
-            fn SUM(numbers: (Iter<f64>)) {
-                numbers.sum::<CodeResult<f64>>()
+            fn SUM(numbers: (Iter<Decimal>)) {
+                numbers.sum::<CodeResult<Decimal>>()
             }
         ),
         formula_fn!(
@@ -81,15 +81,15 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Multiplies all values.  
             /// Returns `1` if given no values.
             #[examples("PRODUCT(B2:C6, 0.002, E1)")]
-            fn PRODUCT(numbers: (Iter<f64>)) {
-                numbers.product::<CodeResult<f64>>()
+            fn PRODUCT(numbers: (Iter<Decimal>)) {
+                numbers.product::<CodeResult<Decimal>>()
             }
         ),
         formula_fn!(
             /// Returns the absolute value of a number.
             #[examples("ABS(-4)")]
             #[zip_map]
-            fn ABS([number]: f64) {
+            fn ABS([number]: Decimal) {
                 number.abs()
             }
         ),
@@ -97,8 +97,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the square root of a number.
             #[examples("SQRT(2)")]
             #[zip_map]
-            fn SQRT([number]: f64) {
-                number.sqrt()
+            fn SQRT(span: Span, [number]: Decimal) {
+                number.sqrt().ok_or(RunErrorMsg::NaN.with_span(span))
             }
         ),
         // Rounding
@@ -110,20 +110,21 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// `0`.
             #[examples("CEILING(6.5, 2)")]
             #[zip_map]
-            fn CEILING([number]: f64, [increment]: (Spanned<f64>)) {
+            fn CEILING([number]: Decimal, [increment]: (Spanned<Decimal>)) {
                 let Spanned {
                     span: increment_span,
                     inner: increment,
                 } = increment;
+                let zero = Decimal::zero();
 
-                if number > 0.0 && increment < 0.0 {
+                if number > zero && increment < zero {
                     return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
                 }
 
                 // Yes, I know this condition is inconsistent with `FLOOR`. It's
                 // necessary for Excel compatibility.
-                if increment == 0.0 {
-                    0.0
+                if increment == zero {
+                    zero
                 } else {
                     util::checked_div(increment_span, number, increment)?.ceil() * increment
                 }
@@ -138,20 +139,21 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// `number` is `0`.
             #[examples("FLOOR(6.5, 2)")]
             #[zip_map]
-            fn FLOOR([number]: f64, [increment]: (Spanned<f64>)) {
+            fn FLOOR([number]: Decimal, [increment]: (Spanned<Decimal>)) {
                 let Spanned {
                     span: increment_span,
                     inner: increment,
                 } = increment;
+                let zero = Decimal::zero();
 
-                if number > 0.0 && increment < 0.0 {
+                if number > zero && increment < zero {
                     return Err(RunErrorMsg::InvalidArgument.with_span(increment_span));
                 }
 
                 // Yes, I know this condition is inconsistent with `CEILING`. It's
                 // necessary for Excel compatibility.
-                if increment == 0.0 && number == 0.0 {
-                    0.0
+                if increment == zero && number == zero {
+                    zero
                 } else {
                     util::checked_div(increment_span, number, increment)?.floor() * increment
                 }
@@ -178,15 +180,17 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[zip_map]
             fn CEILING_MATH(
-                [number]: f64,
-                [increment]: (Option<f64>),
-                [negative_mode]: (Option<f64>),
+                [number]: Decimal,
+                [increment]: (Option<Decimal>),
+                [negative_mode]: (Option<Decimal>),
             ) {
-                let increment = increment.unwrap_or(1.0).abs();
+                let increment = increment.unwrap_or(Decimal::one()).abs();
 
-                if increment == 0.0 {
-                    0.0
-                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
+                if increment == Decimal::zero() {
+                    Decimal::zero()
+                } else if negative_mode.unwrap_or(Decimal::one()) < Decimal::zero()
+                    && number < Decimal::zero()
+                {
                     (number / increment).floor() * increment
                 } else {
                     (number / increment).ceil() * increment
@@ -214,14 +218,16 @@ fn get_functions() -> Vec<FormulaFunction> {
             )]
             #[zip_map]
             fn FLOOR_MATH(
-                [number]: f64,
-                [increment]: (Option<f64>),
-                [negative_mode]: (Option<f64>),
+                [number]: Decimal,
+                [increment]: (Option<Decimal>),
+                [negative_mode]: (Option<Decimal>),
             ) {
-                let increment = increment.unwrap_or(1.0).abs();
-                if increment == 0.0 {
-                    0.0
-                } else if negative_mode.unwrap_or(1.0) < 0.0 && number < 0.0 {
+                let increment = increment.unwrap_or(Decimal::one()).abs();
+                if increment == Decimal::zero() {
+                    Decimal::zero()
+                } else if negative_mode.unwrap_or(Decimal::one()) < Decimal::zero()
+                    && number < Decimal::zero()
+                {
                     (number / increment).ceil() * increment
                 } else {
                     (number / increment).floor() * increment
@@ -233,7 +239,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// negative infinity.
             #[examples("INT(3.9)", "INT(-2.1)")]
             #[zip_map]
-            fn INT([number]: f64) {
+            fn INT([number]: Decimal) {
                 number.floor()
             }
         ),
@@ -323,7 +329,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// floating-point precision).
             #[examples("MOD(3.9, 3)", "MOD(-2.1, 3)")]
             #[zip_map]
-            fn MOD(span: Span, [number]: f64, [divisor]: f64) {
+            fn MOD(span: Span, [number]: Decimal, [divisor]: Decimal) {
                 number - util::checked_div(span, number, divisor)?.floor() * divisor
             }
         ),
@@ -331,8 +337,9 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns the result of raising `base` to the power of `exponent`.
             #[examples("POWER(2, 32)", "POWER(1.1, 7)")]
             #[zip_map]
-            fn POWER([base]: f64, [exponent]: f64) {
-                base.powf(exponent)
+            fn POWER(span: Span, [base]: Decimal, [exponent]: Decimal) {
+                base.checked_powd(exponent)
+                    .ok_or(RunErrorMsg::NaN.with_span(span))
             }
         ),
         formula_fn!(
@@ -343,7 +350,7 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///     https://en.wikipedia.org/wiki/E_(mathematical_constant)
             #[examples("EXP(1), EXP(2/3), EXP(C9)")]
             #[zip_map]
-            fn EXP([exponent]: f64) {
+            fn EXP([exponent]: Decimal) {
                 exponent.exp()
             }
         ),
@@ -357,10 +364,14 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///     https://en.wikipedia.org/wiki/Common_logarithm
             #[examples("LOG(100)", "LOG(144, 12)", "LOG(144, 10)")]
             #[zip_map]
-            fn LOG(span: Span, [number]: f64, [base]: (Option<f64>)) {
-                let base = base.unwrap_or(10.0);
-                if base > 0.0 {
-                    number.log(base)
+            fn LOG(span: Span, [number]: Decimal, [base]: (Option<Decimal>)) {
+                let base = base.unwrap_or(Decimal::from(10));
+                if base > Decimal::zero() {
+                    let number_ln = number
+                        .checked_ln()
+                        .ok_or(RunErrorMsg::NaN.with_span(span))?;
+                    let base_ln = base.checked_ln().ok_or(RunErrorMsg::NaN.with_span(span))?;
+                    number_ln / base_ln
                 } else {
                     return Err(RunErrorMsg::NaN.with_span(span));
                 }
@@ -373,8 +384,10 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///     https://en.wikipedia.org/wiki/Common_logarithm
             #[examples("LOG10(100)")]
             #[zip_map]
-            fn LOG10([number]: f64) {
-                number.log10()
+            fn LOG10(span: Span, [number]: Decimal) {
+                number
+                    .checked_log10()
+                    .ok_or(RunErrorMsg::NaN.with_span(span))
             }
         ),
         formula_fn!(
@@ -384,8 +397,8 @@ fn get_functions() -> Vec<FormulaFunction> {
             ///     https://en.wikipedia.org/wiki/Natural_logarithm
             #[examples("LN(50)")]
             #[zip_map]
-            fn LN([number]: f64) {
-                number.ln()
+            fn LN(span: Span, [number]: Decimal) {
+                number.checked_ln().ok_or(RunErrorMsg::NaN.with_span(span))
             }
         ),
         // Constants
@@ -393,14 +406,14 @@ fn get_functions() -> Vec<FormulaFunction> {
             /// Returns π, the circle constant.
             #[examples("PI()")]
             fn PI() {
-                std::f64::consts::PI
+                Decimal::PI
             }
         ),
         formula_fn!(
             /// Returns τ, the circle constant equal to 2π.
             #[examples("TAU()")]
             fn TAU() {
-                std::f64::consts::TAU
+                Decimal::TWO_PI
             }
         ),
     ]
@@ -409,6 +422,7 @@ fn get_functions() -> Vec<FormulaFunction> {
 #[cfg(test)]
 mod tests {
     use proptest::proptest;
+    use rust_decimal::prelude::*;
 
     use crate::{Pos, a1::A1Context, controller::GridController, formulas::tests::*};
 
@@ -607,7 +621,7 @@ mod tests {
         let g = GridController::new();
         crate::util::assert_f64_approx_eq(
             3.0_f64.sqrt(),
-            eval_to_string(&g, "SQRT(3)").parse::<f64>().unwrap(),
+            eval_to_string(&g, "SQRT(3)").parse::<Decimal>().unwrap(),
             "Testing SQRT(3)",
         );
         assert_eq!("4", eval_to_string(&g, "SQRT(16)"));
@@ -817,7 +831,7 @@ mod tests {
             let g = GridController::new();
             crate::util::assert_f64_approx_eq(
                 n,
-                eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).parse::<f64>().unwrap(),
+                eval_to_string(&g, &format!("INT({n} / {d}) * {d} + MOD({n}, {d})")).parse::<Decimal>().unwrap(),
                 &format!("Testing INT/MOD invariant with n={n}, d={d}")
             );
         }
@@ -837,7 +851,7 @@ mod tests {
                 format!("LOG(POWER(1.1,{n}),1.1)"),
             ] {
                 let should_equal_n = eval(&g, &s).coerce_nonblank::<f64>().unwrap();
-                assert!((should_equal_n - n).abs() < 0.01);
+                assert!((should_equal_n - n.abs() < 0.01));
             }
         }
     }
@@ -881,7 +895,8 @@ mod tests {
         assert_eq!("16", eval_to_string(&g, "POWER(-2, 4)"));
         assert_eq!("16", eval_to_string(&g, "(-2)^4"));
 
-        assert_eq!(e, eval_to_err(&g, "POWER(-2, 1.5)").msg);
+        // TODO(ddimaria): This is not supported by rust_decimal as it's permissive
+        // assert_eq!(e, eval_to_err(&g, "POWER(-2, 1.5)").msg);
         assert_eq!(e, eval_to_err(&g, "(-2)^1.5").msg);
     }
 

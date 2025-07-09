@@ -46,10 +46,15 @@ impl From<Decimal> for CellValue {
 }
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
+        println!("value: {}", value);
         match Decimal::try_from(value) {
             Ok(n) => CellValue::Number(if n.scale() > F64_DECIMAL_PRECISION {
-                round(n, F64_DECIMAL_PRECISION as i64 + 1)
+                println!("n: {}", n);
+                println!("n.scale(): {}", n.scale());
+                round(n, F64_DECIMAL_PRECISION as i64)
             } else {
+                println!("n: {}", n);
+                println!("n.scale(): {}", n.scale());
                 n
             }),
             // TODO: add span information
@@ -306,6 +311,7 @@ macro_rules! impl_try_from_cell_value_for {
 impl_try_from_cell_value_for!(f64);
 impl_try_from_cell_value_for!(i64);
 impl_try_from_cell_value_for!(bool);
+impl_try_from_cell_value_for!(Decimal);
 
 impl<'a> TryFrom<&'a Value> for &'a CellValue {
     type Error = RunErrorMsg;
@@ -344,6 +350,7 @@ impl_try_from_value_for!(String);
 impl_try_from_value_for!(f64);
 impl_try_from_value_for!(i64);
 impl_try_from_value_for!(bool);
+impl_try_from_value_for!(Decimal);
 
 /// Coercion from `Value` or `CellValue` into a particular Rust type.
 pub trait CoerceInto: Sized + Unspan
