@@ -396,7 +396,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Err("Sheet not found".into());
         };
-        let kind = sheet.cell_numeric_format_kind(selection.cursor);
+        let kind = sheet.cell_format_numeric_kind(selection.cursor);
         let source_decimals = sheet
             .calculate_decimal_places(selection.cursor, kind)
             .unwrap_or(0);
@@ -491,8 +491,8 @@ mod test {
     use crate::controller::operations::operation::Operation;
     use crate::grid::CellWrap;
     use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
-    use crate::{Pos, a1::A1Selection};
     use crate::test_util::*;
+    use crate::{Pos, a1::A1Selection};
 
     #[test]
     fn test_set_align_selection() {

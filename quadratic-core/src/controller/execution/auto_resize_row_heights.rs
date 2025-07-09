@@ -153,6 +153,7 @@ mod tests {
                 vec![vec![
                     "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
                 ]],
+                false,
             )
             .unwrap();
         // mock response from renderer
@@ -192,6 +193,7 @@ mod tests {
                 vec![vec![
                     "test_auto_resize_row_heights_on_set_cell_value_2".to_string(),
                 ]],
+                false,
             )
             .unwrap();
         let row_heights = vec![JsRowHeight {
@@ -674,6 +676,7 @@ mod tests {
                 vec![vec![
                     "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
                 ]],
+                false,
             )
             .unwrap();
         // mock response from renderer
