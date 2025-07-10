@@ -45,7 +45,7 @@ async function handler(req: Request, res: Response) {
 
   // create a stripe customer if one doesn't exist
   if (!team?.stripeCustomerId) {
-    // Get user email from Auth0
+    // Get user
     const auth0Record = await getUsers([{ id: userId, auth0Id }]);
     const auth0User = auth0Record[userId];
 

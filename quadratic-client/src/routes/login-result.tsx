@@ -45,7 +45,7 @@ export const loader = async () => {
         }
       }
 
-      let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
+      const redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
       // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {

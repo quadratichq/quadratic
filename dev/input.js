@@ -136,10 +136,6 @@ export class Input {
                 this.cli.options.servicesLocal = !this.cli.options.servicesLocal;
                 this.control.checkServices();
                 break;
-            case "D":
-                this.cli.options.dockerDev = !this.cli.options.dockerDev;
-                this.control.checkServices();
-                break;
         }
     };
 }
