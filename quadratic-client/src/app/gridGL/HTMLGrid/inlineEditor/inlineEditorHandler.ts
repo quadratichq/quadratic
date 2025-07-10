@@ -175,7 +175,9 @@ class InlineEditorHandler {
 
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string, cursorMode?: CursorMode) => {
-    if (!input && !this.open) return;
+    if (!input && !this.open) {
+      return;
+    }
 
     if (initialValue) {
       this.initialValue += initialValue;
@@ -185,8 +187,9 @@ class InlineEditorHandler {
     }
 
     if (!this.div) {
-      throw new Error('Expected div and editor to be defined in InlineEditorHandler');
+      return;
     }
+
     if (input) {
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.position;
@@ -195,23 +198,42 @@ class InlineEditorHandler {
         x: cursor.x,
         y: cursor.y,
       };
-      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
+
       let value: string;
       let changeToFormula = false;
+
       if (initialValue) {
+        changeToFormula = initialValue[0] === '=';
+
         value = initialValue;
-        changeToFormula = value[0] === '=';
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
+
         if (formula?.language === 'Formula') {
-          value = '=' + formula.code_string;
           changeToFormula = true;
+
+          value = '=' + formula.code_string;
         } else {
-          value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
           changeToFormula = false;
+
+          const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
+          if (jsCellValue) {
+            value = jsCellValue.kind === 'number' ? parseFloat(jsCellValue.value).toString() : jsCellValue.value;
+
+            // open the calendar pick if the cell is a date
+            if (['date', 'date time'].includes(jsCellValue.kind)) {
+              pixiAppSettings.setEditorInteractionState?.({
+                ...pixiAppSettings.editorInteractionState,
+                annotationState: `calendar${jsCellValue.kind === 'date time' ? '-time' : ''}`,
+              });
+            }
+          } else {
+            value = '';
+          }
         }
       }
 
+      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
       if (this.codeCell?.language === 'Import' && changeToFormula) {
         pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
         this.closeIfOpen();
@@ -225,6 +247,7 @@ class InlineEditorHandler {
           cursorMode = value ? CursorMode.Edit : CursorMode.Enter;
         }
       }
+
       pixiAppSettings.setInlineEditorState?.((prev) => ({
         ...prev,
         editMode: cursorMode === CursorMode.Edit,
@@ -249,6 +272,7 @@ class InlineEditorHandler {
       this.showDiv();
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
+
       inlineEditorEvents.emit('status', true, value);
 
       // this needs to be at the end to avoid a race condition where the cursor
