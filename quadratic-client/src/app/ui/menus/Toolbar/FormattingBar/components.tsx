@@ -145,6 +145,7 @@ export function FormatButton<T extends Action>({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
+          aria-label={label}
           variant="ghost"
           size="sm"
           className={cn(

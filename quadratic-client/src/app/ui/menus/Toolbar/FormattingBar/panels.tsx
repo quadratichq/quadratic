@@ -13,9 +13,15 @@ import {
 } from '@/app/ui/menus/Toolbar/FormattingBar/components';
 import {
   BorderAllIcon,
+  FormatAlignCenterIcon,
   FormatAlignLeftIcon,
+  FormatAlignRightIcon,
+  FormatTextClipIcon,
+  FormatTextOverflowIcon,
   FormatTextWrapIcon,
   MoreVertIcon,
+  VerticalAlignBottomIcon,
+  VerticalAlignMiddleIcon,
   VerticalAlignTopIcon,
 } from '@/shared/components/Icons';
 import { cn } from '@/shared/shadcn/utils';
@@ -76,38 +82,50 @@ export const FillAndBorderFormatting = forwardRef<HTMLDivElement | null, { class
   </div>
 ));
 
-export const AlignmentFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
-  <ToggleGroup.Root
-    type="multiple"
-    className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => focusGrid()}
-    ref={ref}
-  >
-    <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={FormatAlignLeftIcon}>
-      <FormatButtonDropdownActions
-        actions={[
-          Action.FormatAlignHorizontalLeft,
-          Action.FormatAlignHorizontalCenter,
-          Action.FormatAlignHorizontalRight,
-        ]}
-        actionArgs={undefined}
-      />
-    </FormatButtonDropdown>
-    <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignTopIcon}>
-      <FormatButtonDropdownActions
-        actions={[Action.FormatAlignVerticalTop, Action.FormatAlignVerticalMiddle, Action.FormatAlignVerticalBottom]}
-        actionArgs={undefined}
-      />
-    </FormatButtonDropdown>
-    <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={FormatTextWrapIcon}>
-      <FormatButtonDropdownActions
-        actions={[Action.FormatTextWrapWrap, Action.FormatTextWrapOverflow, Action.FormatTextWrapClip]}
-        actionArgs={undefined}
-      />
-    </FormatButtonDropdown>
-    <FormatSeparator />
-  </ToggleGroup.Root>
-));
+export const AlignmentFormatting = forwardRef<
+  HTMLDivElement | null,
+  { className?: string; formatSummary: CellFormatSummary | undefined }
+>((props, ref) => {
+  let AlignIcon = FormatAlignLeftIcon;
+  if (props.formatSummary?.align === 'center') AlignIcon = FormatAlignCenterIcon;
+  if (props.formatSummary?.align === 'right') AlignIcon = FormatAlignRightIcon;
+
+  let VerticalAlignIcon = VerticalAlignTopIcon;
+  if (props.formatSummary?.verticalAlign === 'middle') VerticalAlignIcon = VerticalAlignMiddleIcon;
+  if (props.formatSummary?.verticalAlign === 'bottom') VerticalAlignIcon = VerticalAlignBottomIcon;
+
+  let TextWrapIcon = FormatTextOverflowIcon;
+  if (props.formatSummary?.wrap === 'wrap') TextWrapIcon = FormatTextWrapIcon;
+  if (props.formatSummary?.wrap === 'clip') TextWrapIcon = FormatTextClipIcon;
+
+  return (
+    <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+      <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={AlignIcon}>
+        <FormatButtonDropdownActions
+          actions={[
+            Action.FormatAlignHorizontalLeft,
+            Action.FormatAlignHorizontalCenter,
+            Action.FormatAlignHorizontalRight,
+          ]}
+          actionArgs={undefined}
+        />
+      </FormatButtonDropdown>
+      <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignIcon}>
+        <FormatButtonDropdownActions
+          actions={[Action.FormatAlignVerticalTop, Action.FormatAlignVerticalMiddle, Action.FormatAlignVerticalBottom]}
+          actionArgs={undefined}
+        />
+      </FormatButtonDropdown>
+      <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={TextWrapIcon}>
+        <FormatButtonDropdownActions
+          actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
+          actionArgs={undefined}
+        />
+      </FormatButtonDropdown>
+      <FormatSeparator />
+    </div>
+  );
+});
 
 export const Clear = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
   <ToggleGroup.Root
