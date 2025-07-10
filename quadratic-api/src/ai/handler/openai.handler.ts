@@ -27,7 +27,7 @@ export const handleOpenAIRequest = async (
     model,
     messages,
     temperature: options.temperature,
-    max_completion_tokens: options.max_tokens,
+    max_completion_tokens: !options.max_tokens ? undefined : options.max_tokens,
     stream: options.stream,
     tools,
     tool_choice,

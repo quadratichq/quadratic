@@ -445,7 +445,7 @@ export const MODELS_CONFIGURATION: {
     model: 'qwen/qwen3-32b',
     displayName: 'qwen3-32b',
     temperature: 0,
-    max_tokens: 40960,
+    max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
@@ -461,7 +461,7 @@ export const MODELS_CONFIGURATION: {
     model: 'qwen/qwen3-235b-a22b',
     displayName: 'qwen3-235b-a22b',
     temperature: 0,
-    max_tokens: 40960,
+    max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
@@ -477,7 +477,7 @@ export const MODELS_CONFIGURATION: {
     model: 'deepseek/deepseek-r1-0528',
     displayName: 'deepseek r1 0528',
     temperature: 0,
-    max_tokens: 128000,
+    max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
@@ -493,7 +493,7 @@ export const MODELS_CONFIGURATION: {
     model: 'deepseek/deepseek-r1-0528-qwen3-8b',
     displayName: 'deepseek r1 0528 qwen3-8b',
     temperature: 0,
-    max_tokens: 32000,
+    max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
@@ -509,7 +509,7 @@ export const MODELS_CONFIGURATION: {
     model: 'deepseek/deepseek-r1-distill-qwen-7b',
     displayName: 'deepseek r1 distill qwen-7b',
     temperature: 0,
-    max_tokens: 16000,
+    max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
@@ -525,7 +525,7 @@ export const MODELS_CONFIGURATION: {
     model: 'deepseek/deepseek-chat-v3-0324',
     displayName: 'deepseek v3',
     temperature: 0,
-    max_tokens: 163840,
+    max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
