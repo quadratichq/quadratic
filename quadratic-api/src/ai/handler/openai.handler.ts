@@ -5,13 +5,14 @@ import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpe
 import type {
   AIRequestHelperArgs,
   OpenAIModelKey,
+  OpenRouterModelKey,
   ParsedAIResponse,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | XAIModelKey,
+  modelKey: OpenAIModelKey | XAIModelKey | OpenRouterModelKey,
   args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
