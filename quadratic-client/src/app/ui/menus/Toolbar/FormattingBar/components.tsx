@@ -227,7 +227,6 @@ export function FormatColorPickerButton({
 }) {
   const actionSpec = defaultActionSpec[action];
   const label = actionSpec.label();
-  console.log(activeColor);
   const IconNode =
     action === Action.FormatTextColor ? (
       <FormatColorTextIcon color={activeColor} />
