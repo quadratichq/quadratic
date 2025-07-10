@@ -425,11 +425,11 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 2.5,
     rate_per_million_cache_write_tokens: 0,
   },
-  'xai:grok-3-beta': {
-    model: 'grok-3-beta',
-    displayName: 'grok 3 beta',
+  'xai:grok-4-0709': {
+    model: 'grok-4-0709',
+    displayName: 'grok 4',
     temperature: 0,
-    max_tokens: 131072,
+    max_tokens: 256000,
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',

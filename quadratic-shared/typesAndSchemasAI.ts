@@ -35,7 +35,7 @@ const OpenAIModelSchema = z.enum([
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
-const XAIModelSchema = z.enum(['grok-3-beta']);
+const XAIModelSchema = z.enum(['grok-4-0709']);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
   VertexAnthropicModelSchema,
@@ -104,7 +104,7 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
-const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
+const XAIModelKeySchema = z.enum(['xai:grok-4-0709']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
 const AIModelKeySchema = z.union([
