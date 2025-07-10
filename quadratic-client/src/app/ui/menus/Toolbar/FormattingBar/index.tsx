@@ -128,8 +128,8 @@ export const FormattingBar = () => {
         </div>,
         measurementContainer
       )}
-      <div className="flex w-full flex-grow" ref={menuRef}>
-        <div className="flex w-full justify-center">
+      <div className="flex h-full w-full flex-grow" ref={menuRef}>
+        <div className="flex h-full w-full justify-center">
           <div className="flex flex-shrink select-none">
             {!hiddenItems.includes('NumberFormatting') && (
               <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
