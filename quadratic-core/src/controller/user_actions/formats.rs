@@ -288,9 +288,21 @@ impl GridController {
         symbol: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return Err("Sheet not found".into());
+        };
+        let format = sheet.format_selection(selection);
+        let kind = if format
+            .numeric_format
+            .is_some_and(|f| f.kind == NumericFormatKind::Currency)
+        {
+            NumericFormatKind::Number
+        } else {
+            NumericFormatKind::Currency
+        };
         let format_update = FormatUpdate {
             numeric_format: Some(Some(NumericFormat {
-                kind: NumericFormatKind::Currency,
+                kind,
                 symbol: Some(symbol),
             })),
             numeric_decimals: Some(Some(2)),
@@ -308,6 +320,15 @@ impl GridController {
         symbol: Option<String>,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return Err("Sheet not found".into());
+        };
+        let format = sheet.format_selection(selection);
+        let kind = if format.numeric_format.is_some_and(|f| f.kind == kind) {
+            NumericFormatKind::Number
+        } else {
+            kind
+        };
         let format_update = FormatUpdate {
             numeric_format: Some(Some(NumericFormat { kind, symbol })),
             ..Default::default()
@@ -991,5 +1012,127 @@ mod test {
         assert_eq!(format.text_color, Some("red".to_string()));
         assert_eq!(format.fill_color, Some("blue".to_string()));
         assert_eq!(format.align, Some(crate::grid::CellAlign::Center));
+    }
+
+    #[test]
+    fn test_toggle_set_currency() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let selection = A1Selection::from_xy(1, 1, sheet_id);
+
+        // First call: set currency format
+        gc.set_currency(&selection, "€".to_string(), None).unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .numeric_format,
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("€".to_string())
+            })
+        );
+
+        // Second call: should toggle back to Number format
+        gc.set_currency(&selection, "€".to_string(), None).unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .numeric_format,
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Number,
+                symbol: Some("€".to_string())
+            })
+        );
+
+        // Third call: should toggle back to Currency format
+        gc.set_currency(&selection, "€".to_string(), None).unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .numeric_format,
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Currency,
+                symbol: Some("€".to_string())
+            })
+        );
+    }
+
+    #[test]
+    fn test_toggle_set_numeric_format() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let selection = A1Selection::from_xy(1, 1, sheet_id);
+
+        // First call: set percentage format
+        gc.set_numeric_format(
+            &selection,
+            crate::grid::NumericFormatKind::Percentage,
+            None,
+            None,
+        )
+        .unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .numeric_format,
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Percentage,
+                symbol: None
+            })
+        );
+
+        // Second call: should toggle back to Number format
+        gc.set_numeric_format(
+            &selection,
+            crate::grid::NumericFormatKind::Percentage,
+            None,
+            None,
+        )
+        .unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .numeric_format,
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Number,
+                symbol: None
+            })
+        );
+
+        // Third call: should toggle back to Percentage format
+        gc.set_numeric_format(
+            &selection,
+            crate::grid::NumericFormatKind::Percentage,
+            None,
+            None,
+        )
+        .unwrap();
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .formats
+                .try_format(Pos { x: 1, y: 1 })
+                .unwrap_or_default()
+                .numeric_format,
+            Some(crate::grid::NumericFormat {
+                kind: crate::grid::NumericFormatKind::Percentage,
+                symbol: None
+            })
+        );
     }
 }
