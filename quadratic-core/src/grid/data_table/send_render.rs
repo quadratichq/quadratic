@@ -33,23 +33,13 @@ impl DataTable {
         self.add_dirty_fills_and_borders(transaction, sheet.id);
 
         if transaction.is_user() {
-            let sheet_rows = sheet.get_rows_with_wrap_in_rect(data_table_rect.into(), true);
-
-            let mut table_rows = HashSet::new();
-            self.get_rows_with_wrap_in_rect(
-                &data_table_pos,
-                &data_table_rect.into(),
-                true,
-                &mut table_rows,
-            );
-
-            if !sheet_rows.is_empty() || !table_rows.is_empty() {
-                let resize_rows = transaction
+            let rows_to_resize = sheet.get_rows_with_wrap_in_rect(data_table_rect.into(), true);
+            if !rows_to_resize.is_empty() {
+                transaction
                     .resize_rows
                     .entry(data_table_rect.sheet_id)
-                    .or_default();
-                resize_rows.extend(sheet_rows);
-                resize_rows.extend(table_rows);
+                    .or_default()
+                    .extend(rows_to_resize);
             }
         }
 
@@ -99,7 +89,7 @@ impl DataTable {
         data_table_pos: &Pos,
         rect: &Rect,
         include_blanks: bool,
-        resize_rows: &mut HashSet<i64>,
+        rows_to_resize: &mut HashSet<i64>,
     ) {
         let formats_x_offset = data_table_pos.x - 1;
         let formats_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
@@ -116,7 +106,7 @@ impl DataTable {
                     if let Ok(y_u64) = u64::try_from(y - 1) {
                         let display_y = self.get_display_index_from_row_index(y_u64) as i64;
                         let actual_y_on_sheet = display_y + formats_y_offset + 1;
-                        if resize_rows.contains(&actual_y_on_sheet) {
+                        if rows_to_resize.contains(&actual_y_on_sheet) {
                             continue;
                         }
 
@@ -129,7 +119,7 @@ impl DataTable {
                             });
 
                         if check_value {
-                            resize_rows.insert(actual_y_on_sheet);
+                            rows_to_resize.insert(actual_y_on_sheet);
                         }
                     }
                 }
@@ -143,7 +133,7 @@ impl DataTable {
         format: &SheetFormatUpdatesType<T>,
         needs_resize: bool,
         dirty_hashes: &mut HashSet<Pos>,
-        resize_rows: &mut HashSet<i64>,
+        rows_to_resize: &mut HashSet<i64>,
     ) {
         // 1-based for formatting, just max bounds are needed to finitize formatting bounds
         let data_table_formats_rect = self.output_rect((1, 1).into(), true);
@@ -164,7 +154,7 @@ impl DataTable {
                             &data_table_pos,
                             &actual_rect_on_sheet,
                             false,
-                            resize_rows,
+                            rows_to_resize,
                         );
                     }
                 });
@@ -176,7 +166,7 @@ impl DataTable {
         data_table_pos: Pos,
         wrap: SheetFormatUpdatesType<CellWrap>,
         dirty_hashes: &mut HashSet<Pos>,
-        resize_rows: &mut HashSet<i64>,
+        rows_to_resize: &mut HashSet<i64>,
     ) {
         // 1-based for formatting, just max bounds are needed to finitize formatting bounds
         let data_table_formats_rect = self.output_rect((1, 1).into(), true);
@@ -195,12 +185,12 @@ impl DataTable {
                     if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
                             let actual_y_on_sheet = y + formats_rect_y_offset;
-                            if resize_rows.contains(&actual_y_on_sheet) {
+                            if rows_to_resize.contains(&actual_y_on_sheet) {
                                 continue;
                             }
 
                             if self.has_content_in_row(y) {
-                                resize_rows.insert(actual_y_on_sheet);
+                                rows_to_resize.insert(actual_y_on_sheet);
                             }
                         }
                     }
@@ -224,84 +214,84 @@ impl DataTable {
         let data_table_pos = data_table_pos.into();
 
         let mut dirty_hashes = HashSet::new();
-        let mut resize_rows = HashSet::new();
+        let mut rows_to_resize = HashSet::new();
 
         self.format_transaction_changes(
             data_table_pos,
             &formats.align,
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.vertical_align,
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.numeric_format,
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.numeric_decimals,
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.numeric_commas,
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.bold,
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.italic,
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.text_color,
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.date_time,
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.underline,
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             data_table_pos,
             &formats.strike_through,
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
 
         // for wrap, we need to check if the new formats is wrap or old is wrap
@@ -310,13 +300,13 @@ impl DataTable {
             data_table_pos,
             formats.wrap.to_owned(),
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.wrap_transaction_changes(
             data_table_pos,
             reverse_formats.wrap.to_owned(),
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
 
         if !transaction.is_server() {
@@ -326,9 +316,12 @@ impl DataTable {
                 dirty_hashes_transaction.extend(dirty_hashes);
             }
 
-            if !resize_rows.is_empty() && transaction.is_user() {
-                let resize_rows_transaction = transaction.resize_rows.entry(sheet_id).or_default();
-                resize_rows_transaction.extend(resize_rows);
+            if !rows_to_resize.is_empty() && transaction.is_user() {
+                transaction
+                    .resize_rows
+                    .entry(sheet_id)
+                    .or_default()
+                    .extend(rows_to_resize);
             }
 
             if formats.fill_color.is_some() {

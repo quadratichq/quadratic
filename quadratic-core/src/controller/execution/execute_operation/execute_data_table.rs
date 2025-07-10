@@ -297,14 +297,19 @@ impl GridController {
             transaction.add_code_cell(sheet_id, data_table_pos);
             transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
 
-            let mut table_rows = HashSet::new();
-            data_table.get_rows_with_wrap_in_rect(&data_table_pos, &rect, true, &mut table_rows);
-            if !table_rows.is_empty() {
-                let resize_rows = transaction
+            let mut rows_to_resize = HashSet::new();
+            data_table.get_rows_with_wrap_in_rect(
+                &data_table_pos,
+                &rect,
+                true,
+                &mut rows_to_resize,
+            );
+            if !rows_to_resize.is_empty() {
+                transaction
                     .resize_rows
                     .entry(sheet_pos.sheet_id)
-                    .or_default();
-                resize_rows.extend(table_rows);
+                    .or_default()
+                    .extend(rows_to_resize);
             }
 
             pos.y -= data_table.y_adjustment(true);
