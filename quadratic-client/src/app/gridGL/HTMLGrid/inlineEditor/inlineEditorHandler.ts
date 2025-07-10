@@ -178,7 +178,6 @@ class InlineEditorHandler {
     if (!input && !this.open) {
       return;
     }
-
     if (initialValue) {
       this.initialValue += initialValue;
       initialValue = this.initialValue;
@@ -199,9 +198,14 @@ class InlineEditorHandler {
         y: cursor.y,
       };
 
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
+        this.location.sheetId,
+        this.location.x,
+        this.location.y
+      );
+
       let value: string;
       let changeToFormula = false;
-
       if (initialValue) {
         changeToFormula = initialValue[0] === '=';
 
@@ -218,7 +222,16 @@ class InlineEditorHandler {
 
           const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
           if (jsCellValue) {
+            if (jsCellValue.kind === 'number') {
+              this.formatSummary.align = this.formatSummary.align ?? 'right';
+            }
             value = jsCellValue.kind === 'number' ? parseFloat(jsCellValue.value).toString() : jsCellValue.value;
+            if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
+              try {
+                const number = parseFloat(value);
+                value = (number * 100).toString() + '%';
+              } catch (e) {}
+            }
 
             // open the calendar pick if the cell is a date
             if (['date', 'date time'].includes(jsCellValue.kind)) {
@@ -253,11 +266,6 @@ class InlineEditorHandler {
         editMode: cursorMode === CursorMode.Edit,
       }));
 
-      this.formatSummary = await quadraticCore.getCellFormatSummary(
-        this.location.sheetId,
-        this.location.x,
-        this.location.y
-      );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       this.temporaryUnderline = this.formatSummary?.underline || undefined;
