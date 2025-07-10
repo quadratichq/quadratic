@@ -13,7 +13,7 @@ impl GridController {
     pub fn add_compute_operations(
         &mut self,
         transaction: &mut PendingTransaction,
-        output: &SheetRect,
+        output: SheetRect,
         skip_compute: Option<SheetPos>,
     ) {
         if !transaction.is_user() {

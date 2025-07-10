@@ -30,6 +30,7 @@ impl DataTable {
         let data_table_rect = self.output_sheet_rect(data_table_sheet_pos, false);
 
         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
+        self.add_dirty_fills_and_borders(transaction, sheet.id);
 
         if transaction.is_user() {
             let sheet_rows = sheet.get_rows_with_wrap_in_rect(data_table_rect.into(), true);
@@ -41,6 +42,7 @@ impl DataTable {
                 true,
                 &mut table_rows,
             );
+
             if !sheet_rows.is_empty() || !table_rows.is_empty() {
                 let resize_rows = transaction
                     .resize_rows
@@ -111,19 +113,24 @@ impl DataTable {
                 }
 
                 for y in rect.y_range() {
-                    let actual_y_on_sheet = y + formats_y_offset;
-                    if resize_rows.contains(&actual_y_on_sheet) {
-                        continue;
-                    }
+                    if let Ok(y_u64) = u64::try_from(y - 1) {
+                        let display_y = self.get_display_index_from_row_index(y_u64) as i64;
+                        let actual_y_on_sheet = display_y + formats_y_offset + 1;
+                        if resize_rows.contains(&actual_y_on_sheet) {
+                            continue;
+                        }
 
-                    let check_value = include_blanks
-                        || rect.x_range().any(|x| {
-                            self.cell_value_at((x - 1) as u32, (y - 1) as u32)
-                                .is_some_and(|cell_value| !cell_value.is_blank_or_empty_string())
-                        });
+                        let check_value = include_blanks
+                            || rect.x_range().any(|x| {
+                                self.cell_value_at((x - 1) as u32, (y - 1) as u32)
+                                    .is_some_and(|cell_value| {
+                                        !cell_value.is_blank_or_empty_string()
+                                    })
+                            });
 
-                    if check_value {
-                        resize_rows.insert(actual_y_on_sheet);
+                        if check_value {
+                            resize_rows.insert(actual_y_on_sheet);
+                        }
                     }
                 }
             }

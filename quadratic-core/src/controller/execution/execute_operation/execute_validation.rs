@@ -71,13 +71,13 @@ impl GridController {
     pub(crate) fn check_validations(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_rect: &SheetRect,
+        sheet_rect: SheetRect,
     ) {
         let validations: Vec<Validation>;
         if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
             validations = sheet
                 .validations
-                .in_rect((*sheet_rect).into(), self.a1_context())
+                .in_rect((sheet_rect).into(), self.a1_context())
                 .iter()
                 .map(|v| (*v).clone())
                 .collect();
@@ -583,7 +583,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.check_validations(
             &mut transaction,
-            &SheetRect::single_sheet_pos(pos![sheet_id!A1]),
+            SheetRect::single_sheet_pos(pos![sheet_id!A1]),
         );
 
         assert_eq!(

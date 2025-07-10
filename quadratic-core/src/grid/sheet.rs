@@ -603,7 +603,10 @@ impl Sheet {
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let value = rng.random_range(-10000..=10000).to_string();
-                self.set_cell_value((x, y).into(), CellValue::Number(decimal_from_str(&value).unwrap()));
+                self.set_cell_value(
+                    (x, y).into(),
+                    CellValue::Number(decimal_from_str(&value).unwrap()),
+                );
             }
         }
         self.recalculate_bounds(a1_context);

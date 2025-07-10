@@ -37,7 +37,7 @@ impl GridController {
 
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
-                    self.add_compute_operations(transaction, &sheet_rect, None);
+                    self.add_compute_operations(transaction, sheet_rect, None);
                     self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
                     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);

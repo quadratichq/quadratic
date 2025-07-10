@@ -44,7 +44,6 @@ impl GridController {
         let sheet = self.try_sheet_result(sheet_id)?;
         let data_table = sheet.data_table_result(&data_table_pos)?;
         data_table.add_dirty_table(transaction, sheet, data_table_pos)?;
-        data_table.add_dirty_fills_and_borders(transaction, sheet_id);
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
@@ -66,7 +65,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         forward_operations: Vec<Operation>,
         reverse_operations: Vec<Operation>,
-        sheet_rect_for_compute_and_spills: Option<&SheetRect>,
+        sheet_rect_for_compute_and_spills: Option<SheetRect>,
     ) {
         if transaction.is_user_undo_redo() {
             transaction.forward_operations.extend(forward_operations);
@@ -159,7 +158,8 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = Pos::from(sheet_pos);
-            let sheet_rect_for_compute_and_spills = data_table.output_sheet_rect(sheet_pos, false);
+            let mut sheet_rect_for_compute_and_spills =
+                data_table.output_sheet_rect(sheet_pos, false);
 
             // select the entire data table
             Self::select_full_data_table(transaction, sheet_id, data_table_pos, &data_table);
@@ -184,6 +184,8 @@ impl GridController {
             // mark old data table as dirty, if it exists
             if let Some(old_data_table) = &old_data_table {
                 let old_data_table_rect = old_data_table.output_sheet_rect(sheet_pos, false);
+                sheet_rect_for_compute_and_spills =
+                    sheet_rect_for_compute_and_spills.union(&old_data_table_rect);
                 transaction.add_dirty_hashes_from_sheet_rect(old_data_table_rect);
             }
 
@@ -209,7 +211,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -259,7 +261,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -441,7 +443,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&rect.to_sheet_rect(sheet_id)),
+                Some(rect.to_sheet_rect(sheet_id)),
             );
 
             return Ok(());
@@ -564,7 +566,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&values_sheet_rect.union(&data_table_rect)),
+                Some(values_sheet_rect.union(&data_table_rect)),
             );
 
             self.check_deleted_data_tables(transaction, &values_sheet_rect);
@@ -616,7 +618,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -713,7 +715,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect.union(&data_table_rect)),
+                Some(sheet_rect.union(&data_table_rect)),
             );
 
             return Ok(());
@@ -722,6 +724,7 @@ impl GridController {
         bail!("Expected Operation::GridToDataTable in execute_grid_to_data_table");
     }
 
+    /// **Deprecated** in favor of [`Self::execute_data_table_option_meta()`].
     pub(super) fn execute_data_table_meta(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -859,20 +862,17 @@ impl GridController {
 
             let mut sheet_rect_for_compute_and_spills = None;
 
-            let sheet = self.grid.try_sheet_result(sheet_id)?;
-            let data_table = sheet.data_table_result(&data_table_pos)?;
-            let data_table_rect = data_table
-                .output_rect(data_table_pos, false)
-                .to_sheet_rect(sheet_id);
-
-            let (_, dirty_rects) = self
+            let (data_table, dirty_rects) = self
                 .grid
                 .try_sheet_mut_result(sheet_id)?
                 .modify_data_table_at(&data_table_pos, |dt| {
                     if columns.is_some() || show_name.is_some() || show_columns.is_some() {
+                        let data_table_rect = dt
+                            .output_rect(data_table_pos, false)
+                            .to_sheet_rect(sheet_id);
                         dt.add_dirty_fills_and_borders(transaction, sheet_id);
                         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
-                        sheet_rect_for_compute_and_spills = Some(&data_table_rect);
+                        sheet_rect_for_compute_and_spills = Some(data_table_rect);
                     }
 
                     // if the header is first row, update the column names in the data table value
@@ -910,6 +910,15 @@ impl GridController {
 
             // changing these options shifts the entire data table, need to mark the entire data table as dirty
             if show_name.is_some() || show_columns.is_some() || columns.is_some() {
+                let data_table_rect = data_table
+                    .output_rect(data_table_pos, false)
+                    .to_sheet_rect(sheet_id);
+                sheet_rect_for_compute_and_spills = sheet_rect_for_compute_and_spills.map_or(
+                    Some(data_table_rect),
+                    |sheet_rect_for_compute_and_spills| {
+                        Some(sheet_rect_for_compute_and_spills.union(&data_table_rect))
+                    },
+                );
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
                 self.send_updated_bounds(transaction, sheet_id);
             }
@@ -951,15 +960,19 @@ impl GridController {
         } = op.to_owned()
         {
             let sheet_id = sheet_pos.sheet_id;
-            let sheet = self.try_sheet_mut_result(sheet_id)?;
+            let sheet = self.try_sheet_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let data_table = sheet.data_table_result(&data_table_pos)?;
             let sheet_rect_for_compute_and_spills = data_table
                 .output_rect(data_table_pos, true)
                 .to_sheet_rect(sheet_id);
 
+            // mark old data table as dirty
+            self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
+
             let old_sort = data_table.sort.to_owned();
             let old_display_buffer = data_table.display_buffer.to_owned();
+            let sheet = self.try_sheet_mut_result(sheet_id)?;
             let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                 dt.sort = sort.and_then(|sort| if sort.is_empty() { None } else { Some(sort) });
                 if let Some(display_buffer) = display_buffer {
@@ -972,6 +985,7 @@ impl GridController {
                 Ok(())
             })?;
 
+            // mark new data table as dirty
             self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             self.send_updated_bounds(transaction, sheet_id);
 
@@ -988,7 +1002,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1188,7 +1202,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1437,7 +1451,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
             return Ok(());
         };
@@ -1590,7 +1604,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1831,7 +1845,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                Some(sheet_rect_for_compute_and_spills),
             );
 
             return Ok(());
@@ -1859,8 +1873,15 @@ impl GridController {
                 return Ok(());
             }
 
+            let mut sheet_rect_for_compute_and_spills = None;
+
             // mark dirty if the first row is not the header, so that largest rect gets marked dirty
             if !data_table.header_is_first_row {
+                sheet_rect_for_compute_and_spills = Some(
+                    data_table
+                        .output_rect(data_table_pos, true)
+                        .to_sheet_rect(sheet_id),
+                );
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             }
 
@@ -1870,14 +1891,16 @@ impl GridController {
                 Ok(())
             })?;
 
-            let sheet_rect_for_compute_and_spills = data_table
-                .output_rect(data_table_pos, true)
-                .to_sheet_rect(sheet_id);
-
             // mark dirty if the first row is not the header, so that largest rect gets marked dirty
             if !data_table.header_is_first_row {
+                sheet_rect_for_compute_and_spills = Some(
+                    data_table
+                        .output_rect(data_table_pos, true)
+                        .to_sheet_rect(sheet_id),
+                );
                 self.mark_data_table_dirty(transaction, sheet_id, data_table_pos)?;
             }
+
             self.send_updated_bounds(transaction, sheet_id);
 
             let sheet = self.try_sheet_result(sheet_id)?;
@@ -1892,7 +1915,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(&sheet_rect_for_compute_and_spills),
+                sheet_rect_for_compute_and_spills,
             );
 
             return Ok(());

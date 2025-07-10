@@ -200,7 +200,7 @@ impl GridController {
                 }
             }
 
-            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+            self.add_compute_operations(transaction, sheet_rect, Some(sheet_pos));
 
             transaction
                 .forward_operations
