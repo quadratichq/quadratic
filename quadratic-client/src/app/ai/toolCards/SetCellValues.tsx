@@ -21,7 +21,7 @@ export const SetCellValues = memo(({ args, loading }: SetCellValuesProps) => {
         setToolArgs(aiToolsSpec[AITool.SetCellValues].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[SetCodeCellValue] Failed to parse args: ', error);
+        console.error('[SetCellValues] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
