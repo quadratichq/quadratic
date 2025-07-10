@@ -451,7 +451,6 @@ export const AIRequestBodySchema = z.object({
   useToolsPrompt: z.boolean(),
   language: CodeCellTypeSchema.optional(),
   useQuadraticContext: z.boolean(),
-  time: z.string().optional(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
 export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'messageSource' | 'modelKey'>;
