@@ -80,23 +80,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.EditCell, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const pos = sheets.sheet.cursor.position;
-      const { x, y } = pos;
-      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(pos);
-      if (codeCell) {
-        doubleClickCell({
-          column: x,
-          row: y,
-        });
-      } else {
-        quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
-          doubleClickCell({
-            column: x,
-            row: y,
-            cell,
-            cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
-          });
-        });
-      }
+      doubleClickCell({ column: pos.x, row: pos.y });
       return true;
     }
   }
@@ -105,19 +89,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
   if (matchShortcut(Action.ToggleArrowMode, event)) {
     if (!inlineEditorHandler.isEditingFormula()) {
       const pos = sheets.sheet.cursor.position;
-      const { x, y } = pos;
-      const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(pos);
-      if (codeCell) {
-        doubleClickCell({
-          column: x,
-          row: y,
-          cursorMode: CursorMode.Edit,
-        });
-      } else {
-        quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
-          doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
-        });
-      }
+      doubleClickCell({ column: pos.x, row: pos.y, cursorMode: CursorMode.Edit });
       return true;
     }
   }
