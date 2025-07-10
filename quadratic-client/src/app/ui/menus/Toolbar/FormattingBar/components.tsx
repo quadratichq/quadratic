@@ -170,14 +170,14 @@ export function FormatButton<T extends Action>({
   );
 }
 
-const ICON_OPACITY = 0.6;
+const ICON_OPACITY = 0.5;
 
 const FormatColorTextIcon = ({ color }: { color: string | undefined }) => {
   return (
     <div style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center' }}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        enable-background="new 0 0 24 24"
+        enableBackground="new 0 0 24 24"
         height="24"
         viewBox="0 0 24 24"
         width="24"
@@ -198,7 +198,7 @@ const FormatColorFillIcon = ({ color }: { color: string | undefined }) => {
     <div style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center' }}>
       <svg
         xmlns="http://www.w3.org/2000/svg"
-        enable-background="new 0 0 24 24"
+        enableBackground="new 0 0 24 24"
         height="24"
         viewBox="0 0 24 24"
         width="24"
