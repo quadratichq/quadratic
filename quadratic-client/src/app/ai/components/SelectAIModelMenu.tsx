@@ -130,7 +130,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             aria-label="Extended thinking"
             size="sm"
             disabled={loading}
-            onClick={() => handleThinkingToggle(!thinkingToggle)}
+            onClick={() => handleThinkingToggle(!thinking)}
             className={cn(
               thinking && '!bg-border !text-primary',
               !thinking && 'w-7 hover:text-foreground',

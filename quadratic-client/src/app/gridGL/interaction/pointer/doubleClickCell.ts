@@ -7,7 +7,6 @@ import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditor
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export async function doubleClickCell(options: {
   column: number;
@@ -15,7 +14,7 @@ export async function doubleClickCell(options: {
   cell?: string;
   cursorMode?: CursorMode;
 }) {
-  const { column, row, cell, cursorMode } = options;
+  let { column, row, cell, cursorMode } = options;
 
   if (inlineEditorHandler.isEditingFormula()) {
     return;
@@ -143,20 +142,6 @@ export async function doubleClickCell(options: {
 
   // Open the text editor
   else if (hasPermission) {
-    const value = await quadraticCore.getCellValue(sheets.current, column, row);
-
-    // open the calendar pick if the cell is a date
-    if (value && ['date', 'date time'].includes(value.kind)) {
-      pixiAppSettings.setEditorInteractionState({
-        ...pixiAppSettings.editorInteractionState,
-        annotationState: `calendar${value.kind === 'date time' ? '-time' : ''}`,
-      });
-    }
-
-    // remove extraneous parts of the number value
-    if (value?.kind === 'number') {
-      value.value = parseFloat(value.value).toString();
-    }
-    pixiAppSettings.changeInput(true, value?.value ?? cell, cursorMode);
+    pixiAppSettings.changeInput(true, cell, cursorMode);
   }
 }

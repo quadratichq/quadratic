@@ -97,7 +97,7 @@ impl GridController {
     pub fn import_csv_operations(
         &mut self,
         sheet_id: SheetId,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         insert_at: Pos,
         delimiter: Option<u8>,
@@ -106,8 +106,7 @@ impl GridController {
         let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
         let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
-        let converted_file = clean_csv_file(&file)?;
-        drop(file); // free the memory of the original file
+        let converted_file = clean_csv_file(file)?;
 
         let (d, width, height, is_table) = find_csv_info(&converted_file);
         let delimiter = delimiter.unwrap_or(d);
@@ -450,7 +449,7 @@ mod test {
         let ops = gc
             .import_csv_operations(
                 sheet_id,
-                SIMPLE_CSV.as_bytes().to_vec(),
+                SIMPLE_CSV.as_bytes(),
                 file_name,
                 pos,
                 Some(b','),
@@ -501,7 +500,7 @@ mod test {
         let ops = gc
             .import_csv_operations(
                 sheet_id,
-                csv.as_bytes().to_vec(),
+                csv.as_bytes(),
                 file_name,
                 pos,
                 Some(b','),
@@ -534,7 +533,7 @@ mod test {
         let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
         gc.import_csv(
             sheet_id,
-            csv.as_bytes().to_vec(),
+            csv.as_bytes(),
             "csv",
             pos,
             None,
@@ -809,7 +808,7 @@ mod test {
         let sheet_id = first_sheet_id(&gc);
         gc.import_csv(
             sheet_id,
-            utf16_data,
+            &utf16_data,
             "utf16.csv",
             pos![A1],
             None,
@@ -911,7 +910,7 @@ mod test {
         let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-1.csv");
         gc.import_csv(
             sheet_id,
-            file.to_vec(),
+            file,
             "csv-error-1.csv",
             pos![A1],
             None,
@@ -928,7 +927,7 @@ mod test {
         let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-2.csv");
         gc.import_csv(
             sheet_id,
-            file.to_vec(),
+            file,
             "csv-error-2.csv",
             pos![A1],
             None,

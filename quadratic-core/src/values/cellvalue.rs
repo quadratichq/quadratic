@@ -1,12 +1,12 @@
 use std::hash::Hash;
-use std::str::FromStr;
 use std::{fmt, fmt::Display};
 
 use anyhow::Result;
-use bigdecimal::{BigDecimal, Signed, ToPrimitive, Zero};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 
+use super::number::decimal_from_str;
 use super::{Duration, Instant, IsBlank};
 use crate::grid::formats::FormatUpdate;
 use crate::grid::{CodeCellLanguage, CodeCellValue};
@@ -21,8 +21,8 @@ const CURRENCY_SYMBOLS: &str = "$€£¥";
 const PERCENTAGE_SYMBOL: char = '%';
 
 // when a number's decimal is larger than this value, then it will treat it as text (this avoids an attempt to allocate a huge vector)
-// there is an unmerged alternative that might be interesting: https://github.com/declanvk/bigdecimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
-// see original issue here: https://github.com/akubera/bigdecimal-rs/issues/108
+// there is an unmerged alternative that might be interesting: https://github.com/declanvk/decimal-rs/commit/b0a2ea3a403ddeeeaeef1ddfc41ff2ae4a4252d6
+// see original issue here: https://github.com/akubera/decimal-rs/issues/108
 const MAX_BIG_DECIMAL_SIZE: usize = 10000000;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -56,7 +56,7 @@ pub enum CellValue {
     Text(String),
     /// Numeric value.
     #[cfg_attr(test, proptest(skip))]
-    Number(BigDecimal),
+    Number(Decimal),
     /// Logical value.
     Logical(bool),
     /// **Deprecated** Nov 2024 in favor of `DateTime`.
@@ -184,9 +184,9 @@ impl CellValue {
             .join(",")
     }
 
-    /// converts a BigDecimal to a String w/commas
-    fn with_commas(bd: BigDecimal) -> String {
-        let mut s = bd.to_string();
+    /// converts a Decimal to a String w/commas
+    fn with_commas(decimal: Decimal) -> String {
+        let mut s = decimal.to_string();
         let negative = s.starts_with('-');
         s = s.trim_start_matches('-').to_string();
         let n = if s.contains('.') {
@@ -247,18 +247,18 @@ impl CellValue {
                         None
                     }
                 });
-                let result: BigDecimal = if numeric_format.kind == NumericFormatKind::Percentage {
-                    n * 100
+                let result: Decimal = if numeric_format.kind == NumericFormatKind::Percentage {
+                    n * Decimal::from(100)
                 } else {
-                    n.clone()
+                    *n
                 };
                 let mut number = if numeric_format.kind == NumericFormatKind::Exponential {
                     let num = result.to_f64().unwrap_or_default();
                     let decimals = numeric_decimals.unwrap_or(2);
                     format!("{:.precision$e}", num, precision = decimals as usize)
                 } else if let Some(decimals) = numeric_decimals {
-                    let scaled =
-                        result.with_scale_round(decimals as i64, bigdecimal::RoundingMode::HalfUp);
+                    let mut scaled = result.to_owned();
+                    scaled.rescale(decimals as u32);
                     if use_commas {
                         CellValue::with_commas(scaled)
                     } else {
@@ -278,7 +278,7 @@ impl CellValue {
                 };
                 match numeric_format.kind {
                     NumericFormatKind::Currency => {
-                        let mut currency = if n.is_negative() {
+                        let mut currency = if n.is_sign_negative() {
                             number = number.trim_start_matches('-').to_string();
                             String::from("-")
                         } else {
@@ -358,7 +358,7 @@ impl CellValue {
         }
     }
 
-    pub fn unpack_percentage(s: &str) -> Option<BigDecimal> {
+    pub fn unpack_percentage(s: &str) -> Option<Decimal> {
         if s.is_empty() {
             return None;
         }
@@ -366,8 +366,8 @@ impl CellValue {
         if without_parentheses.ends_with("%") {
             let without_percentage = CellValue::strip_percentage(&without_parentheses);
             let without_commas = CellValue::strip_commas(without_percentage);
-            if let Ok(bd) = BigDecimal::from_str(&without_commas) {
-                return Some(bd / 100.0);
+            if let Ok(decimal) = decimal_from_str(&without_commas) {
+                return Some(decimal / Decimal::from(100));
             }
         }
         None
@@ -431,7 +431,7 @@ impl CellValue {
         }
     }
 
-    pub fn unpack_currency(s: &str) -> Option<(String, BigDecimal)> {
+    pub fn unpack_currency(s: &str) -> Option<(String, Decimal)> {
         if s.is_empty() {
             return None;
         }
@@ -453,7 +453,7 @@ impl CellValue {
             {
                 let without_commas =
                     CellValue::strip_commas(&CellValue::strip_parentheses(stripped));
-                if let Ok(bd) = BigDecimal::from_str(&without_commas) {
+                if let Ok(bd) = decimal_from_str(&without_commas) {
                     let bd = if is_negative { -bd } else { bd };
                     return Some((char.to_string(), bd));
                 }
@@ -463,7 +463,7 @@ impl CellValue {
     }
 
     pub fn unpack_str_float(value: &str, default: CellValue) -> CellValue {
-        BigDecimal::from_str(value).map_or_else(|_| default, CellValue::Number)
+        decimal_from_str(value).map_or_else(|_| default, CellValue::Number)
     }
 
     pub fn is_blank_or_empty_string(&self) -> bool {
@@ -538,11 +538,11 @@ impl CellValue {
         let lhs_cell_value: CellValue;
         let rhs_cell_value: CellValue;
         if lhs.is_blank() {
-            lhs_cell_value = CellValue::Number(BigDecimal::zero());
+            lhs_cell_value = CellValue::Number(Decimal::zero());
             lhs = &lhs_cell_value;
         }
         if rhs.is_blank() {
-            rhs_cell_value = CellValue::Number(BigDecimal::zero());
+            rhs_cell_value = CellValue::Number(Decimal::zero());
             rhs = &rhs_cell_value;
         }
         Ok(lhs.total_cmp(rhs))
@@ -621,7 +621,7 @@ impl CellValue {
         let without_currency = CellValue::strip_currency(&without_parentheses);
         let parsed = CellValue::strip_percentage(&without_currency);
         let without_commas = CellValue::strip_commas(parsed);
-        let number = BigDecimal::from_str(&without_commas);
+        let number = decimal_from_str(&without_commas);
 
         let is_true = value.eq_ignore_ascii_case("true");
         let is_false = value.eq_ignore_ascii_case("false");
@@ -664,10 +664,10 @@ impl CellValue {
             CellValue::Number(number)
         } else if let Some(bool) = CellValue::unpack_boolean(value) {
             bool
-        } else if let Ok(bd) = BigDecimal::from_str(&CellValue::strip_commas(
+        } else if let Ok(bd) = decimal_from_str(&CellValue::strip_commas(
             &CellValue::strip_parentheses(value),
         )) {
-            if (bd.fractional_digit_count().unsigned_abs() as usize) > MAX_BIG_DECIMAL_SIZE {
+            if (bd.scale() as usize) > MAX_BIG_DECIMAL_SIZE {
                 CellValue::Text(value.into())
             } else {
                 if value.contains(',') {
@@ -677,7 +677,7 @@ impl CellValue {
                     };
                 }
                 if user_entered_percent {
-                    CellValue::Number(bd / 100)
+                    CellValue::Number(bd / Decimal::from(100))
                 } else {
                     CellValue::Number(bd)
                 }
@@ -747,7 +747,7 @@ impl CellValue {
         match self {
             CellValue::Blank => CellValueHash::Blank,
             CellValue::Text(s) => CellValueHash::Text(crate::util::case_fold(s)),
-            CellValue::Number(n) => CellValueHash::Number(n.clone()),
+            CellValue::Number(n) => CellValueHash::Number(*n),
             CellValue::Logical(b) => CellValueHash::Logical(*b),
             CellValue::Instant(Instant { seconds }) => {
                 CellValueHash::Instant(seconds.to_ne_bytes())
@@ -1092,7 +1092,7 @@ pub enum CellValueHash {
     Blank,
     Text(String),
     // If we ever switch to using `f64`, replace this with `[u8; 8]`.
-    Number(BigDecimal),
+    Number(Decimal),
     Logical(bool),
     Instant([u8; 8]),
     Duration(i32, [u8; 8]),
@@ -1112,22 +1112,22 @@ mod test {
 
     #[test]
     fn test_cell_value_to_display_number() {
-        let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
+        let cv = CellValue::Number(decimal_from_str("123123.1233").unwrap());
         assert_eq!(cv.to_display(), String::from("123123.1233"));
 
-        let cv = CellValue::Number(BigDecimal::from_str("-123123.1233").unwrap());
+        let cv = CellValue::Number(decimal_from_str("-123123.1233").unwrap());
         assert_eq!(cv.to_display(), String::from("-123123.1233"));
 
-        let cv = CellValue::Number(BigDecimal::from_str("123.1255").unwrap());
+        let cv = CellValue::Number(decimal_from_str("123.1255").unwrap());
         assert_eq!(cv.to_display(), String::from("123.1255"));
 
-        let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
+        let cv = CellValue::Number(decimal_from_str("123.0").unwrap());
         assert_eq!(cv.to_display(), String::from("123.0"));
     }
 
     #[test]
     fn test_cell_value_to_display_currency() {
-        let cv = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
+        let cv = CellValue::Number(decimal_from_str("123123.1233").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1150,7 +1150,7 @@ mod test {
             ),
             String::from("$123123.12")
         );
-        let cv = CellValue::Number(BigDecimal::from_str("-123123.1233").unwrap());
+        let cv = CellValue::Number(decimal_from_str("-123123.1233").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1184,7 +1184,7 @@ mod test {
             ),
             String::from("-$123123.12")
         );
-        let cv = CellValue::Number(BigDecimal::from_str("123.1255").unwrap());
+        let cv = CellValue::Number(decimal_from_str("123.1255").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1196,7 +1196,7 @@ mod test {
             ),
             String::from("$123.13")
         );
-        let cv = CellValue::Number(BigDecimal::from_str("123.0").unwrap());
+        let cv = CellValue::Number(decimal_from_str("123.0").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1212,7 +1212,7 @@ mod test {
 
     #[test]
     fn test_cell_value_to_display_percentage() {
-        let cv = CellValue::Number(BigDecimal::from_str("0.015").unwrap());
+        let cv = CellValue::Number(decimal_from_str("0.015").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1225,7 +1225,7 @@ mod test {
             String::from("1.5%")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str("0.9912239").unwrap());
+        let cv = CellValue::Number(decimal_from_str("0.9912239").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1237,7 +1237,7 @@ mod test {
             ),
             String::from("99.1224%")
         );
-        let cv = CellValue::Number(BigDecimal::from_str("1231123123.9912239").unwrap());
+        let cv = CellValue::Number(decimal_from_str("1231123123.9912239").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1253,7 +1253,7 @@ mod test {
 
     #[test]
     fn to_number_display_scientific() {
-        let cv = CellValue::Number(BigDecimal::from_str("12345678").unwrap());
+        let cv = CellValue::Number(decimal_from_str("12345678").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1278,7 +1278,7 @@ mod test {
             String::from("1.235e7")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str("-12345678").unwrap());
+        let cv = CellValue::Number(decimal_from_str("-12345678").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1291,7 +1291,7 @@ mod test {
             String::from("-1.23e7")
         );
 
-        let cv = CellValue::Number(BigDecimal::from_str("1000000").unwrap());
+        let cv = CellValue::Number(decimal_from_str("1000000").unwrap());
         assert_eq!(
             cv.to_number_display(
                 Some(NumericFormat {
@@ -1310,7 +1310,7 @@ mod test {
         let value = String::from("1238.12232%");
         assert_eq!(
             CellValue::unpack_percentage(&value),
-            Some(BigDecimal::from_str("12.3812232").unwrap()),
+            Some(decimal_from_str("12.3812232").unwrap()),
         );
     }
 
@@ -1319,7 +1319,7 @@ mod test {
         let value = String::from("$123.123");
         assert_eq!(
             CellValue::unpack_currency(&value),
-            Some((String::from("$"), BigDecimal::from_str("123.123").unwrap()))
+            Some((String::from("$"), decimal_from_str("123.123").unwrap()))
         );
 
         let value = String::from("test");
@@ -1334,7 +1334,7 @@ mod test {
 
     #[test]
     fn test_exponential_display() {
-        let value = CellValue::Number(BigDecimal::from_str("98172937192739718923.12312").unwrap());
+        let value = CellValue::Number(decimal_from_str("98172937192739718923.12312").unwrap());
         assert_eq!(value.to_display(), "98172937192739718923.12312");
     }
 
@@ -1391,7 +1391,7 @@ mod test {
 
     #[test]
     fn to_get_cells() {
-        let value = CellValue::Number(BigDecimal::from_str("123123.1233").unwrap());
+        let value = CellValue::Number(decimal_from_str("123123.1233").unwrap());
         assert_eq!(value.to_get_cells(), "123123.1233");
 
         let value = CellValue::Logical(true);
@@ -1444,13 +1444,13 @@ mod test {
         let value = CellValue::parse_from_str("-123.123%");
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123.123").unwrap())
+            CellValue::Number(decimal_from_str("-123.123").unwrap())
         );
 
         let value = CellValue::parse_from_str("(123.123)%");
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123.123").unwrap())
+            CellValue::Number(decimal_from_str("-123.123").unwrap())
         );
     }
 }
