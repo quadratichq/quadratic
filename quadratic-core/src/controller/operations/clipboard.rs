@@ -891,8 +891,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use bigdecimal::BigDecimal;
-
     use super::{PasteSpecial, *};
     use crate::a1::{A1Context, A1Selection, CellRefRange, ColRange, TableRef};
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
@@ -1136,7 +1134,7 @@ mod test {
 
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((1, 4).into()),
-            Some(CellValue::Number(BigDecimal::from(6)))
+            Some(CellValue::Number(6.into()))
         );
 
         let selection = A1Selection::test_a1("A1:B5");
@@ -1155,7 +1153,7 @@ mod test {
 
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((5, 9).into()),
-            Some(CellValue::Number(BigDecimal::from(6)))
+            Some(CellValue::Number(6.into()))
         );
     }
 
