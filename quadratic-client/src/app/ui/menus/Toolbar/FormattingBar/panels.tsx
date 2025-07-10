@@ -1,5 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
@@ -23,76 +22,58 @@ import { cn } from '@/shared/shadcn/utils';
 import { ToggleGroup } from 'radix-ui';
 import { forwardRef } from 'react';
 
-const convertFormatSummaryToValue = (formatSummary: CellFormatSummary | undefined) => {
-  if (!formatSummary) return [];
-  const result = [];
-  if (formatSummary.commas === true) result.push(defaultActionSpec[Action.FormatNumberToggleCommas].label());
-  console.log(result);
-  return result;
-};
-
 export const NumberFormatting = forwardRef<
   HTMLDivElement | null,
   { className?: string; formatSummary: CellFormatSummary | undefined }
 >((props, ref) => (
-  <ToggleGroup.Root
-    type="multiple"
-    className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => focusGrid()}
-    value={convertFormatSummaryToValue(props.formatSummary)}
-    ref={ref}
-  >
-    <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />
+  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+    <FormatButton
+      action={Action.FormatNumberToggleCommas}
+      actionArgs={undefined}
+      checked={props.formatSummary?.commas}
+    />
     <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
     <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
     <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
     <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
     <FormatButton action={Action.FormatNumberAutomatic} actionArgs={undefined} />
     <FormatSeparator />
-  </ToggleGroup.Root>
+  </div>
 ));
 
 export const DateFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
-  <ToggleGroup.Root
-    type="multiple"
-    className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => focusGrid()}
-    ref={ref}
-  >
+  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
     <FormatDateAndTimePickerButton />
     <FormatSeparator />
-  </ToggleGroup.Root>
+  </div>
 ));
 
-export const TextFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
-  <ToggleGroup.Root
-    type="multiple"
-    className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => focusGrid()}
-    ref={ref}
-  >
-    <FormatButton action={Action.ToggleBold} actionArgs={undefined} />
-    <FormatButton action={Action.ToggleItalic} actionArgs={undefined} />
-    <FormatButton action={Action.ToggleUnderline} actionArgs={undefined} />
-    <FormatButton action={Action.ToggleStrikeThrough} actionArgs={undefined} />
+export const TextFormatting = forwardRef<
+  HTMLDivElement | null,
+  { className?: string; formatSummary: CellFormatSummary | undefined }
+>((props, ref) => (
+  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+    <FormatButton action={Action.ToggleBold} actionArgs={undefined} checked={props.formatSummary?.bold} />
+    <FormatButton action={Action.ToggleItalic} actionArgs={undefined} checked={props.formatSummary?.italic} />
+    <FormatButton action={Action.ToggleUnderline} actionArgs={undefined} checked={props.formatSummary?.underline} />
+    <FormatButton
+      action={Action.ToggleStrikeThrough}
+      actionArgs={undefined}
+      checked={props.formatSummary?.strikeThrough}
+    />
     <FormatColorPickerButton action={Action.FormatTextColor} />
     <FormatSeparator />
-  </ToggleGroup.Root>
+  </div>
 ));
 
 export const FillAndBorderFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
-  <ToggleGroup.Root
-    type="multiple"
-    className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => focusGrid()}
-    ref={ref}
-  >
+  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
     <FormatColorPickerButton action={Action.FormatFillColor} />
     <FormatButtonPopover tooltipLabel="Borders" Icon={BorderAllIcon} className="flex flex-row flex-wrap">
       <BorderMenu />
     </FormatButtonPopover>
     <FormatSeparator />
-  </ToggleGroup.Root>
+  </div>
 ));
 
 export const AlignmentFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (

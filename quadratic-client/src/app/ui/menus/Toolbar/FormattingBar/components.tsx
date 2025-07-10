@@ -6,6 +6,7 @@ import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDi
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
 import { ArrowDropDownIcon } from '@/shared/components/Icons';
+import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +15,8 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
+import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { ToggleGroup } from 'radix-ui';
 import { type ReactNode } from 'react';
 
 export function FormatSeparator() {
@@ -28,25 +29,21 @@ export function FormatButtonDropdown({
   children,
   showDropdownArrow,
   className,
-  disableCloseAutoFocus,
 }: {
   Icon: any;
   children: ReactNode;
   tooltipLabel: string;
   showDropdownArrow?: boolean;
   className?: string;
-  disableCloseAutoFocus?: boolean;
 }) {
   return (
     <DropdownMenu>
       <Tooltip>
         <TooltipTrigger asChild>
-          <ToggleGroup.Item value={tooltipLabel} asChild aria-label={tooltipLabel}>
-            <DropdownMenuTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
-              <Icon />
-              {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
-            </DropdownMenuTrigger>
-          </ToggleGroup.Item>
+          <DropdownMenuTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
+            <Icon />
+            {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
+          </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">
           <TooltipContents label={tooltipLabel} />
@@ -82,12 +79,10 @@ export function FormatButtonPopover({
     <Popover>
       <Tooltip>
         <TooltipTrigger asChild>
-          <ToggleGroup.Item value={tooltipLabel} asChild aria-label={tooltipLabel}>
-            <PopoverTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
-              <Icon />
-              {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
-            </PopoverTrigger>
-          </ToggleGroup.Item>
+          <PopoverTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
+            <Icon />
+            {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
+          </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">
           <TooltipContents label={tooltipLabel} />
@@ -139,26 +134,31 @@ export function FormatButton<T extends Action>({
 }: {
   action: T;
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
-  checked?: boolean;
+  checked?: boolean | null;
 }) {
   const actionSpec = defaultActionSpec[action];
   const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+  if (!Icon) return null;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <ToggleGroup.Item
-          aria-label={label}
-          value={label}
-          className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
+        <Button
+          variant="ghost"
+          size="sm"
+          className={cn(
+            'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
+            checked ? 'bg-accent' : ''
+          )}
           onClick={() => {
             mixpanel.track('[FormattingBar].button', { label });
             actionSpec.run(actionArgs);
+            focusGrid();
           }}
         >
-          {Icon && <Icon />}
-        </ToggleGroup.Item>
+          <Icon />
+        </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
         <TooltipContents label={label} keyboardShortcut={keyboardShortcut} />

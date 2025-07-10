@@ -67,8 +67,9 @@ export const FormattingBar = () => {
           }
         }
       }
+
       // the last item is the same size as the more button, so show the last
-      // item instead
+      // item instead if it's the only item hidden
       if (hiddenItems.length === 1) {
         hiddenItems.pop();
       }
@@ -95,6 +96,7 @@ export const FormattingBar = () => {
     document.body.appendChild(measurementContainer);
   }
 
+  // get the format summary for the current selection
   const [formatSummary, setFormatSummary] = useState<CellFormatSummary | undefined>(undefined);
   useEffect(() => {
     const updateFormatSummary = async () => {
@@ -103,12 +105,14 @@ export const FormattingBar = () => {
     };
     updateFormatSummary();
     events.on('cursorPosition', updateFormatSummary);
+
+    // update the format summary when the transaction ends (which should catch most changes)
+    events.on('transactionEnd', updateFormatSummary);
     return () => {
       events.off('cursorPosition', updateFormatSummary);
+      events.off('transactionEnd', updateFormatSummary);
     };
   }, []);
-
-  console.log(formatSummary);
 
   return (
     <>
@@ -116,7 +120,7 @@ export const FormattingBar = () => {
         <div className="flex w-fit flex-row">
           <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} />
           <DateFormatting ref={dateFormattingRef} />
-          <TextFormatting ref={textFormattingRef} />
+          <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} />
           <FillAndBorderFormatting ref={fillAndBorderFormattingRef} />
           <AlignmentFormatting ref={alignmentFormattingRef} />
           <Clear ref={clearRef} />
@@ -131,7 +135,9 @@ export const FormattingBar = () => {
               <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
             )}
             {!hiddenItems.includes('DateFormatting') && <DateFormatting key="main-date-formatting" />}
-            {!hiddenItems.includes('TextFormatting') && <TextFormatting key="main-text-formatting" />}
+            {!hiddenItems.includes('TextFormatting') && (
+              <TextFormatting key="main-text-formatting" formatSummary={formatSummary} />
+            )}
             {!hiddenItems.includes('FillAndBorderFormatting') && (
               <FillAndBorderFormatting key="main-fill-and-border-formatting" />
             )}
@@ -151,7 +157,9 @@ export const FormattingBar = () => {
                     <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />
                   )}
                   {hiddenItems.includes('DateFormatting') && <DateFormatting key="hidden-date-formatting" />}
-                  {hiddenItems.includes('TextFormatting') && <TextFormatting key="hidden-text-formatting" />}
+                  {hiddenItems.includes('TextFormatting') && (
+                    <TextFormatting key="hidden-text-formatting" formatSummary={formatSummary} />
+                  )}
                   {hiddenItems.includes('FillAndBorderFormatting') && (
                     <FillAndBorderFormatting key="hidden-fill-and-border-formatting" />
                   )}
