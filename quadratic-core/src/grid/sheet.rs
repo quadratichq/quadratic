@@ -244,11 +244,7 @@ impl Sheet {
         }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
-        if let Some(cell_value) = self.get_code_cell_value(pos) {
-            Some(cell_value.clone())
-        } else {
-            None
-        }
+        self.get_code_cell_value(pos)
     }
 
     /// Returns the JsCellValue at a position
