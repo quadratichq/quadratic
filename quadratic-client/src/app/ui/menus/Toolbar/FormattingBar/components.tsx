@@ -135,15 +135,16 @@ export function FormatButtonDropdownActions<T extends Action>({
 export function FormatButton<T extends Action>({
   action,
   actionArgs,
+  checked,
 }: {
   action: T;
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
+  checked?: boolean;
 }) {
   const actionSpec = defaultActionSpec[action];
   const label = actionSpec.label();
   const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
   const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>

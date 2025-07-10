@@ -63,6 +63,7 @@ import type {
   CoreClientGetCodeCell,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
+  CoreClientGetFormatSelection,
   CoreClientGetJwt,
   CoreClientGetValidationList,
   CoreClientLoad,
@@ -1451,6 +1452,20 @@ class QuadraticCore {
       sheetId,
       size,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  getFormatSelection(selection: string): Promise<CellFormatSummary | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetFormatSelection) => {
+        resolve(message.format);
+      };
+      this.send({
+        type: 'clientCoreGetFormatSelection',
+        id,
+        selection,
+      });
     });
   }
 }

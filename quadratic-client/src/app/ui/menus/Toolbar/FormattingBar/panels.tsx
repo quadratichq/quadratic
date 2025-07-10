@@ -1,5 +1,7 @@
 import { Action } from '@/app/actions/actions';
+import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { focusGrid } from '@/app/helpers/focusGrid';
+import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import {
   FormatButton,
@@ -21,11 +23,23 @@ import { cn } from '@/shared/shadcn/utils';
 import { ToggleGroup } from 'radix-ui';
 import { forwardRef } from 'react';
 
-export const NumberFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
+const convertFormatSummaryToValue = (formatSummary: CellFormatSummary | undefined) => {
+  if (!formatSummary) return [];
+  const result = [];
+  if (formatSummary.commas === true) result.push(defaultActionSpec[Action.FormatNumberToggleCommas].label());
+  console.log(result);
+  return result;
+};
+
+export const NumberFormatting = forwardRef<
+  HTMLDivElement | null,
+  { className?: string; formatSummary: CellFormatSummary | undefined }
+>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
     onValueChange={() => focusGrid()}
+    value={convertFormatSummaryToValue(props.formatSummary)}
     ref={ref}
   >
     <FormatButton action={Action.FormatNumberToggleCommas} actionArgs={undefined} />

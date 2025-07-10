@@ -1,3 +1,5 @@
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import {
   AlignmentFormatting,
@@ -91,21 +93,23 @@ export const FormattingBar = () => {
   const [formatSummary, setFormatSummary] = useState<CellFormatSummary | undefined>(undefined);
   useEffect(() => {
     const updateFormatSummary = async () => {
-      const summary = await quadraticCore.getCellFormatSummary();
+      const summary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
       setFormatSummary(summary);
     };
     updateFormatSummary();
-    quadraticCore.onCellFormatSummaryChange(updateFormatSummary);
+    events.on('cursorPosition', updateFormatSummary);
     return () => {
-      quadraticCore.offCellFormatSummaryChange(updateFormatSummary);
+      events.off('cursorPosition', updateFormatSummary);
     };
   }, []);
+
+  console.log(formatSummary);
 
   return (
     <>
       {createPortal(
         <div className="flex w-fit flex-row">
-          <NumberFormatting ref={numberFormattingRef} />
+          <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} />
           <DateFormatting ref={dateFormattingRef} />
           <TextFormatting ref={textFormattingRef} />
           <FillAndBorderFormatting ref={fillAndBorderFormattingRef} />
@@ -118,7 +122,9 @@ export const FormattingBar = () => {
       <div className="flex w-full flex-grow" ref={menuRef}>
         <div className="flex w-full justify-center">
           <div className="flex flex-shrink select-none">
-            {!hiddenItems.includes('NumberFormatting') && <NumberFormatting key="main-number-formatting" />}
+            {!hiddenItems.includes('NumberFormatting') && (
+              <NumberFormatting key="main-number-formatting" formatSummary={formatSummary} />
+            )}
             {!hiddenItems.includes('DateFormatting') && <DateFormatting key="main-date-formatting" />}
             {!hiddenItems.includes('TextFormatting') && <TextFormatting key="main-text-formatting" />}
             {!hiddenItems.includes('FillAndBorderFormatting') && (
@@ -136,7 +142,9 @@ export const FormattingBar = () => {
               </PopoverTrigger>
               <PopoverContent className="w-fit" align="start">
                 <div className="flex gap-1 text-sm">
-                  {hiddenItems.includes('NumberFormatting') && <NumberFormatting key="hidden-number-formatting" />}
+                  {hiddenItems.includes('NumberFormatting') && (
+                    <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />
+                  )}
                   {hiddenItems.includes('DateFormatting') && <DateFormatting key="hidden-date-formatting" />}
                   {hiddenItems.includes('TextFormatting') && <TextFormatting key="hidden-text-formatting" />}
                   {hiddenItems.includes('FillAndBorderFormatting') && (

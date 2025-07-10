@@ -256,7 +256,7 @@ class Core {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
         const format = this.gridController.getFormatSelection(selection);
-        resolve(format);
+        resolve(JSON.parse(JSON.stringify(format)));
       } catch (e) {
         this.handleCoreError('getFormatSelection', e);
         resolve(undefined);

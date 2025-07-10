@@ -668,6 +668,14 @@ class CoreClient {
         core.resizeAllRows(e.data.sheetId, e.data.size, e.data.cursor);
         return;
 
+      case 'clientCoreGetFormatSelection':
+        this.send({
+          type: 'coreClientGetFormatSelection',
+          id: e.data.id,
+          format: await core.getFormatSelection(e.data.selection),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core
