@@ -146,7 +146,7 @@ export const FormatMoreButton = forwardRef<
 >((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
-    className="relative flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
+    className="relative flex h-full cursor-pointer items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
     onValueChange={() => props.setShowMore(!props.showMore)}
     ref={ref}
   >

@@ -67,6 +67,11 @@ export const FormattingBar = () => {
           }
         }
       }
+      // the last item is the same size as the more button, so show the last
+      // item instead
+      if (hiddenItems.length === 1) {
+        hiddenItems.pop();
+      }
       setHiddenItems(hiddenItems);
     };
 
