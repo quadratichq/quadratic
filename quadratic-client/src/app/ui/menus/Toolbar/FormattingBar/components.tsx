@@ -30,6 +30,7 @@ export function FormatButtonDropdown({
   children,
   showDropdownArrow,
   className,
+  checked,
 }: {
   Icon?: React.ComponentType<any> | null;
   IconNode?: JSX.Element | null;
@@ -37,12 +38,18 @@ export function FormatButtonDropdown({
   tooltipLabel: string;
   showDropdownArrow?: boolean;
   className?: string;
+  checked?: boolean;
 }) {
   return (
     <DropdownMenu>
       <Tooltip>
         <TooltipTrigger asChild>
-          <DropdownMenuTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
+          <DropdownMenuTrigger
+            className={cn(
+              'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
+              checked ? 'bg-accent' : ''
+            )}
+          >
             {Icon ? <Icon /> : (IconNode ?? null)}
             {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
           </DropdownMenuTrigger>
@@ -242,8 +249,8 @@ export function FormatColorPickerButton({
     );
 
   return (
-    <FormatButtonDropdown tooltipLabel={label} IconNode={IconNode}>
-      <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
+    <FormatButtonDropdown tooltipLabel={label} IconNode={IconNode} checked={activeColor !== undefined}>
+      <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col p-0">
         <QColorPicker
           onChangeComplete={(color) => {
             actionSpec.run(color);
