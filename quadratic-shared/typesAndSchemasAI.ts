@@ -15,7 +15,12 @@ const AIProvidersSchema = z.enum([
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4@20250514']);
-const VertexAIModelSchema = z.enum(['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']);
+const VertexAIModelSchema = z.enum([
+  'gemini-2.5-pro',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash',
+  'publishers/deepseek-ai/models/deepseek-r1-0528-maas',
+]);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
   'us.anthropic.claude-sonnet-4-20250514-v1:0',
@@ -68,6 +73,7 @@ const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-flash:thinking-toggle-off',
   'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.0-flash',
+  'vertexai:deepseek-r1-0528-maas',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
 
