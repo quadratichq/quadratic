@@ -81,6 +81,7 @@ impl Sheet {
             strike_through: strike_through.and_then(|x| x),
             date_time: None,
             cell_type: None,
+            numeric_format: numeric_format.and_then(|x| x),
         }
     }
 }

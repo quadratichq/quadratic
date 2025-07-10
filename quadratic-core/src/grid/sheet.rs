@@ -447,32 +447,6 @@ impl Sheet {
         }
     }
 
-    /// Returns a summary of formatting in a region.
-    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.cell_format(pos);
-        let cell_type = self
-            .display_value(pos)
-            .and_then(|cell_value| match cell_value {
-                CellValue::Date(_) => Some(CellType::Date),
-                CellValue::DateTime(_) => Some(CellType::DateTime),
-                _ => None,
-            });
-        CellFormatSummary {
-            bold: format.bold,
-            italic: format.italic,
-            text_color: format.text_color,
-            fill_color: format.fill_color,
-            commas: format.numeric_commas,
-            align: format.align,
-            vertical_align: format.vertical_align,
-            wrap: format.wrap,
-            date_time: format.date_time,
-            cell_type,
-            underline: format.underline,
-            strike_through: format.strike_through,
-        }
-    }
-
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get_column(index)

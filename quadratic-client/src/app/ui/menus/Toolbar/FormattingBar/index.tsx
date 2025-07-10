@@ -121,7 +121,7 @@ export const FormattingBar = () => {
           <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} />
           <DateFormatting ref={dateFormattingRef} />
           <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} />
-          <FillAndBorderFormatting ref={fillAndBorderFormattingRef} />
+          <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} />
           <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} />
           <Clear ref={clearRef} />
           <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
@@ -139,7 +139,7 @@ export const FormattingBar = () => {
               <TextFormatting key="main-text-formatting" formatSummary={formatSummary} />
             )}
             {!hiddenItems.includes('FillAndBorderFormatting') && (
-              <FillAndBorderFormatting key="main-fill-and-border-formatting" />
+              <FillAndBorderFormatting key="main-fill-and-border-formatting" formatSummary={formatSummary} />
             )}
             {!hiddenItems.includes('AlignmentFormatting') && (
               <AlignmentFormatting key="main-alignment-formatting" formatSummary={formatSummary} />
@@ -163,7 +163,7 @@ export const FormattingBar = () => {
                     <TextFormatting key="hidden-text-formatting" formatSummary={formatSummary} />
                   )}
                   {hiddenItems.includes('FillAndBorderFormatting') && (
-                    <FillAndBorderFormatting key="hidden-fill-and-border-formatting" />
+                    <FillAndBorderFormatting key="hidden-fill-and-border-formatting" formatSummary={formatSummary} />
                   )}
                   {hiddenItems.includes('AlignmentFormatting') && (
                     <AlignmentFormatting key="hidden-alignment-formatting" formatSummary={formatSummary} />

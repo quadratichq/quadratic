@@ -40,8 +40,16 @@ export const NumberFormatting = forwardRef<
     />
     <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
     <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
-    <FormatButton action={Action.FormatNumberCurrency} actionArgs={undefined} />
-    <FormatButton action={Action.FormatNumberPercent} actionArgs={undefined} />
+    <FormatButton
+      action={Action.FormatNumberCurrency}
+      actionArgs={undefined}
+      checked={props.formatSummary?.numericFormat?.type === 'CURRENCY'}
+    />
+    <FormatButton
+      action={Action.FormatNumberPercent}
+      actionArgs={undefined}
+      checked={props.formatSummary?.numericFormat?.type === 'PERCENTAGE'}
+    />
     <FormatButton action={Action.FormatNumberAutomatic} actionArgs={undefined} />
     <FormatSeparator />
   </div>
@@ -67,14 +75,23 @@ export const TextFormatting = forwardRef<
       actionArgs={undefined}
       checked={props.formatSummary?.strikeThrough}
     />
-    <FormatColorPickerButton action={Action.FormatTextColor} />
+    <FormatColorPickerButton
+      action={Action.FormatTextColor}
+      activeColor={props.formatSummary?.textColor ?? undefined}
+    />
     <FormatSeparator />
   </div>
 ));
 
-export const FillAndBorderFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
+export const FillAndBorderFormatting = forwardRef<
+  HTMLDivElement | null,
+  { className?: string; formatSummary: CellFormatSummary | undefined }
+>((props, ref) => (
   <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
-    <FormatColorPickerButton action={Action.FormatFillColor} />
+    <FormatColorPickerButton
+      action={Action.FormatFillColor}
+      activeColor={props.formatSummary?.fillColor ?? undefined}
+    />
     <FormatButtonPopover tooltipLabel="Borders" Icon={BorderAllIcon} className="flex flex-row flex-wrap">
       <BorderMenu />
     </FormatButtonPopover>
