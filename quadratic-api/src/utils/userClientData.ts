@@ -29,7 +29,6 @@ export async function getUserClientDataKv(userId: number | undefined) {
 export async function setUserClientDataKv(userId: number, clientDataKv: UserClientDataKv) {
   const validatedClientDataKv = UserClientDataKvSchema.safeParse(clientDataKv);
   if (validatedClientDataKv.success) {
-    console.log('validatedClientDataKv', validatedClientDataKv.data);
     await dbClient.user.update({
       where: { id: userId },
       data: { clientDataKv: validatedClientDataKv.data },
