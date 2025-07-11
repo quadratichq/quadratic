@@ -131,7 +131,11 @@ export const FormattingBar = () => {
         </div>,
         measurementContainer
       )}
-      <div className="flex h-full w-full flex-grow" ref={menuRef}>
+      <div
+        className="flex h-full w-full flex-grow"
+        ref={menuRef}
+        style={{ height: '31px' /* 31px was the height of the old formatting bar */ }}
+      >
         <div className="flex h-full w-full justify-center">
           <div className="flex flex-shrink select-none">
             {!hiddenItems.includes('NumberFormatting') && (
