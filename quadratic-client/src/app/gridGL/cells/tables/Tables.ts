@@ -266,8 +266,8 @@ export class Tables extends Container<Table> {
     const tables = this.dataTablesCache?.getLargeTablesInRect(
       cellBounds.left,
       cellBounds.top,
-      cellBounds.right,
-      cellBounds.bottom
+      cellBounds.right - 1,
+      cellBounds.bottom - 1
     );
     return (
       tables?.flatMap((pos) => {
