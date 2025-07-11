@@ -192,7 +192,9 @@ export const AlignmentFormatting = forwardRef<
 });
 
 export const Clear = forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>((props, ref) => (
-  <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} hideLabel={props.hideLabel} />
+  <div ref={ref}>
+    <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} hideLabel={props.hideLabel} />
+  </div>
 ));
 
 export const FormatMoreButton = forwardRef<
