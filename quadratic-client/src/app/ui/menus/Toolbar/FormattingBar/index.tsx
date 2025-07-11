@@ -156,7 +156,7 @@ export const FormattingBar = () => {
                   <FormatMoreButton setShowMore={setShowMore} showMore={showMore} />
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="w-fit" align="start">
+              <PopoverContent className="hidden w-fit md:block" align="start">
                 <div className="flex gap-1 text-sm">
                   {hiddenItems.includes('NumberFormatting') && (
                     <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />
