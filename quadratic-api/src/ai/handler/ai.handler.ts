@@ -18,7 +18,7 @@ import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadrati
 import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
 import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
-import { getCurrentDateContext, getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import {
   anthropic,
   bedrock,
@@ -44,14 +44,6 @@ export const handleAIRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   let args = inputArgs;
   try {
-    if (args.time) {
-      const currentDateContext = getCurrentDateContext(args.time);
-      args = {
-        ...args,
-        messages: [...currentDateContext, ...args.messages],
-      };
-    }
-
     if (args.useToolsPrompt) {
       const toolUseContext = getToolUseContext(args.source);
       args = {
