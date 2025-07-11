@@ -106,7 +106,8 @@ export const TeamClientDataKvSchema = z.record(z.any());
 // Use this to store client-specific data that will be validated whenever it
 // is delivered to or received from the client. When the client no longer needs
 // pieces of this data, they can be removed from the schema and they'll be
-// removed from the stored data as the user continues to use the app.
+// removed from the stored data as the user continues to use the app and the
+// data is validated as it goes and comes over the network.
 export const UserClientDataKvSchema = z
   .object({
     knowsAboutModelPicker: z.boolean().optional(),
