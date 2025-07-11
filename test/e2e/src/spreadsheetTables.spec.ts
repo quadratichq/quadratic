@@ -393,9 +393,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 30 * 1000 });
 
   // Click on the "Fill Color" icon
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
-    .click({ timeout: 30 * 1000 });
+  await page.locator('[data-testid="format_fill_color"]').click({ timeout: 30 * 1000 });
 
   // Select fill color to red
   await page.locator(`[title="#E74C3C"]`).nth(0).click({ force: true });
@@ -643,9 +641,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Fill Color" icon
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
-    .click({ timeout: 30 * 1000 });
+  await page.locator('[data-testid="format_fill_color"]').click({ timeout: 30 * 1000 });
 
   // Select fill color to blue
   await page.locator(`[title="#3498DB"]`).click({ force: true });

@@ -163,7 +163,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   //--------------------------------
   // User 2: change the color of a cell
   await navigateOnSheet(userPage2, { targetColumn: 4, targetRow: 4 });
-  await userPage2.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage2.locator(`[data-testid="format_fill_color"]`).click({ timeout: 30 * 1000 });
   await userPage2.locator(`div[title="#F9D2CE"]`).click({ timeout: 30 * 1000 });
 
   await userPage2.keyboard.press('Escape');
@@ -474,7 +474,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await userPage1.keyboard.press('Control+i');
 
   await selectCells(userPage1, { startXY: [1, 1], endXY: [2, 5] });
-  await userPage1.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`[data-testid="format_fill_color"]`).click({ timeout: 30 * 1000 });
   await userPage1.locator(`div[title="#9B59B6"]`).click({ timeout: 30 * 1000 });
   await userPage1.waitForTimeout(2000);
 
@@ -508,7 +508,7 @@ test('Connection goes down in Multiplayer Session', async ({ page: userPage1 }) 
   await userPage1.waitForTimeout(2000);
   await selectCells(userPage1, { startXY: [5, 9], endXY: [0, 3] });
   await userPage1.waitForTimeout(2000);
-  await userPage1.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`[data-testid="format_fill_color"]`).click({ timeout: 30 * 1000 });
   await userPage1.locator(`div[title="#7BE9D3"]`).click({ timeout: 30 * 1000 });
   await userPage1.mouse.click(300, 0);
 
@@ -631,7 +631,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
     startXY: [1, 1],
     endXY: [2, 5],
   });
-  await userPage1.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage1.locator(`[data-testid="format_fill_color"]`).click({ timeout: 30 * 1000 });
   await userPage1.locator(`div[title="#9B59B6"]`).click({ timeout: 30 * 1000 });
   await userPage1.waitForTimeout(2000);
   await userPage1.mouse.click(300, 0);
@@ -664,7 +664,7 @@ test('Make Changes while Network is off', async ({ page: userPage1 }) => {
   await userPage3.waitForTimeout(2000);
   await selectCells(userPage3, { startXY: [1, 3], endXY: [5, 9] });
   await userPage3.waitForTimeout(2000);
-  await userPage3.locator(`button span:text-is("format_color_fill")`).click({ timeout: 30 * 1000 });
+  await userPage3.locator(`[data-testid="format_fill_color"]`).click({ timeout: 30 * 1000 });
   await userPage3.locator(`div[title="#7BE9D3"]`).click({ timeout: 30 * 1000 });
   await userPage3.mouse.click(300, 0);
   await userPage3.waitForTimeout(5000);
