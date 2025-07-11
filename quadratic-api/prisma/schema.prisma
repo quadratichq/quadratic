@@ -20,6 +20,10 @@ model User {
     UserFileRole        UserFileRole[]
     AnalyticsAIChat     AnalyticsAIChat[]
 
+    // Key/value storage
+    // Use for client-specific data that is not useful to the server or other services
+    clientDataKv Json @default("{}") @map("client_data_kv")
+
     @@index([auth0Id])
 }
 

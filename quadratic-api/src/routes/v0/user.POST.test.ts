@@ -43,4 +43,6 @@ describe('POST /v0/user', () => {
         .expect(200);
     });
   });
+
+  // TODO: test client data kv
 });
