@@ -31,6 +31,7 @@ export function FormatButtonDropdown({
   showDropdownArrow,
   className,
   checked,
+  hideLabel,
 }: {
   Icon?: React.ComponentType<any> | null;
   IconNode?: JSX.Element | null;
@@ -39,6 +40,7 @@ export function FormatButtonDropdown({
   showDropdownArrow?: boolean;
   className?: string;
   checked?: boolean;
+  hideLabel?: boolean;
 }) {
   return (
     <DropdownMenu>
@@ -55,7 +57,7 @@ export function FormatButtonDropdown({
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <TooltipContents label={tooltipLabel} />
+          <TooltipContents label={hideLabel ? '' : tooltipLabel} />
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent
@@ -77,24 +79,29 @@ export function FormatButtonPopover({
   children,
   showDropdownArrow,
   className,
+  hideLabel,
 }: {
   Icon: any;
   children: ReactNode;
   tooltipLabel: string;
   showDropdownArrow?: boolean;
   className?: string;
+  hideLabel?: boolean;
 }) {
   return (
     <Popover>
       <Tooltip>
         <TooltipTrigger asChild>
-          <PopoverTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
+          <PopoverTrigger
+            className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground"
+            aria-label={hideLabel ? '' : tooltipLabel}
+          >
             <Icon />
             {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">
-          <TooltipContents label={tooltipLabel} />
+          <TooltipContents label={hideLabel ? '' : tooltipLabel} />
         </TooltipContent>
       </Tooltip>
       <PopoverContent
@@ -113,13 +120,15 @@ export function FormatButtonPopover({
 export function FormatButtonDropdownActions<T extends Action>({
   actions,
   actionArgs,
+  hideLabel,
 }: {
   actions: T[];
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
+  hideLabel?: boolean;
 }) {
   return actions.map((action, key) => {
     const actionSpec = defaultActionSpec[action];
-    const label = actionSpec.label();
+    const label = hideLabel ? '' : actionSpec.label();
     const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
     return (
       <DropdownMenuItem
@@ -140,10 +149,12 @@ export function FormatButton<T extends Action>({
   action,
   actionArgs,
   checked,
+  hideLabel,
 }: {
   action: T;
   actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
   checked?: boolean | null;
+  hideLabel?: boolean;
 }) {
   const actionSpec = defaultActionSpec[action];
   const label = actionSpec.label();
@@ -171,7 +182,7 @@ export function FormatButton<T extends Action>({
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom">
-        <TooltipContents label={label} keyboardShortcut={keyboardShortcut} />
+        <TooltipContents label={hideLabel ? '' : label} keyboardShortcut={keyboardShortcut} />
       </TooltipContent>
     </Tooltip>
   );
@@ -235,9 +246,11 @@ const FormatColorFillIcon = ({ color }: { color: string | undefined }) => {
 export function FormatColorPickerButton({
   action,
   activeColor,
+  hideLabel,
 }: {
   action: Action.FormatTextColor | Action.FormatFillColor;
   activeColor?: string;
+  hideLabel?: boolean;
 }) {
   const actionSpec = defaultActionSpec[action];
   const label = actionSpec.label();
@@ -249,7 +262,12 @@ export function FormatColorPickerButton({
     );
 
   return (
-    <FormatButtonDropdown tooltipLabel={label} IconNode={IconNode} checked={activeColor !== undefined}>
+    <FormatButtonDropdown
+      tooltipLabel={label}
+      IconNode={IconNode}
+      checked={activeColor !== undefined}
+      hideLabel={hideLabel}
+    >
       <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col p-0">
         <QColorPicker
           onChangeComplete={(color) => {
@@ -266,12 +284,12 @@ export function FormatColorPickerButton({
   );
 }
 
-export function FormatDateAndTimePickerButton() {
+export function FormatDateAndTimePickerButton({ hideLabel }: { hideLabel?: boolean }) {
   const dateAndTimeAction = defaultActionSpec[Action.FormatDateTime];
   const label = dateAndTimeAction.label();
 
   return (
-    <FormatButtonPopover tooltipLabel={label} Icon={dateAndTimeAction.Icon}>
+    <FormatButtonPopover tooltipLabel={label} Icon={dateAndTimeAction.Icon} hideLabel={hideLabel}>
       <div className="min-w-80 p-2">
         <DateFormat
           closeMenu={() => {

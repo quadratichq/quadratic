@@ -1,3 +1,11 @@
+//! These are the components that are used to render the Formatting Bar.
+//! Components that don't fit in the main bar are moved to the sub-bar.
+//!
+//! Note that the hideLabel prop is used to hide the label of the button when
+//! measuring the widths. This is necessary because tests rely on the label to
+//! identify the button. Ideally, we would add data-testid to all UI elements to
+//! avoid this.
+
 import { Action } from '@/app/actions/actions';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
@@ -30,54 +38,76 @@ import { forwardRef } from 'react';
 
 export const NumberFormatting = forwardRef<
   HTMLDivElement | null,
-  { className?: string; formatSummary: CellFormatSummary | undefined }
+  { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
 >((props, ref) => (
   <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
     <FormatButton
       action={Action.FormatNumberToggleCommas}
       actionArgs={undefined}
       checked={props.formatSummary?.commas}
+      hideLabel={props.hideLabel}
     />
-    <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} />
-    <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} />
+    <FormatButton action={Action.FormatNumberDecimalDecrease} actionArgs={undefined} hideLabel={props.hideLabel} />
+    <FormatButton action={Action.FormatNumberDecimalIncrease} actionArgs={undefined} hideLabel={props.hideLabel} />
     <FormatButton
       action={Action.FormatNumberCurrency}
       actionArgs={undefined}
       checked={props.formatSummary?.numericFormat?.type === 'CURRENCY'}
+      hideLabel={props.hideLabel}
     />
     <FormatButton
       action={Action.FormatNumberPercent}
       actionArgs={undefined}
       checked={props.formatSummary?.numericFormat?.type === 'PERCENTAGE'}
+      hideLabel={props.hideLabel}
     />
-    <FormatButton action={Action.FormatNumberAutomatic} actionArgs={undefined} />
+    <FormatButton action={Action.FormatNumberAutomatic} actionArgs={undefined} hideLabel={props.hideLabel} />
     <FormatSeparator />
   </div>
 ));
 
-export const DateFormatting = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
-  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
-    <FormatDateAndTimePickerButton />
-    <FormatSeparator />
-  </div>
-));
+export const DateFormatting = forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>(
+  (props, ref) => (
+    <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+      <FormatDateAndTimePickerButton hideLabel={props.hideLabel} />
+      <FormatSeparator />
+    </div>
+  )
+);
 
 export const TextFormatting = forwardRef<
   HTMLDivElement | null,
-  { className?: string; formatSummary: CellFormatSummary | undefined }
+  { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
 >((props, ref) => (
   <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
-    <FormatButton action={Action.ToggleBold} actionArgs={undefined} checked={props.formatSummary?.bold} />
-    <FormatButton action={Action.ToggleItalic} actionArgs={undefined} checked={props.formatSummary?.italic} />
-    <FormatButton action={Action.ToggleUnderline} actionArgs={undefined} checked={props.formatSummary?.underline} />
+    <FormatButton
+      action={Action.ToggleBold}
+      actionArgs={undefined}
+      checked={props.formatSummary?.bold}
+      hideLabel={props.hideLabel}
+    />
+    <FormatButton
+      action={Action.ToggleItalic}
+      actionArgs={undefined}
+      checked={props.formatSummary?.italic}
+      hideLabel={props.hideLabel}
+    />
+    <FormatButton
+      action={Action.ToggleUnderline}
+      actionArgs={undefined}
+      checked={props.formatSummary?.underline}
+      hideLabel={props.hideLabel}
+    />
     <FormatButton
       action={Action.ToggleStrikeThrough}
       actionArgs={undefined}
       checked={props.formatSummary?.strikeThrough}
+      hideLabel={props.hideLabel}
     />
     <FormatColorPickerButton
       action={Action.FormatTextColor}
       activeColor={props.formatSummary?.textColor ?? undefined}
+      hideLabel={props.hideLabel}
     />
     <FormatSeparator />
   </div>
@@ -85,14 +115,20 @@ export const TextFormatting = forwardRef<
 
 export const FillAndBorderFormatting = forwardRef<
   HTMLDivElement | null,
-  { className?: string; formatSummary: CellFormatSummary | undefined }
+  { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
 >((props, ref) => (
   <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
     <FormatColorPickerButton
       action={Action.FormatFillColor}
       activeColor={props.formatSummary?.fillColor ?? undefined}
+      hideLabel={props.hideLabel}
     />
-    <FormatButtonPopover tooltipLabel="Borders" Icon={BorderAllIcon} className="flex flex-row flex-wrap">
+    <FormatButtonPopover
+      tooltipLabel="Borders"
+      Icon={BorderAllIcon}
+      className="flex flex-row flex-wrap"
+      hideLabel={props.hideLabel}
+    >
       <BorderMenu />
     </FormatButtonPopover>
     <FormatSeparator />
@@ -101,7 +137,7 @@ export const FillAndBorderFormatting = forwardRef<
 
 export const AlignmentFormatting = forwardRef<
   HTMLDivElement | null,
-  { className?: string; formatSummary: CellFormatSummary | undefined }
+  { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
 >((props, ref) => {
   let AlignIcon = FormatAlignLeftIcon;
   if (props.formatSummary?.align === 'center') AlignIcon = FormatAlignCenterIcon;
@@ -125,18 +161,21 @@ export const AlignmentFormatting = forwardRef<
             Action.FormatAlignHorizontalRight,
           ]}
           actionArgs={undefined}
+          hideLabel={props.hideLabel}
         />
       </FormatButtonDropdown>
       <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignIcon}>
         <FormatButtonDropdownActions
           actions={[Action.FormatAlignVerticalTop, Action.FormatAlignVerticalMiddle, Action.FormatAlignVerticalBottom]}
           actionArgs={undefined}
+          hideLabel={props.hideLabel}
         />
       </FormatButtonDropdown>
       <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={TextWrapIcon}>
         <FormatButtonDropdownActions
           actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
           actionArgs={undefined}
+          hideLabel={props.hideLabel}
         />
       </FormatButtonDropdown>
       <FormatSeparator />
@@ -144,7 +183,7 @@ export const AlignmentFormatting = forwardRef<
   );
 });
 
-export const Clear = forwardRef<HTMLDivElement | null, { className?: string }>((props, ref) => (
+export const Clear = forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>((props, ref) => (
   <ToggleGroup.Root
     type="multiple"
     className={cn('flex select-none text-sm', props.className)}
@@ -152,7 +191,7 @@ export const Clear = forwardRef<HTMLDivElement | null, { className?: string }>((
     ref={ref}
     {...props}
   >
-    <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} />
+    <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} hideLabel={props.hideLabel} />
   </ToggleGroup.Root>
 ));
 

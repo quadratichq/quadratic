@@ -1,3 +1,6 @@
+//! The formatting bar automatically resizes to fit the available space, showing
+//! leftovers in a submenu.
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
@@ -118,12 +121,12 @@ export const FormattingBar = () => {
     <>
       {createPortal(
         <div className="flex w-fit flex-row">
-          <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} />
-          <DateFormatting ref={dateFormattingRef} />
-          <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} />
-          <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} />
-          <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} />
-          <Clear ref={clearRef} />
+          <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel />
+          <DateFormatting ref={dateFormattingRef} hideLabel />
+          <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel />
+          <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel />
+          <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel />
+          <Clear ref={clearRef} hideLabel />
           <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
         </div>,
         measurementContainer
