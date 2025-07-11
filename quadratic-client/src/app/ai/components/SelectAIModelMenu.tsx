@@ -146,7 +146,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   );
   useEffect(() => {
     if (initialKnowsAboutModelPicker === false && knowsAboutModelPicker) {
-      apiClient.user.update({ clientDataKv: { knowsAboutModelPicker: true } });
+      apiClient.user.clientDataKv.update({ knowsAboutModelPicker: true });
     }
   }, [initialKnowsAboutModelPicker, knowsAboutModelPicker]);
   const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);

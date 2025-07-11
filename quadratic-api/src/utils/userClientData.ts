@@ -1,4 +1,4 @@
-import { UserClientDataKvSchema, type UserClientDataKv } from 'quadratic-shared/typesAndSchemas';
+import { UserClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 
 export async function getUserClientDataKv(userId: number | undefined) {
@@ -24,17 +24,4 @@ export async function getUserClientDataKv(userId: number | undefined) {
   }
 
   return parsed.data;
-}
-
-export async function setUserClientDataKv(userId: number, clientDataKv: UserClientDataKv) {
-  const validatedClientDataKv = UserClientDataKvSchema.safeParse(clientDataKv);
-  if (validatedClientDataKv.success) {
-    await dbClient.user.update({
-      where: { id: userId },
-      data: { clientDataKv: validatedClientDataKv.data },
-    });
-  } else {
-    // TODO: if this failed, we should log it to Sentry because the data has
-    // been corrupted somehow and that's unexpected
-  }
 }

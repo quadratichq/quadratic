@@ -8,7 +8,6 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
-import { setUserClientDataKv } from '../../utils/userClientData';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -18,7 +17,7 @@ const schema = z.object({
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user.POST.response']>) {
   const {
-    body: { onboardingResponses, clientDataKv },
+    body: { onboardingResponses },
   } = parseRequest(req, schema);
   const userId = req.user.id;
 
@@ -28,16 +27,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user.PO
       data: { onboardingResponses },
     });
     return res.status(200).json({ message: 'Onboarding responses saved' });
-  }
-
-  if (clientDataKv) {
-    try {
-      await setUserClientDataKv(userId, clientDataKv);
-    } catch {
-      return res.status(500).json({ message: 'Client KV data corrupted' });
-    }
-
-    return res.status(200).json({ message: 'Client data updated' });
   }
 
   throw new ApiError(400, 'No data provided');

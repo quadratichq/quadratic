@@ -457,11 +457,11 @@ export const ApiSchemas = {
       .object({
         __version: z.number(),
       })
-      .catchall(z.any())
-      .optional(),
-    clientDataKv: UserClientDataKvSchema.optional(),
+      .catchall(z.any()),
   }),
   '/v0/user.POST.response': z.object({ message: z.string() }),
+  '/v0/user/client-data-kv.POST.request': UserClientDataKvSchema,
+  '/v0/user/client-data-kv.POST.response': UserClientDataKvSchema,
 
   /**
    *
