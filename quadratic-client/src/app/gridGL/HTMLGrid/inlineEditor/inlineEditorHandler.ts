@@ -4,7 +4,6 @@
 
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { inlineEditorFormula } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorFormula';
 import { CursorMode, inlineEditorKeyboard } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
@@ -14,7 +13,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { CURSOR_THICKNESS } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToHex } from '@/app/helpers/convertColor';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import type { CellFormatSummary } from '@/app/quadratic-core-types';
+import type { CellFormatSummary, JsRenderCodeCell } from '@/app/quadratic-core-types';
 import type { SheetPosTS } from '@/app/shared/types/size';
 import { createFormulaStyleHighlights } from '@/app/ui/menus/CodeEditor/hooks/useEditorCellHighlights';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
@@ -47,7 +46,7 @@ class InlineEditorHandler {
   temporaryUnderline: boolean | undefined;
   temporaryStrikeThrough: boolean | undefined;
 
-  private table?: Table;
+  private codeCell?: JsRenderCodeCell;
 
   constructor() {
     events.on('changeInput', this.changeInput);
@@ -83,7 +82,7 @@ class InlineEditorHandler {
     this.temporaryItalic = undefined;
     this.temporaryUnderline = undefined;
     this.temporaryStrikeThrough = undefined;
-    this.table = undefined;
+    this.codeCell = undefined;
     this.changeToFormula(false);
     inlineEditorKeyboard.resetKeyboardPosition();
     inlineEditorFormula.clearDecorations();
@@ -176,7 +175,9 @@ class InlineEditorHandler {
 
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string, cursorMode?: CursorMode) => {
-    if (!input && !this.open) return;
+    if (!input && !this.open) {
+      return;
+    }
 
     if (initialValue) {
       this.initialValue += initialValue;
@@ -186,8 +187,9 @@ class InlineEditorHandler {
     }
 
     if (!this.div) {
-      throw new Error('Expected div and editor to be defined in InlineEditorHandler');
+      return;
     }
+
     if (input) {
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.position;
@@ -196,24 +198,43 @@ class InlineEditorHandler {
         x: cursor.x,
         y: cursor.y,
       };
-      this.table = pixiApp.cellsSheet().tables.getTableFromTableCell(this.location.x, this.location.y);
+
       let value: string;
       let changeToFormula = false;
+
       if (initialValue) {
+        changeToFormula = initialValue[0] === '=';
+
         value = initialValue;
-        changeToFormula = value[0] === '=';
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
+
         if (formula?.language === 'Formula') {
-          value = '=' + formula.code_string;
           changeToFormula = true;
+
+          value = '=' + formula.code_string;
         } else {
-          value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
           changeToFormula = false;
+
+          const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
+          if (jsCellValue) {
+            value = jsCellValue.kind === 'number' ? parseFloat(jsCellValue.value).toString() : jsCellValue.value;
+
+            // open the calendar pick if the cell is a date
+            if (['date', 'date time'].includes(jsCellValue.kind)) {
+              pixiAppSettings.setEditorInteractionState?.({
+                ...pixiAppSettings.editorInteractionState,
+                annotationState: `calendar${jsCellValue.kind === 'date time' ? '-time' : ''}`,
+              });
+            }
+          } else {
+            value = '';
+          }
         }
       }
 
-      if (this.table?.codeCell.language === 'Import' && changeToFormula) {
+      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
+      if (this.codeCell?.language === 'Import' && changeToFormula) {
         pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
         this.closeIfOpen();
         return;
@@ -226,6 +247,7 @@ class InlineEditorHandler {
           cursorMode = value ? CursorMode.Edit : CursorMode.Enter;
         }
       }
+
       pixiAppSettings.setInlineEditorState?.((prev) => ({
         ...prev,
         editMode: cursorMode === CursorMode.Edit,
@@ -250,6 +272,7 @@ class InlineEditorHandler {
       this.showDiv();
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
+
       inlineEditorEvents.emit('status', true, value);
 
       // this needs to be at the end to avoid a race condition where the cursor
@@ -397,7 +420,7 @@ class InlineEditorHandler {
     if (!pixiAppSettings.setInlineEditorState) {
       throw new Error('Expected pixiAppSettings.setInlineEditorState to be defined in InlineEditorHandler');
     }
-    if (this.table?.codeCell.language === 'Import' && formula) {
+    if (this.codeCell?.language === 'Import' && formula) {
       pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
       this.closeIfOpen();
       return;

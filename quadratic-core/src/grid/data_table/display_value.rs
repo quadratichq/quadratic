@@ -284,7 +284,7 @@ pub mod test {
             column[remove_at].display = false;
             data_table.column_headers = Some(column);
 
-            let title = Some(format!("Remove column {}", remove_at));
+            let title = Some(format!("Remove column {remove_at}"));
             pretty_print_data_table(data_table, title.as_deref(), None);
 
             let expected_output_width = data_table.columns_to_show().len();

@@ -9,7 +9,7 @@ on:
 jobs:
   build_client:
     name: Build Client
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-build-client
@@ -134,13 +134,13 @@ jobs:
       matrix:
         include:
           - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: files
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -192,7 +192,7 @@ jobs:
   deploy_client:
     needs: [build_client, build_images]
     name: Deploy Client to S3 + Cloudflare
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-deploy-client
@@ -214,7 +214,7 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete
+          aws s3 sync /tmp/quadratic-client-development/ $S3_DIR --delete --force
         env:
           S3_DIR: s3://qa.quadratic-preview.com/
 
@@ -236,7 +236,7 @@ jobs:
   deploy_infra:
     needs: [build_client, build_images]
     name: Update Infrastructure with Pulumi
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-deploy-infra
@@ -287,7 +287,7 @@ jobs:
   verify_deployed_version:
     name: Verify Version
     needs: [build_client, build_images, deploy_client, deploy_infra]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-verify-version-${{ matrix.service.name }}
@@ -298,8 +298,8 @@ jobs:
         service:
           - name: client
             url: "https://qa.quadratic-preview.com/version.json"
-          - name: api-heroku
-            url: "https://quadratic-staging.herokuapp.com/health"
+          # - name: api-heroku
+          #   url: "https://quadratic-staging.herokuapp.com/health"
           - name: api-aws
             url: "https://api-pr-qa.quadratic-preview.com/health"
           - name: multiplayer
@@ -335,7 +335,7 @@ jobs:
   qa-wolf-notify:
     needs: [deploy_client, deploy_infra, verify_deployed_version]
     name: Notify QA Wolf
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     if: github.head_ref == 'qa' && github.base_ref == 'main'
     concurrency:
       group: qa-wolf-notify

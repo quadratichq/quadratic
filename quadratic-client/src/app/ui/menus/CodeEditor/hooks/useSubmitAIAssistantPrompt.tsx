@@ -1,5 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { AI_FREE_TIER_WAIT_TIME_SECONDS, useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
@@ -7,7 +7,6 @@ import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantCurrentChatMessagesCountAtom,
-  aiAssistantDelaySecondsAtom,
   aiAssistantIdAtom,
   aiAssistantLoadingAtom,
   aiAssistantMessagesAtom,
@@ -17,11 +16,9 @@ import {
   codeEditorWaitingForEditorClose,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
-import { apiClient } from '@/shared/api/apiClient';
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
@@ -31,17 +28,16 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIMessage, ChatMessage, Content, ToolResultMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useRef } from 'react';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 
 const MAX_TOOL_CALL_ITERATIONS = 25;
 
 export type SubmitAIAssistantPromptArgs = {
+  messageSource: string;
   content: Content;
   messageIndex: number;
   codeCell?: CodeCell;
-  onSubmit?: () => void;
 };
 
 export function useSubmitAIAssistantPrompt() {
@@ -49,7 +45,7 @@ export function useSubmitAIAssistantPrompt() {
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
-  const [modelKey] = useAIModel();
+  const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ snapshot }) =>
@@ -73,11 +69,9 @@ export function useSubmitAIAssistantPrompt() {
     [getCurrentSheetContext, getVisibleContext, getCodeCellContext]
   );
 
-  const delayTimerRef = useRef<NodeJS.Timeout | undefined>(undefined);
-
   const submitPrompt = useRecoilCallback(
     ({ set, snapshot }) =>
-      async ({ content, messageIndex, codeCell, onSubmit }: SubmitAIAssistantPromptArgs) => {
+      async ({ messageSource, content, messageIndex, codeCell }: SubmitAIAssistantPromptArgs) => {
         set(showAIAssistantAtom, true);
 
         const previousLoading = await snapshot.getPromise(aiAssistantLoadingAtom);
@@ -89,6 +83,19 @@ export function useSubmitAIAssistantPrompt() {
           set(aiAssistantIdAtom, v4());
           set(aiAssistantMessagesAtom, (prev) => prev.slice(0, messageIndex));
         }
+
+        const onExceededBillingLimit = (exceededBillingLimit: boolean) => {
+          if (!exceededBillingLimit) {
+            return;
+          }
+
+          set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
+
+          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+            exceededBillingLimit: exceededBillingLimit,
+            location: 'AIAssistant',
+          });
+        };
 
         set(codeEditorDiffEditorContentAtom, undefined);
         const currentCodeCellInEditor = await snapshot.getPromise(codeEditorCodeCellAtom);
@@ -103,21 +110,18 @@ export function useSubmitAIAssistantPrompt() {
           codeCell = currentCodeCellInEditor;
         }
 
-        if (!onSubmit) {
-          set(aiAssistantMessagesAtom, (prevMessages) => [
-            ...prevMessages,
-            {
-              role: 'user' as const,
-              content,
-              contextType: 'userPrompt' as const,
-            },
-          ]);
-        }
+        set(aiAssistantMessagesAtom, (prevMessages) => [
+          ...prevMessages,
+          {
+            role: 'user' as const,
+            content,
+            contextType: 'userPrompt' as const,
+          },
+        ]);
 
         const abortController = new AbortController();
         abortController.signal.addEventListener('abort', () => {
           let prevWaitingOnMessageIndex: number | undefined = undefined;
-          clearTimeout(delayTimerRef.current);
           set(aiAssistantWaitingOnMessageIndexAtom, (prev) => {
             prevWaitingOnMessageIndex = prev;
             return undefined;
@@ -155,57 +159,6 @@ export function useSubmitAIAssistantPrompt() {
         });
         set(aiAssistantAbortControllerAtom, abortController);
 
-        const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
-        const { exceededBillingLimit, currentPeriodUsage, billingLimit } =
-          await apiClient.teams.billing.aiUsage(teamUuid);
-        if (exceededBillingLimit) {
-          let localDelaySeconds = AI_FREE_TIER_WAIT_TIME_SECONDS + Math.ceil((currentPeriodUsage ?? 0) * 0.25);
-          set(aiAssistantDelaySecondsAtom, localDelaySeconds);
-          set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
-
-          mixpanel.track('[Billing].ai.exceededBillingLimit', {
-            exceededBillingLimit: exceededBillingLimit,
-            billingLimit: billingLimit,
-            currentPeriodUsage: currentPeriodUsage,
-            localDelaySeconds: localDelaySeconds,
-            location: 'AIAssistant',
-          });
-
-          await new Promise<void>((resolve) => {
-            const resolveAfterDelay = () => {
-              localDelaySeconds -= 1;
-              if (localDelaySeconds <= 0) {
-                resolve();
-              } else {
-                set(aiAssistantDelaySecondsAtom, localDelaySeconds);
-                clearTimeout(delayTimerRef.current);
-                delayTimerRef.current = setTimeout(resolveAfterDelay, 1000);
-              }
-            };
-
-            resolveAfterDelay();
-          });
-        }
-        set(aiAssistantWaitingOnMessageIndexAtom, undefined);
-
-        if (abortController.signal.aborted) {
-          set(aiAssistantAbortControllerAtom, undefined);
-          set(aiAssistantLoadingAtom, false);
-          return;
-        }
-
-        if (onSubmit) {
-          onSubmit();
-          set(aiAssistantMessagesAtom, (prevMessages) => [
-            ...prevMessages,
-            {
-              role: 'user' as const,
-              content,
-              contextType: 'userPrompt' as const,
-            },
-          ]);
-        }
-
         set(aiAssistantLoadingAtom, true);
 
         let lastMessageIndex = -1;
@@ -219,13 +172,17 @@ export function useSubmitAIAssistantPrompt() {
           // Handle tool calls
           let toolCallIterations = 0;
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
+            toolCallIterations++;
+
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ codeCell });
             lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAssistant',
+              messageSource,
               modelKey,
+              time: new Date().toString(),
               messages: messagesWithContext,
               useStream: true,
               toolName: undefined,
@@ -234,13 +191,14 @@ export function useSubmitAIAssistantPrompt() {
               useQuadraticContext: true,
               setMessages: (updater) => set(aiAssistantMessagesAtom, updater),
               signal: abortController.signal,
+              onExceededBillingLimit,
             });
 
             if (response.toolCalls.length === 0) {
               break;
             }
 
-            toolCallIterations++;
+            messageSource = response.toolCalls.map((toolCall) => toolCall.name).join(', ');
 
             // Message containing tool call results
             const toolResultMessage: ToolResultMessage = {

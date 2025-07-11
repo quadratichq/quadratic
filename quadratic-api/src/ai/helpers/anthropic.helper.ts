@@ -20,8 +20,8 @@ import {
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
-  AIMessagePrompt,
   AIRequestHelperArgs,
   AISource,
   AIUsage,
@@ -225,14 +225,18 @@ function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse> {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
@@ -420,14 +424,18 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): ParsedAIResponse {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   result.content?.forEach((message) => {

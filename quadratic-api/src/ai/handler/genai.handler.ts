@@ -14,6 +14,8 @@ const KEEP_ALIVE_INTERVAL = 25000;
 export const handleGenAIRequest = async (
   modelKey: VertexAIModelKey | GeminiAIModelKey,
   args: AIRequestHelperArgs,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   genai: GoogleGenAI,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
@@ -27,7 +29,7 @@ export const handleGenAIRequest = async (
     config: {
       temperature: options.temperature,
       systemInstruction: system,
-      maxOutputTokens: options.max_tokens,
+      maxOutputTokens: !options.max_tokens ? undefined : options.max_tokens,
       tools,
       toolConfig: tool_choice,
       ...(options.thinking !== undefined && {
@@ -61,12 +63,12 @@ export const handleGenAIRequest = async (
 
     clearTimeout(timeout);
 
-    const parsedResponse = await parseGenAIStream(result, modelKey, response);
+    const parsedResponse = await parseGenAIStream(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   } else {
     const result = await genai.models.generateContent(apiArgs);
 
-    const parsedResponse = parseGenAIResponse(result, modelKey, response);
+    const parsedResponse = parseGenAIResponse(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   }
 };

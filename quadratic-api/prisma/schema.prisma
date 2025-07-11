@@ -150,6 +150,11 @@ enum ConnectionType {
     MYSQL
     MSSQL
     SNOWFLAKE
+    BIGQUERY
+    COCKROACHDB
+    MARIADB
+    NEON
+    SUPABASE
 }
 
 model Connection {
@@ -287,6 +292,7 @@ model AnalyticsAIChatMessage {
     model            String
     messageIndex     Int                @map("message_index")
     messageType      AIChatMessageType? @map("message_type")
+    source           String?
     s3Key            String?            @map("s3_key")
     like             Boolean?
     undo             Boolean?

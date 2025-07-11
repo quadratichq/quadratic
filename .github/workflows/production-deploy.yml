@@ -8,7 +8,7 @@ on:
 jobs:
   build_client:
     name: Build Client
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     concurrency:
       group: production-build-client
       cancel-in-progress: true
@@ -131,13 +131,13 @@ jobs:
       matrix:
         include:
           - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: files
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -189,7 +189,7 @@ jobs:
   deploy_client:
     needs: [build_client, build_images]
     name: Deploy Client to S3 + Cloudflare
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     concurrency:
       group: production-deploy-client
     timeout-minutes: 60
@@ -210,7 +210,7 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR --delete
+          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR --delete --force
         env:
           S3_DIR: s3://app.quadratichq.com/
 
@@ -232,7 +232,7 @@ jobs:
   deploy_infra:
     needs: [build_client, build_images]
     name: Update Infrastructure with Pulumi
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     concurrency:
       group: production-deploy-infra
     timeout-minutes: 60
@@ -276,7 +276,7 @@ jobs:
   verify_deployed_version:
     name: Verify Version
     needs: [build_client, build_images, deploy_client, deploy_infra]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     concurrency:
       group: production-verify-version-${{ matrix.service.name }}
       cancel-in-progress: true

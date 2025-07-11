@@ -44,7 +44,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -68,7 +68,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   const aiMessageCount = Number(aiMessageCountText?.match(/\d+/)?.[0]);
 
   // Return to file directory page
-  await page.getByRole(`link`, { name: `draft Files` }).click();
+  await page.getByRole(`link`, { name: `draft Files` }).click({ timeout: 30 * 1000 });
 
   // Assert that we're at the files page before triggering cleanup & creating a new file
   await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
@@ -88,7 +88,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   //--------------------------------
 
   // Click on the Chat icon in left sidebar
-  await page.getByRole(`button`, { name: `auto_awesome` }).click();
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
 
   // Assert the chat is open based on heading text
   await expect(page.getByText(`Sheet chat`)).toBeVisible({ timeout: 30 * 1000 });
@@ -100,7 +100,7 @@ test.skip('AI Message Counter', async ({ page }) => {
     await page.getByPlaceholder('Ask a question...').fill(promptsToSend[i]);
 
     // Click the button with the "arrow_upward" icon to submit the prompt
-    await page.locator('span:has-text("arrow_upward")').click();
+    await page.locator('span:has-text("arrow_upward")').click({ timeout: 30 * 1000 });
 
     // Assert the user prompt is visible in chat history
     const userPrompt = page.locator(`form`).nth(i);
@@ -119,8 +119,8 @@ test.skip('AI Message Counter', async ({ page }) => {
   }
 
   // Navigate back to the Settings page to check the message counter
-  await page.locator(`[href="/"]`).click();
-  await page.getByRole(`link`, { name: `settings Settings` }).click();
+  await page.locator(`[href="/"]`).click({ timeout: 30 * 1000 });
+  await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -153,7 +153,7 @@ test.skip('AI Message Counter', async ({ page }) => {
 
   // **Cleanup**
   // Navigate back to homepage to trigger cleanup
-  await page.getByRole(`link`, { name: `draft Files` }).click();
+  await page.getByRole(`link`, { name: `draft Files` }).click({ timeout: 30 * 1000 });
 
   // Assert that we're at the files page before trigger cleanup
   await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
@@ -190,7 +190,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -221,7 +221,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 30 * 1000 });
 
   // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click();
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -240,15 +240,11 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
 
   // Store the credit card details from the initial payment method used to upgrade to Pro
-  const initialPaymentEl = await page
-    .locator(`[data-testid="page-container-main"] .Box-hideIfEmpty`)
-    .nth(23)
-    .innerText();
-
-  const [, initialPaymentNum, initialPaymentExpiry] = initialPaymentEl.split('\n');
+  const initialPaymentEl = await page.locator(`:below(:text("Payment Method")) >>nth=0`).innerText();
+  const [initialPaymentNum, _, initialPaymentExpiry] = initialPaymentEl.split('\n');
 
   // Click 'Add payment method' to add an additional payment method
-  await page.getByRole(`link`, { name: `Add payment method` }).click();
+  await page.getByRole(`link`, { name: `Add payment method` }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -284,7 +280,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Click 'Submit' button to add the new payment method after it is enabled
   await expect(page.locator(`[data-testid="confirm"]`)).toBeEnabled();
   await page.locator(`[data-testid="confirm"]`).scrollIntoViewIfNeeded();
-  await page.locator(`[data-testid="confirm"]`).click();
+  await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -355,7 +351,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   });
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -389,7 +385,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(memberCount).toBe(1);
 
   // Click 'manage' link to manage team members
-  await page.getByRole(`link`, { name: `manage` }).click();
+  await page.getByRole(`link`, { name: `manage` }).click({ timeout: 30 * 1000 });
 
   // Assert that we've navigated to the team management page
   await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible({ timeout: 30 * 1000 });
@@ -419,7 +415,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await userPage2.waitForLoadState('networkidle');
 
   // Navigate to 'Settings' to check team member count again
-  await page.getByRole(`link`, { name: `settings Settings` }).click();
+  await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -433,7 +429,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(newMemberCount).toBe(2);
 
   // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click();
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -455,7 +451,10 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 30 * 1000 });
 
   // Expand and check the first accordion element for invoice details
-  await page.locator(`[data-test="show-cost-details"]`).first().click();
+  await page
+    .locator(`[data-test="show-cost-details"]`)
+    .first()
+    .click({ timeout: 30 * 1000 });
   const invoiceTotalText = await page
     .locator('[data-testid="expanded-invoice-details"] span[data-test="value"]')
     .first()
@@ -466,13 +465,16 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(Number(invoiceTotal)).toBe(newMemberCount * proPlanCost);
 
   // Close the first accordion
-  await page.locator(`[data-test="hide-cost-details"]`).click();
+  await page.locator(`[data-test="hide-cost-details"]`).click({ timeout: 30 * 1000 });
 
   // Wait for the accordion to close before interacting with the second one
   await page.waitForTimeout(500);
 
   // Expand and check the second accordion for invoice details
-  await page.locator(`[data-test="show-cost-details"]`).last().click();
+  await page
+    .locator(`[data-test="show-cost-details"]`)
+    .last()
+    .click({ timeout: 30 * 1000 });
   const secondInvoiceText = await page.locator(`[data-testid="expanded-invoice-details"]`).last().innerText();
 
   // Check if the text includes a prorated charge for team
@@ -482,12 +484,12 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(secondInvoiceText).toContain(`Qty ${newMemberCount}`);
 
   // Close the second accordion
-  await page.locator(`[data-test="hide-cost-details"]`).click();
+  await page.locator(`[data-test="hide-cost-details"]`).click({ timeout: 30 * 1000 });
 
   // **Cleanup**
   // Remove the team member from the team and check monthly cost is back to $20
   // Navigate to Quadratic home page (files page)
-  await page.locator(`[data-testid="return-to-business-link"]`).click();
+  await page.locator(`[data-testid="return-to-business-link"]`).click({ timeout: 30 * 1000 });
 
   // Remove the team member from the team
   await deleteMemberFromProPlan(page, {
@@ -512,7 +514,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -527,7 +529,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
 
   // Click 'Manage billing' to reach the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click();
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -543,7 +545,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
 
   // Click 'Cancel subscription' button
-  await page.locator(`[data-test="cancel-subscription"]`).click();
+  await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 30 * 1000 });
 
   // Assert that the page to confirm the cancellation appears
   await expect(page).toHaveTitle(/Cancel subscription/);
@@ -557,7 +559,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   expect(cancelSubscriptionText).toContain('subscription will be canceled');
 
   // Click 'Cancel subscription" to confirm the cancellation
-  await page.locator(`[data-testid="confirm"]`).click();
+  await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
 
   // Wait for the cancellation confirmation dialog to appear
   await page.getByRole(`dialog`).waitFor();
@@ -598,7 +600,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -629,7 +631,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 30 * 1000 });
 
   // Click 'Manage billing' to reach the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click();
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -645,7 +647,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
 
   // Click 'Update Information' under 'Billing Information'
-  await page.getByRole(`button`, { name: `Update information` }).click();
+  await page.getByRole(`button`, { name: `Update information` }).click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -681,13 +683,13 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await page.getByRole(`textbox`, { name: `Address line 1` }).fill(billingInfo.address1);
   await page.getByRole(`textbox`, { name: `Address line 2` }).fill(billingInfo.address2);
   await page.getByRole(`textbox`, { name: `City` }).fill(billingInfo.city);
-  await page.getByLabel(`State`).click();
+  await page.getByLabel(`State`).click({ timeout: 30 * 1000 });
   await page.getByLabel(`State`).type(billingInfo.state);
   await page.getByLabel(`State`).press('Enter');
   await page.getByRole(`textbox`, { name: `ZIP` }).fill(billingInfo.zip);
 
   // Click 'Save' button to confirm the changes
-  await page.locator(`[data-testid="confirm"]`).click();
+  await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
 
   // Assert that the new name is the updated name
   await expect(page.getByText(`Name${billingInfo.name}`)).toBeVisible({ timeout: 30 * 1000 });
@@ -716,7 +718,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await createNewTeamByURL(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -747,7 +749,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -805,7 +807,7 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click();
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -837,7 +839,7 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   //--------------------------------
 
   // Click 'Upgrade to Pro' to upgrade the account
-  await page.getByRole(`button`, { name: `Upgrade to Pro` }).click();
+  await page.getByRole(`button`, { name: `Upgrade to Pro` }).click({ timeout: 30 * 1000 });
 
   // Assert that page was redirected to a Stripe integrated payment page
   await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 30 * 1000 });
@@ -882,7 +884,7 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   await page.getByRole(`textbox`, { name: `ZIP` }).fill(creditCard.zipCode);
 
   // Click 'Subscribe' button to upgrade the count to a Pro plan
-  await page.locator(`[data-testid="hosted-payment-submit-button"]`).click();
+  await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 30 * 1000 });
 
   await page.waitForLoadState('domcontentloaded');
 

@@ -19,6 +19,7 @@ export const ROUTES = {
       state?: UrlParamsDevState['insertAndRunCodeInNewSheet'];
       prompt?: string | null;
       private?: boolean;
+      chatId?: string | null;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -31,6 +32,9 @@ export const ROUTES = {
     }
     if (searchParams.private) {
       url.searchParams.set('private', 'true');
+    }
+    if (searchParams.chatId) {
+      url.searchParams.set('chat-id', searchParams.chatId);
     }
 
     return url.toString();
@@ -60,6 +64,7 @@ export const ROUTES = {
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
+  ACTIVE_TEAM_SETTINGS: `/team/settings`,
   EXAMPLES: '/examples',
   LABS: '/labs',
 
@@ -73,6 +78,8 @@ export const ROUTES = {
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
     },
   },
+
+  IFRAME_INDEXEDDB: '/iframe-indexeddb',
 };
 
 export const ROUTE_LOADER_IDS = {

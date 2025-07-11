@@ -61,7 +61,7 @@ impl SnowflakeConnection {
 /// Since the snowflake api returns arrow data, we don't need some of the
 /// trait functions implemented.
 #[async_trait]
-impl Connection for SnowflakeConnection {
+impl<'a> Connection<'a> for SnowflakeConnection {
     type Conn = SnowflakeApi;
     type Row = Arc<dyn Array>;
     type Column = ArrayRef;
@@ -77,12 +77,12 @@ impl Connection for SnowflakeConnection {
     }
 
     /// Get the name of a column
-    fn column_name(_col: &Self::Column) -> &str {
+    fn column_name(&self, _col: &Self::Column, _index: usize) -> String {
         unimplemented!();
     }
 
     /// Convert a row to an Arrow type
-    fn to_arrow(_row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
+    fn to_arrow(&self, _row: &Self::Row, _: &ArrayRef, _index: usize) -> ArrowType {
         unimplemented!();
     }
 
@@ -108,34 +108,17 @@ impl Connection for SnowflakeConnection {
 
     /// Query rows from a Snowflake database
     async fn query(
-        &self,
+        &mut self,
         _client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
     ) -> Result<(Bytes, bool, usize)> {
         let query_error = |e: String| SharedError::Sql(SqlError::Query(e));
 
-        #[cfg(all(any(test, feature = "test"), not(clippy)))]
-        let (mut _client, _recording) = tests::get_mocked(self, "snowflake-connection").await;
-
         let query_result = _client
             .exec_raw(sql, true)
             .await
             .map_err(|e| query_error(e.to_string()))?;
-
-        #[cfg(all(
-            any(test, feature = "test"),
-            feature = "record-request-mock",
-            not(clippy)
-        ))]
-        record_stop(scenario, _recording).await;
-
-        #[cfg(all(
-            any(test, feature = "test"),
-            feature = "record-request-mock",
-            not(clippy)
-        ))]
-        println!("query_result: {:?}", query_result);
 
         if let RawQueryResult::Stream(mut bytes_stream) = query_result {
             let mut chunks = vec![];
@@ -215,21 +198,10 @@ impl Connection for SnowflakeConnection {
                 col.ordinal_position;"
         );
 
-        #[cfg(all(any(test, feature = "test"), not(clippy)))]
-        let (mut _client, _recording) =
-            tests::get_mocked(self, "snowflake-connection-schema").await;
-
         let row_stream = _client
             .exec(&sql)
             .await
             .map_err(|e| SharedError::Sql(SqlError::Query(e.to_string())))?;
-
-        #[cfg(all(
-            any(test, feature = "test"),
-            feature = "record-request-mock",
-            not(clippy)
-        ))]
-        record_stop(scenario, _recording).await;
 
         let mut data = vec![vec![]; 6];
 
@@ -293,73 +265,23 @@ impl Connection for SnowflakeConnection {
     }
 }
 
-#[cfg(not(clippy))]
-#[cfg(any(test, feature = "test"))]
 pub mod tests {
 
-    use crate::test::request::get_server;
-
-    #[cfg(feature = "record-request-mock")]
-    use crate::test::request::{record_start, record_stop};
-
     use super::*;
-    use httpmock::{MockServer, Recording};
+    use std::sync::{LazyLock, Mutex};
 
     pub const PARQUET_FILE: &str = "data/parquet/all_native_data_types-snowflake.parquet";
 
+    pub static SNOWFLAKE_CREDENTIALS: LazyLock<Mutex<String>> = LazyLock::new(|| {
+        dotenv::from_filename(".env.test").ok();
+        let credentials = std::env::var("SNOWFLAKE_CREDENTIALS").unwrap();
+
+        Mutex::new(credentials)
+    });
+
     pub fn new_snowflake_connection() -> SnowflakeConnection {
-        SnowflakeConnection::new(
-            "TEST".into(),
-            "TEST".into(),
-            "TEST".into(),
-            None,
-            "ALL_NATIVE_DATA_TYPES".into(),
-            None,
-            None,
-        )
-    }
-
-    pub fn get_mock_server<'a>(
-        connection: &SnowflakeConnection,
-        scenario: &str,
-    ) -> (Option<Recording<'a>>, MockServer) {
-        let url = format!(
-            "https://{}.snowflakecomputing.com",
-            &connection.account_identifier
-        );
-        let server = get_server(
-            cfg!(all(
-                any(test, feature = "test"),
-                feature = "record-request-mock"
-            )),
-            scenario,
-            &url,
-        );
-
-        #[cfg(all(any(test, feature = "test"), feature = "record-request-mock"))]
-        return (Some(record_start(&server)), server);
-
-        (None, server)
-    }
-
-    pub async fn get_mocked_client(
-        connection: &SnowflakeConnection,
-        server: &MockServer,
-    ) -> SnowflakeApi {
-        connection
-            .connect()
-            .await
-            .map(|c| c.with_host(Some(server.base_url())))
-            .unwrap()
-    }
-
-    pub async fn get_mocked<'a>(
-        connection: &'a SnowflakeConnection,
-        scenario: &'a str,
-    ) -> (SnowflakeApi, Option<Recording<'a>>) {
-        let (recording, server) = tests::get_mock_server(connection, scenario);
-        let client = tests::get_mocked_client(connection, &server).await;
-        (client, recording)
+        let credentials = SNOWFLAKE_CREDENTIALS.lock().unwrap().to_string();
+        serde_json::from_str::<SnowflakeConnection>(&credentials).unwrap()
     }
 
     // async fn _seed(
@@ -419,54 +341,8 @@ pub mod tests {
         (connection, client)
     }
 
-    // to record: cargo test --features record-request-mock
-    pub async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
-        let connection = new_snowflake_connection();
-        let mut client = connection.connect().await.unwrap();
-
-        connection
-            .query(
-                &mut client,
-                "select * from all_native_data_types;",
-                max_bytes,
-            )
-            .await
-            .unwrap()
-    }
-
-    #[tokio::test]
-    async fn test_snowflake_connection() {
-        let (_, client) = setup().await;
-
-        assert!(client.is_ok());
-    }
-
-    #[tokio::test]
-    async fn test_snowflake_query() {
-        let (rows, over_the_limit, num_records) = test_query(None).await;
-
-        // ensure the parquet file is the same as the bytes
-        assert!(crate::parquet::utils::compare_parquet_file_with_bytes(
-            PARQUET_FILE,
-            rows
-        ));
-        assert!(!over_the_limit);
-        assert_eq!(num_records, 2);
-
-        // // test if we're over the limit
-        let (_, over_the_limit, num_records) = test_query(Some(10)).await;
-        assert!(over_the_limit);
-        assert_eq!(num_records, 0);
-    }
-
-    // to record: cargo test test_snowflake_schema --features record-request-mock
-    #[tokio::test]
-    async fn test_snowflake_schema() {
-        let connection = new_snowflake_connection();
-        let mut client = connection.connect().await.unwrap();
-        let schema = connection.schema(&mut client).await.unwrap();
-
-        let expected = vec![
+    pub fn expected_snowflake_schema() -> Vec<SchemaColumn> {
+        vec![
             SchemaColumn {
                 name: "INTEGER_COL".into(),
                 r#type: "NUMBER".into(),
@@ -557,7 +433,63 @@ pub mod tests {
                 r#type: "GEOGRAPHY".into(),
                 is_nullable: true,
             },
-        ];
+        ]
+    }
+
+    // to record: cargo test --features record-request-mock
+    pub async fn test_query(max_bytes: Option<u64>) -> (Bytes, bool, usize) {
+        let mut connection = new_snowflake_connection();
+        let mut client = connection.connect().await.unwrap();
+
+        connection
+            .query(
+                &mut client,
+                "select * from ALL_NATIVE_DATA_TYPES.ALL_NATIVE_DATA_TYPES.ALL_NATIVE_DATA_TYPES limit 1;",
+                max_bytes,
+            )
+            .await
+            .unwrap()
+    }
+
+    #[tokio::test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
+    async fn test_snowflake_connection() {
+        let (_, client) = setup().await;
+
+        assert!(client.is_ok());
+    }
+
+    #[tokio::test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
+    async fn test_snowflake_query() {
+        let (rows, over_the_limit, num_records) = test_query(None).await;
+
+        // ensure the parquet file is the same as the bytes
+        assert!(crate::parquet::utils::compare_parquet_file_with_bytes(
+            PARQUET_FILE,
+            rows
+        ));
+        assert!(!over_the_limit);
+        assert_eq!(num_records, 2);
+
+        // // test if we're over the limit
+        let (_, over_the_limit, num_records) = test_query(Some(10)).await;
+        assert!(over_the_limit);
+        assert_eq!(num_records, 0);
+    }
+
+    // to record: cargo test test_snowflake_schema --features record-request-mock
+    #[tokio::test]
+    // TODO(ddimaria): remove this ignore once snowflake MFA issue is resolved
+    #[ignore]
+    async fn test_snowflake_schema() {
+        let connection = new_snowflake_connection();
+        let mut client = connection.connect().await.unwrap();
+        let schema = connection.schema(&mut client).await.unwrap();
+
+        let expected = expected_snowflake_schema();
 
         let columns = &schema.tables.get("ALL_NATIVE_DATA_TYPES").unwrap().columns;
 

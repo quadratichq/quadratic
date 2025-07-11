@@ -30,9 +30,9 @@ use crate::state::State;
 #[macro_export]
 macro_rules! test_connection {
     ( $connection:expr ) => {{
-        let (_, headers) = crate::test_util::new_team_id_with_header().await;
-        let state = Extension(crate::test_util::new_state().await);
-        let claims = crate::test_util::get_claims();
+        let (_, headers) = $crate::test_util::new_team_id_with_header().await;
+        let state = Extension($crate::test_util::new_state().await);
+        let claims = $crate::test_util::get_claims();
         let response = test(headers, state, claims, axum::Json($connection))
             .await
             .unwrap();
@@ -143,11 +143,11 @@ pub(crate) async fn validate_parquet(response: Response, expected: Vec<(DataType
 
     for (count, expect) in expected.iter().enumerate() {
         let (data_type, value) = output.get(count).unwrap().to_owned();
-        println!("data_type: {:?}, value: {:?}", data_type, value);
+        println!("data_type: {data_type:?}, value: {value:?}");
         println!("expected data_type: {:?}", expect.0);
 
-        assert_eq!(data_type, expect.0, "Invalid data type at index {}", count);
-        assert_eq!(value, expect.1, "Invalid value at index {}", count);
+        assert_eq!(data_type, expect.0, "Invalid data type at index {count}");
+        assert_eq!(value, expect.1, "Invalid value at index {count}");
     }
 }
 

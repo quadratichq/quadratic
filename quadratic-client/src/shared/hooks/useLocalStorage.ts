@@ -2,11 +2,11 @@ import type { Dispatch, SetStateAction } from 'react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 // See: https://usehooks-ts.com/react-hook/use-event-listener
-import useEventListener from './useEventListener';
+import useEventListener from '@/shared/hooks/useEventListener';
 
 declare global {
   interface WindowEventMap {
-    'local-storage': CustomEvent;
+    'local-storage': StorageEvent;
     'run-editor-action': CustomEvent;
   }
 }
@@ -47,31 +47,55 @@ function useLocalStorage<T>(key: string, initialValue: T): [T, SetValue<T>] {
       }
 
       try {
-        // Allow value to be a function so we have the same API as useState
-        const newValue = value instanceof Function ? value(storedValue) : value;
-
-        // Save to local storage
-        window.localStorage.setItem(key, JSON.stringify(newValue));
-
         // Save state
-        setStoredValue(newValue);
+        setStoredValue((oldValue) => {
+          // Allow value to be a function so we have the same API as useState
+          const newValue = value instanceof Function ? value(oldValue) : value;
+          const newValueString = JSON.stringify(newValue);
 
-        // We dispatch a custom event so every useLocalStorage hook are notified
-        window.dispatchEvent(new Event('local-storage'));
+          const oldValueString = window.localStorage.getItem(key);
+
+          if (newValueString !== oldValueString) {
+            // Save to local storage
+            window.localStorage.setItem(key, newValueString);
+
+            // We dispatch a custom event so every useLocalStorage hook are notified
+            window.dispatchEvent(
+              new StorageEvent('local-storage', {
+                key,
+                newValue: newValueString,
+                oldValue: oldValueString,
+              })
+            );
+          }
+
+          return newValue;
+        });
       } catch (error) {
         throw new Error(`Error setting localStorage key “${key}”`);
       }
     },
-    [key, storedValue]
+    [key]
   );
+
+  useEffect(() => {
+    if (window.localStorage.getItem(key) === null) {
+      setValue(initialValue);
+    }
+  }, [initialValue, key, setValue]);
 
   useEffect(() => {
     setStoredValue(readValue());
   }, [readValue]);
 
-  const handleStorageChange = useCallback(() => {
-    setStoredValue(readValue());
-  }, [readValue]);
+  const handleStorageChange = useCallback(
+    (e: StorageEvent) => {
+      if (e.key === key) {
+        setStoredValue(readValue());
+      }
+    },
+    [readValue, key]
+  );
 
   // this only works for other documents, not the current one
   useEventListener('storage', handleStorageChange);

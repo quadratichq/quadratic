@@ -55,6 +55,9 @@ impl GridController {
                     }
 
                     if transaction.is_user_undo_redo() {
+                        transaction.generate_thumbnail |=
+                            self.thumbnail_dirty_sheet_rect(sheet_rect);
+
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_pos, values });
@@ -65,9 +68,6 @@ impl GridController {
                                 sheet_pos,
                                 values: old_values,
                             });
-
-                        transaction.generate_thumbnail |=
-                            self.thumbnail_dirty_sheet_rect(sheet_rect);
                     }
                 }
             }
@@ -77,8 +77,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use bigdecimal::BigDecimal;
-
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
     use crate::{CellValue, Pos, SheetPos};
@@ -89,8 +87,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "0".to_string(),
@@ -99,14 +97,14 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(0)))
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(0.into()))
         );
 
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "1".to_string(),
@@ -115,8 +113,8 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Number(1.into()))
         );
     }
 
@@ -169,7 +167,7 @@ mod tests {
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         gc.set_cell_value(sheet_pos, "".to_string(), None);
         let sheet = gc.sheet(sheet_id);
@@ -188,7 +186,7 @@ mod tests {
         gc.set_cell_value(sheet_pos, "1".to_string(), None);
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         gc.undo(None);
         assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);

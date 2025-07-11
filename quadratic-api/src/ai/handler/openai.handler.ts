@@ -6,14 +6,17 @@ import type {
   AIRequestHelperArgs,
   AzureOpenAIModelKey,
   OpenAIModelKey,
+  OpenRouterModelKey,
   ParsedAIResponse,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | XAIModelKey | AzureOpenAIModelKey,
+  modelKey: OpenAIModelKey | XAIModelKey | OpenRouterModelKey | AzureOpenAIModelKey,
   args: AIRequestHelperArgs,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   openai: OpenAI,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
@@ -25,7 +28,7 @@ export const handleOpenAIRequest = async (
     model,
     messages,
     temperature: options.temperature,
-    max_completion_tokens: options.max_tokens,
+    max_completion_tokens: !options.max_tokens ? undefined : options.max_tokens,
     stream: options.stream,
     tools,
     tool_choice,
@@ -46,11 +49,11 @@ export const handleOpenAIRequest = async (
       },
     };
     const completion = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsStreaming);
-    const parsedResponse = await parseOpenAIStream(completion, modelKey, response);
+    const parsedResponse = await parseOpenAIStream(completion, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   } else {
     const result = await openai.chat.completions.create(apiArgs as ChatCompletionCreateParamsNonStreaming);
-    const parsedResponse = parseOpenAIResponse(result, modelKey, response);
+    const parsedResponse = parseOpenAIResponse(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
   }
 };

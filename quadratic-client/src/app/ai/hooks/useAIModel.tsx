@@ -1,7 +1,7 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import type { SetValue } from '@/shared/hooks/useLocalStorage';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { DEFAULT_MODEL, DEFAULT_MODEL_VERSION, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { DEFAULT_MODEL_FREE, DEFAULT_MODEL_VERSION, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 import { useEffect, useMemo } from 'react';
 
@@ -9,48 +9,62 @@ const MODEL_LOCAL_STORAGE_KEY = 'aiModel';
 const THINKING_TOGGLE_LOCAL_STORAGE_KEY = 'aiThinkingToggle';
 const MODEL_VERSION_LOCAL_STORAGE_KEY = 'aiModelVersion';
 
-export function useAIModel(): [AIModelKey, SetValue<AIModelKey>, AIModelConfig, boolean, SetValue<boolean>] {
-  const { getFlag } = useDebugFlags();
-  const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(MODEL_LOCAL_STORAGE_KEY, DEFAULT_MODEL);
-  const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(THINKING_TOGGLE_LOCAL_STORAGE_KEY, false);
-  const [version] = useLocalStorage<number>('aiModelVersion', 0);
-
-  // This is to force update model stored in local storage to the current default model
+export const useAIModel = (): {
+  modelKey: AIModelKey;
+  setModelKey: SetValue<AIModelKey>;
+  modelConfig: AIModelConfig;
+  thinkingToggle: boolean;
+  setThinkingToggle: SetValue<boolean>;
+} => {
+  // Clear older versions of the model and thinking toggle from local storage
   useEffect(() => {
-    if (version !== DEFAULT_MODEL_VERSION) {
-      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL));
-      window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
-
-      const modelConfig = MODELS_CONFIGURATION[DEFAULT_MODEL];
-      if ('thinkingToggle' in modelConfig) {
-        window.localStorage.setItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY, JSON.stringify(!!modelConfig.thinking));
-      }
+    window.localStorage.removeItem(MODEL_LOCAL_STORAGE_KEY);
+    window.localStorage.removeItem(THINKING_TOGGLE_LOCAL_STORAGE_KEY);
+    window.localStorage.removeItem(MODEL_VERSION_LOCAL_STORAGE_KEY);
+    for (let i = 0; i < DEFAULT_MODEL_VERSION; i++) {
+      window.localStorage.removeItem(`${MODEL_LOCAL_STORAGE_KEY}-${i}`);
+      window.localStorage.removeItem(`${THINKING_TOGGLE_LOCAL_STORAGE_KEY}-${i}`);
     }
-  }, [version]);
+  }, []);
+
+  const { debug } = useDebugFlags();
+
+  const defaultConfig = useMemo(() => MODELS_CONFIGURATION[DEFAULT_MODEL_FREE], []);
+  if (!defaultConfig) {
+    throw new Error(`Default model ${DEFAULT_MODEL_FREE} not found`);
+  }
+
+  const [modelKey, setModelKey] = useLocalStorage<AIModelKey>(
+    `${MODEL_LOCAL_STORAGE_KEY}-${DEFAULT_MODEL_VERSION}`,
+    DEFAULT_MODEL_FREE
+  );
+
+  const [thinkingToggle, setThinkingToggle] = useLocalStorage<boolean>(
+    `${THINKING_TOGGLE_LOCAL_STORAGE_KEY}-${DEFAULT_MODEL_VERSION}`,
+    !!defaultConfig.thinkingToggle
+  );
 
   // If the model is removed from the MODELS object or is not enabled, set the model to the current default model
   useEffect(() => {
     const config = MODELS_CONFIGURATION[modelKey];
-    if (!config || (!getFlag('debug') && !config.enabled)) {
-      window.localStorage.setItem(MODEL_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL));
-      window.localStorage.setItem(MODEL_VERSION_LOCAL_STORAGE_KEY, JSON.stringify(DEFAULT_MODEL_VERSION));
+    if (!config || (!debug && config.mode === 'disabled')) {
+      setModelKey(DEFAULT_MODEL_FREE);
+      if ('thinkingToggle' in defaultConfig) {
+        setThinkingToggle(!!defaultConfig.thinkingToggle);
+      }
     }
-  }, [modelKey, getFlag]);
+  }, [debug, defaultConfig, modelKey, setModelKey, setThinkingToggle]);
 
-  const config = useMemo(() => {
-    return MODELS_CONFIGURATION[modelKey];
-  }, [modelKey]);
-
-  const defaultConfig = useMemo(() => {
-    return MODELS_CONFIGURATION[DEFAULT_MODEL];
-  }, []);
-  if (!defaultConfig) {
-    throw new Error(`Default model ${DEFAULT_MODEL} not found`);
+  const modelConfig = useMemo(() => MODELS_CONFIGURATION[modelKey], [modelKey]);
+  if (!modelConfig) {
+    return {
+      modelKey: DEFAULT_MODEL_FREE,
+      setModelKey,
+      modelConfig: defaultConfig,
+      thinkingToggle,
+      setThinkingToggle,
+    };
   }
 
-  if (!config) {
-    return [DEFAULT_MODEL, setModelKey, defaultConfig, thinkingToggle, setThinkingToggle];
-  }
-
-  return [modelKey, setModelKey, config, thinkingToggle, setThinkingToggle];
-}
+  return { modelKey, setModelKey, modelConfig, thinkingToggle, setThinkingToggle };
+};

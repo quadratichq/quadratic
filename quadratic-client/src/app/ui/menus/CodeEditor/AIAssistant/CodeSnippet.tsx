@@ -31,7 +31,12 @@ export const CodeSnippet = memo(({ code, language = 'plaintext' }: CodeSnippetPr
       lowerCaseLanguage === 'postgres' ||
       lowerCaseLanguage === 'mysql' ||
       lowerCaseLanguage === 'mssql' ||
-      lowerCaseLanguage === 'snowflake'
+      lowerCaseLanguage === 'snowflake' ||
+      lowerCaseLanguage === 'cockroachdb' ||
+      lowerCaseLanguage === 'bigquery' ||
+      lowerCaseLanguage === 'mariadb' ||
+      lowerCaseLanguage === 'supabase' ||
+      lowerCaseLanguage === 'neon'
     ) {
       return 'sql';
     }

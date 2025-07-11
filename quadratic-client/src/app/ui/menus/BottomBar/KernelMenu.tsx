@@ -35,7 +35,7 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
 
   const [disableRunCodeCell, setDisableRunCodeCell] = useState(true);
   useEffect(() => {
-    const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.isCursorOnCodeCell());
+    const checkRunCodeCell = () => setDisableRunCodeCell(!pixiApp.cellsSheet().tables.hasCodeCellInCurrentSelection());
     checkRunCodeCell();
 
     events.on('cursorPosition', checkRunCodeCell);
@@ -113,108 +113,112 @@ export const KernelMenu = ({ triggerIcon }: { triggerIcon: React.ReactNode }) =>
         <DropdownMenuLabel>
           Status: {pythonCodeRunning || javascriptCodeRunning || connectionCodeRunning ? 'running' : 'idle'}
         </DropdownMenuLabel>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuLabel>
           {pythonState.pythonState === 'loading' ? 'Python loading...' : 'All code languages are ready'}
         </DropdownMenuLabel>
-        {pythonCodeRunning && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Python {pythonState.version}</DropdownMenuLabel>
-          </>
-        )}
-        {pythonCodeRunning && (
-          <DropdownMenuItem onClick={pythonWebWorker.cancelExecution}>
-            <Tooltip>
-              <TooltipContent>Stop running cell</TooltipContent>
-              <TooltipTrigger>
-                <div className="ml-5 text-sm">
-                  <StopIcon style={{ color: colors.darkGray }} />
-                  Cell {xyToA1(pythonCodeRunning.sheetPos.x, pythonCodeRunning.sheetPos.y)}
-                  {pythonCodeRunning.sheetPos.sheetId !== sheets.current
-                    ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                    : ''}
-                  {' is running...'}
-                </div>
-              </TooltipTrigger>
-            </Tooltip>
-          </DropdownMenuItem>
-        )}
-        {javascriptCodeRunning && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Javascript</DropdownMenuLabel>
-          </>
-        )}
-        {javascriptCodeRunning && (
-          <DropdownMenuItem onClick={javascriptWebWorker.cancelExecution}>
-            <Tooltip>
-              <TooltipContent>Stop running cell</TooltipContent>
-              <TooltipTrigger>
-                <div className="ml-5 text-sm">
-                  <StopIcon style={{ color: colors.darkGray }} />
-                  Cell {xyToA1(javascriptCodeRunning.sheetPos.x, javascriptCodeRunning.sheetPos.y)}
-                  {javascriptCodeRunning.sheetPos.sheetId !== sheets.current
-                    ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                    : ''}
-                  {' is running...'}
-                </div>
-              </TooltipTrigger>
-            </Tooltip>
-          </DropdownMenuItem>
-        )}
-        {connectionCodeRunning && (
-          <>
-            <DropdownMenuSeparator />
-            <DropdownMenuLabel>Connection</DropdownMenuLabel>
-          </>
-        )}
-        {connectionCodeRunning && (
-          <DropdownMenuItem onClick={() => quadraticCore.sendCancelExecution({ Connection: {} as any })}>
-            <Tooltip>
-              <TooltipContent>Stop running cell</TooltipContent>
-              <TooltipTrigger>
-                <div className="ml-5 text-sm">
-                  <StopIcon style={{ color: colors.darkGray }} />
-                  Cell {xyToA1(connectionCodeRunning.sheetPos.x, connectionCodeRunning.sheetPos.y)}
-                  {connectionCodeRunning.sheetPos.sheetId !== sheets.current
-                    ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
-                    : ''}
-                  {' is running...'}
-                </div>
-              </TooltipTrigger>
-            </Tooltip>
-          </DropdownMenuItem>
-        )}
+
         <DropdownMenuSeparator />
+
+        {pythonCodeRunning && (
+          <>
+            <DropdownMenuLabel>Python {pythonState.version}</DropdownMenuLabel>
+
+            <DropdownMenuItem onClick={pythonWebWorker.cancelExecution}>
+              <Tooltip>
+                <TooltipContent>Stop running cell</TooltipContent>
+                <TooltipTrigger>
+                  <div className="ml-5 text-sm">
+                    <StopIcon style={{ color: colors.darkGray }} />
+                    Cell {xyToA1(pythonCodeRunning.sheetPos.x, pythonCodeRunning.sheetPos.y)}
+                    {pythonCodeRunning.sheetPos.sheetId !== sheets.current
+                      ? `, "${sheets.getById(pythonCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                      : ''}
+                    {' is running...'}
+                  </div>
+                </TooltipTrigger>
+              </Tooltip>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        <DropdownMenuSeparator />
+
+        {javascriptCodeRunning && (
+          <>
+            <DropdownMenuLabel>Javascript</DropdownMenuLabel>
+
+            <DropdownMenuItem onClick={javascriptWebWorker.cancelExecution}>
+              <Tooltip>
+                <TooltipContent>Stop running cell</TooltipContent>
+                <TooltipTrigger>
+                  <div className="ml-5 text-sm">
+                    <StopIcon style={{ color: colors.darkGray }} />
+                    Cell {xyToA1(javascriptCodeRunning.sheetPos.x, javascriptCodeRunning.sheetPos.y)}
+                    {javascriptCodeRunning.sheetPos.sheetId !== sheets.current
+                      ? `, "${sheets.getById(javascriptCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                      : ''}
+                    {' is running...'}
+                  </div>
+                </TooltipTrigger>
+              </Tooltip>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        <DropdownMenuSeparator />
+
+        {connectionCodeRunning && (
+          <>
+            <DropdownMenuLabel>Connection</DropdownMenuLabel>
+
+            <DropdownMenuItem onClick={() => quadraticCore.sendCancelExecution({ Connection: {} as any })}>
+              <Tooltip>
+                <TooltipContent>Stop running cell</TooltipContent>
+                <TooltipTrigger>
+                  <div className="ml-5 text-sm">
+                    <StopIcon style={{ color: colors.darkGray }} />
+                    Cell {xyToA1(connectionCodeRunning.sheetPos.x, connectionCodeRunning.sheetPos.y)}
+                    {connectionCodeRunning.sheetPos.sheetId !== sheets.current
+                      ? `, "${sheets.getById(connectionCodeRunning.sheetPos.sheetId)?.name || ''}"`
+                      : ''}
+                    {' is running...'}
+                  </div>
+                </TooltipTrigger>
+              </Tooltip>
+            </DropdownMenuItem>
+          </>
+        )}
+
+        <DropdownMenuSeparator />
+
         <DropdownMenuItem
           disabled={disableRunCodeCell}
           onClick={() =>
-            quadraticCore.rerunCodeCells(
-              sheets.current,
-              sheets.sheet.cursor.position.x,
-              sheets.sheet.cursor.position.y,
-              sheets.getCursorPosition()
-            )
+            quadraticCore.rerunCodeCells(sheets.current, sheets.sheet.cursor.a1String(), sheets.getCursorPosition())
           }
         >
-          Run current code cell
+          Run selected code
           <DropdownMenuShortcut className="pl-4">
             {KeyboardSymbols.Command + KeyboardSymbols.Enter}
           </DropdownMenuShortcut>
         </DropdownMenuItem>
+
         <DropdownMenuItem
-          onClick={() => quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition())}
+          onClick={() => quadraticCore.rerunCodeCells(sheets.current, undefined, sheets.getCursorPosition())}
         >
-          Run all code cells in sheet
+          Run all code in sheet
           <DropdownMenuShortcut className="pl-4">
             {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Enter}
           </DropdownMenuShortcut>
         </DropdownMenuItem>
+
         <DropdownMenuItem
-          onClick={() => quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition())}
+          onClick={() => quadraticCore.rerunCodeCells(undefined, undefined, sheets.getCursorPosition())}
         >
-          Run all code cells in file
+          Run all code in file
           <DropdownMenuShortcut className="pl-4">
             {KeyboardSymbols.Shift + KeyboardSymbols.Command + KeyboardSymbols.Alt + KeyboardSymbols.Enter}
           </DropdownMenuShortcut>

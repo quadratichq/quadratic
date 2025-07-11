@@ -12,7 +12,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadFile } from '@/app/helpers/downloadFileInBrowser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -186,25 +185,8 @@ export const editActionsSpec: EditActionSpec = {
     label: () => 'Edit cell',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
-        const { x, y } = sheets.sheet.cursor.position;
-        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
-        if (table) {
-          doubleClickCell({
-            column: x,
-            row: y,
-            cell: '',
-          });
-        } else {
-          quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
-            doubleClickCell({
-              column: x,
-              row: y,
-              cell,
-              cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
-            });
-          });
-        }
-
+        const cursor = sheets.sheet.cursor.position;
+        doubleClickCell({ column: cursor.x, row: cursor.y, cursorMode: CursorMode.Edit });
         return true;
       }
     },
@@ -213,20 +195,8 @@ export const editActionsSpec: EditActionSpec = {
     label: () => 'Toggle arrow mode',
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
-        const { x, y } = sheets.sheet.cursor.position;
-        const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
-        if (table) {
-          doubleClickCell({
-            column: x,
-            row: y,
-            cell: '',
-            cursorMode: CursorMode.Edit,
-          });
-        } else {
-          quadraticCore.getEditCell(sheets.current, x, y).then((cell) => {
-            doubleClickCell({ column: x, row: y, cell, cursorMode: CursorMode.Edit });
-          });
-        }
+        const cursor = sheets.sheet.cursor.position;
+        doubleClickCell({ column: cursor.x, row: cursor.y, cell: '', cursorMode: CursorMode.Edit });
         return true;
       }
     },

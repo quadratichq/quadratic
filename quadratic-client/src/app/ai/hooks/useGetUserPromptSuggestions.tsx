@@ -51,6 +51,7 @@ ${JSON.stringify(chatPromptMessages)}
         const response = await handleAIRequestToAPI({
           chatId: v4(),
           source: 'GetUserPromptSuggestions',
+          messageSource: 'GetUserPromptSuggestions',
           modelKey: DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL,
           messages,
           signal: abortController.signal,

@@ -1,13 +1,10 @@
 import { editorInteractionStateFileUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import {
-  AIMessagePromptSchema,
-  type AIMessagePrompt,
-  type AIRequestBody,
-  type ChatMessage,
-} from 'quadratic-shared/typesAndSchemasAI';
+import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import { type AIMessagePrompt, type AIRequestBody, type ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import type { SetterOrUpdater } from 'recoil';
 import { useRecoilCallback } from 'recoil';
 
@@ -16,28 +13,35 @@ export const AI_FREE_TIER_WAIT_TIME_SECONDS = 5;
 type HandleAIPromptProps = Omit<AIRequestBody, 'fileUuid'> & {
   setMessages?: SetterOrUpdater<ChatMessage[]> | ((value: React.SetStateAction<ChatMessage[]>) => void);
   signal: AbortSignal;
+  onExceededBillingLimit?: (exceededBillingLimit: boolean) => void;
 };
 
 export function useAIRequestToAPI() {
+  const { isOnPaidPlan, setIsOnPaidPlan } = useIsOnPaidPlan();
+
   const handleAIRequestToAPI = useRecoilCallback(
-    ({ snapshot }) =>
+    ({ set, snapshot }) =>
       async ({
         setMessages,
         signal,
+        onExceededBillingLimit,
         ...args
       }: HandleAIPromptProps): Promise<{
         error?: boolean;
         content: AIMessagePrompt['content'];
         toolCalls: AIMessagePrompt['toolCalls'];
       }> => {
-        let responseMessage: AIMessagePrompt = {
+        let responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
           role: 'assistant',
           content: [],
           contextType: 'userPrompt',
           toolCalls: [],
           modelKey: args.modelKey,
+          isOnPaidPlan,
+          exceededBillingLimit: false,
         };
         setMessages?.((prev) => [...prev, { ...responseMessage, content: [] }]);
+
         const { source, modelKey, useStream } = args;
         const fileUuid = await snapshot.getPromise(editorInteractionStateFileUuidAtom);
 
@@ -105,7 +109,7 @@ export function useAIRequestToAPI() {
               for (const line of lines) {
                 if (line.startsWith('data: ')) {
                   try {
-                    const newResponseMessage = AIMessagePromptSchema.parse(JSON.parse(line.slice(6)));
+                    const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(JSON.parse(line.slice(6)));
                     setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
                     responseMessage = newResponseMessage;
                   } catch (error) {
@@ -114,18 +118,19 @@ export function useAIRequestToAPI() {
                 }
               }
             }
-
-            return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
-          } else {
-            // handle non-streaming response
-
+          }
+          // handle non-streaming response
+          else {
             const data = await response.json();
-            const newResponseMessage = AIMessagePromptSchema.parse(data);
+            const newResponseMessage = ApiSchemas['/v0/ai/chat.POST.response'].parse(data);
             setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
             responseMessage = newResponseMessage;
-
-            return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
           }
+
+          setIsOnPaidPlan(responseMessage.isOnPaidPlan);
+          onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
+
+          return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
         } catch (err: any) {
           if (err.name === 'AbortError') {
             return { error: false, content: [{ type: 'text', text: 'Aborted by user' }], toolCalls: [] };
@@ -150,7 +155,7 @@ export function useAIRequestToAPI() {
           }
         }
       },
-    []
+    [isOnPaidPlan, setIsOnPaidPlan]
   );
 
   return { handleAIRequestToAPI };

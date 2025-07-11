@@ -16,8 +16,7 @@ pub fn assert_cell_value(
 
     assert_eq!(
         value, cell_value,
-        "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-        x, y, value, cell_value
+        "Cell at ({x}, {y}) does not have the value {value:?}, it's actually {cell_value:?}"
     );
 }
 
@@ -47,8 +46,9 @@ pub fn assert_display_cell_value(
     let cell_value = sheet
         .display_value(Pos { x, y })
         .map_or_else(|| CellValue::Blank, |v| CellValue::Text(v.to_string()));
-    let expected_text_or_blank =
-        |v: &CellValue| v == &CellValue::Text(value.into()) || v == &CellValue::Blank;
+    let expected_text_or_blank = |v: &CellValue| {
+        v == &CellValue::Text(value.into()) || (v == &CellValue::Blank && value.trim().is_empty())
+    };
 
     assert!(
         expected_text_or_blank(&cell_value),
@@ -125,7 +125,7 @@ pub fn assert_cell_value_row(
         if let Some(cell_value) = value.get(index) {
             assert_display_cell_value(gc, sheet_id, x, y, cell_value);
         } else {
-            panic!("No value at position ({},{})", index, y);
+            panic!("No value at position ({index},{y})");
         }
     }
 }
@@ -157,7 +157,7 @@ mod tests {
         sheet.set_cell_value(pos![A1], CellValue::Text("display test".to_string()));
 
         // Test the assertion passes when values match
-        assert_display_cell_value(&gc, sheet_id, 0, 0, "display test");
+        assert_display_cell_value(&gc, sheet_id, 1, 1, "display test");
     }
 
     #[test]
@@ -172,6 +172,6 @@ mod tests {
         sheet.set_cell_value(pos![C1], CellValue::Text("three".to_string()));
 
         // Test the assertion passes for a row
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 0, vec!["one", "two", "three"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 1, vec!["one", "two", "three"]);
     }
 }

@@ -11,8 +11,10 @@ pub mod cell_values;
 pub mod cellvalue;
 mod convert;
 pub mod date_time;
+pub mod empty_values_cache;
 mod from_js;
 mod isblank;
+pub mod number;
 pub mod parquet;
 mod time;
 
@@ -53,7 +55,8 @@ impl<T: Into<CellValue>> From<T> for Value {
     }
 }
 impl From<Array> for Value {
-    fn from(array: Array) -> Self {
+    fn from(mut array: Array) -> Self {
+        array.update_empty_values_cache();
         Value::Array(array)
     }
 }

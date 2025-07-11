@@ -1,7 +1,7 @@
+import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { Matrix, Renderer } from 'pixi.js';
-import { sheets } from '../../grid/controller/Sheets';
-import { pixiApp } from './PixiApp';
 
 const resolution = 4;
 const borderSize = 1;
@@ -28,6 +28,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   const rect = sheets.sheet.cursor.getLargestRectangle();
   if (!rect) return null;
 
+  const sheetId = sheets.current;
   const screenRect = sheets.sheet.getScreenRectangle(rect.x, rect.y, rect.width, rect.height);
 
   // captures bottom-right border size
@@ -48,7 +49,7 @@ export const copyAsPNG = async (): Promise<Blob | null> => {
   renderer.resize(imageWidth, imageHeight);
   renderer.view.width = imageWidth;
   renderer.view.height = imageHeight;
-  await pixiApp.prepareForCopying({ cull: screenRect });
+  await pixiApp.prepareForCopying({ sheetId, cull: screenRect });
 
   const transform = new Matrix();
   transform.translate(-screenRect.x + borderSize / 2, -screenRect.y + borderSize / 2);

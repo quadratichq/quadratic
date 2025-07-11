@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::DataTableKind;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::{DataTableKind, NumericFormatKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
@@ -18,7 +18,7 @@ impl GridController {
         value: &str,
         allow_code: bool,
     ) -> (CellValue, FormatUpdate) {
-        CellValue::string_to_cell_value(value, allow_code)
+        CellValue::string_to_cell_value(value, allow_code, false)
     }
 
     /// Generate operations for a user-initiated change to a cell value
@@ -26,6 +26,10 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
+
+        // whether this was inputted directly by a user (which currently handles
+        // percentage conversions differently)
+        from_user_input: bool,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
@@ -69,12 +73,20 @@ impl GridController {
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
-                    let (cell_value, format_update) = CellValue::string_to_cell_value(&value, true);
-
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
+                    let user_enter_percent = from_user_input
+                        && sheet
+                            .cell_format(pos)
+                            .numeric_format
+                            .is_some_and(|format| format.kind == NumericFormatKind::Percentage);
+
+                    let (cell_value, format_update) =
+                        CellValue::string_to_cell_value(&value, true, user_enter_percent);
+
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
+
                     let data_table_pos = existing_data_tables
                         .iter()
                         .find(|rect| rect.contains(pos))
@@ -429,7 +441,7 @@ impl GridController {
                             CellValue::Html(_) => "chart",
                             _ => "unknown",
                         };
-                        let message = format!("Cannot place {} within a table", cell_type);
+                        let message = format!("Cannot place {cell_type} within a table");
 
                         #[cfg(any(target_family = "wasm", test))]
                         {
@@ -500,14 +512,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
+    use crate::number::decimal_from_str;
     use crate::test_util::*;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
@@ -579,32 +588,20 @@ mod test {
         assert!(format_update.is_default());
 
         let (value, format_update) = gc.string_to_cell_value("123.45", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("123.45").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("123.45").unwrap()));
         assert!(format_update.is_default());
 
         let (value, format_update) = gc.string_to_cell_value("123,456.78", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("123456.78").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456.78").unwrap()));
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         let (value, format_update) = gc.string_to_cell_value("123,456,789.01", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456789.01").unwrap()));
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         // currency with comma
         let (value, format_update) = gc.string_to_cell_value("$123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -615,10 +612,7 @@ mod test {
 
         // parentheses with comma
         let (value, format_update) = gc.string_to_cell_value("(123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         // parentheses with -ve
@@ -628,10 +622,7 @@ mod test {
 
         // currency with a space
         let (value, format_update) = gc.string_to_cell_value("$ 123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -642,10 +633,7 @@ mod test {
 
         // currency with a space and -ve outside
         let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -656,10 +644,7 @@ mod test {
 
         // currency with a space and -ve inside
         let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -670,10 +655,7 @@ mod test {
 
         // currency with parentheses outside
         let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -684,10 +666,7 @@ mod test {
 
         // currency with parentheses inside
         let (value, format_update) = gc.string_to_cell_value("$(123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -698,10 +677,7 @@ mod test {
 
         // currency with parentheses and space
         let (value, format_update) = gc.string_to_cell_value("$ ( 123,456)", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("-123456").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -717,10 +693,7 @@ mod test {
 
         // percent with a space
         let (value, format_update) = gc.string_to_cell_value("123456 %", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("1234.56").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {
@@ -731,10 +704,7 @@ mod test {
 
         // percent with a comma
         let (value, format_update) = gc.string_to_cell_value("123,456%", true);
-        assert_eq!(
-            value,
-            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
-        );
+        assert_eq!(value, CellValue::Number(decimal_from_str("1234.56").unwrap()));
         assert_eq!(
             format_update.numeric_format,
             Some(Some(NumericFormat {

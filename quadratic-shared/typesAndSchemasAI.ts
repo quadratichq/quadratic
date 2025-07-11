@@ -11,6 +11,7 @@ const AIProvidersSchema = z.enum([
   'anthropic',
   'openai',
   'xai',
+  'open-router',
   'azure-openai',
 ]);
 
@@ -36,8 +37,16 @@ const OpenAIModelSchema = z.enum([
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
-const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'o4-mini']);
-const XAIModelSchema = z.enum(['grok-3-beta']);
+const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
+const XAIModelSchema = z.enum(['grok-4-0709']);
+const OpenRouterModelSchema = z.enum([
+  'qwen/qwen3-32b',
+  'qwen/qwen3-235b-a22b',
+  'deepseek/deepseek-r1-0528',
+  'deepseek/deepseek-r1-0528-qwen3-8b',
+  'deepseek/deepseek-r1-distill-qwen-7b',
+  'deepseek/deepseek-chat-v3-0324',
+]);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
   VertexAnthropicModelSchema,
@@ -49,6 +58,7 @@ const AIModelSchema = z.union([
   OpenAIModelSchema,
   AzureOpenAIModelSchema,
   XAIModelSchema,
+  OpenRouterModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
@@ -67,7 +77,9 @@ export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKey
 const VertexAIModelKeySchema = z.enum([
   'vertexai:gemini-2.5-pro:thinking-toggle-off',
   'vertexai:gemini-2.5-pro:thinking-toggle-on',
-  'vertexai:gemini-2.5-flash',
+  'vertexai:gemini-2.5-pro:thinking',
+  'vertexai:gemini-2.5-flash:thinking-toggle-off',
+  'vertexai:gemini-2.5-flash:thinking-toggle-on',
   'vertexai:gemini-2.0-flash',
 ]);
 export type VertexAIModelKey = z.infer<typeof VertexAIModelKeySchema>;
@@ -80,8 +92,8 @@ const BedrockAnthropicModelKeySchema = z.enum([
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-on',
   'bedrock-anthropic:claude:thinking-toggle-off',
   'bedrock-anthropic:claude:thinking-toggle-on',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off',
+  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
@@ -105,11 +117,21 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
-const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1', 'azure-openai:o4-mini']);
+const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1', 'azure-openai:gpt-4.1-mini']);
 export type AzureOpenAIModelKey = z.infer<typeof AzureOpenAIModelKeySchema>;
 
-const XAIModelKeySchema = z.enum(['xai:grok-3-beta']);
+const XAIModelKeySchema = z.enum(['xai:grok-4-0709']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
+
+const OpenRouterModelKeySchema = z.enum([
+  'open-router:qwen/qwen3-32b',
+  'open-router:qwen/qwen3-235b-a22b',
+  'open-router:deepseek/deepseek-r1-0528',
+  'open-router:deepseek/deepseek-r1-0528-qwen3-8b',
+  'open-router:deepseek/deepseek-r1-distill-qwen-7b',
+  'open-router:deepseek/deepseek-chat-v3-0324',
+]);
+export type OpenRouterModelKey = z.infer<typeof OpenRouterModelKeySchema>;
 
 const AIModelKeySchema = z.union([
   QuadraticModelKeySchema,
@@ -122,6 +144,7 @@ const AIModelKeySchema = z.union([
   OpenAIModelKeySchema,
   AzureOpenAIModelKeySchema,
   XAIModelKeySchema,
+  OpenRouterModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;
 
@@ -132,6 +155,8 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_write_tokens: z.number(),
 });
 export type AIRates = z.infer<typeof AIRatesSchema>;
+const ModelModeSchema = z.enum(['disabled', 'basic', 'pro']);
+export type ModelMode = z.infer<typeof ModelModeSchema>;
 export const AIModelConfigSchema = z
   .object({
     model: AIModelSchema,
@@ -140,7 +165,7 @@ export const AIModelConfigSchema = z
     max_tokens: z.number(),
     canStream: z.boolean(),
     canStreamWithToolCalls: z.boolean(),
-    enabled: z.boolean(),
+    mode: ModelModeSchema,
     provider: AIProvidersSchema,
     promptCaching: z.boolean(),
     strictParams: z.boolean().optional(),
@@ -164,6 +189,7 @@ const InternalContextTypeSchema = z.enum([
   'tables',
   'files',
   'modelRouter',
+  'currentDate',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
@@ -173,7 +199,17 @@ export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
 const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
   z.object({
     Connection: z.object({
-      kind: z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']),
+      kind: z.enum([
+        'POSTGRES',
+        'MYSQL',
+        'MSSQL',
+        'SNOWFLAKE',
+        'BIGQUERY',
+        'COCKROACHDB',
+        'MARIADB',
+        'NEON',
+        'SUPABASE',
+      ]),
       id: z.string(),
     }),
   })
@@ -435,6 +471,7 @@ export const AIRequestBodySchema = z.object({
   chatId: z.string().uuid(),
   fileUuid: z.string().uuid(),
   source: AISourceSchema,
+  messageSource: z.string(),
   modelKey: AIModelKeySchema,
   messages: z.array(ChatMessageSchema),
   useStream: z.boolean(),
@@ -442,9 +479,10 @@ export const AIRequestBodySchema = z.object({
   useToolsPrompt: z.boolean(),
   language: CodeCellTypeSchema.optional(),
   useQuadraticContext: z.boolean(),
+  time: z.string().optional(),
 });
 export type AIRequestBody = z.infer<typeof AIRequestBodySchema>;
-export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'modelKey'>;
+export type AIRequestHelperArgs = Omit<AIRequestBody, 'chatId' | 'fileUuid' | 'messageSource' | 'modelKey'>;
 
 const AIUsageSchema = z.object({
   inputTokens: z.number(),

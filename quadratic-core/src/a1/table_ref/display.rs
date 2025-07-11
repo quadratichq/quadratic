@@ -57,7 +57,7 @@ mod tests {
     fn test_to_string_only_table_name() {
         let context = A1Context::test(&[], &[("Table1", &["A"], Rect::test_a1("A1"))]);
         let table_ref = TableRef::parse("Table1", &context).unwrap_or_else(|e| {
-            panic!("Failed to parse Table1: {}", e);
+            panic!("Failed to parse Table1: {e}");
         });
         assert_eq!(table_ref.to_string(), "Table1");
     }
@@ -84,8 +84,8 @@ mod tests {
 
         for test in tests {
             let table_ref = TableRef::parse(test, &context)
-                .unwrap_or_else(|e| panic!("Failed to parse {}: {}", test, e));
-            assert_eq!(table_ref.to_string(), test, "{}", test);
+                .unwrap_or_else(|e| panic!("Failed to parse {test}: {e}"));
+            assert_eq!(table_ref.to_string(), test, "{test}");
         }
     }
 }

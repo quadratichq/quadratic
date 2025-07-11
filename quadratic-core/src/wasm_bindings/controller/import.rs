@@ -13,7 +13,7 @@ use crate::wasm_bindings::js::jsImportProgress;
 impl GridController {
     #[wasm_bindgen(js_name = "importCsv")]
     pub fn js_import_csv(
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         delimiter: Option<u8>,
         header_is_first_row: Option<bool>,
@@ -45,7 +45,7 @@ impl GridController {
     #[allow(clippy::too_many_arguments)]
     pub fn js_import_csv_into_existing_file(
         &mut self,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         sheet_id: &str,
         insert_at: &str,
@@ -99,10 +99,7 @@ impl GridController {
                 error: None,
             })?),
             Err(e) => {
-                let error = format!(
-                    "Error importing Excel file: {:?}, error: {:?}",
-                    file_name, e
-                );
+                let error = format!("Error importing Excel file: {file_name:?}, error: {e:?}");
                 dbgjs!(&error);
                 Ok(serde_wasm_bindgen::to_value(&JsResponse {
                     result: false,

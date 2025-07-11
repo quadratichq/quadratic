@@ -48,6 +48,7 @@ quadratic-files/target/
 quadratic-files/storage
 quadratic-multiplayer/target/
 quadratic-rust-shared/target/
+poc/**/target/
 
 quadratic-rust-shared/src/auto_gen_path.rs
 
@@ -81,6 +82,9 @@ docker/postgres-connection/data
 docker/mysql-connection/data
 docker/snowflake-connection/data
 docker/mssql-connection/data
+docker/cockroachdb-connection/data
+docker/mariadb-connection/data
+docker/bigquery-connection/data
 docker/ssh-postgres-connection/data
 docker/ssh-mysql-connection/data
 docker/ssh-mssql-connection/data

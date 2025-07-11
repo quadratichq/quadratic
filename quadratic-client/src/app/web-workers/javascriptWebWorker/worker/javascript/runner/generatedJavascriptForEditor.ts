@@ -252,6 +252,11 @@ export class q {
       );
     }
 
+    // This is a shared buffer that will be used to communicate with core
+    // The first 4 bytes are used to signal the python core that the data is ready
+    // The second 4 bytes are used to signal the length of the data
+    // The third 4 bytes are used to signal the id of the data
+    // Length of the cells string is unknown at this point
     let sharedBuffer: SharedArrayBuffer | undefined = new SharedArrayBuffer(4 + 4 + 4);
     let int32View: Int32Array | undefined = new Int32Array(sharedBuffer, 0, 3);
     Atomics.store(int32View, 0, 0);

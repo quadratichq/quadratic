@@ -18,6 +18,7 @@ import {
   GCP_PROJECT_ID,
   GCP_REGION,
   GCP_REGION_ANTHROPIC,
+  OPEN_ROUTER_API_KEY,
   OPENAI_API_KEY,
   XAI_API_KEY,
 } from '../env-vars';
@@ -69,16 +70,25 @@ export const anthropic = new Anthropic({
 });
 
 export const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY || '',
+  apiKey: OPENAI_API_KEY,
 });
 
 export const azureOpenAI = new AzureOpenAI({
-  apiKey: AZURE_OPENAI_API_KEY || '',
+  apiKey: AZURE_OPENAI_API_KEY,
   endpoint: AZURE_OPENAI_ENDPOINT,
-  apiVersion: '2025-01-01-preview',
+  apiVersion: '2024-10-21',
 });
 
 export const xai = new OpenAI({
-  apiKey: XAI_API_KEY || '',
+  apiKey: XAI_API_KEY,
   baseURL: 'https://api.x.ai/v1',
+});
+
+export const open_router = new OpenAI({
+  apiKey: OPEN_ROUTER_API_KEY,
+  baseURL: 'https://openrouter.ai/api/v1',
+  defaultHeaders: {
+    'HTTP-Referer': 'https://quadratic.ai',
+    'X-Title': 'Quadratic',
+  },
 });
