@@ -37,7 +37,7 @@ export const NumberFormatting = forwardRef<
   HTMLDivElement | null,
   { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
 >((props, ref) => (
-  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+  <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
     <FormatButton
       action={Action.FormatNumberToggleCommas}
       actionArgs={undefined}
@@ -65,7 +65,7 @@ export const NumberFormatting = forwardRef<
 
 export const DateFormatting = forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>(
   (props, ref) => (
-    <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+    <div className={cn('flex select-none items-center text-sm', props.className)} ref={ref}>
       <FormatDateAndTimePickerButton hideLabel={props.hideLabel} />
       <FormatSeparator />
     </div>
@@ -76,7 +76,7 @@ export const TextFormatting = forwardRef<
   HTMLDivElement | null,
   { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
 >((props, ref) => (
-  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+  <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
     <FormatButton
       action={Action.ToggleBold}
       actionArgs={undefined}
@@ -114,7 +114,7 @@ export const FillAndBorderFormatting = forwardRef<
   HTMLDivElement | null,
   { className?: string; formatSummary: CellFormatSummary | undefined; hideLabel?: boolean }
 >((props, ref) => (
-  <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
+  <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
     <FormatColorPickerButton
       action={Action.FormatFillColor}
       activeColor={props.formatSummary?.fillColor ?? undefined}
@@ -150,13 +150,8 @@ export const AlignmentFormatting = forwardRef<
   if (props.formatSummary?.wrap === 'clip') TextWrapIcon = FormatTextClipIcon;
 
   return (
-    <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
-      <FormatButtonDropdown
-        action="horizontal-align"
-        showDropdownArrow
-        tooltipLabel="Horizontal align"
-        Icon={AlignIcon}
-      >
+    <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
+      <FormatButtonDropdown action="horizontal-align" tooltipLabel="Horizontal align" Icon={AlignIcon}>
         <FormatButtonDropdownActions
           actions={[
             Action.FormatAlignHorizontalLeft,
@@ -167,19 +162,14 @@ export const AlignmentFormatting = forwardRef<
           hideLabel={props.hideLabel}
         />
       </FormatButtonDropdown>
-      <FormatButtonDropdown
-        action="vertical-align"
-        showDropdownArrow
-        tooltipLabel="Vertical align"
-        Icon={VerticalAlignIcon}
-      >
+      <FormatButtonDropdown action="vertical-align" tooltipLabel="Vertical align" Icon={VerticalAlignIcon}>
         <FormatButtonDropdownActions
           actions={[Action.FormatAlignVerticalTop, Action.FormatAlignVerticalMiddle, Action.FormatAlignVerticalBottom]}
           actionArgs={undefined}
           hideLabel={props.hideLabel}
         />
       </FormatButtonDropdown>
-      <FormatButtonDropdown action="text-wrap" showDropdownArrow tooltipLabel="Text wrap" Icon={TextWrapIcon}>
+      <FormatButtonDropdown action="text-wrap" tooltipLabel="Text wrap" Icon={TextWrapIcon}>
         <FormatButtonDropdownActions
           actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
           actionArgs={undefined}
@@ -192,7 +182,7 @@ export const AlignmentFormatting = forwardRef<
 });
 
 export const Clear = forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>((props, ref) => (
-  <div ref={ref}>
+  <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
     <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} hideLabel={props.hideLabel} />
   </div>
 ));
@@ -201,12 +191,14 @@ export const FormatMoreButton = forwardRef<
   HTMLDivElement | null,
   { setShowMore: (showMore: boolean) => void; showMore: boolean }
 >((props, ref) => (
-  <ToggleGroup.Root
-    type="multiple"
-    className="relative flex h-full cursor-pointer items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
-    onValueChange={() => props.setShowMore(!props.showMore)}
-    ref={ref}
-  >
-    <MoreVertIcon />
-  </ToggleGroup.Root>
+  <div className={cn('flex select-none items-center gap-1 text-sm')}>
+    <ToggleGroup.Root
+      type="multiple"
+      className="relative flex h-7 w-7 cursor-pointer items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none"
+      onValueChange={() => props.setShowMore(!props.showMore)}
+      ref={ref}
+    >
+      <MoreVertIcon />
+    </ToggleGroup.Root>
+  </div>
 ));

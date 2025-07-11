@@ -5,7 +5,6 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -20,7 +19,7 @@ import mixpanel from 'mixpanel-browser';
 import { type JSX, type ReactNode } from 'react';
 
 export function FormatSeparator() {
-  return <hr className="relative mx-1.5 mt-1.5 h-2/3 w-[1px] bg-border" />;
+  return <hr className="relative mx-1.5 h-6 w-[1px] bg-border" />;
 }
 
 export function FormatButtonDropdown({
@@ -29,7 +28,7 @@ export function FormatButtonDropdown({
   IconNode,
   tooltipLabel,
   children,
-  showDropdownArrow,
+
   className,
   checked,
   hideLabel,
@@ -39,7 +38,7 @@ export function FormatButtonDropdown({
   IconNode?: JSX.Element | null;
   children: ReactNode;
   tooltipLabel: string;
-  showDropdownArrow?: boolean;
+
   className?: string;
   checked?: boolean;
   hideLabel?: boolean;
@@ -51,13 +50,12 @@ export function FormatButtonDropdown({
           <DropdownMenuTrigger
             aria-label={hideLabel ? '' : tooltipLabel}
             className={cn(
-              'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
+              'flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
               checked ? 'bg-accent' : ''
             )}
             data-testid={hideLabel ? '' : action}
           >
             {Icon ? <Icon /> : (IconNode ?? null)}
-            {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
           </DropdownMenuTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">
@@ -82,7 +80,7 @@ export function FormatButtonPopover({
   Icon,
   tooltipLabel,
   children,
-  showDropdownArrow,
+
   className,
   hideLabel,
 }: {
@@ -90,7 +88,7 @@ export function FormatButtonPopover({
   Icon: any;
   children: ReactNode;
   tooltipLabel: string;
-  showDropdownArrow?: boolean;
+
   className?: string;
   hideLabel?: boolean;
 }) {
@@ -99,12 +97,11 @@ export function FormatButtonPopover({
       <Tooltip>
         <TooltipTrigger asChild>
           <PopoverTrigger
-            className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground"
             aria-label={hideLabel ? '' : tooltipLabel}
             data-testid={hideLabel ? '' : action}
           >
             <Icon />
-            {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
           </PopoverTrigger>
         </TooltipTrigger>
         <TooltipContent side="bottom">
@@ -176,9 +173,9 @@ export function FormatButton<T extends Action>({
         <Button
           aria-label={hideLabel ? '' : label}
           variant="ghost"
-          size="sm"
+          size="icon-sm"
           className={cn(
-            'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
+            'flex items-center text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
             checked ? 'bg-accent' : ''
           )}
           onClick={() => {

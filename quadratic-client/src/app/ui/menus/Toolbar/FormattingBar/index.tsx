@@ -131,11 +131,7 @@ export const FormattingBar = () => {
         </div>,
         measurementContainer
       )}
-      <div
-        className="flex h-full w-full flex-grow"
-        ref={menuRef}
-        style={{ height: '31px' /* 31px was the height of the old formatting bar */ }}
-      >
+      <div className="flex h-full w-full flex-grow" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
           <div className="flex flex-shrink select-none">
             {!hiddenItems.includes('NumberFormatting') && (
@@ -160,7 +156,7 @@ export const FormattingBar = () => {
                   <FormatMoreButton setShowMore={setShowMore} showMore={showMore} />
                 </div>
               </PopoverTrigger>
-              <PopoverContent className="hidden w-fit md:block" align="start">
+              <PopoverContent className="hidden w-fit p-2 md:block" align="start">
                 <div className="flex gap-1 text-sm">
                   {hiddenItems.includes('NumberFormatting') && (
                     <NumberFormatting key="hidden-number-formatting" formatSummary={formatSummary} />
