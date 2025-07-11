@@ -1,8 +1,8 @@
 import { test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
-import { cleanUpFiles, uploadFile } from './helpers/file.helpers';
+import { cleanUpFiles, openNewFile, uploadFile } from './helpers/file.helpers';
 import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
-import { assertSelection, gotoCells } from './helpers/sheet.helper';
+import { assertCellValue, assertSelection, gotoCells } from './helpers/sheet.helper';
 
 test('Keyboard Navigation', async ({ page }) => {
   // Constants
@@ -206,6 +206,39 @@ test('Keyboard Selection', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:C1' });
   await assertTopLeftPosition(page, 'A1');
+
+  // All done
+  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Keyboard Editing', async ({ page }) => {
+  // Constants
+  const fileName = 'Keyboard Editing';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_keyboard_editing` });
+
+  // Create a new team
+  // const teamName = `Keyboarding Editing - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  await openNewFile(page, fileName);
+
+  await page.keyboard.type('Hello', { delay: 100 });
+  await page.keyboard.press('Enter', { delay: 100 });
+
+  await assertCellValue(page, { a1: 'A1', value: 'Hello' });
+
+  await page.keyboard.press('Enter', { delay: 100 });
+  await page.keyboard.type('10%', { delay: 100 });
+
+  await assertCellValue(page, { a1: 'A2', value: '10%' });
+
+  await page.keyboard.press('Enter', { delay: 100 });
 
   // All done
   await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
