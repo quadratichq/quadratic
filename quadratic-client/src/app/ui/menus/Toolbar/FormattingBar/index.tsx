@@ -121,12 +121,12 @@ export const FormattingBar = () => {
     <>
       {createPortal(
         <div className="flex w-fit flex-row">
-          <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel />
-          <DateFormatting ref={dateFormattingRef} hideLabel />
-          <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel />
-          <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel />
-          <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel />
-          <Clear ref={clearRef} hideLabel />
+          <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+          <DateFormatting ref={dateFormattingRef} hideLabel={true} />
+          <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+          <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+          <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+          <Clear ref={clearRef} hideLabel={true} />
           <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
         </div>,
         measurementContainer

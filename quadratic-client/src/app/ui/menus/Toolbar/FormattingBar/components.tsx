@@ -47,6 +47,7 @@ export function FormatButtonDropdown({
       <Tooltip>
         <TooltipTrigger asChild>
           <DropdownMenuTrigger
+            aria-label={hideLabel ? '' : tooltipLabel}
             className={cn(
               'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
               checked ? 'bg-accent' : ''
@@ -165,7 +166,7 @@ export function FormatButton<T extends Action>({
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          aria-label={label}
+          aria-label={hideLabel ? '' : label}
           variant="ghost"
           size="sm"
           className={cn(
