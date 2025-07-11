@@ -11,6 +11,7 @@ const AIProvidersSchema = z.enum([
   'anthropic',
   'openai',
   'xai',
+  'open-router',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
@@ -36,6 +37,14 @@ const OpenAIModelSchema = z.enum([
   'o3-2025-04-16',
 ]);
 const XAIModelSchema = z.enum(['grok-4-0709']);
+const OpenRouterModelSchema = z.enum([
+  'qwen/qwen3-32b',
+  'qwen/qwen3-235b-a22b',
+  'deepseek/deepseek-r1-0528',
+  'deepseek/deepseek-r1-0528-qwen3-8b',
+  'deepseek/deepseek-r1-distill-qwen-7b',
+  'deepseek/deepseek-chat-v3-0324',
+]);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
   VertexAnthropicModelSchema,
@@ -46,6 +55,7 @@ const AIModelSchema = z.union([
   AnthropicModelSchema,
   OpenAIModelSchema,
   XAIModelSchema,
+  OpenRouterModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
 
@@ -107,6 +117,16 @@ export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 const XAIModelKeySchema = z.enum(['xai:grok-4-0709']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
+const OpenRouterModelKeySchema = z.enum([
+  'open-router:qwen/qwen3-32b',
+  'open-router:qwen/qwen3-235b-a22b',
+  'open-router:deepseek/deepseek-r1-0528',
+  'open-router:deepseek/deepseek-r1-0528-qwen3-8b',
+  'open-router:deepseek/deepseek-r1-distill-qwen-7b',
+  'open-router:deepseek/deepseek-chat-v3-0324',
+]);
+export type OpenRouterModelKey = z.infer<typeof OpenRouterModelKeySchema>;
+
 const AIModelKeySchema = z.union([
   QuadraticModelKeySchema,
   VertexAIAnthropicModelKeySchema,
@@ -117,6 +137,7 @@ const AIModelKeySchema = z.union([
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
   XAIModelKeySchema,
+  OpenRouterModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;
 

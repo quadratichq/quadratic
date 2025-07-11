@@ -7,6 +7,7 @@ import {
   isBedrockModel,
   isGenAIModel,
   isOpenAIModel,
+  isOpenRouterModel,
   isVertexAIAnthropicModel,
   isVertexAIModel,
   isXAIModel,
@@ -23,6 +24,7 @@ import {
   bedrock,
   bedrock_anthropic,
   geminiai,
+  open_router,
   openai,
   vertex_anthropic,
   vertexai,
@@ -90,6 +92,15 @@ export const handleAIRequest = async (
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, openai, response);
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
+    } else if (isOpenRouterModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        open_router,
+        response
+      );
     } else if (isVertexAIModel(modelKey)) {
       parsedResponse = await handleGenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, vertexai, response);
     } else if (isGenAIModel(modelKey)) {
