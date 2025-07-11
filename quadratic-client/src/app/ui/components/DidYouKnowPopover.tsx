@@ -15,7 +15,8 @@ export function DidYouKnowPopover({
   setOpen: (open: boolean) => void;
   title: string;
 }) {
-  // TODO: as we use this elsewhere, we'll probably need a custom position for the arrow
+  // TODO: as we beging to use this component elsewhere, we'll likely need a
+  // a prop to indicate on which side we want to show the arrow.
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor>{children}</PopoverAnchor>
