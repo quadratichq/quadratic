@@ -598,8 +598,8 @@ export class Tables extends Container<Table> {
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
     if (!this.dataTablesCache) return [];
     const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
-      cellRectangle.x,
-      cellRectangle.y,
+      cellRectangle.left,
+      cellRectangle.top,
       cellRectangle.right - 1,
       cellRectangle.bottom - 1
     );
