@@ -6,7 +6,6 @@ use columns::SheetColumns;
 use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
 use regex::Regex;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
 
@@ -35,6 +34,7 @@ pub mod col_row;
 pub mod columns;
 pub mod data_table;
 pub mod data_tables;
+mod format_summary;
 pub mod formats;
 pub mod rendering;
 pub mod rendering_date_time;
@@ -233,34 +233,18 @@ impl Sheet {
             .get_column(pos.x)
             .and_then(|column| column.values.get(&pos.y));
 
-        let is_percent = self.cell_format_numeric_kind(pos) == NumericFormatKind::Percentage;
-
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
         if let Some(cell_value) = cell_value {
             if !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
             ) {
-                if is_percent {
-                    if let CellValue::Number(n) = cell_value {
-                        return Some(CellValue::Number(n * Decimal::from(100)));
-                    }
-                }
                 return Some(cell_value.clone());
             }
         }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
-        if let Some(cell_value) = self.get_code_cell_value(pos) {
-            if is_percent {
-                if let CellValue::Number(n) = cell_value {
-                    return Some(CellValue::Number(n * Decimal::from(100)));
-                }
-            }
-            Some(cell_value.clone())
-        } else {
-            None
-        }
+        self.get_code_cell_value(pos)
     }
 
     /// Returns the JsCellValue at a position
@@ -446,32 +430,6 @@ impl Sheet {
         }
     }
 
-    /// Returns a summary of formatting in a region.
-    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.cell_format(pos);
-        let cell_type = self
-            .display_value(pos)
-            .and_then(|cell_value| match cell_value {
-                CellValue::Date(_) => Some(CellType::Date),
-                CellValue::DateTime(_) => Some(CellType::DateTime),
-                _ => None,
-            });
-        CellFormatSummary {
-            bold: format.bold,
-            italic: format.italic,
-            text_color: format.text_color,
-            fill_color: format.fill_color,
-            commas: format.numeric_commas,
-            align: format.align,
-            vertical_align: format.vertical_align,
-            wrap: format.wrap,
-            date_time: format.date_time,
-            cell_type,
-            underline: format.underline,
-            strike_through: format.strike_through,
-        }
-    }
-
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get_column(index)
@@ -616,7 +574,10 @@ impl Sheet {
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let value = rng.random_range(-10000..=10000).to_string();
-                self.set_cell_value((x, y).into(), CellValue::Number(decimal_from_str(&value).unwrap()));
+                self.set_cell_value(
+                    (x, y).into(),
+                    CellValue::Number(decimal_from_str(&value).unwrap()),
+                );
             }
         }
         self.recalculate_bounds(a1_context);

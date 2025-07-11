@@ -56,6 +56,7 @@ export const defaultShortcuts: ActionShortcut = {
   [Action.ShowGoToMenu]: {
     mac: [
       [MacModifiers.Cmd, Keys.G],
+      [MacModifiers.Ctrl, Keys.G],
       [MacModifiers.Cmd, Keys.J],
     ],
     windows: [
