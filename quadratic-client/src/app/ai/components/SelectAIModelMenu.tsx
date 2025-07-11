@@ -1,10 +1,12 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
-import { aiAnalystChatsAtom } from '@/app/atoms/aiAnalystAtom';
+import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
+import { apiClient } from '@/shared/api/apiClient';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -22,12 +24,10 @@ import { cn } from '@/shared/shadcn/utils';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
-import type { AIModelConfig, AIModelKey, ChatMessage, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
+import { memo, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
-
-const HAS_CLICKED_MODEL_PICKER_KEY = 'hasClickedModelPicker';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
@@ -43,7 +43,6 @@ interface SelectAIModelMenuProps {
 }
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const { debug } = useDebugFlags();
-  const [, setHasClickedModelPicker] = useLocalStorage(HAS_CLICKED_MODEL_PICKER_KEY, false);
 
   const {
     modelKey: selectedModel,
@@ -129,6 +128,29 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     }
   }, [debug, isOnPaidPlan, selectedModelMode, setModelMode]);
 
+  // "Did you know?" popover for the model picker
+  // 1. Get the initial state from the server
+  // 2. Save the initial state in local storage
+  // 3. If the state changes from false to true, update localstorage and the server
+  // We do it this way because the client state is not being synced with the
+  // server state through the router.
+  // So we keep track of it ourselves and then if the page is ever reloaded,
+  // we'll get the freshest state.
+  const {
+    userMakingRequest: { clientDataKv },
+  } = useFileRouteLoaderData();
+  const initialKnowsAboutModelPicker = Boolean(clientDataKv?.knowsAboutModelPicker);
+  const [knowsAboutModelPicker, setKnowsAboutModelPicker] = useLocalStorage(
+    'knowsAboutModelPicker',
+    initialKnowsAboutModelPicker
+  );
+  useEffect(() => {
+    if (initialKnowsAboutModelPicker === false && knowsAboutModelPicker) {
+      apiClient.user.update({ clientDataKv: { knowsAboutModelPicker: true } });
+    }
+  }, [initialKnowsAboutModelPicker, knowsAboutModelPicker]);
+  const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+
   return (
     <>
       {canToggleThinking ? (
@@ -192,13 +214,20 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <DidYouKnow>
+        <DidYouKnowPopover
+          // If they've already seen the popover, don't show it.
+          // Otherwise, only show it to them when they've used the AI a bit.
+          open={knowsAboutModelPicker ? false : userMessagesCount > 4}
+          setOpen={() => setKnowsAboutModelPicker(true)}
+          title="Try our Pro model"
+          description="Pro is our best and most capable model. But be careful, it uses credits more quickly."
+        >
           <Popover>
             {/* Needs a min-width or it shifts as the popover closes */}
             <PopoverTrigger
               className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
               onClick={() => {
-                setHasClickedModelPicker(true);
+                setKnowsAboutModelPicker(true);
               }}
             >
               Model: {selectedModelLabel}
@@ -241,90 +270,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               )}
             </PopoverContent>
           </Popover>
-        </DidYouKnow>
+        </DidYouKnowPopover>
       )}
     </>
   );
 });
-
-function DidYouKnow({ children }: { children: React.ReactNode }) {
-  // TODO: differentiate between whether this is an AI analyst or AI assistant
-
-  const [hasClickedModelPicker] = useLocalStorage(HAS_CLICKED_MODEL_PICKER_KEY, false);
-  const [hasSeenProModelPopover, setHasSeenProModelPopover] = useLocalStorage('hasSeenProModelPopover', false);
-  const chats = useRecoilValue(aiAnalystChatsAtom);
-  console.log('chats', chats);
-
-  // Determine whether to show
-  const initialOpen = useMemo(() => {
-    // Have they ever clicked on the model picker? If so, don't show it because
-    // we can assume they know about the feature.
-    if (hasClickedModelPicker) {
-      console.log('hasClickedModelPicker');
-      // return false;
-    }
-
-    // Have they ever seen this popover? If so, don't show it.
-    if (hasSeenProModelPopover) {
-      console.log('hasSeenProModelPopover');
-      // return false;
-    }
-
-    // Have they prompted the AI less than 5 times? If yes, don't show it
-    // (make sure they've used the AI a bit before showing)
-    const userMessages: ChatMessage[] = [];
-    for (const chat of chats) {
-      const messages = chat.messages.filter(
-        (message) => message.role === 'user' && message.contextType === 'userPrompt'
-      );
-      userMessages.push(...messages);
-    }
-    console.log('userMessages', userMessages);
-    if (userMessages.length < 2) {
-      console.log('userMessages.length < 5', userMessages.length);
-      // return false;
-    }
-
-    // Are there any "pro" models used in their chat history? If yes, don't show it
-    // (this weeds out people who've been using the app already and have used the model picker).
-    let hasUsedProModel = false;
-    outer: for (const chat of chats) {
-      for (const message of chat.messages) {
-        // TODO: fix this part
-        // TODO: turn console.log statements into debug flags
-        if (message.role === 'assistant' && message.contextType === 'userPrompt' && message.modelKey.includes('-pro')) {
-          hasUsedProModel = true;
-          break outer;
-        }
-      }
-    }
-    if (hasUsedProModel) {
-      console.log('hasUsedProModel');
-      // return false;
-    }
-
-    // If none of the above prevented this from being shown, show it.
-    return true;
-  }, [chats, hasClickedModelPicker, hasSeenProModelPopover]);
-
-  // Set the initial state
-  const [open, setOpen] = useState(initialOpen);
-
-  // When this thing is seen, save that state
-  useEffect(() => {
-    if (open && !hasSeenProModelPopover) {
-      setHasSeenProModelPopover(true);
-    }
-  }, [open, hasSeenProModelPopover, setHasSeenProModelPopover]);
-
-  return (
-    <DidYouKnowPopover
-      open={open}
-      setOpen={setOpen}
-      title="Try our Pro model"
-      description="Pro is our best and most capable model. But be careful, it uses credits more quickly."
-    >
-      {children}
-    </DidYouKnowPopover>
-  );
-}

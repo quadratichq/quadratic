@@ -34,9 +34,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/user.PO
     try {
       await setUserClientDataKv(userId, clientDataKv);
     } catch {
-      return res.status(500).json({ message: 'Client KV data corrupted ' });
+      return res.status(500).json({ message: 'Client KV data corrupted' });
     }
-    return res.status(200).json({ message: 'Client data saved' });
+
+    return res.status(200).json({ message: 'Client data updated' });
   }
 
   throw new ApiError(400, 'No data provided');

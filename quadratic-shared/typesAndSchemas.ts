@@ -109,7 +109,7 @@ export const TeamClientDataKvSchema = z.record(z.any());
 // removed from the stored data as the user continues to use the app.
 export const UserClientDataKvSchema = z
   .object({
-    hasSeenDidYouKnowPopoverModelPicker: z.boolean().optional(),
+    knowsAboutModelPicker: z.boolean().optional(),
   })
   .strip();
 export type UserClientDataKv = z.infer<typeof UserClientDataKvSchema>;
