@@ -600,8 +600,8 @@ export class Tables extends Container<Table> {
     const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
       cellRectangle.x,
       cellRectangle.y,
-      cellRectangle.right,
-      cellRectangle.bottom
+      cellRectangle.right - 1,
+      cellRectangle.bottom - 1
     );
     if (!tablePositions) return [];
 
