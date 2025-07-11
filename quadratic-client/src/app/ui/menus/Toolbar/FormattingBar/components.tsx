@@ -63,7 +63,7 @@ export function FormatButtonDropdown({
         </TooltipContent>
       </Tooltip>
       <DropdownMenuContent
-        className={className}
+        className={cn('hover:bg-background', className)}
         onCloseAutoFocus={(e) => {
           e.preventDefault();
           focusGrid();
@@ -276,7 +276,7 @@ export function FormatColorPickerButton({
       hideLabel={hideLabel}
       action={action}
     >
-      <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col p-0">
+      <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
         <QColorPicker
           onChangeComplete={(color) => {
             actionSpec.run(color);
