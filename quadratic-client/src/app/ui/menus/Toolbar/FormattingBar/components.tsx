@@ -24,6 +24,7 @@ export function FormatSeparator() {
 }
 
 export function FormatButtonDropdown({
+  action,
   Icon,
   IconNode,
   tooltipLabel,
@@ -33,6 +34,7 @@ export function FormatButtonDropdown({
   checked,
   hideLabel,
 }: {
+  action: string;
   Icon?: React.ComponentType<any> | null;
   IconNode?: JSX.Element | null;
   children: ReactNode;
@@ -52,6 +54,7 @@ export function FormatButtonDropdown({
               'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
               checked ? 'bg-accent' : ''
             )}
+            data-testid={hideLabel ? '' : action}
           >
             {Icon ? <Icon /> : (IconNode ?? null)}
             {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
@@ -75,6 +78,7 @@ export function FormatButtonDropdown({
 }
 
 export function FormatButtonPopover({
+  action,
   Icon,
   tooltipLabel,
   children,
@@ -82,6 +86,7 @@ export function FormatButtonPopover({
   className,
   hideLabel,
 }: {
+  action: string;
   Icon: any;
   children: ReactNode;
   tooltipLabel: string;
@@ -96,6 +101,7 @@ export function FormatButtonPopover({
           <PopoverTrigger
             className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground"
             aria-label={hideLabel ? '' : tooltipLabel}
+            data-testid={hideLabel ? '' : action}
           >
             <Icon />
             {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
@@ -138,6 +144,8 @@ export function FormatButtonDropdownActions<T extends Action>({
           mixpanel.track('[FormattingBar].button', { label });
           actionSpec.run(actionArgs);
         }}
+        aria-label={hideLabel ? '' : label}
+        data-testid={hideLabel ? '' : action}
       >
         {Icon && <Icon className="mr-2" />}
         {label}
@@ -178,6 +186,7 @@ export function FormatButton<T extends Action>({
             actionSpec.run(actionArgs);
             focusGrid();
           }}
+          data-testid={hideLabel ? '' : action}
         >
           <Icon />
         </Button>
@@ -268,6 +277,7 @@ export function FormatColorPickerButton({
       IconNode={IconNode}
       checked={activeColor !== undefined}
       hideLabel={hideLabel}
+      action={action}
     >
       <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col p-0">
         <QColorPicker
@@ -290,7 +300,12 @@ export function FormatDateAndTimePickerButton({ hideLabel }: { hideLabel?: boole
   const label = dateAndTimeAction.label();
 
   return (
-    <FormatButtonPopover tooltipLabel={label} Icon={dateAndTimeAction.Icon} hideLabel={hideLabel}>
+    <FormatButtonPopover
+      tooltipLabel={label}
+      Icon={dateAndTimeAction.Icon}
+      hideLabel={hideLabel}
+      action={Action.FormatDateTime}
+    >
       <div className="min-w-80 p-2">
         <DateFormat
           closeMenu={() => {

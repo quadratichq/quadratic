@@ -2,12 +2,9 @@
 //! Components that don't fit in the main bar are moved to the sub-bar.
 //!
 //! Note that the hideLabel prop is used to hide the label of the button when
-//! measuring the widths. This is necessary because tests rely on the label to
-//! identify the button. Ideally, we would add data-testid to all UI elements to
-//! avoid this.
+//! measuring the widths.
 
 import { Action } from '@/app/actions/actions';
-import { focusGrid } from '@/app/helpers/focusGrid';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
 import { BorderMenu } from '@/app/ui/components/BorderMenu';
 import {
@@ -124,6 +121,7 @@ export const FillAndBorderFormatting = forwardRef<
       hideLabel={props.hideLabel}
     />
     <FormatButtonPopover
+      action="borders"
       tooltipLabel="Borders"
       Icon={BorderAllIcon}
       className="flex flex-row flex-wrap"
@@ -153,7 +151,12 @@ export const AlignmentFormatting = forwardRef<
 
   return (
     <div className={cn('flex select-none text-sm', props.className)} ref={ref}>
-      <FormatButtonDropdown showDropdownArrow tooltipLabel="Horizontal align" Icon={AlignIcon}>
+      <FormatButtonDropdown
+        action="horizontal-align"
+        showDropdownArrow
+        tooltipLabel="Horizontal align"
+        Icon={AlignIcon}
+      >
         <FormatButtonDropdownActions
           actions={[
             Action.FormatAlignHorizontalLeft,
@@ -164,14 +167,19 @@ export const AlignmentFormatting = forwardRef<
           hideLabel={props.hideLabel}
         />
       </FormatButtonDropdown>
-      <FormatButtonDropdown showDropdownArrow tooltipLabel="Vertical align" Icon={VerticalAlignIcon}>
+      <FormatButtonDropdown
+        action="vertical-align"
+        showDropdownArrow
+        tooltipLabel="Vertical align"
+        Icon={VerticalAlignIcon}
+      >
         <FormatButtonDropdownActions
           actions={[Action.FormatAlignVerticalTop, Action.FormatAlignVerticalMiddle, Action.FormatAlignVerticalBottom]}
           actionArgs={undefined}
           hideLabel={props.hideLabel}
         />
       </FormatButtonDropdown>
-      <FormatButtonDropdown showDropdownArrow tooltipLabel="Text wrap" Icon={TextWrapIcon}>
+      <FormatButtonDropdown action="text-wrap" showDropdownArrow tooltipLabel="Text wrap" Icon={TextWrapIcon}>
         <FormatButtonDropdownActions
           actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
           actionArgs={undefined}
@@ -184,15 +192,7 @@ export const AlignmentFormatting = forwardRef<
 });
 
 export const Clear = forwardRef<HTMLDivElement | null, { className?: string; hideLabel?: boolean }>((props, ref) => (
-  <ToggleGroup.Root
-    type="multiple"
-    className={cn('flex select-none text-sm', props.className)}
-    onValueChange={() => focusGrid()}
-    ref={ref}
-    {...props}
-  >
-    <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} hideLabel={props.hideLabel} />
-  </ToggleGroup.Root>
+  <FormatButton action={Action.ClearFormattingBorders} actionArgs={undefined} hideLabel={props.hideLabel} />
 ));
 
 export const FormatMoreButton = forwardRef<
