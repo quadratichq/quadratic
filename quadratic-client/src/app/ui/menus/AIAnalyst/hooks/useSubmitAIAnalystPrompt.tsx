@@ -1,5 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDateTimeContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
@@ -70,6 +71,7 @@ export type SubmitAIAnalystPromptArgs = {
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
+  const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
@@ -82,27 +84,35 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, filesContext] =
+        const [filesContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
           await Promise.all([
+            getFilesContext({ chatMessages }),
             getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
-            getFilesContext({ chatMessages }),
           ]);
 
         const messagesWithContext: ChatMessage[] = [
+          ...filesContext,
           ...otherSheetsContext,
           ...tablesContext,
+          ...getCurrentDateTimeContext(),
           ...currentSheetContext,
           ...visibleContext,
-          ...filesContext,
           ...getPromptMessagesForAI(chatMessages),
         ];
 
         return messagesWithContext;
       },
-    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext]
+    [
+      getCurrentDateTimeContext,
+      getOtherSheetsContext,
+      getTablesContext,
+      getCurrentSheetContext,
+      getVisibleContext,
+      getFilesContext,
+    ]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -275,7 +285,6 @@ export function useSubmitAIAnalystPrompt() {
               source: 'AIAnalyst',
               messageSource,
               modelKey,
-              time: new Date().toString(),
               messages: messagesWithContext,
               useStream: USE_STREAM,
               toolName: undefined,

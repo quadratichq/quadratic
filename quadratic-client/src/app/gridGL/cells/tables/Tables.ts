@@ -264,10 +264,10 @@ export class Tables extends Container<Table> {
     const bounds = forceBounds ?? pixiApp.viewport.getVisibleBounds();
     const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
     const tables = this.dataTablesCache?.getLargeTablesInRect(
-      cellBounds.x,
-      cellBounds.y,
-      cellBounds.width,
-      cellBounds.height
+      cellBounds.left,
+      cellBounds.top,
+      cellBounds.right - 1,
+      cellBounds.bottom - 1
     );
     return (
       tables?.flatMap((pos) => {
@@ -598,10 +598,10 @@ export class Tables extends Container<Table> {
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
     if (!this.dataTablesCache) return [];
     const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
-      cellRectangle.x,
-      cellRectangle.y,
-      cellRectangle.right,
-      cellRectangle.bottom
+      cellRectangle.left,
+      cellRectangle.top,
+      cellRectangle.right - 1,
+      cellRectangle.bottom - 1
     );
     if (!tablePositions) return [];
 
