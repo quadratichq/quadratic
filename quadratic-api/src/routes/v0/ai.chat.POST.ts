@@ -5,6 +5,7 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
+import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
 import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
@@ -90,6 +91,16 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
 
   const source = args.source;
   const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+
+  if (args.useToolsPrompt) {
+    const toolUseContext = getToolUseContext(args.source);
+    args.messages = [...toolUseContext, ...args.messages];
+  }
+
+  if (args.useQuadraticContext) {
+    const quadraticContext = getQuadraticContext(args.language);
+    args.messages = [...quadraticContext, ...args.messages];
+  }
 
   const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
   if (parsedResponse) {
