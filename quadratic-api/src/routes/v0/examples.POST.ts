@@ -45,7 +45,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
   }
 
   try {
-    const apiUrl = `https://api.quadratichq.com/v0/files/${fileUuid}`;
+    const apiUrl = `https://api-aws.quadratichq.com/v0/files/${fileUuid}`;
 
     // Fetch info about the file
     const {
