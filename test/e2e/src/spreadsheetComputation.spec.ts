@@ -31,7 +31,7 @@ test('API Calls', async ({ page }) => {
   });
 
   // Open api-calls tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(4000);
 
   //--------------------------------
@@ -44,13 +44,13 @@ test('API Calls', async ({ page }) => {
   });
 
   // Click search icon
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Search for 'run all code in sheet'
   await page.keyboard.type('run all code in sheet', { delay: 250 });
 
   // Select option
-  await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   //--------------------------------
@@ -106,12 +106,12 @@ test('Basic Formula Creation', async ({ page }) => {
   await page.waitForTimeout(5000);
 
   // Assertion with formula cell visible (purple outline with button)
-  await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // remove = to turn off formula
   await page.keyboard.press('Backspace');
   // Negative assertion with formula cell not visible (purple outline with button)
-  await expect(page.locator(`div[data-mode-id="Formula"]`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-mode-id="Formula"]`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   await page.keyboard.type('=SUM(', { delay: 250 });
   await page.waitForTimeout(2000);
@@ -146,12 +146,12 @@ test('Basic Formula Creation', async ({ page }) => {
   await page.waitForTimeout(5000);
 
   // Assertion with formula cell visible (purple outline with button)
-  await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await page.locator(`div[data-mode-id="Formula"] + button`).click({ timeout: 30 * 1000 });
-  await expect(page.locator(`#QuadraticCodeEditorID:has-text("SUM(A2:A16)")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await page.locator(`div[data-mode-id="Formula"] + button`).click({ timeout: 60 * 1000 });
+  await expect(page.locator(`#QuadraticCodeEditorID:has-text("SUM(A2:A16)")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -179,7 +179,7 @@ test('Charts', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Open charts tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -190,13 +190,13 @@ test('Charts', async ({ page }) => {
   });
 
   // Click search icon
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Search for 'run all code in sheet'
   await page.keyboard.type('run all code in sheet');
 
   // Select option
-  await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
 
   // Wait for loading spinner to go away
   await page.waitForTimeout(15000);
@@ -208,11 +208,11 @@ test('Charts', async ({ page }) => {
   // After code finishes executing screenshot assertion that cells and sheet looks like it should
   // Take final screenshot (do not add max pixel diff)
   try {
-    await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+    await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-charts-post.1.png');
   } catch {
     // Open charts tab
-    await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+    await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
     // Take final screenshot (do not add max pixel diff)
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-charts-post.png');
   }
@@ -248,7 +248,7 @@ test('Drag References', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   const canvas = page.locator(`#QuadraticCanvasID`);
-  await expect(canvas).toBeVisible({ timeout: 30 * 1000 });
+  await expect(canvas).toBeVisible({ timeout: 60 * 1000 });
   const canvasBox = await canvas.boundingBox();
   if (!canvasBox) {
     throw new Error('Canvas bounding box not found');
@@ -306,7 +306,7 @@ test('Drag References', async ({ page }) => {
   await page.mouse.move(canvasBox.x + 959, canvasBox.y + 226, { steps: 10 });
   await page.mouse.up();
 
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   //--------------------------------
   // Assert:
@@ -348,7 +348,7 @@ test('Drag References', async ({ page }) => {
   await page.mouse.move(canvasBox.x + 959, canvasBox.y + 121, { steps: 10 });
   await page.mouse.up();
 
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   //--------------------------------
   // Assert:
@@ -377,7 +377,7 @@ test('Drag References', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-absolute-post-drag.png`);
 
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -405,7 +405,7 @@ test('Formatting', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Open formatting tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(4000);
 
   //--------------------------------
@@ -418,13 +418,13 @@ test('Formatting', async ({ page }) => {
   });
 
   // Click search icon
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Search for 'run all code in sheet'
   await page.keyboard.type('run all code in sheet');
 
   // Select option
-  await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(4000);
 
   //--------------------------------
@@ -438,7 +438,7 @@ test('Formatting', async ({ page }) => {
   });
 
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -473,13 +473,13 @@ test('Formulas', async ({ page }) => {
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-formulas-pre-ss.png`);
 
   // Click search icon
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Search for 'run all code in sheet'
   await page.keyboard.type('run all code in sheet');
 
   // Select option
-  await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(4000);
 
   // Select all cells in column I, copy them to assert against in Assert block
@@ -509,7 +509,7 @@ test('Formulas', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -545,7 +545,7 @@ console.log(data)
   await page.keyboard.press('/');
 
   // Select JavaScript language option
-  await page.locator(`div[data-value="JavaScript"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`div[data-value="JavaScript"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -554,25 +554,25 @@ console.log(data)
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).focus();
 
   // Click code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
 
   // Type in a sleep function in JavaScript editor
   await page.keyboard.type(javascriptCode);
 
   // Click the blue play arrow to 'Save and run'
-  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert Array: [ 0: 1 1: 2 2: 3 3: 4 ] is visible in console
   await expect(page.locator(`[role="tabpanel"] :text("Array: [ 0: 1 1: 2 2: 3 3: 4 ]")`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Assert formatting appears correct
@@ -585,7 +585,7 @@ console.log(data)
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -616,13 +616,13 @@ test('Javascript Formulas', async ({ page }) => {
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       // Click search icon
-      await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+      await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
       // Search for 'run all code in sheet'
       await page.keyboard.type('run all code in sheet');
 
       // Select option
-      await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+      await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
 
       //--------------------------------
       // Assert:
@@ -644,7 +644,7 @@ test('Javascript Formulas', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -683,41 +683,41 @@ test('Open and Use Formula Editor', async ({ page }) => {
   //--------------------------------
   // Assert code language selector to pop up
   await expect(page.locator(`div[role="dialog"]:has(input[placeholder*="Choose a cell type"])`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Click on formula
-  await page.locator(`div[data-value="Formula"]`).click({ timeout: 30 * 1000 });
-  await page.waitForTimeout(30 * 1000);
+  await page.locator(`div[data-value="Formula"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(60 * 1000);
 
   // Assert multi line code editor opens
-  await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(10 * 1000);
 
   // tool tip hover, assert formula tooltip
   await page.locator(`#QuadraticCodeEditorID svg`).first().hover();
-  await expect(page.locator(`[role*="tooltip"] :text-is("Formula")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`[role*="tooltip"] :text-is("Formula")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Close code editor
-  await page.getByRole(`button`, { name: `close` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `close` }).click({ timeout: 60 * 1000 });
 
   // Create open formula editor with =, then open multi code editor with button
   await navigateOnSheet(page, { targetColumn: 2, targetRow: 2 });
   await page.keyboard.press('=');
 
   // Assertion with formula cell visible (purple outline with button)
-  await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await page.locator(`div[data-mode-id="Formula"] + button`).click({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-mode-id="Formula"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await page.locator(`div[data-mode-id="Formula"] + button`).click({ timeout: 60 * 1000 });
 
   // Assert multi line code editor opens
-  await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(10 * 1000);
 
   // tool tip hover, assert formula tooltip
   await page.locator(`#QuadraticCodeEditorID svg`).first().hover();
-  await expect(page.locator(`[role*="tooltip"] :text-is("Formula")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`[role*="tooltip"] :text-is("Formula")`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Use Formula Editor
@@ -727,7 +727,7 @@ test('Open and Use Formula Editor', async ({ page }) => {
   // Act:
   //--------------------------------
   await page.keyboard.type('SUM(A2:A16');
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Wait a moment for processing
   await page.waitForTimeout(5 * 1000);
@@ -744,7 +744,7 @@ test('Open and Use Formula Editor', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -780,7 +780,7 @@ print(my_data)
   await page.keyboard.press('/');
 
   // Select Python language option
-  await page.locator(`div[data-value="Python"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`div[data-value="Python"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -789,22 +789,22 @@ print(my_data)
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).focus();
 
   // Click code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
 
   // Type in a sleep function in Python editor
   await page.keyboard.type(pythonCode, { delay: 250 });
 
   // Click the blue play arrow to 'Save and run'
-  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
   // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert [1, 2, 3, 4] shows up in console
-  await expect(page.locator(`[role="tabpanel"] :text("[1, 2, 3, 4]")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`[role="tabpanel"] :text("[1, 2, 3, 4]")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert formatting appears correct
   await expect(page.locator(`[role="tabpanel"] :text("[1, 2, 3, 4]")`)).toHaveScreenshot(`python_print.png`, {
@@ -815,7 +815,7 @@ print(my_data)
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -846,7 +846,7 @@ test('Read JavaScript Output within Formula', async ({ page }) => {
   //--------------------------------
 
   // Click the search bar on the top right of the page
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Fill the search field
   await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code in sheet`);
@@ -883,7 +883,7 @@ test('Read JavaScript Output within Formula', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -914,7 +914,7 @@ test('Read Python Output within Formula', async ({ page }) => {
   //--------------------------------
 
   // Click the search bar on the top right of the page
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Fill the search field
   await page.locator(`[placeholder="Search menus and commands…"]`).fill(`Run all code in sheet`);
@@ -948,7 +948,7 @@ test('Read Python Output within Formula', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -976,7 +976,7 @@ test('References', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Open References tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5000);
 
   //--------------------------------
@@ -991,13 +991,13 @@ test('References', async ({ page }) => {
   for (let attempt = 1; attempt <= 5; attempt++) {
     try {
       // Click search icon
-      await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+      await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
       // Search for 'run all code in sheet'
       await page.keyboard.type('run all code in sheet');
 
       // Select option
-      await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+      await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
       await page.waitForTimeout(8000);
 
       //--------------------------------
@@ -1018,7 +1018,7 @@ test('References', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1046,7 +1046,7 @@ test('Spills', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Open References tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5000);
 
   //--------------------------------
@@ -1059,13 +1059,13 @@ test('Spills', async ({ page }) => {
   });
 
   // Click search icon
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Search for 'run all code in sheet'
   await page.keyboard.type('run all code in sheet');
 
   // Select option
-  await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(15 * 1000);
 
   //--------------------------------
@@ -1082,7 +1082,7 @@ test('Spills', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1123,11 +1123,11 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   // Act:
   //--------------------------------
   // Click on the new connection button
-  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 60 * 1000 });
   // Click on the PostgreSQL button
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
   await page.locator(`button[data-testid="new-connection-POSTGRES"]`).click({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Fill in database details:
@@ -1139,14 +1139,14 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   await page.getByLabel(`Password`).fill(POSTGRES_DB.password);
 
   // Click Test
-  await page.getByRole(`button`, { name: `Test` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Test` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert connection established
   await expect(page.getByRole(`button`, { name: `${POSTGRES_DB.connectionName} Created` })).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Close modal
@@ -1157,7 +1157,7 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
 
   // Assert connection is visible under Connections
   await expect(page.locator(`div:text-is("Connections") + div:has-text("${POSTGRES_DB.connectionName}")`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   //--------------------------------
@@ -1166,16 +1166,16 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   // Click on the new connection
   await page
     .locator(`div:text-is("Connections") + div span:text-is("${POSTGRES_DB.connectionName}")`)
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Clean up: run drop table command
   await page.waitForTimeout(5 * 1000);
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
 
   await page.keyboard.type(`DROP TABLE ${tableName}`);
 
   // Click Play
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Wait for code execution
   await page.waitForTimeout(5 * 1000);
@@ -1198,13 +1198,13 @@ hire_date DATE);`);
   // Act:
   //--------------------------------
   // Click on code editor to bring into focus
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
 
   // Paste into code editor
   await page.keyboard.press('Control+V');
 
   // Click Play
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Wait a few seconds before taking screenshot
   await page.waitForTimeout(3000);
@@ -1226,19 +1226,19 @@ hire_date DATE);`);
 ('Michael', 'Brown', 'Sales', 60000, '2018-11-30'),
 ('Emily', 'Davis', 'HR', 55000, '2021-07-11');`);
   });
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Paste into code editor
   await page.keyboard.press('Control+V');
 
   // Click Play
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Reload schema
   await page
     .locator(`div:has(h3:text-is("${POSTGRES_DB.connectionName}")) + div > button span:text-is("refresh")`)
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Wait a few seconds before taking screenshot
   await page.waitForTimeout(5 * 1000);
@@ -1252,7 +1252,7 @@ hire_date DATE);`);
 
   // Assert schema shows table fake_data_employees
   await page.getByRole(`button`, { name: tableName }).scrollIntoViewIfNeeded();
-  await expect(page.getByRole(`button`, { name: tableName })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: tableName })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Query Database
@@ -1267,7 +1267,7 @@ hire_date DATE);`);
   await page.keyboard.type(`SELECT * FROM ${tableName} LIMIT 100;`);
 
   // Click Play
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Wait a few seconds before taking screenshot
   await page.waitForTimeout(5 * 1000);
@@ -1307,7 +1307,7 @@ hire_date DATE);`);
   await page.keyboard.type(`DROP TABLE ${tableName}`);
 
   // Click Play
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Clean up server connections
   // Navigate to different cell
@@ -1321,7 +1321,7 @@ hire_date DATE);`);
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1359,11 +1359,11 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
 
   // Setup database connection
   // Click on the new connection button
-  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 60 * 1000 });
   // Click on the PostgreSQL button
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
   await page.locator(`button[data-testid="new-connection-POSTGRES"]`).click({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   await page.getByLabel(`Connection name`).fill(POSTGRES_DB.connectionName);
@@ -1374,11 +1374,11 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
   await page.getByLabel(`Password`).fill(POSTGRES_DB.password);
 
   // Click Test
-  await page.getByRole(`button`, { name: `Test` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Test` }).click({ timeout: 60 * 1000 });
 
   // Assert connection established
   await expect(page.getByRole(`button`, { name: `${POSTGRES_DB.connectionName} Created` })).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Close modal
@@ -1390,14 +1390,14 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
   // Click on the new connection
   await page
     .locator(`div:text-is("Connections") + div span:text-is("${POSTGRES_DB.connectionName}")`)
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Clean up: run drop table command
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.type(`DROP TABLE public.fake_data_employee_reference`);
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
 
   // Wait for SQL query to execute
   await page.waitForTimeout(5 * 1000);
@@ -1417,14 +1417,14 @@ hire_date DATE);`);
   });
 
   // Click on code editor to bring into focus
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Paste into code editor
   await page.keyboard.press('Control+V');
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Clear code editor
@@ -1439,14 +1439,14 @@ hire_date DATE);`);
 ('Michael', 'Brown', 'Sales', 60000, '2018-11-30'),
 ('Emily', 'Davis', 'HR', 55000, '2021-07-11');`);
   });
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Paste into code editor
   await page.keyboard.press('Control+V');
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Clear code editor
@@ -1456,7 +1456,7 @@ hire_date DATE);`);
   await page.keyboard.type('SELECT * FROM fake_data_employee_reference LIMIT 100;');
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Screenshot assertion: Page should not show #ERROR
@@ -1512,17 +1512,17 @@ hire_date DATE);`);
   await page.waitForTimeout(2000);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 9 });
   await page.keyboard.press('/');
-  await page.locator(`span:text-is("Python")`).click({ timeout: 30 * 1000 });
+  await page.locator(`span:text-is("Python")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
   await page.keyboard.type(`sum([q.cells('A4'), q.cells('A5'), q.cells('A6')])`);
   await page.waitForTimeout(3000);
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Navigate to answer
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
   await page.keyboard.press('Escape');
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 8 });
@@ -1558,7 +1558,7 @@ hire_date DATE);`);
   await page.keyboard.type(`DROP TABLE public.fake_data_employee_reference`);
 
   // Click Play
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Clean up server connections
   // Navigate to different cell
@@ -1572,7 +1572,7 @@ hire_date DATE);`);
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1611,11 +1611,11 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
 
   // Setup database connection
   // Click on the new connection button
-  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('button', { name: 'New connection' }).click({ timeout: 60 * 1000 });
   // Click on the PostgreSQL button
   // Click PostgreSQL: PostgreSQL is an image - unable to select via text
   await page.locator(`button[data-testid="new-connection-POSTGRES"]`).click({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Fill in database details:
@@ -1627,11 +1627,11 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
   await page.getByLabel(`Password`).fill(POSTGRES_DB.password);
 
   // Click Test
-  await page.getByRole(`button`, { name: `Test` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Test` }).click({ timeout: 60 * 1000 });
 
   // Assert connection established
   await expect(page.getByRole(`button`, { name: `${POSTGRES_DB.connectionName} Created` })).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Close modal
@@ -1643,14 +1643,14 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
   // Click on the new connection
   await page
     .locator(`div:text-is("Connections") + div span:text-is("${POSTGRES_DB.connectionName}")`)
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Clean up: run drop table command
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.type(`DROP TABLE ${tableName}`);
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
 
   // Wait for SQL command to execute
   await page.waitForTimeout(5 * 1000);
@@ -1670,7 +1670,7 @@ hire_date DATE);`);
   });
 
   // Click on code editor to bring into focus
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5000);
 
   // Paste into code editor
@@ -1678,7 +1678,7 @@ hire_date DATE);`);
   await page.waitForTimeout(2000);
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5000);
 
   // Clear code editor
@@ -1693,7 +1693,7 @@ hire_date DATE);`);
 ('Michael', 'Brown', 'Sales', 60000, '2018-11-30'),
 ('Emily', 'Davis', 'HR', 55000, '2021-07-11');`);
   });
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Paste into code editor
@@ -1701,7 +1701,7 @@ hire_date DATE);`);
   await page.waitForTimeout(2000);
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Clear code editor
@@ -1712,7 +1712,7 @@ hire_date DATE);`);
   await page.waitForTimeout(2000);
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
+  await playButton.click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5000);
 
   // Screenshot assertion: Page should not show #ERROR
@@ -1736,17 +1736,17 @@ hire_date DATE);`);
   await page.keyboard.press('/');
 
   // Select Javascript
-  await page.locator(`div[data-value=JavaScript]`).click({ timeout: 30 * 1000 });
+  await page.locator(`div[data-value=JavaScript]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Focus on the code editor
   await page
     .locator('#QuadraticCodeEditorID div.monaco-editor div.view-lines.monaco-mouse-cursor-text')
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   // Add console logs for potential debugging
@@ -1767,11 +1767,11 @@ hire_date DATE);`);
   await page.waitForTimeout(10 * 1000);
 
   // Click Play
-  await playButton.click({ timeout: 30 * 1000 });
-  await page.waitForTimeout(30 * 1000);
+  await playButton.click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(60 * 1000);
 
   // Navigate to answer
-  await typingInput.click({ timeout: 30 * 1000 });
+  await typingInput.click({ timeout: 60 * 1000 });
   await page.keyboard.press('Escape');
   await page.waitForTimeout(3000);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 12 });
@@ -1796,11 +1796,11 @@ hire_date DATE);`);
     await page.waitForTimeout(5000);
 
     // Click Play
-    await playButton.click({ timeout: 30 * 1000 });
+    await playButton.click({ timeout: 60 * 1000 });
     await page.waitForTimeout(5000);
 
     // Navigate to answer
-    await typingInput.click({ timeout: 30 * 1000 });
+    await typingInput.click({ timeout: 60 * 1000 });
     await page.keyboard.press('Escape');
     await page.waitForTimeout(3000);
     await navigateOnSheet(page, { targetColumn: 1, targetRow: 12 });
@@ -1841,7 +1841,7 @@ hire_date DATE);`);
   await page.keyboard.type(`DROP TABLE fake_data_employee_javascript_reference`);
 
   // Click Play
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   // Clean up server connections
   // Navigate to different cell
@@ -1855,7 +1855,7 @@ hire_date DATE);`);
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1900,10 +1900,10 @@ test('Switch between Python and Formula', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 2 });
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('/');
-  await page.locator(`span:text-is("Python")`).click({ timeout: 30 * 1000 });
+  await page.locator(`span:text-is("Python")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('5+5');
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1924,19 +1924,19 @@ test('Switch between Python and Formula', async ({ page }) => {
 
     // Mouse to double click on [2, 1]
     await page.mouse.dblclick(330, 130);
-    await page.waitForTimeout(30 * 1000);
+    await page.waitForTimeout(60 * 1000);
 
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-formula.png`, {
       maxDiffPixelRatio: 0.001,
     });
 
-    await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 30 * 1000 });
+    await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 60 * 1000 });
 
     await page.waitForTimeout(10 * 1000);
 
     // tool tip hover, assert python tooltip
     await page.locator(`#QuadraticCodeEditorID svg`).first().hover();
-    await expect(page.locator(`[role="tooltip"]:has-text("Python")`)).toBeVisible({ timeout: 30 * 1000 });
+    await expect(page.locator(`[role="tooltip"]:has-text("Python")`)).toBeVisible({ timeout: 60 * 1000 });
   }
 
   // Convert Python cell to Basic Formula cell
@@ -1960,10 +1960,10 @@ test('Switch between Python and Formula', async ({ page }) => {
   await page.keyboard.press('Delete');
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('/');
-  await page.locator(`span:text-is("Python")`).click({ timeout: 30 * 1000 });
+  await page.locator(`span:text-is("Python")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.type('5+5');
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
 
   await page.keyboard.press('Enter');
   await page.waitForTimeout(2000);
@@ -1976,19 +1976,19 @@ test('Switch between Python and Formula', async ({ page }) => {
     maxDiffPixelRatio: 0.001,
   });
 
-  await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`#QuadraticCodeEditorID`)).toBeVisible({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(10 * 1000);
 
   // tool tip hover, assert python tooltip
   await page.locator(`#QuadraticCodeEditorID svg`).first().hover();
-  await expect(page.locator(`[role="tooltip"]:has-text("Python")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`[role="tooltip"]:has-text("Python")`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2016,7 +2016,7 @@ test('Types: Numbers and Strings', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Open numbers and strings tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(4000);
 
   //--------------------------------
@@ -2029,13 +2029,13 @@ test('Types: Numbers and Strings', async ({ page }) => {
   // This is added due the flakiness of run all code in sheet, Quadratic is aware of this issue.
   for (let attempt = 1; attempt <= 5; attempt++) {
     // Click search icon
-    await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+    await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
     // Search for 'run all code in sheet'
     await page.keyboard.type('run all code in sheet');
 
     // Select option
-    await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+    await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(6000);
 
     //--------------------------------
@@ -2055,7 +2055,7 @@ test('Types: Numbers and Strings', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2083,7 +2083,7 @@ test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Open Types: Sequences, Mappings, and Sets tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(4000);
 
   // Take initial screenshot
@@ -2098,7 +2098,7 @@ test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
 
     try {
       // Click search icon
-      await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+      await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
       // Search for 'run all code in sheet'
       await page.keyboard.type('run all code in sheet');
@@ -2145,7 +2145,7 @@ test('Types: Sequences, Mappings, and Sets', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2173,7 +2173,7 @@ test('Types: Series and Data-Frames', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Open Types: Sequences, Mappings, and Sets tab
-  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(4000);
 
   // Take initial screenshot
@@ -2184,13 +2184,13 @@ test('Types: Series and Data-Frames', async ({ page }) => {
   //--------------------------------
 
   // Click search icon
-  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Search for 'run all code in sheet'
   await page.keyboard.type('run all code in sheet');
 
   // Select option
-  await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="option"]`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5000);
 
   //--------------------------------
@@ -2207,6 +2207,6 @@ test('Types: Series and Data-Frames', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

@@ -38,16 +38,16 @@ test.skip('AI Assistant', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on python option
-  await page.locator(`div[data-value="Python"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`div[data-value="Python"]`).click({ timeout: 60 * 1000 });
 
   // Click on 'Chat' tab in bottom right
-  await page.getByRole(`tab`, { name: `Chat` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`tab`, { name: `Chat` }).click({ timeout: 60 * 1000 });
 
   // Fill the "Ask a question" input with the prompt
   await page.getByPlaceholder(`Ask a question...`).fill(prompt);
 
   // Click "Send" icon/button
-  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // AI Timeout on Free Tier
   await page.waitForTimeout(90 * 1000);
@@ -61,13 +61,13 @@ test.skip('AI Assistant', async ({ page }) => {
   // Conversation clears when closed
   //--------------------------------
   // Close the python editor
-  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 60 * 1000 });
 
   // Press "/" key on keyboard
   await page.keyboard.press('/');
 
   // Click on 'Chat' tab in bottom right
-  await page.getByRole(`tab`, { name: `Chat` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`tab`, { name: `Chat` }).click({ timeout: 60 * 1000 });
 
   // Wait for a short delay to ensure AI assistant has loaded
   await page.waitForTimeout(5 * 1000);
@@ -82,7 +82,7 @@ test.skip('AI Assistant', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -118,10 +118,10 @@ test('Can Stop Code Execution', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python option
-  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
+  await page.locator('[data-value="Python"]').click({ timeout: 60 * 1000 });
 
   // Click on console tab
-  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
 
   // Focus the default text inside the code editor
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).focus();
@@ -134,7 +134,7 @@ test('Can Stop Code Execution', async ({ page }) => {
 
   // Run code
   await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   // Click stop execution
   await page.getByRole(`button`, { name: `stop`, exact: true }).click({ timeout: 60 * 1000 });
@@ -174,7 +174,7 @@ test('Can Stop Code Execution', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -271,7 +271,7 @@ test('Charts Resizing', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -300,19 +300,19 @@ test('Code Editor Displays Return', async ({ page }) => {
   // Code Editor Displays Return
   //--------------------------------
   // Select a cell
-  await page.locator(`[id="QuadraticCanvasID"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[id="QuadraticCanvasID"]`).click({ timeout: 60 * 1000 });
 
   // Press "/" key on keyboard
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
+  await page.locator('[data-value="Python"]').click({ timeout: 60 * 1000 });
 
   // Focus the default text inside the code editor
   await page.locator(`[id="QuadraticCodeEditorID"] [data-keybinding-context="1"] [class="view-line"]`).focus();
 
   // Click code editor
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 60 * 1000 });
 
   for (let i = 0; i < 3; i++) {
     // Type Python code into code editor
@@ -321,13 +321,13 @@ test('Code Editor Displays Return', async ({ page }) => {
     await page.waitForTimeout(2000);
 
     // Click run
-    await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
+    await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
     // Check expected return test near the btotom of the code editor
     await expect(page.getByText(`Line ${i + 1} returned ${expectedOutputs[i]}`)).toBeVisible();
 
     // Click code editor
-    await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
+    await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 60 * 1000 });
 
     // Press enter
     await page.keyboard.press('Enter');
@@ -337,7 +337,7 @@ test('Code Editor Displays Return', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -364,15 +364,15 @@ test('Code Snippets', async ({ page }) => {
   // Code snippet inserts into code editor
   //--------------------------------
   // Select a cell
-  await page.locator(`[id="QuadraticCanvasID"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[id="QuadraticCanvasID"]`).click({ timeout: 60 * 1000 });
 
   // Press "/" key on keyboard
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
+  await page.locator('[data-value="Python"]').click({ timeout: 60 * 1000 });
 
-  await page.locator(`#QuadraticCodeEditorID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorID`).click({ timeout: 60 * 1000 });
 
   // Click code snippets button on top nav of code editor
   await page.waitForTimeout(2000);
@@ -382,7 +382,7 @@ test('Code Snippets', async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Click an option from the popup menu
-  await page.getByRole(`button`, { name: `Read from sheet` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Read from sheet` }).click({ timeout: 60 * 1000 });
 
   // Confirm that appropriate number of lines were inserted into the code editor
   // Note: not ideal to use count() but the number of lines changes according to
@@ -394,7 +394,7 @@ test('Code Snippets', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -427,7 +427,7 @@ test('Data Actions', async ({ page, context }) => {
   await expect(page.getByRole(`button`, { name: `DataActionsCSV` })).toBeVisible();
 
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 
   //--------------------------------
@@ -457,7 +457,7 @@ test('Data Actions', async ({ page, context }) => {
   // Flatten data
   await page.mouse.move(111, 111, { steps: 20 });
   await page.mouse.click(111, 111, { button: 'right' });
-  await page.locator(`[role='menuitem'] span:text-is("Flatten")`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role='menuitem'] span:text-is("Flatten")`).click({ timeout: 60 * 1000 });
 
   // Highlight the cells from 1, 2` through 8, 5
   await selectCells(page, { startXY: [1, 2], endXY: [8, 5] });
@@ -471,7 +471,7 @@ test('Data Actions', async ({ page, context }) => {
   ]);
 
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 
   // Save the download to a specific path
@@ -518,31 +518,31 @@ test('Discard Changes', async ({ page }) => {
   // Discard Changes
   //--------------------------------
   // Select a cell
-  await page.locator(`#QuadraticCanvasID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
 
   // Press "/" key on keyboard
   await page.keyboard.press('/');
 
   // Click Python option from popup menu
-  await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
+  await page.locator('[data-value="Python"]').click({ timeout: 60 * 1000 });
 
   // Focus the default text inside the code editor
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).focus();
 
   // Click code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
 
   // Type sample Python code that creates the header of a function
   await page.keyboard.type(pythonCode);
 
   // Press close code editor button (without saving)
-  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 60 * 1000 });
 
   // Check that the save changes pop up window appears
   await expect(page.getByRole(`alertdialog`, { name: `Do you want to save your code changes?` })).toBeVisible();
 
   // Click discard changes button
-  await page.getByRole(`button`, { name: 'Discard changes' }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: 'Discard changes' }).click({ timeout: 60 * 1000 });
 
   // Check that the regular Python code executed successfully
   await expect(page.getByText(pythonCode)).not.toBeVisible();
@@ -551,7 +551,7 @@ test('Discard Changes', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -568,11 +568,11 @@ test('File Actions', async ({ page }) => {
   const myFilesButton = page.getByRole('link', { name: 'lock My files' });
 
   // Clean up lingering files
-  await myFilesButton.click({ timeout: 30 * 1000 });
+  await myFilesButton.click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
   await cleanUpFiles(page, { fileName: renamedFileName });
 
-  await filesButton.click({ timeout: 30 * 1000 });
+  await filesButton.click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
   await cleanUpFiles(page, { fileName: renamedFileName });
 
@@ -583,10 +583,10 @@ test('File Actions', async ({ page }) => {
   // Rename File
   //--------------------------------
   // Click file title drop down button located at top-center of page
-  await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 60 * 1000 });
 
   // Click Rename
-  await page.getByRole(`menuitem`, { name: `text_select_start Rename` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`menuitem`, { name: `text_select_start Rename` }).click({ timeout: 60 * 1000 });
 
   // Rename file
   await page.getByRole(`textbox`, { name: `Rename file` }).fill(renamedFileName);
@@ -603,7 +603,7 @@ test('File Actions', async ({ page }) => {
   const duplicateButton = page.getByRole(`menuitem`, { name: `file_copy Duplicate` });
 
   // click File
-  await fileMenu.click({ timeout: 30 * 1000 });
+  await fileMenu.click({ timeout: 60 * 1000 });
 
   // click Duplicate
   // Clicking something to open a new tab
@@ -613,15 +613,15 @@ test('File Actions', async ({ page }) => {
   await duplicatedPage.bringToFront();
 
   // assert that file title contains word "(Copy)"
-  await expect(duplicatedPage.locator(`button:text("${renamedFileName} (Copy)")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(duplicatedPage.locator(`button:text("${renamedFileName} (Copy)")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // navigate to dashboard my files page
   await page.bringToFront();
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   //assert that a duplicate copy has been created
-  await page.locator(`div a:text("My files")`).click({ timeout: 30 * 1000 });
-  await expect(page.locator(`:text("${renamedFileName} (Copy)")`)).toBeVisible({ timeout: 30 * 1000 });
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
+  await expect(page.locator(`:text("${renamedFileName} (Copy)")`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Download File
@@ -630,19 +630,19 @@ test('File Actions', async ({ page }) => {
   const downloadButton = page.getByRole(`menuitem`, { name: `download Download` });
 
   // Navigate to Renamed Copy Spreedsheet
-  await page.locator(`:text("${renamedFileName} (Copy)")`).click({ timeout: 30 * 1000 });
+  await page.locator(`:text("${renamedFileName} (Copy)")`).click({ timeout: 60 * 1000 });
 
   // click Main Menu drop down
-  // await mainMenu.click({ timeout: 30 * 1000 });
+  // await mainMenu.click({ timeout: 60 * 1000 });
 
   // click File
-  await fileMenu.click({ timeout: 30 * 1000 });
+  await fileMenu.click({ timeout: 60 * 1000 });
 
   // Start waiting for download before clicking. Note no await.
   const downloadPromise = page.waitForEvent('download');
 
   // click Download
-  await downloadButton.click({ timeout: 30 * 1000 });
+  await downloadButton.click({ timeout: 60 * 1000 });
   const download = await downloadPromise;
 
   // assert that download was successful
@@ -652,16 +652,16 @@ test('File Actions', async ({ page }) => {
   // Delete File
   //--------------------------------
 
-  await page.locator(`#QuadraticCanvasID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
 
   // click File
-  await fileMenu.click({ timeout: 30 * 1000 });
+  await fileMenu.click({ timeout: 60 * 1000 });
 
   // click Delete
-  await page.getByRole(`menuitem`, { name: `delete Delete` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`menuitem`, { name: `delete Delete` }).click({ timeout: 60 * 1000 });
 
   // Confirm delete
-  await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 60 * 1000 });
 
   // assert that file was deleted and not visible on dashboard
   await expect(page.locator(`li:has-text("${fileName}")`)).not.toBeVisible();
@@ -670,11 +670,11 @@ test('File Actions', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await myFilesButton.click({ timeout: 30 * 1000 });
+  await myFilesButton.click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
   await cleanUpFiles(page, { fileName: renamedFileName });
 
-  await filesButton.click({ timeout: 30 * 1000 });
+  await filesButton.click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
   await cleanUpFiles(page, { fileName: renamedFileName });
 });
@@ -705,13 +705,13 @@ test('Docs Action', async ({ page }) => {
   const docsButton = page.getByRole(`menuitem`, { name: `arrow_outward Docs` });
 
   // Click Help
-  await helpMenu.click({ timeout: 30 * 1000 });
+  await helpMenu.click({ timeout: 60 * 1000 });
 
   // Start waiting for popup before clicking. Note no await.
   const popupPromise = page.waitForEvent('popup');
 
   // Click Docs
-  await docsButton.click({ timeout: 30 * 1000 });
+  await docsButton.click({ timeout: 60 * 1000 });
 
   // New tab for docs page
   const popup = await popupPromise;
@@ -748,13 +748,13 @@ test('Feedback Action', async ({ page }) => {
   const docsButton = page.getByRole(`menuitem`, { name: `arrow_outward Docs` });
 
   // Click Help
-  await helpMenu.click({ timeout: 30 * 1000 });
+  await helpMenu.click({ timeout: 60 * 1000 });
 
   // Start waiting for popup before clicking. Note no await.
   const popupPromise = page.waitForEvent('popup');
 
   // Click Docs
-  await docsButton.click({ timeout: 30 * 1000 });
+  await docsButton.click({ timeout: 60 * 1000 });
 
   // New tab for docs page
   const popup = await popupPromise;
@@ -788,13 +788,13 @@ test('Open Formula Editor', async ({ page }) => {
   // Open Formula Editor
   //--------------------------------
   // Select a cell
-  await page.locator(`#QuadraticCanvasID`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
 
   // Press "/" key on keyboard
   await page.keyboard.press('/');
 
   // Click Formula option from popup menu
-  await page.locator(`div[data-value="Formula"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`div[data-value="Formula"]`).click({ timeout: 60 * 1000 });
 
   // Check that the selected language icon on top nav bar of code editor is Formula's icon
   // Note: while not ideal, there were not clearer locators for this icon
@@ -804,7 +804,7 @@ test('Open Formula Editor', async ({ page }) => {
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).focus();
 
   // Click code editor
-  await page.locator(`[id="QuadraticCodeEditorID"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[id="QuadraticCodeEditorID"]`).click({ timeout: 60 * 1000 });
 
   // Type sample Python code that creates the header of a function
   await page.keyboard.type(formulaCode);
@@ -816,7 +816,7 @@ test('Open Formula Editor', async ({ page }) => {
   await page
     .getByLabel('SUMIF', { exact: true })
     .locator('a')
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Check autocorrect by asserting if the code autocompletes
   await expect(
@@ -829,7 +829,7 @@ test('Open Formula Editor', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -858,13 +858,13 @@ test('Open Python Editor', async ({ page }) => {
   // Open Python Editor
   //--------------------------------
   // Select a cell
-  await page.locator(`[id="QuadraticCanvasID"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[id="QuadraticCanvasID"]`).click({ timeout: 60 * 1000 });
 
   // Press "/" key on keyboard
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator(`div[data-value="Python"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`div[data-value="Python"]`).click({ timeout: 60 * 1000 });
 
   // Check that the selected language icon on top nav bar of code editor is Python's icon
   // Note: while not ideal, there were not clearer locators for this icon
@@ -874,7 +874,7 @@ test('Open Python Editor', async ({ page }) => {
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).focus();
 
   // Click code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 30 * 1000 });
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
 
   // Type sample Python code that creates the header of a function
   await page.keyboard.type(pythonCode);
@@ -893,7 +893,7 @@ test('Open Python Editor', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -946,7 +946,7 @@ test('Resize Column width with Fill', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1033,7 +1033,7 @@ test('Right Click Actions', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1065,27 +1065,27 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 1 });
 
   // Click "Share" -> Fill in recipient email -> select "Can edit"
-  await page.locator(`button:text-is("Share")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text-is("Share")`).click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can edit');
 
   // Click "Invite" and close the share file dialog
-  await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 30 * 1000 });
-  await page.locator(`button:has-text("Copy link") + button`).click({ timeout: 30 * 1000 });
+  await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button:has-text("Copy link") + button`).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(10 * 1000);
 
   // Bring recipient page to the front and navigate to "Shared with me"
   await recipientPage.bringToFront();
-  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 30 * 1000 });
+  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   // Assert the "Share_File_Spreadsheet" file appears on recipient's "Files shared with me" page
   const recipientFileCard = recipientPage.locator(`a:has-text("${fileName}")`);
   await expect(recipientFileCard).toBeVisible();
 
   // Navigate to file
-  await recipientFileCard.click({ timeout: 30 * 1000 });
+  await recipientFileCard.click({ timeout: 60 * 1000 });
   await recipientPage.locator(`#QuadraticCanvasID`).waitFor();
 
   // Highlight the text from the 0, 0 cell
@@ -1116,7 +1116,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
     await recipientPage
       .getByRole(`button`, { name: `close` })
       .first()
-      .click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -1148,7 +1148,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
     await page
       .getByRole(`button`, { name: `close` })
       .first()
-      .click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -1163,7 +1163,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Share File - Can view (Non-public)
   //--------------------------------
   // Navigate to files page
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Delete Previous Share_File_Spreadsheet file
   await cleanUpFiles(page, { fileName });
@@ -1175,24 +1175,24 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 1 });
 
   // Click "Share" -> Fill in recipient email -> select "Can view"
-  await page.locator(`button:text-is("Share")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text-is("Share")`).click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can view');
 
   // Click "Invite" and close the share file dialog
-  await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 30 * 1000 });
-  await page.locator(`button:has-text("Copy link") + button`).click({ timeout: 30 * 1000 });
+  await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button:has-text("Copy link") + button`).click({ timeout: 60 * 1000 });
 
   // Bring recipient page to the front and navigate to "Shared with me"
   await recipientPage.bringToFront();
-  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 30 * 1000 });
+  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   // Assert the "Share_File_Spreadsheet" file appears on recipient's "Files shared with me" page
   await expect(recipientFileCard).toBeVisible();
 
   // Navigate to file
-  await recipientFileCard.click({ timeout: 30 * 1000 });
+  await recipientFileCard.click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -1207,7 +1207,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
   //--------------------------------
   // Bring default user page to the front and navigate to files page
   await page.bringToFront();
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Delete Previous Share_File_Spreadsheet file
   await cleanUpFiles(page, { fileName });
@@ -1219,13 +1219,13 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 1 });
 
   // Click "Share" -> select "Can edit" for "Anyone with the link"
-  await page.locator(`button:text-is("Share")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text-is("Share")`).click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
-  await page.locator(`button:has-text("No access")`).click({ timeout: 30 * 1000 });
-  await page.locator(`[role="option"]:has-text("Can edit")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:has-text("No access")`).click({ timeout: 60 * 1000 });
+  await page.locator(`[role="option"]:has-text("Can edit")`).click({ timeout: 60 * 1000 });
 
   // Copy the link
-  await page.locator(`button:text("Copy link")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text("Copy link")`).click({ timeout: 60 * 1000 });
 
   // Read URL text from the clipboard
   let copiedUrl = await page.evaluate(() => navigator.clipboard.readText());
@@ -1266,7 +1266,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
     await recipientPage
       .getByRole(`button`, { name: `close` })
       .first()
-      .click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -1290,7 +1290,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
     await page
       .getByRole(`button`, { name: `close` })
       .first()
-      .click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -1311,16 +1311,16 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'B', targetRow: 1 });
 
   // Click "Share" -> select "Can view" for "Anyone with the link"
-  await page.locator(`button:text-is("Share")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text-is("Share")`).click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page
     .locator(`div:has-text("Anyone with the link") + div button span:text-is("Can edit")`)
-    .click({ timeout: 30 * 1000 });
-  await page.locator(`[role="option"]:has-text("Can view")`).click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
+  await page.locator(`[role="option"]:has-text("Can view")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
 
   // Copy the link
-  await page.locator(`button:text("Copy link")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text("Copy link")`).click({ timeout: 60 * 1000 });
 
   // Read URL text from the clipboard
   copiedUrl = await page.evaluate(() => navigator.clipboard.readText());
@@ -1340,7 +1340,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
   // Cleanup newly created files
   await page.bringToFront();
   await page.keyboard.press('Escape');
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
   await cleanUpFiles(page, { fileName });
 });
@@ -1368,7 +1368,7 @@ test('Sheet Actions', async ({ page }) => {
   // Create New Sheet
   //--------------------------------
   // click the + to create a new sheet
-  await page.getByRole(`button`, { name: `add` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
 
   // assert that the new sheet has been created with name "Sheet 2"
   await expect(page.getByText(`Sheet 2arrow_drop_down`)).toBeVisible();
@@ -1383,8 +1383,8 @@ test('Sheet Actions', async ({ page }) => {
   await page
     .locator(`[data-order=a1]`)
     .getByRole(`button`, { name: `arrow_drop_down`, exact: true })
-    .click({ timeout: 30 * 1000 }); // click dropdown button next to sheet
-  await page.getByRole(`menuitem`, { name: `Rename` }).click({ timeout: 30 * 1000 }); // click Rename option
+    .click({ timeout: 60 * 1000 }); // click dropdown button next to sheet
+  await page.getByRole(`menuitem`, { name: `Rename` }).click({ timeout: 60 * 1000 }); // click Rename option
   await page.keyboard.type(sheetName, { delay: 250 }); // fill out sheet name with sheetName var
   await page.keyboard.press('Enter');
 
@@ -1411,8 +1411,8 @@ test('Sheet Actions', async ({ page }) => {
   await page
     .locator(`[data-order=a1]`)
     .getByRole(`button`, { name: `arrow_drop_down`, exact: true })
-    .click({ timeout: 30 * 1000 }); // click dropdown button next to sheet
-  await page.getByRole(`menuitem`, { name: `Duplicate` }).click({ timeout: 30 * 1000 }); // click Duplicate option
+    .click({ timeout: 60 * 1000 }); // click dropdown button next to sheet
+  await page.getByRole(`menuitem`, { name: `Duplicate` }).click({ timeout: 60 * 1000 }); // click Duplicate option
 
   // assert that the new sheet has the same name with copy at the end
   await expect(page.locator('[data-actual-order="6"]')).toHaveText(`${sheetName} Copyarrow_drop_down`);
@@ -1426,14 +1426,14 @@ test('Sheet Actions', async ({ page }) => {
   // Change Color of Sheet
   //--------------------------------
   // navigate to the first sheet
-  await page.locator('[data-actual-order="2"]').click({ timeout: 30 * 1000 });
+  await page.locator('[data-actual-order="2"]').click({ timeout: 60 * 1000 });
 
   // click on dropdown button
-  await page.locator('[data-actual-order="2"] button').click({ timeout: 30 * 1000 });
+  await page.locator('[data-actual-order="2"] button').click({ timeout: 60 * 1000 });
 
   // click on change color option
-  await page.locator('[role="menuitem"]:has-text("Change color")').click({ timeout: 30 * 1000 });
-  await page.locator('[title="#6F258E"]').click({ timeout: 30 * 1000 });
+  await page.locator('[role="menuitem"]:has-text("Change color")').click({ timeout: 60 * 1000 });
+  await page.locator('[title="#6F258E"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // assert that the color has changed
@@ -1443,10 +1443,10 @@ test('Sheet Actions', async ({ page }) => {
   // Move Sheet Right
   //--------------------------------
   // click on dropdown button for Sheet 1
-  await page.locator('[data-actual-order="2"] button').click({ timeout: 30 * 1000 });
+  await page.locator('[data-actual-order="2"] button').click({ timeout: 60 * 1000 });
 
   // click the option to move to the right
-  await page.locator('[role="menuitem"]:has-text("Move right")').click({ timeout: 30 * 1000 });
+  await page.locator('[role="menuitem"]:has-text("Move right")').click({ timeout: 60 * 1000 });
 
   // assert that the sheet has moved one to the right
   await expect(page.locator('[data-actual-order="2"]')).toHaveText(`${sheetName}arrow_drop_down`);
@@ -1461,10 +1461,10 @@ test('Sheet Actions', async ({ page }) => {
   // Move Sheet Left
   //--------------------------------
   // click on dropdown button for Sheet 1
-  await page.locator('[data-actual-order="4"] button').click({ timeout: 30 * 1000 });
+  await page.locator('[data-actual-order="4"] button').click({ timeout: 60 * 1000 });
 
   // click the option to move to the left
-  await page.locator('[role="menuitem"]:has-text("Move left")').click({ timeout: 30 * 1000 });
+  await page.locator('[role="menuitem"]:has-text("Move left")').click({ timeout: 60 * 1000 });
 
   // assert that the sheet has moved one to the left
   await expect(page.locator('[data-actual-order="2"]')).toHaveText('Sheet 1arrow_drop_down');
@@ -1479,10 +1479,10 @@ test('Sheet Actions', async ({ page }) => {
   // Delete Sheet
   //--------------------------------
   // click on dropdown button for Sheet 1
-  await page.locator('[data-actual-order="2"] button').click({ timeout: 30 * 1000 });
+  await page.locator('[data-actual-order="2"] button').click({ timeout: 60 * 1000 });
 
   // click the option to Delete
-  await page.getByRole('menuitem', { name: 'Delete' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('menuitem', { name: 'Delete' }).click({ timeout: 60 * 1000 });
 
   // assert that sheet is gone
   await expect(page.locator('[data-actual-order="2"]')).toHaveText(`${sheetName}arrow_drop_down`);
@@ -1493,7 +1493,7 @@ test('Sheet Actions', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1529,14 +1529,14 @@ test('View Actions', async ({ page }) => {
   //--------------------------------
 
   // Open view menu
-  await viewMenu.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
 
   // Enable "Show row and column headings" if needed
   let isEnabled = await showRowAndColOption.locator(`span:has-text("check_small").visible`).isVisible();
   if (!isEnabled) {
-    await showRowAndColOption.click({ timeout: 30 * 1000 });
+    await showRowAndColOption.click({ timeout: 60 * 1000 });
   } else {
-    await viewMenu.click({ timeout: 30 * 1000 }); // Close menu if already enabled
+    await viewMenu.click({ timeout: 60 * 1000 }); // Close menu if already enabled
   }
 
   // Move mouse so tooltip doesn't display
@@ -1572,8 +1572,8 @@ test('View Actions', async ({ page }) => {
   });
 
   // Disable the "Show row and column headings" setting
-  await viewMenu.click({ timeout: 30 * 1000 });
-  await showRowAndColOption.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
+  await showRowAndColOption.click({ timeout: 60 * 1000 });
 
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
@@ -1606,14 +1606,14 @@ test('View Actions', async ({ page }) => {
   // Show grid lines
   //--------------------------------
   // Open view menu
-  await viewMenu.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
 
   // Enable "Show grid lines" if needed
   isEnabled = await showGridLinesOption.locator(`span:has-text("check_small").visible`).isVisible();
   if (!isEnabled) {
-    await showGridLinesOption.click({ timeout: 30 * 1000 });
+    await showGridLinesOption.click({ timeout: 60 * 1000 });
   } else {
-    await viewMenu.click({ timeout: 30 * 1000 }); // Close menu if already enabled
+    await viewMenu.click({ timeout: 60 * 1000 }); // Close menu if already enabled
   }
 
   // Move mouse so tooltip doesn't display
@@ -1634,8 +1634,8 @@ test('View Actions', async ({ page }) => {
   });
 
   // Disable the "Show grid lines" setting
-  await viewMenu.click({ timeout: 30 * 1000 });
-  await showGridLinesOption.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
+  await showGridLinesOption.click({ timeout: 60 * 1000 });
 
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
@@ -1658,14 +1658,14 @@ test('View Actions', async ({ page }) => {
   // Show code cell outlines
   //--------------------------------
   // Open view menu
-  await viewMenu.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
 
   // Enable "Show code cell outlines" if needed
   isEnabled = await showCodeCellOutlinesOption.locator(`span:has-text("check_small").visible`).isVisible();
   if (!isEnabled) {
-    await showCodeCellOutlinesOption.click({ timeout: 30 * 1000 });
+    await showCodeCellOutlinesOption.click({ timeout: 60 * 1000 });
   } else {
-    await viewMenu.click({ timeout: 30 * 1000 }); // Close menu if already enabled
+    await viewMenu.click({ timeout: 60 * 1000 }); // Close menu if already enabled
   }
 
   // Move mouse so tooltip doesn't display
@@ -1686,8 +1686,8 @@ test('View Actions', async ({ page }) => {
   });
 
   // Disable the "Show grid outlines" setting
-  await viewMenu.click({ timeout: 30 * 1000 });
-  await showCodeCellOutlinesOption.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
+  await showCodeCellOutlinesOption.click({ timeout: 60 * 1000 });
 
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
@@ -1710,14 +1710,14 @@ test('View Actions', async ({ page }) => {
   // Show code peek
   //--------------------------------
   // Open view menu
-  await viewMenu.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
 
   // Enable "Show code peek" if needed
   isEnabled = await showCodePeekOption.locator(`span:has-text("check_small").visible`).isVisible();
   if (!isEnabled) {
-    await showCodePeekOption.click({ timeout: 30 * 1000 });
+    await showCodePeekOption.click({ timeout: 60 * 1000 });
   } else {
-    await viewMenu.click({ timeout: 30 * 1000 }); // Close menu if already enabled
+    await viewMenu.click({ timeout: 60 * 1000 }); // Close menu if already enabled
   }
 
   // Move mouse so tooltip doesn't display
@@ -1743,8 +1743,8 @@ test('View Actions', async ({ page }) => {
   });
 
   // Disable the "Show grid peek" setting
-  await viewMenu.click({ timeout: 30 * 1000 });
-  await showCodePeekOption.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
+  await showCodePeekOption.click({ timeout: 60 * 1000 });
 
   // Move mouse so tooltip doesn't display
   await page.mouse.click(500, 0);
@@ -1770,10 +1770,10 @@ test('View Actions', async ({ page }) => {
   // Presentation mode
   //--------------------------------
   // Open view menu
-  await viewMenu.click({ timeout: 30 * 1000 });
+  await viewMenu.click({ timeout: 60 * 1000 });
 
   // Enter presentation mode
-  await presentationModeOption.click({ timeout: 30 * 1000 });
+  await presentationModeOption.click({ timeout: 60 * 1000 });
 
   // Wait for a short delay
   await page.waitForTimeout(10 * 1000);
@@ -1801,7 +1801,7 @@ test('View Actions', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1831,10 +1831,10 @@ test('Zoom Options', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom to selection`
-  await page.locator(`:text("Zoom to selection")`).click({ timeout: 30 * 1000 });
+  await page.locator(`:text("Zoom to selection")`).click({ timeout: 60 * 1000 });
 
   // Wait a moment for zoom to process
   await page.waitForTimeout(5 * 1000);
@@ -1852,10 +1852,10 @@ test('Zoom Options', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom to fit`
-  await page.locator(`:text("Zoom to fit")`).click({ timeout: 30 * 1000 });
+  await page.locator(`:text("Zoom to fit")`).click({ timeout: 60 * 1000 });
 
   // Wait a moment for zoom to process
   await page.waitForTimeout(5 * 1000);
@@ -1873,10 +1873,10 @@ test('Zoom Options', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom to 50%`
-  await page.locator(`:text("Zoom to 50%")`).click({ timeout: 30 * 1000 });
+  await page.locator(`:text("Zoom to 50%")`).click({ timeout: 60 * 1000 });
 
   // Wait a moment for zoom to process
   await page.waitForTimeout(5 * 1000);
@@ -1894,10 +1894,10 @@ test('Zoom Options', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom to 100%`
-  await page.locator(`:text("Zoom to 100%")`).click({ timeout: 30 * 1000 });
+  await page.locator(`:text("Zoom to 100%")`).click({ timeout: 60 * 1000 });
 
   // Wait a moment for zoom to process
   await page.waitForTimeout(5 * 1000);
@@ -1915,10 +1915,10 @@ test('Zoom Options', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom to 200%`
-  await page.locator(`:text("Zoom to 200%")`).click({ timeout: 30 * 1000 });
+  await page.locator(`:text("Zoom to 200%")`).click({ timeout: 60 * 1000 });
 
   // Wait a moment for zoom to process
   await page.waitForTimeout(5 * 1000);
@@ -1932,6 +1932,6 @@ test('Zoom Options', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

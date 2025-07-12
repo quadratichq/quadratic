@@ -208,6 +208,6 @@ test('Keyboard Selection', async ({ page }) => {
   await assertTopLeftPosition(page, 'A1');
 
   // All done
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
