@@ -6,6 +6,7 @@ import {
   BROKEN,
   COMPONENTS,
   DONE,
+  FUNCTION_TIMER,
   KILLED,
   NO_LOGS,
   PERF,
@@ -79,7 +80,7 @@ export class UI {
   write(text: string, color?: string, underline?: boolean) {
     if (underline) {
       process.stdout.write(
-        color ? chalk[color].underline(text) : chalk.underline(text)
+        color ? chalk[color].underline(text) : chalk.underline(text),
       );
     } else {
       process.stdout.write(color ? chalk[color](text) : text);
@@ -129,11 +130,15 @@ export class UI {
     } else {
       this.write(" " + DONE, "green");
     }
-    if (
-      component === "core" && this.cli.options.perf
-    ) {
+
+    if (component === "core" && this.cli.options.perf) {
       this.write(PERF);
     }
+
+    if (component === "core" && this.cli.options.functionTimer) {
+      this.write(FUNCTION_TIMER);
+    }
+
     this.write(SPACE);
   }
 
@@ -212,7 +217,7 @@ export class UI {
       } else {
         this.clear();
         process.stdout.write(
-          `[${chalk[color](displayName)}] ${chalk[color](data)}`
+          `[${chalk[color](displayName)}] ${chalk[color](data)}`,
         );
         this.prompt();
         if (callback) {
@@ -233,16 +238,16 @@ export class UI {
         if (
           data.includes("[ESLint] Found 0 error and 0 warning") ||
           data.includes(
-            "[TypeScript] Found 0 errors. Watching for file changes."
+            "[TypeScript] Found 0 errors. Watching for file changes.",
           )
         ) {
           process.stdout.write(
-            `[${chalk[color](displayName)}] ${chalk[color](data)}`
+            `[${chalk[color](displayName)}] ${chalk[color](data)}`,
           );
         } else {
           let dataColor = this.cli.options.dark ? "white" : "red";
           process.stdout.write(
-            `[${chalk[color](displayName)}] ${chalk[dataColor](data)}`
+            `[${chalk[color](displayName)}] ${chalk[dataColor](data)}`,
           );
         }
         this.prompt();

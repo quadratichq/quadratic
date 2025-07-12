@@ -21,7 +21,10 @@ export const handleBedrockRequest = async (
     modelId: model,
     system,
     messages,
-    inferenceConfig: { maxTokens: options.max_tokens, temperature: options.temperature },
+    inferenceConfig: {
+      maxTokens: !options.max_tokens ? undefined : options.max_tokens,
+      temperature: options.temperature,
+    },
     toolConfig: tools &&
       tool_choice && {
         tools,

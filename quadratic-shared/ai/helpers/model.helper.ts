@@ -8,6 +8,7 @@ import type {
   BedrockModelKey,
   GeminiAIModelKey,
   OpenAIModelKey,
+  OpenRouterModelKey,
   QuadraticModelKey,
   VertexAIAnthropicModelKey,
   VertexAIModelKey,
@@ -37,6 +38,10 @@ export function isXAIModel(modelKey: AIModelKey): modelKey is XAIModelKey {
 
 export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'openai';
+}
+
+export function isOpenRouterModel(modelKey: AIModelKey): modelKey is OpenRouterModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'open-router';
 }
 
 export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModelKey {

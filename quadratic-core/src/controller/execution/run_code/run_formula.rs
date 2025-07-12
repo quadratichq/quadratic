@@ -90,9 +90,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
     use uuid::Uuid;
 
     use crate::{
@@ -107,6 +104,7 @@ mod test {
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+        number::decimal_from_str,
         test_util::pretty_print_data_table,
     };
 
@@ -116,7 +114,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(10.into()));
         let sheet_pos = SheetPos {
             x: 2,
             y: 1,
@@ -153,7 +151,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.grid_mut().try_sheet_mut(sheet_id).unwrap();
 
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(BigDecimal::from(10)));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(10.into()));
         let sheet_pos = SheetPos {
             x: 2,
             y: 1,
@@ -347,7 +345,7 @@ mod test {
             .set(
                 0,
                 0,
-                CellValue::Number(BigDecimal::from_str("1.1").unwrap()),
+                CellValue::Number(decimal_from_str("1.1").unwrap()),
                 false,
             )
             .unwrap();
@@ -355,7 +353,7 @@ mod test {
             .set(
                 1,
                 0,
-                CellValue::Number(BigDecimal::from_str("0.2").unwrap()),
+                CellValue::Number(decimal_from_str("0.2").unwrap()),
                 false,
             )
             .unwrap();
@@ -363,7 +361,7 @@ mod test {
             .set(
                 0,
                 1,
-                CellValue::Number(BigDecimal::from_str("3").unwrap()),
+                CellValue::Number(decimal_from_str("3").unwrap()),
                 false,
             )
             .unwrap();

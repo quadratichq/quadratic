@@ -310,7 +310,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 // Test
                 let _ = gc.import_csv(
                     sheet_id,
-                    SIMPLE_CSV.as_bytes().to_vec(),
+                    SIMPLE_CSV.as_bytes(),
                     "smallpop.csv",
                     pos,
                     None,

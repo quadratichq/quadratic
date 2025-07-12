@@ -30,9 +30,9 @@ use crate::state::State;
 #[macro_export]
 macro_rules! test_connection {
     ( $connection:expr ) => {{
-        let (_, headers) = crate::test_util::new_team_id_with_header().await;
-        let state = Extension(crate::test_util::new_state().await);
-        let claims = crate::test_util::get_claims();
+        let (_, headers) = $crate::test_util::new_team_id_with_header().await;
+        let state = Extension($crate::test_util::new_state().await);
+        let claims = $crate::test_util::get_claims();
         let response = test(headers, state, claims, axum::Json($connection))
             .await
             .unwrap();

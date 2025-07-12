@@ -280,6 +280,7 @@ impl GridController {
         }
 
         sheet.send_content_cache();
+        sheet.send_data_tables_cache();
     }
 
     /// Sends delete sheet to the client

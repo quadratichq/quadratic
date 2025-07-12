@@ -240,12 +240,8 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
 
   // Store the credit card details from the initial payment method used to upgrade to Pro
-  const initialPaymentEl = await page
-    .locator(`[data-testid="page-container-main"] .Box-hideIfEmpty`)
-    .nth(23)
-    .innerText();
-
-  const [, initialPaymentNum, initialPaymentExpiry] = initialPaymentEl.split('\n');
+  const initialPaymentEl = await page.locator(`:below(:text("Payment Method")) >>nth=0`).innerText();
+  const [initialPaymentNum, _, initialPaymentExpiry] = initialPaymentEl.split('\n');
 
   // Click 'Add payment method' to add an additional payment method
   await page.getByRole(`link`, { name: `Add payment method` }).click({ timeout: 30 * 1000 });

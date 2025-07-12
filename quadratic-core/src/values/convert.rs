@@ -1,13 +1,13 @@
-use bigdecimal::{BigDecimal, One, ToPrimitive, Zero};
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use itertools::Itertools;
+use rust_decimal::prelude::*;
 
 use super::{CellValue, Duration, IsBlank, Value};
 use crate::{CodeResult, CodeResultExt, RunErrorMsg, Span, Spanned, Unspan};
 
 const CURRENCY_PREFIXES: &[char] = &['$', '¥', '£', '€'];
 
-const F64_DECIMAL_PRECISION: u64 = 14; // just enough to not lose information
+const DECIMAL_PRECISION: u32 = 14; // just enough to not lose information
 
 /*
  * CONVERSIONS (specific type -> Value)
@@ -39,42 +39,43 @@ impl From<&str> for CellValue {
         CellValue::Text(value.to_string())
     }
 }
-impl From<BigDecimal> for CellValue {
-    fn from(value: BigDecimal) -> Self {
-        CellValue::Number(value)
+
+impl From<Decimal> for CellValue {
+    fn from(value: Decimal) -> Self {
+        CellValue::Number(
+            value
+                .round_sf(DECIMAL_PRECISION)
+                .unwrap_or(value)
+                .normalize(),
+        )
     }
 }
 impl From<f64> for CellValue {
     fn from(value: f64) -> Self {
-        match BigDecimal::try_from(value) {
-            Ok(n) => CellValue::Number(if n.digits() > F64_DECIMAL_PRECISION {
-                n.with_prec(F64_DECIMAL_PRECISION)
-            } else {
-                n
-            }),
-            // TODO: add span information
-            Err(_) => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
+        match Decimal::from_f64_retain(value) {
+            Some(n) => n.into(),
+            None => CellValue::Error(Box::new(RunErrorMsg::NaN.without_span())),
         }
     }
 }
 impl From<i64> for CellValue {
     fn from(value: i64) -> Self {
-        CellValue::Number(BigDecimal::from(value))
+        CellValue::Number(Decimal::from(value))
     }
 }
 impl From<i32> for CellValue {
     fn from(value: i32) -> Self {
-        CellValue::Number(BigDecimal::from(value))
+        CellValue::Number(Decimal::from(value))
     }
 }
 impl From<u32> for CellValue {
     fn from(value: u32) -> Self {
-        CellValue::Number(BigDecimal::from(value))
+        CellValue::Number(Decimal::from(value))
     }
 }
 impl From<usize> for CellValue {
     fn from(value: usize) -> Self {
-        CellValue::Number(BigDecimal::from(value as u64))
+        CellValue::Number(Decimal::from(value as u64))
     }
 }
 impl From<bool> for CellValue {
@@ -142,16 +143,16 @@ impl<'a> TryFrom<&'a CellValue> for String {
         }
     }
 }
-impl<'a> TryFrom<&'a CellValue> for BigDecimal {
+impl<'a> TryFrom<&'a CellValue> for Decimal {
     type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
         match value {
-            CellValue::Blank => Ok(BigDecimal::zero()),
+            CellValue::Blank => Ok(Decimal::zero()),
             CellValue::Text(s) => {
                 let mut s = s.trim();
                 if s.is_empty() {
-                    return Ok(BigDecimal::zero());
+                    return Ok(Decimal::zero());
                 }
                 if let Some(rest) = s.strip_prefix(CURRENCY_PREFIXES) {
                     s = rest;
@@ -162,9 +163,9 @@ impl<'a> TryFrom<&'a CellValue> for BigDecimal {
                 })
             }
             // todo: this may be wrong
-            CellValue::Number(n) => Ok(n.clone()),
-            CellValue::Logical(true) => Ok(BigDecimal::one()),
-            CellValue::Logical(false) => Ok(BigDecimal::zero()),
+            CellValue::Number(n) => Ok(*n),
+            CellValue::Logical(true) => Ok(Decimal::one()),
+            CellValue::Logical(false) => Ok(Decimal::zero()),
             CellValue::Instant(_) | CellValue::Duration(_) => Err(RunErrorMsg::Expected {
                 expected: "number".into(),
                 got: Some(value.type_name().into()),
@@ -178,10 +179,10 @@ impl<'a> TryFrom<&'a CellValue> for BigDecimal {
                 got: Some(value.type_name().into()),
             }),
             CellValue::Error(e) => Err(e.msg.clone()),
-            CellValue::Html(_) => Ok(BigDecimal::zero()),
-            CellValue::Code(_) => Ok(BigDecimal::zero()),
-            CellValue::Image(_) => Ok(BigDecimal::zero()),
-            CellValue::Import(_) => Ok(BigDecimal::zero()),
+            CellValue::Html(_) => Ok(Decimal::zero()),
+            CellValue::Code(_) => Ok(Decimal::zero()),
+            CellValue::Image(_) => Ok(Decimal::zero()),
+            CellValue::Import(_) => Ok(Decimal::zero()),
         }
     }
 }
@@ -189,10 +190,10 @@ impl<'a> TryFrom<&'a CellValue> for f64 {
     type Error = RunErrorMsg;
 
     fn try_from(value: &'a CellValue) -> Result<Self, Self::Error> {
-        BigDecimal::try_from(value)?
+        Decimal::try_from(value)?
             .to_f64()
             .ok_or(RunErrorMsg::InternalError(
-                "error converting bigdecimal to f64".into(),
+                "error converting Decimal to f64".into(),
             ))
     }
 }

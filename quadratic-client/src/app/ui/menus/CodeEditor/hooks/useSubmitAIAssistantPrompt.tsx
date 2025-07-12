@@ -182,7 +182,6 @@ export function useSubmitAIAssistantPrompt() {
               source: 'AIAssistant',
               messageSource,
               modelKey,
-              time: new Date().toString(),
               messages: messagesWithContext,
               useStream: true,
               toolName: undefined,

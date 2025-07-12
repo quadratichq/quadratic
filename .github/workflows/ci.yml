@@ -252,6 +252,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
+        with:
+          node-version: 24
+
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -267,7 +272,7 @@ jobs:
 
       - name: Run cargo clippy
         run: |
-          cargo clippy -- -D warnings
+          npm run lint:clippy
 
   lint_typescript:
     runs-on: blacksmith-4vcpu-ubuntu-2404

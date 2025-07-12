@@ -279,7 +279,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use bigdecimal::BigDecimal;
     use uuid::Uuid;
 
     use super::*;
@@ -941,15 +940,15 @@ mod tests {
         let sheet = gc.grid.first_sheet();
         assert_eq!(
             sheet.display_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(pos![B1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(pos![C1]),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
     }
 
@@ -968,15 +967,15 @@ mod tests {
         let sheet = gc.grid.first_sheet();
         assert_eq!(
             sheet.display_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(pos![B1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(pos![C1]),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
     }
 
@@ -1142,7 +1141,7 @@ mod tests {
         gc.received_transaction(transaction_id_0, 1, operations_0);
         gc.received_transaction(transaction_id_1, 2, operations_1);
 
-        let cell_value_num = |n: i64| CellValue::Number(BigDecimal::from(n));
+        let cell_value_num = |n: i64| CellValue::Number(n.into());
         let sheet = gc.grid.first_sheet();
 
         assert_eq!(sheet.display_value(pos![A1]), Some(cell_value_num(1)));

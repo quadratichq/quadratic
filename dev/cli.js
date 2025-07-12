@@ -17,6 +17,7 @@ export class CLI {
             .option("-l, --all", "Watch all directories")
             .option("-t, --skipTypes", "Skip WASM types compilation")
             .option("-p, --perf", "Run quadratic-core in perf mode (slower to link but faster runtime)")
+            .option("-ft, --function-timer", "Run quadratic-core with function timer (log metrics to console)")
             .option("-R, --hideReact", "Hide React output")
             .option("-A, --hideAPI", "Hide React output")
             .option("-C, --hideCore", "Hide React output")

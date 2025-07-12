@@ -1,4 +1,4 @@
-use bigdecimal::{BigDecimal, ToPrimitive, Zero};
+use rust_decimal::prelude::*;
 
 use super::Sheet;
 use crate::{
@@ -21,7 +21,7 @@ impl Sheet {
     ) -> Option<JsSummarizeSelectionResult> {
         // sum and count
         let mut count: i64 = 0;
-        let mut sum = BigDecimal::zero();
+        let mut sum = Decimal::zero();
 
         let values = self.selection_values(
             &selection,
@@ -47,7 +47,7 @@ impl Sheet {
             return None;
         }
 
-        let average: BigDecimal = &sum / count;
+        let average: Decimal = sum / Decimal::from(count);
 
         Some(JsSummarizeSelectionResult {
             count,
