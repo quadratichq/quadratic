@@ -121,7 +121,7 @@ impl Sheet {
 
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_values(&self, rect: Rect) -> CellValues {
-        self.iter_code_output_in_rect(rect)
+        self.iter_data_tables_in_rect(rect)
             .flat_map(|(data_table_rect, data_table)| match &data_table.value {
                 Value::Single(v) => vec![vec![v.to_owned()]],
                 Value::Array(_) => rect
@@ -145,37 +145,16 @@ impl Sheet {
             .into()
     }
 
-    pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
-        self.data_tables_intersect_rect(rect)
-            .map(|(_, pos, data_table)| {
-                let output_rect = data_table.output_rect(pos, false);
-                (output_rect, data_table)
-            })
-    }
-
-    pub fn iter_code_output_intersects_rect(
-        &self,
-        rect: Rect,
-    ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
-        self.data_tables_intersect_rect(rect)
-            .filter_map(move |(_, pos, data_table)| {
-                let output_rect = data_table.output_rect(pos, false);
-                output_rect
-                    .intersection(&rect)
-                    .map(|intersection_rect| (output_rect, intersection_rect, data_table))
-            })
-    }
-
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
     pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
         let mut code_pos = pos;
-        let cell_value = if let Some(cell_value) = self.cell_value(pos) {
+        let cell_value = if let Some(cell_value) = self.cell_value_ref(pos) {
             Some(cell_value)
         } else {
-            match self.data_table_pos_that_contains(pos) {
+            match self.data_table_pos_that_contains_result(pos) {
                 Ok(data_table_pos) => {
-                    if let Some(code_value) = self.cell_value(data_table_pos) {
+                    if let Some(code_value) = self.cell_value_ref(data_table_pos) {
                         code_pos = data_table_pos;
                         Some(code_value)
                     } else {

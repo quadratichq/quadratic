@@ -10,17 +10,13 @@ impl GridController {
         &self,
         selection: &A1Selection,
     ) -> Vec<Operation> {
-        let mut ops = vec![];
-        let format_ops = self.format_ops(selection, FormatUpdate::cleared());
-        ops.extend(format_ops);
-        if let Some(border_ops) = self.set_borders_a1_selection_operations(
+        let mut ops = self.format_ops(selection, FormatUpdate::cleared());
+        ops.extend(self.set_borders_a1_selection_operations(
             selection.clone(),
             BorderSelection::All,
             None,
             false,
-        ) {
-            ops.extend(border_ops);
-        }
+        ));
         ops
     }
 }

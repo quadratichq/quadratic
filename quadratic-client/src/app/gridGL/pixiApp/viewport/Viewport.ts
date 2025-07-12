@@ -17,7 +17,7 @@ const MINIMUM_VIEWPORT_SCALE = 0.01;
 const MAXIMUM_VIEWPORT_SCALE = 10;
 const WHEEL_ZOOM_PERCENT = 1.5;
 
-export const WAIT_TO_SNAP_TIME = 200;
+const WAIT_TO_SNAP_TIME = 200;
 const SNAPPING_TIME = 50;
 
 type SnapState = 'waiting' | 'snapping' | undefined;

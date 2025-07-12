@@ -30,17 +30,12 @@ impl GridController {
                 A1Selection::from_rect(source)
             };
 
-            let mut ops = vec![];
-
-            if let Ok((cut_ops, js_clipboard)) = self.cut_to_clipboard_operations(&selection, false)
-            {
-                ops.extend(cut_ops);
-
+            if let Ok((clipboard, mut ops)) = self.cut_to_clipboard_operations(&selection, false) {
                 match self.paste_html_operations(
                     dest.into(),
                     dest.into(),
                     &A1Selection::from_single_cell(dest),
-                    js_clipboard.html,
+                    clipboard,
                     PasteSpecial::None,
                 ) {
                     Ok((paste_ops, data_table_ops)) => {
@@ -49,9 +44,8 @@ impl GridController {
                     }
                     Err(_) => return,
                 }
+                transaction.operations.extend(ops);
             }
-
-            transaction.operations.extend(ops);
         }
     }
 }

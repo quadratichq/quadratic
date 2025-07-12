@@ -7,9 +7,6 @@ use super::SheetFormatting;
 
 use anyhow::Result;
 
-// todo: this is wrong. it does not properly handle infinite selections (it cuts
-// them off at the bounds of the sheet)
-
 impl SheetFormatting {
     /// Returns a format update that applies the formatting from the cells in
     /// the selection.
@@ -20,11 +17,11 @@ impl SheetFormatting {
         a1_context: &A1Context,
     ) -> Result<SheetFormatUpdates> {
         // first, get formats for the sheet of the selection
-        let mut sheet_format_updates =
+        let mut sheet_format_updates: SheetFormatUpdates =
             SheetFormatUpdates::from_sheet_formatting_selection(selection, self);
 
         // get the largest rect that is finite of the selection
-        let rect = selection.largest_rect_finite(a1_context);
+        let rect = selection.largest_rect_unbounded(a1_context);
 
         // get the formats from the data table and merge them with the sheet formats
         for data_table_pos in sheet.data_tables_pos_intersect_rect(rect) {
@@ -33,11 +30,7 @@ impl SheetFormatting {
             // update the sheet format updates with the formats from the data
             // table we send in the full rect, and the function just looks at
             // the overlapping area
-            data_table.transfer_formats_to_sheet(
-                data_table_pos,
-                rect,
-                &mut sheet_format_updates,
-            )?;
+            data_table.transfer_formats_to_sheet(data_table_pos, rect, &mut sheet_format_updates);
         }
 
         Ok(sheet_format_updates)
