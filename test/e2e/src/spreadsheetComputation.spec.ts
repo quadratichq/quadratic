@@ -209,16 +209,12 @@ test('Charts', async ({ page }) => {
   // Take final screenshot (do not add max pixel diff)
   try {
     await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
-    await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-charts-post.1.png', {
-      maxDiffPixelRatio: 0.01,
-    });
+    await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-charts-post.1.png');
   } catch {
     // Open charts tab
     await page.locator(`[data-title="${sheetName}"]`).click({ timeout: 30 * 1000 });
     // Take final screenshot (do not add max pixel diff)
-    await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-charts-post.png', {
-      maxDiffPixelRatio: 0.01,
-    });
+    await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('spreadsheet-computation-charts-post.png');
   }
 
   // Go back
