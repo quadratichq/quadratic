@@ -1252,7 +1252,7 @@ test('Share File - Spreadsheet', async ({ page }) => {
   await recipientPage.waitForTimeout(1500);
 
   // Replace text in the cell with edited text
-  await recipientPage.keyboard.type(fileEditText, { delay: 200 });
+  await recipientPage.keyboard.type(fileEditText, { delay: 250 });
   await recipientPage.keyboard.press(`Enter`);
   await recipientPage.waitForTimeout(2000);
 
@@ -1385,7 +1385,7 @@ test('Sheet Actions', async ({ page }) => {
     .getByRole(`button`, { name: `arrow_drop_down`, exact: true })
     .click({ timeout: 30 * 1000 }); // click dropdown button next to sheet
   await page.getByRole(`menuitem`, { name: `Rename` }).click({ timeout: 30 * 1000 }); // click Rename option
-  await page.keyboard.type(sheetName); // fill out sheet name with sheetName var
+  await page.keyboard.type(sheetName, { delay: 250 }); // fill out sheet name with sheetName var
   await page.keyboard.press('Enter');
 
   // assert that the new sheet has new name
@@ -1401,7 +1401,7 @@ test('Sheet Actions', async ({ page }) => {
   await page.mouse.click(500, 500);
 
   // type out some text to assert for duplication
-  await page.keyboard.type('Typing a sort of long string to test the duplication!', { delay: 300 });
+  await page.keyboard.type('Typing a sort of long string to test the duplication!', { delay: 250 });
   await page.keyboard.press('Enter');
 
   // save photo

@@ -128,7 +128,6 @@ test('Edit Share File Permissions', async ({ page }) => {
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can view');
-  await page.pause();
 
   // Click "Invite" and close the share file dialog
   await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 30 * 1000 });
@@ -192,7 +191,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   await recipientPage.waitForTimeout(1000);
 
   // Edit the cell
-  await recipientPage.keyboard.type(fileEditText, { delay: 100 });
+  await recipientPage.keyboard.type(fileEditText, { delay: 250 });
   await recipientPage.keyboard.press(`Enter`);
   await recipientPage.waitForTimeout(2000);
 

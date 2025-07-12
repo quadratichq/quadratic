@@ -999,7 +999,7 @@ test('Can Edit Team Member Can Edit Files', async ({ page: adminUserPage }) => {
   // Assert file can be renamed with edit permission
   await canEditUserPage.getByRole(`button`, { name: testPermissionFile }).click({ timeout: 30 * 1000 });
   const fileEditName = `${testPermissionFile}-edit`;
-  await canEditUserPage.keyboard.type(fileEditName);
+  await canEditUserPage.keyboard.type(fileEditName, { delay: 250 });
   await canEditUserPage.keyboard.press(`Enter`);
   await expect(canEditUserPage.getByRole(`button`, { name: fileEditName })).toBeVisible({ timeout: 30 * 1000 });
 

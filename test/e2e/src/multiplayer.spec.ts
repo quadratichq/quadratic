@@ -189,7 +189,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await userPage3.keyboard.press('Enter');
   await userPage3.waitForTimeout(2000);
 
-  await userPage3.keyboard.type('q.cells("B10") + q.cells("B11")');
+  await userPage3.keyboard.type('q.cells("B10") + q.cells("B11")', { delay: 250 });
 
   await userPage3.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
 
@@ -351,7 +351,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await navigateOnSheet(userPage2, { targetColumn: 4, targetRow: 10 });
   await userPage2.keyboard.press('Enter');
   await userPage2.waitForTimeout(3000);
-  await userPage2.keyboard.type('User 2: Other users cannot edit this cell');
+  await userPage2.keyboard.type('User 2: Other users cannot edit this cell', { delay: 250 });
 
   // Bring userPage1 to the front
   // User 1: tries to type in the same cell
@@ -359,7 +359,7 @@ test('Action Visibility', async ({ page: userPage1 }) => {
   await navigateOnSheet(userPage1, { targetColumn: 4, targetRow: 10 });
   await userPage1.keyboard.press('Enter');
   await userPage1.waitForTimeout(3000);
-  await userPage1.keyboard.type('testing');
+  await userPage1.keyboard.type('testing', { delay: 250 });
   await userPage1.waitForTimeout(3000);
   await userPage1.keyboard.press('Enter');
   //--------------------------------

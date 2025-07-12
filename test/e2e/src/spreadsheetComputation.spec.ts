@@ -47,7 +47,7 @@ test('API Calls', async ({ page }) => {
   await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 30 * 1000 });
 
   // Search for 'run all code in sheet'
-  await page.keyboard.type('run all code in sheet');
+  await page.keyboard.type('run all code in sheet', { delay: 250 });
 
   // Select option
   await page.locator(`[role="option"]`).click({ timeout: 30 * 1000 });
@@ -102,7 +102,7 @@ test('Basic Formula Creation', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5000);
-  await page.keyboard.type('=');
+  await page.keyboard.type('=', { delay: 250 });
   await page.waitForTimeout(5000);
 
   // Assertion with formula cell visible (purple outline with button)
@@ -247,24 +247,30 @@ test('Drag References', async ({ page }) => {
   // Upload file
   await uploadFile(page, { fileName, fileType });
 
+  const canvas = page.locator(`#QuadraticCanvasID`);
+  await expect(canvas).toBeVisible({ timeout: 30 * 1000 });
+  const canvasBox = await canvas.boundingBox();
+  if (!canvasBox) {
+    throw new Error('Canvas bounding box not found');
+  }
+
   //--------------------------------
   // Act:
   //--------------------------------
   // Drag cell C2 to C2:D5
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 2 });
   await page.waitForTimeout(2000);
-  await page.mouse.move(396, 140);
+
+  await page.mouse.move(canvasBox.x + 348, canvasBox.y + 61);
   await page.mouse.down();
-  await page.mouse.move(434, 195, { steps: 10 });
+  await page.mouse.move(canvasBox.x + 474, canvasBox.y + 121, { steps: 10 });
   await page.mouse.up();
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-relative-post-drag.png`, {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-relative-post-drag.png`);
 
   //--------------------------------
   // Drag References - Formula Absolute
@@ -275,18 +281,16 @@ test('Drag References', async ({ page }) => {
   // Drag cell E2 to E2:F5
   await navigateOnSheet(page, { targetColumn: 5, targetRow: 2 });
   await page.waitForTimeout(2000);
-  await page.mouse.move(657, 140);
+  await page.mouse.move(canvasBox.x + 609, canvasBox.y + 61);
   await page.mouse.down();
-  await page.mouse.move(722, 195, { steps: 10 });
+  await page.mouse.move(canvasBox.x + 721, canvasBox.y + 121, { steps: 10 });
   await page.mouse.up();
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-absolute-post-drag.png`, {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-absolute-post-drag.png`);
 
   //--------------------------------
   // Drag References - JavaScript Relative
@@ -297,9 +301,9 @@ test('Drag References', async ({ page }) => {
   // Drag cell G7 to G7:H9
   await navigateOnSheet(page, { targetColumn: 7, targetRow: 7 });
   await page.waitForTimeout(2000);
-  await page.mouse.move(908, 245);
+  await page.mouse.move(canvasBox.x + 861, canvasBox.y + 166);
   await page.mouse.down();
-  await page.mouse.move(961, 280, { steps: 10 });
+  await page.mouse.move(canvasBox.x + 959, canvasBox.y + 226, { steps: 10 });
   await page.mouse.up();
 
   await page.waitForTimeout(30 * 1000);
@@ -308,9 +312,7 @@ test('Drag References', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-relative-post-drag.png`, {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-relative-post-drag.png`);
 
   //--------------------------------
   // Drag References - JavaScript Absolute
@@ -321,18 +323,58 @@ test('Drag References', async ({ page }) => {
   // Drag cell I7 to I7:J9
   await navigateOnSheet(page, { targetColumn: 9, targetRow: 7 });
   await page.waitForTimeout(2000);
-  await page.mouse.move(1154, 245);
+  await page.mouse.move(canvasBox.x + 1107, canvasBox.y + 166);
   await page.mouse.down();
-  await page.mouse.move(1212, 280, { steps: 10 });
+  await page.mouse.move(canvasBox.x + 1202, canvasBox.y + 226, { steps: 10 });
   await page.mouse.up();
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-absolute-post-drag.png`, {
-    maxDiffPixels: 100,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-absolute-post-drag.png`);
+
+  //--------------------------------
+  // Drag References - Python Relative
+  //--------------------------------
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Drag cell G2 to G2:H4
+  await navigateOnSheet(page, { targetColumn: 7, targetRow: 2 });
+  await page.waitForTimeout(2000);
+  await page.mouse.move(canvasBox.x + 861, canvasBox.y + 61);
+  await page.mouse.down();
+  await page.mouse.move(canvasBox.x + 959, canvasBox.y + 121, { steps: 10 });
+  await page.mouse.up();
+
+  await page.waitForTimeout(30 * 1000);
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert screenshot for correct values
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-relative-post-drag.png`);
+
+  //--------------------------------
+  // Drag References - Python Absolute
+  //--------------------------------
+  //--------------------------------
+  // Act:
+  //--------------------------------
+  // Drag cell I2 to I2:J4
+  await navigateOnSheet(page, { targetColumn: 9, targetRow: 2 });
+  await page.waitForTimeout(2000);
+  await page.mouse.move(canvasBox.x + 1105, canvasBox.y + 61);
+  await page.mouse.down();
+  await page.mouse.move(canvasBox.x + 1202, canvasBox.y + 121, { steps: 10 });
+  await page.mouse.up();
+
+  //--------------------------------
+  // Assert:
+  //--------------------------------
+  // Assert screenshot for correct values
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-absolute-post-drag.png`);
 
   // Cleanup newly created files
   await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
@@ -750,7 +792,7 @@ print(my_data)
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 30 * 1000 });
 
   // Type in a sleep function in Python editor
-  await page.keyboard.type(pythonCode, { delay: 100 });
+  await page.keyboard.type(pythonCode, { delay: 250 });
 
   // Click the blue play arrow to 'Save and run'
   await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
@@ -1432,7 +1474,7 @@ hire_date DATE);`);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 8 });
   await page.keyboard.press('Enter');
   await page.waitForTimeout(2000);
-  await page.keyboard.type('=SUM(A3:A6)', { delay: 500 });
+  await page.keyboard.type('=SUM(A3:A6)', { delay: 250 });
   await page.waitForTimeout(2000);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000);
@@ -1849,7 +1891,7 @@ test('Switch between Python and Formula', async ({ page }) => {
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000);
 
-  await page.keyboard.type('=SUM(A2:A16', { delay: 500 });
+  await page.keyboard.type('=SUM(A2:A16', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(3000);

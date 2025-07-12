@@ -267,7 +267,7 @@ test('Edit Table Data', async ({ page }) => {
     // Press Enter to edit cell value and type "CANADA"
     await page.keyboard.press('Enter');
     await page.waitForTimeout(5 * 1000);
-    await page.keyboard.type('CANADA', { delay: 100 });
+    await page.keyboard.type('CANADA', { delay: 250 });
     // Press Enter to navigate to next cell
     await page.keyboard.press('Enter');
     await page.waitForTimeout(5 * 1000);
