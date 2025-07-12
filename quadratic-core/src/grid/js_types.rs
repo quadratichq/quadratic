@@ -286,6 +286,8 @@ pub struct CellFormatSummary {
 
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
+
+    pub numeric_format: Option<NumericFormat>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]

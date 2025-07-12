@@ -372,7 +372,7 @@ test('Auto-Complete', async ({ page }) => {
   await page.locator('[data-value="Formula"]').click({ timeout: 30 * 1000 });
 
   // Enter the formula
-  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`sum(16+99)`, { delay: 500 });
+  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`sum(16+99)`, { delay: 250 });
 
   // Execute the formula
   // TODO: Workflow is having an issue syncing. Confirm if this is a bug
@@ -441,7 +441,7 @@ test('Auto-Complete', async ({ page }) => {
   await page.locator('[data-value="Python"]').click({ timeout: 30 * 1000 });
 
   // Enter a simple Python expression
-  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`9+8`, { delay: 500 });
+  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`9+8`, { delay: 250 });
 
   // Execute the Python code
   await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
@@ -542,7 +542,7 @@ time.sleep(20)
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`).click({ timeout: 30 * 1000 });
 
   // Type in a sleep function in Python editor
-  await page.keyboard.type(pythonCode, { delay: 100 });
+  await page.keyboard.type(pythonCode, { delay: 250 });
 
   // Click the blue play arrow to 'Save and run'
   await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 30 * 1000 });
@@ -2234,7 +2234,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Down Arrow"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Down Arrow', { delay: 500 });
+  await page.keyboard.type('Down Arrow', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2247,7 +2247,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Left Arrow"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Left Arrow', { delay: 500 });
+  await page.keyboard.type('Left Arrow', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2260,7 +2260,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Up Arrow"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Up Arrow', { delay: 500 });
+  await page.keyboard.type('Up Arrow', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2281,7 +2281,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Tab"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Tab', { delay: 500 });
+  await page.keyboard.type('Tab', { delay: 250 });
 
   //--------------------------------
   // Assert:
@@ -2312,7 +2312,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Enter"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Enter', { delay: 500 });
+  await page.keyboard.type('Enter', { delay: 250 });
 
   // Use Enter Key while in edit mode
   await page.keyboard.press('Enter');
@@ -2335,7 +2335,7 @@ test('Key Actions', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Confirm we're hovering over the expected cell
-  await page.keyboard.type('Shift Key', { delay: 500 });
+  await page.keyboard.type('Shift Key', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2347,7 +2347,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Shift+Tab"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Shift+Tab', { delay: 500 });
+  await page.keyboard.type('Shift+Tab', { delay: 250 });
 
   // Confirm we're Prompted to type and editing is allowed
   await expect(
@@ -2360,7 +2360,7 @@ test('Key Actions', async ({ page }) => {
   //--------------------------------
   // Set up text in 3, 3
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 3 });
-  await page.keyboard.type('Shift Key', { delay: 500 });
+  await page.keyboard.type('Shift Key', { delay: 250 });
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 3 });
@@ -4435,7 +4435,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
     // Small wait in between theme changes
     await page.waitForTimeout(5 * 1000);
 
-    // Click theme toggle button (identified by constract icon)
+    // Click theme toggle button (identified by contrast icon)
     await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 30 * 1000 });
 
     // Click accent color
@@ -4448,7 +4448,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
     // Ensure selected column(s), row(s) and cell(s) have the accent color
     await selectCells(page, { startXY: [1, 1], endXY: [6, 6] });
     await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
-      `ApperanceCustomization-Sheet-${theme.name}-Accent.png`,
+      `AppearanceCustomization-Sheet-${theme.name}-Accent.png`,
       {
         maxDiffPixelRatio: 0.01,
       }
@@ -4492,7 +4492,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   // Act:
   //--------------------------------
 
-  // Click theme toggle button (identified by constract icon)
+  // Click theme toggle button (identified by contrast icon)
   await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 30 * 1000 });
 
   // Click 'Dark' button to trigger theme change
@@ -4522,7 +4522,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, darkText);
 
   // Assert with screenshot that the canvas is in a dark mode state
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Dark.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -4548,7 +4548,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, darkText);
 
   // Assert with screenshot that the canvas is in a dark mode state
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Dark.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -4565,7 +4565,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   // Act:
   //--------------------------------
 
-  // Click theme toggle button (identified by constract icon)
+  // Click theme toggle button (identified by contrast icon)
   await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 30 * 1000 });
 
   // Click 'Light' button to trigger theme change
@@ -4602,7 +4602,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, lightText);
 
   // Assert with screenshot that the canvas is in a light mode state
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Light.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -4628,7 +4628,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, lightText);
 
   // Assert with screenshot that the canvas is in a light mode state
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Light.png', {
     maxDiffPixelRatio: 0.01,
   });
 

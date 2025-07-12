@@ -280,10 +280,8 @@ test('Cell Formatting', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click the Format Color Icon
-  // Click on the element with the 'format_color_fill' icon
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
-    .click({ timeout: 30 * 1000 });
+  // Click on the element with the 'format_fill_color' icon
+  await page.locator('[data-testid="format_fill_color"]').click({ timeout: 30 * 1000 });
 
   // Select a color
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
@@ -302,9 +300,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Click the Format Color Icon
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20:has-text("format_color_fill")')
-    .click({ timeout: 30 * 1000 });
+  await page.locator('[data-testid="format_fill_color"]').click({ timeout: 30 * 1000 });
 
   //--------------------------------
   // Act:

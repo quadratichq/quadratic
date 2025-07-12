@@ -156,14 +156,6 @@ class CoreClient {
         });
         return;
 
-      case 'clientCoreGetFormatCell':
-        this.send({
-          type: 'coreClientGetFormatCell',
-          id: e.data.id,
-          format: await core.getFormatCell(e.data.sheetId, e.data.x, e.data.y),
-        });
-        return;
-
       case 'clientCoreInitMultiplayer':
         coreMultiplayer.init(e.ports[0]);
 
@@ -666,6 +658,14 @@ class CoreClient {
 
       case 'clientCoreResizeAllRows':
         core.resizeAllRows(e.data.sheetId, e.data.size, e.data.cursor);
+        return;
+
+      case 'clientCoreGetFormatSelection':
+        this.send({
+          type: 'coreClientGetFormatSelection',
+          id: e.data.id,
+          format: core.getFormatSelection(e.data.selection),
+        });
         return;
 
       default:

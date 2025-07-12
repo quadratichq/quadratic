@@ -145,7 +145,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
 
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowDown');
-  await page.keyboard.type('test', { delay: 500 });
+  await page.keyboard.type('test', { delay: 250 });
   await page.keyboard.press('Enter');
   await page.waitForTimeout(60 * 1000);
 
@@ -494,7 +494,7 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
 
   await sharedUserPage.keyboard.press('ArrowRight');
   await sharedUserPage.keyboard.press('ArrowDown');
-  await sharedUserPage.keyboard.type('test', { delay: 500 });
+  await sharedUserPage.keyboard.type('test', { delay: 250 });
   await sharedUserPage.keyboard.press('Enter');
 
   await sharedUserPage.locator(`nav a svg`).click({ timeout: 30 * 1000 });
