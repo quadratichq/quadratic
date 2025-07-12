@@ -664,7 +664,7 @@ class CoreClient {
         this.send({
           type: 'coreClientGetFormatSelection',
           id: e.data.id,
-          format: await core.getFormatSelection(e.data.selection),
+          format: core.getFormatSelection(e.data.selection),
         });
         return;
 

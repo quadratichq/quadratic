@@ -1,6 +1,7 @@
 //! The formatting bar automatically resizes to fit the available space, showing
 //! leftovers in a submenu.
 
+import { editorInteractionStateTransactionsInfoAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellFormatSummary } from '@/app/quadratic-core-types';
@@ -17,6 +18,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
+import { useRecoilValue } from 'recoil';
 
 type FormattingTypes =
   | 'NumberFormatting'
@@ -28,16 +30,16 @@ type FormattingTypes =
 
 export const FormattingBar = memo(() => {
   const [hiddenItems, setHiddenItems] = useState<FormattingTypes[]>([]);
-  const menuRef = useRef<HTMLDivElement>(null);
   const [showMore, setShowMore] = useState(false);
 
-  const moreButtonRef = useRef<HTMLDivElement>(null);
   const numberFormattingRef = useRef<HTMLDivElement>(null);
   const dateFormattingRef = useRef<HTMLDivElement>(null);
   const textFormattingRef = useRef<HTMLDivElement>(null);
   const fillAndBorderFormattingRef = useRef<HTMLDivElement>(null);
   const alignmentFormattingRef = useRef<HTMLDivElement>(null);
   const clearRef = useRef<HTMLDivElement>(null);
+  const moreButtonRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const refs: Record<FormattingTypes, RefObject<HTMLDivElement | null>> = {
@@ -58,18 +60,17 @@ export const FormattingBar = memo(() => {
       }
 
       const menuWidth = menuRef.current?.clientWidth;
-      const keys = Object.keys(refs) as FormattingTypes[];
       let currentWidth = moreButtonRef.current?.clientWidth ?? 0;
       const hiddenItems: FormattingTypes[] = [];
-      for (const key of keys) {
-        const itemWidth = refs[key].current?.clientWidth;
+      Object.entries(refs).forEach(([key, ref]) => {
+        const itemWidth = ref.current?.clientWidth;
         if (itemWidth) {
           currentWidth += itemWidth;
           if (currentWidth > menuWidth) {
-            hiddenItems.push(key);
+            hiddenItems.push(key as FormattingTypes);
           }
         }
-      }
+      });
 
       // the last item is the same size as the more button, so show the last
       // item instead if it's the only item hidden
@@ -86,41 +87,32 @@ export const FormattingBar = memo(() => {
     };
   }, []);
 
-  // create a container to measure the size of the panels of the formatting bar
-  let measurementContainer: HTMLDivElement | null = document.querySelector('#measurement-container');
-  if (!measurementContainer) {
-    measurementContainer = document.createElement('div') as HTMLDivElement;
-    measurementContainer.style.position = 'absolute';
-    measurementContainer.style.left = '-10000px';
-    measurementContainer.style.top = '-10000px';
-    measurementContainer.id = 'measurement-container';
-    measurementContainer.style.visibility = 'hidden';
-    measurementContainer.style.pointerEvents = 'none';
-    document.body.appendChild(measurementContainer);
-  }
-
   // get the format summary for the current selection
   const [formatSummary, setFormatSummary] = useState<CellFormatSummary | undefined>(undefined);
+  const transactionsInfo = useRecoilValue(editorInteractionStateTransactionsInfoAtom);
   useEffect(() => {
     const updateFormatSummary = async () => {
-      const summary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
-      setFormatSummary(summary);
+      // don't update the format summary if there are transactions in progress
+      if (transactionsInfo.length > 0) return;
+      try {
+        const summary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
+        setFormatSummary(summary);
+      } catch (e) {
+        console.error('[FormattingBar] Error getting format summary', e);
+      }
     };
     updateFormatSummary();
-    events.on('cursorPosition', updateFormatSummary);
 
-    // update the format summary when the transaction ends (which should catch most changes)
-    events.on('transactionEnd', updateFormatSummary);
+    events.on('cursorPosition', updateFormatSummary);
     return () => {
       events.off('cursorPosition', updateFormatSummary);
-      events.off('transactionEnd', updateFormatSummary);
     };
-  }, []);
+  }, [transactionsInfo.length]);
 
   return (
     <>
       {createPortal(
-        <div className="flex w-fit flex-row">
+        <div id="measurement-container" className="flex w-fit flex-row">
           <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
           <DateFormatting ref={dateFormattingRef} hideLabel={true} />
           <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
@@ -129,8 +121,9 @@ export const FormattingBar = memo(() => {
           <Clear ref={clearRef} hideLabel={true} />
           <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
         </div>,
-        measurementContainer
+        document.body
       )}
+
       <div className="flex h-full w-full flex-grow" ref={menuRef}>
         <div className="flex h-full w-full justify-center">
           <div className="flex flex-shrink select-none">
@@ -149,6 +142,7 @@ export const FormattingBar = memo(() => {
             )}
             {!hiddenItems.includes('Clear') && <Clear key="main-clear" />}
           </div>
+
           {hiddenItems.length > 0 && (
             <Popover>
               <PopoverTrigger asChild>

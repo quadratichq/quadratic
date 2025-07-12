@@ -13,7 +13,7 @@ use validations::Validations;
 use super::bounds::GridBounds;
 use super::column::Column;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
+use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, A1Selection, CellRefRange};
@@ -611,6 +611,7 @@ mod test {
     use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
+    use crate::grid::js_types::{CellFormatSummary, CellType};
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };

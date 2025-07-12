@@ -292,19 +292,16 @@ impl GridController {
             return Err("Sheet not found".into());
         };
         let format = sheet.format_selection(selection);
-        let kind = if format
+        let (kind, symbol): (NumericFormatKind, Option<String>) = if format
             .numeric_format
-            .is_some_and(|f| f.kind == NumericFormatKind::Currency)
+            .is_some_and(|f| f.symbol == Some(symbol.clone()))
         {
-            NumericFormatKind::Number
+            (NumericFormatKind::Number, None)
         } else {
-            NumericFormatKind::Currency
+            (NumericFormatKind::Currency, Some(symbol))
         };
         let format_update = FormatUpdate {
-            numeric_format: Some(Some(NumericFormat {
-                kind,
-                symbol: Some(symbol),
-            })),
+            numeric_format: Some(Some(NumericFormat { kind, symbol })),
             numeric_decimals: Some(Some(2)),
             ..Default::default()
         };
@@ -1046,7 +1043,7 @@ mod test {
                 .numeric_format,
             Some(crate::grid::NumericFormat {
                 kind: crate::grid::NumericFormatKind::Number,
-                symbol: Some("€".to_string())
+                symbol: None
             })
         );
 
