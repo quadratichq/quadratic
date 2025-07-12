@@ -1,10 +1,11 @@
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { CursorPosition } from '@/app/ui/menus/Toolbar/CursorPosition';
-import { FormattingBar } from '@/app/ui/menus/Toolbar/FormattingBar';
+import { FormattingBar } from '@/app/ui/menus/Toolbar/FormattingBar/FormattingBar';
 import { ZoomMenu } from '@/app/ui/menus/Toolbar/ZoomMenu';
+import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-export const Toolbar = () => {
+export const Toolbar = memo(() => {
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
 
   return (
@@ -22,4 +23,4 @@ export const Toolbar = () => {
       </div>
     </div>
   );
-};
+});

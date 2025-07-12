@@ -15,7 +15,7 @@ import {
 } from '@/app/ui/menus/Toolbar/FormattingBar/panels';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
-import { useEffect, useRef, useState, type RefObject } from 'react';
+import { memo, useEffect, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
 type FormattingTypes =
@@ -26,7 +26,7 @@ type FormattingTypes =
   | 'AlignmentFormatting'
   | 'Clear';
 
-export const FormattingBar = () => {
+export const FormattingBar = memo(() => {
   const [hiddenItems, setHiddenItems] = useState<FormattingTypes[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const [showMore, setShowMore] = useState(false);
@@ -180,4 +180,4 @@ export const FormattingBar = () => {
       </div>
     </>
   );
-};
+});
