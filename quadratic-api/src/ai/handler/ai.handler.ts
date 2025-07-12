@@ -18,7 +18,6 @@ import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadrati
 import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
 import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
-import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import {
   anthropic,
   bedrock,
@@ -37,30 +36,14 @@ import { handleGenAIRequest } from './genai.handler';
 
 export const handleAIRequest = async (
   modelKey: AIModelKey,
-  inputArgs: AIRequestHelperArgs,
+  args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
-  let args = inputArgs;
   try {
-    if (args.useToolsPrompt) {
-      const toolUseContext = getToolUseContext(args.source);
-      args = {
-        ...args,
-        messages: [...toolUseContext, ...args.messages],
-      };
-    }
-
-    if (args.useQuadraticContext) {
-      const quadraticContext = getQuadraticContext(args.language);
-      args = {
-        ...args,
-        messages: [...quadraticContext, ...args.messages],
-      };
-    }
-
     let parsedResponse: ParsedAIResponse | undefined;
+
     if (isVertexAIAnthropicModel(modelKey)) {
       parsedResponse = await handleAnthropicRequest(
         modelKey,
@@ -142,7 +125,7 @@ export const handleAIRequest = async (
     });
 
     if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
-      const options = getModelOptions(modelKey, inputArgs);
+      const options = getModelOptions(modelKey, args);
 
       // thinking backup model
       if (options.thinking && modelKey !== DEFAULT_BACKUP_MODEL_THINKING) {
