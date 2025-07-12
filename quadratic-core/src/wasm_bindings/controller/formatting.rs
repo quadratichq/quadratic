@@ -292,14 +292,6 @@ impl GridController {
         Ok(())
     }
 
-    #[wasm_bindgen(js_name = "getFormatCell")]
-    pub fn js_get_format_cell(&self, sheet_id: String, x: i32, y: i32) -> Result<JsValue, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
-        let sheet = self.try_sheet(sheet_id).ok_or(JsValue::UNDEFINED)?;
-        serde_wasm_bindgen::to_value(&sheet.cell_format((x, y).into()))
-            .map_err(|_| JsValue::UNDEFINED)
-    }
-
     #[wasm_bindgen(js_name = "getFormatSelection")]
     pub fn js_get_format_selection(&self, selection: String) -> Result<JsValue, JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)

@@ -18,7 +18,6 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Format,
   FormatUpdate,
   JsBordersSheet,
   JsCellValue,
@@ -485,22 +484,6 @@ class QuadraticCore {
         resolve(message.formatSummary);
       };
       this.send(message);
-    });
-  }
-
-  getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatCell',
-        sheetId,
-        x,
-        y,
-        id,
-      });
     });
   }
 

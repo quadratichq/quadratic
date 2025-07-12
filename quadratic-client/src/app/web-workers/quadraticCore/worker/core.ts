@@ -17,7 +17,6 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Format,
   FormatUpdate,
   JsCellValue,
   JsCodeCell,
@@ -234,19 +233,6 @@ class Core {
       } catch (e) {
         this.handleCoreError('getCellFormatSummary', e);
         resolve({} as CellFormatSummary);
-      }
-    });
-  }
-
-  getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const format = this.gridController.getFormatCell(sheetId, x, y);
-        resolve(format);
-      } catch (e) {
-        this.handleCoreError('getFormatCell', e);
-        resolve(undefined);
       }
     });
   }
