@@ -543,9 +543,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Assert horizontal alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Horizontal_Alignment_Left.png',
-    {
-      maxDiffPixelRatio: 0.01,
-    }
+    { maxDiffPixelRatio: 0.01 }
   );
 
   // Click on the "Horizontal Align" icon and select "Right"
@@ -578,9 +576,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Assert vertical alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Vertical_Alignment_Bottom.png',
-    {
-      maxDiffPixelRatio: 0.01,
-    }
+    { maxDiffPixelRatio: 0.01 }
   );
 
   // Click on the "Vertical Align" icon and select "Top"
@@ -591,9 +587,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Assert vertical alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Vertical_Alignment_Top.png',
-    {
-      maxDiffPixelRatio: 0.01,
-    }
+    { maxDiffPixelRatio: 0.01 }
   );
 
   // Click on the "Vertical Align" icon and select "Middle"
@@ -604,9 +598,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Assert vertical alignment formatting has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     'Edit_Table_Formatting_Vertical_Alignment_Middle.png',
-    {
-      maxDiffPixelRatio: 0.01,
-    }
+    { maxDiffPixelRatio: 0.01 }
   );
 
   //--------------------------------
@@ -653,7 +645,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Horizontal Align" icon and select "Left"
-  await page.locator(`button[data-testid="horizontal_align"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -683,12 +675,10 @@ test('Edit Table Formatting', async ({ page }) => {
     await page.getByRole(`radio`, { name: `border_${option}` }).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(5 * 1000);
 
-    // Asser cell border formatting has applied successfully
+    // Assert cell border formatting has applied successfully
     await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
       `Edit_Table_Formatting_Cell_Border_${option}.png`,
-      {
-        maxDiffPixelRatio: 0.01,
-      }
+      { maxDiffPixelRatio: 0.01 }
     );
 
     // Click Border option to deselect
@@ -704,16 +694,14 @@ test('Edit Table Formatting', async ({ page }) => {
 
   for (const option of horizontalAlignOptions) {
     // Click on the "Horizontal Align" icon and select option
-    await page.locator(`button[data-testid="horizontal_align"]`).click({ timeout: 60 * 1000 });
+    await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
     await page.locator(`div[role="menuitem"] >> text=${option}`).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(5 * 1000);
 
     // Assert cell horizontal align formatting has applied successfully
     await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
       `Edit_Table_Formatting_Cell_Align_${option}.png`,
-      {
-        maxDiffPixelRatio: 0.01,
-      }
+      { maxDiffPixelRatio: 0.01 }
     );
   }
 
@@ -2301,7 +2289,7 @@ test('Table Resize', async ({ page }) => {
   const fileName = 'Athletes_Table';
   const fileType = 'grid';
   const startX = 520; // Bottom right corner of (E, 12)
-  const startY = 273; // Bottom right corner of (E, 12)
+  const startY = 270; // Bottom right corner of (E, 12)
   const endX = 620; // Bottom right corner of (F, 16)
   const endY = 355; // Bottom right corner of (F, 16)
 

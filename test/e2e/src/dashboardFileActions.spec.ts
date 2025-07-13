@@ -214,7 +214,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert the edit persists after page reload (0, 0 Cell should say "FileEditText")
-  await expect(recipientPage).toHaveScreenshot(`edited-spreadsheet.png`, {
+  await expect(recipientPage).toHaveScreenshot(`edited-spreadsheet-1.png`, {
     clip: { x: 67.5, y: 100, width: 250, height: 25 },
     maxDiffPixels: 10,
   });
@@ -239,7 +239,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   }
 
   // Assert the edit appears on default user's page (0, 0 Cell should say "FileEditText")
-  await expect(page).toHaveScreenshot(`edited-spreadsheet.png`, {
+  await expect(page).toHaveScreenshot(`edited-spreadsheet-2.png`, {
     clip: { x: 67.5, y: 100, width: 250, height: 25 },
   });
 

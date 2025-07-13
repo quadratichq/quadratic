@@ -32,10 +32,10 @@ test('Cell Formatting', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Click on the Bold Formatting button
-  await page.getByLabel(`Bold`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_bold"]`).click({ timeout: 60 * 1000 });
 
   // Click on the Italic Formatting button
-  await page.getByLabel(`Italic`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_italic"]`).click({ timeout: 60 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -52,17 +52,15 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Reset Bold and Italic Formats
-  await page.getByLabel(`Bold`).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Italic`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_bold"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_italic"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click on the Left Alignment button
   // Click on the dropdown arrow icon
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
-    .click({ timeout: 60 * 1000 });
+  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   // Click on the menu item containing the 'format_align_left' icon and the text 'Left'
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
 
@@ -76,10 +74,8 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Click on the center Alignment button
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
-    .click({ timeout: 60 * 1000 });
-  await page.getByRole(`menuitem`, { name: `format_align_center Center` }).click({ timeout: 60 * 1000 });
+  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Center').click({ timeout: 60 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
@@ -88,10 +84,8 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Click on the Right Alignment button
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
-    .click({ timeout: 60 * 1000 });
-  await page.getByRole(`menuitem`, { name: `format_align_right Right` }).click({ timeout: 60 * 1000 });
+  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
+  await page.locator('div[role="menuitem"] >> text=Right').click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_RightAlignment.png', {
@@ -104,9 +98,7 @@ test('Cell Formatting', async ({ page }) => {
 
   // Reset to left alignment
   // Click on the dropdown arrow icon
-  await page
-    .locator('.material-symbols-outlined.material-symbols-20.-ml-1.-mr-2 >>nth=0')
-    .click({ timeout: 60 * 1000 });
+  await page.locator('button[data-testid="horizontal-align"]').click({ timeout: 60 * 1000 });
   // Click on the menu item containing the 'format_align_left' icon and the text 'Left'
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
@@ -115,7 +107,7 @@ test('Cell Formatting', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click the Border button
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Click on the all Borders Icon
   await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 60 * 1000 });
@@ -134,7 +126,7 @@ test('Cell Formatting', async ({ page }) => {
   // Click on the Inner Borders Icon
   await page.getByRole(`radio`, { name: `border_inner` }).click({ timeout: 60 * 1000 });
   // Click the Border button to make it disappear for screenshot
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_InnerBorders.png', {
@@ -142,12 +134,12 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
   // Click on the Outer Borders Icon
   await page.getByRole(`radio`, { name: `border_outer` }).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
@@ -156,12 +148,12 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
   // Click on the Horizontal Borders Icon
   await page.getByRole(`radio`, { name: `border_horizontal` }).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
@@ -170,12 +162,12 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
   // Click on the Vertical Borders Icon
   await page.getByRole(`radio`, { name: `border_vertical` }).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
@@ -188,7 +180,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
@@ -196,7 +188,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Click on the Left Borders Icon
   await page.getByRole(`radio`, { name: `border_left` }).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -208,7 +200,7 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
   // Click on the Top Borders Icon
@@ -216,7 +208,7 @@ test('Cell Formatting', async ({ page }) => {
     .getByRole(`radio`, { name: `border_top` })
     .first()
     .click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_TopBorders.png', {
@@ -224,12 +216,12 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
   // Click on the Right Borders Icon
   await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_RightBorders.png', {
@@ -237,12 +229,12 @@ test('Cell Formatting', async ({ page }) => {
   });
 
   // Clear Border Filters
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
   // Click on the Bottom Borders Icon
   await page.getByRole(`radio`, { name: `border_bottom` }).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   // Confirm Cells are formatted as expected
   await page.waitForTimeout(2000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Cell_Formatting_BottomBorders.png', {
@@ -254,7 +246,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Add All Borders
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
@@ -262,7 +254,7 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
   // Click the Clear all Borders
   await page.getByRole(`radio`, { name: `border_clear` }).click({ timeout: 60 * 1000 });
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -321,9 +313,9 @@ test('Cell Formatting', async ({ page }) => {
   //--------------------------------
 
   // Add Different Formats
-  await page.getByLabel(`Bold`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_bold"]`).click({ timeout: 60 * 1000 });
 
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
   await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 60 * 1000 });
   await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
 
@@ -331,7 +323,7 @@ test('Cell Formatting', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click the Clear Formatting button
-  await page.getByLabel(`Clear formatting`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="clear_formatting_borders"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -828,30 +820,31 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
     "This is a very long text string that should wrap to the next line when it reaches the edge of the text area. We'll use this to test the text wrap functionality.";
   await typeInCell(page, { a1: 'A1', text: longText });
 
-  await page.locator(`[aria-label="Text wrap"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
   await page.locator(`[role="menuitem"] span:has-text("Overflow")`).click({ timeout: 60 * 1000 });
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Check text overflow
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrapoverflow.png', {
-    maxDiffPixels: 1000,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrapoverflow.png');
 
   // Test text wrap
-  await page.locator(`[aria-label="Text wrap"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
   await page.locator(`[role="menuitem"] span:has-text("Wrap")`).click({ timeout: 60 * 1000 });
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Check text wrap
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrap.png', { maxDiffPixels: 1000 });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextwrap.png');
 
   // Test for text cut-off
-  await page.locator(`[aria-label="Text wrap"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
   await page.locator(`[role="menuitem"] span:has-text("Clip")`).click({ timeout: 60 * 1000 });
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 1 });
 
   // Check text cut-off
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextcutoff.png', { maxDiffPixels: 1000 });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtextcutoff.png');
 
   //--------------------------------
   // Horizontal Align
@@ -869,8 +862,9 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Left alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
-  await page.locator(`[aria-label="Horizontal align"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[role="menuitem"] span:has-text("Left")`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert left alignment
@@ -880,25 +874,23 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
 
   // Center alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
-  await page.locator(`[aria-label="Horizontal align"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[role="menuitem"] span:has-text("Center")`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator('div[role="menuitem"] >> text=Center').click({ timeout: 60 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert center alignment
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterhorizontalalign.png', {
-    maxDiffPixels: 1000,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterhorizontalalign.png');
 
   // Right alignment
   await selectCells(page, { startXY: [1, 1], endXY: [1, 3] });
-  await page.locator(`[aria-label="Horizontal align"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[role="menuitem"] span:has-text("Right")`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator('div[role="menuitem"] >> text=Right').click({ timeout: 60 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert right alignment
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testrighthorizontalalign.png', {
-    maxDiffPixels: 1000,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testrighthorizontalalign.png');
 
   //--------------------------------
   // Vertical Align
@@ -921,32 +913,31 @@ test('Text Wrap, Horizontal and Vertical Alignment', async ({ page }) => {
   //--------------------------------
 
   // Top alignment
-  await page.locator(`[aria-label="Vertical align"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[role="menuitem"] span:has-text("Top")`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator('div[role="menuitem"] >> text=Top').click({ timeout: 60 * 1000 });
   await page.mouse.click(65, 150);
 
   // Assert top alignment
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtopverticalalign.png', {
-    maxDiffPixels: 1000,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testtopverticalalign.png');
 
   // Center alignment
-  await page.locator(`[aria-label="Vertical align"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[role="menuitem"][ data-orientation="vertical"] >> nth=1`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator('div[role="menuitem"] >> text=Middle').click({ timeout: 60 * 1000 });
+  await page.mouse.click(65, 150);
 
   // Assert center alignment
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterverticalalign.png', {
-    maxDiffPixels: 1000,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testcenterverticalalign.png');
 
   // Bottom alignment
-  await page.locator(`[aria-label="Vertical align"]`).click({ timeout: 60 * 1000 });
-  await page.locator(`[role="menuitem"] span:has-text("Bottom")`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+  await page.locator('div[role="menuitem"] >> text=Bottom').click({ timeout: 60 * 1000 });
+  await page.mouse.click(65, 150);
 
   // Assert bottom alignment
-  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testbottomverticalalign.png', {
-    maxDiffPixels: 1000,
-  });
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('testbottomverticalalign.png');
 
   //--------------------------------
   // Clean up:

@@ -812,7 +812,7 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   for (let i = 1; i < 5; i += 0.5) {
     // Move the mouse
     await userPage1.bringToFront();
-    await userPage1.mouse.move(i * 100, i * 100);
+    await userPage1.mouse.move(i * 100, i * 100, { steps: 10 });
     await userPage1.mouse.down();
 
     await userPage2.waitForTimeout(10 * 1000);
@@ -861,8 +861,6 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage1.reload();
   await navigateIntoFile(userPage1, { fileName });
 
-  await userPage3.waitForTimeout(60 * 1000);
-
   // Dedicated wait for timeout
   await userPage1.bringToFront();
   await userPage1.waitForTimeout(5 * 1000);
@@ -876,21 +874,19 @@ test('Mouse Visibility', async ({ page: userPage1 }) => {
   await userPage2.mouse.down();
   await userPage2.mouse.up();
 
-  await userPage3.waitForTimeout(60 * 1000);
-
   //--------------------------------
   // Act:
   //--------------------------------
   for (let i = 1; i < 5; i += 0.5) {
     // Move the mouse as the first user
     await userPage1.bringToFront();
-    await userPage1.mouse.move(i * 50, i * 100);
+    await userPage1.mouse.move(i * 50, i * 100, { steps: 10 });
     await userPage1.mouse.down();
     await userPage1.mouse.up();
 
     // Move the mouse as the second user
     await userPage2.bringToFront();
-    await userPage2.mouse.move(i * 150, i * 100);
+    await userPage2.mouse.move(i * 150, i * 100, { steps: 10 });
     await userPage2.mouse.down();
     await userPage2.mouse.up();
 
