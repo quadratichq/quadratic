@@ -29,7 +29,7 @@ export const handleGenAIRequest = async (
     config: {
       temperature: options.temperature,
       systemInstruction: system,
-      maxOutputTokens: options.max_tokens,
+      maxOutputTokens: !options.max_tokens ? undefined : options.max_tokens,
       tools,
       toolConfig: tool_choice,
       ...(options.thinking !== undefined && {

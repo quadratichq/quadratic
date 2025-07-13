@@ -1,8 +1,11 @@
+use crate::CellValue;
+use crate::Pos;
 use crate::grid::CellAlign;
 use crate::grid::CellVerticalAlign;
 use crate::grid::CellWrap;
 use crate::grid::NumericFormat;
 use crate::grid::js_types::CellFormatSummary;
+use crate::grid::js_types::CellType;
 use crate::{
     a1::{A1Selection, CellRefRange},
     grid::Sheet,
@@ -29,6 +32,33 @@ macro_rules! check_format {
 }
 
 impl Sheet {
+    /// Returns a summary of formatting for a cell.
+    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
+        let format = self.cell_format(pos);
+        let cell_type = self
+            .display_value(pos)
+            .and_then(|cell_value| match cell_value {
+                CellValue::Date(_) => Some(CellType::Date),
+                CellValue::DateTime(_) => Some(CellType::DateTime),
+                _ => None,
+            });
+        CellFormatSummary {
+            bold: format.bold,
+            italic: format.italic,
+            text_color: format.text_color,
+            fill_color: format.fill_color,
+            commas: format.numeric_commas,
+            align: format.align,
+            vertical_align: format.vertical_align,
+            wrap: format.wrap,
+            date_time: format.date_time,
+            cell_type,
+            underline: format.underline,
+            strike_through: format.strike_through,
+            numeric_format: format.numeric_format,
+        }
+    }
+
     /// Gets the common formatting for a selection. Note: this does not pass any
     /// information about date or time.
     pub fn format_selection(&self, selection: &A1Selection) -> CellFormatSummary {

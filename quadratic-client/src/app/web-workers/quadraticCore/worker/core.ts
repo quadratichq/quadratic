@@ -17,7 +17,6 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Format,
   FormatUpdate,
   JsCellValue,
   JsCodeCell,
@@ -238,30 +237,13 @@ class Core {
     });
   }
 
-  getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
+  getFormatSelection(selection: string): CellFormatSummary | undefined {
+    try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const format = this.gridController.getFormatCell(sheetId, x, y);
-        resolve(format);
-      } catch (e) {
-        this.handleCoreError('getFormatCell', e);
-        resolve(undefined);
-      }
-    });
-  }
-
-  getFormatSelection(selection: string): Promise<CellFormatSummary | undefined> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const format = this.gridController.getFormatSelection(selection);
-        resolve(JSON.parse(JSON.stringify(format)));
-      } catch (e) {
-        this.handleCoreError('getFormatSelection', e);
-        resolve(undefined);
-      }
-    });
+      return this.gridController.getFormatSelection(selection);
+    } catch (e) {
+      this.handleCoreError('getFormatSelection', e);
+    }
   }
 
   receiveSequenceNum(sequenceNum: number) {

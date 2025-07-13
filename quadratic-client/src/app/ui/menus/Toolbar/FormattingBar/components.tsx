@@ -5,7 +5,6 @@ import { focusGrid } from '@/app/helpers/focusGrid';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { DateFormat } from '@/app/ui/components/DateFormat';
 import { QColorPicker } from '@/app/ui/components/qColorPicker';
-import { ArrowDropDownIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
@@ -17,169 +16,196 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popo
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
-import { type JSX, type ReactNode } from 'react';
+import { memo, type JSX, type ReactNode } from 'react';
 
-export function FormatSeparator() {
-  return <hr className="relative mx-1.5 mt-1.5 h-2/3 w-[1px] bg-border" />;
-}
+export const FormatSeparator = memo(() => {
+  return <hr className="relative mx-1.5 h-6 w-[1px] bg-border" />;
+});
 
-export function FormatButtonDropdown({
-  Icon,
-  IconNode,
-  tooltipLabel,
-  children,
-  showDropdownArrow,
-  className,
-  checked,
-}: {
-  Icon?: React.ComponentType<any> | null;
-  IconNode?: JSX.Element | null;
-  children: ReactNode;
-  tooltipLabel: string;
-  showDropdownArrow?: boolean;
-  className?: string;
-  checked?: boolean;
-}) {
-  return (
-    <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger
-            className={cn(
-              'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
-              checked ? 'bg-accent' : ''
-            )}
-          >
-            {Icon ? <Icon /> : (IconNode ?? null)}
-            {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <TooltipContents label={tooltipLabel} />
-        </TooltipContent>
-      </Tooltip>
-      <DropdownMenuContent
-        className={className}
-        onCloseAutoFocus={(e) => {
-          e.preventDefault();
-          focusGrid();
-        }}
-      >
-        {children}
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
+export const FormatButtonDropdown = memo(
+  ({
+    action,
+    Icon,
+    IconNode,
+    tooltipLabel,
+    children,
 
-export function FormatButtonPopover({
-  Icon,
-  tooltipLabel,
-  children,
-  showDropdownArrow,
-  className,
-}: {
-  Icon: any;
-  children: ReactNode;
-  tooltipLabel: string;
-  showDropdownArrow?: boolean;
-  className?: string;
-}) {
-  return (
-    <Popover>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger className="flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground">
-            <Icon />
-            {showDropdownArrow && <ArrowDropDownIcon className="-ml-1 -mr-2" />}
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <TooltipContents label={tooltipLabel} />
-        </TooltipContent>
-      </Tooltip>
-      <PopoverContent
-        className={className + ' w-fit p-1'}
-        onCloseAutoFocus={(e) => {
-          e.preventDefault();
-          focusGrid();
-        }}
-      >
-        {children}
-      </PopoverContent>
-    </Popover>
-  );
-}
+    className,
+    checked,
+    hideLabel,
+  }: {
+    action: string;
+    Icon?: React.ComponentType<any> | null;
+    IconNode?: JSX.Element | null;
+    children: ReactNode;
+    tooltipLabel: string;
 
-export function FormatButtonDropdownActions<T extends Action>({
-  actions,
-  actionArgs,
-}: {
-  actions: T[];
-  actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
-}) {
-  return actions.map((action, key) => {
-    const actionSpec = defaultActionSpec[action];
-    const label = actionSpec.label();
-    const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+    className?: string;
+    checked?: boolean;
+    hideLabel?: boolean;
+  }) => {
     return (
-      <DropdownMenuItem
-        key={key}
-        onClick={() => {
-          mixpanel.track('[FormattingBar].button', { label });
-          actionSpec.run(actionArgs);
-        }}
-      >
-        {Icon && <Icon className="mr-2" />}
-        {label}
-      </DropdownMenuItem>
-    );
-  });
-}
-
-export function FormatButton<T extends Action>({
-  action,
-  actionArgs,
-  checked,
-}: {
-  action: T;
-  actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
-  checked?: boolean | null;
-}) {
-  const actionSpec = defaultActionSpec[action];
-  const label = actionSpec.label();
-  const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
-  if (!Icon) return null;
-  const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          aria-label={label}
-          variant="ghost"
-          size="sm"
-          className={cn(
-            'flex h-full items-center px-2 text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
-            checked ? 'bg-accent' : ''
-          )}
-          onClick={() => {
-            mixpanel.track('[FormattingBar].button', { label });
-            actionSpec.run(actionArgs);
+      <DropdownMenu>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger
+              aria-label={hideLabel ? '' : tooltipLabel}
+              className={cn(
+                'flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground',
+                checked ? 'bg-accent' : ''
+              )}
+              data-testid={hideLabel ? '' : action}
+            >
+              {Icon ? <Icon /> : (IconNode ?? null)}
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <TooltipContents label={hideLabel ? '' : tooltipLabel} />
+          </TooltipContent>
+        </Tooltip>
+        <DropdownMenuContent
+          className={cn('hover:bg-background', className)}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
             focusGrid();
           }}
         >
-          <Icon />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent side="bottom">
-        <TooltipContents label={label} keyboardShortcut={keyboardShortcut} />
-      </TooltipContent>
-    </Tooltip>
-  );
-}
+          {children}
+        </DropdownMenuContent>
+      </DropdownMenu>
+    );
+  }
+);
+
+export const FormatButtonPopover = memo(
+  ({
+    action,
+    Icon,
+    tooltipLabel,
+    children,
+
+    className,
+    hideLabel,
+  }: {
+    action: string;
+    Icon: any;
+    children: ReactNode;
+    tooltipLabel: string;
+
+    className?: string;
+    hideLabel?: boolean;
+  }) => {
+    return (
+      <Popover>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger
+              className="flex h-7 w-7 items-center justify-center rounded text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none aria-expanded:bg-accent aria-expanded:text-foreground"
+              aria-label={hideLabel ? '' : tooltipLabel}
+              data-testid={hideLabel ? '' : action}
+            >
+              <Icon />
+            </PopoverTrigger>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            <TooltipContents label={hideLabel ? '' : tooltipLabel} />
+          </TooltipContent>
+        </Tooltip>
+        <PopoverContent
+          className={className + ' w-fit p-1'}
+          onCloseAutoFocus={(e) => {
+            e.preventDefault();
+            focusGrid();
+          }}
+        >
+          {children}
+        </PopoverContent>
+      </Popover>
+    );
+  }
+);
+
+export const FormatButtonDropdownActions = memo(
+  <T extends Action>({
+    actions,
+    actionArgs,
+    hideLabel,
+  }: {
+    actions: T[];
+    actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
+    hideLabel?: boolean;
+  }) => {
+    return actions.map((action, key) => {
+      const actionSpec = defaultActionSpec[action];
+      const label = hideLabel ? '' : actionSpec.label();
+      const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+      return (
+        <DropdownMenuItem
+          key={key}
+          onClick={() => {
+            mixpanel.track('[FormattingBar].button', { label });
+            actionSpec.run(actionArgs);
+          }}
+          aria-label={hideLabel ? '' : label}
+          data-testid={hideLabel ? '' : action}
+        >
+          {Icon && <Icon className="mr-2" />}
+          {label}
+        </DropdownMenuItem>
+      );
+    });
+  }
+);
+
+export const FormatButton = memo(
+  <T extends Action>({
+    action,
+    actionArgs,
+    checked,
+    hideLabel,
+  }: {
+    action: T;
+    actionArgs: T extends keyof ActionArgs ? ActionArgs[T] : void;
+    checked?: boolean | null;
+    hideLabel?: boolean;
+  }) => {
+    const actionSpec = defaultActionSpec[action];
+    const label = actionSpec.label();
+    const Icon = 'Icon' in actionSpec ? actionSpec.Icon : undefined;
+    if (!Icon) return null;
+    const keyboardShortcut = keyboardShortcutEnumToDisplay(action);
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            aria-label={hideLabel ? '' : label}
+            variant="ghost"
+            size="icon-sm"
+            className={cn(
+              'flex items-center text-muted-foreground hover:bg-accent hover:text-foreground focus:bg-accent focus:text-foreground focus:outline-none',
+              checked ? 'bg-accent' : ''
+            )}
+            onClick={() => {
+              mixpanel.track('[FormattingBar].button', { label });
+              actionSpec.run(actionArgs);
+              focusGrid();
+            }}
+            data-testid={hideLabel ? '' : action}
+          >
+            <Icon />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          <TooltipContents label={hideLabel ? '' : label} keyboardShortcut={keyboardShortcut} />
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+);
 
 const ICON_OPACITY = 0.5;
 
-const FormatColorTextIcon = ({ color }: { color: string | undefined }) => {
+const FormatColorTextIcon = memo(({ color }: { color: string | undefined }) => {
   return (
     <div className="group flex h-5 w-5 items-center">
       <svg
@@ -204,9 +230,9 @@ const FormatColorTextIcon = ({ color }: { color: string | undefined }) => {
       </svg>
     </div>
   );
-};
+});
 
-const FormatColorFillIcon = ({ color }: { color: string | undefined }) => {
+const FormatColorFillIcon = memo(({ color }: { color: string | undefined }) => {
   return (
     <div className="group flex h-5 w-5 items-center">
       <svg
@@ -230,48 +256,63 @@ const FormatColorFillIcon = ({ color }: { color: string | undefined }) => {
       </svg>
     </div>
   );
-};
+});
 
-export function FormatColorPickerButton({
-  action,
-  activeColor,
-}: {
-  action: Action.FormatTextColor | Action.FormatFillColor;
-  activeColor?: string;
-}) {
-  const actionSpec = defaultActionSpec[action];
-  const label = actionSpec.label();
-  const IconNode =
-    action === Action.FormatTextColor ? (
-      <FormatColorTextIcon color={activeColor} />
-    ) : (
-      <FormatColorFillIcon color={activeColor} />
+export const FormatColorPickerButton = memo(
+  ({
+    action,
+    activeColor,
+    hideLabel,
+  }: {
+    action: Action.FormatTextColor | Action.FormatFillColor;
+    activeColor?: string;
+    hideLabel?: boolean;
+  }) => {
+    const actionSpec = defaultActionSpec[action];
+    const label = actionSpec.label();
+    const IconNode =
+      action === Action.FormatTextColor ? (
+        <FormatColorTextIcon color={activeColor} />
+      ) : (
+        <FormatColorFillIcon color={activeColor} />
+      );
+
+    return (
+      <FormatButtonDropdown
+        tooltipLabel={label}
+        IconNode={IconNode}
+        checked={activeColor !== undefined}
+        hideLabel={hideLabel}
+        action={action}
+      >
+        <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col !bg-background p-0">
+          <QColorPicker
+            onChangeComplete={(color) => {
+              actionSpec.run(color);
+              focusGrid();
+            }}
+            onClear={() => {
+              actionSpec.run(undefined);
+              focusGrid();
+            }}
+          />
+        </DropdownMenuItem>
+      </FormatButtonDropdown>
     );
+  }
+);
 
-  return (
-    <FormatButtonDropdown tooltipLabel={label} IconNode={IconNode} checked={activeColor !== undefined}>
-      <DropdownMenuItem className="color-picker-dropdown-menu flex flex-col p-0">
-        <QColorPicker
-          onChangeComplete={(color) => {
-            actionSpec.run(color);
-            focusGrid();
-          }}
-          onClear={() => {
-            actionSpec.run(undefined);
-            focusGrid();
-          }}
-        />
-      </DropdownMenuItem>
-    </FormatButtonDropdown>
-  );
-}
-
-export function FormatDateAndTimePickerButton() {
+export const FormatDateAndTimePickerButton = memo(({ hideLabel }: { hideLabel?: boolean }) => {
   const dateAndTimeAction = defaultActionSpec[Action.FormatDateTime];
   const label = dateAndTimeAction.label();
 
   return (
-    <FormatButtonPopover tooltipLabel={label} Icon={dateAndTimeAction.Icon}>
+    <FormatButtonPopover
+      tooltipLabel={label}
+      Icon={dateAndTimeAction.Icon}
+      hideLabel={hideLabel}
+      action={Action.FormatDateTime}
+    >
       <div className="min-w-80 p-2">
         <DateFormat
           closeMenu={() => {
@@ -281,9 +322,9 @@ export function FormatDateAndTimePickerButton() {
       </div>
     </FormatButtonPopover>
   );
-}
+});
 
-export function TooltipContents({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) {
+export const TooltipContents = memo(({ label, keyboardShortcut }: { label: string; keyboardShortcut?: string }) => {
   return (
     <p>
       {label}{' '}
@@ -292,4 +333,4 @@ export function TooltipContents({ label, keyboardShortcut }: { label: string; ke
       )}
     </p>
   );
-}
+});

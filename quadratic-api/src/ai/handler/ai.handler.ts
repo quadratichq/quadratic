@@ -7,6 +7,7 @@ import {
   isBedrockModel,
   isGenAIModel,
   isOpenAIModel,
+  isOpenRouterModel,
   isVertexAIAnthropicModel,
   isVertexAIModel,
   isXAIModel,
@@ -17,12 +18,12 @@ import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadrati
 import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
 import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
-import { getCurrentDateContext, getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import {
   anthropic,
   bedrock,
   bedrock_anthropic,
   geminiai,
+  open_router,
   openai,
   vertex_anthropic,
   vertexai,
@@ -35,38 +36,14 @@ import { handleGenAIRequest } from './genai.handler';
 
 export const handleAIRequest = async (
   modelKey: AIModelKey,
-  inputArgs: AIRequestHelperArgs,
+  args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
-  let args = inputArgs;
   try {
-    if (args.time) {
-      const currentDateContext = getCurrentDateContext(args.time);
-      args = {
-        ...args,
-        messages: [...currentDateContext, ...args.messages],
-      };
-    }
-
-    if (args.useToolsPrompt) {
-      const toolUseContext = getToolUseContext(args.source);
-      args = {
-        ...args,
-        messages: [...toolUseContext, ...args.messages],
-      };
-    }
-
-    if (args.useQuadraticContext) {
-      const quadraticContext = getQuadraticContext(args.language);
-      args = {
-        ...args,
-        messages: [...quadraticContext, ...args.messages],
-      };
-    }
-
     let parsedResponse: ParsedAIResponse | undefined;
+
     if (isVertexAIAnthropicModel(modelKey)) {
       parsedResponse = await handleAnthropicRequest(
         modelKey,
@@ -98,6 +75,15 @@ export const handleAIRequest = async (
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, openai, response);
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
+    } else if (isOpenRouterModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        open_router,
+        response
+      );
     } else if (isVertexAIModel(modelKey)) {
       parsedResponse = await handleGenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, vertexai, response);
     } else if (isGenAIModel(modelKey)) {
@@ -139,7 +125,7 @@ export const handleAIRequest = async (
     });
 
     if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
-      const options = getModelOptions(modelKey, inputArgs);
+      const options = getModelOptions(modelKey, args);
 
       // thinking backup model
       if (options.thinking && modelKey !== DEFAULT_BACKUP_MODEL_THINKING) {

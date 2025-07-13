@@ -8,6 +8,7 @@ type GotoCellsOptions = {
   a1: string;
 };
 export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
+  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+G');
   await page.waitForSelector('[data-testid="goto-menu"]');
   await page.keyboard.type(a1);
