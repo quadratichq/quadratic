@@ -270,6 +270,7 @@ test('Drag References', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
+  await page.waitForTimeout(10 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-relative-post-drag.png`);
 
   //--------------------------------
@@ -290,6 +291,7 @@ test('Drag References', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
+  await page.waitForTimeout(10 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-formula-absolute-post-drag.png`);
 
   //--------------------------------
@@ -306,12 +308,11 @@ test('Drag References', async ({ page }) => {
   await page.mouse.move(canvasBox.x + 959, canvasBox.y + 226, { steps: 10 });
   await page.mouse.up();
 
-  await page.waitForTimeout(60 * 1000);
-
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
+  await page.waitForTimeout(10 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-relative-post-drag.png`);
 
   //--------------------------------
@@ -332,6 +333,7 @@ test('Drag References', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
+  await page.waitForTimeout(10 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-javascript-absolute-post-drag.png`);
 
   //--------------------------------
@@ -348,12 +350,11 @@ test('Drag References', async ({ page }) => {
   await page.mouse.move(canvasBox.x + 959, canvasBox.y + 121, { steps: 10 });
   await page.mouse.up();
 
-  await page.waitForTimeout(60 * 1000);
-
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
+  await page.waitForTimeout(10 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-relative-post-drag.png`);
 
   //--------------------------------
@@ -374,6 +375,7 @@ test('Drag References', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert screenshot for correct values
+  await page.waitForTimeout(10 * 1000);
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${sheetName}-python-absolute-post-drag.png`);
 
   // Cleanup newly created files
