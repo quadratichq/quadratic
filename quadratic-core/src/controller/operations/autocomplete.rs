@@ -638,6 +638,7 @@ impl GridController {
             spaces: (final_range.width() * final_range.height()) as i32,
             negative,
         });
+        let mut new_series = series.clone();
 
         // we don't need to apply any operations to the cells set in
         // data_tables_and_cell_values_in_rect() for no_op_cells
@@ -659,7 +660,6 @@ impl GridController {
         // gather SetDataTable and ComputeCode operations for any code cells
         let mut data_table_ops = vec![];
         let mut compute_code_ops = vec![];
-        let mut new_series = series.clone();
         for (i, Pos { x, y }) in final_range.iter().enumerate() {
             let final_sheet_pos = SheetPos::new(sheet_id, x, y);
 
@@ -709,7 +709,7 @@ impl GridController {
         let values = CellValues::from_flat_array(
             final_range.width(),
             final_range.height(),
-            new_series.iter().map(|(v, _)| v.to_owned()).collect(),
+            new_series.into_iter().map(|(v, _)| v).collect(),
         );
         let cell_values_ops = self.cell_values_operations(
             Some(&selection),
