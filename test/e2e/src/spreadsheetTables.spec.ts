@@ -290,7 +290,7 @@ test('Edit Table Data', async ({ page }) => {
   // Wait a second
   await page.waitForTimeout(5 * 1000);
 
-  // Assert all cells except first rowin table have been cleared
+  // Assert all cells except first row in table have been cleared
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Date_ClearAllCellsButFirstRow.png', {
     maxDiffPixelRatio: 0.01,
   });
@@ -328,7 +328,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Edit Table Text Formatting
   //--------------------------------
   // Click "Bold" option
-  await page.getByLabel(`Bold`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_bold"]`).click({ timeout: 60 * 1000 });
 
   // Assert text formatting bold has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Bold.png', {
@@ -336,10 +336,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Bold" option to deselect
-  await page.getByLabel(`Bold`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_bold"]`).click({ timeout: 60 * 1000 });
 
   // Click "Italic" option
-  await page.getByLabel(`Italic`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_italic"]`).click({ timeout: 60 * 1000 });
 
   // Assert text formatting italics has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Italic.png', {
@@ -347,10 +347,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Italic" option to deselect
-  await page.getByLabel(`Italic`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_italic"]`).click({ timeout: 60 * 1000 });
 
   // Click "Underline" option
-  await page.getByRole(`button`, { name: `Underline` }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_underline"]`).click({ timeout: 60 * 1000 });
 
   // Assert text formatting underline has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Underline.png', {
@@ -358,10 +358,10 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Underline" option to deselect
-  await page.getByRole(`button`, { name: `Underline` }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_underline"]`).click({ timeout: 60 * 1000 });
 
   // Click "Strike through" option
-  await page.getByRole(`button`, { name: `Strike through` }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_strike_through"]`).click({ timeout: 60 * 1000 });
 
   // Assert text formatting strike through has applied successfully
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Strike.png', {
@@ -369,13 +369,13 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Strike through" option to deselect
-  await page.getByRole(`button`, { name: `Strike through` }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_strike_through"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Edit Table Color Formatting
   //--------------------------------
   // Click "Text color" option
-  await page.getByLabel(`Text color`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="format_text_color"]`).click({ timeout: 60 * 1000 });
 
   // Select text color red
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
@@ -387,16 +387,25 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click "Text color" option
-  await page.getByLabel(`Text color`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="format_text_color"]`).click({ timeout: 60 * 1000 });
 
   // Select 'Clear' text color button
   await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
 
+  // Assert text color formatting has been cleared
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Text_Color_Clear.png', {
+    maxDiffPixelRatio: 0.01,
+  });
+
   // Click on the "Fill Color" icon
   await page.locator('[data-testid="format_fill_color"]').click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
 
   // Select fill color to red
-  await page.locator(`[title="#E74C3C"]`).nth(0).click({ force: true });
+  await page
+    .locator(`[title="#E74C3C"]`)
+    .nth(0)
+    .click({ force: true, timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Assert color formatting has applied successfully (fill color red)
@@ -404,15 +413,23 @@ test('Edit Table Formatting', async ({ page }) => {
     maxDiffPixelRatio: 0.01,
   });
 
-  // Click undo on keyboard to clear fill color and highlight all cells
-  await page.keyboard.press(`Control+Z`);
-  await page.waitForTimeout(5 * 1000);
+  // Click on the "Fill Color" icon
+  await page.locator('[data-testid="format_fill_color"]').click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(2 * 1000);
+
+  // Select fill color to red
+  await page.getByText(`Clear`, { exact: true }).click({ timeout: 60 * 1000 });
+
+  // Assert fill color formatting has been cleared
+  await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Fill_Color_Clear.png', {
+    maxDiffPixelRatio: 0.01,
+  });
 
   //--------------------------------
   // Edit Table Borders Formatting
   //--------------------------------
   // Click Borders option to open border menu
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Click 'Border All' option
   await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 60 * 1000 });
@@ -475,7 +492,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.getByRole(`radio`, { name: `border_right` }).click({ timeout: 60 * 1000 });
 
   // Click Borders option to close border menu
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Edit Table Wrap, Overflow, Clip Formatting
@@ -491,7 +508,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await page.waitForTimeout(500);
 
   // Click on the "Text Wrap" icon and select "Overflow"
-  await page.getByRole('button', { name: 'Text Wrap' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Overflow').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -501,12 +518,12 @@ test('Edit Table Formatting', async ({ page }) => {
   });
 
   // Click on the "Text Wrap" icon and select "Clip"
-  await page.getByRole('button', { name: 'Text Wrap' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Clip').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Text Wrap" icon and select "Wrap"
-  await page.getByRole('button', { name: 'Text Wrap' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="text-wrap"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Wrap').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -519,7 +536,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Edit Table Alignment Formatting
   //--------------------------------
   // Click on the "Horizontal Align" icon and select "Left"
-  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -532,7 +549,7 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Horizontal Align" icon and select "Right"
-  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Right').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -543,7 +560,7 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Horizontal Align" icon and select "Center"
-  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal-align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Center').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -554,7 +571,7 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Vertical Align" icon and select "Bottom"
-  await page.getByRole('button', { name: 'Vertical align' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Bottom').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -567,7 +584,7 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Vertical Align" icon and select "Top"
-  await page.getByRole('button', { name: 'Vertical align' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Top').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -580,7 +597,7 @@ test('Edit Table Formatting', async ({ page }) => {
   );
 
   // Click on the "Vertical Align" icon and select "Middle"
-  await page.getByRole('button', { name: 'Vertical align' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="vertical-align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Middle').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -596,7 +613,7 @@ test('Edit Table Formatting', async ({ page }) => {
   // Edit Table Clear Formatting
   //--------------------------------
   // Click the Clear Formatting button
-  await page.getByLabel(`Clear formatting`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="clear_formatting_borders"]`).click({ timeout: 60 * 1000 });
 
   // Assert clear formatting has successfully applied
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('Edit_Table_Formatting_Clear.png', {
@@ -610,33 +627,33 @@ test('Edit Table Formatting', async ({ page }) => {
   await selectCells(page, { startXY: ['C', 3], endXY: ['C', 5] });
 
   // Click "Bold" option
-  await page.getByLabel(`Bold`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_bold"]`).click({ timeout: 60 * 1000 });
 
   // Click "Italic" option
-  await page.getByLabel(`Italic`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_italic"]`).click({ timeout: 60 * 1000 });
 
   // Click "Underline" option
-  await page.getByRole(`button`, { name: `Underline` }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_underline"]`).click({ timeout: 60 * 1000 });
 
   // Click "Strike through" option
-  await page.getByRole(`button`, { name: `Strike through` }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="toggle_strike_through"]`).click({ timeout: 60 * 1000 });
 
   // Click "Text color" option
-  await page.getByLabel(`Text color`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="format_text_color"]`).click({ timeout: 60 * 1000 });
 
   // Select text color red
   await page.locator(`[title="#E74C3C"]`).click({ force: true });
   await page.waitForTimeout(5 * 1000);
 
   // Click Borders option to open border menu
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Click 'Border All' option
   await page.getByRole(`radio`, { name: `border_all` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click on the "Horizontal Align" icon and select "Left"
-  await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="horizontal_align"]`).click({ timeout: 60 * 1000 });
   await page.locator('div[role="menuitem"] >> text=Left').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
@@ -656,7 +673,7 @@ test('Edit Table Formatting', async ({ page }) => {
   await selectCells(page, { startXY: ['B', 7], endXY: ['B', 9] });
 
   // Click Borders option to open border menu
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Assert border formatting options apply to highlighted cells correctly
   const borderOptions = ['top', 'bottom', 'left', 'right', 'all', 'inner', 'outer'];
@@ -680,18 +697,18 @@ test('Edit Table Formatting', async ({ page }) => {
   }
 
   // Click Borders option to close border menu
-  await page.getByLabel(`Borders`).click({ timeout: 60 * 1000 });
+  await page.locator(`button[data-testid="borders"]`).click({ timeout: 60 * 1000 });
 
   // Assert horizontal align formatting options apply to highlighted cells correctly
   const horizontalAlignOptions = ['Center', 'Left', 'Right'];
 
   for (const option of horizontalAlignOptions) {
     // Click on the "Horizontal Align" icon and select option
-    await page.getByRole('button', { name: 'Horizontal align' }).click({ timeout: 60 * 1000 });
+    await page.locator(`button[data-testid="horizontal_align"]`).click({ timeout: 60 * 1000 });
     await page.locator(`div[role="menuitem"] >> text=${option}`).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(5 * 1000);
 
-    // Asser cell horizontal align formatting has applied successfully
+    // Assert cell horizontal align formatting has applied successfully
     await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
       `Edit_Table_Formatting_Cell_Align_${option}.png`,
       {

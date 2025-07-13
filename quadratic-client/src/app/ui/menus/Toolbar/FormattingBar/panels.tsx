@@ -158,7 +158,12 @@ export const AlignmentFormatting = memo(
 
     return (
       <div className={cn('flex select-none items-center gap-1 text-sm', props.className)} ref={ref}>
-        <FormatButtonDropdown action="horizontal-align" tooltipLabel="Horizontal align" Icon={AlignIcon}>
+        <FormatButtonDropdown
+          action="horizontal-align"
+          tooltipLabel="Horizontal align"
+          Icon={AlignIcon}
+          hideLabel={props.hideLabel}
+        >
           <FormatButtonDropdownActions
             actions={[
               Action.FormatAlignHorizontalLeft,
@@ -169,7 +174,12 @@ export const AlignmentFormatting = memo(
             hideLabel={props.hideLabel}
           />
         </FormatButtonDropdown>
-        <FormatButtonDropdown action="vertical-align" tooltipLabel="Vertical align" Icon={VerticalAlignIcon}>
+        <FormatButtonDropdown
+          action="vertical-align"
+          tooltipLabel="Vertical align"
+          Icon={VerticalAlignIcon}
+          hideLabel={props.hideLabel}
+        >
           <FormatButtonDropdownActions
             actions={[
               Action.FormatAlignVerticalTop,
@@ -180,7 +190,12 @@ export const AlignmentFormatting = memo(
             hideLabel={props.hideLabel}
           />
         </FormatButtonDropdown>
-        <FormatButtonDropdown action="text-wrap" tooltipLabel="Text wrap" Icon={TextWrapIcon}>
+        <FormatButtonDropdown
+          action="text-wrap"
+          tooltipLabel="Text wrap"
+          Icon={TextWrapIcon}
+          hideLabel={props.hideLabel}
+        >
           <FormatButtonDropdownActions
             actions={[Action.FormatTextWrapOverflow, Action.FormatTextWrapWrap, Action.FormatTextWrapClip]}
             actionArgs={undefined}

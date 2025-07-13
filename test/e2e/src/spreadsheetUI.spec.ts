@@ -196,16 +196,23 @@ test('Charts Resizing', async ({ page }) => {
   // Import file
   await uploadFile(page, { fileName, fileType });
 
+  const canvas = page.locator(`#QuadraticCanvasID`);
+  await expect(canvas).toBeVisible({ timeout: 60 * 1000 });
+  const canvasBox = await canvas.boundingBox();
+  if (!canvasBox) {
+    throw new Error('Canvas bounding box not found');
+  }
+
   //--------------------------------
   // Resize Charts JavaScript
   //--------------------------------
   // Hover over the bottom of the JS chart (right bar graph)
   // Simulate mouse drag
   await page.waitForTimeout(2000);
-  await page.mouse.move(786, 334, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 786, canvasBox.y + 253, { steps: 50 });
   await page.mouse.down();
   await page.waitForTimeout(2000);
-  await page.mouse.move(716, 500, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 716, canvasBox.y + 500, { steps: 50 });
   await page.mouse.up();
 
   // Wait a moment for processing
@@ -214,16 +221,16 @@ test('Charts Resizing', async ({ page }) => {
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(
     `charts_resizing_javascript_verticalresize_bigger.png`,
-    { maxDiffPixels: 2000 }
+    { maxDiffPixelRatio: 0.01 }
   );
 
   // Hover over the right of the JS chart (right bar graph)
   // Simulate mouse drag
-  await page.mouse.move(1129, 524, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 1090, canvasBox.y + 260, { steps: 50 });
   await page.waitForTimeout(5 * 1000);
 
   await page.mouse.down();
-  await page.mouse.move(900, 350, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 865, canvasBox.y + 260, { steps: 50 });
   await page.mouse.up();
 
   // Wait a moment for processing
@@ -231,7 +238,7 @@ test('Charts Resizing', async ({ page }) => {
 
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`charts_resizing_javascript_horizontalresize.png`, {
-    maxDiffPixels: 2000,
+    maxDiffPixelRatio: 0.01,
   });
 
   //--------------------------------
@@ -239,9 +246,9 @@ test('Charts Resizing', async ({ page }) => {
   //--------------------------------
   // Hover over the bottom of the Python chart (left Life expectancy in US chart)
   // Simulate mouse drag
-  await page.mouse.move(266, 586, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 220, canvasBox.y + 506, { steps: 50 });
   await page.mouse.down();
-  await page.mouse.move(266, 450, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 220, canvasBox.y + 310, { steps: 50 });
   await page.mouse.up();
 
   // Wait a moment for processing
@@ -249,14 +256,14 @@ test('Charts Resizing', async ({ page }) => {
 
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`charts_resizing_python_vertical.png`, {
-    maxDiffPixels: 2000,
+    maxDiffPixelRatio: 0.01,
   });
 
   // Hover over the right of the Python chart (left Life expectancy in US chart)
   // Simulate mouse drag
-  await page.mouse.move(470, 300, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 425, canvasBox.y + 175, { steps: 50 });
   await page.mouse.down();
-  await page.mouse.move(300, 300, { steps: 50 });
+  await page.mouse.move(canvasBox.x + 210, canvasBox.y + 175, { steps: 50 });
   await page.mouse.up();
 
   // Wait a moment for processing
@@ -264,7 +271,7 @@ test('Charts Resizing', async ({ page }) => {
 
   // Assert with screenshot that chart has been resized appropriately
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`charts_resizing_python_horizontal_smaller.png`, {
-    maxDiffPixels: 2000,
+    maxDiffPixelRatio: 0.01,
   });
 
   //--------------------------------

@@ -112,14 +112,16 @@ export const FormattingBar = memo(() => {
   return (
     <>
       {createPortal(
-        <div id="measurement-container" className="flex w-fit flex-row">
-          <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-          <DateFormatting ref={dateFormattingRef} hideLabel={true} />
-          <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-          <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-          <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
-          <Clear ref={clearRef} hideLabel={true} />
-          <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
+        <div className="-left-10000 -top-10000 -z-10000 absolute">
+          <div id="measurement-container" className="flex w-fit flex-row">
+            <NumberFormatting ref={numberFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+            <DateFormatting ref={dateFormattingRef} hideLabel={true} />
+            <TextFormatting ref={textFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+            <FillAndBorderFormatting ref={fillAndBorderFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+            <AlignmentFormatting ref={alignmentFormattingRef} formatSummary={formatSummary} hideLabel={true} />
+            <Clear ref={clearRef} hideLabel={true} />
+            <FormatMoreButton ref={moreButtonRef} setShowMore={setShowMore} showMore={showMore} />
+          </div>
         </div>,
         document.body
       )}
