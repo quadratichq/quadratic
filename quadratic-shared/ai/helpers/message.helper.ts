@@ -103,8 +103,8 @@ export const getLastAIPromptMessageModelKey = (messages: ChatMessage[]): AIModel
   const aiPromptMessages = getAIPromptMessages(messages);
   for (let i = aiPromptMessages.length - 1; i >= 0; i--) {
     const message = aiPromptMessages[i];
-    if (!!message.modelKey && !isQuadraticModel(message.modelKey)) {
-      return message.modelKey;
+    if (!!message.modelKey && !isQuadraticModel(message.modelKey as AIModelKey)) {
+      return message.modelKey as AIModelKey;
     }
   }
 };
