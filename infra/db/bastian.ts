@@ -13,6 +13,14 @@ const config = new pulumi.Config();
 const instanceSize = config.require("db-bastion-instance-size");
 const bastionPublicKey = config.require("db-bastion-public-key");
 
+// Create Elastic IP
+const bastionEip = new aws.ec2.Eip("db-bastion-eip", {
+  domain: "vpc",
+  tags: {
+    Name: "db-bastion-eip",
+  },
+});
+
 // Create security group for bastion host
 export const bastionSecurityGroup = new aws.ec2.SecurityGroup(
   "db-bastion-security-group",
@@ -66,3 +74,12 @@ const bastionInstance = new aws.ec2.Instance("db-bastion-instance", {
     systemctl restart sshd
   `,
 });
+
+// Associate the Elastic IP with the bastion instance
+const bastionEipAssociation = new aws.ec2.EipAssociation(
+  "db-bastion-eip-association",
+  {
+    instanceId: bastionInstance.id,
+    allocationId: bastionEip.id,
+  },
+);
