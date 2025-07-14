@@ -3,7 +3,7 @@ import { UserClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
 
 export async function getUserClientDataKv(userId: number | undefined) {
-  // Expected because an known person can request a file that's been shared
+  // Expected because an unknown person can request a file that's been shared
   // publicly, in which case we won't have a `userClientDataKv` for them
   if (!userId) {
     return undefined;
