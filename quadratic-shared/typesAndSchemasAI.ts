@@ -407,11 +407,13 @@ export type InternalMessage = z.infer<typeof InternalMessageSchema>;
 const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema, InternalMessageSchema]);
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+export const ChatMessagesSchema = z.array(ChatMessageSchema);
+
 export const ChatSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   lastUpdated: z.number(),
-  messages: z.array(ChatMessageSchema),
+  messages: ChatMessagesSchema,
 });
 export type Chat = z.infer<typeof ChatSchema>;
 

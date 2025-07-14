@@ -162,6 +162,12 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     description: 'Prints the AI Context to the console in a readable form',
     group: 'AI',
   },
+  debugAIAnalystDebugChatInput: {
+    initial: false,
+    title: 'AI Analyst Debug Chat Input',
+    description: 'Debug AI Analyst chat input',
+    group: 'AI',
+  },
 
   debugShowTopLeftPosition: {
     initial: false,
