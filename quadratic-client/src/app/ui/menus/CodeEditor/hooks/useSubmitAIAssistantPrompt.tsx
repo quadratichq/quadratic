@@ -135,8 +135,8 @@ export function useSubmitAIAssistantPrompt() {
               if (currentContent?.type !== 'text') {
                 currentContent = { type: 'text', text: '' };
               }
-              currentContent.text += '\n\nRequest aborted by the user.';
               currentContent.text = currentContent.text.trim();
+              currentContent.text += '\n\nRequest aborted by the user.';
               newLastMessage.toolCalls = [];
               newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
@@ -256,8 +256,8 @@ export function useSubmitAIAssistantPrompt() {
               if (currentContent?.type !== 'text') {
                 currentContent = { type: 'text', text: '' };
               }
-              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
               currentContent.text = currentContent.text.trim();
+              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
               newLastMessage.toolCalls = [];
               newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
