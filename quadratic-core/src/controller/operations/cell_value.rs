@@ -364,7 +364,7 @@ impl GridController {
         force_table_bounds: bool,
     ) -> Vec<Operation> {
         let mut ops = self.delete_cells_operations(selection, force_table_bounds);
-        ops.extend(self.clear_format_borders_operations(selection));
+        ops.extend(self.clear_format_borders_operations(selection, true));
         ops
     }
 

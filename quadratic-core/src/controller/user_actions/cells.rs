@@ -45,7 +45,7 @@ impl GridController {
 
     /// Starts a transaction to clear formatting in a given rect.
     pub fn clear_formatting(&mut self, selection: &A1Selection, cursor: Option<String>) {
-        let ops = self.clear_format_borders_operations(selection);
+        let ops = self.clear_format_borders_operations(selection, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 

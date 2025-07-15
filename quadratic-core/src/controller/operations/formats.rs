@@ -9,8 +9,13 @@ impl GridController {
     pub(crate) fn clear_format_borders_operations(
         &self,
         selection: &A1Selection,
+        ignore_tables_having_anchoring_cell_in_selection: bool,
     ) -> Vec<Operation> {
-        let mut ops = self.format_ops(selection, FormatUpdate::cleared());
+        let mut ops = self.format_ops(
+            selection,
+            FormatUpdate::cleared(),
+            ignore_tables_having_anchoring_cell_in_selection,
+        );
         ops.extend(self.set_borders_a1_selection_operations(
             selection.clone(),
             BorderSelection::All,
@@ -40,7 +45,7 @@ mod tests {
 
         let sheet_id = SheetId::TEST;
         let selection = A1Selection::test_a1("A1");
-        let ops = gc.clear_format_borders_operations(&selection);
+        let ops = gc.clear_format_borders_operations(&selection, false);
 
         assert_eq!(ops.len(), 2);
         assert_eq!(

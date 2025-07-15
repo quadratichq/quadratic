@@ -13,7 +13,7 @@ use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, Numeric
 
 impl GridController {
     pub(crate) fn clear_format_borders(&mut self, selection: &A1Selection, cursor: Option<String>) {
-        let ops = self.clear_format_borders_operations(selection);
+        let ops = self.clear_format_borders_operations(selection, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
@@ -22,6 +22,7 @@ impl GridController {
         &self,
         selection: &A1Selection,
         format_update: FormatUpdate,
+        ignore_tables_having_anchoring_cell_in_selection: bool,
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
@@ -40,6 +41,12 @@ impl GridController {
                         sheet.iter_data_tables_intersects_rect(rect)
                     {
                         let data_table_pos = output_rect.min;
+
+                        if ignore_tables_having_anchoring_cell_in_selection
+                            && intersection_rect.contains(data_table_pos)
+                        {
+                            continue;
+                        }
 
                         let table_format_updates = data_table
                             .transfer_formats_from_sheet_format_updates(
@@ -131,7 +138,7 @@ impl GridController {
             align: Some(Some(align)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -146,7 +153,7 @@ impl GridController {
             vertical_align: Some(Some(vertical_align)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -172,7 +179,7 @@ impl GridController {
             bold: Some(Some(bold)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -198,7 +205,7 @@ impl GridController {
             italic: Some(Some(italic)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -213,7 +220,7 @@ impl GridController {
             wrap: Some(Some(wrap)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -243,7 +250,7 @@ impl GridController {
             numeric_decimals: Some(Some(2)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -268,7 +275,7 @@ impl GridController {
             numeric_format: Some(Some(NumericFormat { kind, symbol })),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -294,7 +301,7 @@ impl GridController {
             numeric_commas: Some(Some(commas)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -309,7 +316,7 @@ impl GridController {
             text_color: Some(color),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -324,7 +331,7 @@ impl GridController {
             fill_color: Some(color),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -338,7 +345,7 @@ impl GridController {
             numeric_format: Some(None),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -361,7 +368,7 @@ impl GridController {
             numeric_decimals: Some(Some(new_precision)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -376,7 +383,7 @@ impl GridController {
             date_time: Some(date_time),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -402,7 +409,7 @@ impl GridController {
             underline: Some(Some(underline)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
@@ -428,13 +435,13 @@ impl GridController {
             strike_through: Some(Some(strike_through)),
             ..Default::default()
         };
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
         Ok(())
     }
 
     pub(crate) fn set_formats(&mut self, selection: &A1Selection, format_update: FormatUpdate) {
-        let ops = self.format_ops(selection, format_update);
+        let ops = self.format_ops(selection, format_update, false);
         self.start_user_transaction(ops, None, TransactionName::SetFormats);
     }
 }
@@ -887,6 +894,7 @@ mod test {
         let ops = gc.format_ops(
             &A1Selection::test_a1_context("Table1", gc.a1_context()),
             format_update.clone(),
+            false,
         );
         assert_eq!(ops.len(), 1);
 
