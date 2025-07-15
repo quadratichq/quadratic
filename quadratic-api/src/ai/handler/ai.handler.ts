@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import {
   getModelOptions,
   isAnthropicModel,
+  isBasetenModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isGenAIModel,
@@ -20,6 +21,7 @@ import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
 import {
   anthropic,
+  baseten,
   bedrock,
   bedrock_anthropic,
   geminiai,
@@ -75,6 +77,8 @@ export const handleAIRequest = async (
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, openai, response);
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
+    } else if (isBasetenModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, baseten, response);
     } else if (isOpenRouterModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(
         modelKey,

@@ -4,6 +4,7 @@ import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParams
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
   AIRequestHelperArgs,
+  BasetenModelKey,
   OpenAIModelKey,
   OpenRouterModelKey,
   ParsedAIResponse,
@@ -12,7 +13,7 @@ import type {
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | XAIModelKey | OpenRouterModelKey,
+  modelKey: OpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
   args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
