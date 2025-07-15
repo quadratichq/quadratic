@@ -24,18 +24,23 @@ impl GridController {
         self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
 
-    pub fn add_sheet(&mut self, cursor: Option<String>) {
-        let ops = self.add_sheet_operations(None);
+    pub fn add_sheet(
+        &mut self,
+        name: Option<String>,
+        insert_before_sheet_name: Option<String>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.add_sheet_operations(name, insert_before_sheet_name);
         self.start_user_transaction(ops, cursor, TransactionName::SheetAdd);
     }
 
     pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>) {
-        let ops = self.add_sheet_operations(Some(name));
+        let ops = self.add_sheet_operations(Some(name), None);
         self.start_user_transaction(ops, cursor, TransactionName::SheetAdd);
     }
 
     pub fn server_add_sheet_with_name(&mut self, name: String) {
-        let ops = self.add_sheet_operations(Some(name));
+        let ops = self.add_sheet_operations(Some(name), None);
         self.server_apply_transaction(ops, None);
     }
 
@@ -52,8 +57,13 @@ impl GridController {
         let ops = self.move_sheet_operations(sheet_id, to_before);
         self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
-    pub fn duplicate_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
-        let ops = self.duplicate_sheet_operations(sheet_id);
+    pub fn duplicate_sheet(
+        &mut self,
+        sheet_id: SheetId,
+        name_of_new_sheet: Option<String>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.duplicate_sheet_operations(sheet_id, name_of_new_sheet);
         self.start_user_transaction(ops, cursor, TransactionName::DuplicateSheet);
     }
 }
@@ -159,14 +169,14 @@ mod test {
     #[test]
     fn test_move_sheet_sheet_does_not_exist() {
         let mut g = GridController::test();
-        g.add_sheet(None);
+        g.add_sheet(None, None, None);
         g.move_sheet(SheetId::new(), None, None);
     }
 
     #[test]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::test();
-        g.add_sheet(None);
+        g.add_sheet(None, None, None);
         g.add_sheet_with_name("test".into(), None);
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
@@ -262,7 +272,7 @@ mod test {
 
         clear_js_calls();
 
-        gc.duplicate_sheet(sheet_id, None);
+        gc.duplicate_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy");
 
@@ -321,7 +331,7 @@ mod test {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        gc.duplicate_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         let duplicated_sheet_id2 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
@@ -331,7 +341,7 @@ mod test {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        gc.duplicate_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy (1)");
         assert_eq!(gc.grid.sheets()[2].name, "Nice Name Copy");
@@ -404,7 +414,7 @@ mod test {
             Some(CellValue::Number(2.into()))
         );
 
-        gc.duplicate_sheet(sheet_id, None);
+        gc.duplicate_sheet(sheet_id, None, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, SHEET_NAME.to_owned() + "1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;

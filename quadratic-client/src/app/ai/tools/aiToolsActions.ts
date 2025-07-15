@@ -622,4 +622,48 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
+  [AITool.AddSheet]: async (args) => {
+    const { sheet_name, insert_before_sheet_name } = args;
+    quadraticCore.addSheet(sheet_name, insert_before_sheet_name, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Create new sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.DuplicateSheet]: async (args) => {
+    const { sheet_name_to_duplicate, name_of_new_sheet } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name_to_duplicate);
+    if (sheetId) {
+      quadraticCore.duplicateSheet(sheetId, name_of_new_sheet, sheets.getCursorPosition());
+    }
+    return [
+      {
+        type: 'text',
+        text: 'Duplicate sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.RenameSheet]: async (args) => {
+    const { sheet_name, new_name } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    if (sheetId) {
+      quadraticCore.setSheetName(sheetId, new_name, sheets.getCursorPosition());
+    }
+    return [
+      {
+        type: 'text',
+        text: 'Rename sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.DeleteSheet]: async (args) => {
+    return [
+      {
+        type: 'text',
+        text: 'Delete sheet tool executed successfully.',
+      },
+    ];
+  },
 } as const;

@@ -316,7 +316,7 @@ export class Sheets {
   }
 
   duplicate() {
-    quadraticCore.duplicateSheet(this.current, this.getCursorPosition());
+    quadraticCore.duplicateSheet(this.current, undefined, this.getCursorPosition());
   }
 
   userDeleteSheet(id: string) {

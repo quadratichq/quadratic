@@ -791,8 +791,8 @@ class QuadraticCore {
 
   //#region Sheet Operations
 
-  addSheet(cursor?: string) {
-    this.send({ type: 'clientCoreAddSheet', cursor });
+  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string) {
+    this.send({ type: 'clientCoreAddSheet', sheetName, insertBeforeSheetName, cursor });
   }
 
   deleteSheet(sheetId: string, cursor: string) {
@@ -811,8 +811,8 @@ class QuadraticCore {
     this.send({ type: 'clientCoreSetSheetColor', sheetId, color, cursor });
   }
 
-  duplicateSheet(sheetId: string, cursor: string) {
-    this.send({ type: 'clientCoreDuplicateSheet', sheetId, cursor });
+  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string) {
+    this.send({ type: 'clientCoreDuplicateSheet', sheetId, nameOfNewSheet, cursor });
   }
 
   //#endregion

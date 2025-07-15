@@ -583,11 +583,11 @@ class Core {
     });
   }
 
-  addSheet(cursor?: string) {
+  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
-        this.gridController.addSheet(cursor);
+        this.gridController.addSheet(sheetName, insertBeforeSheetName, cursor);
       } catch (e) {
         this.handleCoreError('addSheet', e);
       }
@@ -643,11 +643,11 @@ class Core {
     });
   }
 
-  duplicateSheet(sheetId: string, cursor: string) {
+  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
-        this.gridController.duplicateSheet(sheetId, cursor);
+        this.gridController.duplicateSheet(sheetId, nameOfNewSheet, cursor);
       } catch (e) {
         this.handleCoreError('duplicateSheet', e);
       }

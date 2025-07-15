@@ -531,6 +531,8 @@ export interface CoreClientSheetBoundsUpdate {
 
 export interface ClientCoreAddSheet {
   type: 'clientCoreAddSheet';
+  sheetName?: string;
+  insertBeforeSheetName?: string;
   cursor?: string;
 }
 
@@ -581,6 +583,7 @@ export interface ClientCoreSetSheetColor {
 export interface ClientCoreDuplicateSheet {
   type: 'clientCoreDuplicateSheet';
   sheetId: string;
+  nameOfNewSheet?: string;
   cursor: string;
 }
 

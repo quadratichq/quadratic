@@ -240,7 +240,7 @@ class CoreClient {
         return;
 
       case 'clientCoreAddSheet':
-        await core.addSheet(e.data.cursor);
+        await core.addSheet(e.data.sheetName, e.data.insertBeforeSheetName, e.data.cursor);
         return;
 
       case 'clientCoreDeleteSheet':
@@ -260,7 +260,7 @@ class CoreClient {
         return;
 
       case 'clientCoreDuplicateSheet':
-        await core.duplicateSheet(e.data.sheetId, e.data.cursor);
+        await core.duplicateSheet(e.data.sheetId, e.data.nameOfNewSheet, e.data.cursor);
         return;
 
       case 'clientCoreUndo':

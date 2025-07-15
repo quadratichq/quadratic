@@ -21,6 +21,11 @@ export enum AITool {
   ConvertToTable = 'convert_to_table',
   WebSearch = 'web_search',
   WebSearchInternal = 'web_search_internal',
+
+  AddSheet = 'add_sheet',
+  DuplicateSheet = 'duplicate_sheet',
+  RenameSheet = 'rename_sheet',
+  DeleteSheet = 'delete_sheet',
 }
 
 export const AIToolSchema = z.enum([
@@ -42,6 +47,10 @@ export const AIToolSchema = z.enum([
   AITool.ConvertToTable,
   AITool.WebSearch,
   AITool.WebSearchInternal,
+  AITool.AddSheet,
+  AITool.DuplicateSheet,
+  AITool.RenameSheet,
+  AITool.DeleteSheet,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -198,6 +207,21 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.WebSearchInternal]: z.object({
     query: z.string(),
+  }),
+  [AITool.AddSheet]: z.object({
+    sheet_name: z.string(),
+    insert_before_sheet_name: z.string().optional(),
+  }),
+  [AITool.DuplicateSheet]: z.object({
+    sheet_name_to_duplicate: z.string(),
+    name_of_new_sheet: z.string(),
+  }),
+  [AITool.RenameSheet]: z.object({
+    sheet_name: z.string(),
+    new_name: z.string(),
+  }),
+  [AITool.DeleteSheet]: z.object({
+    sheet_name: z.string(),
   }),
 } as const;
 
@@ -976,6 +1000,111 @@ It requires the query to search for.\n
     prompt: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for.\n
+`,
+  },
+  [AITool.AddSheet]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool adds a new sheet in the file.\n
+It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The name of the new sheet. This must be a unique name.',
+        },
+        insert_before_sheet_name: {
+          type: 'string',
+          description:
+            'The name of a sheet to insert the new sheet before. If not provided, the new sheet will be added to the end of the sheet list.',
+        },
+      },
+      required: ['sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddSheet],
+    prompt: `
+This tool adds a new sheet in the file.\n
+It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
+`,
+  },
+  [AITool.DuplicateSheet]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool duplicates a sheet in the file.\n
+It requires the name of the sheet to duplicate and the name of the new sheet.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name_to_duplicate: {
+          type: 'string',
+          description: 'The name of the sheet to duplicate',
+        },
+        name_of_new_sheet: {
+          type: 'string',
+          description: 'The name of the new sheet. This must be a unique name.',
+        },
+      },
+      required: ['sheet_name_to_duplicate', 'name_of_new_sheet'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.DuplicateSheet],
+    prompt: `
+This tool duplicates a sheet in the file.\n
+It requires the name of the sheet to duplicate and the name of the new sheet.\n
+`,
+  },
+  [AITool.RenameSheet]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool renames a sheet in the file.\n
+It requires the name of the sheet to rename and the new name. This must be a unique name.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The name of the sheet to rename',
+        },
+        new_name: {
+          type: 'string',
+          description: 'The new name of the sheet. This must be a unique name.',
+        },
+      },
+      required: ['sheet_name', 'new_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.RenameSheet],
+    prompt: `
+This tool renames a sheet in the file.\n
+It requires the name of the sheet to rename and the new name. This must be a unique name.\n
+`,
+  },
+  [AITool.DeleteSheet]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool deletes a sheet in the file.\n
+It requires the name of the sheet to delete.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The name of the sheet to delete',
+        },
+      },
+      required: ['sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.DeleteSheet],
+    prompt: `
+This tool deletes a sheet in the file.\n
+It requires the name of the sheet to delete.\n
 `,
   },
 } as const;
