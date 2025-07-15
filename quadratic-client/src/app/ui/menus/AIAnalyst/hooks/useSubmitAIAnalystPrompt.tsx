@@ -4,6 +4,7 @@ import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDate
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -79,18 +80,20 @@ export function useSubmitAIAnalystPrompt() {
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
+  const { getSqlContext } = useSqlContextMessages();
   const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [filesContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
+        const [filesContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext, sqlContext] =
           await Promise.all([
             getFilesContext({ chatMessages }),
             getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
+            getSqlContext(),
           ]);
 
         const messagesWithContext: ChatMessage[] = [
@@ -100,6 +103,7 @@ export function useSubmitAIAnalystPrompt() {
           ...getCurrentDateTimeContext(),
           ...currentSheetContext,
           ...visibleContext,
+          ...sqlContext,
           ...getPromptMessagesForAI(chatMessages),
         ];
 
@@ -112,6 +116,7 @@ export function useSubmitAIAnalystPrompt() {
       getCurrentSheetContext,
       getVisibleContext,
       getFilesContext,
+      getSqlContext,
     ]
   );
 

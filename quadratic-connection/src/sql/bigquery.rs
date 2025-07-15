@@ -2,10 +2,7 @@ use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection,
-    sql::{
-        Connection,
-        bigquery_connection::{BigqueryConfig, BigqueryConnection},
-    },
+    sql::bigquery_connection::{BigqueryConfig, BigqueryConnection},
 };
 use uuid::Uuid;
 
@@ -18,7 +15,7 @@ use crate::{
     state::State,
 };
 
-use super::{Schema, query_generic};
+use super::{Schema, query_generic, schema_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(
@@ -53,7 +50,7 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
-) -> Result<(BigqueryConnection, ApiConnection<BigqueryConfig>)> {
+) -> Result<ApiConnection<BigqueryConfig>> {
     let connection = if cfg!(not(test)) {
         get_api_connection(state, "", &claims.sub, connection_id, team_id).await?
     } else {
@@ -68,17 +65,7 @@ async fn get_connection(
         }
     };
 
-    let bigquery_connection = BigqueryConnection::new(
-        connection
-            .type_details
-            .service_account_configuration
-            .to_owned(),
-        connection.type_details.project_id.to_owned(),
-        connection.type_details.dataset.to_owned(),
-    )
-    .await?;
-
-    Ok((bigquery_connection, connection))
+    Ok(connection)
 }
 
 /// Query the database and return the results as a parquet file.
@@ -89,9 +76,10 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
-        .await?
-        .0;
+    let config_connection =
+        get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
+    let connection = BigqueryConnection::new_from_config(config_connection.type_details).await?;
+
     query_generic::<BigqueryConnection>(connection, state, sql_query).await
 }
 
@@ -103,18 +91,18 @@ pub(crate) async fn schema(
     claims: Claims,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
-    let mut pool = connection.connect().await?;
-    let database_schema = connection.schema(&mut pool).await?;
-    let schema = Schema {
-        id: api_connection.uuid,
-        name: api_connection.name,
-        r#type: api_connection.r#type,
-        database: api_connection.type_details.project_id,
-        tables: database_schema.tables.into_values().collect(),
+    let connection = get_connection(&state, &claims, &id, &team_id).await?;
+
+    let api_connection = ApiConnection {
+        uuid: connection.uuid,
+        name: connection.name,
+        r#type: connection.r#type,
+        created_date: connection.created_date,
+        updated_date: connection.updated_date,
+        type_details: BigqueryConnection::new_from_config(connection.type_details).await?,
     };
 
-    Ok(Json(schema))
+    schema_generic(api_connection, state).await
 }
 
 use std::sync::{LazyLock, Mutex};
