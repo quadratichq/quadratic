@@ -203,22 +203,33 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
   // If we have multiple get_cell_data messages, keep only the tool call after a
   // certain number of calls
   return messages.map((message, i) => {
-    if (i < messages.length - CLEAN_UP_AFTER && message.role === 'user' && message.contextType === 'toolResult') {
+    if (message.role === 'user' && message.contextType === 'toolResult') {
       return {
         ...message,
-        content: message.content.map((content) => {
-          if (getToolIds.has(content.id)) {
-            return {
-              id: content.id,
-              content: [
-                {
-                  type: 'text' as const,
-                  text: CLEAN_UP_MESSAGE,
-                },
-              ],
-            };
+        content: message.content.map((toolResult) => {
+          if (getToolIds.has(toolResult.id)) {
+            if (i < messages.length - CLEAN_UP_AFTER) {
+              return {
+                id: toolResult.id,
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: CLEAN_UP_MESSAGE,
+                  },
+                ],
+              };
+            } else {
+              return toolResult;
+            }
           } else {
-            return content;
+            // clean up plotly images in tool result
+            return {
+              id: toolResult.id,
+              content:
+                toolResult.content.length > 1
+                  ? toolResult.content.filter((content) => !isContentImage(content))
+                  : toolResult.content,
+            };
           }
         }),
       };
