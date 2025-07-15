@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::{
     CopyFormats, Pos, Rect,
-    grid::{CellWrap, Format, Sheet, SheetFormatting, formats::SheetFormatUpdates},
+    grid::{CellWrap, Format, Sheet, formats::SheetFormatUpdates},
 };
 
 use super::DataTable;
@@ -56,26 +56,62 @@ impl DataTable {
         formats_rect: Rect,
         sheet_format_updates: &mut SheetFormatUpdates,
     ) {
-        let data_table_display_formats = self.get_display_formats_for_data_table(data_table_pos);
-        let Some(data_table_display_formats) = data_table_display_formats else {
+        let data_table_display_formats_update =
+            self.get_display_formats_updates_for_data_table(data_table_pos, formats_rect);
+
+        let Some(data_table_display_formats_update) = data_table_display_formats_update else {
             return;
         };
 
-        let data_table_format_updates = SheetFormatUpdates::from_sheet_formatting_rect(
-            formats_rect,
-            &data_table_display_formats,
-            false,
-        );
-
-        sheet_format_updates.merge(&data_table_format_updates);
+        sheet_format_updates.merge(&data_table_display_formats_update);
     }
 
-    // Factors in hidden columns and sorted rows and return SheetFormatting
-    // for the actual displayed formats in sheet coordinates system
-    //
-    // This is expensive for single cell queries, used for rect queries only
-    fn get_display_formats_for_data_table(&self, data_table_pos: Pos) -> Option<SheetFormatting> {
-        let mut formats = self.formats.clone()?;
+    // Factors in hidden columns and sorted rows and return SheetFormatUpdates
+    // for the actual displayed formats update in sheet coordinates system
+    fn get_display_formats_updates_for_data_table(
+        &self,
+        data_table_pos: Pos,
+        formats_rect: Rect,
+    ) -> Option<SheetFormatUpdates> {
+        let data_table_formats = self.formats.as_ref()?;
+
+        let y_adjustment = self.y_adjustment(true);
+
+        let col_start =
+            self.get_column_index_from_display_index(u32::try_from(formats_rect.min.x).ok()?, true);
+        let col_end =
+            self.get_column_index_from_display_index(u32::try_from(formats_rect.max.x).ok()?, true);
+
+        // handle sorted rows
+        let mut data_table_display_formats_update = if self.display_buffer.is_some() {
+            let mut data_table_display_formats_update = SheetFormatUpdates::default();
+            for display_row in formats_rect.y_range() {
+                if let Ok(display_row) = u64::try_from(display_row) {
+                    let actual_row = self.get_row_index_from_display_index(display_row);
+                    let mut row_formats = SheetFormatUpdates::from_sheet_formatting_rect(
+                        Rect::new(
+                            1 + col_start as i64,
+                            1 + actual_row as i64,
+                            1 + col_end as i64,
+                            1 + actual_row as i64,
+                        ),
+                        data_table_formats,
+                        false,
+                    );
+                    row_formats.translate_in_place(0, display_row as i64 - actual_row as i64);
+                    data_table_display_formats_update.merge(&row_formats);
+                }
+            }
+            data_table_display_formats_update
+        } else {
+            let data_table_formats_rect =
+                formats_rect.translate(1 - data_table_pos.x, 1 - data_table_pos.y - y_adjustment);
+            SheetFormatUpdates::from_sheet_formatting_rect(
+                data_table_formats_rect,
+                data_table_formats,
+                false,
+            )
+        };
 
         // handle hidden columns
         if let Some(column_headers) = &self.column_headers {
@@ -84,35 +120,18 @@ impl DataTable {
                 .sorted_by(|a, b| b.value_index.cmp(&a.value_index))
             {
                 if !column_header.display {
-                    formats.remove_column(column_header.value_index as i64 + 1);
+                    data_table_display_formats_update
+                        .remove_column(column_header.value_index as i64 + 1);
                 }
             }
         }
 
-        // handle sorted rows
-        if let Some(display_buffer) = &self.display_buffer {
-            let mut sorted_formats = SheetFormatting::default();
-            for (display_row, &actual_row) in display_buffer
-                .iter()
-                .enumerate()
-                .sorted_by_key(|(display_row, _)| *display_row)
-            {
-                if let Some(mut row_formats) = formats.copy_row(actual_row as i64 + 1) {
-                    row_formats.translate_in_place(0, display_row as i64 - actual_row as i64);
-                    sorted_formats.apply_updates(&row_formats);
-                }
-            }
-            std::mem::swap(&mut formats, &mut sorted_formats);
-        }
-
-        // convert to sheet coordinates
-        let y_adjustment = self.y_adjustment(true);
-        formats.translate_in_place(data_table_pos.x - 1, data_table_pos.y - 1 + y_adjustment);
-
-        if formats.is_all_default() {
+        if data_table_display_formats_update.is_default() {
             None
         } else {
-            Some(formats)
+            data_table_display_formats_update
+                .translate_in_place(data_table_pos.x - 1, data_table_pos.y + y_adjustment - 1);
+            Some(data_table_display_formats_update)
         }
     }
 

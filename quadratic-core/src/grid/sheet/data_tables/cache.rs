@@ -202,11 +202,7 @@ impl MultiCellTablesCache {
                     // handle sorted rows
                     if let Some(display_buffer) = &data_table.display_buffer {
                         let mut sorted_empty_values_cache = Contiguous2D::new();
-                        for (display_row, &actual_row) in display_buffer
-                            .iter()
-                            .enumerate()
-                            .sorted_by_key(|(display_row, _)| *display_row)
-                        {
+                        for (display_row, &actual_row) in display_buffer.iter().enumerate() {
                             if let Some(mut row) =
                                 empty_values_cache.copy_row(actual_row as i64 + 1)
                             {
