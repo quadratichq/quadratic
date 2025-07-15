@@ -1,6 +1,7 @@
 import { aiAnalystCurrentChatAtom, aiAnalystLoadingAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { getMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { ChatMessagesSchema } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -13,7 +14,7 @@ export const AIAnalystDebugChatInput = memo(() => {
   const [error, setError] = useState<string | null>(null);
 
   const chatString = useMemo(
-    () => (currentChat.messages.length > 0 ? JSON.stringify(currentChat.messages) : ''),
+    () => (currentChat.messages.length > 0 ? JSON.stringify(getMessagesForAI(currentChat.messages)) : ''),
     [currentChat.messages]
   );
 
