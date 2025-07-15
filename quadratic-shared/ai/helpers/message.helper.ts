@@ -40,11 +40,9 @@ export const getPromptAndInternalMessages = (
   );
 };
 
-const getPromptMessagesWithoutPDF = (
-  messages: ChatMessage[]
-): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
-  return getPromptMessages(messages).map((message) => {
-    if (message.role !== 'user' || message.contextType === 'toolResult') {
+const getPromptMessagesWithoutPDF = (messages: ChatMessage[]): ChatMessage[] => {
+  return messages.map((message) => {
+    if (message.role !== 'user' || message.contextType !== 'userPrompt') {
       return message;
     }
 
@@ -55,10 +53,14 @@ const getPromptMessagesWithoutPDF = (
   });
 };
 
+export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
+  return getPromptMessagesWithoutPDF(messages);
+};
+
 export const getPromptMessagesForAI = (
   messages: ChatMessage[]
 ): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
-  return getPromptMessagesWithoutPDF(messages);
+  return getPromptMessages(getPromptMessagesWithoutPDF(messages));
 };
 
 export const removeOldFilesInToolResult = (messages: ChatMessage[], files: Set<string>): ChatMessage[] => {

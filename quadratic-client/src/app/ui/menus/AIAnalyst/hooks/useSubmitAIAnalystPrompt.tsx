@@ -27,7 +27,8 @@ import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWe
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
-  getPromptMessagesForAI,
+  getMessagesForAI,
+  getPromptAndInternalMessages,
   isContentFile,
   removeOldFilesInToolResult,
   replaceOldGetToolCallResults,
@@ -100,7 +101,7 @@ export function useSubmitAIAnalystPrompt() {
           ...getCurrentDateTimeContext(),
           ...currentSheetContext,
           ...visibleContext,
-          ...getPromptMessagesForAI(chatMessages),
+          ...getPromptAndInternalMessages(chatMessages),
         ];
 
         return messagesWithContext;
@@ -253,18 +254,22 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             toolCallIterations++;
 
-            // Send tool call results to API
-            const messagesWithContext = await updateInternalContext({ context, chatMessages });
+            // Update internal context
+            chatMessages = await updateInternalContext({ context, chatMessages });
+            set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
-            if (debugFlag('debugShowAIInternalContext')) {
+            const messagesForAI = getMessagesForAI(chatMessages);
+
+            if (debugFlag('debugLogJsonAIInternalContext')) {
               console.log('AIAnalyst messages with context:', {
                 context,
-                messagesWithContext,
+                messagesForAI,
               });
             }
-            if (debugFlag('debugPrintAIInternalContext')) {
+
+            if (debugFlag('debugLogReadableAIInternalContext')) {
               console.log(
-                messagesWithContext
+                messagesForAI
                   .filter((message) => message.role === 'user' && message.contextType === 'userPrompt')
                   .map((message) => {
                     return `${message.role}: ${message.content.map((content) => {
@@ -279,13 +284,13 @@ export function useSubmitAIAnalystPrompt() {
               );
             }
 
-            lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
               messageSource,
               modelKey,
-              messages: messagesWithContext,
+              messages: messagesForAI,
               useStream: USE_STREAM,
               toolName: undefined,
               useToolsPrompt: true,
