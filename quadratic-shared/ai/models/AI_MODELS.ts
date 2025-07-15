@@ -363,6 +363,22 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtSk7d04': {
     model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BtSk7d04',
+    displayName: 'gpt 4.1 mini fine-tuned (stable)',
+    temperature: 0.1,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: false,
+    rate_per_million_input_tokens: 0.8,
+    rate_per_million_output_tokens: 3.2,
+    rate_per_million_cache_read_tokens: 0.2,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::Bta9G76W': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::Bta9G76W',
     displayName: 'gpt 4.1 mini fine-tuned (latest)',
     temperature: 0.1,
     max_tokens: 16384,
