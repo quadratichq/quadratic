@@ -6,7 +6,6 @@ use std::collections::BTreeMap;
 use std::str::FromStr;
 
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, NaiveDateTime, NaiveTime, Utc};
 use google_cloud_bigquery::client::google_cloud_auth::credentials::CredentialsFile;
@@ -16,6 +15,7 @@ use google_cloud_bigquery::http::job::query::QueryRequest;
 use google_cloud_bigquery::http::table::{TableFieldSchema, TableFieldType};
 use google_cloud_bigquery::http::tabledata::list::{Cell, Tuple, Value};
 use google_cloud_bigquery::query::row::Row;
+use rust_decimal::Decimal;
 use serde::{self, Deserialize, Serialize};
 use serde_json::json;
 
@@ -373,9 +373,9 @@ where
 
 fn bigquery_number(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
     let number_string = string_column_value(row, index);
-    let parsed = number_string.parse::<BigDecimal>().map_err(query_error)?;
+    let parsed = number_string.parse::<Decimal>().map_err(query_error)?;
 
-    Ok(ArrowType::BigDecimal(parsed))
+    Ok(ArrowType::Decimal(parsed))
 }
 
 fn bigquery_date(row: &BigqueryRow, index: usize) -> Result<ArrowType> {
@@ -589,9 +589,7 @@ pub mod tests {
 
         let mut connection = new_connection().await;
 
-        let sql = format!(
-            "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10"
-        );
+        let sql = "SELECT * FROM `quadratic-development.all_native_data_types.all_data_types` order by id LIMIT 10".to_string();
         let results = connection.raw_query(&sql, None).await.unwrap();
         println!("{results:?}");
     }
@@ -609,7 +607,7 @@ pub mod tests {
     async fn test_bigquery_query_over_limit() {
         let mut connection = new_connection().await;
         let sql = "select * from `quadratic-development.all_native_data_types.all_data_types`";
-        let results = connection.raw_query(&sql, Some(1)).await.unwrap();
+        let results = connection.raw_query(sql, Some(1)).await.unwrap();
 
         assert_eq!(results, (Vec::new(), true, 0));
     }

@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use bigdecimal::ToPrimitive;
 use itertools::Itertools;
+use rust_decimal::prelude::*;
 
 pub(crate) use super::*;
 use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};

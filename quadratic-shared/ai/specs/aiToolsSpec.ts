@@ -978,7 +978,7 @@ IMPORTANT: the selection can NOT contain any code cells or data tables.\n
 It requires the sheet name, a rectangular selection of cells to convert to a data table, the name of the data table and whether the first row is the column names.\n
 A data table cannot be created over any existing code cells or data tables.\n
 The table will be created with the first row as the header row if first_row_is_column_names is true, otherwise the first row will be the first row of the data.\n
-The data table will include a table name as the first row, which will push down all data by one row.\n
+The data table will include a table name as the first row, which will push down all data by one row. Example: if the data previously occupied A1:A6, it now occupies A1:A7 since adding the table name shifted the data down by one row.\n
 `,
   },
   [AITool.WebSearch]: {

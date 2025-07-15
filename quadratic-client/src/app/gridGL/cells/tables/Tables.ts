@@ -85,6 +85,7 @@ export class Tables extends Container<Table> {
     events.off('updateCodeCells', this.updateCodeCells);
 
     events.off('cursorPosition', this.cursorPosition);
+    events.off('a1ContextUpdated', this.cursorPosition);
     events.off('sheetOffsets', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
@@ -259,14 +260,14 @@ export class Tables extends Container<Table> {
   };
 
   /// Returns the tables that are visible in the viewport.
-  private getVisibleTables = (): Table[] => {
-    const bounds = pixiApp.viewport.getVisibleBounds();
+  private getVisibleTables = (forceBounds?: Rectangle): Table[] => {
+    const bounds = forceBounds ?? pixiApp.viewport.getVisibleBounds();
     const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
     const tables = this.dataTablesCache?.getLargeTablesInRect(
-      cellBounds.x,
-      cellBounds.y,
-      cellBounds.width,
-      cellBounds.height
+      cellBounds.left,
+      cellBounds.top,
+      cellBounds.right - 1,
+      cellBounds.bottom - 1
     );
     return (
       tables?.flatMap((pos) => {
@@ -277,6 +278,13 @@ export class Tables extends Container<Table> {
         return [];
       }) ?? []
     );
+  };
+
+  /// Forces an update of all tables to the given bounds (used by thumbnail generation)
+  forceUpdate = (bounds: Rectangle) => {
+    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+    const visibleTables = this.getVisibleTables(bounds);
+    visibleTables?.forEach((table) => table.update(bounds, gridHeading));
   };
 
   update = (dirtyViewport: boolean) => {
@@ -371,6 +379,7 @@ export class Tables extends Container<Table> {
   // that table active while the context menu is open)
   private contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
+      this.actionDataTable.hideActive();
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
     }
@@ -589,10 +598,10 @@ export class Tables extends Container<Table> {
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): JsRenderCodeCell[] => {
     if (!this.dataTablesCache) return [];
     const tablePositions = this.dataTablesCache.getSingleCellTablesInRect(
-      cellRectangle.x,
-      cellRectangle.y,
-      cellRectangle.right,
-      cellRectangle.bottom
+      cellRectangle.left,
+      cellRectangle.top,
+      cellRectangle.right - 1,
+      cellRectangle.bottom - 1
     );
     if (!tablePositions) return [];
 

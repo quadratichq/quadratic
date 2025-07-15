@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-rust-shared"
-version = "0.13.0"
+version = "0.13.5"
 edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -43,7 +43,7 @@ sqlx = { version = "0.8.2", features = [
   "uuid",
   "mysql",
   "postgres",
-  "bigdecimal",
+  "rust_decimal",
   "json",
   "runtime-tokio-native-tls",
 ], optional = true }
