@@ -9,6 +9,7 @@ use crate::{
     grid::{CodeCellLanguage, Contiguous2D, DataTable},
 };
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -187,7 +188,10 @@ impl MultiCellTablesCache {
 
                     // handle hidden columns
                     if let Some(column_headers) = &data_table.column_headers {
-                        for column_header in column_headers.iter() {
+                        for column_header in column_headers
+                            .iter()
+                            .sorted_by(|a, b| b.value_index.cmp(&a.value_index))
+                        {
                             if !column_header.display {
                                 empty_values_cache
                                     .remove_column(column_header.value_index as i64 + 1);
@@ -198,7 +202,11 @@ impl MultiCellTablesCache {
                     // handle sorted rows
                     if let Some(display_buffer) = &data_table.display_buffer {
                         let mut sorted_empty_values_cache = Contiguous2D::new();
-                        for (display_row, &actual_row) in display_buffer.iter().enumerate() {
+                        for (display_row, &actual_row) in display_buffer
+                            .iter()
+                            .enumerate()
+                            .sorted_by_key(|(display_row, _)| *display_row)
+                        {
                             if let Some(mut row) =
                                 empty_values_cache.copy_row(actual_row as i64 + 1)
                             {

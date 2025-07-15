@@ -321,15 +321,21 @@ impl SheetFormatUpdates {
     ) where
         T: Clone + Debug + PartialEq,
     {
-        if let Some(value) = value {
-            item.get_or_insert_with(Default::default).set_rect(
-                rect.min.x,
-                rect.min.y,
-                Some(rect.max.x),
-                Some(rect.max.y),
-                Some(value.into()),
-            );
-        };
+        item.get_or_insert_with(Default::default).set_rect(
+            rect.min.x,
+            rect.min.y,
+            if rect.max.x == i64::MAX {
+                None
+            } else {
+                Some(rect.max.x)
+            },
+            if rect.max.y == i64::MAX {
+                None
+            } else {
+                Some(rect.max.y)
+            },
+            value.map(|value| value.into()),
+        );
     }
 
     /// Sets all formats for a rect within the SheetFormatUpdates
@@ -479,6 +485,31 @@ impl SheetFormatUpdates {
         Self::insert_column_item(&mut self.date_time, column, copy_formats);
         Self::insert_column_item(&mut self.underline, column, copy_formats);
         Self::insert_column_item(&mut self.strike_through, column, copy_formats);
+    }
+
+    fn remove_column_item<T>(item: &mut SheetFormatUpdatesType<T>, column: i64)
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        if let Some(item) = item.as_mut() {
+            item.remove_column(column);
+        }
+    }
+
+    pub fn remove_column(&mut self, column: i64) {
+        Self::remove_column_item(&mut self.align, column);
+        Self::remove_column_item(&mut self.vertical_align, column);
+        Self::remove_column_item(&mut self.wrap, column);
+        Self::remove_column_item(&mut self.numeric_format, column);
+        Self::remove_column_item(&mut self.numeric_decimals, column);
+        Self::remove_column_item(&mut self.numeric_commas, column);
+        Self::remove_column_item(&mut self.bold, column);
+        Self::remove_column_item(&mut self.italic, column);
+        Self::remove_column_item(&mut self.text_color, column);
+        Self::remove_column_item(&mut self.fill_color, column);
+        Self::remove_column_item(&mut self.date_time, column);
+        Self::remove_column_item(&mut self.underline, column);
+        Self::remove_column_item(&mut self.strike_through, column);
     }
 
     fn copy_row_item<T>(item: &SheetFormatUpdatesType<T>, row: i64) -> SheetFormatUpdatesType<T>

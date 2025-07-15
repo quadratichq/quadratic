@@ -79,7 +79,10 @@ impl DataTable {
 
         // handle hidden columns
         if let Some(column_headers) = &self.column_headers {
-            for column_header in column_headers.iter() {
+            for column_header in column_headers
+                .iter()
+                .sorted_by(|a, b| b.value_index.cmp(&a.value_index))
+            {
                 if !column_header.display {
                     formats.remove_column(column_header.value_index as i64 + 1);
                 }
@@ -89,7 +92,11 @@ impl DataTable {
         // handle sorted rows
         if let Some(display_buffer) = &self.display_buffer {
             let mut sorted_formats = SheetFormatting::default();
-            for (display_row, &actual_row) in display_buffer.iter().enumerate() {
+            for (display_row, &actual_row) in display_buffer
+                .iter()
+                .enumerate()
+                .sorted_by_key(|(display_row, _)| *display_row)
+            {
                 if let Some(mut row_formats) = formats.copy_row(actual_row as i64 + 1) {
                     row_formats.translate_in_place(0, display_row as i64 - actual_row as i64);
                     sorted_formats.apply_updates(&row_formats);
@@ -204,10 +211,16 @@ impl DataTable {
 
             let mut max_row = 1;
 
-            for (display_row, &actual_row) in display_buffer.iter().enumerate() {
+            for (display_row, &actual_row) in display_buffer
+                .iter()
+                .enumerate()
+                .sorted_by_key(|(_, actual_row)| *actual_row)
+            {
                 if let Some(mut row_formats) = format_update.copy_row(display_row as i64 + 1) {
-                    row_formats.translate_in_place(0, actual_row as i64 - display_row as i64);
-                    sorted_formats_update.merge(&row_formats);
+                    if !row_formats.is_default() {
+                        row_formats.translate_in_place(0, actual_row as i64 - display_row as i64);
+                        sorted_formats_update.merge(&row_formats);
+                    }
                 }
                 max_row = max_row.max(display_row as i64);
             }
@@ -216,7 +229,9 @@ impl DataTable {
 
             for display_row in (max_row + 1)..=max_y {
                 if let Some(row_formats) = format_update.copy_row(display_row + 1) {
-                    sorted_formats_update.merge(&row_formats);
+                    if !row_formats.is_default() {
+                        sorted_formats_update.merge(&row_formats);
+                    }
                 }
             }
 
