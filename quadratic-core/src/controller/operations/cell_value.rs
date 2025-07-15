@@ -457,9 +457,9 @@ impl GridController {
                     return Err(Error::msg(message));
                 }
 
+                let headers = data_table.column_headers.to_owned();
                 let contains_header = data_table.get_show_columns()
                     && intersection_rect.y_range().contains(&data_table_pos.y);
-                let headers = data_table.column_headers.to_owned();
 
                 if let (Some(mut headers), true) = (headers, contains_header) {
                     let y = data_table_pos.y - start_pos.y;

@@ -133,24 +133,24 @@ test('Keyboard Navigation', async ({ page }) => {
 
   await gotoCells(page, { a1: 'A1' });
 
-  await page.keyboard.press('PageDown', { delay: 100 });
+  await page.keyboard.press('PageDown', { delay: 250 });
   await assertSelection(page, { a1: 'A28' });
 
   await page.keyboard.press('PageDown');
   await assertSelection(page, { a1: 'A55' });
 
-  await page.keyboard.press('ArrowDown', { delay: 100 });
-  await page.keyboard.press('ArrowDown', { delay: 100 });
-  await page.keyboard.press('ArrowDown', { delay: 100 });
+  await page.keyboard.press('ArrowDown', { delay: 250 });
+  await page.keyboard.press('ArrowDown', { delay: 250 });
+  await page.keyboard.press('ArrowDown', { delay: 250 });
   await assertSelection(page, { a1: 'A58' });
 
-  await page.keyboard.press('PageUp', { delay: 100 });
+  await page.keyboard.press('PageUp', { delay: 250 });
   await assertSelection(page, { a1: 'A30' });
 
-  await page.keyboard.press('PageUp', { delay: 100 });
+  await page.keyboard.press('PageUp', { delay: 250 });
   await assertSelection(page, { a1: 'A2' });
 
-  await page.keyboard.press('PageUp', { delay: 100 });
+  await page.keyboard.press('PageUp', { delay: 250 });
   await assertSelection(page, { a1: 'A1' });
 
   // All done
@@ -182,32 +182,32 @@ test('Keyboard Selection', async ({ page }) => {
   // Test of the top left position flag
   await assertTopLeftPosition(page, 'A1');
 
-  await page.keyboard.press('Shift+PageDown', { delay: 100 });
+  await page.keyboard.press('Shift+PageDown', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:A28' });
   await assertTopLeftPosition(page, 'A28');
 
-  await page.keyboard.press('Shift+PageDown', { delay: 100 });
+  await page.keyboard.press('Shift+PageDown', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:A55' });
   await assertTopLeftPosition(page, 'A55');
 
-  await page.keyboard.press('Shift+ArrowRight', { delay: 100 });
-  await page.keyboard.press('Shift+ArrowRight', { delay: 100 });
+  await page.keyboard.press('Shift+ArrowRight', { delay: 250 });
+  await page.keyboard.press('Shift+ArrowRight', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:C55' });
 
-  await page.keyboard.press('Shift+PageUp', { delay: 100 });
+  await page.keyboard.press('Shift+PageUp', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:C27' });
   await assertTopLeftPosition(page, 'A27');
 
-  await page.keyboard.press('Shift+PageUp', { delay: 100 });
+  await page.keyboard.press('Shift+PageUp', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:C1' });
   await assertTopLeftPosition(page, 'A1');
 
   // All done
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

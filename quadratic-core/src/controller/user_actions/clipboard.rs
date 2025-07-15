@@ -348,17 +348,7 @@ mod test {
             sheet.cell_format_summary(Pos { x: 2, y: 2 }),
             CellFormatSummary {
                 bold: Some(true),
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
-                underline: None,
-                strike_through: None,
+                ..Default::default()
             }
         );
         assert_eq!(
@@ -368,18 +358,8 @@ mod test {
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 4, y: 3 }),
             CellFormatSummary {
-                bold: None,
                 italic: Some(true),
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
-                underline: None,
-                strike_through: None
+                ..Default::default()
             }
         );
         assert_eq!(
@@ -389,18 +369,8 @@ mod test {
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 6, y: 4 }),
             CellFormatSummary {
-                bold: None,
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
                 underline: Some(true),
-                strike_through: None
+                ..Default::default()
             }
         );
         assert_eq!(
@@ -410,18 +380,8 @@ mod test {
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 8, y: 5 }),
             CellFormatSummary {
-                bold: None,
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
-                underline: None,
                 strike_through: Some(true),
+                ..Default::default()
             }
         );
     }
@@ -948,34 +908,14 @@ mod test {
             sheet.cell_format_summary(Pos { x: 2, y: 2 }),
             CellFormatSummary {
                 bold: Some(true),
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
-                underline: None,
-                strike_through: None
+                ..Default::default()
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 3, y: 3 }),
             CellFormatSummary {
-                bold: None,
                 italic: Some(true),
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
-                underline: None,
-                strike_through: None
+                ..Default::default()
             }
         );
     }
@@ -1097,34 +1037,14 @@ mod test {
             sheet.cell_format_summary(Pos { x: 2, y: 3 }),
             CellFormatSummary {
                 bold: Some(true),
-                italic: None,
-                text_color: None,
-                fill_color: None,
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
-                underline: None,
-                strike_through: None
+                ..Default::default()
             }
         );
         assert_eq!(
             sheet.cell_format_summary(Pos { x: 4, y: 5 }),
             CellFormatSummary {
-                bold: None,
-                italic: None,
-                text_color: None,
                 fill_color: Some("red".to_string()),
-                commas: None,
-                align: None,
-                vertical_align: None,
-                wrap: None,
-                date_time: None,
-                cell_type: None,
-                underline: None,
-                strike_through: None
+                ..Default::default()
             }
         );
     }

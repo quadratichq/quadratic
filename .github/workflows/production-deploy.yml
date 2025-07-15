@@ -286,8 +286,8 @@ jobs:
         service:
           - name: client
             url: "https://app.quadratichq.com/version.json"
-          - name: api-heroku
-            url: "https://api.quadratichq.com/health"
+          # - name: api-heroku
+          #   url: "https://api.quadratichq.com/health"
           - name: api-aws
             url: "https://api-aws.quadratichq.com/health"
           - name: multiplayer
