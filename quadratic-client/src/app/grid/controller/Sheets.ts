@@ -225,10 +225,12 @@ export class Sheets {
     }
   }
 
+  /// Gets sheet by name, case insensitive
   getSheetIdFromName(name: string): string {
-    return this.sheets.find((sheet) => sheet.name === name)?.id || '';
+    return this.sheets.find((sheet) => sheet.name.toLowerCase() === name.toLowerCase())?.id || '';
   }
 
+  /// Gets sheet by name, case insensitive
   getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {
     for (const sheet of this.sheets) {
       if (sheet.name === name || (urlCompare && decodeURI(name).toLowerCase() === sheet.name.toLowerCase())) {

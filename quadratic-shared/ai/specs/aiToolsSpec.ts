@@ -1041,7 +1041,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
       properties: {
         sheet_name_to_duplicate: {
           type: 'string',
-          description: 'The name of the sheet to duplicate',
+          description: 'The name of the sheet to duplicate.',
         },
         name_of_new_sheet: {
           type: 'string',
