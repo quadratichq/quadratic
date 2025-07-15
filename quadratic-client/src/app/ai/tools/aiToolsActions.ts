@@ -659,6 +659,11 @@ export const aiToolsActions: AIToolActionsRecord = {
     ];
   },
   [AITool.DeleteSheet]: async (args) => {
+    const { sheet_name } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    if (sheetId) {
+      quadraticCore.deleteSheet(sheetId, sheets.getCursorPosition());
+    }
     return [
       {
         type: 'text',
