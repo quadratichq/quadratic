@@ -209,8 +209,8 @@ export function useSubmitAIAnalystPrompt() {
               if (currentContent?.type !== 'text') {
                 currentContent = { type: 'text', text: '' };
               }
-              currentContent.text = currentContent.text.trim();
               currentContent.text += '\n\nRequest aborted by the user.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
               newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
@@ -259,6 +259,7 @@ export function useSubmitAIAnalystPrompt() {
             set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
 
             if (debugFlag('debugLogJsonAIInternalContext')) {
               console.log('AIAnalyst messages with context:', {
@@ -284,7 +285,6 @@ export function useSubmitAIAnalystPrompt() {
               );
             }
 
-            lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
@@ -436,8 +436,8 @@ export function useSubmitAIAnalystPrompt() {
               if (currentContent?.type !== 'text') {
                 currentContent = { type: 'text', text: '' };
               }
-              currentContent.text = currentContent.text.trim();
               currentContent.text += '\n\nLooks like there was a problem. Please try again.';
+              currentContent.text = currentContent.text.trim();
               newLastMessage.toolCalls = [];
               newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];

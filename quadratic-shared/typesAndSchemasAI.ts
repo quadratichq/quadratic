@@ -300,7 +300,12 @@ export type Content = z.infer<typeof ContentSchema>;
 
 const SystemMessageSchema = z.object({
   role: z.literal('user'),
-  content: z.array(TextContentSchema),
+  content: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      return [{ type: 'text', text: val }];
+    }
+    return val;
+  }, z.array(TextContentSchema)),
   contextType: InternalContextTypeSchema,
 });
 export type SystemMessage = z.infer<typeof SystemMessageSchema>;
