@@ -42,6 +42,6 @@ export const RenameSheet = memo(({ args, loading }: RenameSheetProps) => {
   }
 
   return (
-    <ToolCard icon={icon} label={label} description={`${toolArgs.data.sheet_name} -> ${toolArgs.data.new_name}`} />
+    <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}" -> "${toolArgs.data.new_name}"`} />
   );
 });

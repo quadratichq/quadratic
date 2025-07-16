@@ -41,5 +41,5 @@ export const NewSheet = memo(({ args, loading }: NewSheetProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return <ToolCard icon={icon} label={label} description={`${toolArgs.data.sheet_name}`} />;
+  return <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}" created`} />;
 });

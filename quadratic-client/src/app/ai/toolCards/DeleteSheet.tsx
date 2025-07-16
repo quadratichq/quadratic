@@ -41,5 +41,5 @@ export const DeleteSheet = memo(({ args, loading }: DeleteSheetProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return <ToolCard icon={icon} label={label} description={`${toolArgs.data.sheet_name}`} />;
+  return <ToolCard icon={icon} label={label} description={`"${toolArgs.data.sheet_name}" deleted`} />;
 });
