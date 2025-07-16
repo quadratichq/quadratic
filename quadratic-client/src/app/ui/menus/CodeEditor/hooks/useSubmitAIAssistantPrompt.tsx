@@ -187,7 +187,6 @@ export function useSubmitAIAssistantPrompt() {
             set(aiAssistantMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
-
             lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
 
             const response = await handleAIRequestToAPI({

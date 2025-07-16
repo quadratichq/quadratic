@@ -33,7 +33,6 @@ export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'GCP_PROJECT_ID';
 export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL || 'GCP_CLIENT_EMAIL';
 export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY || 'GCP_PRIVATE_KEY';
 export const GCP_GEMINI_API_KEY = process.env.GCP_GEMINI_API_KEY || 'GCP_GEMINI_API_KEY';
-export const FINE_TUNE = process.env.FINE_TUNE || 'false';
 
 // Optional Billing
 export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
@@ -54,11 +53,15 @@ export const LICENSE_KEY = process.env.LICENSE_KEY as string;
 export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
 export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || 'AZURE_OPENAI_ENDPOINT';
+export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || 'AZURE_OPENAI_API_KEY';
 export const XAI_API_KEY = process.env.XAI_API_KEY || '';
+export const BASETEN_API_KEY = process.env.BASETEN_API_KEY || '';
 export const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY || 'OPEN_ROUTER_API_KEY';
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
+export const FINE_TUNE = process.env.FINE_TUNE || 'false';
 
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);

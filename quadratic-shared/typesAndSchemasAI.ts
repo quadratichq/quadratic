@@ -11,7 +11,9 @@ const AIProvidersSchema = z.enum([
   'anthropic',
   'openai',
   'xai',
+  'baseten',
   'open-router',
+  'azure-openai',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
@@ -36,7 +38,9 @@ const OpenAIModelSchema = z.enum([
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
+const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
+const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct']);
 const OpenRouterModelSchema = z.enum([
   'qwen/qwen3-32b',
   'qwen/qwen3-235b-a22b',
@@ -55,7 +59,9 @@ const AIModelSchema = z.union([
   BedrockModelSchema,
   AnthropicModelSchema,
   OpenAIModelSchema,
+  AzureOpenAIModelSchema,
   XAIModelSchema,
+  BasetenModelSchema,
   OpenRouterModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
@@ -115,8 +121,14 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
+const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1', 'azure-openai:gpt-4.1-mini']);
+export type AzureOpenAIModelKey = z.infer<typeof AzureOpenAIModelKeySchema>;
+
 const XAIModelKeySchema = z.enum(['xai:grok-4-0709']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
+
+const BasetenModelKeySchema = z.enum(['baseten:moonshotai/Kimi-K2-Instruct']);
+export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
 const OpenRouterModelKeySchema = z.enum([
   'open-router:qwen/qwen3-32b',
@@ -138,7 +150,9 @@ const AIModelKeySchema = z.union([
   BedrockModelKeySchema,
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
+  AzureOpenAIModelKeySchema,
   XAIModelKeySchema,
+  BasetenModelKeySchema,
   OpenRouterModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;
@@ -288,7 +302,12 @@ export type Content = z.infer<typeof ContentSchema>;
 
 const SystemMessageSchema = z.object({
   role: z.literal('user'),
-  content: z.array(TextContentSchema),
+  content: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      return [{ type: 'text', text: val }];
+    }
+    return val;
+  }, z.array(TextContentSchema)),
   contextType: InternalContextTypeSchema,
 });
 export type SystemMessage = z.infer<typeof SystemMessageSchema>;
