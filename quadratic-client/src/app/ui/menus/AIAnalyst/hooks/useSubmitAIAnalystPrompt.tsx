@@ -267,7 +267,6 @@ export function useSubmitAIAnalystPrompt() {
             // Send tool call results to API
             const messagesWithContext = await updateInternalContext({ context, chatMessages });
 
-            console.log(messagesWithContext);
             if (debugFlag('debugShowAIInternalContext')) {
               console.log('AIAnalyst messages with context:', {
                 context,
