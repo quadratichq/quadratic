@@ -179,9 +179,9 @@ impl<'a> Connection<'a> for MsSqlConnection {
 
         config.trust_cert();
 
-        let tcp = TcpStream::connect(config.get_addr()).await.map_err(|e| {
-            SharedError::Sql(SqlError::Connect(format!("Failed to connect: {e}")))
-        })?;
+        let tcp = TcpStream::connect(config.get_addr())
+            .await
+            .map_err(|e| SharedError::Sql(SqlError::Connect(format!("Failed to connect: {e}"))))?;
         tcp.set_nodelay(true).map_err(|e| {
             SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {e}")))
         })?;
@@ -404,6 +404,14 @@ impl UsesSsh for MsSqlConnection {
 
     fn set_port(&mut self, port: u16) {
         self.port = Some(port.to_string());
+    }
+
+    fn host(&self) -> String {
+        self.host.clone()
+    }
+
+    fn set_host(&mut self, host: String) {
+        self.host = host;
     }
 
     fn ssh_host(&self) -> Option<String> {
