@@ -220,7 +220,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetCellValues]: async (args) => {
     const { sheet_name, top_left_position, cell_values } = args;
     try {
-      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(top_left_position, sheetId);
       if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
@@ -243,7 +243,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
     let { sheet_name, code_cell_language, code_string, code_cell_position, code_cell_name } = args;
     try {
-      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
       if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
@@ -283,7 +283,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.SetFormulaCellValue]: async (args, messageMetaData) => {
     let { sheet_name, formula_string, code_cell_position } = args;
     try {
-      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
       if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid formula cell position, this should be a single cell, not a range' }];
@@ -326,7 +326,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.MoveCells]: async (args) => {
     const { sheet_name, source_selection_rect, target_top_left_position } = args;
     try {
-      const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const sourceSelection = sheets.stringToSelection(source_selection_rect, sheetId);
       const sourceRect = sourceSelection.getSingleRectangleOrCursor(sheets.jsA1Context);
       if (!sourceRect) {
@@ -361,7 +361,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.DeleteCells]: async (args) => {
     const { sheet_name, selection } = args;
-    const sheetId = sheets.getSheetByName(sheet_name)?.id ?? sheets.current;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
     try {
       const sourceSelection = sheets.stringToSelection(selection, sheetId);
 
@@ -461,7 +461,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.GetCellData]: async (args) => {
     const { selection, sheet_name, page } = args;
     try {
-      const sheetId = sheets.getSheetIdFromName(sheet_name);
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const response = await quadraticCore.getAICells(selection, sheetId, page);
       if (response) {
         return [
@@ -517,7 +517,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         date_time: args.date_time ?? null,
       };
 
-      const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+      const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
       await quadraticCore.setFormats(sheetId, args.selection, formatUpdates);
       return [
         {
@@ -536,7 +536,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.GetTextFormats]: async (args) => {
     try {
-      const sheetId = sheets.getSheetIdFromName(args.sheet_name);
+      const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
       const response = await quadraticCore.getAICellFormats(sheetId, args.selection, args.page);
       if (response) {
         return [
@@ -564,8 +564,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.ConvertToTable]: async (args) => {
     try {
-      const sheet = sheets.getSheetByName(args.sheet_name) ?? sheets.sheet;
-      const sheetId = sheet.id;
+      const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
       const sheetRect = sheets.selectionToSheetRect(sheetId, args.selection);
       if (sheetRect) {
         const response = await quadraticCore.gridToDataTable(
