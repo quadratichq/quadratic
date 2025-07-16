@@ -23,6 +23,7 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
+  BasetenModelKey,
   Content,
   ImageContent,
   OpenAIModelKey,
@@ -161,7 +162,7 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | XAIModelKey | OpenRouterModelKey,
+  modelKey: OpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -285,7 +286,7 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | XAIModelKey | OpenRouterModelKey,
+  modelKey: OpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
