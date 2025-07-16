@@ -10,10 +10,12 @@ import type {
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
+  JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
   SheetRect,
 } from '@/app/quadratic-core-types';
+import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
@@ -725,7 +727,6 @@ export const aiToolsActions: AIToolActionsRecord = {
     ];
   },
   [AITool.TextSearch]: async (args) => {
-    debugger;
     const { query, case_sensitive, whole_cell, search_code, sheet_name } = args;
     let sheet_id = null;
     if (sheet_name) {
@@ -740,12 +741,33 @@ export const aiToolsActions: AIToolActionsRecord = {
       search_code: search_code ?? null,
       sheet_id,
     });
-    console.log(results);
-    debugger;
+    const sortedResults: Record<string, JsSheetPosText[]> = {};
+    results.forEach((result) => {
+      if (!sortedResults[result.sheet_id]) {
+        sortedResults[result.sheet_id] = [];
+      }
+      sortedResults[result.sheet_id].push(result);
+    });
+
+    let text = '';
+    Object.entries(sortedResults).forEach(([sheet_id, results]) => {
+      const sheet = sheets.getById(sheet_id);
+      if (sheet) {
+        text += `For Sheet "${sheet.name}": `;
+        results.forEach((result, index) => {
+          text += `Cell: ${xyToA1(Number(result.x), Number(result.y))} is "${result.text}"`;
+          if (index < results.length - 1) {
+            text += ', ';
+          } else {
+            text += '.\n';
+          }
+        });
+      }
+    });
     return [
       {
         type: 'text',
-        text: 'Text search tool executed successfully.',
+        text,
       },
     ];
   },

@@ -1183,9 +1183,7 @@ It requires a record of sheet names to change mapped to the new color.\n
   [AITool.TextSearch]: {
     sources: ['AIAnalyst', 'AIAssistant'],
     description: `
-This tool searches the text in the file.\n
-It requires the query to search for.\n
-It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_name. If sheet_name is not provided, then it searches all sheets.\n
+This tool searches for text in cells within a specific sheet or the entire file.\n
 `,
     parameters: {
       type: 'object',
@@ -1200,16 +1198,16 @@ It also provides optional parameters to control the search: case_sensitive, whol
         },
         whole_cell: {
           type: 'boolean',
-          description: 'Whether the search should be for the whole cell',
+          description:
+            'Whether the search should be for the whole cell (i.e., if true, then a cell with "Hello World" would not be found with a search for "Hello"; if false, it would be).',
         },
         search_code: {
           type: 'boolean',
-          description: 'Whether the search should include code cells',
+          description: 'Whether the search should include code within code cells',
         },
         sheet_name: {
           type: 'string',
           description: 'The sheet name to search in. If not provided, then it searches all sheets.',
-          optional: true,
         },
       },
       required: ['query', 'case_sensitive', 'whole_cell', 'search_code'],
@@ -1217,9 +1215,7 @@ It also provides optional parameters to control the search: case_sensitive, whol
     },
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
     prompt: `
-This tool searches the text in the file.\n
-It requires the query to search for.\n
-It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_name. If sheet_name is not provided, then it searches all sheets.\n
+This tool searches for text in cells within a specific sheet or the entire file.\n
 `,
   },
 } as const;

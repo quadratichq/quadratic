@@ -26,6 +26,7 @@ import type {
   JsResponse,
   JsRowHeight,
   JsSelectionContext,
+  JsSheetPosText,
   JsSummarizeSelectionResult,
   JsTablesContext,
   Pos,
@@ -703,7 +704,7 @@ class Core {
     });
   }
 
-  search(search: string, searchOptions: SearchOptions): Promise<SheetPos[]> {
+  search(search: string, searchOptions: SearchOptions): Promise<JsSheetPosText[]> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
