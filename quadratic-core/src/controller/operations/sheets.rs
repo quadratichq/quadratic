@@ -30,14 +30,12 @@ impl GridController {
         sheet_name_to_color
             .into_iter()
             .filter_map(|(sheet_name, color)| {
-                if let Some(sheet) = self.grid.try_sheet_from_name(&sheet_name) {
-                    Some(Operation::SetSheetColor {
+                self.grid
+                    .try_sheet_from_name(&sheet_name)
+                    .map(|sheet| Operation::SetSheetColor {
                         sheet_id: sheet.id,
                         color: Some(color),
                     })
-                } else {
-                    None
-                }
             })
             .collect()
     }
