@@ -46,8 +46,10 @@ export const SheetBar = memo((): JSX.Element => {
     };
 
     events.on('changeSheet', updateSheet);
+    events.on('deleteSheet', updateSheet);
     return () => {
       events.off('changeSheet', updateSheet);
+      events.off('deleteSheet', updateSheet);
     };
   }, []);
 
