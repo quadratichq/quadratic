@@ -32,6 +32,7 @@ import type {
   ToolResultContent,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { v4 } from 'uuid';
 
 function convertContent(content: Content): Array<ChatCompletionContentPart> {
   return content
@@ -223,7 +224,7 @@ export async function parseOpenAIStream(
             if (tool_call.function?.name) {
               // New tool call
               responseMessage.toolCalls.push({
-                id: tool_call.id ?? '',
+                id: tool_call.id ?? v4(),
                 name: tool_call.function.name,
                 arguments: tool_call.function.arguments ?? '',
                 loading: true,
