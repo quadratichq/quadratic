@@ -391,6 +391,14 @@ impl UsesSsh for PostgresConnection {
         self.port = Some(port.to_string());
     }
 
+    fn host(&self) -> String {
+        self.host.clone()
+    }
+
+    fn set_host(&mut self, host: String) {
+        self.host = host;
+    }
+
     fn ssh_host(&self) -> Option<String> {
         self.ssh_host.to_owned()
     }

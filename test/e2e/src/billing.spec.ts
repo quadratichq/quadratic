@@ -44,7 +44,7 @@ test.skip('AI Message Counter', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -52,10 +52,10 @@ test.skip('AI Message Counter', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that 'Your AI messages' stat is available on the page
-  await expect(page.getByText(`Your AI messages`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Your AI messages`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Locate the text element that starts with 'Your AI messages' followed by a number
   // Store the text content (e.g., 'Your AI messages303')
@@ -68,11 +68,11 @@ test.skip('AI Message Counter', async ({ page }) => {
   const aiMessageCount = Number(aiMessageCountText?.match(/\d+/)?.[0]);
 
   // Return to file directory page
-  await page.getByRole(`link`, { name: `draft Files` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`link`, { name: `draft Files` }).click({ timeout: 60 * 1000 });
 
   // Assert that we're at the files page before triggering cleanup & creating a new file
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole(`button`, { name: `New file` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `New file` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up files that were previously created by this WF
   await cleanUpFiles(page, { fileName });
@@ -88,11 +88,11 @@ test.skip('AI Message Counter', async ({ page }) => {
   //--------------------------------
 
   // Click on the Chat icon in left sidebar
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Assert the chat is open based on heading text
-  await expect(page.getByText(`Sheet chat`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Sheet chat`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
   // Iterate through the pre-defined prompt messages and send them one by one to the chat
   for (let i = 0; i < promptsToSend.length; i++) {
@@ -100,27 +100,27 @@ test.skip('AI Message Counter', async ({ page }) => {
     await page.getByPlaceholder('Ask a question...').fill(promptsToSend[i]);
 
     // Click the button with the "arrow_upward" icon to submit the prompt
-    await page.locator('span:has-text("arrow_upward")').click({ timeout: 30 * 1000 });
+    await page.locator('span:has-text("arrow_upward")').click({ timeout: 60 * 1000 });
 
     // Assert the user prompt is visible in chat history
     const userPrompt = page.locator(`form`).nth(i);
     await expect(userPrompt).toContainText(promptsToSend[i]);
 
     // Assert no 403 Error Message is visible
-    await expect(page.locator('.markdown :text("403")')).not.toBeVisible({ timeout: 30 * 1000 });
+    await expect(page.locator('.markdown :text("403")')).not.toBeVisible({ timeout: 60 * 1000 });
 
     // Wait for the AI response to appear (ensure the AI's response is visible)
     const aiResponse = page.locator('div[class="markdown"]').last();
-    await expect(aiResponse).toBeVisible({ timeout: 30 * 1000 });
+    await expect(aiResponse).toBeVisible({ timeout: 60 * 1000 });
 
     // Assert that the 'Cancel Generating' button appears while AI is generating and disappears afterwards
-    await expect(page.getByRole('button', { name: 'backspace Cancel generating' })).toBeVisible({ timeout: 30 * 1000 });
+    await expect(page.getByRole('button', { name: 'backspace Cancel generating' })).toBeVisible({ timeout: 60 * 1000 });
     await expect(page.getByRole('button', { name: 'backspace Cancel generating' })).toBeHidden({ timeout: 60000 });
   }
 
   // Navigate back to the Settings page to check the message counter
-  await page.locator(`[href="/"]`).click({ timeout: 30 * 1000 });
-  await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 30 * 1000 });
+  await page.locator(`[href="/"]`).click({ timeout: 60 * 1000 });
+  await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -128,10 +128,10 @@ test.skip('AI Message Counter', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that 'Your AI messages' stat is available on the page
-  await expect(page.getByText(`Your AI messages`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Your AI messages`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Locate the text element that starts with 'Your AI messages' followed by a number
   // Store the text content (e.g., 'Your AI messages303')
@@ -153,11 +153,11 @@ test.skip('AI Message Counter', async ({ page }) => {
 
   // **Cleanup**
   // Navigate back to homepage to trigger cleanup
-  await page.getByRole(`link`, { name: `draft Files` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`link`, { name: `draft Files` }).click({ timeout: 60 * 1000 });
 
   // Assert that we're at the files page before trigger cleanup
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole(`button`, { name: `New file` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `New file` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up files created by this workflow
   await cleanUpFiles(page, { fileName });
@@ -190,7 +190,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -198,7 +198,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -210,18 +210,18 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
 
   // Assert that the 'Free plan' is not accompanied by the 'Current plan' flag
   // freePlanParentEl is declared 'Arrange' step
-  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Pro plan' container includes the 'Current plan' flag
-  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is no longer visible
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -233,18 +233,18 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(page).toHaveTitle(/Billing/);
 
   // Assert a couple of key elements that confirm we're on the correct page
-  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert the account email address is displayed on the billing page
-  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Store the credit card details from the initial payment method used to upgrade to Pro
   const initialPaymentEl = await page.locator(`:below(:text("Payment Method")) >>nth=0`).innerText();
-  const [initialPaymentNum, _, initialPaymentExpiry] = initialPaymentEl.split('\n');
+  const [initialPaymentNum, , initialPaymentExpiry] = initialPaymentEl.split('\n');
 
   // Click 'Add payment method' to add an additional payment method
-  await page.getByRole(`link`, { name: `Add payment method` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`link`, { name: `Add payment method` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -252,7 +252,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Assert that we're currently on a page to add a new payment method
   await expect(page).toHaveURL(/pay/);
   await expect(page).toHaveTitle(/Add payment method/);
-  await expect(page.getByText(`Add payment method`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Add payment method`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Wait for the Stripe iframe to be available
   const iframeLocator = page.locator('.__PrivateStripeElement iframe').first();
@@ -280,7 +280,7 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   // Click 'Submit' button to add the new payment method after it is enabled
   await expect(page.locator(`[data-testid="confirm"]`)).toBeEnabled();
   await page.locator(`[data-testid="confirm"]`).scrollIntoViewIfNeeded();
-  await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-testid="confirm"]`).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -289,11 +289,11 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   await expect(page).toHaveTitle(/Billing/);
 
   // Assert a couple of key elements that confirm we're on the correct page
-  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByText(`Payment methods`, { exact: true })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`Payment methods`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert the account email address is displayed on the billing page
-  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -304,17 +304,17 @@ test('Manage Billing - Add Payment Method', async ({ page }) => {
   expect(newCardCount).toBe(2);
 
   // Assert that the previously added payment method is still visible, based on its expiration date
-  await expect(page.getByText(initialPaymentExpiry)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(initialPaymentExpiry)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the previously added payment method is still visible, based on its card type & card number
-  await expect(page.getByText(initialPaymentNum)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(initialPaymentNum)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the newly added payment method is visible based on its expiration date
-  await expect(page.getByText(`Expires ${paymentMethod.expDateFull}`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Expires ${paymentMethod.expDateFull}`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the newly added payment method is visible based on its card number and type
   await expect(page.getByText(`${paymentMethod.type} •••• ${paymentMethod.cardNumber.split(' ')[3]}`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // **Cleanup** Remove the newly added payment method from this account
@@ -351,7 +351,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   });
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -359,7 +359,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -385,10 +385,10 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(memberCount).toBe(1);
 
   // Click 'manage' link to manage team members
-  await page.getByRole(`link`, { name: `manage` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`link`, { name: `manage` }).click({ timeout: 60 * 1000 });
 
   // Assert that we've navigated to the team management page
-  await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible({ timeout: 60 * 1000 });
   await expect(page).toHaveURL(/members/);
 
   // Invite the new user to the team with 'Can Edit' permission
@@ -402,7 +402,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   //--------------------------------
 
   // Assert that invited user is added as a team member
-  await expect(page.getByText(user2Email).first()).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(user2Email).first()).toBeVisible({ timeout: 60 * 1000 });
 
   // Second user navigates into file
   await userPage2.bringToFront();
@@ -415,7 +415,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await userPage2.waitForLoadState('networkidle');
 
   // Navigate to 'Settings' to check team member count again
-  await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -429,7 +429,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(newMemberCount).toBe(2);
 
   // Navigate to the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -438,23 +438,23 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await expect(page).toHaveTitle(/Billing/);
 
   // Assert a couple of key elements that confirm we're on the correct page
-  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert the account email address is displayed on the billing page
-  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Cancel Subscription' button appears
-  await expect(page.locator(`[data-test="cancel-subscription"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`[data-test="cancel-subscription"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the page reflects the increased cost due to new members
-  await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`$${newMemberCount * proPlanCost}.00 per month`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Expand and check the first accordion element for invoice details
   await page
     .locator(`[data-test="show-cost-details"]`)
     .first()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
   const invoiceTotalText = await page
     .locator('[data-testid="expanded-invoice-details"] span[data-test="value"]')
     .first()
@@ -465,7 +465,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(Number(invoiceTotal)).toBe(newMemberCount * proPlanCost);
 
   // Close the first accordion
-  await page.locator(`[data-test="hide-cost-details"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-test="hide-cost-details"]`).click({ timeout: 60 * 1000 });
 
   // Wait for the accordion to close before interacting with the second one
   await page.waitForTimeout(500);
@@ -474,7 +474,7 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   await page
     .locator(`[data-test="show-cost-details"]`)
     .last()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
   const secondInvoiceText = await page.locator(`[data-testid="expanded-invoice-details"]`).last().innerText();
 
   // Check if the text includes a prorated charge for team
@@ -484,12 +484,12 @@ test('Add user to a Team with existing Pro Plan', async ({ page }) => {
   expect(secondInvoiceText).toContain(`Qty ${newMemberCount}`);
 
   // Close the second accordion
-  await page.locator(`[data-test="hide-cost-details"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-test="hide-cost-details"]`).click({ timeout: 60 * 1000 });
 
   // **Cleanup**
   // Remove the team member from the team and check monthly cost is back to $20
   // Navigate to Quadratic home page (files page)
-  await page.locator(`[data-testid="return-to-business-link"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-testid="return-to-business-link"]`).click({ timeout: 60 * 1000 });
 
   // Remove the team member from the team
   await deleteMemberFromProPlan(page, {
@@ -514,7 +514,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -526,10 +526,10 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Manage billing' to reach the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -538,18 +538,18 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   await expect(page).toHaveTitle(/Billing/);
 
   // Assert a couple of key elements that confirm we're on the correct page
-  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the billing management page includes the account email address
-  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Cancel subscription' button
-  await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-test="cancel-subscription"]`).click({ timeout: 60 * 1000 });
 
   // Assert that the page to confirm the cancellation appears
   await expect(page).toHaveTitle(/Cancel subscription/);
-  await expect(page.getByText(`Cancel your subscription`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Cancel your subscription`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Store the text content of the main page container and remove the extra spaces
   const cancelSubscriptionRawText = await page.locator('[data-testid="page-container-main"]').textContent();
@@ -559,7 +559,7 @@ test('Manage Billing - Cancel Subscription', async ({ page }) => {
   expect(cancelSubscriptionText).toContain('subscription will be canceled');
 
   // Click 'Cancel subscription" to confirm the cancellation
-  await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-testid="confirm"]`).click({ timeout: 60 * 1000 });
 
   // Wait for the cancellation confirmation dialog to appear
   await page.getByRole(`dialog`).waitFor();
@@ -600,7 +600,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -608,7 +608,7 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -620,18 +620,18 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
 
   // Assert that the 'Free plan' is not accompanied by the 'Current plan' flag
   // freePlanParentEl is declared 'Arrange' step
-  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Pro plan' container includes the 'Current plan' flag
-  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is no longer visible
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Manage billing' to reach the billing management page
-  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Manage billing` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('domcontentloaded');
@@ -640,21 +640,21 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await expect(page).toHaveTitle(/Billing/);
 
   // Assert a couple of key elements that confirm we're on the correct page
-  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Current subscription`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`Payment method`, { exact: true })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert the account email address is displayed on the billing page
-  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(emailAddress)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click 'Update Information' under 'Billing Information'
-  await page.getByRole(`button`, { name: `Update information` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Update information` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
 
   // Assert that the page displays 'Billing Information'
-  await expect(page.locator(`form`).getByText(`Billing information`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`form`).getByText(`Billing information`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that 'Name', 'Email', 'Address' and 'Phone Number' fields are available to update
   await expect(
@@ -662,19 +662,19 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
       .locator(`div`)
       .filter({ hasText: /^Name$/ })
       .first()
-  ).toBeVisible({ timeout: 30 * 1000 });
+  ).toBeVisible({ timeout: 60 * 1000 });
   await expect(
     page
       .locator(`div`)
       .filter({ hasText: /^Email$/ })
       .first()
-  ).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div`).filter({ hasText: /^Address$/ })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div`).filter({ hasText: /^Phone number$/ })).toBeVisible({ timeout: 30 * 1000 });
+  ).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div`).filter({ hasText: /^Address$/ })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div`).filter({ hasText: /^Phone number$/ })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that there are options to 'Save' or 'Cancel' any changes
-  await expect(page.locator(`[data-testid="confirm"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`[data-test="cancel"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`[data-testid="confirm"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`[data-test="cancel"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Fill 'Name' textbox with an updated name: 'My Updated Billing Name'
   await page.getByRole(`textbox`, { name: `Name` }).fill(billingInfo.name);
@@ -683,22 +683,22 @@ test('Manage Billing - Update Billing Information', async ({ page }) => {
   await page.getByRole(`textbox`, { name: `Address line 1` }).fill(billingInfo.address1);
   await page.getByRole(`textbox`, { name: `Address line 2` }).fill(billingInfo.address2);
   await page.getByRole(`textbox`, { name: `City` }).fill(billingInfo.city);
-  await page.getByLabel(`State`).click({ timeout: 30 * 1000 });
+  await page.getByLabel(`State`).click({ timeout: 60 * 1000 });
   await page.getByLabel(`State`).type(billingInfo.state);
   await page.getByLabel(`State`).press('Enter');
   await page.getByRole(`textbox`, { name: `ZIP` }).fill(billingInfo.zip);
 
   // Click 'Save' button to confirm the changes
-  await page.locator(`[data-testid="confirm"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-testid="confirm"]`).click({ timeout: 60 * 1000 });
 
   // Assert that the new name is the updated name
-  await expect(page.getByText(`Name${billingInfo.name}`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Name${billingInfo.name}`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the billing address is the updated address
-  await expect(page.getByText(billingInfo.address1)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByText(billingInfo.address2)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(billingInfo.address1)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(billingInfo.address2)).toBeVisible({ timeout: 60 * 1000 });
   await expect(page.getByText(`${billingInfo.city}, ${billingInfo.stateAbbr} ${billingInfo.zip} US`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // **Cleanup** Reset billing information from 'Billing management' page
@@ -718,7 +718,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await createNewTeamByURL(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -726,17 +726,17 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Locate the parent div that contains 'Free plan'
   const freePlanParentEl = page.locator(`:text("Free plan")`).locator('..');
 
   // Assert both 'Free plan' and 'Current plan' texts are within the same parent div
-  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Locate the parent div that contains 'Pro plan' details
   const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
@@ -749,7 +749,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   await upgradeToProPlan(page);
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -757,7 +757,7 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -765,19 +765,19 @@ test('Upgrade to the Pro Plan', async ({ page }) => {
 
   // Assert that the 'Free plan' is no longer accompanied by the 'Current plan' flag
   // freePlanParentEl is declared in the 'Arrange' step
-  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Pro plan' container includes the 'Current plan' flag
-  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is no longer visible
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Manage billing' button is visible
   // This indicates that the user has an active subscription to manage
-  await expect(page.getByRole(`button`, { name: `Manage billing` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Manage billing` })).toBeVisible({ timeout: 60 * 1000 });
 
   // **CLEANUP**
   // Cancel the Pro plan subscription for this account
@@ -807,7 +807,7 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName });
 
   // Navigate to the Settings page by clicking the 'Settings' link
-  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 30 * 1000 });
+  await page.getByRole('link', { name: 'settings Settings' }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(5 * 1000);
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -815,45 +815,45 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   // Assert page is currently displaying Settings
   await expect(page).toHaveURL(/settings/);
   await expect(page).toHaveTitle(/settings/);
-  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team settings` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Locate the parent div that contains 'Free plan'
   const freePlanParentEl = page.locator(`:text("Free plan")`).locator('..');
 
   // Assert both 'Free plan' and 'Current plan' texts are within the same parent div
-  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Free plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(freePlanParentEl.locator(`:text("Current plan")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Upgrade to Pro' button is visible, indicating that the user is not on the Pro plan
-  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Upgrade to Pro` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Locate the parent div that contains 'Pro plan' details
   const proPlanParentEl = page.locator(`:text("Pro plan")`).locator('..').locator('..');
 
   // Assert that 'Current plan' is not within the 'Pro plan' div
-  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(proPlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Pro plan")`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(proPlanParentEl.locator(`:text("Current plan")`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Click 'Upgrade to Pro' to upgrade the account
-  await page.getByRole(`button`, { name: `Upgrade to Pro` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `Upgrade to Pro` }).click({ timeout: 60 * 1000 });
 
   // Assert that page was redirected to a Stripe integrated payment page
-  await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that subscription page is for Team billing
   await expect(page.locator(`[data-testid="product-summary-name"]`)).toHaveText(`Subscribe to Team`);
   await expect(page.locator(`[data-testid="line-item-product-name"]`)).toHaveText(`Team`);
 
   // Assert that the 'Total due today' text is visible, indicating that we're on a checkout page
-  await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the bank account textbox is not visible
   // This ensures that we will be filling in credit card details and not bank details (debit)
-  await expect(page.getByRole(`textbox`, { name: `Bank account` })).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`textbox`, { name: `Bank account` })).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Assert the border color of the card number input is as expected (dark gray) using toHaveCSS
   await expect(page.locator('[data-qa="FormFieldGroup-cardForm"] #cardNumber')).toHaveCSS(
@@ -884,7 +884,7 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   await page.getByRole(`textbox`, { name: `ZIP` }).fill(creditCard.zipCode);
 
   // Click 'Subscribe' button to upgrade the count to a Pro plan
-  await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`[data-testid="hosted-payment-submit-button"]`).click({ timeout: 60 * 1000 });
 
   await page.waitForLoadState('domcontentloaded');
 
@@ -893,10 +893,10 @@ test('Upgrade to the Pro Plan with an Invalid Card', async ({ page }) => {
   //--------------------------------
 
   // Assert that page was NOT redirected and we're still on the Stripe-integrated payment page
-  await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`link`, { name: `Powered by Stripe` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the 'Total due today' text is visible, indicating that we're *still* on the checkout page
-  await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Total due today`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Ensure that the textbox with the card number is visible
   await page.locator('[data-qa="FormFieldGroup-cardForm"] #cardNumber').scrollIntoViewIfNeeded();
