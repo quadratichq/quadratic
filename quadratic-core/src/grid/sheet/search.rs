@@ -1,5 +1,5 @@
 use super::Sheet;
-use crate::{CellValue, Pos, SheetPos, Value};
+use crate::{CellValue, Pos, Value, grid::js_types::JsSheetPosText};
 
 use serde::{Deserialize, Serialize};
 
@@ -32,23 +32,28 @@ impl Sheet {
         case_sensitive: bool,
         whole_cell: bool,
         search_code: bool,
-    ) -> bool {
+    ) -> Option<String> {
         match cell_value {
             CellValue::Text(text) => {
                 if (case_sensitive && text == query)
                     || (!case_sensitive && text.to_lowercase() == *query)
                 {
-                    true
+                    Some(text.to_string())
                 } else if !whole_cell {
-                    (!case_sensitive && text.to_lowercase().contains(&query.to_lowercase()))
+                    if (!case_sensitive && text.to_lowercase().contains(&query.to_lowercase()))
                         || (case_sensitive && text.contains(query))
+                    {
+                        Some(text.to_string())
+                    } else {
+                        None
+                    }
                 } else {
-                    false
+                    None
                 }
             }
             CellValue::Number(n) => {
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
-                    true
+                    Some(n.to_string())
                 } else {
                     let numeric_format = self.formats.numeric_format.get(pos);
                     let numeric_decimals = self.formats.numeric_decimals.get(pos);
@@ -58,23 +63,36 @@ impl Sheet {
                         numeric_decimals,
                         numeric_commas,
                     );
-                    display == *query || (!whole_cell && display.contains(query))
+                    if display == *query || (!whole_cell && display.contains(query)) {
+                        Some(display)
+                    } else {
+                        None
+                    }
                 }
             }
             CellValue::Logical(b) => {
                 let query = query.to_lowercase();
-                (*b && query == "true") || (!(*b) && query == "false")
+                if (*b && query == "true") || (!(*b) && query == "false") {
+                    Some(query)
+                } else {
+                    None
+                }
             }
             CellValue::Code(code) => {
                 if search_code {
                     let code = &code.code;
-                    (case_sensitive && code.contains(query))
+                    if (case_sensitive && code.contains(query))
                         || (!case_sensitive && code.to_lowercase().contains(query))
+                    {
+                        Some(code.to_string())
+                    } else {
+                        None
+                    }
                 } else {
-                    false
+                    None
                 }
             }
-            _ => false,
+            _ => None,
         }
     }
 
@@ -85,12 +103,12 @@ impl Sheet {
         case_sensitive: bool,
         whole_cell: bool,
         search_code: bool,
-    ) -> Vec<SheetPos> {
+    ) -> Vec<JsSheetPosText> {
         self.columns
             .expensive_iter()
             .flat_map(|(x, column)| {
                 column.values.iter().flat_map(|(y, cell_value)| {
-                    if self.compare_cell_value(
+                    if let Some(text) = self.compare_cell_value(
                         cell_value,
                         query,
                         Pos { x: *x, y: *y },
@@ -98,10 +116,11 @@ impl Sheet {
                         whole_cell,
                         search_code,
                     ) {
-                        Some(SheetPos {
+                        Some(JsSheetPosText {
+                            sheet_id: self.id.to_string(),
                             x: *x,
                             y: *y,
-                            sheet_id: self.id,
+                            text: Some(text),
                         })
                     } else {
                         None
@@ -116,14 +135,14 @@ impl Sheet {
         query: &String,
         case_sensitive: bool,
         whole_cell: bool,
-    ) -> Vec<SheetPos> {
+    ) -> Vec<JsSheetPosText> {
         let mut results = vec![];
         self.data_tables
             .expensive_iter()
             .filter(|(_, data_table)| !data_table.has_spill() && !data_table.has_error())
             .for_each(|(pos, data_table)| match &data_table.value {
                 Value::Single(v) => {
-                    if self.compare_cell_value(
+                    if let Some(text) = self.compare_cell_value(
                         v,
                         query,
                         *pos,
@@ -131,7 +150,12 @@ impl Sheet {
                         whole_cell,
                         false, // data_tables can never have code within them (although that would be cool if they did ;)
                     ) {
-                        results.push(pos.to_sheet_pos(self.id));
+                        results.push(JsSheetPosText {
+                            sheet_id: self.id.to_string(),
+                            x: pos.x,
+                            y: pos.y,
+                            text: Some(text),
+                        });
                     }
                 }
                 Value::Array(array) => {
@@ -142,7 +166,7 @@ impl Sheet {
                         }
                         for y in 0..array.size().h.get() {
                             let cell_value = array.get(x, y).unwrap();
-                            if self.compare_cell_value(
+                            if let Some(text) = self.compare_cell_value(
                                 cell_value,
                                 query,
                                 Pos {
@@ -157,10 +181,11 @@ impl Sheet {
                                     + data_table.y_adjustment(true)
                                     + data_table.get_display_index_from_row_index(y as u64) as i64;
                                 if y >= pos.y {
-                                    results.push(SheetPos {
+                                    results.push(JsSheetPosText {
+                                        sheet_id: self.id.to_string(),
                                         x: pos.x + x as i64,
                                         y,
-                                        sheet_id: self.id,
+                                        text: Some(text),
                                     });
                                 }
                             }
@@ -176,7 +201,7 @@ impl Sheet {
     /// Returns the resulting SheetPos sorted by x and then y.
     ///
     /// Returns `Vec<SheetPos>` for all cells that match.
-    pub fn search(&self, query: &String, options: &SearchOptions) -> Vec<SheetPos> {
+    pub fn search(&self, query: &String, options: &SearchOptions) -> Vec<JsSheetPosText> {
         let case_sensitive = options.case_sensitive.unwrap_or(false);
         let query = if case_sensitive {
             query.to_owned()
@@ -269,7 +294,7 @@ impl Sheet {
 mod test {
     use super::*;
     use crate::{
-        Array,
+        Array, SheetPos,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
     };
@@ -281,8 +306,24 @@ mod test {
         sheet.set_cell_value(Pos { x: -10, y: -10 }, CellValue::Text("hello".into()));
         let results = sheet.search(&"hello".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -10),);
-        assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -10,
+                text: Some("hello".to_string()),
+            }
+        );
+        assert_eq!(
+            results[1],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello".to_string()),
+            }
+        );
 
         let results = sheet.search(&"goodbye".into(), &SearchOptions::default());
         assert_eq!(results.len(), 0);
@@ -301,7 +342,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"HELLO".into(),
@@ -311,12 +360,36 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -11,
+                text: Some("HELLO".to_string()),
+            }
+        );
 
         let results = sheet.search(&"HELLO".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
-        assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -11,
+                text: Some("HELLO".to_string()),
+            }
+        );
+        assert_eq!(
+            results[1],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello".to_string()),
+            }
+        );
     }
 
     #[test]
@@ -335,7 +408,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello world".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"hello".into(),
@@ -345,7 +426,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello world".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"hello".into(),
@@ -355,7 +444,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello world".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"hello".into(),
@@ -365,7 +462,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello world".to_string()),
+            }
+        );
     }
 
     #[test]
@@ -405,7 +510,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("hello world".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"HELLO WORLD".into(),
@@ -425,20 +538,69 @@ mod test {
         sheet.set_cell_value(Pos { x: -10, y: -11 }, CellValue::Number(1234.into()));
         let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
-        assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -11,
+                text: Some("123".to_string()),
+            }
+        );
+        assert_eq!(
+            results[1],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -11,
+                text: Some("123".to_string()),
+            }
+        );
+        assert_eq!(
+            results[1],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("123".to_string()),
+            }
+        );
 
         let results = sheet.search(&"1234".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -11,
+                text: Some("1234".to_string()),
+            }
+        );
 
         let results = sheet.search(&"1234".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -11,
+                text: Some("1234".to_string()),
+            }
+        );
 
         let results = sheet.search(&"1234".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, -10, -11));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: -10,
+                y: -11,
+                text: Some("1234".to_string()),
+            }
+        );
     }
 
     #[test]
@@ -467,12 +629,36 @@ mod test {
         let sheet = gc.sheet(sheet_id);
         let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
-        assert_eq!(results[1], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 1,
+                text: Some("123".to_string()),
+            }
+        );
+        assert_eq!(
+            results[1],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("$5,123".to_string()),
+            }
+        );
 
         let results = sheet.search(&"$5,123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 1,
+                text: Some("10.123%".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"5123".into(),
@@ -482,7 +668,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 4, 5));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 4,
+                y: 5,
+                text: Some("$5,123".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"123".into(),
@@ -501,7 +695,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 1,
+                text: Some("10.123%".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"0.10123".into(),
@@ -512,7 +714,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 1));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 1,
+                text: Some("10.123%".to_string()),
+            }
+        );
     }
 
     #[test]
@@ -555,7 +765,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 2,
+                text: Some("hello".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"world".into(),
@@ -565,7 +783,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 2,
+                text: Some("world".to_string()),
+            }
+        );
     }
 
     #[test]
@@ -604,7 +830,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 1, 2));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 1,
+                y: 2,
+                text: Some("abc".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"def".into(),
@@ -614,7 +848,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 2, 2));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 2,
+                y: 2,
+                text: Some("def".to_string()),
+            }
+        );
 
         let results = sheet.search(
             &"pqr".into(),
@@ -624,7 +866,15 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet.id, 3, 3));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet.id.to_string(),
+                x: 3,
+                y: 3,
+                text: Some("pqr".to_string()),
+            }
+        );
     }
 
     #[test]
@@ -754,6 +1004,14 @@ mod test {
             },
         );
         assert_eq!(results.len(), 1);
-        assert_eq!(results[0], SheetPos::new(sheet_id, 6, 9));
+        assert_eq!(
+            results[0],
+            JsSheetPosText {
+                sheet_id: sheet_id.to_string(),
+                x: 6,
+                y: 9,
+                text: Some("MO".to_string()),
+            }
+        );
     }
 }

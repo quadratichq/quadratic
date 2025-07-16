@@ -1,11 +1,11 @@
 use std::str::FromStr;
 
-use crate::SheetPos;
+use crate::grid::js_types::JsSheetPosText;
 
 use super::{Grid, SheetId, sheet::search::SearchOptions};
 
 impl Grid {
-    pub fn search(&self, query: &String, options: SearchOptions) -> Vec<SheetPos> {
+    pub fn search(&self, query: &String, options: SearchOptions) -> Vec<JsSheetPosText> {
         let mut result = Vec::new();
         if let Some(sheet_id) = options
             .sheet_id
@@ -51,10 +51,11 @@ mod test {
         assert_eq!(result.len(), 1);
         assert_eq!(
             result[0],
-            SheetPos {
-                sheet_id,
+            JsSheetPosText {
+                sheet_id: sheet_id.to_string(),
                 x: 0,
                 y: 1,
+                text: Some("hello".to_string()),
             }
         );
 
@@ -62,10 +63,11 @@ mod test {
         assert_eq!(result.len(), 1);
         assert_eq!(
             result[0],
-            SheetPos {
-                sheet_id,
+            JsSheetPosText {
+                sheet_id: sheet_id.to_string(),
                 x: -10,
                 y: -11,
+                text: Some("world".to_string()),
             }
         );
 
@@ -73,10 +75,11 @@ mod test {
         assert_eq!(result.len(), 1);
         assert_eq!(
             result[0],
-            SheetPos {
-                sheet_id,
+            JsSheetPosText {
+                sheet_id: sheet_id.to_string(),
                 x: 100,
                 y: 200,
+                text: Some("123".to_string()),
             }
         );
 

@@ -28,6 +28,8 @@ export enum AITool {
   DeleteSheet = 'delete_sheet',
   MoveSheet = 'move_sheet',
   ColorSheets = 'color_sheets',
+
+  TextSearch = 'text_search',
 }
 
 export const AIToolSchema = z.enum([
@@ -55,6 +57,7 @@ export const AIToolSchema = z.enum([
   AITool.DeleteSheet,
   AITool.MoveSheet,
   AITool.ColorSheets,
+  AITool.TextSearch,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -233,6 +236,15 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.ColorSheets]: z.object({
     sheet_name_to_color: z.record(z.string(), z.string()),
+  }),
+  [AITool.TextSearch]: z.object({
+    query: z.string(),
+    options: z.object({
+      case_sensitive: z.boolean(),
+      whole_cell: z.boolean(),
+      search_code: z.boolean(),
+      sheet_name: z.string().optional(),
+    }),
   }),
 } as const;
 
@@ -1168,6 +1180,52 @@ It requires a record of sheet names to change mapped to the new color.\n
     prompt: `
 This tool colors the sheet tabs in the file.\n
 It requires a record of sheet names to change mapped to the new color.\n
+`,
+  },
+  [AITool.TextSearch]: {
+    sources: ['AIAnalyst', 'AIAssistant'],
+    description: `
+This tool searches the text in the file.\n
+It requires the query to search for.\n
+It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_id. If sheet_id is not provided, then it searches all sheets.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The query to search for',
+        },
+        options: {
+          type: 'object',
+          properties: {
+            case_sensitive: {
+              type: 'boolean',
+              description: 'Whether the search should be case sensitive',
+            },
+            whole_cell: {
+              type: 'boolean',
+              description: 'Whether the search should be for the whole cell',
+            },
+            search_code: {
+              type: 'boolean',
+              description: 'Whether the search should include code cells',
+            },
+            sheet_name: {
+              type: 'string',
+              description: 'The sheet name to search in. If not provided, then it searches all sheets.',
+            },
+          },
+        },
+      },
+      required: ['query', 'options'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.TextSearch],
+    prompt: `
+This tool searches the text in the file.\n
+It requires the query to search for.\n
+It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_id. If sheet_id is not provided, then it searches all sheets.\n
 `,
   },
 } as const;

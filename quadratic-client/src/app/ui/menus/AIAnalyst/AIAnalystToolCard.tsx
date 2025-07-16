@@ -15,6 +15,7 @@ import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
 import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
+import { TextSearch } from '@/app/ai/toolCards/TextSearch';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
@@ -73,6 +74,8 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <MoveSheet args={args} loading={loading} />;
     case AITool.ColorSheets:
       return <ColorSheets args={args} loading={loading} />;
+    case AITool.TextSearch:
+      return <TextSearch args={args} loading={loading} />;
     default:
       console.error(`Unknown tool: ${name}`);
       return null;
