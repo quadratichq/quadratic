@@ -4,7 +4,7 @@ import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDate
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useSheetNameMessages } from '@/app/ai/hooks/useSheetNameMessages';
+import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -74,7 +74,7 @@ export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
-  const { getSheetNamesContext } = useSheetNameMessages();
+  const { getSheetInfoContext } = useSheetInfoMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
@@ -86,25 +86,19 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [
-          filesContext,
-          sheetNamesContext,
-          otherSheetsContext,
-          tablesContext,
-          currentSheetContext,
-          visibleContext,
-        ] = await Promise.all([
-          getFilesContext({ chatMessages }),
-          getSheetNamesContext({ sheets: sheets.sheets }),
-          getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-          getTablesContext(),
-          getCurrentSheetContext({ currentSheetName: context.currentSheet }),
-          getVisibleContext(),
-        ]);
+        const [filesContext, sheetInfoContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
+          await Promise.all([
+            getFilesContext({ chatMessages }),
+            getSheetInfoContext({ sheets: sheets.sheets }),
+            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+            getTablesContext(),
+            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+            getVisibleContext(),
+          ]);
 
         const messagesWithContext: ChatMessage[] = [
           ...filesContext,
-          ...sheetNamesContext,
+          ...sheetInfoContext,
           ...otherSheetsContext,
           ...tablesContext,
           ...getCurrentDateTimeContext(),
@@ -122,7 +116,7 @@ export function useSubmitAIAnalystPrompt() {
       getCurrentSheetContext,
       getVisibleContext,
       getFilesContext,
-      getSheetNamesContext,
+      getSheetInfoContext,
     ]
   );
 

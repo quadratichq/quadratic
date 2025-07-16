@@ -1150,7 +1150,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
     sources: ['AIAnalyst'],
     description: `
 This tool colors the sheet tabs in the file.\n
-It requires  record of sheet names to change mapped to the new color.\n
+It requires a record of sheet names to change mapped to the new color.\n
 `,
     parameters: {
       type: 'object',

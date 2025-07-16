@@ -2,8 +2,8 @@ import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
-export function useSheetNameMessages() {
-  const getSheetNamesContext = useCallback(async ({ sheets }: { sheets: Sheet[] }): Promise<ChatMessage[]> => {
+export function useSheetInfoMessages() {
+  const getSheetInfoContext = useCallback(async ({ sheets }: { sheets: Sheet[] }): Promise<ChatMessage[]> => {
     if (sheets.length === 0) return [];
 
     return [
@@ -25,5 +25,5 @@ ${sheets.map((sheet) => `${sheet.name} is ${sheet.color ?? 'not colored'}`).join
     ];
   }, []);
 
-  return { getSheetNamesContext };
+  return { getSheetInfoContext };
 }
