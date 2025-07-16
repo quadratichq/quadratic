@@ -240,10 +240,18 @@ const ContextSchema = z.object({
 });
 export type Context = z.infer<typeof ContextSchema>;
 
-const TextContentSchema = z.object({
-  type: z.literal('text'),
-  text: z.string(),
-});
+const TextContentSchema = z.preprocess(
+  (val: any) => {
+    if (typeof val === 'string') {
+      return { type: 'text', text: val };
+    }
+    return val;
+  },
+  z.object({
+    type: z.literal('text'),
+    text: z.string(),
+  })
+);
 export type TextContent = z.infer<typeof TextContentSchema>;
 
 export const ImageContentSchema = z.object({
@@ -284,15 +292,7 @@ export type Content = z.infer<typeof ContentSchema>;
 
 const SystemMessageSchema = z.object({
   role: z.literal('user'),
-  content: z.union([
-    z.string().transform((str) => [
-      {
-        type: 'text' as const,
-        text: str,
-      },
-    ]),
-    z.array(TextContentSchema),
-  ]),
+  content: z.array(TextContentSchema),
   contextType: InternalContextTypeSchema,
 });
 export type SystemMessage = z.infer<typeof SystemMessageSchema>;
@@ -311,7 +311,7 @@ const ToolResultSchema = z.object({
 });
 export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
 
-const convertStringToContent = (val: any): Content => {
+const convertStringToContent = (val: any): TextContent[] => {
   // old chat messages are single strings, being migrated to array of text objects
   if (typeof val === 'string') {
     return val
@@ -363,31 +363,31 @@ const AIResponseContentSchema = z.array(
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
-const convertStringToTextContent = (val: any): AIResponseContent => {
-  // old chat messages are single strings, being migrated to array of text objects
-  if (typeof val === 'string') {
-    return val
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => !!line)
-      .map((line) => ({ type: 'text', text: line }));
-  }
-  return val;
-};
-export const AIMessagePromptSchema = z.object({
-  role: z.literal('assistant'),
-  content: z.preprocess(convertStringToTextContent, AIResponseContentSchema),
-  contextType: UserPromptContextTypeSchema,
-  toolCalls: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      arguments: z.string(),
-      loading: z.boolean(),
-    })
-  ),
-  modelKey: AIModelKeySchema,
-});
+export const AIMessagePromptSchema = z.preprocess(
+  (val: any) => {
+    if (typeof val === 'object' && 'model' in val) {
+      return {
+        ...val,
+        modelKey: val.model,
+      };
+    }
+    return val;
+  },
+  z.object({
+    role: z.literal('assistant'),
+    content: z.preprocess(convertStringToContent, AIResponseContentSchema),
+    contextType: UserPromptContextTypeSchema,
+    toolCalls: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        arguments: z.string(),
+        loading: z.boolean(),
+      })
+    ),
+    modelKey: z.string(),
+  })
+);
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
 const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]);
@@ -413,11 +413,13 @@ export type InternalMessage = z.infer<typeof InternalMessageSchema>;
 const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema, InternalMessageSchema]);
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+export const ChatMessagesSchema = z.array(ChatMessageSchema);
+
 export const ChatSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   lastUpdated: z.number(),
-  messages: z.array(ChatMessageSchema),
+  messages: ChatMessagesSchema,
 });
 export type Chat = z.infer<typeof ChatSchema>;
 
