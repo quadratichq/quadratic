@@ -223,12 +223,18 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
             }
           } else {
             // clean up plotly images in tool result
+            const content = toolResult.content.filter((content) => !isContentImage(content));
             return {
               id: toolResult.id,
               content:
-                toolResult.content.length > 1
-                  ? toolResult.content.filter((content) => !isContentImage(content))
-                  : toolResult.content,
+                content.length > 0
+                  ? content
+                  : [
+                      {
+                        type: 'text' as const,
+                        text: 'NOTE: the results from this tool call have been removed from the context.',
+                      },
+                    ],
             };
           }
         }),

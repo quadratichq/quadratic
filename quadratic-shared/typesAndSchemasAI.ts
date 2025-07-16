@@ -32,7 +32,7 @@ const AnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-20241022',
 ]);
 const OpenAIModelSchema = z.enum([
-  'ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
   'gpt-4.1-2025-04-14',
   'gpt-4.1-mini-2025-04-14',
   'o4-mini-2025-04-16',
@@ -48,6 +48,7 @@ const OpenRouterModelSchema = z.enum([
   'deepseek/deepseek-r1-0528-qwen3-8b',
   'deepseek/deepseek-r1-distill-qwen-7b',
   'deepseek/deepseek-chat-v3-0324',
+  'moonshotai/kimi-k2',
 ]);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
@@ -112,7 +113,7 @@ const AnthropicModelKeySchema = z.enum([
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
   'openai:gpt-4.1-2025-04-14',
   'openai:gpt-4.1-mini-2025-04-14',
   'openai:o4-mini-2025-04-16',
@@ -136,6 +137,7 @@ const OpenRouterModelKeySchema = z.enum([
   'open-router:deepseek/deepseek-r1-0528-qwen3-8b',
   'open-router:deepseek/deepseek-r1-distill-qwen-7b',
   'open-router:deepseek/deepseek-chat-v3-0324',
+  'open-router:moonshotai/kimi-k2',
 ]);
 export type OpenRouterModelKey = z.infer<typeof OpenRouterModelKeySchema>;
 
