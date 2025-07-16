@@ -88,6 +88,8 @@
         "ec2:PutResourcePolicy",
         "ec2:DeleteLaunchTemplate",
         "ec2:TerminateInstances",
+        "ec2:StopInstances",
+        "ec2:StartInstances",
         "ec2:DescribeLocalGatewayRouteTablePermissions",
         "ec2:DescribeTags",
         "ec2:SendSpotInstanceInterruptions",
