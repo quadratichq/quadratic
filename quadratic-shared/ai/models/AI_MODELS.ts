@@ -441,6 +441,22 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
+  'baseten:moonshotai/Kimi-K2-Instruct': {
+    model: 'moonshotai/Kimi-K2-Instruct',
+    displayName: 'Kimi K2 Instruct',
+    temperature: 0,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: false,
+    rate_per_million_input_tokens: 0.6,
+    rate_per_million_output_tokens: 2.5,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'open-router:qwen/qwen3-32b': {
     model: 'qwen/qwen3-32b',
     displayName: 'qwen3-32b',
