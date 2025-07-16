@@ -30,8 +30,6 @@ const AnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-20241022',
 ]);
 const OpenAIModelSchema = z.enum([
-  'ft:gpt-4.1-mini-2025-04-14:quadratic::BtSk7d04',
-  'ft:gpt-4.1-nano-2025-04-14:quadratic::BtMZQYlp',
   'ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
   'gpt-4.1-2025-04-14',
   'gpt-4.1-mini-2025-04-14',
@@ -109,8 +107,6 @@ const AnthropicModelKeySchema = z.enum([
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtSk7d04',
-  'openai:ft:gpt-4.1-nano-2025-04-14:quadratic::BtMZQYlp',
   'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
   'openai:gpt-4.1-2025-04-14',
   'openai:gpt-4.1-mini-2025-04-14',
