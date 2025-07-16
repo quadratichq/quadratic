@@ -53,7 +53,15 @@ impl Sheet {
             }
             CellValue::Number(n) => {
                 if n.to_string() == *query || (!whole_cell && n.to_string().contains(query)) {
-                    Some(n.to_string())
+                    let numeric_format = self.formats.numeric_format.get(pos);
+                    let numeric_decimals = self.formats.numeric_decimals.get(pos);
+                    let numeric_commas = self.formats.numeric_commas.get(pos);
+                    let display = cell_value.to_number_display(
+                        numeric_format,
+                        numeric_decimals,
+                        numeric_commas,
+                    );
+                    Some(display)
                 } else {
                     let numeric_format = self.formats.numeric_format.get(pos);
                     let numeric_decimals = self.formats.numeric_decimals.get(pos);
@@ -108,23 +116,19 @@ impl Sheet {
             .expensive_iter()
             .flat_map(|(x, column)| {
                 column.values.iter().flat_map(|(y, cell_value)| {
-                    if let Some(text) = self.compare_cell_value(
+                    self.compare_cell_value(
                         cell_value,
                         query,
                         Pos { x: *x, y: *y },
                         case_sensitive,
                         whole_cell,
                         search_code,
-                    ) {
-                        Some(JsSheetPosText {
+                    ).map(|text| JsSheetPosText {
                             sheet_id: self.id.to_string(),
                             x: *x,
                             y: *y,
                             text: Some(text),
                         })
-                    } else {
-                        None
-                    }
                 })
             })
             .collect::<Vec<_>>()
@@ -396,10 +400,7 @@ mod test {
     fn whole_cell_search() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Text("hello".into()));
-        sheet.set_cell_value(
-            Pos { x: -10, y: -11 },
-            CellValue::Text("hello world".into()),
-        );
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Text("hello world".into()));
         let results = sheet.search(
             &"hello".into(),
             &SearchOptions {
@@ -414,7 +415,7 @@ mod test {
                 sheet_id: sheet.id.to_string(),
                 x: 4,
                 y: 5,
-                text: Some("hello world".to_string()),
+                text: Some("hello".to_string()),
             }
         );
 
@@ -432,7 +433,7 @@ mod test {
                 sheet_id: sheet.id.to_string(),
                 x: 4,
                 y: 5,
-                text: Some("hello world".to_string()),
+                text: Some("hello".to_string()),
             }
         );
 
@@ -450,7 +451,7 @@ mod test {
                 sheet_id: sheet.id.to_string(),
                 x: 4,
                 y: 5,
-                text: Some("hello world".to_string()),
+                text: Some("hello".to_string()),
             }
         );
 
@@ -468,7 +469,7 @@ mod test {
                 sheet_id: sheet.id.to_string(),
                 x: 4,
                 y: 5,
-                text: Some("hello world".to_string()),
+                text: Some("hello".to_string()),
             }
         );
     }
@@ -535,25 +536,16 @@ mod test {
     fn search_numbers() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(Pos { x: 4, y: 5 }, CellValue::Number(123.into()));
-        sheet.set_cell_value(Pos { x: -10, y: -11 }, CellValue::Number(1234.into()));
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1234.into()));
         let results = sheet.search(&"123".into(), &SearchOptions::default());
         assert_eq!(results.len(), 2);
         assert_eq!(
             results[0],
             JsSheetPosText {
                 sheet_id: sheet.id.to_string(),
-                x: -10,
-                y: -11,
-                text: Some("123".to_string()),
-            }
-        );
-        assert_eq!(
-            results[1],
-            JsSheetPosText {
-                sheet_id: sheet.id.to_string(),
-                x: -10,
-                y: -11,
-                text: Some("123".to_string()),
+                x: 1,
+                y: 1,
+                text: Some("1234".to_string()),
             }
         );
         assert_eq!(
@@ -572,8 +564,8 @@ mod test {
             results[0],
             JsSheetPosText {
                 sheet_id: sheet.id.to_string(),
-                x: -10,
-                y: -11,
+                x: 1,
+                y: 1,
                 text: Some("1234".to_string()),
             }
         );
@@ -584,8 +576,8 @@ mod test {
             results[0],
             JsSheetPosText {
                 sheet_id: sheet.id.to_string(),
-                x: -10,
-                y: -11,
+                x: 1,
+                y: 1,
                 text: Some("1234".to_string()),
             }
         );
@@ -596,8 +588,8 @@ mod test {
             results[0],
             JsSheetPosText {
                 sheet_id: sheet.id.to_string(),
-                x: -10,
-                y: -11,
+                x: 1,
+                y: 1,
                 text: Some("1234".to_string()),
             }
         );
@@ -635,7 +627,7 @@ mod test {
                 sheet_id: sheet.id.to_string(),
                 x: 1,
                 y: 1,
-                text: Some("123".to_string()),
+                text: Some("10.123%".to_string()),
             }
         );
         assert_eq!(
@@ -644,7 +636,7 @@ mod test {
                 sheet_id: sheet.id.to_string(),
                 x: 4,
                 y: 5,
-                text: Some("$5,123".to_string()),
+                text: Some("$5,123.00".to_string()),
             }
         );
 
@@ -654,9 +646,9 @@ mod test {
             results[0],
             JsSheetPosText {
                 sheet_id: sheet.id.to_string(),
-                x: 1,
-                y: 1,
-                text: Some("10.123%".to_string()),
+                x: 4,
+                y: 5,
+                text: Some("$5,123.00".to_string()),
             }
         );
 
@@ -674,7 +666,7 @@ mod test {
                 sheet_id: sheet.id.to_string(),
                 x: 4,
                 y: 5,
-                text: Some("$5,123".to_string()),
+                text: Some("$5,123.00".to_string()),
             }
         );
 

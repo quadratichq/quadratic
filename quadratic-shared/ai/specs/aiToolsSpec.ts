@@ -1187,7 +1187,7 @@ It requires a record of sheet names to change mapped to the new color.\n
     description: `
 This tool searches the text in the file.\n
 It requires the query to search for.\n
-It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_id. If sheet_id is not provided, then it searches all sheets.\n
+It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_name. If sheet_name is not provided, then it searches all sheets.\n
 `,
     parameters: {
       type: 'object',
@@ -1225,7 +1225,7 @@ It also provides optional parameters to control the search: case_sensitive, whol
     prompt: `
 This tool searches the text in the file.\n
 It requires the query to search for.\n
-It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_id. If sheet_id is not provided, then it searches all sheets.\n
+It also provides optional parameters to control the search: case_sensitive, whole_cell, search_code, sheet_name. If sheet_name is not provided, then it searches all sheets.\n
 `,
   },
 } as const;
