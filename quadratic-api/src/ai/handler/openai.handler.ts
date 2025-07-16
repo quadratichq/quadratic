@@ -5,6 +5,7 @@ import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpe
 import type {
   AIRequestHelperArgs,
   AzureOpenAIModelKey,
+  BasetenModelKey,
   OpenAIModelKey,
   OpenRouterModelKey,
   ParsedAIResponse,
@@ -13,7 +14,7 @@ import type {
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | XAIModelKey | OpenRouterModelKey | AzureOpenAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
   args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,

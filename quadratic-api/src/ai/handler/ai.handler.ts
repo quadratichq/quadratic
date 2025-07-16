@@ -4,6 +4,7 @@ import {
   getModelOptions,
   isAnthropicModel,
   isAzureOpenAIModel,
+  isBasetenModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isGenAIModel,
@@ -22,6 +23,7 @@ import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
 import {
   anthropic,
   azureOpenAI,
+  baseten,
   bedrock,
   bedrock_anthropic,
   geminiai,
@@ -86,6 +88,8 @@ export const handleAIRequest = async (
       );
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
+    } else if (isBasetenModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, baseten, response);
     } else if (isOpenRouterModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(
         modelKey,

@@ -12,6 +12,7 @@ import {
   AWS_S3_SECRET_ACCESS_KEY,
   AZURE_OPENAI_API_KEY,
   AZURE_OPENAI_ENDPOINT,
+  BASETEN_API_KEY,
   GCP_CLIENT_EMAIL,
   GCP_GEMINI_API_KEY,
   GCP_PRIVATE_KEY,
@@ -82,6 +83,11 @@ export const azureOpenAI = new AzureOpenAI({
 export const xai = new OpenAI({
   apiKey: XAI_API_KEY,
   baseURL: 'https://api.x.ai/v1',
+});
+
+export const baseten = new OpenAI({
+  apiKey: BASETEN_API_KEY,
+  baseURL: 'https://inference.baseten.co/v1',
 });
 
 export const open_router = new OpenAI({
