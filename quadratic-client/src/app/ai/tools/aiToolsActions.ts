@@ -726,18 +726,18 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.TextSearch]: async (args) => {
     debugger;
-    const { query, options } = args;
+    const { query, case_sensitive, whole_cell, search_code, sheet_name } = args;
     let sheet_id = null;
-    if (options.sheet_name) {
-      sheet_id = sheets.getSheetIdFromName(options.sheet_name) ?? null;
+    if (sheet_name) {
+      sheet_id = sheets.getSheetIdFromName(sheet_name) ?? null;
       if (sheet_id === '') {
         sheet_id = null;
       }
     }
     const results = await quadraticCore.search(query, {
-      case_sensitive: options.case_sensitive ?? null,
-      whole_cell: options.whole_cell ?? null,
-      search_code: options.search_code ?? null,
+      case_sensitive: case_sensitive ?? null,
+      whole_cell: whole_cell ?? null,
+      search_code: search_code ?? null,
       sheet_id,
     });
     console.log(results);

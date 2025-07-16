@@ -239,12 +239,10 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.TextSearch]: z.object({
     query: z.string(),
-    options: z.object({
-      case_sensitive: z.boolean(),
-      whole_cell: z.boolean(),
-      search_code: z.boolean(),
-      sheet_name: z.string().optional(),
-    }),
+    case_sensitive: z.boolean(),
+    whole_cell: z.boolean(),
+    search_code: z.boolean(),
+    sheet_name: z.string().optional(),
   }),
 } as const;
 
@@ -1196,29 +1194,25 @@ It also provides optional parameters to control the search: case_sensitive, whol
           type: 'string',
           description: 'The query to search for',
         },
-        options: {
-          type: 'object',
-          properties: {
-            case_sensitive: {
-              type: 'boolean',
-              description: 'Whether the search should be case sensitive',
-            },
-            whole_cell: {
-              type: 'boolean',
-              description: 'Whether the search should be for the whole cell',
-            },
-            search_code: {
-              type: 'boolean',
-              description: 'Whether the search should include code cells',
-            },
-            sheet_name: {
-              type: 'string',
-              description: 'The sheet name to search in. If not provided, then it searches all sheets.',
-            },
-          },
+        case_sensitive: {
+          type: 'boolean',
+          description: 'Whether the search should be case sensitive',
+        },
+        whole_cell: {
+          type: 'boolean',
+          description: 'Whether the search should be for the whole cell',
+        },
+        search_code: {
+          type: 'boolean',
+          description: 'Whether the search should include code cells',
+        },
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to search in. If not provided, then it searches all sheets.',
+          optional: true,
         },
       },
-      required: ['query', 'options'],
+      required: ['query', 'case_sensitive', 'whole_cell', 'search_code'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
