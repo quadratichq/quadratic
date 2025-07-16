@@ -305,10 +305,6 @@ export class Sheets {
     return !!this.sheets.find((sheet) => sheet.name === name);
   }
 
-  getSheetNames(): string[] {
-    return this.sheets.map((sheet) => sheet.name);
-  }
-
   getSheetListItems() {
     return this.sheets.map((sheet) => ({ name: sheet.name, id: sheet.id }));
   }

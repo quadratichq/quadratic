@@ -811,6 +811,10 @@ class QuadraticCore {
     this.send({ type: 'clientCoreSetSheetColor', sheetId, color, cursor });
   }
 
+  setSheetColors(sheetNameToColor: Record<string, string>, cursor: string) {
+    this.send({ type: 'clientCoreSetSheetColors', sheetNameToColor, cursor });
+  }
+
   duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string) {
     this.send({ type: 'clientCoreDuplicateSheet', sheetId, nameOfNewSheet, cursor });
   }

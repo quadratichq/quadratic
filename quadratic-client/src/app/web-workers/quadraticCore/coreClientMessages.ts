@@ -580,6 +580,12 @@ export interface ClientCoreSetSheetColor {
   cursor: string;
 }
 
+export interface ClientCoreSetSheetColors {
+  type: 'clientCoreSetSheetColors';
+  sheetNameToColor: Record<string, string>;
+  cursor: string;
+}
+
 export interface ClientCoreDuplicateSheet {
   type: 'clientCoreDuplicateSheet';
   sheetId: string;
@@ -1237,6 +1243,7 @@ export type ClientCoreMessage =
   | ClientCoreMoveSheet
   | ClientCoreSetSheetName
   | ClientCoreSetSheetColor
+  | ClientCoreSetSheetColors
   | ClientCoreDuplicateSheet
   | ClientCoreUndo
   | ClientCoreRedo

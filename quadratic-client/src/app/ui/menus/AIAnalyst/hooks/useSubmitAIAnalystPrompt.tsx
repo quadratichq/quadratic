@@ -95,7 +95,7 @@ export function useSubmitAIAnalystPrompt() {
           visibleContext,
         ] = await Promise.all([
           getFilesContext({ chatMessages }),
-          getSheetNamesContext({ sheetNames: sheets.getSheetNames() }),
+          getSheetNamesContext({ sheets: sheets.sheets }),
           getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
           getTablesContext(),
           getCurrentSheetContext({ currentSheetName: context.currentSheet }),

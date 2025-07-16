@@ -259,6 +259,10 @@ class CoreClient {
         await core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor);
         return;
 
+      case 'clientCoreSetSheetColors':
+        await core.setSheetColors(e.data.sheetNameToColor, e.data.cursor);
+        return;
+
       case 'clientCoreDuplicateSheet':
         await core.duplicateSheet(e.data.sheetId, e.data.nameOfNewSheet, e.data.cursor);
         return;

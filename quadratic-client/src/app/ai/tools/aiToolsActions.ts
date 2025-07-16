@@ -715,8 +715,9 @@ export const aiToolsActions: AIToolActionsRecord = {
     ];
   },
   [AITool.ColorSheets]: async (args) => {
-    // const { sheet_name_to_color } = args;
-    // quadraticCore.colorSheets(sheet_name_to_color, sheets.getCursorPosition());
+    const { sheet_name_to_color } = args;
+    console.log(sheet_name_to_color);
+    quadraticCore.setSheetColors(sheet_name_to_color, sheets.getCursorPosition());
     return [
       {
         type: 'text',

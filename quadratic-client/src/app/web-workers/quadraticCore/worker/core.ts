@@ -643,6 +643,18 @@ class Core {
     });
   }
 
+  setSheetColors(sheetNameToColor: Record<string, string>, cursor: string) {
+    return new Promise((resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        this.gridController.setSheetColors(sheetNameToColor, cursor);
+      } catch (e) {
+        this.handleCoreError('setSheetColors', e);
+      }
+      resolve(undefined);
+    });
+  }
+
   duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

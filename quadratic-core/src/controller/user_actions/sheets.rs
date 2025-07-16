@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::SheetId,
@@ -21,6 +23,15 @@ impl GridController {
         cursor: Option<String>,
     ) {
         let ops = self.set_sheet_color_operations(sheet_id, color);
+        self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
+    }
+
+    pub fn set_sheet_colors(
+        &mut self,
+        sheet_name_to_color: HashMap<String, String>,
+        cursor: Option<String>,
+    ) {
+        let ops = self.set_sheet_colors_operations(sheet_name_to_color);
         self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
     }
 
@@ -70,6 +81,8 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+
     use crate::{
         CellValue, SheetPos,
         a1::A1Selection,
@@ -142,6 +155,61 @@ mod test {
         );
         let sheet = g.sheet(s1);
         assert_eq!(sheet.color, Some(String::from("red")));
+    }
+
+    #[test]
+    fn test_set_sheet_colors() {
+        let mut g = GridController::test();
+        let old_sheet_ids = g.sheet_ids();
+        let s1 = old_sheet_ids[0];
+
+        // Add a second sheet for testing multiple colors
+        g.add_sheet_with_name("Sheet2".into(), None);
+        let s2 = g.sheet_ids()[1];
+
+        // Set initial colors
+        g.set_sheet_color(s1, Some(String::from("blue")), None);
+        g.set_sheet_color(s2, Some(String::from("green")), None);
+
+        // Test setting multiple sheet colors at once
+        let mut sheet_name_to_color = HashMap::new();
+        sheet_name_to_color.insert(g.sheet(s1).name.clone(), String::from("red"));
+        sheet_name_to_color.insert(g.sheet(s2).name.clone(), String::from("yellow"));
+
+        g.set_sheet_colors(sheet_name_to_color, None);
+
+        // Verify colors were set correctly
+        assert_eq!(g.sheet(s1).color, Some(String::from("red")));
+        assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
+
+        // Test undo
+        g.undo(None);
+        assert_eq!(g.sheet(s1).color, Some(String::from("blue")));
+        assert_eq!(g.sheet(s2).color, Some(String::from("green")));
+
+        // Test redo
+        g.redo(None);
+        assert_eq!(g.sheet(s1).color, Some(String::from("red")));
+        assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
+
+        // Test setting colors for non-existent sheets (should not affect existing sheets)
+        let mut invalid_sheet_name_to_color = HashMap::new();
+        invalid_sheet_name_to_color.insert("NonExistentSheet".to_string(), String::from("purple"));
+        invalid_sheet_name_to_color.insert(g.sheet(s1).name.clone(), String::from("orange"));
+
+        g.set_sheet_colors(invalid_sheet_name_to_color, None);
+
+        // Only the existing sheet should be affected
+        assert_eq!(g.sheet(s1).color, Some(String::from("orange")));
+        assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
+
+        // Test setting empty HashMap (should not change anything)
+        let empty_sheet_name_to_color = HashMap::new();
+        g.set_sheet_colors(empty_sheet_name_to_color, None);
+
+        // Colors should remain unchanged
+        assert_eq!(g.sheet(s1).color, Some(String::from("orange")));
+        assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
     }
 
     #[test]

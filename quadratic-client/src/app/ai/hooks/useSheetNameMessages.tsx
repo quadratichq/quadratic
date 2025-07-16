@@ -1,9 +1,10 @@
+import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useSheetNameMessages() {
-  const getSheetNamesContext = useCallback(async ({ sheetNames }: { sheetNames: string[] }): Promise<ChatMessage[]> => {
-    if (sheetNames.length === 0) return [];
+  const getSheetNamesContext = useCallback(async ({ sheets }: { sheets: Sheet[] }): Promise<ChatMessage[]> => {
+    if (sheets.length === 0) return [];
 
     return [
       {
@@ -13,7 +14,10 @@ export function useSheetNameMessages() {
             type: 'text',
             text: `
 I have the following sheets (the sheet list) in the currently open file:\n
-${sheetNames.join(', ')}\n`,
+${sheets.map((sheet) => sheet.name).join(', ')}\n
+
+The sheet names have the following colors (if they are colored):\n
+${sheets.map((sheet) => `${sheet.name} is ${sheet.color ?? 'not colored'}`).join('; ')}`,
           },
         ],
         contextType: 'sheetNames',

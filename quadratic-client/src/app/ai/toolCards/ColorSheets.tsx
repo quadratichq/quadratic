@@ -31,18 +31,15 @@ export const ColorSheets = memo(({ args, loading }: ColorSheetsProps) => {
   const icon = <GridActionIcon />;
   const label = 'Color sheets';
 
-  const mappedSheetNames = useMemo(() => {
-    const mappedSheetNames: React.ReactNode[] = [];
+  const results = useMemo(() => {
     if (!toolArgs?.data) {
       return '';
     }
+    let results = 'Changed sheet colors: ';
     for (const key in toolArgs.data.sheet_name_to_color) {
-      const color = (
-        <div className="h-4 w-4 rounded-full" style={{ backgroundColor: toolArgs.data.sheet_name_to_color[key] }} />
-      );
-      mappedSheetNames.push(color);
+      results += `"${key}"${key !== Object.keys(toolArgs.data.sheet_name_to_color)[Object.keys(toolArgs.data.sheet_name_to_color).length - 1] ? ', ' : ''}`;
     }
-    return mappedSheetNames;
+    return results + '\n';
   }, [toolArgs?.data]);
 
   if (loading) {
@@ -55,5 +52,5 @@ export const ColorSheets = memo(({ args, loading }: ColorSheetsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return <ToolCard icon={icon} label={label} description={mappedSheetNames} />;
+  return <ToolCard icon={icon} label={label} description={results} />;
 });
