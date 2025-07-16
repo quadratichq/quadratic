@@ -1,4 +1,5 @@
 import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
+import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
@@ -7,6 +8,7 @@ import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
+import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
 import { RenameSheet } from '@/app/ai/toolCards/RenameSheet';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
@@ -67,6 +69,10 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <RenameSheet args={args} loading={loading} />;
     case AITool.DeleteSheet:
       return <DeleteSheet args={args} loading={loading} />;
+    case AITool.MoveSheet:
+      return <MoveSheet args={args} loading={loading} />;
+    case AITool.ColorSheets:
+      return <ColorSheets args={args} loading={loading} />;
     default:
       console.error(`Unknown tool: ${name}`);
       return null;

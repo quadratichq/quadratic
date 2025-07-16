@@ -26,6 +26,8 @@ const HACK_TO_NOT_BLUR_ON_RENAME = 250;
 
 interface SheetBarTabProps {
   sheet: Sheet;
+  id: string;
+  color?: string;
   order: string;
   active: boolean;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
@@ -34,7 +36,7 @@ interface SheetBarTabProps {
 }
 
 export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
-  const { sheet, order, active, onPointerDown, forceRename, clearRename } = props;
+  const { sheet, id, order, active, onPointerDown, forceRename, clearRename } = props;
 
   const [isOpenDropdown, setIsOpenDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
@@ -65,8 +67,8 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
       style={{
         order,
       }}
-      data-id={sheet.id}
-      data-order={sheet.order}
+      data-id={id}
+      data-order={order}
       data-actual-order={order}
       onPointerDown={(event) => {
         if (isRenaming) return;
@@ -91,7 +93,7 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
           setIsRenaming={setIsRenaming}
           sheet={sheet}
         />
-        {sheet.id !== sheets.current && <TabMultiplayer sheetId={sheet.id} />}
+        {id !== sheets.current && <TabMultiplayer sheetId={id} />}
         <div className={cn('flex', !active && 'invisible opacity-0 group-hover:visible group-hover:opacity-100')}>
           {hasPermission && (
             <SheetBarTabDropdownMenu

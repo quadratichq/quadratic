@@ -26,6 +26,8 @@ export enum AITool {
   DuplicateSheet = 'duplicate_sheet',
   RenameSheet = 'rename_sheet',
   DeleteSheet = 'delete_sheet',
+  MoveSheet = 'move_sheet',
+  ColorSheets = 'color_sheets',
 }
 
 export const AIToolSchema = z.enum([
@@ -51,6 +53,8 @@ export const AIToolSchema = z.enum([
   AITool.DuplicateSheet,
   AITool.RenameSheet,
   AITool.DeleteSheet,
+  AITool.MoveSheet,
+  AITool.ColorSheets,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -222,6 +226,13 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.DeleteSheet]: z.object({
     sheet_name: z.string(),
+  }),
+  [AITool.MoveSheet]: z.object({
+    sheet_name: z.string(),
+    insert_before_sheet_name: z.string().optional(),
+  }),
+  [AITool.ColorSheets]: z.object({
+    sheet_name_to_color: z.record(z.string(), z.string()),
   }),
 } as const;
 
@@ -1105,6 +1116,58 @@ It requires the name of the sheet to delete.\n
     prompt: `
 This tool deletes a sheet in the file.\n
 It requires the name of the sheet to delete.\n
+`,
+  },
+  [AITool.MoveSheet]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool moves a sheet within the sheet list.\n
+It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The name of the sheet to move',
+        },
+        insert_before_sheet_name: {
+          type: 'string',
+          description:
+            'The name of a sheet to insert the moved sheet before. If not provided, the sheet will be added to the end of the sheet list.',
+        },
+      },
+      required: ['sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.MoveSheet],
+    prompt: `
+This tool moves a sheet in the sheet list.\n
+It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
+`,
+  },
+  [AITool.ColorSheets]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool colors the sheet tabs in the file.\n
+It requires  record of sheet names to change mapped to the new color.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name_to_color: {
+          type: 'record',
+          description:
+            'A record of sheet names to change mapped to the new color. The color must be a valid CSS color string.',
+        },
+      },
+      required: ['sheet_name_to_color'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ColorSheets],
+    prompt: `
+This tool colors the sheet tabs in the file.\n
+It requires a record of sheet names to change mapped to the new color.\n
 `,
   },
 } as const;

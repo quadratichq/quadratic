@@ -4,7 +4,6 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import type { SheetInfo } from '@/app/quadratic-core-types';
 import { SheetBarButton } from '@/app/ui/menus/SheetBar/SheetBarButton';
 import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
@@ -395,12 +394,12 @@ export const SheetBar = memo((): JSX.Element => {
   const [forceRename, setForceRename] = useState<string | undefined>();
   const clearRename = useCallback(() => setForceRename(undefined), []);
   useEffect(() => {
-    const sheetUpdate = (sheetInfo: SheetInfo) => setForceRename(sheetInfo.sheet_id);
+    const sheetUpdate = () => setTrigger((trigger) => trigger + 1);
     events.on('sheetInfoUpdate', sheetUpdate);
     return () => {
       events.off('sheetInfoUpdate', sheetUpdate);
     };
-  });
+  }, []);
 
   return (
     <div
@@ -433,6 +432,8 @@ export const SheetBar = memo((): JSX.Element => {
         {sheets.map((sheet) => (
           <SheetBarTab
             key={sheet.id}
+            id={sheet.id}
+            color={sheet.color}
             order={getOrderIndex(sheet.order).toString()}
             onPointerDown={handlePointerDown}
             active={activeSheet === sheet.id}
