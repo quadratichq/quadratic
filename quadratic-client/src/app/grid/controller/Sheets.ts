@@ -314,7 +314,7 @@ export class Sheets {
   }
 
   userAddSheet() {
-    quadraticCore.addSheet(this.getCursorPosition());
+    quadraticCore.addSheet(undefined, undefined, this.getCursorPosition());
   }
 
   duplicate() {
