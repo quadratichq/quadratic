@@ -1156,9 +1156,13 @@ It requires a record of sheet names to change mapped to the new color.\n
       type: 'object',
       properties: {
         sheet_name_to_color: {
-          type: 'record',
+          type: 'object',
           description:
             'A record of sheet names to change mapped to the new color. The color must be a valid CSS color string.',
+          additionalProperties: {
+            type: 'string',
+            description: 'The new color of the sheet. This must be a valid CSS color string.',
+          },
         },
       },
       required: ['sheet_name_to_color'],
