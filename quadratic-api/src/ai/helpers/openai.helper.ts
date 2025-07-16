@@ -16,12 +16,10 @@ import {
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
-  AIModelKey,
   AIRequestHelperArgs,
   AISource,
   AIUsage,
@@ -33,7 +31,6 @@ import type {
   ParsedAIResponse,
   TextContent,
   ToolResultContent,
-  VertexAIModelKey,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 
@@ -343,16 +340,4 @@ export function parseOpenAIResponse(
   };
 
   return { responseMessage, usage };
-}
-
-export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey {
-  return MODELS_CONFIGURATION[modelKey].provider === 'openai';
-}
-
-export function isAzureOpenAIModel(modelKey: AIModelKey): modelKey is AzureOpenAIModelKey {
-  return MODELS_CONFIGURATION[modelKey].provider === 'azure-openai';
-}
-
-export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModelKey {
-  return MODELS_CONFIGURATION[modelKey].provider === 'vertexai';
 }

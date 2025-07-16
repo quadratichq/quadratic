@@ -3,6 +3,7 @@ import type { Response } from 'express';
 import {
   getModelOptions,
   isAnthropicModel,
+  isAzureOpenAIModel,
   isBedrockAnthropicModel,
   isBedrockModel,
   isGenAIModel,
@@ -18,7 +19,6 @@ import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadrati
 import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
 import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
-import { isAzureOpenAIModel } from '../../ai/helpers/openai.helper';
 import {
   anthropic,
   azureOpenAI,
