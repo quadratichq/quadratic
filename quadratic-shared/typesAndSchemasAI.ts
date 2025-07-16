@@ -13,6 +13,7 @@ const AIProvidersSchema = z.enum([
   'xai',
   'baseten',
   'open-router',
+  'azure-openai',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
@@ -37,6 +38,7 @@ const OpenAIModelSchema = z.enum([
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
+const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct']);
 const OpenRouterModelSchema = z.enum([
@@ -56,6 +58,7 @@ const AIModelSchema = z.union([
   BedrockModelSchema,
   AnthropicModelSchema,
   OpenAIModelSchema,
+  AzureOpenAIModelSchema,
   XAIModelSchema,
   BasetenModelSchema,
   OpenRouterModelSchema,
@@ -117,6 +120,9 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
+const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1', 'azure-openai:gpt-4.1-mini']);
+export type AzureOpenAIModelKey = z.infer<typeof AzureOpenAIModelKeySchema>;
+
 const XAIModelKeySchema = z.enum(['xai:grok-4-0709']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
@@ -142,6 +148,7 @@ const AIModelKeySchema = z.union([
   BedrockModelKeySchema,
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
+  AzureOpenAIModelKeySchema,
   XAIModelKeySchema,
   BasetenModelKeySchema,
   OpenRouterModelKeySchema,
