@@ -22,7 +22,7 @@ export const TextSearch = memo(({ args, loading }: TextSearchProps) => {
         setToolArgs(aiToolsSpec[AITool.TextSearch].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[CreateNewSheet] Failed to parse args: ', error);
+        console.error('[TextSearch] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
