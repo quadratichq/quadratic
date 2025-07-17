@@ -45,7 +45,7 @@ All these tables and charts have first row as table or chart name, respectively.
 Data tables and code tables have column headers after the table name (if visible). These take up the next row of table height. These can also be hidden in the UI. When hidden, this does not take up any space in the sheet grid.\n
 The actual data starts after the table name and column headers. This is a grid of cells with values for data table and code cells for code table. This a interactive chart for charts.\n
 If there is any data present in the sheet where the table or chart is suppose to take place, it result into spill and the table or chart is displayed as spill error at the root cell of the table or chart.\n
-To fix a spill, use the move_cells tool to move the anchor cell of the table to a different position. Ensure that the position has sufficient space to accommodate the entire table without creating another spill.\n
+To fix a spill, use the move_cells tool to move the anchor cell of the table to a different position. Ensure that the position has sufficient space to accommodate the entire table without creating another spill. Ideally, leave a space between the new position and any surrounding content.\n
 \n\n
 
 ${
