@@ -53,11 +53,11 @@ impl DataTable {
     pub fn transfer_formats_to_sheet(
         &self,
         data_table_pos: Pos,
-        formats_rect: Rect,
+        display_rect: Rect,
         sheet_format_updates: &mut SheetFormatUpdates,
     ) {
         let data_table_display_formats_update =
-            self.get_display_formats_updates_for_data_table(data_table_pos, formats_rect);
+            self.get_display_formats_updates_for_data_table(data_table_pos, display_rect);
 
         let Some(data_table_display_formats_update) = data_table_display_formats_update else {
             return;
@@ -71,23 +71,27 @@ impl DataTable {
     fn get_display_formats_updates_for_data_table(
         &self,
         data_table_pos: Pos,
-        formats_rect: Rect,
+        display_rect: Rect,
     ) -> Option<SheetFormatUpdates> {
         let data_table_formats = self.formats.as_ref()?;
 
         let y_adjustment = self.y_adjustment(true);
 
-        let col_start =
-            self.get_column_index_from_display_index(u32::try_from(formats_rect.min.x).ok()?, true);
-        let col_end =
-            self.get_column_index_from_display_index(u32::try_from(formats_rect.max.x).ok()?, true);
+        let data_table_rect =
+            display_rect.translate(-data_table_pos.x, -data_table_pos.y - y_adjustment);
+
+        let col_start = self
+            .get_column_index_from_display_index(u32::try_from(data_table_rect.min.x).ok()?, true);
+        let col_end = self
+            .get_column_index_from_display_index(u32::try_from(data_table_rect.max.x).ok()?, true);
 
         // handle sorted rows
         let mut data_table_display_formats_update = if self.display_buffer.is_some() {
             let mut data_table_display_formats_update = SheetFormatUpdates::default();
-            for display_row in formats_rect.y_range() {
+            for display_row in data_table_rect.y_range() {
                 if let Ok(display_row) = u64::try_from(display_row) {
                     let actual_row = self.get_row_index_from_display_index(display_row);
+
                     let mut row_formats = SheetFormatUpdates::from_sheet_formatting_rect(
                         Rect::new(
                             1 + col_start as i64,
@@ -98,14 +102,15 @@ impl DataTable {
                         data_table_formats,
                         false,
                     );
+
                     row_formats.translate_in_place(0, display_row as i64 - actual_row as i64);
+
                     data_table_display_formats_update.merge(&row_formats);
                 }
             }
             data_table_display_formats_update
         } else {
-            let data_table_formats_rect =
-                formats_rect.translate(1 - data_table_pos.x, 1 - data_table_pos.y - y_adjustment);
+            let data_table_formats_rect = data_table_rect.translate(1, 1);
             SheetFormatUpdates::from_sheet_formatting_rect(
                 data_table_formats_rect,
                 data_table_formats,
@@ -141,7 +146,7 @@ impl DataTable {
     pub fn transfer_formats_from_sheet(
         &self,
         data_table_pos: Pos,
-        formats_rect: Rect,
+        display_rect: Rect,
         sheet: &Sheet,
     ) -> Option<SheetFormatUpdates> {
         if sheet.formats.is_all_default() {
@@ -149,7 +154,7 @@ impl DataTable {
         }
 
         let mut format_update =
-            SheetFormatUpdates::from_sheet_formatting_rect(formats_rect, &sheet.formats, false);
+            SheetFormatUpdates::from_sheet_formatting_rect(display_rect, &sheet.formats, false);
 
         if format_update.is_default() {
             return None;
@@ -157,7 +162,7 @@ impl DataTable {
 
         self.adjust_format_update_for_hidden_sorted_rows(
             data_table_pos,
-            formats_rect,
+            display_rect,
             &mut format_update,
         );
 
@@ -172,7 +177,7 @@ impl DataTable {
     pub fn transfer_formats_from_sheet_format_updates(
         &self,
         data_table_pos: Pos,
-        formats_rect: Rect,
+        display_rect: Rect,
         sheet_format_updates: &mut SheetFormatUpdates,
     ) -> Option<SheetFormatUpdates> {
         if sheet_format_updates.is_default() {
@@ -181,7 +186,7 @@ impl DataTable {
 
         let mut format_update = SheetFormatUpdates::default();
 
-        format_update.transfer_format_rect_from_other(formats_rect, sheet_format_updates);
+        format_update.transfer_format_rect_from_other(display_rect, sheet_format_updates);
 
         if format_update.is_default() {
             return None;
@@ -189,7 +194,7 @@ impl DataTable {
 
         self.adjust_format_update_for_hidden_sorted_rows(
             data_table_pos,
-            formats_rect,
+            display_rect,
             &mut format_update,
         );
 
@@ -204,10 +209,13 @@ impl DataTable {
     fn adjust_format_update_for_hidden_sorted_rows(
         &self,
         data_table_pos: Pos,
-        formats_rect: Rect,
+        display_rect: Rect,
         format_update: &mut SheetFormatUpdates,
     ) {
         let y_adjustment = self.y_adjustment(true);
+
+        let data_table_rect =
+            display_rect.translate(-data_table_pos.x, -data_table_pos.y - y_adjustment);
 
         format_update.translate_in_place(1 - data_table_pos.x, 1 - data_table_pos.y - y_adjustment);
 
@@ -225,31 +233,20 @@ impl DataTable {
         }
 
         // handle sorted rows
-        if let Some(display_buffer) = &self.display_buffer {
+        if self.display_buffer.is_some() {
             let mut sorted_formats_update = SheetFormatUpdates::default();
 
-            let mut max_row = 1;
+            for display_row in data_table_rect.y_range() {
+                if let Ok(display_row) = u64::try_from(display_row) {
+                    let actual_row = self.get_row_index_from_display_index(display_row);
 
-            for (display_row, &actual_row) in display_buffer
-                .iter()
-                .enumerate()
-                .sorted_by_key(|(_, actual_row)| *actual_row)
-            {
-                if let Some(mut row_formats) = format_update.copy_row(display_row as i64 + 1) {
-                    if !row_formats.is_default() {
-                        row_formats.translate_in_place(0, actual_row as i64 - display_row as i64);
-                        sorted_formats_update.merge(&row_formats);
-                    }
-                }
-                max_row = max_row.max(display_row as i64);
-            }
+                    if let Some(mut row_formats) = format_update.copy_row(display_row as i64 + 1) {
+                        if !row_formats.is_default() {
+                            row_formats
+                                .translate_in_place(0, actual_row as i64 - display_row as i64);
 
-            let max_y = formats_rect.max.y + 1 - data_table_pos.y - y_adjustment;
-
-            for display_row in (max_row + 1)..=max_y {
-                if let Some(row_formats) = format_update.copy_row(display_row + 1) {
-                    if !row_formats.is_default() {
-                        sorted_formats_update.merge(&row_formats);
+                            sorted_formats_update.merge(&row_formats);
+                        }
                     }
                 }
             }

@@ -17,20 +17,21 @@ impl SheetFormatting {
         a1_context: &A1Context,
     ) -> Result<SheetFormatUpdates> {
         // first, get formats for the sheet of the selection
-        let mut sheet_format_updates: SheetFormatUpdates =
+        let mut sheet_format_updates =
             SheetFormatUpdates::from_sheet_formatting_selection(selection, self);
 
         // get the largest rect that is finite of the selection
-        let rect = selection.largest_rect_unbounded(a1_context);
-
-        // get the formats from the data table and merge them with the sheet formats
-        for data_table_pos in sheet.data_tables_pos_intersect_rect(rect) {
-            let data_table = sheet.data_table_result(&data_table_pos)?;
-
-            // update the sheet format updates with the formats from the data
-            // table we send in the full rect, and the function just looks at
-            // the overlapping area
-            data_table.transfer_formats_to_sheet(data_table_pos, rect, &mut sheet_format_updates);
+        for rect in sheet.selection_to_rects(selection, false, false, false, a1_context) {
+            // get the formats from the data table and merge them with the sheet formats
+            for (output_rect, intersection_rect, data_table) in
+                sheet.iter_data_tables_intersects_rect(rect)
+            {
+                data_table.transfer_formats_to_sheet(
+                    output_rect.min,
+                    intersection_rect,
+                    &mut sheet_format_updates,
+                );
+            }
         }
 
         Ok(sheet_format_updates)

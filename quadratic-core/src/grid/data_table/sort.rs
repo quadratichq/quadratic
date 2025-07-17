@@ -46,7 +46,7 @@ impl DataTable {
         let old_display_buffer = self.display_buffer.to_owned();
         self.display_buffer = None;
 
-        let display_buffer = if let Some(ref mut sort) = self.sort.to_owned() {
+        let display_buffer = if let Some(sort) = self.sort.to_owned() {
             let value = self.display_value(true)?.into_array()?;
             let mut display_buffer = (0..value.height()).map(|i| i as u64).collect::<Vec<u64>>();
 

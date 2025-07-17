@@ -419,6 +419,22 @@ impl SheetFormatUpdates {
     }
 
     /// Merges another SheetFormatUpdates into this one.
+    fn merge_item<T>(item: &mut SheetFormatUpdatesType<T>, other: &SheetFormatUpdatesType<T>)
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        match (item.as_mut(), other.as_ref()) {
+            (Some(item), Some(other)) => {
+                item.update_from(other, |value, new_value| value.replace(new_value.clone()));
+            }
+            (None, Some(other)) => {
+                *item = Some(other.clone());
+            }
+            _ => {}
+        }
+    }
+
+    /// Merges another SheetFormatUpdates into this one.
     pub fn merge(&mut self, other: &SheetFormatUpdates) {
         Self::merge_item(&mut self.align, &other.align);
         Self::merge_item(&mut self.vertical_align, &other.vertical_align);
@@ -433,22 +449,6 @@ impl SheetFormatUpdates {
         Self::merge_item(&mut self.date_time, &other.date_time);
         Self::merge_item(&mut self.underline, &other.underline);
         Self::merge_item(&mut self.strike_through, &other.strike_through);
-    }
-
-    /// Merges another SheetFormatUpdates into this one.
-    fn merge_item<T>(item: &mut SheetFormatUpdatesType<T>, other: &SheetFormatUpdatesType<T>)
-    where
-        T: Clone + Debug + PartialEq,
-    {
-        match (item.as_mut(), other.as_ref()) {
-            (Some(item), Some(other)) => {
-                item.update_from(other, |value, new_value| value.replace(new_value.clone()));
-            }
-            (None, Some(other)) => {
-                *item = Some(other.clone());
-            }
-            _ => {}
-        }
     }
 
     /// Whether the update includes any fill color changes

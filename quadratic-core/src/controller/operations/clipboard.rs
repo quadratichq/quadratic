@@ -727,6 +727,7 @@ impl GridController {
                     clipboard.w as i64,
                     clipboard.h as i64,
                 );
+
                 let formats_ops = self.clipboard_formats_operations(
                     selection.sheet_id,
                     formats_rect,
@@ -734,6 +735,7 @@ impl GridController {
                     Some(&clipboard.selection),
                     delete_value,
                 );
+
                 ops.extend(formats_ops);
             }
 
@@ -1017,18 +1019,20 @@ impl GridController {
             ops.extend(compute_code_ops);
         }
 
-        if !formats.is_default() {
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id: selection.sheet_id,
-                formats,
-            });
-        }
+        if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
+            if !formats.is_default() {
+                ops.push(Operation::SetCellFormatsA1 {
+                    sheet_id: selection.sheet_id,
+                    formats,
+                });
+            }
 
-        if !borders.is_empty() {
-            ops.push(Operation::SetBordersA1 {
-                sheet_id: selection.sheet_id,
-                borders,
-            });
+            if !borders.is_empty() {
+                ops.push(Operation::SetBordersA1 {
+                    sheet_id: selection.sheet_id,
+                    borders,
+                });
+            }
         }
 
         ops.push(Operation::SetCursorA1 {

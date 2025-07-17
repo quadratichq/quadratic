@@ -517,7 +517,7 @@ impl Sheet {
             .chain(self.iter_data_tables_intersects_rect(rect).flat_map(
                 |(output_rect, intersection_rect, data_table)| {
                     let mut rows_to_resize = HashSet::new();
-                    data_table.get_rows_with_wrap_in_rect(
+                    data_table.get_rows_with_wrap_in_display_rect(
                         &output_rect.min,
                         &intersection_rect,
                         include_blanks,

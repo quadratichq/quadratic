@@ -291,16 +291,15 @@ impl GridController {
                 return Ok(());
             }
 
-            let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
-            let mut old_values = sheet.get_code_cell_values(rect);
+            let display_rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
 
             transaction.add_code_cell(sheet_id, data_table_pos);
-            transaction.add_dirty_hashes_from_sheet_rect(rect.to_sheet_rect(sheet_id));
+            transaction.add_dirty_hashes_from_sheet_rect(display_rect.to_sheet_rect(sheet_id));
 
             let mut rows_to_resize = HashSet::new();
-            data_table.get_rows_with_wrap_in_rect(
+            data_table.get_rows_with_wrap_in_display_rect(
                 &data_table_pos,
-                &rect,
+                &display_rect,
                 true,
                 &mut rows_to_resize,
             );
@@ -318,34 +317,33 @@ impl GridController {
 
             // if there is a display buffer, use it to find the row index for all the values
             // this is used when the data table has sorted columns, maps input to actual coordinates
-            if is_sorted {
+            let old_values = if is_sorted {
                 // rebuild CellValues with unsorted coordinates
                 let mut values_unsorted = CellValues::new(0, 0);
-                let mut old_values_unsorted = CellValues::new(0, 0);
+                let mut old_values = CellValues::new(0, 0);
 
                 let rect = Rect::from_numbers(pos.x, pos.y, values.w as i64, values.h as i64);
                 for y in rect.y_range() {
-                    let display_row = y - data_table_pos.y;
-                    let actual_row = data_table
-                        .get_row_index_from_display_index(u64::try_from(display_row)?)
-                        as i64;
+                    let display_row = u32::try_from(y - data_table_pos.y)?;
+                    let actual_row = u32::try_from(
+                        data_table.get_row_index_from_display_index(display_row as u64),
+                    )?;
 
                     for x in rect.x_range() {
-                        let display_column = x - data_table_pos.x;
+                        let display_column = u32::try_from(x - data_table_pos.x)?;
 
-                        let value_x = u32::try_from(x - pos.x)?;
+                        let value_x: u32 = u32::try_from(x - pos.x)?;
                         let value_y = u32::try_from(y - pos.y)?;
 
-                        let x = u32::try_from(display_column)?;
-                        let y = u32::try_from(actual_row)?;
                         if let Some(value) = values.remove(value_x, value_y) {
-                            values_unsorted.set(x, y, value);
+                            values_unsorted.set(display_column, actual_row, value);
                         }
 
                         // account for hidden columns
-                        let column_index = data_table.get_column_index_from_display_index(x, true);
-                        if let Ok(value) = data_table.value.get(column_index, y) {
-                            old_values_unsorted.set(x, y, value.to_owned());
+                        let column_index =
+                            data_table.get_column_index_from_display_index(display_column, true);
+                        if let Ok(value) = data_table.value.get(column_index, actual_row) {
+                            old_values.set(display_column, display_row, value.to_owned());
                         }
                     }
                 }
@@ -357,8 +355,10 @@ impl GridController {
                     data_table_pos.x,
                     data_table_pos.y + data_table.y_adjustment(true),
                 );
-                old_values = old_values_unsorted;
-            }
+                old_values
+            } else {
+                sheet.get_code_cell_values(display_rect)
+            };
 
             // check if any column is hidden, shift values to account for hidden columns
             if data_table
@@ -393,7 +393,7 @@ impl GridController {
 
             // set the new value, and sort if necessary
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let (data_table, dirty_rects) =
+            let (_, dirty_rects) =
                 sheet
                     .data_tables
                     .modify_data_table_at(&data_table_pos, |data_table| {
@@ -415,25 +415,6 @@ impl GridController {
                         Ok(())
                     })?;
 
-            // Update the old values to match the new sorted data table
-            if is_sorted {
-                let mut old_sorted_values = CellValues::new(0, 0);
-                let rect = Rect::from_numbers(0, 0, old_values.w as i64, old_values.h as i64);
-                for x in rect.x_range() {
-                    for y in rect.y_range() {
-                        let value_x = u32::try_from(x)?;
-                        let value_y = u32::try_from(y)?;
-
-                        let display_y = data_table.get_display_index_from_row_index(value_y as u64);
-
-                        if let Some(value) = old_values.remove(value_x, value_y) {
-                            old_sorted_values.set(value_x, display_y as u32, value);
-                        }
-                    }
-                }
-                old_values = old_sorted_values;
-            }
-
             self.send_updated_bounds(transaction, sheet_id);
 
             let sheet = self.try_sheet_result(sheet_id)?;
@@ -448,7 +429,7 @@ impl GridController {
                 transaction,
                 forward_operations,
                 reverse_operations,
-                Some(rect.to_sheet_rect(sheet_id)),
+                Some(display_rect.to_sheet_rect(sheet_id)),
             );
 
             return Ok(());
@@ -1950,6 +1931,9 @@ impl GridController {
             let mut reverse_operations = vec![];
 
             sheet.modify_data_table_at(&data_table_pos, |dt| {
+                // mark old table dirty
+                dt.mark_formats_dirty(transaction, data_table_pos.to_sheet_pos(sheet_id), &formats);
+
                 let reverse_formats = dt.formats.get_or_insert_default().apply_updates(&formats);
                 if dt
                     .formats
@@ -1959,12 +1943,8 @@ impl GridController {
                     dt.formats = None;
                 }
 
-                dt.mark_formats_dirty(
-                    transaction,
-                    data_table_pos.to_sheet_pos(sheet_id),
-                    &formats,
-                    &reverse_formats,
-                );
+                // mark new table dirty
+                dt.mark_formats_dirty(transaction, data_table_pos.to_sheet_pos(sheet_id), &formats);
 
                 if transaction.is_user_undo_redo() {
                     forward_operations.push(op);

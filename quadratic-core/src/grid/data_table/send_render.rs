@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    ClearOption, Pos, Rect, SheetPos,
+    Pos, Rect, SheetPos,
     controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{
         CellWrap, Sheet, SheetId,
@@ -71,30 +71,18 @@ impl DataTable {
         }
     }
 
-    fn has_content_in_row(&self, row: i64) -> bool {
-        let data_table_rect = self.output_rect((0, 0).into(), false);
-        for x in data_table_rect.x_range() {
-            if let Some(cell_value) = self.cell_value_at(x as u32, row as u32) {
-                if !cell_value.is_blank_or_empty_string() {
-                    return true;
-                }
-            }
-        }
-        false
-    }
-
     /// Returns the rows with wrap in the given rect.
-    pub(crate) fn get_rows_with_wrap_in_rect(
+    pub(crate) fn get_rows_with_wrap_in_display_rect(
         &self,
         data_table_pos: &Pos,
-        rect: &Rect,
+        display_rect: &Rect,
         include_blanks: bool,
         rows_to_resize: &mut HashSet<i64>,
     ) {
-        let formats_x_offset = data_table_pos.x - 1;
-        let formats_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
+        let y_adjustment = self.y_adjustment(true);
 
-        let data_table_rect = rect.translate(-formats_x_offset, -formats_y_offset);
+        let data_table_rect =
+            display_rect.translate(1 - data_table_pos.x, 1 - data_table_pos.y - y_adjustment);
 
         if let Some(formats) = self.formats.as_ref() {
             for (rect, value) in formats.wrap.nondefault_rects_in_rect(data_table_rect) {
@@ -104,9 +92,11 @@ impl DataTable {
 
                 for y in rect.y_range() {
                     if let Ok(y_u64) = u64::try_from(y - 1) {
-                        let display_y = self.get_display_index_from_row_index(y_u64) as i64;
-                        let actual_y_on_sheet = display_y + formats_y_offset + 1;
-                        if rows_to_resize.contains(&actual_y_on_sheet) {
+                        let actual_row = data_table_pos.y
+                            + y_adjustment
+                            + self.get_display_index_from_row_index(y_u64) as i64;
+
+                        if rows_to_resize.contains(&actual_row) {
                             continue;
                         }
 
@@ -119,82 +109,11 @@ impl DataTable {
                             });
 
                         if check_value {
-                            rows_to_resize.insert(actual_y_on_sheet);
+                            rows_to_resize.insert(actual_row);
                         }
                     }
                 }
             }
-        }
-    }
-
-    fn format_transaction_changes<T: std::fmt::Debug + Clone + PartialEq>(
-        &self,
-        data_table_pos: Pos,
-        format: &SheetFormatUpdatesType<T>,
-        needs_resize: bool,
-        dirty_hashes: &mut HashSet<Pos>,
-        rows_to_resize: &mut HashSet<i64>,
-    ) {
-        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
-        let data_table_formats_rect = self.output_rect((1, 1).into(), true);
-        if let Some(format) = format {
-            format
-                .to_rects_with_rect_bounds(data_table_formats_rect)
-                .for_each(|(x1, y1, x2, y2, _)| {
-                    let formats_rect = Rect::new(x1, y1, x2, y2);
-                    let formats_rect_x_offset = data_table_pos.x - 1;
-                    let formats_rect_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
-                    let actual_rect_on_sheet =
-                        formats_rect.translate(formats_rect_x_offset, formats_rect_y_offset);
-
-                    dirty_hashes.extend(actual_rect_on_sheet.to_hashes());
-
-                    if needs_resize {
-                        self.get_rows_with_wrap_in_rect(
-                            &data_table_pos,
-                            &actual_rect_on_sheet,
-                            false,
-                            rows_to_resize,
-                        );
-                    }
-                });
-        }
-    }
-
-    fn wrap_transaction_changes(
-        &self,
-        data_table_pos: Pos,
-        wrap: SheetFormatUpdatesType<CellWrap>,
-        dirty_hashes: &mut HashSet<Pos>,
-        rows_to_resize: &mut HashSet<i64>,
-    ) {
-        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
-        let data_table_formats_rect = self.output_rect((1, 1).into(), true);
-        if let Some(wrap) = wrap {
-            wrap.to_rects_with_rect_bounds(data_table_formats_rect)
-                .for_each(|(x1, y1, x2, y2, value)| {
-                    let formats_rect = Rect::new(x1, y1, x2, y2);
-                    let formats_rect_x_offset = data_table_pos.x - 1;
-                    let formats_rect_y_offset = data_table_pos.y - 1 + self.y_adjustment(true);
-                    let actual_rect_on_sheet =
-                        formats_rect.translate(formats_rect_x_offset, formats_rect_y_offset);
-
-                    dirty_hashes.extend(actual_rect_on_sheet.to_hashes());
-
-                    // check if new formats is wrap
-                    if value == ClearOption::Some(CellWrap::Wrap) {
-                        for y in y1..=y2 {
-                            let actual_y_on_sheet = y + formats_rect_y_offset;
-                            if rows_to_resize.contains(&actual_y_on_sheet) {
-                                continue;
-                            }
-
-                            if self.has_content_in_row(y) {
-                                rows_to_resize.insert(actual_y_on_sheet);
-                            }
-                        }
-                    }
-                });
         }
     }
 
@@ -204,7 +123,6 @@ impl DataTable {
         transaction: &mut PendingTransaction,
         data_table_pos: SheetPos,
         formats: &SheetFormatUpdates,
-        reverse_formats: &SheetFormatUpdates,
     ) {
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return;
@@ -227,6 +145,13 @@ impl DataTable {
             data_table_pos,
             &formats.vertical_align,
             false,
+            &mut dirty_hashes,
+            &mut rows_to_resize,
+        );
+        self.format_transaction_changes(
+            data_table_pos,
+            &formats.wrap,
+            true,
             &mut dirty_hashes,
             &mut rows_to_resize,
         );
@@ -294,21 +219,6 @@ impl DataTable {
             &mut rows_to_resize,
         );
 
-        // for wrap, we need to check if the new formats is wrap or old is wrap
-        // no need to resize rows if wrap is not present in both new and old formats
-        self.wrap_transaction_changes(
-            data_table_pos,
-            formats.wrap.to_owned(),
-            &mut dirty_hashes,
-            &mut rows_to_resize,
-        );
-        self.wrap_transaction_changes(
-            data_table_pos,
-            reverse_formats.wrap.to_owned(),
-            &mut dirty_hashes,
-            &mut rows_to_resize,
-        );
-
         if !transaction.is_server() {
             if !dirty_hashes.is_empty() {
                 let dirty_hashes_transaction =
@@ -326,6 +236,97 @@ impl DataTable {
 
             if formats.fill_color.is_some() {
                 transaction.add_fill_cells(sheet_id);
+            }
+        }
+    }
+
+    fn format_transaction_changes<T: std::fmt::Debug + Clone + PartialEq>(
+        &self,
+        data_table_pos: Pos,
+        format: &SheetFormatUpdatesType<T>,
+        needs_resize: bool,
+        dirty_hashes: &mut HashSet<Pos>,
+        rows_to_resize: &mut HashSet<i64>,
+    ) {
+        let y_adjustment = self.y_adjustment(true);
+
+        // 1-based for formatting, just max bounds are needed to finitize formatting bounds
+        let data_table_formats_rect = self.output_rect((1, 1).into(), true);
+
+        if let Some(format) = format {
+            format
+                .nondefault_rects_in_rect(data_table_formats_rect)
+                .for_each(|(formats_rect, _value)| {
+                    for x in formats_rect.x_range() {
+                        if let Ok(actual_col) = u32::try_from(x - 1) {
+                            let display_col = data_table_pos.x
+                                + self.get_display_index_from_column_index(actual_col, false);
+
+                            for y in formats_rect.y_range() {
+                                if let Ok(actual_row) = u64::try_from(y - 1) {
+                                    let display_row = data_table_pos.y
+                                        + y_adjustment
+                                        + self.get_display_index_from_row_index(actual_row) as i64;
+
+                                    let mut hash: Pos = (display_col, display_row).into();
+                                    hash.to_quadrant();
+                                    dirty_hashes.insert(hash);
+                                }
+                            }
+                        }
+                    }
+
+                    if needs_resize {
+                        self.get_rows_with_wrap_in_formats_rect(
+                            &data_table_pos,
+                            formats_rect,
+                            false,
+                            rows_to_resize,
+                        );
+                    }
+                });
+        }
+    }
+
+    fn get_rows_with_wrap_in_formats_rect(
+        &self,
+        data_table_pos: &Pos,
+        formats_rect: Rect,
+        include_blanks: bool,
+        rows_to_resize: &mut HashSet<i64>,
+    ) {
+        let y_adjustment = self.y_adjustment(true);
+
+        if let Some(formats) = self.formats.as_ref() {
+            for (rect, value) in formats.wrap.nondefault_rects_in_rect(formats_rect) {
+                if value != Some(CellWrap::Wrap) {
+                    continue;
+                }
+
+                for y in rect.y_range() {
+                    if let Ok(y_u32) = u32::try_from(y - 1) {
+                        let actual_row = data_table_pos.y
+                            + y_adjustment
+                            + self.get_display_index_from_row_index(y_u32 as u64) as i64;
+
+                        if rows_to_resize.contains(&actual_row) {
+                            continue;
+                        }
+
+                        let check_value = include_blanks
+                            || rect.x_range().any(|x| {
+                                u32::try_from(x - 1).ok().is_some_and(|x_u32| {
+                                    self.cell_value_at(x_u32, y_u32).is_some_and(|cell_value| {
+                                        !cell_value.is_blank_or_empty_string()
+                                    })
+                                })
+                            });
+
+                        if check_value {
+                            rows_to_resize.insert(actual_row);
+                        }
+                    }
+                }
             }
         }
     }

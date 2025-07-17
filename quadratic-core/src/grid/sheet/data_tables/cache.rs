@@ -200,21 +200,45 @@ impl MultiCellTablesCache {
                     }
 
                     // handle sorted rows
-                    if let Some(display_buffer) = &data_table.display_buffer {
-                        let mut sorted_empty_values_cache = Contiguous2D::new();
-                        for (display_row, &actual_row) in display_buffer.iter().enumerate() {
-                            if let Some(mut row) =
-                                empty_values_cache.copy_row(actual_row as i64 + 1)
-                            {
-                                row.translate_in_place(0, display_row as i64 - actual_row as i64);
-                                sorted_empty_values_cache.set_from(&row);
-                            }
-                        }
-                        std::mem::swap(&mut empty_values_cache, &mut sorted_empty_values_cache);
-                    }
+                    let empty_values_cache =
+                        if data_table.display_buffer.is_some() {
+                            let mut sorted_empty_values_cache = Contiguous2D::new();
+                            sorted_empty_values_cache.set_rect(
+                                x1,
+                                y1 + y_adjustment,
+                                Some(x2),
+                                Some(y2),
+                                Some(None),
+                            );
 
-                    // convert to sheet coordinates
-                    empty_values_cache.translate_in_place(x1 - 1, y1 - 1 + y_adjustment);
+                            for (rect, value) in empty_values_cache
+                                .nondefault_rects_in_rect(Rect::new(1, 1, i64::MAX, i64::MAX))
+                            {
+                                if value == Some(Some(true)) {
+                                    for y in rect.y_range() {
+                                        if let Ok(actual_row) = u64::try_from(y - 1) {
+                                            let display_row = data_table
+                                                .get_display_index_from_row_index(actual_row);
+
+                                            sorted_empty_values_cache.set_rect(
+                                                x1 + rect.min.x - 1,
+                                                y1 + y_adjustment + display_row as i64,
+                                                Some(x1 + rect.max.x - 1),
+                                                Some(y1 + y_adjustment + display_row as i64),
+                                                value,
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
+                            sorted_empty_values_cache
+                        } else {
+                            // convert to sheet coordinates
+                            empty_values_cache.translate_in_place(x1 - 1, y1 + y_adjustment - 1);
+                            empty_values_cache
+                        };
+
                     self.multi_cell_tables_empty.set_from(&empty_values_cache);
 
                     // mark table name and column headers as non-empty
@@ -223,7 +247,7 @@ impl MultiCellTablesCache {
                             x1,
                             y1,
                             Some(x2),
-                            Some(y1 - 1 + y_adjustment),
+                            Some(y1 + y_adjustment - 1),
                             None,
                         );
                     }

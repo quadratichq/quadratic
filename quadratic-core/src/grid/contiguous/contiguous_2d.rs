@@ -663,25 +663,6 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
             })
     }
 
-    /// Returns the set of rectangles that have values. Each rectangle is `(x1,
-    /// y1, x2, y2, value)` with inclusive coordinates. Unlike `to_rects()`,
-    /// this returns concrete coordinates rather than potentially infinite
-    /// bounds.
-    ///
-    /// `None` values are skipped.
-    pub fn to_rects_with_rect_bounds(
-        &self,
-        rect: Rect,
-    ) -> impl '_ + Iterator<Item = (i64, i64, i64, i64, T)> {
-        self.to_rects()
-            .map(move |(x1, y1, x2, y2, value)| match (x2, y2) {
-                (Some(x2), Some(y2)) => (x1, y1, x2, y2, value),
-                (None, Some(y2)) => (x1, y1, rect.max.x.max(x1), y2, value),
-                (Some(x2), None) => (x1, y1, x2, rect.max.y.max(y1), value),
-                _ => (x1, y1, rect.max.x.max(x1), rect.max.y.max(y1), value),
-            })
-    }
-
     /// Constructs an update for a selection, taking values from `self` at every
     /// location in the selection.
     pub fn get_update_for_selection(

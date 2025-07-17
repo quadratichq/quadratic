@@ -73,11 +73,6 @@ impl Sheet {
         }
     }
 
-    /// Returns anchor positions of data tables that intersect a rect
-    pub fn data_tables_pos_intersect_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
-        self.data_tables.iter_pos_in_rect(rect, false)
-    }
-
     /// Returns anchor positions of data tables that intersect a rect, sorted by index
     pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
         self.data_tables
