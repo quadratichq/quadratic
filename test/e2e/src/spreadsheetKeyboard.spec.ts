@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
-import { cleanUpFiles, openNewFile, uploadFile } from './helpers/file.helpers';
+import { cleanUpFiles, createFile, uploadFile } from './helpers/file.helpers';
 import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
 import { assertCellValue, assertSelection, gotoCells } from './helpers/sheet.helper';
 
@@ -226,7 +226,7 @@ test('Keyboard Editing', async ({ page }) => {
   // Clean up lingering files
   await cleanUpFiles(page, { fileName });
 
-  await openNewFile(page, fileName);
+  await createFile(page, { fileName, skipNavigateBack: true });
 
   await page.keyboard.type('Hello', { delay: 100 });
   await page.keyboard.press('Enter', { delay: 100 });

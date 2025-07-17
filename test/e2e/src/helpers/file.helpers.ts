@@ -3,39 +3,9 @@ import path from 'path';
 
 type CreateFileOptions = {
   fileName: string;
+  skipNavigateBack?: boolean;
 };
-export const createFile = async (page: Page, { fileName }: CreateFileOptions) => {
-  // Click New File
-  await page.locator(`button:text-is("New file")`).click({ timeout: 60 * 1000 });
-
-  const quadraticLoading = page.locator('html[data-loading-start]');
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
-
-  // Name file
-  await page.getByRole('button', { name: 'Untitled' }).click({ timeout: 60000 });
-  await page.keyboard.type(fileName);
-  await page.keyboard.press('Enter');
-  await page.waitForTimeout(5 * 1000);
-
-  // Close AI chat box as needed
-  try {
-    await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
-  } catch (e) {
-    console.error(e);
-  }
-
-  // Navigate back to files
-  await page.locator(`nav a >> nth = 0`).click({ timeout: 60 * 1000 });
-  await page.waitForTimeout(10 * 1000);
-  await page.waitForLoadState('domcontentloaded');
-  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
-  await page.waitForLoadState('networkidle');
-};
-
-export const openNewFile = async (page: Page, fileName: string) => {
+export const createFile = async (page: Page, { fileName, skipNavigateBack = false }: CreateFileOptions) => {
   // Click New File
   await page.locator(`button:text-is("New file")`).click({ timeout: 30 * 1000 });
 
@@ -56,6 +26,15 @@ export const openNewFile = async (page: Page, fileName: string) => {
     await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
   } catch (e) {
     console.error(e);
+  }
+
+  if (!skipNavigateBack) {
+    // Navigate back to files
+    await page.locator(`nav a >> nth = 0`).click({ timeout: 60 * 1000 });
+    await page.waitForTimeout(10 * 1000);
+    await page.waitForLoadState('domcontentloaded');
+    await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+    await page.waitForLoadState('networkidle');
   }
 };
 
