@@ -26,7 +26,7 @@ export function useTablesContextMessages() {
     const dataTables = tablesContext.flatMap((tx) => tx.data_tables);
     const codeTables = tablesContext.flatMap((tx) => tx.code_tables);
     const charts = tablesContext.flatMap((tx) => tx.charts);
-    console.log(dataTables);
+
     return [
       {
         role: 'user',
