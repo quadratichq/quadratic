@@ -574,7 +574,7 @@ export const aiToolsActions: AIToolActionsRecord = {
           args.first_row_is_column_names,
           sheets.getCursorPosition()
         );
-        if (response) {
+        if (response?.result) {
           return [
             {
               type: 'text',
@@ -585,7 +585,7 @@ export const aiToolsActions: AIToolActionsRecord = {
           return [
             {
               type: 'text',
-              text: 'Error executing convert to table tool',
+              text: response?.error ?? 'Error executing convert to table tool',
             },
           ];
         }

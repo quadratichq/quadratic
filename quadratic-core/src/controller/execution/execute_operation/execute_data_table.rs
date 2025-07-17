@@ -639,7 +639,7 @@ impl GridController {
             let sheet = self.try_sheet_result(sheet_id)?;
             let sheet_pos = sheet_rect.min.to_sheet_pos(sheet_id);
 
-            let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into());
+            let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into())?;
 
             if !no_data_table {
                 return Ok(());

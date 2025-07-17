@@ -42,11 +42,11 @@ impl GridController {
         sheet_rect: SheetRect,
         table_name: Option<String>,
         first_row_is_header: bool,
-    ) -> Vec<Operation> {
+    ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
 
         if let Some(sheet) = self.grid.try_sheet(sheet_rect.sheet_id) {
-            let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into());
+            let no_data_table = sheet.enforce_no_data_table_within_rect(sheet_rect.into())?;
 
             if no_data_table {
                 ops.push(Operation::GridToDataTable { sheet_rect });
@@ -72,7 +72,7 @@ impl GridController {
             }
         }
 
-        ops
+        Ok(ops)
     }
 
     pub fn data_table_meta_operations(
@@ -524,7 +524,9 @@ mod test {
         gc.set_cell_values(sheet_pos, values, None);
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
-        let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
+        let ops = gc
+            .grid_to_data_table_operations(sheet_rect, None, false)
+            .unwrap();
         gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
 
         let import = Import::new("Table1".into());
@@ -552,7 +554,9 @@ mod test {
 
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
-        let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
+        let ops = gc
+            .grid_to_data_table_operations(sheet_rect, None, false)
+            .unwrap();
 
         // no operations should be needed since the formula data table is in
         // the selection
