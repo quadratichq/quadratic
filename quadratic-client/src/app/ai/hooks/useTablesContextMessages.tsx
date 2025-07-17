@@ -26,7 +26,7 @@ export function useTablesContextMessages() {
     const dataTables = tablesContext.flatMap((tx) => tx.data_tables);
     const codeTables = tablesContext.flatMap((tx) => tx.code_tables);
     const charts = tablesContext.flatMap((tx) => tx.charts);
-
+    console.log(dataTables);
     return [
       {
         role: 'user',
@@ -45,6 +45,7 @@ All these tables and charts have first row as table or chart name, respectively.
 Data tables and code tables have column headers after the table name (if visible). These take up the next row of table height. These can also be hidden in the UI. When hidden, this does not take up any space in the sheet grid.\n
 The actual data starts after the table name and column headers. This is a grid of cells with values for data table and code cells for code table. This a interactive chart for charts.\n
 If there is any data present in the sheet where the table or chart is suppose to take place, it result into spill and the table or chart is displayed as spill error at the root cell of the table or chart.\n
+To fix a spill, use the move_cells tool to move the anchor cell of the table to a different position. Ensure that the position has sufficient space to accommodate the entire table without creating another spill.\n
 \n\n
 
 ${
@@ -52,10 +53,10 @@ ${
     ? `
 I am sharing data tables in the currently open file for reference as an array of objects described below:\n
 Each data table has following properties:\n
-- sheet_name: This is the name of the sheet.\n
+- sheet_name: This is the name of the sheet where the data table is present.\n
 - data_table_name: This is the name of the data table.\n
-- all_columns: This is an array of all columns in the data table.\n
-- visible_columns: This is an array of visible columns in the data table.\n
+- all_columns: This is an array of the names of all columns in the data table.\n
+- visible_columns: This is an array of the names of all visible columns in the data table.\n
 - first_row_visible_values: This is an array of visible values in the first row of the data table.\n
 - last_row_visible_values: This is an array of visible values in the last row of the data table.\n
 - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
