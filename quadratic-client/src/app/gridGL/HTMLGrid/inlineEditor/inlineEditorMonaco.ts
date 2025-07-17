@@ -520,16 +520,10 @@ class InlineEditorMonaco {
 
     monaco.languages.register({ id: 'inline-editor' });
     monaco.languages.registerCompletionItemProvider('inline-editor', {
-      provideCompletionItems: (model, position, context, token) => {
-        const lowerCase = this.get().toLowerCase();
-        const filteredList = this.autocompleteList?.filter(
-          (t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length
-        );
-        if (!this.autocompleteList || filteredList?.length !== 1) {
-          // this.autocompleteSuggestionShowing = false;
+      provideCompletionItems: (model, position) => {
+        if (!this.autocompleteList || !this.autocompleteSuggestionShowing) {
           return;
         }
-        // this.autocompleteSuggestionShowing = true;
         const word = model.getWordUntilPosition(position);
         const range = new monaco.Range(position.lineNumber, 1, position.lineNumber, word.endColumn);
         return {
