@@ -20,7 +20,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
-import Decimal from 'decimal.js';
+import BigNumber from 'bignumber.js';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 
@@ -226,10 +226,10 @@ class InlineEditorHandler {
             if (jsCellValue.kind === 'number') {
               this.formatSummary.align = this.formatSummary.align ?? 'right';
             }
-            value = jsCellValue.kind === 'number' ? new Decimal(jsCellValue.value).toString() : jsCellValue.value;
+            value = jsCellValue.kind === 'number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
             if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
               try {
-                const number = new Decimal(value).mul(100).toString();
+                const number = new BigNumber(value).multipliedBy(100).toString();
                 value = number + '%';
               } catch (e) {}
             }
