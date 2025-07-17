@@ -554,15 +554,8 @@ mod test {
 
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
-        let ops = gc
-            .grid_to_data_table_operations(sheet_rect, None, false)
-            .unwrap();
-
-        // no operations should be needed since the formula data table is in
-        // the selection
-        assert_eq!(ops.len(), 0);
-
-        gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
+        let ops = gc.grid_to_data_table_operations(sheet_rect, None, false);
+        assert!(ops.is_err());
 
         // there should still be just 1 data table
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
