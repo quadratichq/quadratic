@@ -47,7 +47,7 @@ export const QuadraticAppDebugSettings = () => {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetContent showOverlay={false}>
+      <SheetContent showOverlay={false} className="flex flex-col">
         <SheetHeader>
           <SheetTitle>Debugging flags</SheetTitle>
           <SheetDescription>
