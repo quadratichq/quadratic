@@ -10,7 +10,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -41,6 +41,8 @@ type AIAnalystMessagesProps = {
 };
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
+  const { debug, debugFlags } = useDebugFlags();
+
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
@@ -165,7 +167,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     >
       {messages.map((message, index) => {
         if (
-          !debugFlag('debugShowAIInternalContext') &&
+          !debugFlags.getFlag('debugShowAIInternalContext') &&
           !['userPrompt', 'webSearchInternal'].includes(message.contextType)
         ) {
           return null;
@@ -184,7 +186,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {debugFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
