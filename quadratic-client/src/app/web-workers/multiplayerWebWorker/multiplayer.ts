@@ -106,7 +106,7 @@ export class Multiplayer {
     this.refreshMessengers();
     this.state = 'startup';
 
-    console.log('[Multiplayer] terminated');
+    if (debugFlag('debugWebWorkers')) console.log('[Multiplayer] terminated');
   }
 
   refreshMessengers() {
@@ -228,6 +228,8 @@ export class Multiplayer {
     if (debugFlag('debugWebWorkers')) console.log('[Multiplayer] Initialized');
   }
 
+  // used to re-initialize the multiplayer web worker after a core error,
+  // using existing fileId, user, and anonymous state
   async reInit() {
     if (this.fileId && this.user && this.anonymous !== undefined) {
       await this.init(this.fileId, this.user, this.anonymous);

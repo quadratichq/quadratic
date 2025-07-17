@@ -68,7 +68,7 @@ class RenderText extends Singleton {
       this.ready();
     });
 
-    console.log('[RenderText] initialized');
+    if (debugFlag('debugWebWorkers')) console.log('[RenderText] initialized');
   }
 
   clientInit(bitmapFonts: RenderBitmapFonts) {

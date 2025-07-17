@@ -370,7 +370,7 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    // pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
+    pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
   rebuild = () => {

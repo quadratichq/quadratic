@@ -1,5 +1,11 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 
+/**
+ * Singleton class to ensure only one instance of a class is created.
+ * Allows for easy refreshing of the singleton instance.
+ * Intended to be used for web worker messengers, but can be used for any class.
+ * Meant to be extended by the class it is managing.
+ */
 export class Singleton {
   private static instances = new Map<Function, any>();
 

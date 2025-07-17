@@ -87,8 +87,6 @@ export const reload = async (uuid: string) => {
 };
 
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
-  console.log('file.$uuid.tsx loader');
-
   // only load assets if they haven't already been loaded
   if (!assetsLoaded) {
     // Start loading PIXI assets early and asynchronously
