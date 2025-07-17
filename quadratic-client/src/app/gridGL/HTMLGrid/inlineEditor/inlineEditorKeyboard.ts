@@ -143,6 +143,7 @@ class InlineEditorKeyboard {
     ) {
       events.emit('suggestionDropdownKeyboard', e.key as 'ArrowDown' | 'ArrowUp' | 'Enter' | 'Escape' | 'Tab');
       e.preventDefault();
+      e.stopPropagation();
       return;
     }
 
@@ -198,7 +199,7 @@ class InlineEditorKeyboard {
     // Tab key
     else if (matchShortcut(Action.SaveInlineEditorMoveRight, e)) {
       if (inlineEditorMonaco.autocompleteSuggestionShowing) {
-        inlineEditorMonaco.autocompleteSuggestionShowing = false;
+        return;
       } else {
         e.stopPropagation();
         e.preventDefault();

@@ -1002,6 +1002,7 @@ export interface ClientCoreGridToDataTable {
 export interface CoreClientGridToDataTable {
   type: 'coreClientGridToDataTable';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreDataTableMeta {
@@ -1189,6 +1190,18 @@ export interface CoreClientContentCache {
   contentCache: Uint8Array;
 }
 
+export interface ClientCoreGetFormatSelection {
+  type: 'clientCoreGetFormatSelection';
+  id: number;
+  selection: string;
+}
+
+export interface CoreClientGetFormatSelection {
+  type: 'coreClientGetFormatSelection';
+  id: number;
+  format: CellFormatSummary | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1282,7 +1295,8 @@ export type ClientCoreMessage =
   | ClientCoreResizeColumns
   | ClientCoreResizeRows
   | ClientCoreResizeAllColumns
-  | ClientCoreResizeAllRows;
+  | ClientCoreResizeAllRows
+  | ClientCoreGetFormatSelection;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1354,4 +1368,5 @@ export type CoreClientMessage =
   | CoreClientGridToDataTable
   | CoreClientDataTablesCache
   | CoreClientContentCache
-  | CoreClientSetCellRenderResize;
+  | CoreClientSetCellRenderResize
+  | CoreClientGetFormatSelection;

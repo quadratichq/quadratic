@@ -10,10 +10,11 @@ impl GridController {
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
     #[allow(clippy::too_many_arguments)]
+    #[function_timer::function_timer]
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
@@ -83,16 +84,15 @@ impl GridController {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use std::str::FromStr;
 
     use crate::{
         CellValue, Rect, RunError, RunErrorMsg, Span,
         grid::{CodeCellLanguage, CodeCellValue},
+        number::decimal_from_str,
         test_util::*,
         wasm_bindings::js::clear_js_calls,
     };
 
-    use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime};
 
     use crate::wasm_bindings::js::expect_js_call_count;
@@ -125,7 +125,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -176,7 +176,7 @@ pub(crate) mod tests {
 
         let result = grid_controller.import_csv(
             sheet_id,
-            "".as_bytes().to_vec(),
+            "".as_bytes(),
             "smallpop.csv",
             pos,
             None,
@@ -202,7 +202,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             gc.grid.sheets()[0].id,
-            csv.as_bytes().to_vec(),
+            csv.as_bytes(),
             "large.csv",
             Pos { x: 0, y: 0 },
             None,
@@ -221,7 +221,7 @@ pub(crate) mod tests {
         let ops = gc
             .import_csv_operations(
                 gc.grid.sheets()[0].id,
-                csv.as_bytes().to_vec(),
+                csv.as_bytes(),
                 "bad line",
                 Pos { x: 0, y: 0 },
                 Some(b','),
@@ -271,7 +271,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             sheet.cell_value((5, 2).into()).unwrap(),
-            CellValue::Number(BigDecimal::from_str("1.1").unwrap())
+            CellValue::Number(decimal_from_str("1.1").unwrap())
         );
         assert_eq!(
             sheet.cell_value((6, 2).into()).unwrap(),
@@ -281,7 +281,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             sheet.cell_value((7, 2).into()).unwrap(),
-            CellValue::Number(BigDecimal::from_str("1").unwrap())
+            CellValue::Number(decimal_from_str("1").unwrap())
         );
         assert_eq!(
             sheet.cell_value((8, 2).into()).unwrap(),
@@ -480,7 +480,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -508,7 +508,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -535,7 +535,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -591,7 +591,7 @@ pub(crate) mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
             .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
         assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
@@ -605,7 +605,7 @@ pub(crate) mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
             .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 1, "test_special_character_.csv");
         assert_cell_value_row(
@@ -651,7 +651,7 @@ pub(crate) mod tests {
         let sheet_id = first_sheet_id(&gc);
         let file_name = "customers-100.csv";
         let csv_file = read_test_csv_file(file_name);
-        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
             .unwrap();
         assert_table_count(&gc, sheet_id, 1);
     }

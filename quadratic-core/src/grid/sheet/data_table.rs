@@ -489,7 +489,7 @@ impl Sheet {
     /// You shouldn't be able to create a data table that includes a data table.
     /// Deny the action and give a popup explaining why it was blocked.
     /// Returns true if the data table is not within the rect
-    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
+    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> Result<bool> {
         let contains_data_table = self.contains_data_table_within_rect(rect, None);
 
         #[cfg(any(target_family = "wasm", test))]
@@ -497,9 +497,11 @@ impl Sheet {
             let message = "Tables cannot be created over tables, code, or formulas.";
             let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
             crate::wasm_bindings::js::jsClientMessage(message.into(), severity.to_string());
+
+            return Err(anyhow!(message));
         }
 
-        !contains_data_table
+        Ok(!contains_data_table)
     }
 
     /// Sets or deletes a data table.
@@ -532,7 +534,6 @@ mod test {
         test_create_code_table, test_create_data_table, test_create_html_chart,
         test_create_js_chart,
     };
-    use bigdecimal::BigDecimal;
 
     pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
@@ -550,7 +551,7 @@ mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Single(CellValue::Number(BigDecimal::from(2))),
+            Value::Single(CellValue::Number(2.into())),
             false,
             None,
             None,
@@ -598,7 +599,7 @@ mod test {
 
         assert_eq!(
             sheet.get_code_cell_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(sheet.data_table_at(&pos![A1]), Some(&data_table));
         assert_eq!(sheet.data_table_at(&pos![B2]), None);

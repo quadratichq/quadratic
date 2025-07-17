@@ -4,14 +4,17 @@ import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParams
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type {
   AIRequestHelperArgs,
+  AzureOpenAIModelKey,
+  BasetenModelKey,
   OpenAIModelKey,
+  OpenRouterModelKey,
   ParsedAIResponse,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | XAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
   args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
@@ -26,7 +29,7 @@ export const handleOpenAIRequest = async (
     model,
     messages,
     temperature: options.temperature,
-    max_completion_tokens: options.max_tokens,
+    max_completion_tokens: !options.max_tokens ? undefined : options.max_tokens,
     stream: options.stream,
     tools,
     tool_choice,

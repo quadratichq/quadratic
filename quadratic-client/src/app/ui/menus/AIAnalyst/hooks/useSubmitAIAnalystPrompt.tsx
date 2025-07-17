@@ -1,5 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDateTimeContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
@@ -26,7 +27,8 @@ import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWe
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
-  getPromptMessagesForAI,
+  getMessagesForAI,
+  getPromptAndInternalMessages,
   isContentFile,
   removeOldFilesInToolResult,
   replaceOldGetToolCallResults,
@@ -70,6 +72,7 @@ export type SubmitAIAnalystPromptArgs = {
 
 export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
+  const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
@@ -82,27 +85,35 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext, filesContext] =
+        const [filesContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
           await Promise.all([
+            getFilesContext({ chatMessages }),
             getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
-            getFilesContext({ chatMessages }),
           ]);
 
         const messagesWithContext: ChatMessage[] = [
+          ...filesContext,
           ...otherSheetsContext,
           ...tablesContext,
+          ...getCurrentDateTimeContext(),
           ...currentSheetContext,
           ...visibleContext,
-          ...filesContext,
-          ...getPromptMessagesForAI(chatMessages),
+          ...getPromptAndInternalMessages(chatMessages),
         ];
 
         return messagesWithContext;
       },
-    [getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext, getFilesContext]
+    [
+      getCurrentDateTimeContext,
+      getOtherSheetsContext,
+      getTablesContext,
+      getCurrentSheetContext,
+      getVisibleContext,
+      getFilesContext,
+    ]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -243,18 +254,23 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             toolCallIterations++;
 
-            // Send tool call results to API
-            const messagesWithContext = await updateInternalContext({ context, chatMessages });
+            // Update internal context
+            chatMessages = await updateInternalContext({ context, chatMessages });
+            set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
-            if (debugFlag('debugShowAIInternalContext')) {
+            const messagesForAI = getMessagesForAI(chatMessages);
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
+
+            if (debugFlag('debugLogJsonAIInternalContext')) {
               console.log('AIAnalyst messages with context:', {
                 context,
-                messagesWithContext,
+                messagesForAI,
               });
             }
-            if (debugFlag('debugPrintAIInternalContext')) {
+
+            if (debugFlag('debugLogReadableAIInternalContext')) {
               console.log(
-                messagesWithContext
+                messagesForAI
                   .filter((message) => message.role === 'user' && message.contextType === 'userPrompt')
                   .map((message) => {
                     return `${message.role}: ${message.content.map((content) => {
@@ -269,14 +285,12 @@ export function useSubmitAIAnalystPrompt() {
               );
             }
 
-            lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAnalyst',
               messageSource,
               modelKey,
-              time: new Date().toString(),
-              messages: messagesWithContext,
+              messages: messagesForAI,
               useStream: USE_STREAM,
               toolName: undefined,
               useToolsPrompt: true,

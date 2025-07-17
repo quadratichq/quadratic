@@ -6,10 +6,10 @@ use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::StreamExt;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -288,7 +288,7 @@ impl<'a> Connection<'a> for PostgresConnection {
             "BOOL" => to_arrow_type!(ArrowType::Boolean, bool, row, index),
             "REAL" | "FLOAT4" => to_arrow_type!(ArrowType::Float32, f32, row, index),
             "DOUBLE PRECISION" | "FLOAT8" => to_arrow_type!(ArrowType::Float64, f64, row, index),
-            "NUMERIC" => to_arrow_type!(ArrowType::BigDecimal, BigDecimal, row, index),
+            "NUMERIC" => to_arrow_type!(ArrowType::Decimal, Decimal, row, index),
             "TIMESTAMP" => to_arrow_type!(ArrowType::Timestamp, NaiveDateTime, row, index),
             "TIMESTAMPTZ" => to_arrow_type!(ArrowType::TimestampTz, DateTime<Local>, row, index),
             "DATE" => match convert_sqlx_type!(NaiveDate, row, index) {
@@ -346,7 +346,7 @@ impl<'a> Connection<'a> for PostgresConnection {
                             "DOUBLE PRECISION" | "FLOAT8" => {
                                 convert_sqlx_array_type!(Vec<f64>, row, index)
                             }
-                            "NUMERIC" => convert_sqlx_array_type!(Vec<BigDecimal>, row, index),
+                            "NUMERIC" => convert_sqlx_array_type!(Vec<Decimal>, row, index),
                             "TIMESTAMP" => convert_sqlx_array_type!(Vec<NaiveDateTime>, row, index),
                             "TIMESTAMPTZ" => {
                                 convert_sqlx_array_type!(Vec<DateTime<Local>>, row, index)
@@ -389,6 +389,14 @@ impl UsesSsh for PostgresConnection {
 
     fn set_port(&mut self, port: u16) {
         self.port = Some(port.to_string());
+    }
+
+    fn host(&self) -> String {
+        self.host.clone()
+    }
+
+    fn set_host(&mut self, host: String) {
+        self.host = host;
     }
 
     fn ssh_host(&self) -> Option<String> {
@@ -681,8 +689,8 @@ pub mod tests {
             ArrowType::Int16(32767),
             ArrowType::Int32(2147483647),
             ArrowType::Int64(9223372036854775807),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.6700").unwrap()),
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap()),
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap()),
             ArrowType::Float32(123.45),
             ArrowType::Float64(123456789.123456),
             ArrowType::Int32(1),
@@ -717,7 +725,7 @@ pub mod tests {
             ArrowType::Utf8("1,2,3".into()),
             ArrowType::Utf8("32767,16384,8192".into()),
             ArrowType::Utf8("9223372036854775807,4611686018427387903,2305843009213693951".into()),
-            ArrowType::Utf8("123.4500,67.8900,12.3400".into()),
+            ArrowType::Utf8("123.45,67.89,12.34".into()),
             ArrowType::Utf8("123.45,67.89,12.34".into()),
             ArrowType::Utf8("123456789.123456,987654321.987654,555555555.555555".into()),
             ArrowType::Utf8("text1,text2,text3".into()),

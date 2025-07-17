@@ -302,7 +302,7 @@ pub mod tests {
                 DataType::Utf8,
                 str_vec("9223372036854775807,4611686018427387903,2305843009213693951"),
             ),
-            (DataType::Utf8, str_vec("123.4500,67.8900,12.3400")),
+            (DataType::Utf8, str_vec("123.45,67.89,12.34")),
             (DataType::Utf8, str_vec("123.45,67.89,12.34")),
             (
                 DataType::Utf8,

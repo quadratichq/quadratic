@@ -17,7 +17,6 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Format,
   FormatUpdate,
   JsCellValue,
   JsCodeCell,
@@ -238,17 +237,13 @@ class Core {
     });
   }
 
-  getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
-    return new Promise((resolve) => {
+  getFormatSelection(selection: string): CellFormatSummary | undefined {
+    try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        const format = this.gridController.getFormatCell(sheetId, x, y);
-        resolve(format);
-      } catch (e) {
-        this.handleCoreError('getFormatCell', e);
-        resolve(undefined);
-      }
-    });
+      return this.gridController.getFormatSelection(selection);
+    } catch (e) {
+      this.handleCoreError('getFormatSelection', e);
+    }
   }
 
   receiveSequenceNum(sequenceNum: number) {
@@ -1269,10 +1264,15 @@ class Core {
     }
   }
 
-  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+  gridToDataTable(
+    sheetRect: string,
+    tableName: string | undefined,
+    firstRowIsHeader: boolean,
+    cursor: string
+  ): JsResponse | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.gridToDataTable(sheetRect, tableName, firstRowIsHeader, cursor);
+      return this.gridController.gridToDataTable(sheetRect, tableName, firstRowIsHeader, cursor);
     } catch (e) {
       this.handleCoreError('gridToDataTable', e);
     }

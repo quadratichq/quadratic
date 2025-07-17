@@ -18,7 +18,6 @@ import type {
   CellWrap,
   CodeCellLanguage,
   DataTableSort,
-  Format,
   FormatUpdate,
   JsBordersSheet,
   JsCellValue,
@@ -63,8 +62,10 @@ import type {
   CoreClientGetCodeCell,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
+  CoreClientGetFormatSelection,
   CoreClientGetJwt,
   CoreClientGetValidationList,
+  CoreClientGridToDataTable,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -470,7 +471,6 @@ class QuadraticCore {
     });
   }
 
-  // todo: we should probably only have getFormatCell and not this one...
   getCellFormatSummary(sheetId: string, x: number, y: number): Promise<CellFormatSummary> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -485,22 +485,6 @@ class QuadraticCore {
         resolve(message.formatSummary);
       };
       this.send(message);
-    });
-  }
-
-  getFormatCell(sheetId: string, x: number, y: number): Promise<Format | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { format: Format | undefined }) => {
-        resolve(message.format);
-      };
-      this.send({
-        type: 'clientCoreGetFormatCell',
-        sheetId,
-        x,
-        y,
-        id,
-      });
     });
   }
 
@@ -1288,11 +1272,16 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+  gridToDataTable(
+    sheetRect: string,
+    tableName: string | undefined,
+    firstRowIsHeader: boolean,
+    cursor: string
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = () => {
-        resolve(undefined);
+      this.waitingForResponse[id] = (message: CoreClientGridToDataTable) => {
+        resolve(message.response);
       };
       this.send({
         type: 'clientCoreGridToDataTable',
@@ -1452,6 +1441,20 @@ class QuadraticCore {
       sheetId,
       size,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  getFormatSelection(selection: string): Promise<CellFormatSummary | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetFormatSelection) => {
+        resolve(message.format);
+      };
+      this.send({
+        type: 'clientCoreGetFormatSelection',
+        id,
+        selection,
+      });
     });
   }
 }

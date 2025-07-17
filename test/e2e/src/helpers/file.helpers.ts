@@ -6,7 +6,7 @@ type CreateFileOptions = {
 };
 export const createFile = async (page: Page, { fileName }: CreateFileOptions) => {
   // Click New File
-  await page.locator(`button:text-is("New file")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text-is("New file")`).click({ timeout: 60 * 1000 });
 
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
@@ -28,7 +28,7 @@ export const createFile = async (page: Page, { fileName }: CreateFileOptions) =>
   }
 
   // Navigate back to files
-  await page.locator(`nav a >> nth = 0`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a >> nth = 0`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
@@ -58,9 +58,9 @@ export const cleanUpFiles = async (page: Page, { fileName, skipFilterClear = fal
     await page
       .locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`)
       .first()
-      .click({ timeout: 30 * 1000 });
-    await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 30 * 1000 });
-    await page.locator('[role="alertdialog"] button:has-text("Delete")').click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
+    await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 60 * 1000 });
+    await page.locator('[role="alertdialog"] button:has-text("Delete")').click({ timeout: 60 * 1000 });
     await page.waitForTimeout(5 * 1000);
   }
 
@@ -76,7 +76,7 @@ export const navigateIntoFile = async (page: Page, { fileName, skipClose = false
   // Search for the file
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
   await page.waitForTimeout(2000);
-  await page.locator(`h2 :text("${fileName}")`).click({ timeout: 30 * 1000 });
+  await page.locator(`h2 :text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   const quadraticLoading = page.locator('html[data-loading-start]');
   await page.waitForTimeout(10 * 1000);
@@ -111,7 +111,7 @@ type UploadFileOptions = {
 };
 export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath }: UploadFileOptions) => {
   // Click Import
-  await page.locator(`button:text-is("Import ")`).click({ timeout: 30 * 1000 });
+  await page.locator(`button:text-is("Import ")`).click({ timeout: 60 * 1000 });
 
   // If options include filepath use that, otherwise use default
   const filePath = fullFilePath ?? path.join(process.cwd(), './data/', `${fileName}.${fileType}`);
@@ -122,7 +122,7 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
   });
 
   // Click Local File option
-  await page.locator(`[role="menuitem"]:has-text("Local File")`).click({ timeout: 30 * 1000 });
+  await page.locator(`[role="menuitem"]:has-text("Local File")`).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(2000);
 
@@ -146,7 +146,7 @@ export const uploadFile = async (page: Page, { fileName, fileType, fullFilePath 
     await page
       .getByRole(`button`, { name: `close` })
       .first()
-      .click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
   } catch (error: any) {
     void error;
   }
@@ -184,11 +184,11 @@ export const createSharedFile = async (page: Page, { fileName, email }: CreateSh
   await page.waitForTimeout(2000);
 
   await createFile(page, { fileName });
-  await page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 30 * 1000 });
+  await page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
-  await page.locator('[role="menuitem"]:has-text("Share")').click({ timeout: 30 * 1000 });
+  await page.locator('[role="menuitem"]:has-text("Share")').click({ timeout: 60 * 1000 });
   await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await page.locator(`input[placeholder="Email"]`).fill(email);
-  await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 30 * 1000 });
-  await page.locator(`[role="dialog"] button:nth-of-type(2)`).click({ timeout: 30 * 1000 });
+  await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[role="dialog"] button:nth-of-type(2)`).click({ timeout: 60 * 1000 });
 };

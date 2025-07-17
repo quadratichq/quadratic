@@ -4,6 +4,7 @@ import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMes
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
+import { aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantCurrentChatMessagesCountAtom,
@@ -22,7 +23,8 @@ import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import mixpanel from 'mixpanel-browser';
 import {
   getLastAIPromptMessageIndex,
-  getPromptMessagesForAI,
+  getMessagesForAI,
+  getPromptAndInternalMessages,
   isContentFile,
   removeOldFilesInToolResult,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -61,7 +63,7 @@ export function useSubmitAIAssistantPrompt() {
           ...currentSheetContext,
           ...visibleContext,
           ...codeContext,
-          ...getPromptMessagesForAI(prevMessages),
+          ...getPromptAndInternalMessages(prevMessages),
         ];
 
         return messagesWithContext;
@@ -135,8 +137,8 @@ export function useSubmitAIAssistantPrompt() {
               if (currentContent?.type !== 'text') {
                 currentContent = { type: 'text', text: '' };
               }
-              currentContent.text += '\n\nRequest aborted by the user.';
               currentContent.text = currentContent.text.trim();
+              currentContent.text += '\n\nRequest aborted by the user.';
               newLastMessage.toolCalls = [];
               newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];
@@ -163,9 +165,15 @@ export function useSubmitAIAssistantPrompt() {
 
         let lastMessageIndex = -1;
         let chatId = '';
-        set(aiAssistantIdAtom, (prev) => {
-          chatId = prev ? prev : v4();
-          return chatId;
+        let chatMessages: ChatMessage[] = [];
+        set(aiAnalystCurrentChatAtom, (prev) => {
+          chatId = prev.id ? prev.id : v4();
+          chatMessages = prev.messages;
+          return {
+            ...prev,
+            id: chatId,
+            lastUpdated: Date.now(),
+          };
         });
 
         try {
@@ -174,16 +182,19 @@ export function useSubmitAIAssistantPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             toolCallIterations++;
 
-            // Send tool call results to API
-            const messagesWithContext = await updateInternalContext({ codeCell });
-            lastMessageIndex = getLastAIPromptMessageIndex(messagesWithContext);
+            // Update internal context
+            chatMessages = await updateInternalContext({ codeCell });
+            set(aiAssistantMessagesAtom, chatMessages);
+
+            const messagesForAI = getMessagesForAI(chatMessages);
+            lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
+
             const response = await handleAIRequestToAPI({
               chatId,
               source: 'AIAssistant',
               messageSource,
               modelKey,
-              time: new Date().toString(),
-              messages: messagesWithContext,
+              messages: messagesForAI,
               useStream: true,
               toolName: undefined,
               useToolsPrompt: true,
@@ -243,10 +254,12 @@ export function useSubmitAIAssistantPrompt() {
               return acc;
             }, new Set<string>());
 
-            set(aiAssistantMessagesAtom, (prev) => [
-              ...removeOldFilesInToolResult(prev, filesInToolResult),
-              toolResultMessage,
-            ]);
+            let nextChatMessages: ChatMessage[] = [];
+            set(aiAssistantMessagesAtom, (prev) => {
+              nextChatMessages = [...removeOldFilesInToolResult(prev, filesInToolResult), toolResultMessage];
+              return nextChatMessages;
+            });
+            chatMessages = nextChatMessages;
           }
         } catch (error) {
           set(aiAssistantMessagesAtom, (prevMessages) => {
@@ -257,8 +270,8 @@ export function useSubmitAIAssistantPrompt() {
               if (currentContent?.type !== 'text') {
                 currentContent = { type: 'text', text: '' };
               }
-              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
               currentContent.text = currentContent.text.trim();
+              currentContent.text += '\n\nLooks like there was a problem. Please try again.';
               newLastMessage.toolCalls = [];
               newLastMessage.content = [...newLastMessage.content.slice(0, -1), currentContent];
               return [...prevMessages.slice(0, -1), newLastMessage];

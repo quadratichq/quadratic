@@ -23,14 +23,18 @@ import type {
   AIRequestHelperArgs,
   AISource,
   AIUsage,
+  AzureOpenAIModelKey,
+  BasetenModelKey,
   Content,
   ImageContent,
   OpenAIModelKey,
+  OpenRouterModelKey,
   ParsedAIResponse,
   TextContent,
   ToolResultContent,
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { v4 } from 'uuid';
 
 function convertContent(content: Content): Array<ChatCompletionContentPart> {
   return content
@@ -159,7 +163,7 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | XAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -222,7 +226,7 @@ export async function parseOpenAIStream(
             if (tool_call.function?.name) {
               // New tool call
               responseMessage.toolCalls.push({
-                id: tool_call.id ?? '',
+                id: tool_call.id ?? v4(),
                 name: tool_call.function.name,
                 arguments: tool_call.function.arguments ?? '',
                 loading: true,
@@ -283,7 +287,7 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | XAIModelKey,
+  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response

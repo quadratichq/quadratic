@@ -9,8 +9,6 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { getGenAIApiArgs, parseGenAIResponse, parseGenAIStream } from '../helpers/genai.helper';
 
-const KEEP_ALIVE_INTERVAL = 25000;
-
 export const handleGenAIRequest = async (
   modelKey: VertexAIModelKey | GeminiAIModelKey,
   args: AIRequestHelperArgs,
@@ -29,7 +27,7 @@ export const handleGenAIRequest = async (
     config: {
       temperature: options.temperature,
       systemInstruction: system,
-      maxOutputTokens: options.max_tokens,
+      maxOutputTokens: !options.max_tokens ? undefined : options.max_tokens,
       tools,
       toolConfig: tool_choice,
       ...(options.thinking !== undefined && {
@@ -47,21 +45,7 @@ export const handleGenAIRequest = async (
     response?.setHeader('Connection', 'keep-alive');
     response?.write(`stream\n\n`);
 
-    // hack to keep stream alive when response takes longer than heroku's 30s timeout
-    let timeout: NodeJS.Timeout | undefined = undefined;
-    const keepStreamAlive = () => {
-      clearTimeout(timeout);
-      if (response?.writableEnded) {
-        return;
-      }
-      response?.write(`keep alive\n\n`);
-      timeout = setTimeout(keepStreamAlive, KEEP_ALIVE_INTERVAL);
-    };
-    keepStreamAlive();
-
     const result = await genai.models.generateContentStream(apiArgs);
-
-    clearTimeout(timeout);
 
     const parsedResponse = await parseGenAIStream(result, modelKey, isOnPaidPlan, exceededBillingLimit, response);
     return parsedResponse;
