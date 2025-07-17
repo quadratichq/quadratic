@@ -234,9 +234,9 @@ test('Keyboard Editing', async ({ page }) => {
   await assertCellValue(page, { a1: 'A1', value: 'Hello' });
 
   await page.keyboard.press('Enter', { delay: 100 });
-  await page.keyboard.type('10%', { delay: 100 });
+  await page.keyboard.type('14%', { delay: 100 });
 
-  await assertCellValue(page, { a1: 'A2', value: '10%' });
+  await assertCellValue(page, { a1: 'A2', value: '14%' });
 
   await page.keyboard.press('Enter', { delay: 100 });
 
