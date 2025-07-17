@@ -204,7 +204,13 @@ pub trait UsesSsh {
     // Set the port to connect to
     fn set_port(&mut self, port: u16);
 
-    // The host to connect to
+    // The database host to connect to
+    fn host(&self) -> String;
+
+    // Set the host to connect to
+    fn set_host(&mut self, host: String);
+
+    // The SSH host to connect to
     fn ssh_host(&self) -> Option<String>;
 
     // Set the SSH key
