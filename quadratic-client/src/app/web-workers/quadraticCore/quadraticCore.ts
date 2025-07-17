@@ -43,7 +43,6 @@ import type {
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
-import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   ClientCoreGetCellFormatSummary,
@@ -76,7 +75,14 @@ import type {
   CoreClientSummarizeSelection,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
+import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
+import { coreConnection } from '@/app/web-workers/quadraticCore/worker/coreConnection';
+import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavascript';
+import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
+import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
+import { coreRender } from '@/app/web-workers/quadraticCore/worker/coreRender';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
+import { initWorkers, stopWorkers } from '@/app/web-workers/workers';
 import { authClient } from '@/auth/auth';
 
 class QuadraticCore {
@@ -94,8 +100,29 @@ class QuadraticCore {
       this.worker.onmessage = this.handleMessage;
       this.worker.onerror = (e) => console.warn(`[core.worker] error: ${e.message}`, e);
 
+      if (debugFlag('debugWebWorkers')) console.log('[quadraticCore] worker initialized');
+
       this.sendInit();
     }
+  }
+
+  isInitialized() {
+    return this.worker !== undefined;
+  }
+
+  terminateWorker() {
+    this.worker?.terminate();
+    this.worker = undefined;
+    this.refreshMessengers();
+  }
+
+  refreshMessengers() {
+    coreClient.refreshSingleton();
+    coreConnection.refreshSingleton();
+    coreJavascript.refreshSingleton();
+    coreMultiplayer.refreshSingleton();
+    corePython.refreshSingleton();
+    coreRender.refreshSingleton();
   }
 
   private handleMessage = async (e: MessageEvent<CoreClientMessage>) => {
@@ -205,13 +232,15 @@ class QuadraticCore {
       if (debugFlag('debug')) {
         console.error('[quadraticCore] core error', e.data.from, e.data.error);
       }
+      stopWorkers();
+      initWorkers();
       events.emit('coreError', e.data.from, e.data.error);
       return;
     } else if (e.data.type === 'coreClientContentCache') {
-      events.emit('contentCache', e.data.sheetId, new SheetContentCache(e.data.contentCache));
+      // events.emit('contentCache', e.data.sheetId, new SheetContentCache(e.data.contentCache));
       return;
     } else if (e.data.type === 'coreClientDataTablesCache') {
-      events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
+      // events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
       return;
     }
 

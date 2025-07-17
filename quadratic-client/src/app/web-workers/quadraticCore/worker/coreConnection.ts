@@ -4,6 +4,7 @@ import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
+import { Singleton } from '@/app/web-workers/Singleton';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -18,7 +19,7 @@ declare var self: WorkerGlobalScope &
     ) => void;
   };
 
-class CoreConnection {
+class CoreConnection extends Singleton {
   controller: AbortController = new AbortController();
 
   lastTransactionId?: string;

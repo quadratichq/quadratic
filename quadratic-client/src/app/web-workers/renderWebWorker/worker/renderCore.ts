@@ -16,8 +16,9 @@ import type {
   RenderCoreResponseRowHeights,
 } from '@/app/web-workers/quadraticCore/coreRenderMessages';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
+import { Singleton } from '@/app/web-workers/Singleton';
 
-class RenderCore {
+class RenderCore extends Singleton {
   private renderCorePort?: MessagePort;
   private waitingForResponse: Map<number, Function> = new Map();
   private id = 0;

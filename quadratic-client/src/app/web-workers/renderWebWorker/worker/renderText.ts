@@ -22,6 +22,7 @@ import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { RenderBitmapFonts } from '@/app/web-workers/renderWebWorker/renderBitmapFonts';
 import { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
 import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
+import { Singleton } from '@/app/web-workers/Singleton';
 import type { Rectangle } from 'pixi.js';
 
 // We need Rust, Client, and Core to be initialized before we can start rendering
@@ -31,7 +32,7 @@ interface RenderTextStatus {
   core: false | SheetInfo[];
 }
 
-class RenderText {
+class RenderText extends Singleton {
   private firstRender = false;
   private complete = false;
   private status: RenderTextStatus = {
@@ -60,11 +61,14 @@ class RenderText {
   viewportBuffer: SharedArrayBuffer | undefined;
 
   constructor() {
+    super();
     this.viewportBuffer = undefined;
     initCoreRender().then(() => {
       this.status.rust = true;
       this.ready();
     });
+
+    console.log('[RenderText] initialized');
   }
 
   clientInit(bitmapFonts: RenderBitmapFonts) {

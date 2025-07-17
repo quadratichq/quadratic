@@ -58,6 +58,11 @@ class JavascriptWebWorker {
     quadraticCore.sendJavascriptInit(JavascriptCoreChannel.port2);
   }
 
+  terminate() {
+    this.worker?.terminate();
+    this.worker = undefined;
+  }
+
   cancelExecution = () => {
     mixpanel.track('[JavascriptWebWorker].restartFromUser');
     this.init();

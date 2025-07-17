@@ -18,6 +18,9 @@ import type {
   MultiplayerState,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
 import type { MultiplayerUser, ReceiveRoom } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
+import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
+import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
+import { multiplayerServer } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerServer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
@@ -39,6 +42,7 @@ export class Multiplayer {
 
   private anonymous?: boolean;
   private fileId?: string;
+  private user?: User;
   private jwt?: string | void;
 
   private codeRunning?: SheetPosTS[];
@@ -90,6 +94,25 @@ export class Multiplayer {
         },
       });
     };
+  }
+
+  isInitialized() {
+    return this.worker !== undefined;
+  }
+
+  terminate() {
+    this.worker?.terminate();
+    this.worker = undefined;
+    this.refreshMessengers();
+    this.state = 'startup';
+
+    console.log('[Multiplayer] terminated');
+  }
+
+  refreshMessengers() {
+    multiplayerClient.refreshSingleton();
+    multiplayerCore.refreshSingleton();
+    multiplayerServer.refreshSingleton();
   }
 
   private pythonState = (_state: LanguageState, current?: CodeRun, awaitingExecution?: CodeRun[]) => {
@@ -173,6 +196,7 @@ export class Multiplayer {
     const channel = new MessageChannel();
 
     this.fileId = fileId;
+    this.user = user;
     this.anonymous = anonymous;
     if (!this.anonymous) {
       await this.addJwtCookie();
@@ -200,6 +224,14 @@ export class Multiplayer {
       channel.port1
     );
     quadraticCore.initMultiplayer(channel.port2);
+
+    if (debugFlag('debugWebWorkers')) console.log('[Multiplayer] Initialized');
+  }
+
+  async reInit() {
+    if (this.fileId && this.user && this.anonymous !== undefined) {
+      await this.init(this.fileId, this.user, this.anonymous);
+    }
   }
 
   // used to pre-populate useMultiplayerUsers.tsx

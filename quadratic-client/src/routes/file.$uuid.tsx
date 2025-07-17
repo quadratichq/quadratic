@@ -1,6 +1,7 @@
 import { editorInteractionStateAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { loadAssets } from '@/app/gridGL/loadAssets';
+import { assetsLoaded, loadAssets } from '@/app/gridGL/loadAssets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import initCoreClient from '@/app/quadratic-core/quadratic_core';
@@ -8,14 +9,17 @@ import { VersionComparisonResult, compareVersions } from '@/app/schemas/compareV
 import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { QuadraticApp } from '@/app/ui/QuadraticApp';
 import { QuadraticAppDebugSettings } from '@/app/ui/QuadraticAppDebugSettings';
+import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { initWorkers } from '@/app/web-workers/workers';
+import { allWorkerAreInitialized, initWorkers } from '@/app/web-workers/workers';
 import { authClient, useCheckForAuthorizationTokenOnWindowFocus } from '@/auth/auth';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
+import { CoreErrorReloadDialog } from '@/shared/components/CoreErrorReloadDialog';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
+import { useCoreErrorRedirect } from '@/shared/hooks/useCoreErrorRedirect';
 import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
@@ -32,11 +36,66 @@ type FileData = ApiTypes['/v0/files/:uuid.GET.response'];
 export const shouldRevalidate = ({ currentParams, nextParams }: ShouldRevalidateFunctionArgs) =>
   currentParams.uuid !== nextParams.uuid;
 
+export const reload = async (uuid: string) => {
+  if (debugFlag('debugStartupTime')) console.time('[reload]');
+
+  const waitForGridReady = async (): Promise<void> => {
+    return new Promise((resolve) => {
+      const checkReady = () => {
+        if (allWorkerAreInitialized()) {
+          resolve();
+        } else {
+          setTimeout(checkReady, 50);
+        }
+      };
+      checkReady();
+    });
+  };
+
+  // wait for the grid to be ready before continuing
+  await waitForGridReady();
+
+  try {
+    // load the file data
+    let data = await apiClient.files.get(uuid);
+
+    let checkpoint = {
+      url: data.file.lastCheckpointDataUrl,
+      version: data.file.lastCheckpointVersion,
+      sequenceNumber: data.file.lastCheckpointSequenceNumber,
+    };
+
+    // load the Core web worker
+    await quadraticCore.load({
+      fileId: uuid,
+      teamUuid: data.team.uuid,
+      url: checkpoint.url,
+      version: checkpoint.version,
+      sequenceNumber: checkpoint.sequenceNumber,
+    });
+
+    // reinitialize the multiplayer web worker, then refresh pixi
+    await multiplayer.reInit();
+    await pixiApp.refresh();
+    pixiApp.setViewportDirty();
+    pixiApp.viewportChanged();
+  } catch (error) {
+    console.error('Error reloading file', error);
+  }
+
+  if (debugFlag('debugStartupTime')) console.timeEnd('[reload]');
+};
+
 export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<FileData | Response> => {
-  // Start loading PIXI assets early and asynchronously
-  if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
-  loadAssets().catch((e) => console.error('Error loading assets', e));
-  if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+  console.log('file.$uuid.tsx loader');
+
+  // only load assets if they haven't already been loaded
+  if (!assetsLoaded) {
+    // Start loading PIXI assets early and asynchronously
+    if (debugFlag('debugStartupTime')) console.time('[file.$uuid.tsx] initializing PIXI assets');
+    loadAssets().catch((e) => console.error('Error loading assets', e));
+    if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing PIXI assets');
+  }
 
   const { uuid } = params as { uuid: string };
 
@@ -169,6 +228,9 @@ export const Component = () => {
     setIsOnPaidPlan(isOnPaidPlan);
   }, [isOnPaidPlan, setIsOnPaidPlan]);
 
+  // handle coreError events and redirect without reloading
+  const { isReloading } = useCoreErrorRedirect();
+
   // If this is an embed, ensure that wheel events do not scroll the page
   // otherwise we get weird double-scrolling on the iframe embed
   if (isEmbed) {
@@ -182,6 +244,7 @@ export const Component = () => {
       <QuadraticApp />
       <Outlet />
       <QuadraticAppDebugSettings />
+      <CoreErrorReloadDialog isReloading={isReloading} />
     </RecoilRoot>
   );
 };

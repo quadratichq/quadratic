@@ -18,14 +18,16 @@ import type {
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
 import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
+import { Singleton } from '@/app/web-workers/Singleton';
 import { Rectangle } from 'pixi.js';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
-class RenderClient {
+class RenderClient extends Singleton {
   tableColumnHeaderForeground = 0;
 
   constructor() {
+    super();
     self.onmessage = this.handleMessage;
   }
 

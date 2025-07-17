@@ -7,7 +7,6 @@ import {
   editorInteractionStateShowShareFileMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
 import { presentationModeAtom } from '@/app/atoms/gridSettingsAtom';
-import { events } from '@/app/events/events';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import QuadraticGrid from '@/app/gridGL/QuadraticGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
@@ -30,14 +29,11 @@ import { QuadraticSidebar } from '@/app/ui/QuadraticSidebar';
 import { UpdateAlertVersion } from '@/app/ui/UpdateAlertVersion';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { DialogRenameItem } from '@/shared/components/DialogRenameItem';
-import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ShareFileDialog } from '@/shared/components/ShareDialog';
 import { UserMessage } from '@/shared/components/UserMessage';
 import { COMMUNITY_A1_FILE_UPDATE_URL } from '@/shared/constants/urls';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
-import { Button } from '@/shared/shadcn/ui/button';
-import { CrossCircledIcon } from '@radix-ui/react-icons';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useNavigation, useParams } from 'react-router';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
@@ -53,15 +49,6 @@ export default function QuadraticUI() {
   const showCommandPalette = useRecoilValue(editorInteractionStateShowCommandPaletteAtom);
   const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
   const canEditFile = useMemo(() => hasPermissionToEditFile(permissions), [permissions]);
-
-  const [error, setError] = useState<{ from: string; error: Error | unknown } | null>(null);
-  useEffect(() => {
-    const handleError = (from: string, error: Error | unknown) => setError({ from, error });
-    events.on('coreError', handleError);
-    return () => {
-      events.off('coreError', handleError);
-    };
-  }, []);
 
   useRemoveInitialLoadingUI();
 
@@ -83,19 +70,6 @@ export default function QuadraticUI() {
       window.history.replaceState({}, '', `${window.location.pathname}${url.toString() ? `?${url}` : ''}`);
     }
   }, []);
-
-  if (error) {
-    return (
-      <EmptyPage
-        title="Quadratic crashed"
-        description="Something went wrong. Our team has been notified of this issue. Please reload the application to continue."
-        Icon={CrossCircledIcon}
-        actions={<Button onClick={() => window.location.reload()}>Reload</Button>}
-        error={error.error}
-        source={error.from}
-      />
-    );
-  }
 
   return (
     <div
