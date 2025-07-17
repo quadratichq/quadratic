@@ -15,6 +15,8 @@ const Q_CELLS_A1_REGEX: &str = r#"\bq\.cells\s*\(\s*(['"`])(.*?)\1"#;
 lazy_static! {
     static ref Q_CELLS_A1_REGEX_COMPILED: Regex =
         Regex::new(Q_CELLS_A1_REGEX).expect("Failed to compile Q_CELLS_A1_REGEX");
+    pub static ref HANDLEBARS_REGEX_COMPILED: Regex =
+        Regex::new(r#"\{\{(.*?)\}\}"#).expect("Failed to compile HANDLEBARS_REGEX");
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -40,7 +42,7 @@ impl CodeCellValue {
 
     /// Replaces `q.cells()` calls in Python and Javascript.
     ///
-    /// Do not call this function unless `self.is_code_cell()`.
+    /// Do not call this function unless `self.language.has_q_cells()`.
     fn replace_q_cells_a1_selection(
         &mut self,
         pos: SheetPos,
@@ -57,10 +59,36 @@ impl CodeCellValue {
                         let a1_str =
                             func(sheet_cell_ref_range).unwrap_or_else(|e: RefError| e.to_string());
 
-                        // let a1_str = a1_selection.to_string(Some(*default_sheet_id), a1_context);
-
                         // Replace only the first argument, keep the rest unchanged
                         format!(r#"q.cells("{a1_str}""#)
+                    }
+                    // If the cell reference is invalid, return the original string
+                    Err(_) => full_match.to_string(),
+                }
+            })
+            .to_string();
+    }
+
+    /// Replaces `{{ a1_str }}` calls in Connections.
+    ///
+    /// Do not call this function unless `self.language.has_handle_bars()`.
+    fn replace_handle_bars_a1_selection(
+        &mut self,
+        pos: SheetPos,
+        a1_context: &A1Context,
+        mut func: impl FnMut(SheetCellRefRange) -> Result<String, RefError>,
+    ) {
+        self.code = HANDLEBARS_REGEX_COMPILED
+            .replace_all(&self.code, |caps: &fancy_regex::Captures<'_>| {
+                let full_match = &caps[0]; // Capture the entire match
+                let a1_str = caps[1].trim(); // Capture the string inside the handlebars
+
+                match SheetCellRefRange::parse_at(a1_str, pos, a1_context) {
+                    Ok(sheet_cell_ref_range) => {
+                        let a1_str =
+                            func(sheet_cell_ref_range).unwrap_or_else(|e: RefError| e.to_string());
+
+                        format!(r#"{{{{ {a1_str} }}}}"#)
                     }
                     // If the cell reference is invalid, return the original string
                     Err(_) => full_match.to_string(),
@@ -96,6 +124,12 @@ impl CodeCellValue {
                         .adjust(adjust)?
                         .to_a1_string(Some(new_default_sheet_id), a1_context))
                 });
+            } else if self.language.has_handle_bars() {
+                self.replace_handle_bars_a1_selection(pos, a1_context, |cell_ref| {
+                    Ok(cell_ref
+                        .adjust(adjust)?
+                        .to_a1_string(Some(new_default_sheet_id), a1_context))
+                });
             }
         }
     }
@@ -116,6 +150,10 @@ impl CodeCellValue {
             );
         } else if self.language.has_q_cells() {
             self.replace_q_cells_a1_selection(pos, old_a1_context, |cell_ref| {
+                Ok(cell_ref.to_a1_string(Some(pos.sheet_id), new_a1_context))
+            });
+        } else if self.language.has_handle_bars() {
+            self.replace_handle_bars_a1_selection(pos, old_a1_context, |cell_ref| {
                 Ok(cell_ref.to_a1_string(Some(pos.sheet_id), new_a1_context))
             });
         }
@@ -139,6 +177,11 @@ impl CodeCellValue {
                     cell_ref.replace_table_name(old_name, new_name);
                     Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
                 });
+            } else if self.language.has_handle_bars() {
+                self.replace_handle_bars_a1_selection(pos, a1_context, |mut cell_ref| {
+                    cell_ref.replace_table_name(old_name, new_name);
+                    Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
+                });
             }
         }
     }
@@ -159,6 +202,11 @@ impl CodeCellValue {
                 );
             } else if self.language.has_q_cells() {
                 self.replace_q_cells_a1_selection(pos, a1_context, |mut cell_ref| {
+                    cell_ref.replace_column_name(table_name, old_name, new_name);
+                    Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
+                });
+            } else if self.language.has_handle_bars() {
+                self.replace_handle_bars_a1_selection(pos, a1_context, |mut cell_ref| {
                     cell_ref.replace_column_name(table_name, old_name, new_name);
                     Ok(cell_ref.to_a1_string(Some(pos.sheet_id), a1_context))
                 });
