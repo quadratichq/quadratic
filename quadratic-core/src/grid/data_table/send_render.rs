@@ -84,6 +84,8 @@ impl DataTable {
         let data_table_rect =
             display_rect.translate(1 - data_table_pos.x, 1 - data_table_pos.y - y_adjustment);
 
+        let reverse_display_buffer = self.get_reverse_display_buffer();
+
         if let Some(formats) = self.formats.as_ref() {
             for (rect, value) in formats.wrap.nondefault_rects_in_rect(data_table_rect) {
                 if value != Some(CellWrap::Wrap) {
@@ -94,7 +96,10 @@ impl DataTable {
                     if let Ok(y_u64) = u64::try_from(y - 1) {
                         let actual_row = data_table_pos.y
                             + y_adjustment
-                            + self.get_display_index_from_row_index(y_u64) as i64;
+                            + self.get_display_index_from_reverse_display_buffer(
+                                y_u64,
+                                reverse_display_buffer.as_ref(),
+                            ) as i64;
 
                         if rows_to_resize.contains(&actual_row) {
                             continue;
@@ -253,6 +258,8 @@ impl DataTable {
         // 1-based for formatting, just max bounds are needed to finitize formatting bounds
         let data_table_formats_rect = self.output_rect((1, 1).into(), true);
 
+        let reverse_display_buffer = self.get_reverse_display_buffer();
+
         if let Some(format) = format {
             format
                 .nondefault_rects_in_rect(data_table_formats_rect)
@@ -266,7 +273,10 @@ impl DataTable {
                                 if let Ok(actual_row) = u64::try_from(y - 1) {
                                     let display_row = data_table_pos.y
                                         + y_adjustment
-                                        + self.get_display_index_from_row_index(actual_row) as i64;
+                                        + self.get_display_index_from_reverse_display_buffer(
+                                            actual_row,
+                                            reverse_display_buffer.as_ref(),
+                                        ) as i64;
 
                                     let mut hash: Pos = (display_col, display_row).into();
                                     hash.to_quadrant();
@@ -297,6 +307,8 @@ impl DataTable {
     ) {
         let y_adjustment = self.y_adjustment(true);
 
+        let reverse_display_buffer = self.get_reverse_display_buffer();
+
         if let Some(formats) = self.formats.as_ref() {
             for (rect, value) in formats.wrap.nondefault_rects_in_rect(formats_rect) {
                 if value != Some(CellWrap::Wrap) {
@@ -307,7 +319,10 @@ impl DataTable {
                     if let Ok(y_u32) = u32::try_from(y - 1) {
                         let actual_row = data_table_pos.y
                             + y_adjustment
-                            + self.get_display_index_from_row_index(y_u32 as u64) as i64;
+                            + self.get_display_index_from_reverse_display_buffer(
+                                y_u32 as u64,
+                                reverse_display_buffer.as_ref(),
+                            ) as i64;
 
                         if rows_to_resize.contains(&actual_row) {
                             continue;

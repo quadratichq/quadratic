@@ -137,8 +137,13 @@ impl Sheet {
                 Value::Array(array) => {
                     let y_adjustment = data_table.y_adjustment(true);
 
+                    let reverse_display_buffer = data_table.get_reverse_display_buffer();
+
                     for y in 0..array.size().h.get() {
-                        let display_row = data_table.get_display_index_from_row_index(y as u64);
+                        let display_row = data_table.get_display_index_from_reverse_display_buffer(
+                            y as u64,
+                            reverse_display_buffer.as_ref(),
+                        );
 
                         for x in 0..array.size().w.get() {
                             let column_display = data_table.header_display(x as usize);

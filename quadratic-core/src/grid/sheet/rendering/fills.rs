@@ -43,6 +43,7 @@ impl Sheet {
                 self.data_tables
                     .expensive_iter()
                     .filter_map(|(pos, dt)| {
+                        let reverse_display_buffer = dt.get_reverse_display_buffer();
                         dt.formats.as_ref().map(|formats| {
                             formats.fill_color.to_rects().flat_map(
                                 move |(mut x0, mut y0, x1, y1, color)| {
@@ -66,7 +67,10 @@ impl Sheet {
                                             let x = rect.min.x + x0;
                                             let x1 = rect.min.x + x1;
                                             let mut y = dt
-                                                .get_display_index_from_row_index(y as u64)
+                                                .get_display_index_from_reverse_display_buffer(
+                                                    y as u64,
+                                                    reverse_display_buffer.as_ref(),
+                                                )
                                                 as i64;
                                             y += rect.min.y;
                                             if x1 >= x && y >= fills_min_y {

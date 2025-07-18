@@ -201,7 +201,9 @@ impl MultiCellTablesCache {
 
                     // handle sorted rows
                     let empty_values_cache =
-                        if data_table.display_buffer.is_some() {
+                        if let Some(reverse_display_buffer) =
+                            data_table.get_reverse_display_buffer()
+                        {
                             let mut sorted_empty_values_cache = Contiguous2D::new();
                             sorted_empty_values_cache.set_rect(
                                 x1,
@@ -218,7 +220,10 @@ impl MultiCellTablesCache {
                                     for y in rect.y_range() {
                                         if let Ok(actual_row) = u64::try_from(y - 1) {
                                             let display_row = data_table
-                                                .get_display_index_from_row_index(actual_row);
+                                                .get_display_index_from_reverse_display_buffer(
+                                                    actual_row,
+                                                    Some(&reverse_display_buffer),
+                                                );
 
                                             sorted_empty_values_cache.set_rect(
                                                 x1 + rect.min.x - 1,
