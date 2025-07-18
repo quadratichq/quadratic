@@ -120,7 +120,7 @@ export const handleAIRequest = async (
       parsedResponse.usage.source = args.source;
       parsedResponse.usage.modelKey = modelKey;
       parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
-      console.log('[AI.Usage]', parsedResponse.usage);
+      console.log({ message: 'AI.Usage', usage: parsedResponse.usage });
     }
 
     if (debugAndNotInProduction && FINE_TUNE === 'true' && !!parsedResponse) {
@@ -129,7 +129,7 @@ export const handleAIRequest = async (
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in handleAIRequest: ', modelKey, error);
+    console.error({ message: 'Error in handleAIRequest', modelKey, error });
 
     Sentry.captureException(error, {
       level: 'error',

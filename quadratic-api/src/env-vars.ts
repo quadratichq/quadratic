@@ -9,6 +9,7 @@ export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 export const CORS = process.env.CORS || '*';
 export const SENTRY_DSN = process.env.SENTRY_DSN;
 export const NODE_ENV = process.env.NODE_ENV || 'development';
+export const LOG_REQUEST_INFO = process.env.LOG_REQUEST_INFO;
 export const PORT = process.env.PORT || 8000;
 export const AWS_S3_ENDPOINT = process.env.AWS_S3_ENDPOINT || undefined;
 export const ENVIRONMENT = process.env.ENVIRONMENT;
