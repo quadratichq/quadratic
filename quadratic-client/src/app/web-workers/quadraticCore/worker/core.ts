@@ -157,7 +157,9 @@ class Core {
         );
         resolve(renderCells);
       } catch (e) {
-        this.handleCoreError('getRenderCells', e);
+        if (e instanceof Error && !e.message.includes('Sheet not found')) {
+          this.handleCoreError('getRenderCells', e);
+        }
         resolve(undefined);
       }
     });
