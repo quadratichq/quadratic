@@ -182,12 +182,16 @@ impl Sheet {
                 continue;
             };
 
+            let intended_bounds = table.output_rect(pos.to_owned(), true);
+            let bounds = table.output_rect(pos.to_owned(), false);
+
             if table.is_html_or_image() {
                 if let CellValue::Code(code_cell_value) = cell_value {
                     tables_context.charts.push(JsChartContext {
                         sheet_name: self.name.clone(),
                         chart_name: table.name().to_string(),
-                        bounds: table.output_rect(pos.to_owned(), false).a1_string(),
+                        bounds: bounds.a1_string(),
+                        intended_bounds: intended_bounds.a1_string(),
                         language: code_cell_value.language.to_owned(),
                         code_string: code_cell_value.code.to_owned(),
                         spill: table.has_spill(),
@@ -195,8 +199,6 @@ impl Sheet {
                 }
                 continue;
             }
-
-            let bounds = table.output_rect(pos.to_owned(), false);
 
             let first_row_rect = Rect::from_numbers(
                 bounds.min.x,
@@ -231,6 +233,7 @@ impl Sheet {
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
+                    intended_bounds: intended_bounds.a1_string(),
                     show_name: table.get_show_name(),
                     show_columns: table.get_show_columns(),
                     language: code_cell_value.language.to_owned(),
@@ -248,8 +251,10 @@ impl Sheet {
                     first_row_visible_values,
                     last_row_visible_values,
                     bounds: bounds.a1_string(),
+                    intended_bounds: intended_bounds.a1_string(),
                     show_name: table.get_show_name(),
                     show_columns: table.get_show_columns(),
+                    spill: table.has_spill(),
                 });
             }
         }

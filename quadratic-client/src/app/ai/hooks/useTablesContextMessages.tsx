@@ -60,8 +60,10 @@ Each data table has following properties:\n
 - first_row_visible_values: This is an array of visible values in the first row of the data table.\n
 - last_row_visible_values: This is an array of visible values in the last row of the data table.\n
 - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
+- intended_bounds: This is the desired bounds for the table (which may be different from the bounds if the table has a spill).\n
 - show_name: This is a boolean value representing if the table name is visible.\n
 - show_columns: This is a boolean value representing if the column headers are visible.\n\n
+- spill: This is a boolean value representing if the data table has a spill.\n
 
 first_row_visible_values is an array of objects with following properties:\n
 - value: This is the value of the cell.\n
@@ -97,6 +99,7 @@ Each code table has following properties:\n
 - first_row_visible_values: This is an array of visible values in the first row of the data table.\n
 - last_row_visible_values: This is an array of visible values in the last row of the data table.\n
 - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
+- intended_bounds: This is the desired bounds for the table (which may be different from the bounds if the table has a spill).\n
 - show_name: This is a boolean value representing if the table name is visible.\n
 - show_columns: This is a boolean value representing if the column headers are visible.\n
 - language: This is the language of the code code which outputs the table.\n
@@ -130,6 +133,7 @@ Each chart has following properties:\n
 - sheet_name: This is the name of the sheet.\n
 - chart_name: This is the name of the chart.\n
 - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the chart in A1 notation. This includes the first row of the chart which is the chart name and always visible.\n
+- intended_bounds: This is the desired bounds for the chart (which may be different from the bounds if the chart has a spill).\n
 - language: This is the language of the code cell which outputs the chart.\n
 - code_string: This is the code in the code cell which outputs the chart.\n
 - spill: This is a boolean value representing if the chart has a spill.\n\n
