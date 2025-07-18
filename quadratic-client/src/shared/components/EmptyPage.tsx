@@ -43,7 +43,15 @@ export function EmptyPage(props: EmptyPageProps) {
       mixpanel.track('[Empty].error', {
         title: sourceTitle,
         description,
-        error: JSON.stringify(error),
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
+        from: source,
       });
       Sentry.captureException(new Error('error-page'), {
         extra: {
