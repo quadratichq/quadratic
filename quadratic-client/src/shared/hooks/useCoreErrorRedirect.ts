@@ -18,7 +18,16 @@ export const useCoreErrorRedirect = () => {
     const handleCoreError = async (from: string, error: Error | unknown) => {
       console.error('[useCoreErrorRedirect] Core error occurred:', { from, error });
 
-      mixpanel.track('coreError', { from, error });
+      const errorString = JSON.stringify(
+        error instanceof Error
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : error
+      );
+      mixpanel.track('coreError', { from, error: errorString });
 
       setIsReloading(true);
 
