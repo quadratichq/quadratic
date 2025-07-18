@@ -363,7 +363,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BuScSwIi': {
     model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BuScSwIi',
-    displayName: 'quad-mini-ft (latest: BtkM9uba)',
+    displayName: 'quad-mini-ft (latest: BuScSwIi)',
     temperature: 0.1,
     max_tokens: 16384,
     canStream: true,
