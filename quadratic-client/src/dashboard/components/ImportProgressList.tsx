@@ -111,7 +111,7 @@ const ImportProgressItem = ({
         ) : null}
 
         {state === 'Importing...' ? (
-          <Progress value={progress} className="w-[100px]" />
+          <Progress value={progress} className="w-[100px]" variant="primary" />
         ) : (
           <div className={`text-sm font-normal ${textColor}`}>{state}</div>
         )}

@@ -36,7 +36,7 @@ export const ImportProgress = () => {
         </Button>
       </div>
 
-      <Progress key={fileNo} value={progress} />
+      <Progress key={fileNo} value={progress} variant="primary" />
     </div>
   );
 };

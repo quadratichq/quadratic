@@ -435,7 +435,11 @@ function QuestionFormFooter({ disabled }: { disabled?: boolean }) {
           currentId === 'use' && 'invisible opacity-0'
         )}
       >
-        <Progress value={(currentQuestionNumber / currentQuestionsTotal) * 100} className="h-3 w-1/3 transition-none" />{' '}
+        <Progress
+          className="h-3 w-1/3 transition-none"
+          variant="primary"
+          value={(currentQuestionNumber / currentQuestionsTotal) * 100}
+        />{' '}
         Question {currentQuestionNumber} / {currentQuestionsTotal}
       </div>
       <div className="flex items-center justify-end gap-2">

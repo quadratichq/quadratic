@@ -12,6 +12,8 @@ export const DOCUMENTATION_BROWSER_COMPATIBILITY_URL = `${DOCUMENTATION_URL}/spr
 export const DOCUMENTATION_DATE_TIME_FORMATTING = `${DOCUMENTATION_URL}/spreadsheet/date-time-formatting`;
 export const DOCUMENTATION_NEGATIVE_OFFSETS = `${DOCUMENTATION_URL}/spreadsheet/negative-offsets`;
 export const DOCUMENTATION_ANALYTICS_AI = `${DOCUMENTATION_URL}/quadratic-ai/security`;
+// TODO: is this right?
+export const DOCUMENTATION_PRICING_URL = `${DOCUMENTATION_URL}/pricing`;
 export const TRUST_CENTER = 'https://trust.quadratichq.com';
 export const BUG_REPORT_URL = 'https://github.com/quadratichq/quadratic/issues';
 export const TWITTER = 'https://twitter.com/quadratichq';

@@ -20,6 +20,7 @@ if (document.fonts) {
 }
 
 const sizes = {
+  '2xs': '14',
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
   // md: '24',
@@ -297,6 +298,10 @@ export const DraftIcon: IconComponent = (props) => {
 
 export const EditIcon: IconComponent = (props) => {
   return <Icon {...props}>edit</Icon>;
+};
+
+export const AddCircleIcon: IconComponent = (props) => {
+  return <Icon {...props}>add_circle</Icon>;
 };
 
 export const EducationIcon: IconComponent = (props) => {
@@ -691,6 +696,10 @@ export const FileOpenIcon: IconComponent = (props) => {
   return <Icon {...props}>file_open</Icon>;
 };
 
+export const ArrowForwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_forward</Icon>;
+};
+
 export const ArrowRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
 };
@@ -741,4 +750,12 @@ export const RadioButtonCheckedIcon: IconComponent = (props) => {
 
 export const WebBrowserIcon: IconComponent = (props) => {
   return <Icon {...props}>captive_portal</Icon>;
+};
+
+export const WarningIcon: IconComponent = (props) => {
+  return <Icon {...props}>warning</Icon>;
+};
+
+export const CycleIcon: IconComponent = (props) => {
+  return <Icon {...props}>cycle</Icon>;
 };
