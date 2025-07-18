@@ -120,12 +120,7 @@ export function AIUsageIndividual({
           Additional monthly credits
           {isProPlan && !isProPlanAndUsageBasedPricingEnabled && <Badge variant="secondary">Off</Badge>}
         </div>
-        <p
-          className={cn(
-            '-mt-0.5 text-sm',
-            creditsAdditionalExceeded ? 'text-muted-foreground' : 'text-muted-foreground'
-          )}
-        >
+        <p className={'-mt-0.5 text-sm text-muted-foreground'}>
           {!isProPlan
             ? 'Usage-based pricing available on Pro.'
             : isProPlanAndUsageBasedPricingEnabled
