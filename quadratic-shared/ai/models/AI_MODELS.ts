@@ -361,9 +361,25 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.5,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba': {
-    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BuScSwIi': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BuScSwIi',
     displayName: 'quad-mini-ft (latest: BtkM9uba)',
+    temperature: 0.1,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: false,
+    rate_per_million_input_tokens: 0.8,
+    rate_per_million_output_tokens: 3.2,
+    rate_per_million_cache_read_tokens: 0.2,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'openai:ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n': {
+    model: 'ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
+    displayName: 'quad-nano-ft (latest: BuACH1pQ)',
     temperature: 0.1,
     max_tokens: 16384,
     canStream: true,
