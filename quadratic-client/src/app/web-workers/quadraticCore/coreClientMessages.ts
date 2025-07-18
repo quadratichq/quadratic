@@ -657,8 +657,7 @@ export interface CoreClientCutToClipboard {
 export interface ClientCorePasteFromClipboard {
   type: 'clientCorePasteFromClipboard';
   selection: string;
-  plainText: string | undefined;
-  html: string | undefined;
+  jsClipboard: Uint8Array;
   special: string;
   cursor: string;
 }

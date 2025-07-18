@@ -4,10 +4,13 @@ use serde::{Deserialize, Serialize};
 use std::fmt::Debug;
 
 use crate::{
-    Pos, Rect,
+    CopyFormats, Pos, Rect,
     a1::A1Selection,
     clear_option::ClearOption,
-    grid::{CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, SheetFormatting},
+    grid::{
+        CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, SheetFormatting,
+        sheet_formatting::SheetFormattingType,
+    },
 };
 
 use super::FormatUpdate;
@@ -66,25 +69,130 @@ impl SheetFormatUpdates {
         }
     }
 
+    fn from_sheet_formatting_selection_item<T>(
+        item: &SheetFormattingType<T>,
+        selection: &A1Selection,
+    ) -> SheetFormatUpdatesType<T>
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        let update = item.get_update_for_selection(selection);
+        if update.is_all_default() {
+            None
+        } else {
+            Some(update)
+        }
+    }
+
     /// Constructs a format update that uses formats from every cell in the selection.
     pub fn from_sheet_formatting_selection(
         selection: &A1Selection,
         formats: &SheetFormatting,
     ) -> Self {
         SheetFormatUpdates {
-            align: Some(formats.align.get_update_for_selection(selection)),
-            vertical_align: Some(formats.vertical_align.get_update_for_selection(selection)),
-            wrap: Some(formats.wrap.get_update_for_selection(selection)),
-            numeric_format: Some(formats.numeric_format.get_update_for_selection(selection)),
-            numeric_decimals: Some(formats.numeric_decimals.get_update_for_selection(selection)),
-            numeric_commas: Some(formats.numeric_commas.get_update_for_selection(selection)),
-            bold: Some(formats.bold.get_update_for_selection(selection)),
-            italic: Some(formats.italic.get_update_for_selection(selection)),
-            text_color: Some(formats.text_color.get_update_for_selection(selection)),
-            fill_color: Some(formats.fill_color.get_update_for_selection(selection)),
-            date_time: Some(formats.date_time.get_update_for_selection(selection)),
-            underline: Some(formats.underline.get_update_for_selection(selection)),
-            strike_through: Some(formats.strike_through.get_update_for_selection(selection)),
+            align: Self::from_sheet_formatting_selection_item(&formats.align, selection),
+            vertical_align: Self::from_sheet_formatting_selection_item(
+                &formats.vertical_align,
+                selection,
+            ),
+            wrap: Self::from_sheet_formatting_selection_item(&formats.wrap, selection),
+            numeric_format: Self::from_sheet_formatting_selection_item(
+                &formats.numeric_format,
+                selection,
+            ),
+            numeric_decimals: Self::from_sheet_formatting_selection_item(
+                &formats.numeric_decimals,
+                selection,
+            ),
+            numeric_commas: Self::from_sheet_formatting_selection_item(
+                &formats.numeric_commas,
+                selection,
+            ),
+            bold: Self::from_sheet_formatting_selection_item(&formats.bold, selection),
+            italic: Self::from_sheet_formatting_selection_item(&formats.italic, selection),
+            text_color: Self::from_sheet_formatting_selection_item(&formats.text_color, selection),
+            fill_color: Self::from_sheet_formatting_selection_item(&formats.fill_color, selection),
+            date_time: Self::from_sheet_formatting_selection_item(&formats.date_time, selection),
+            underline: Self::from_sheet_formatting_selection_item(&formats.underline, selection),
+            strike_through: Self::from_sheet_formatting_selection_item(
+                &formats.strike_through,
+                selection,
+            ),
+        }
+    }
+
+    fn from_sheet_formatting_rect_item<T>(
+        item: &SheetFormattingType<T>,
+        rect: Rect,
+        clear_on_none: bool,
+    ) -> SheetFormatUpdatesType<T>
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        let update = item.get_update_for_rect(rect, clear_on_none);
+        if update.is_all_default() {
+            None
+        } else {
+            Some(update)
+        }
+    }
+
+    /// Constructs a format update that uses formats from every cell in the rect.
+    pub fn from_sheet_formatting_rect(
+        rect: Rect,
+        formats: &SheetFormatting,
+        clear_on_none: bool,
+    ) -> Self {
+        SheetFormatUpdates {
+            align: Self::from_sheet_formatting_rect_item(&formats.align, rect, clear_on_none),
+            vertical_align: Self::from_sheet_formatting_rect_item(
+                &formats.vertical_align,
+                rect,
+                clear_on_none,
+            ),
+            wrap: Self::from_sheet_formatting_rect_item(&formats.wrap, rect, clear_on_none),
+            numeric_format: Self::from_sheet_formatting_rect_item(
+                &formats.numeric_format,
+                rect,
+                clear_on_none,
+            ),
+            numeric_decimals: Self::from_sheet_formatting_rect_item(
+                &formats.numeric_decimals,
+                rect,
+                clear_on_none,
+            ),
+            numeric_commas: Self::from_sheet_formatting_rect_item(
+                &formats.numeric_commas,
+                rect,
+                clear_on_none,
+            ),
+            bold: Self::from_sheet_formatting_rect_item(&formats.bold, rect, clear_on_none),
+            italic: Self::from_sheet_formatting_rect_item(&formats.italic, rect, clear_on_none),
+            text_color: Self::from_sheet_formatting_rect_item(
+                &formats.text_color,
+                rect,
+                clear_on_none,
+            ),
+            fill_color: Self::from_sheet_formatting_rect_item(
+                &formats.fill_color,
+                rect,
+                clear_on_none,
+            ),
+            date_time: Self::from_sheet_formatting_rect_item(
+                &formats.date_time,
+                rect,
+                clear_on_none,
+            ),
+            underline: Self::from_sheet_formatting_rect_item(
+                &formats.underline,
+                rect,
+                clear_on_none,
+            ),
+            strike_through: Self::from_sheet_formatting_rect_item(
+                &formats.strike_through,
+                rect,
+                clear_on_none,
+            ),
         }
     }
 
@@ -213,15 +321,21 @@ impl SheetFormatUpdates {
     ) where
         T: Clone + Debug + PartialEq,
     {
-        if let Some(value) = value {
-            item.get_or_insert_with(Default::default).set_rect(
-                rect.min.x,
-                rect.min.y,
-                Some(rect.max.x),
-                Some(rect.max.y),
-                Some(value.into()),
-            );
-        };
+        item.get_or_insert_with(Default::default).set_rect(
+            rect.min.x,
+            rect.min.y,
+            if rect.max.x == i64::MAX {
+                None
+            } else {
+                Some(rect.max.x)
+            },
+            if rect.max.y == i64::MAX {
+                None
+            } else {
+                Some(rect.max.y)
+            },
+            value.map(|value| value.into()),
+        );
     }
 
     /// Sets all formats for a rect within the SheetFormatUpdates
@@ -239,6 +353,45 @@ impl SheetFormatUpdates {
         Self::set_format_rect_item(&mut self.date_time, rect, update.date_time);
         Self::set_format_rect_item(&mut self.underline, rect, update.underline);
         Self::set_format_rect_item(&mut self.strike_through, rect, update.strike_through);
+    }
+
+    fn transfer_format_rect_item<T>(
+        item: &mut SheetFormatUpdatesType<T>,
+        rect: Rect,
+        other_item: &mut SheetFormatUpdatesType<T>,
+    ) where
+        T: Clone + Debug + PartialEq,
+    {
+        item.get_or_insert_with(Default::default).set_from(
+            &other_item.get_or_insert_with(Default::default).set_rect(
+                rect.min.x,
+                rect.min.y,
+                Some(rect.max.x),
+                Some(rect.max.y),
+                None,
+            ),
+        );
+    }
+
+    /// Transfers a rect from another SheetFormatUpdates into this one, clearing the other.
+    pub fn transfer_format_rect_from_other(&mut self, rect: Rect, other: &mut SheetFormatUpdates) {
+        Self::transfer_format_rect_item(&mut self.align, rect, &mut other.align);
+        Self::transfer_format_rect_item(&mut self.vertical_align, rect, &mut other.vertical_align);
+        Self::transfer_format_rect_item(&mut self.wrap, rect, &mut other.wrap);
+        Self::transfer_format_rect_item(&mut self.numeric_format, rect, &mut other.numeric_format);
+        Self::transfer_format_rect_item(
+            &mut self.numeric_decimals,
+            rect,
+            &mut other.numeric_decimals,
+        );
+        Self::transfer_format_rect_item(&mut self.numeric_commas, rect, &mut other.numeric_commas);
+        Self::transfer_format_rect_item(&mut self.bold, rect, &mut other.bold);
+        Self::transfer_format_rect_item(&mut self.italic, rect, &mut other.italic);
+        Self::transfer_format_rect_item(&mut self.text_color, rect, &mut other.text_color);
+        Self::transfer_format_rect_item(&mut self.fill_color, rect, &mut other.fill_color);
+        Self::transfer_format_rect_item(&mut self.date_time, rect, &mut other.date_time);
+        Self::transfer_format_rect_item(&mut self.underline, rect, &mut other.underline);
+        Self::transfer_format_rect_item(&mut self.strike_through, rect, &mut other.strike_through);
     }
 
     fn translate_rect_item<T>(item: &mut SheetFormatUpdatesType<T>, x: i64, y: i64)
@@ -266,6 +419,22 @@ impl SheetFormatUpdates {
     }
 
     /// Merges another SheetFormatUpdates into this one.
+    fn merge_item<T>(item: &mut SheetFormatUpdatesType<T>, other: &SheetFormatUpdatesType<T>)
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        match (item.as_mut(), other.as_ref()) {
+            (Some(item), Some(other)) => {
+                item.update_from(other, |value, new_value| value.replace(new_value.clone()));
+            }
+            (None, Some(other)) => {
+                *item = Some(other.clone());
+            }
+            _ => {}
+        }
+    }
+
+    /// Merges another SheetFormatUpdates into this one.
     pub fn merge(&mut self, other: &SheetFormatUpdates) {
         Self::merge_item(&mut self.align, &other.align);
         Self::merge_item(&mut self.vertical_align, &other.vertical_align);
@@ -282,21 +451,98 @@ impl SheetFormatUpdates {
         Self::merge_item(&mut self.strike_through, &other.strike_through);
     }
 
-    /// Merges another SheetFormatUpdates into this one.
-    fn merge_item<T>(item: &mut SheetFormatUpdatesType<T>, other: &SheetFormatUpdatesType<T>)
-    where
-        T: Clone + Debug + PartialEq,
-    {
-        if let (Some(item), Some(other)) = (item, other) {
-            item.update_from(other, |value, new_value| value.replace(new_value.clone()));
-        }
-    }
-
     /// Whether the update includes any fill color changes
     pub fn has_fills(&self) -> bool {
         self.fill_color
             .as_ref()
             .is_some_and(|fills| !fills.is_all_default())
+    }
+
+    /// Inserts a column into the SheetFormatUpdates
+    fn insert_column_item<T>(
+        item: &mut SheetFormatUpdatesType<T>,
+        column: i64,
+        copy_formats: CopyFormats,
+    ) where
+        T: Clone + Debug + PartialEq,
+    {
+        if let Some(item) = item.as_mut() {
+            item.insert_column(column, copy_formats);
+        }
+    }
+
+    pub fn insert_column(&mut self, column: i64, copy_formats: CopyFormats) {
+        Self::insert_column_item(&mut self.align, column, copy_formats);
+        Self::insert_column_item(&mut self.vertical_align, column, copy_formats);
+        Self::insert_column_item(&mut self.wrap, column, copy_formats);
+        Self::insert_column_item(&mut self.numeric_format, column, copy_formats);
+        Self::insert_column_item(&mut self.numeric_decimals, column, copy_formats);
+        Self::insert_column_item(&mut self.numeric_commas, column, copy_formats);
+        Self::insert_column_item(&mut self.bold, column, copy_formats);
+        Self::insert_column_item(&mut self.italic, column, copy_formats);
+        Self::insert_column_item(&mut self.text_color, column, copy_formats);
+        Self::insert_column_item(&mut self.fill_color, column, copy_formats);
+        Self::insert_column_item(&mut self.date_time, column, copy_formats);
+        Self::insert_column_item(&mut self.underline, column, copy_formats);
+        Self::insert_column_item(&mut self.strike_through, column, copy_formats);
+    }
+
+    fn remove_column_item<T>(item: &mut SheetFormatUpdatesType<T>, column: i64)
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        if let Some(item) = item.as_mut() {
+            item.remove_column(column);
+        }
+    }
+
+    pub fn remove_column(&mut self, column: i64) {
+        Self::remove_column_item(&mut self.align, column);
+        Self::remove_column_item(&mut self.vertical_align, column);
+        Self::remove_column_item(&mut self.wrap, column);
+        Self::remove_column_item(&mut self.numeric_format, column);
+        Self::remove_column_item(&mut self.numeric_decimals, column);
+        Self::remove_column_item(&mut self.numeric_commas, column);
+        Self::remove_column_item(&mut self.bold, column);
+        Self::remove_column_item(&mut self.italic, column);
+        Self::remove_column_item(&mut self.text_color, column);
+        Self::remove_column_item(&mut self.fill_color, column);
+        Self::remove_column_item(&mut self.date_time, column);
+        Self::remove_column_item(&mut self.underline, column);
+        Self::remove_column_item(&mut self.strike_through, column);
+    }
+
+    fn copy_row_item<T>(item: &SheetFormatUpdatesType<T>, row: i64) -> SheetFormatUpdatesType<T>
+    where
+        T: Clone + Debug + PartialEq,
+    {
+        item.as_ref()
+            .and_then(|item| item.copy_row(row))
+            .map(|c| c.map_ref(|opt| opt.clone().and_then(|x| x)))
+    }
+
+    pub fn copy_row(&self, row: i64) -> Option<SheetFormatUpdates> {
+        let updates = SheetFormatUpdates {
+            align: Self::copy_row_item(&self.align, row),
+            vertical_align: Self::copy_row_item(&self.vertical_align, row),
+            wrap: Self::copy_row_item(&self.wrap, row),
+            numeric_format: Self::copy_row_item(&self.numeric_format, row),
+            numeric_decimals: Self::copy_row_item(&self.numeric_decimals, row),
+            numeric_commas: Self::copy_row_item(&self.numeric_commas, row),
+            bold: Self::copy_row_item(&self.bold, row),
+            italic: Self::copy_row_item(&self.italic, row),
+            text_color: Self::copy_row_item(&self.text_color, row),
+            fill_color: Self::copy_row_item(&self.fill_color, row),
+            date_time: Self::copy_row_item(&self.date_time, row),
+            underline: Self::copy_row_item(&self.underline, row),
+            strike_through: Self::copy_row_item(&self.strike_through, row),
+        };
+
+        if updates.is_default() {
+            None
+        } else {
+            Some(updates)
+        }
     }
 }
 

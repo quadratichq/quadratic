@@ -161,7 +161,7 @@ impl GridController {
         let mut ops = vec![];
         let selection = A1Selection::from_rect(delete_rect);
         ops.extend(self.delete_cells_operations(&selection, false));
-        ops.extend(self.clear_format_borders_operations(&selection));
+        ops.extend(self.clear_format_borders_operations(&selection, false));
         ops
     }
 
@@ -643,7 +643,6 @@ impl GridController {
         // we don't need to apply any operations to the cells set in
         // data_tables_and_cell_values_in_rect() for no_op_cells
         let mut no_op_cells = CellValues::default();
-        let mut values = CellValues::new(final_range.width(), final_range.height());
         let context = self.a1_context();
         let selection =
             A1Selection::from_rect(SheetRect::new_from_rect(final_range.to_owned(), sheet_id));
@@ -651,7 +650,7 @@ impl GridController {
         let data_tables_in_rect = sheet.data_tables_and_cell_values_in_rect(
             initial_range,
             &mut no_op_cells,
-            &mut values,
+            &mut None,
             context,
             &selection,
             false,

@@ -121,44 +121,52 @@ impl Sheet {
         self.data_tables
             .expensive_iter()
             .filter(|(_, data_table)| !data_table.has_spill() && !data_table.has_error())
-            .for_each(|(pos, data_table)| match &data_table.value {
+            .for_each(|(data_table_pos, data_table)| match &data_table.value {
                 Value::Single(v) => {
                     if self.compare_cell_value(
                         v,
                         query,
-                        *pos,
+                        *data_table_pos,
                         case_sensitive,
                         whole_cell,
                         false, // data_tables can never have code within them (although that would be cool if they did ;)
                     ) {
-                        results.push(pos.to_sheet_pos(self.id));
+                        results.push(data_table_pos.to_sheet_pos(self.id));
                     }
                 }
                 Value::Array(array) => {
-                    for x in 0..array.size().w.get() {
-                        let column_display = data_table.header_display(x as usize);
-                        if !column_display {
-                            continue;
-                        }
-                        for y in 0..array.size().h.get() {
+                    let y_adjustment = data_table.y_adjustment(true);
+
+                    let reverse_display_buffer = data_table.get_reverse_display_buffer();
+
+                    for y in 0..array.size().h.get() {
+                        let display_row = data_table.get_display_index_from_reverse_display_buffer(
+                            y as u64,
+                            reverse_display_buffer.as_ref(),
+                        );
+
+                        for x in 0..array.size().w.get() {
+                            let column_display = data_table.header_display(x as usize);
+                            if !column_display {
+                                continue;
+                            }
+
                             let cell_value = array.get(x, y).unwrap();
                             if self.compare_cell_value(
                                 cell_value,
                                 query,
                                 Pos {
-                                    x: pos.x + x as i64,
-                                    y: pos.y + y as i64,
+                                    x: data_table_pos.x + x as i64,
+                                    y: data_table_pos.y + y as i64,
                                 },
                                 case_sensitive,
                                 whole_cell,
                                 false, // data_tables can never have code within them (although that would be cool if they did ;)
                             ) {
-                                let y = pos.y
-                                    + data_table.y_adjustment(true)
-                                    + data_table.get_display_index_from_row_index(y as u64) as i64;
-                                if y >= pos.y {
+                                let y = data_table_pos.y + y_adjustment + display_row as i64;
+                                if y >= data_table_pos.y {
                                     results.push(SheetPos {
-                                        x: pos.x + x as i64,
+                                        x: data_table_pos.x + x as i64,
                                         y,
                                         sheet_id: self.id,
                                     });
