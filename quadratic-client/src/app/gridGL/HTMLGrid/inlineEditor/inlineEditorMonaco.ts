@@ -47,7 +47,6 @@ class InlineEditorMonaco {
   // used to populate autocomplete suggestion (dropdown is handled in autocompleteDropDown.tsx)
   autocompleteList?: string[];
   autocompleteShowingList = false;
-  autocompleteSuggestionShowing = false;
 
   // Helper function to get the model without having to check if editor or model
   // is defined.
@@ -60,6 +59,10 @@ class InlineEditorMonaco {
       throw new Error('Expected model to be defined in getModel');
     }
     return model;
+  }
+
+  setShowingList(showing: boolean) {
+    this.autocompleteShowingList = showing;
   }
 
   // Gets the value of the inline editor.
@@ -518,15 +521,9 @@ class InlineEditorMonaco {
     monaco.languages.register({ id: 'inline-editor' });
     monaco.languages.registerCompletionItemProvider('inline-editor', {
       provideCompletionItems: (model, position) => {
-        const lowerCase = this.get().toLowerCase();
-        const filteredList = this.autocompleteList?.filter(
-          (t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length
-        );
-        if (!this.autocompleteList || filteredList?.length !== 1) {
-          this.autocompleteSuggestionShowing = false;
+        if (!this.autocompleteList || !this.autocompleteSuggestionShowing) {
           return;
         }
-        this.autocompleteSuggestionShowing = true;
         const word = model.getWordUntilPosition(position);
         const range = new monaco.Range(position.lineNumber, 1, position.lineNumber, word.endColumn);
         return {
@@ -550,6 +547,16 @@ class InlineEditorMonaco {
       pixiAppSettings.setInlineEditorState?.((prev) => ({ ...prev, editMode: true }));
     });
     this.editor.onDidChangeModelContent(() => inlineEditorEvents.emit('valueChanged', this.get()));
+  }
+
+  /// Returns true if the autocomplete suggestion is probably showing.
+  get autocompleteSuggestionShowing(): boolean {
+    if (!this.autocompleteList) return false;
+    const lowerCase = this.get().toLowerCase();
+    const filteredList = this.autocompleteList?.filter(
+      (t) => t.toLowerCase().startsWith(lowerCase) && t.length > lowerCase.length
+    );
+    return filteredList?.length === 1;
   }
 
   // Sends a keyboard event to the editor (used when returning

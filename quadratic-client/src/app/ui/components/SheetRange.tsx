@@ -69,7 +69,7 @@ export const SheetRange = (props: Props) => {
         onChangeRange(selection);
         setRangeError(undefined);
         if (selection && selection.save() !== sheets.sheet.cursor.save()) {
-          sheets.changeSelection(selection, true);
+          sheets.changeSelection(selection);
 
           // need to call focus again since changeSelection will change focus
           inputRef.current?.focus();
@@ -112,7 +112,7 @@ export const SheetRange = (props: Props) => {
     try {
       const selection = sheets.stringToSelection(input, a1SheetId);
       if (selection && selection.save() !== sheets.sheet.cursor.save()) {
-        sheets.changeSelection(selection, true);
+        sheets.changeSelection(selection);
 
         // need to call focus again since changeSelection will change focus
         inputRef.current?.focus();
