@@ -204,14 +204,7 @@ impl MultiCellTablesCache {
                         if let Some(reverse_display_buffer) =
                             data_table.get_reverse_display_buffer()
                         {
-                            let mut sorted_empty_values_cache = Contiguous2D::new();
-                            sorted_empty_values_cache.set_rect(
-                                x1,
-                                y1 + y_adjustment,
-                                Some(x2),
-                                Some(y2),
-                                Some(None),
-                            );
+                            let mut empty_rects = vec![];
 
                             for (rect, value) in empty_values_cache
                                 .nondefault_rects_in_rect(Rect::new(1, 1, i64::MAX, i64::MAX))
@@ -225,16 +218,35 @@ impl MultiCellTablesCache {
                                                     Some(&reverse_display_buffer),
                                                 );
 
-                                            sorted_empty_values_cache.set_rect(
+                                            empty_rects.push(Rect::new(
                                                 x1 + rect.min.x - 1,
                                                 y1 + y_adjustment + display_row as i64,
-                                                Some(x1 + rect.max.x - 1),
-                                                Some(y1 + y_adjustment + display_row as i64),
-                                                value,
-                                            );
+                                                x1 + rect.max.x - 1,
+                                                y1 + y_adjustment + display_row as i64,
+                                            ));
                                         }
                                     }
                                 }
+                            }
+
+                            let mut sorted_empty_values_cache = Contiguous2D::new();
+                            sorted_empty_values_cache.set_rect(
+                                x1,
+                                y1 + y_adjustment,
+                                Some(x2),
+                                Some(y2),
+                                Some(None),
+                            );
+
+                            empty_rects.sort_by(|a, b| (a.min.y, a.min.x).cmp(&(b.min.y, b.min.x)));
+                            for rect in empty_rects {
+                                sorted_empty_values_cache.set_rect(
+                                    rect.min.x,
+                                    rect.min.y,
+                                    Some(rect.max.x),
+                                    Some(rect.max.y),
+                                    Some(Some(true)),
+                                );
                             }
 
                             sorted_empty_values_cache

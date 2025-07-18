@@ -55,6 +55,9 @@ impl GridController {
                                 &mut sheet_format_update,
                             );
 
+                        sheet_format_update
+                            .set_format_rect(intersection_rect, FormatUpdate::cleared());
+
                         if let Some(table_format_updates) = table_format_updates {
                             if !table_format_updates.is_default() {
                                 ops.push(Operation::DataTableFormats {
@@ -117,6 +120,11 @@ impl GridController {
                 }
             }
         }
+
+        dbgjs!(&format!(
+            "sheet_format_update: {:?}",
+            sheet_format_update.is_default()
+        ));
 
         if !sheet_format_update.is_default() {
             ops.push(Operation::SetCellFormatsA1 {

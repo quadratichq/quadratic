@@ -88,8 +88,8 @@ impl DataTable {
         // handle sorted rows
         let mut data_table_display_formats_update = if self.display_buffer.is_some() {
             let mut data_table_display_formats_update = SheetFormatUpdates::default();
-            for display_row in data_table_rect.y_range() {
-                if let Ok(display_row) = u64::try_from(display_row) {
+            for y in data_table_rect.y_range() {
+                if let Ok(display_row) = u64::try_from(y) {
                     let actual_row = self.get_row_index_from_display_index(display_row);
 
                     let mut row_formats = SheetFormatUpdates::from_sheet_formatting_rect(
@@ -184,24 +184,25 @@ impl DataTable {
             return None;
         }
 
-        let mut format_update = SheetFormatUpdates::default();
+        let mut data_table_format_update = SheetFormatUpdates::default();
 
-        format_update.transfer_format_rect_from_other(display_rect, sheet_format_updates);
+        data_table_format_update
+            .transfer_format_rect_from_other(display_rect, sheet_format_updates);
 
-        if format_update.is_default() {
+        if data_table_format_update.is_default() {
             return None;
         }
 
         self.adjust_format_update_for_hidden_sorted_rows(
             data_table_pos,
             display_rect,
-            &mut format_update,
+            &mut data_table_format_update,
         );
 
-        if format_update.is_default() {
+        if data_table_format_update.is_default() {
             None
         } else {
-            Some(format_update)
+            Some(data_table_format_update)
         }
     }
 
@@ -210,14 +211,43 @@ impl DataTable {
         &self,
         data_table_pos: Pos,
         display_rect: Rect,
-        format_update: &mut SheetFormatUpdates,
+        data_table_format_update: &mut SheetFormatUpdates,
     ) {
         let y_adjustment = self.y_adjustment(true);
 
         let data_table_rect =
             display_rect.translate(-data_table_pos.x, -data_table_pos.y - y_adjustment);
 
-        format_update.translate_in_place(1 - data_table_pos.x, 1 - data_table_pos.y - y_adjustment);
+        data_table_format_update
+            .translate_in_place(1 - data_table_pos.x, 1 - data_table_pos.y - y_adjustment);
+
+        // handle sorted rows
+        if self.display_buffer.is_some() {
+            let mut rows_formats = vec![];
+
+            for y in data_table_rect.y_range() {
+                if let Ok(display_row) = u64::try_from(y) {
+                    let actual_row = self.get_row_index_from_display_index(display_row);
+
+                    if let Some(mut row_formats) =
+                        data_table_format_update.copy_row(display_row as i64 + 1)
+                    {
+                        row_formats.translate_in_place(0, actual_row as i64 - display_row as i64);
+
+                        rows_formats.push((actual_row, row_formats));
+                    }
+                }
+            }
+
+            let mut sorted_formats_update = SheetFormatUpdates::default();
+
+            rows_formats.sort_by_key(|(actual_row, _)| *actual_row);
+            for (_, row_formats) in rows_formats {
+                sorted_formats_update.merge(&row_formats);
+            }
+
+            std::mem::swap(data_table_format_update, &mut sorted_formats_update);
+        }
 
         // handle hidden columns
         if let Some(column_headers) = &self.column_headers {
@@ -226,32 +256,10 @@ impl DataTable {
                 .sorted_by_key(|column_header| column_header.value_index)
             {
                 if !column_header.display {
-                    format_update
+                    data_table_format_update
                         .insert_column(column_header.value_index as i64 + 1, CopyFormats::None);
                 }
             }
-        }
-
-        // handle sorted rows
-        if self.display_buffer.is_some() {
-            let mut sorted_formats_update = SheetFormatUpdates::default();
-
-            for display_row in data_table_rect.y_range() {
-                if let Ok(display_row) = u64::try_from(display_row) {
-                    let actual_row = self.get_row_index_from_display_index(display_row);
-
-                    if let Some(mut row_formats) = format_update.copy_row(display_row as i64 + 1) {
-                        if !row_formats.is_default() {
-                            row_formats
-                                .translate_in_place(0, actual_row as i64 - display_row as i64);
-
-                            sorted_formats_update.merge(&row_formats);
-                        }
-                    }
-                }
-            }
-
-            std::mem::swap(format_update, &mut sorted_formats_update);
         }
     }
 }
