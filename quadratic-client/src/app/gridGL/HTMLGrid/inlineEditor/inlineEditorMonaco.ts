@@ -79,6 +79,10 @@ class InlineEditorMonaco {
       throw new Error('Expected editor to be defined in setValue');
     }
     this.editor.setValue(s);
+
+    // set the edited value on the div for playwright
+    document.querySelector('#cell-edit')?.setAttribute('data-test-value', s);
+
     this.setColumn(s.length + 1);
     if (select !== undefined && select !== false) {
       const model = this.getModel();

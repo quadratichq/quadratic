@@ -10,6 +10,7 @@ type GotoCellsOptions = {
 export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
   await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+G');
+  await page.waitForSelector('[data-testid="goto-menu"]');
   await page.keyboard.type(a1);
   await page.keyboard.press('Enter');
   await page.waitForTimeout(2 * 1000);
@@ -24,4 +25,18 @@ type AssertSelectionOptions = {
 };
 export const assertSelection = async (page: Page, { a1 }: AssertSelectionOptions) => {
   await expect(page.locator(`[data-testid="cursor-position"]`)).toHaveValue(a1);
+};
+
+/**
+ * Asserts the cell value is the expected value by attempting to edit it.
+ */
+type AssertCellValueOptions = {
+  a1: string;
+  value: string;
+};
+export const assertCellValue = async (page: Page, { a1, value }: AssertCellValueOptions) => {
+  await gotoCells(page, { a1 });
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(2 * 1000);
+  await expect(page.locator('#cell-edit')).toHaveAttribute('data-test-value', value);
 };

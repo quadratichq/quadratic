@@ -1453,4 +1453,21 @@ mod test {
             CellValue::Number(decimal_from_str("-123.123").unwrap())
         );
     }
+
+    #[test]
+    fn test_percentage_14() {
+        let (value, format) = CellValue::string_to_cell_value("14%", false, true);
+        assert_eq!(value, CellValue::Number(decimal_from_str("0.14").unwrap()));
+        assert_eq!(
+            format,
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                })),
+                ..Default::default()
+            }
+        );
+        assert_eq!(value.to_edit(), "0.14");
+    }
 }

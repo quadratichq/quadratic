@@ -13,7 +13,7 @@ describe('convertNumber', () => {
     expect(convertNumber('1234.5678', { commas: null, decimals: 5, format: null })).toBe('1234.56780');
     expect(
       convertNumber('0.01234', { commas: null, decimals: null, format: { type: 'PERCENTAGE', symbol: null } })
-    ).toBe('1.23%');
+    ).toBe('1.234%');
     expect(
       convertNumber('123456789', { commas: null, decimals: null, format: { type: 'EXPONENTIAL', symbol: null } })
     ).toBe('1.23e+8');
