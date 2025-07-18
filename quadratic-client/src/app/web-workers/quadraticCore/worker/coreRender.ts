@@ -70,7 +70,7 @@ class CoreRender {
   }
 
   private async getRenderCells(request: RenderCoreRequestRenderCells) {
-    const data = await core.getRenderCells(request);
+    const data = core.getRenderCells(request);
     this.send({ type: 'coreRenderRenderCells', id: request.id, data }, data?.buffer);
   }
 
