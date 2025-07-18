@@ -23,6 +23,13 @@
   -webkit-font-smoothing: antialiased;
 }
 
+.material-symbols-14 {
+  width: 14px;
+  height: 14px;
+  font-size: 14px;
+  font-variation-settings: 'OPSZ' 14;
+}
+
 .material-symbols-20 {
   width: 20px;
   height: 20px;
