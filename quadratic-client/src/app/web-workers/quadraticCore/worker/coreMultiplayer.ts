@@ -4,6 +4,7 @@ import type {
   MultiplayerCoreMessage,
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { Singleton } from '@/app/web-workers/Singleton';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -11,7 +12,7 @@ declare var self: WorkerGlobalScope &
     requestTransactions: (sequenceNum: number) => void;
   };
 
-class CoreMultiplayer {
+class CoreMultiplayer extends Singleton {
   private coreMessagePort?: MessagePort;
 
   async init(coreMessagePort: MessagePort) {

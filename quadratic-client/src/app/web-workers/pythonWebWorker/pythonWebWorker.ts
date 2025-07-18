@@ -58,6 +58,11 @@ class PythonWebWorker {
     quadraticCore.sendPythonInit(pythonCoreChannel.port2);
   }
 
+  terminate() {
+    this.worker?.terminate();
+    this.worker = undefined;
+  }
+
   cancelExecution = () => {
     mixpanel.track('[PythonWebWorker].restartFromUser');
     this.init();

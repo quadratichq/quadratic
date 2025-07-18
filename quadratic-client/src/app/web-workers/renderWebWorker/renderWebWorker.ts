@@ -9,6 +9,9 @@ import type {
   RenderClientMessage,
   RenderClientRowMaxHeight,
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
+import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
+import { renderCore } from '@/app/web-workers/renderWebWorker/worker/renderCore';
+import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText';
 import type { Rectangle } from 'pixi.js';
 
 class RenderWebWorker {
@@ -23,6 +26,25 @@ class RenderWebWorker {
     this.worker = new Worker(new URL('./worker/render.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => console.warn(`[render.worker] error: ${e.message}`, e);
+  }
+
+  isInitialized() {
+    return this.worker !== undefined;
+  }
+
+  terminate() {
+    this.worker?.terminate();
+    this.worker = undefined;
+    this.refreshMessengers();
+
+    console.log('[renderWebWorker] terminated');
+  }
+
+  refreshMessengers() {
+    renderClient.refreshSingleton();
+    renderCore.refreshSingleton();
+    renderText.refreshSingleton();
+    renderText.ready();
   }
 
   async init(coreMessagePort: MessagePort) {
@@ -82,7 +104,8 @@ class RenderWebWorker {
 
   private send(message: ClientRenderMessage) {
     if (!this.worker) {
-      throw new Error('Expected worker to be initialized in renderWebWorker.send');
+      // throw new Error('Expected worker to be initialized in renderWebWorker.send');
+      return;
     }
 
     this.worker.postMessage(message);

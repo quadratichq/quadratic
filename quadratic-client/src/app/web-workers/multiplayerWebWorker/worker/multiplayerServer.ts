@@ -27,6 +27,7 @@ import {
 } from '@/app/web-workers/multiplayerWebWorker/proto/transaction';
 import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
+import { Singleton } from '@/app/web-workers/Singleton';
 import type { User } from '@/auth/auth';
 import * as Sentry from '@sentry/react';
 
@@ -55,7 +56,7 @@ export const cellEditDefault = (): CellEdit => ({
   inline_code_editor: false,
 });
 
-export class MultiplayerServer {
+export class MultiplayerServer extends Singleton {
   private websocket?: WebSocket;
 
   private _state: MultiplayerState = 'startup';

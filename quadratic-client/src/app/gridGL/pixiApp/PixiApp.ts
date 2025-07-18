@@ -1,6 +1,6 @@
+import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import './pixiApp.css';
 
-import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import {
   copyToClipboardEvent,
@@ -48,7 +48,7 @@ export class PixiApp {
   // Used to track whether we're done with the first render (either before or
   // after init is called, depending on timing).
   private waitingForFirstRender?: Function;
-  private alreadyRendered = false;
+  alreadyRendered = false;
 
   // todo: UI should be pulled out and separated into its own class
 
@@ -140,6 +140,16 @@ export class PixiApp {
         }
         this.initialized = true;
       }
+    });
+  };
+
+  refresh = (): Promise<void> => {
+    return new Promise((resolve) => {
+      this.rebuild();
+      renderWebWorker.sendBitmapFonts();
+      urlParams.init();
+      this.alreadyRendered = false;
+      this.waitingForFirstRender = resolve;
     });
   };
 

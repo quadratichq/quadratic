@@ -6,13 +6,14 @@ import type {
   JavascriptCoreMessage,
 } from '@/app/web-workers/javascriptWebWorker/javascriptCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { Singleton } from '@/app/web-workers/Singleton';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     sendRunJavascript: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
   };
 
-class CoreJavascript {
+class CoreJavascript extends Singleton {
   private coreJavascriptPort?: MessagePort;
 
   // last running transaction (used to cancel execution)
