@@ -543,6 +543,7 @@ Examples:
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
+IMPORTANT: When moving a table, provide only the anchor cell of the table (the top-left cell of the table) in the source selection rectangle.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
     parameters: {

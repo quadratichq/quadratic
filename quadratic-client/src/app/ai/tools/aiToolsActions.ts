@@ -462,6 +462,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const { selection, sheet_name, page } = args;
     try {
       const sheetId = sheets.getSheetIdFromName(sheet_name);
+      console.log(selection, sheet_name, page);
       const response = await quadraticCore.getAICells(selection, sheetId, page);
       if (response) {
         return [
