@@ -1,5 +1,6 @@
 import { events } from '@/app/events/events';
 import { reload } from '@/routes/file.$uuid';
+import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 
@@ -16,6 +17,8 @@ export const useCoreErrorRedirect = () => {
   useEffect(() => {
     const handleCoreError = async (from: string, error: Error | unknown) => {
       console.error('[useCoreErrorRedirect] Core error occurred:', { from, error });
+
+      mixpanel.track('coreError', { from, error });
 
       setIsReloading(true);
 
