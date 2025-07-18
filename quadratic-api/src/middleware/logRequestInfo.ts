@@ -27,7 +27,7 @@ export const logRequestInfo = (req: Request, res: Response, next: NextFunction):
   });
 
   // Log response when finished
-  res.on('finish', () => {
+  res.once('finish', () => {
     const duration = Date.now() - startTime;
     console.info({
       level: 'info',
