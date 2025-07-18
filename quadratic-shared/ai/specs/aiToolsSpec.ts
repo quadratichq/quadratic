@@ -225,7 +225,7 @@ Choose the AI model for this user prompt based on the following instructions, al
         ai_model: {
           type: 'string',
           description:
-            'Value can be only one of the following: "claude" or "pro" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+            'Value can be only one of the following: "claude" or "4.1" models exactly, this is the model best suited for the user prompt based on examples and model capabilities.\n',
         },
       },
       required: ['ai_model'],
