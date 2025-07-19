@@ -770,4 +770,17 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
+  [AITool.HasCellData]: async (args) => {
+    const { selection, sheet_name } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    const response = await quadraticCore.hasCellData(sheetId, selection);
+    return [
+      {
+        type: 'text',
+        text: response
+          ? `The selection "${args.selection}" in Sheet "${args.sheet_name}" has data.`
+          : `The selection "${args.selection}" in Sheet "${args.sheet_name}" does not have data.`,
+      },
+    ];
+  },
 } as const;

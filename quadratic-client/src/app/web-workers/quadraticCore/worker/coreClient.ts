@@ -672,6 +672,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreHasCellData':
+        this.send({
+          type: 'coreClientHasCellData',
+          id: e.data.id,
+          hasData: core.hasCellData(e.data.sheetId, e.data.selection),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

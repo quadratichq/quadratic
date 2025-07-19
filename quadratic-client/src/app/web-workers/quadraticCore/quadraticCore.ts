@@ -66,6 +66,7 @@ import type {
   CoreClientGetJwt,
   CoreClientGetValidationList,
   CoreClientGridToDataTable,
+  CoreClientHasCellData,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -215,7 +216,6 @@ class QuadraticCore {
       events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
       return;
     }
-
     if (e.data.id !== undefined) {
       // handle responses from requests to quadratic-core
       if (this.waitingForResponse[e.data.id]) {
@@ -1458,6 +1458,21 @@ class QuadraticCore {
         type: 'clientCoreGetFormatSelection',
         id,
         selection,
+      });
+    });
+  }
+
+  hasCellData(sheetId: string, selection: string): Promise<boolean> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientHasCellData) => {
+        resolve(message.hasData);
+      };
+      this.send({
+        type: 'clientCoreHasCellData',
+        sheetId,
+        selection,
+        id,
       });
     });
   }
