@@ -134,8 +134,6 @@ export function initMixpanelAnalytics(user: User) {
     $avatar: user?.picture,
     ...utmData,
   });
-
-  console.log('[Analytics] Mixpanel activated');
 }
 
 function configureSentry(user: User) {
