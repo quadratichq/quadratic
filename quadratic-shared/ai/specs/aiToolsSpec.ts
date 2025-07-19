@@ -28,6 +28,8 @@ export enum AITool {
   DeleteSheet = 'delete_sheet',
   MoveSheet = 'move_sheet',
   ColorSheets = 'color_sheets',
+
+  TextSearch = 'text_search',
 }
 
 export const AIToolSchema = z.enum([
@@ -55,6 +57,7 @@ export const AIToolSchema = z.enum([
   AITool.DeleteSheet,
   AITool.MoveSheet,
   AITool.ColorSheets,
+  AITool.TextSearch,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -233,6 +236,13 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.ColorSheets]: z.object({
     sheet_name_to_color: z.record(z.string(), z.string()),
+  }),
+  [AITool.TextSearch]: z.object({
+    query: z.string(),
+    case_sensitive: z.boolean(),
+    whole_cell: z.boolean(),
+    search_code: z.boolean(),
+    sheet_name: z.string().optional(),
   }),
 } as const;
 
@@ -1172,6 +1182,44 @@ It requires a record of sheet names to change mapped to the new color.\n
     prompt: `
 This tool colors the sheet tabs in the file.\n
 It requires a record of sheet names to change mapped to the new color.\n
+`,
+  },
+  [AITool.TextSearch]: {
+    sources: ['AIAnalyst', 'AIAssistant'],
+    description: `
+This tool searches for text in cells within a specific sheet or the entire file.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        query: {
+          type: 'string',
+          description: 'The query to search for',
+        },
+        case_sensitive: {
+          type: 'boolean',
+          description: 'Whether the search should be case sensitive',
+        },
+        whole_cell: {
+          type: 'boolean',
+          description:
+            'Whether the search should be for the whole cell (i.e., if true, then a cell with "Hello World" would not be found with a search for "Hello"; if false, it would be).',
+        },
+        search_code: {
+          type: 'boolean',
+          description: 'Whether the search should include code within code cells',
+        },
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to search in. If not provided, then it searches all sheets.',
+        },
+      },
+      required: ['query', 'case_sensitive', 'whole_cell', 'search_code'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.TextSearch],
+    prompt: `
+This tool searches for text in cells within a specific sheet or the entire file.\n
 `,
   },
 } as const;
