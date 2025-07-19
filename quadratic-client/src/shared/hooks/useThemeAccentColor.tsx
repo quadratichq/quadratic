@@ -17,7 +17,7 @@ export const ThemeAccentColorEffects = memo(() => {
   // Update the theme color in the UI
   useEffect(() => {
     // Set the current theme color variable in CSS via the DOM
-    document.documentElement.setAttribute('data-theme', accentColor);
+    document.documentElement.dataset.theme = accentColor;
 
     // Set in pixi
     sharedEvents.emit('changeThemeAccentColor');

@@ -3,7 +3,7 @@
 
 <head>
   <script>
-    document.documentElement.setAttribute('data-loading-start', Date.now());
+    document.documentElement.dataset.loadingStart = Date.now();
   </script>
   <meta charset="utf-8" />
   <link rel="icon" href="/favicon.ico" />
@@ -34,7 +34,9 @@
   <!-- Material symbols font -->
   <link
     href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..24,400,0,0&display=block"
-    rel="stylesheet" />
+    rel="stylesheet" crossorigin="anonymous" fetchpriority="high" onload="document.fonts.load('1em Material Symbols Outlined').then(() => {
+      document.documentElement.dataset.materialSymbolsLoaded = 'true';
+    })" />
 
   <!-- Preload our loading images -->
   <link rel="preload" as="image" href="/images/logo_etching.png" />
