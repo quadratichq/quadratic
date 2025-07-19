@@ -10,7 +10,7 @@ impl GridController {
     pub fn get_render_cells(&self, sheet_id: String, rect: String) -> Result<Vec<u8>, JsValue> {
         let rect = serde_json::from_str::<Rect>(&rect).map_err(|e| e.to_string())?;
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
-            return Result::Err("Sheet not found".into());
+            return Ok(vec![]);
         };
         sheet.send_validation_warnings_rect(rect, true);
         let output = sheet.get_render_cells(rect, self.a1_context());
