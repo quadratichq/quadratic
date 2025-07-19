@@ -25,8 +25,10 @@ try {
     isDemo: true,
   });
 } catch (error) {
-  console.log({
-    message: '`CONNECTION_DEMO` env var is missing or malformed. No demo connection will be available.',
-    error,
-  });
+  console.log(
+    JSON.stringify({
+      message: '`CONNECTION_DEMO` env var is missing or malformed. No demo connection will be available.',
+      error,
+    })
+  );
 }

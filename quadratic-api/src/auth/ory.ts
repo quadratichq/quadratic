@@ -34,7 +34,7 @@ export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]):
   try {
     identities = (await sdk.listIdentities({ ids })).data;
   } catch (error) {
-    console.error({ message: 'Error in getUsersFromOry', error });
+    console.error(JSON.stringify({ message: 'Error in getUsersFromOry', error }));
     return {};
   }
 
@@ -78,7 +78,7 @@ export const getUsersFromOryByEmail = async (email: string): Promise<ByEmailUser
   try {
     identities = (await sdk.listIdentities({ credentialsIdentifier: email })).data;
   } catch (error) {
-    console.error({ message: 'Error in getUsersFromOryByEmail', error });
+    console.error(JSON.stringify({ message: 'Error in getUsersFromOryByEmail', error }));
     return [];
   }
 
