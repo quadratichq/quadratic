@@ -326,10 +326,10 @@ fn test_find_cell_references() {
     let mut g = GridController::new();
     let sheet1 = g.sheet_ids()[0];
 
-    g.add_sheet(None);
-    g.add_sheet(None);
-    g.add_sheet(None);
-    g.add_sheet(None);
+    g.add_sheet(None, None, None);
+    g.add_sheet(None, None, None);
+    g.add_sheet(None, None, None);
+    g.add_sheet(None, None, None);
     let apple = g.sheet_ids()[1];
     g.set_sheet_name(apple, "apple".into(), None);
     let orange = g.sheet_ids()[2];
@@ -396,7 +396,7 @@ fn test_sheet_references() {
     let name1 = "MySheet".to_string();
     g.set_sheet_name(id1, name1.clone(), None);
 
-    g.add_sheet(None);
+    g.add_sheet(None, None, None);
     let id2 = g.sheet_ids()[1];
     let name2 = "My Other Sheet".to_string();
     g.set_sheet_name(id2, name2.clone(), None);

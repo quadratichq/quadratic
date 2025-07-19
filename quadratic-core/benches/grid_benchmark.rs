@@ -221,7 +221,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |mut gc| {
                 // Test
-                gc.add_sheet(None);
+                gc.add_sheet(None, None, None);
             },
             criterion::BatchSize::SmallInput,
         )

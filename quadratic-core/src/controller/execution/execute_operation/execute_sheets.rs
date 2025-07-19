@@ -376,7 +376,7 @@ mod tests {
     #[test]
     fn test_add_sheet() {
         let mut gc = GridController::test();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id = gc.sheet_ids()[1];
         let sheet = gc.sheet(sheet_id);
@@ -538,7 +538,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Sheet1, Sheet 2
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id2 = gc.sheet_ids()[1];
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
@@ -711,7 +711,7 @@ mod tests {
             "Table2"
         );
 
-        let ops = gc.duplicate_sheet_operations(sheet_id);
+        let ops = gc.duplicate_sheet_operations(sheet_id, None);
         gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
 
         let duplicated_sheet_id = gc.sheet_ids()[1];

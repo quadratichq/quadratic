@@ -621,4 +621,106 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
+  [AITool.AddSheet]: async (args) => {
+    const { sheet_name, insert_before_sheet_name } = args;
+    quadraticCore.addSheet(sheet_name, insert_before_sheet_name, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Create new sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.DuplicateSheet]: async (args) => {
+    const { sheet_name_to_duplicate, name_of_new_sheet } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name_to_duplicate);
+    if (sheetId) {
+      quadraticCore.duplicateSheet(sheetId, name_of_new_sheet, sheets.getCursorPosition());
+    } else {
+      return [
+        {
+          type: 'text',
+          text: 'Error executing duplicate sheet tool, sheet not found',
+        },
+      ];
+    }
+    return [
+      {
+        type: 'text',
+        text: 'Duplicate sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.RenameSheet]: async (args) => {
+    const { sheet_name, new_name } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    if (sheetId) {
+      quadraticCore.setSheetName(sheetId, new_name, sheets.getCursorPosition());
+    } else {
+      return [
+        {
+          type: 'text',
+          text: 'Error executing rename sheet tool, sheet not found',
+        },
+      ];
+    }
+    return [
+      {
+        type: 'text',
+        text: 'Rename sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.DeleteSheet]: async (args) => {
+    const { sheet_name } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    if (sheetId) {
+      quadraticCore.deleteSheet(sheetId, sheets.getCursorPosition());
+    } else {
+      return [
+        {
+          type: 'text',
+          text: 'Error executing delete sheet tool, sheet not found',
+        },
+      ];
+    }
+    return [
+      {
+        type: 'text',
+        text: 'Delete sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.MoveSheet]: async (args) => {
+    const { sheet_name, insert_before_sheet_name } = args;
+    const sheetId = sheets.getSheetIdFromName(sheet_name);
+    const insertBeforeSheetId = insert_before_sheet_name
+      ? sheets.getSheetIdFromName(insert_before_sheet_name)
+      : undefined;
+    if (!sheetId) {
+      return [
+        {
+          type: 'text',
+          text: 'Error executing move sheet tool',
+        },
+      ];
+    }
+    quadraticCore.moveSheet(sheetId, insertBeforeSheetId, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Reorder sheet tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.ColorSheets]: async (args) => {
+    const { sheet_name_to_color } = args;
+    quadraticCore.setSheetColors(sheet_name_to_color, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Color sheets tool executed successfully.',
+      },
+    ];
+  },
 } as const;
