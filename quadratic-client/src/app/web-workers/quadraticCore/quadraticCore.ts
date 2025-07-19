@@ -65,6 +65,7 @@ import type {
   CoreClientGetFormatSelection,
   CoreClientGetJwt,
   CoreClientGetValidationList,
+  CoreClientGridToDataTable,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -1275,11 +1276,16 @@ class QuadraticCore {
     });
   }
 
-  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+  gridToDataTable(
+    sheetRect: string,
+    tableName: string | undefined,
+    firstRowIsHeader: boolean,
+    cursor: string
+  ): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = () => {
-        resolve(undefined);
+      this.waitingForResponse[id] = (message: CoreClientGridToDataTable) => {
+        resolve(message.response);
       };
       this.send({
         type: 'clientCoreGridToDataTable',

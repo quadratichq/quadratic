@@ -152,7 +152,7 @@ const updateTeamStatus = async (
       stripeSubscriptionStatus = SubscriptionStatus.UNPAID;
       break;
     default:
-      console.error(`Unhandled subscription status: ${status}`);
+      console.error({ message: 'Unhandled subscription status', status });
       return;
   }
 
@@ -174,7 +174,7 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
 
   // if customer is not a string, then the following line will throw an error
   if (typeof customer !== 'string') {
-    console.error('Invalid customer ID:', customer);
+    console.error({ message: 'Invalid customer ID', customer });
     return;
   }
 
@@ -193,7 +193,7 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
 
   // This should not happen, but if it does, we should not update the team
   if (customer.deleted) {
-    console.error('Unexpected Error: Customer is deleted:', customer);
+    console.error({ message: 'Unexpected Error: Customer is deleted', customer });
     return;
   }
 
@@ -220,6 +220,9 @@ export const updateBilling = async (team: Team | DecryptedTeam) => {
   } else {
     // If we have more than one subscription, log an error
     // This should not happen.
-    console.error('Unexpected Error: Unhandled number of subscriptions:', customer.subscriptions?.data);
+    console.error({
+      message: 'Unexpected Error: Unhandled number of subscriptions',
+      subscriptions: customer.subscriptions?.data,
+    });
   }
 };

@@ -1011,6 +1011,7 @@ export interface ClientCoreGridToDataTable {
 export interface CoreClientGridToDataTable {
   type: 'coreClientGridToDataTable';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreDataTableMeta {
