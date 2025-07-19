@@ -130,9 +130,7 @@ impl GridController {
         match &self.get_ai_cells(selection, page as u32) {
             Ok(ai_cells) => serde_json::to_string(ai_cells)
                 .map_err(|_| JsValue::from_str("Unable to parse AICells")),
-            Err(e) => Err(JsValue::from_str(&format!(
-                "Unable to parse AICells: {e}"
-            ))),
+            Err(e) => Err(JsValue::from_str(&format!("Unable to parse AICells: {e}"))),
         }
     }
 
@@ -154,6 +152,19 @@ impl GridController {
             Err(e) => Err(JsValue::from_str(&format!(
                 "Unable to parse AICellFormats: {e}"
             ))),
+        }
+    }
+
+    #[wasm_bindgen(js_name = "hasCellData")]
+    pub fn js_has_cell_data(&self, sheet_id: String, selection: String) -> Result<bool, JsValue> {
+        let sheet_id = SheetId::from_str(&sheet_id)
+            .map_err(|_| JsValue::from_str("Unable to parse SheetId"))?;
+        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            .map_err(|_| JsValue::from_str("Unable to parse a1 string"))?;
+        if let Some(sheet) = self.try_sheet(sheet_id) {
+            Ok(sheet.has_content_in_selection(selection, self.a1_context()))
+        } else {
+            Ok(false)
         }
     }
 }

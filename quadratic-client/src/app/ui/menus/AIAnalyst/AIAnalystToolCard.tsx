@@ -7,6 +7,7 @@ import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
 import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
+import { HasCellData } from '@/app/ai/toolCards/HasCellData';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
@@ -76,8 +77,7 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <ColorSheets args={args} loading={loading} />;
     case AITool.TextSearch:
       return <TextSearch args={args} loading={loading} />;
-    default:
-      console.error(`Unknown tool: ${name}`);
-      return null;
+    case AITool.HasCellData:
+      return <HasCellData args={args} loading={loading} />;
   }
 });

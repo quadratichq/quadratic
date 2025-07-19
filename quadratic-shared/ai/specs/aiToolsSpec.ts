@@ -16,6 +16,7 @@ export enum AITool {
   UserPromptSuggestions = 'user_prompt_suggestions',
   PDFImport = 'pdf_import',
   GetCellData = 'get_cell_data',
+  HasCellData = 'has_cell_data',
   SetTextFormats = 'set_text_formats',
   GetTextFormats = 'get_text_formats',
   ConvertToTable = 'convert_to_table',
@@ -46,6 +47,7 @@ export const AIToolSchema = z.enum([
   AITool.UserPromptSuggestions,
   AITool.PDFImport,
   AITool.GetCellData,
+  AITool.HasCellData,
   AITool.SetTextFormats,
   AITool.GetTextFormats,
   AITool.ConvertToTable,
@@ -180,6 +182,10 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().optional(),
     selection: z.string(),
     page: z.number(),
+  }),
+  [AITool.HasCellData]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
   }),
   [AITool.SetTextFormats]: z.object({
     sheet_name: z.string().optional(),
@@ -350,6 +356,31 @@ IMPORTANT: If the results include page information:\n
 - you MUST perform actions on the current page's results before requesting the next page of results.\n
 - as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
 `,
+  },
+  [AITool.HasCellData]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description:
+            'The sheet name of the current sheet as defined in the context, unless the user is requesting data from another sheet. In which case, use that sheet name.',
+        },
+        selection: {
+          type: 'string',
+          description: `
+The string representation (in a1 notation) of the selection of cells to check for data. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
+        },
+      },
+      required: ['selection', 'sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.HasCellData],
+    prompt: `This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n`,
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
@@ -589,6 +620,7 @@ Moves a rectangular selection of cells from one location to another on the curre
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
 IMPORTANT: When moving a table, provide only the anchor cell of the table (the top-left cell of the table) in the source selection rectangle.\n
+ALSO IMPORTANT: Before moving a table, use the has_cell_data tool to check if the cells in the new selection have any data. If they do, you should choose a different target location and check that location before moving the table.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
     parameters: {
