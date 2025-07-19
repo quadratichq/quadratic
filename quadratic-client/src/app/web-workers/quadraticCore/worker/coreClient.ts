@@ -559,10 +559,10 @@ class CoreClient {
         return;
 
       case 'clientCoreGridToDataTable':
-        core.gridToDataTable(e.data.sheetRect, e.data.tableName, e.data.firstRowIsHeader, e.data.cursor);
         this.send({
           type: 'coreClientGridToDataTable',
           id: e.data.id,
+          response: core.gridToDataTable(e.data.sheetRect, e.data.tableName, e.data.firstRowIsHeader, e.data.cursor),
         });
         return;
 

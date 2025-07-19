@@ -51,9 +51,13 @@ export function CodeEditorHeaderLabel() {
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
   const focusCellRef = useCallback(() => {
-    if (!cellRef) return;
-    const selection = sheets.stringToSelection(cellRef, sheets.current);
-    sheets.changeSelection(selection);
+    try {
+      if (!cellRef) return;
+      const selection = sheets.stringToSelection(cellRef, sheets.current);
+      sheets.changeSelection(selection);
+    } catch (error) {
+      console.error(error);
+    }
   }, [cellRef]);
 
   // Get the connection name (it's possible the user won't have access to it

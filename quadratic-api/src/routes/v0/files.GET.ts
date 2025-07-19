@@ -1,11 +1,11 @@
-import { Response } from 'express';
-import { ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { Response } from 'express';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { getFileUrl } from '../../storage/storage';
-import { RequestWithUser } from '../../types/Request';
-import { ResponseError } from '../../types/Response';
+import type { RequestWithUser } from '../../types/Request';
+import type { ResponseError } from '../../types/Response';
 
 export default [validateAccessToken, userMiddleware, handler];
 
