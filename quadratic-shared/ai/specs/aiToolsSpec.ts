@@ -620,7 +620,8 @@ Moves a rectangular selection of cells from one location to another on the curre
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
 IMPORTANT: When moving a table, provide only the anchor cell of the table (the top-left cell of the table) in the source selection rectangle.\n
-ALSO IMPORTANT: Before moving a table, use the has_cell_data tool to check if the cells in the new selection have any data. If they do, you should choose a different target location and check that location before moving the table.\n
+Before moving a table, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
+When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
     parameters: {
