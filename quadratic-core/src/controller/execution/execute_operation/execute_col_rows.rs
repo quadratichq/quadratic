@@ -330,7 +330,7 @@ mod tests {
     fn adjust_code_cells_formula() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        gc.add_sheet(Some("Other".to_string()));
+        gc.add_sheet(Some("Other".to_string()), None, None);
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 16), "1".into(), None);
         gc.set_cell_value(SheetPos::new(sheet_id, 2, 17), "2".into(), None);
         gc.set_code_cell(

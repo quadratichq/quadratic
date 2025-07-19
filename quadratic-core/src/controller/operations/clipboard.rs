@@ -1017,7 +1017,7 @@ mod test {
         let JsClipboard { html, .. } = sheet
             .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
             .unwrap();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
 
         let sheet_id = gc.sheet_ids()[1];
         let insert_at = selection.cursor;
@@ -1160,7 +1160,7 @@ mod test {
     #[test]
     fn paste_clipboard_with_formula_across_sheets() {
         let mut gc = GridController::new();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         let sheet1 = gc.sheet_ids()[0];
         let sheet2 = gc.sheet_ids()[1];
 

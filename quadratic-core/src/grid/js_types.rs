@@ -539,3 +539,11 @@ pub enum Direction {
     Left,
     Right,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
+pub struct JsSheetPosText {
+    pub sheet_id: String,
+    pub x: i64,
+    pub y: i64,
+    pub text: Option<String>,
+}

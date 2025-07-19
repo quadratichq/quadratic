@@ -17,12 +17,12 @@ import type {
   JsRenderCell,
   JsResponse,
   JsSelectionContext,
+  JsSheetPosText,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsTablesContext,
   Pos,
   SearchOptions,
-  SheetPos,
   SheetRect,
   TransactionName,
   Validation,
@@ -187,7 +187,7 @@ export interface ClientCoreSearch {
 
 export interface CoreClientSearch {
   type: 'coreClientSearch';
-  results: SheetPos[];
+  results: JsSheetPosText[];
   id: number;
 }
 
@@ -531,6 +531,8 @@ export interface CoreClientSheetBoundsUpdate {
 
 export interface ClientCoreAddSheet {
   type: 'clientCoreAddSheet';
+  sheetName?: string;
+  insertBeforeSheetName?: string;
   cursor?: string;
 }
 
@@ -578,9 +580,16 @@ export interface ClientCoreSetSheetColor {
   cursor: string;
 }
 
+export interface ClientCoreSetSheetColors {
+  type: 'clientCoreSetSheetColors';
+  sheetNameToColor: Record<string, string>;
+  cursor: string;
+}
+
 export interface ClientCoreDuplicateSheet {
   type: 'clientCoreDuplicateSheet';
   sheetId: string;
+  nameOfNewSheet?: string;
   cursor: string;
 }
 
@@ -1235,6 +1244,7 @@ export type ClientCoreMessage =
   | ClientCoreMoveSheet
   | ClientCoreSetSheetName
   | ClientCoreSetSheetColor
+  | ClientCoreSetSheetColors
   | ClientCoreDuplicateSheet
   | ClientCoreUndo
   | ClientCoreRedo

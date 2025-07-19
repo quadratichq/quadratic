@@ -26,6 +26,7 @@ import type {
   JsResponse,
   JsRowHeight,
   JsSelectionContext,
+  JsSheetPosText,
   JsSummarizeSelectionResult,
   JsTablesContext,
   Pos,
@@ -583,11 +584,11 @@ class Core {
     });
   }
 
-  addSheet(cursor?: string) {
+  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
-        this.gridController.addSheet(cursor);
+        this.gridController.addSheet(sheetName, insertBeforeSheetName, cursor);
       } catch (e) {
         this.handleCoreError('addSheet', e);
       }
@@ -643,11 +644,23 @@ class Core {
     });
   }
 
-  duplicateSheet(sheetId: string, cursor: string) {
+  setSheetColors(sheetNameToColor: Record<string, string>, cursor: string) {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
-        this.gridController.duplicateSheet(sheetId, cursor);
+        this.gridController.setSheetColors(sheetNameToColor, cursor);
+      } catch (e) {
+        this.handleCoreError('setSheetColors', e);
+      }
+      resolve(undefined);
+    });
+  }
+
+  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string) {
+    return new Promise((resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        this.gridController.duplicateSheet(sheetId, nameOfNewSheet, cursor);
       } catch (e) {
         this.handleCoreError('duplicateSheet', e);
       }
@@ -691,7 +704,7 @@ class Core {
     });
   }
 
-  search(search: string, searchOptions: SearchOptions): Promise<SheetPos[]> {
+  search(search: string, searchOptions: SearchOptions): Promise<JsSheetPosText[]> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       try {
