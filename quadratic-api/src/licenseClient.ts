@@ -26,7 +26,12 @@ export const licenseClient = {
       return LicenseSchema.parse(response.data) as LicenseResponse;
     } catch (error) {
       if (error instanceof Error) {
-        console.error({ message: 'Failed to get the license info from the license service', error });
+        console.error(
+          JSON.stringify({
+            message: 'Failed to get the license info from the license service',
+            error,
+          })
+        );
         throw new ApiError(402, 'Failed to get the license info from the license service');
       }
 

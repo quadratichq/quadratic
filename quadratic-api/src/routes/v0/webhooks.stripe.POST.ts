@@ -27,7 +27,7 @@ async function handler(req: Request, res: Response) {
       await handleSubscriptionWebhookEvent(event.data.object);
       break;
     default:
-      console.log({ message: `Unhandled event type`, eventType: event.type });
+      console.log(JSON.stringify({ message: `Unhandled event type`, eventType: event.type }));
   }
 
   // Return a 200 response to acknowledge receipt of the event

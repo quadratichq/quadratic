@@ -52,9 +52,9 @@ registerRoutes().then(() => {
     if (NODE_ENV !== 'test') {
       if (error.status >= 500) {
         if (NODE_ENV === 'production') {
-          console.error({ time: new Date().toISOString(), error });
+          console.error(JSON.stringify({ error }));
         } else {
-          console.log({ time: new Date().toISOString(), error });
+          console.log(JSON.stringify({ error }));
         }
       }
     }
@@ -72,7 +72,7 @@ registerRoutes().then(() => {
     if (error instanceof ApiError) {
       res.status(error.status).json({ error: { message: error.message, ...(error.meta ? { meta: error.meta } : {}) } });
     } else {
-      console.error({ error });
+      console.error(JSON.stringify({ error }));
 
       // Generic error handling
       res.status(error.status || 500).json({
@@ -109,7 +109,7 @@ async function registerRoutes() {
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('DELETE');
 
     if (httpMethodIndex === -1) {
-      console.error({ message: 'File route is malformed. It needs an HTTP method', file });
+      console.error(JSON.stringify({ message: 'File route is malformed. It needs an HTTP method', file }));
     } else {
       const httpMethod = segments[httpMethodIndex].toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
       const routeSegments = segments.slice(0, httpMethodIndex);
@@ -121,17 +121,19 @@ async function registerRoutes() {
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
       } catch (err) {
-        console.error({ message: 'Failed to register route', expressRoute, error: err });
+        console.error(JSON.stringify({ message: 'Failed to register route', expressRoute, error: err }));
       }
     }
   }
 
   // Keep around for debugging
   // if (NODE_ENV !== 'production' && NODE_ENV !== 'test') {
-  //   console.log({
-  //     message: 'Dynamically registered routes',
-  //     routes: registeredRoutes.map((route) => `\n  ${route}`).join(''),
-  //   });
+  //   console.log(
+  //     JSON.stringify({
+  //       message: 'Dynamically registered routes',
+  //       routes: registeredRoutes.map((route) => `\n  ${route}`).join(''),
+  //     })
+  //   );
   // }
 }
 

@@ -177,6 +177,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       });
     }
   } catch (error) {
-    console.error({ message: 'Error in ai.chat.POST handler', error });
+    console.error(JSON.stringify({ message: 'Error in ai.chat.POST handler', error }));
   }
 }
