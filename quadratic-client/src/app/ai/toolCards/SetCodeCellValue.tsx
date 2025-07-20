@@ -9,18 +9,14 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { OBJ, parse, STR } from 'partial-json';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
 type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
 
-type SetCodeCellValueProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) => {
+export const SetCodeCellValue = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
   const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 

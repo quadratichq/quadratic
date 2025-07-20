@@ -1,17 +1,13 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { GridActionIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type SetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.SetTextFormats]['responseSchema']>;
 
-type SetTextFormatsProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const SetTextFormats = memo(({ args, loading }: SetTextFormatsProps) => {
+export const SetTextFormats = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<SetTextFormatsResponse, SetTextFormatsResponse>>();
 
   useEffect(() => {

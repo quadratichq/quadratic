@@ -47,15 +47,24 @@ export const AIToolSchema = z.enum([
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   sources: AISource[];
   description: string; // this is sent with tool definition, has a maximum character limit
-  parameters: {
-    type: 'object';
-    properties: Record<string, AIToolArgs>;
-    required: string[];
-    additionalProperties: boolean;
-  };
+  parameters: AIToolArgs;
   responseSchema: (typeof AIToolsArgsSchema)[T];
   prompt: string; // this is sent as internal message to AI, no character limit
 };
+
+const numberSchema = z.preprocess((val) => {
+  if (typeof val === 'number') {
+    return val;
+  }
+  return Number(val);
+}, z.number());
+
+const booleanSchema = z.preprocess((val) => {
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean());
 
 const array2DSchema = z
   .array(
@@ -163,21 +172,21 @@ export const AIToolsArgsSchema = {
   [AITool.GetCellData]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.SetTextFormats]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    bold: z.boolean().optional(),
-    italic: z.boolean().optional(),
-    underline: z.boolean().optional(),
-    strike_through: z.boolean().optional(),
+    bold: booleanSchema.optional(),
+    italic: booleanSchema.optional(),
+    underline: booleanSchema.optional(),
+    strike_through: booleanSchema.optional(),
     text_color: z.string().optional(),
     fill_color: z.string().optional(),
     align: z.string().optional(),
     vertical_align: z.string().optional(),
     wrap: z.string().optional(),
-    numeric_commas: z.boolean().optional(),
+    numeric_commas: booleanSchema.optional(),
     number_type: z.string().optional(),
     currency_symbol: z.string().optional(),
     date_time: z.string().optional(),
@@ -185,13 +194,13 @@ export const AIToolsArgsSchema = {
   [AITool.GetTextFormats]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.ConvertToTable]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
     table_name: z.string(),
-    first_row_is_column_names: z.boolean(),
+    first_row_is_column_names: booleanSchema,
   }),
   [AITool.WebSearch]: z.object({
     query: z.string(),

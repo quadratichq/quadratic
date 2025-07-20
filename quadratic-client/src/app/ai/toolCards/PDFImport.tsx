@@ -1,17 +1,13 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { PDFIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type PDFImportResponse = z.infer<(typeof aiToolsSpec)[AITool.PDFImport]['responseSchema']>;
 
-type PDFImportProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const PDFImport = memo(({ args, loading }: PDFImportProps) => {
+export const PDFImport = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<PDFImportResponse, PDFImportResponse>>();
 
   useEffect(() => {

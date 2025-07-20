@@ -36,42 +36,46 @@ import type {
 import { v4 } from 'uuid';
 
 function convertContent(content: Content): ContentBlock[] {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const image: ImageBlock = {
-        format: content.mimeType.split('/')[1] as ImageFormat,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { image };
-    } else if (isContentPdfFile(content) || isContentTextFile(content)) {
-      const document: DocumentBlock = {
-        format: content.mimeType.split('/')[1] as DocumentFormat,
-        name: content.fileName,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { document };
-    } else {
-      return {
-        text: content.text,
-      };
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const image: ImageBlock = {
+          format: content.mimeType.split('/')[1] as ImageFormat,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { image };
+      } else if (isContentPdfFile(content) || isContentTextFile(content)) {
+        const document: DocumentBlock = {
+          format: content.mimeType.split('/')[1] as DocumentFormat,
+          name: content.fileName,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { document };
+      } else {
+        return {
+          text: content.text.trim(),
+        };
+      }
+    });
 }
 
 function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const image: ImageBlock = {
-        format: content.mimeType.split('/')[1] as ImageFormat,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { image };
-    } else {
-      return {
-        text: content.text,
-      };
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const image: ImageBlock = {
+          format: content.mimeType.split('/')[1] as ImageFormat,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { image };
+      } else {
+        return {
+          text: content.text.trim(),
+        };
+      }
+    });
 }
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
@@ -83,7 +87,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
-  const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
+  const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message.trim() }));
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
@@ -92,9 +96,9 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
         role: message.role,
         content: [
           ...message.content
-            .filter((content) => content.text && content.type === 'text')
+            .filter((content) => content.type === 'text' && !!content.text.trim())
             .map((content) => ({
-              text: content.text,
+              text: content.text.trim(),
             })),
           ...message.toolCalls.map((toolCall) => ({
             toolUse: {
@@ -301,7 +305,7 @@ export function parseBedrockResponse(
     if ('text' in contentBlock && contentBlock.text) {
       responseMessage.content.push({
         type: 'text',
-        text: contentBlock.text,
+        text: contentBlock.text.trim(),
       });
     }
 

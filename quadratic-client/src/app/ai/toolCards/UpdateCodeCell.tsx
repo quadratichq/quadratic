@@ -10,18 +10,14 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { Editor } from '@monaco-editor/react';
 import mixpanel from 'mixpanel-browser';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
 type UpdateCodeCellResponse = z.infer<(typeof aiToolsSpec)[AITool.UpdateCodeCell]['responseSchema']>;
 
-type UpdateCodeCellProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const UpdateCodeCell = memo(({ args, loading }: UpdateCodeCellProps) => {
+export const UpdateCodeCell = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<UpdateCodeCellResponse, UpdateCodeCellResponse>>();
   const editorContent = useRecoilValue(codeEditorEditorContentAtom);
   const codeCell = useRecoilValue(codeEditorCodeCellAtom);

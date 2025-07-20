@@ -3,17 +3,13 @@
 
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type z from 'zod';
 
 type WebSearchResponse = z.infer<(typeof aiToolsSpec)[AITool.WebSearch]['responseSchema']>;
 
-type WebSearchProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const WebSearch = memo(({ args, loading }: WebSearchProps) => {
+export const WebSearch = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<WebSearchResponse, WebSearchResponse>>();
 
   useEffect(() => {

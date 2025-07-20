@@ -26,7 +26,7 @@ type AIContextProps = {
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
-  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  setFiles: (files: FileContent[]) => void;
   editing: boolean;
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -77,9 +77,9 @@ export const AIContext = memo(
 
     const handleOnClickFileContext = useCallback(
       (file: FileContent) => {
-        setFiles?.((prev) => prev.filter((f) => f !== file));
+        setFiles(files.filter((f) => f !== file));
       },
-      [setFiles]
+      [files, setFiles]
     );
 
     // const handleOnClickSelection = useCallback(() => {
@@ -114,7 +114,7 @@ export const AIContext = memo(
         {files.map((file, index) => (
           <FileContextPill
             key={`${index}-${file.fileName}`}
-            disabled={disabled || !setFiles}
+            disabled={disabled}
             file={file}
             onClick={() => handleOnClickFileContext(file)}
           />

@@ -1,17 +1,13 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type SetFormulaCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetFormulaCellValue]['responseSchema']>;
 
-type SetFormulaCellValueProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const SetFormulaCellValue = memo(({ args, loading }: SetFormulaCellValueProps) => {
+export const SetFormulaCellValue = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
   const [toolArgs, setToolArgs] =
     useState<z.SafeParseReturnType<SetFormulaCellValueResponse, SetFormulaCellValueResponse>>();
 

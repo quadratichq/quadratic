@@ -1,16 +1,12 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type GetCellDataResponse = z.infer<(typeof aiToolsSpec)[AITool.GetCellData]['responseSchema']>;
 
-type GetCellDataProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const GetCellData = memo(({ args, loading }: GetCellDataProps) => {
+export const GetCellData = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
   const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<GetCellDataResponse, GetCellDataResponse>>();
 
   useEffect(() => {

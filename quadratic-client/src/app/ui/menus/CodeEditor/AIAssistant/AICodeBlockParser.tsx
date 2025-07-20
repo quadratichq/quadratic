@@ -18,7 +18,7 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
     // Add any text before the current code block
     if (lastIndex < match.index) {
       blocks.push(
-        <Markdown key={`markdown-${lastIndex}-${match.index}`}>{input.substring(lastIndex, match.index)}</Markdown>
+        <Markdown key={`markdown-${lastIndex}-${match.index}`} text={input.substring(lastIndex, match.index)} />
       );
     }
 
@@ -29,7 +29,7 @@ export function parseCodeBlocks(input: string): Array<string | JSX.Element> {
 
   // Add any remaining text after the last code block
   if (lastIndex < input.length) {
-    blocks.push(<Markdown key={`markdown-${lastIndex}-${input.length}`}>{input.substring(lastIndex)}</Markdown>);
+    blocks.push(<Markdown key={`markdown-${lastIndex}-${input.length}`} text={input.substring(lastIndex)} />);
   }
 
   return blocks;

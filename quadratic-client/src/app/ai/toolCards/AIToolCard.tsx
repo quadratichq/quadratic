@@ -13,50 +13,49 @@ import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo } from 'react';
 
-type AIAnalystToolCardProps = {
-  name: string;
-  args: string;
-  loading: boolean;
+type AIToolCardProps = {
+  toolCall: AIToolCall;
 };
 
-export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCardProps) => {
-  if (!Object.values(AITool).includes(name as AITool)) {
+export const AIToolCard = memo(({ toolCall }: AIToolCardProps) => {
+  if (!Object.values(AITool).includes(toolCall.name as AITool)) {
     return null;
   }
 
-  switch (name) {
+  switch (toolCall.name) {
     case AITool.AddDataTable:
-      return <AddDataTable args={args} loading={loading} />;
+      return <AddDataTable toolCall={toolCall} />;
     case AITool.SetCellValues:
-      return <SetCellValues args={args} loading={loading} />;
+      return <SetCellValues toolCall={toolCall} />;
     case AITool.SetCodeCellValue:
-      return <SetCodeCellValue args={args} loading={loading} />;
+      return <SetCodeCellValue toolCall={toolCall} />;
     case AITool.SetFormulaCellValue:
-      return <SetFormulaCellValue args={args} loading={loading} />;
+      return <SetFormulaCellValue toolCall={toolCall} />;
     case AITool.MoveCells:
-      return <MoveCells args={args} loading={loading} />;
+      return <MoveCells toolCall={toolCall} />;
     case AITool.DeleteCells:
-      return <DeleteCells args={args} loading={loading} />;
+      return <DeleteCells toolCall={toolCall} />;
     case AITool.UpdateCodeCell:
-      return <UpdateCodeCell args={args} loading={loading} />;
+      return <UpdateCodeCell toolCall={toolCall} />;
     case AITool.UserPromptSuggestions:
-      return <UserPromptSuggestionsSkeleton args={args} loading={loading} />;
+      return <UserPromptSuggestionsSkeleton toolCall={toolCall} />;
     case AITool.PDFImport:
-      return <PDFImport args={args} loading={loading} />;
+      return <PDFImport toolCall={toolCall} />;
     case AITool.GetCellData:
-      return <GetCellData args={args} loading={loading} />;
+      return <GetCellData toolCall={toolCall} />;
     case AITool.SetTextFormats:
-      return <SetTextFormats args={args} loading={loading} />;
+      return <SetTextFormats toolCall={toolCall} />;
     case AITool.GetTextFormats:
-      return <GetTextFormats args={args} loading={loading} />;
+      return <GetTextFormats toolCall={toolCall} />;
     case AITool.ConvertToTable:
-      return <ConvertToTable args={args} loading={loading} />;
+      return <ConvertToTable toolCall={toolCall} />;
     case AITool.WebSearch:
-      return <WebSearch args={args} loading={loading} />;
+      return <WebSearch toolCall={toolCall} />;
     default:
-      console.error(`Unknown tool: ${name}`);
+      console.error(`Unknown tool: ${toolCall.name}`);
       return null;
   }
 });

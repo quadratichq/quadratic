@@ -1,12 +1,8 @@
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo } from 'react';
 
-type UserPromptSuggestionsProps = {
-  args: string;
-  loading: boolean;
-};
-
-export const UserPromptSuggestionsSkeleton = memo(({ loading }: UserPromptSuggestionsProps) => {
+export const UserPromptSuggestionsSkeleton = memo(({ toolCall: { loading } }: { toolCall: AIToolCall }) => {
   if (loading) {
     return (
       <div>
