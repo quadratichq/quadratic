@@ -12,6 +12,7 @@ import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
 import { RenameSheet } from '@/app/ai/toolCards/RenameSheet';
+import { RerunCode } from '@/app/ai/toolCards/RerunCode';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
@@ -79,5 +80,7 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <TextSearch args={args} loading={loading} />;
     case AITool.HasCellData:
       return <HasCellData args={args} loading={loading} />;
+    case AITool.RerunCode:
+      return <RerunCode args={args} loading={loading} />;
   }
 });

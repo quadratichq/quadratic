@@ -221,7 +221,7 @@ export function useSubmitAIAssistantPrompt() {
             for (const toolCall of response.toolCalls) {
               if (Object.values(AITool).includes(toolCall.name as AITool)) {
                 const aiTool = toolCall.name as AITool;
-                const argsObject = JSON.parse(toolCall.arguments);
+                const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
                 const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
                 const toolResultContent = await aiToolsActions[aiTool](args as any, {
                   source: 'AIAssistant',

@@ -783,4 +783,21 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
+  [AITool.RerunCode]: async (args) => {
+    const { sheet_name, selection } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : undefined;
+    quadraticCore.rerunCodeCells(sheetId, selection, sheets.getCursorPosition());
+    const text =
+      sheet_name && selection
+        ? `Code in sheet "${sheet_name}" within selection "${selection}" has been rerun.`
+        : sheet_name && !selection
+          ? `Code in sheet "${sheet_name}" has been rerun.`
+          : 'Code in all sheets has been rerun.';
+    return [
+      {
+        type: 'text',
+        text,
+      },
+    ];
+  },
 } as const;
