@@ -190,7 +190,15 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns a list of rectangles containing non-default values.
     pub fn nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, T)> {
-        let [x1, x2, y1, y2] = range_to_rect(RefRangeBounds::new_relative_rect(rect));
+        self.nondefault_rects_in_range(RefRangeBounds::new_relative_rect(rect))
+    }
+
+    /// Returns a list of rectangles containing non-default values.
+    pub fn nondefault_rects_in_range(
+        &self,
+        range: RefRangeBounds,
+    ) -> impl Iterator<Item = (Rect, T)> {
+        let [x1, x2, y1, y2] = range_to_rect(range);
         let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
         self.0
             .blocks_for_range(x1, x2)

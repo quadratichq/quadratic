@@ -134,6 +134,21 @@ impl SheetDataTablesCache {
         }
         false
     }
+
+    pub fn tables_in_range(&self, range: RefRangeBounds) -> impl Iterator<Item = Pos> {
+        self.single_cell_tables
+            .nondefault_rects_in_range(range)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+            .chain(
+                self.multi_cell_tables
+                    .unique_values_in_range(range)
+                    .into_iter()
+                    .flatten(),
+            )
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]

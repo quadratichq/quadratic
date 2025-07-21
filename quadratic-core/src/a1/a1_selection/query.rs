@@ -549,7 +549,7 @@ impl A1Selection {
     pub fn selected_table_names(
         &self,
         sheet_id: SheetId,
-        data_cache: &SheetDataTablesCache,
+        data_tables_cache: &SheetDataTablesCache,
         context: &A1Context,
     ) -> Vec<String> {
         let mut names = Vec::new();
@@ -560,25 +560,27 @@ impl A1Selection {
                 }
             }
             CellRefRange::Sheet { range } => {
-                let tables = data_cache.multi_cell_tables.unique_values_in_range(*range);
-                tables.iter().flatten().for_each(|table_pos| {
-                    if let Some(table) = context
-                        .table_map
-                        .table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                    {
-                        // ensure the table name is intersected by the range
-                        if table.show_name
-                            && range.might_intersect_rect(Rect::new(
-                                table.bounds.min.x,
-                                table.bounds.min.y,
-                                table.bounds.max.x,
-                                1,
-                            ))
+                data_tables_cache
+                    .tables_in_range(*range)
+                    .for_each(|table_pos| {
+                        if let Some(table) = context
+                            .table_map
+                            .table_from_pos(table_pos.to_sheet_pos(sheet_id))
                         {
-                            names.push(table.table_name.clone());
+                            // ensure the table name is intersected by the range
+                            if table.bounds.len() == 1
+                                || (table.show_name
+                                    && range.might_intersect_rect(Rect::new(
+                                        table.bounds.min.x,
+                                        table.bounds.min.y,
+                                        table.bounds.max.x,
+                                        1,
+                                    )))
+                            {
+                                names.push(table.table_name.clone());
+                            }
                         }
-                    }
-                });
+                    });
             }
         });
         names.sort();
@@ -1181,6 +1183,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
         test_create_data_table(&mut gc, sheet_id, pos![E5], 2, 2);
+        test_create_data_table(&mut gc, sheet_id, pos![F6], 2, 2);
 
         let sheet = gc.sheet(sheet_id);
         let cache = sheet.data_tables.cache_ref().clone();
@@ -1221,6 +1224,13 @@ mod tests {
             selection
                 .selected_table_names(sheet_id, &cache, gc.a1_context())
                 .is_empty(),
+        );
+
+        // Test selection with spilled tables
+        let selection = A1Selection::test_a1_context("A1:H10", gc.a1_context());
+        assert_eq!(
+            selection.selected_table_names(sheet_id, &cache, gc.a1_context()),
+            vec!["test_table", "test_table1", "test_table2"]
         );
     }
 
