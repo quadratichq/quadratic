@@ -93,6 +93,17 @@ export interface CoreClientExport {
   id: number;
 }
 
+export interface ClientCoreExportExcel {
+  type: 'clientCoreExportExcel';
+  id: number;
+}
+
+export interface CoreClientExportExcel {
+  type: 'coreClientExportExcel';
+  excel: ArrayBufferLike;
+  id: number;
+}
+
 export interface ClientCoreExportCsvSelection {
   type: 'clientCoreExportCsvSelection';
   id: number;
@@ -1239,6 +1250,7 @@ export type ClientCoreMessage =
   | ClientCoreRedo
   | ClientCoreUpgradeGridFile
   | ClientCoreExport
+  | ClientCoreExportExcel
   | ClientCoreSearch
   | ClientCoreRerunCodeCells
   | ClientCoreCopyToClipboard
@@ -1313,6 +1325,7 @@ export type CoreClientMessage =
   | CoreClientSheetOffsets
   | CoreClientUpgradeFile
   | CoreClientExport
+  | CoreClientExportExcel
   | CoreClientSearch
   | CoreClientCopyToClipboard
   | CoreClientCutToClipboard

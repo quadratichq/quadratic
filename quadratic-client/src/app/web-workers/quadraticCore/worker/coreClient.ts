@@ -276,6 +276,11 @@ class CoreClient {
         this.send({ type: 'coreClientExport', id: e.data.id, grid: exportGrid }, exportGrid);
         return;
 
+      case 'clientCoreExportExcel':
+        const exportExcel = await core.exportExcel();
+        this.send({ type: 'coreClientExportExcel', id: e.data.id, excel: exportExcel }, exportExcel);
+        return;
+
       case 'clientCoreSearch':
         const results = await core.search(e.data.search, e.data.searchOptions);
         this.send({ type: 'coreClientSearch', id: e.data.id, results });

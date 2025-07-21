@@ -302,6 +302,16 @@ class QuadraticCore {
     });
   }
 
+  async exportExcel(): Promise<Uint8Array> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: { excel: Uint8Array }) => {
+        resolve(message.excel);
+      };
+      this.send({ type: 'clientCoreExportExcel', id });
+    });
+  }
+
   // Gets a code cell from a sheet
   getCodeCell(sheetId: string, x: number, y: number): Promise<JsCodeCell | undefined> {
     const id = this.id++;

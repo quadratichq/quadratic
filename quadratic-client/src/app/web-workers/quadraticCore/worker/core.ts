@@ -687,6 +687,18 @@ class Core {
     });
   }
 
+  exportExcel(): Promise<ArrayBufferLike> {
+    return new Promise((resolve) => {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      try {
+        resolve(this.gridController.exportExcel().buffer);
+      } catch (e) {
+        this.handleCoreError('exportExcel', e);
+        resolve(new ArrayBuffer(0));
+      }
+    });
+  }
+
   search(search: string, searchOptions: SearchOptions): Promise<SheetPos[]> {
     return new Promise((resolve) => {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
