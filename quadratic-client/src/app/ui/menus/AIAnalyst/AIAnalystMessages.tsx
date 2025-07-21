@@ -1,4 +1,4 @@
-import { AIToolCardWithEditing } from '@/app/ai/toolCards/AIToolCardWithEditing';
+import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import {
   aiAnalystCurrentChatAtom,
@@ -273,7 +273,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall, toolCallIndex) => (
-                    <AIToolCardWithEditing
+                    <AIToolCardEditable
                       key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
                       toolCall={toolCall}
                       onToolCallChange={

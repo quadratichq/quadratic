@@ -7,34 +7,45 @@ import type { z } from 'zod';
 
 type SetFormulaCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetFormulaCellValue]['responseSchema']>;
 
-export const SetFormulaCellValue = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
-  const [toolArgs, setToolArgs] =
-    useState<z.SafeParseReturnType<SetFormulaCellValueResponse, SetFormulaCellValueResponse>>();
+export const SetFormulaCellValue = memo(
+  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+    const [toolArgs, setToolArgs] =
+      useState<z.SafeParseReturnType<SetFormulaCellValueResponse, SetFormulaCellValueResponse>>();
 
-  useEffect(() => {
-    if (!loading) {
-      try {
-        const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.SetFormulaCellValue].responseSchema.safeParse(json));
-      } catch (error) {
+    useEffect(() => {
+      if (!loading) {
+        try {
+          const json = JSON.parse(args);
+          setToolArgs(aiToolsSpec[AITool.SetFormulaCellValue].responseSchema.safeParse(json));
+        } catch (error) {
+          setToolArgs(undefined);
+          console.error('[SetFormulaCellValue] Failed to parse args: ', error);
+        }
+      } else {
         setToolArgs(undefined);
-        console.error('[SetFormulaCellValue] Failed to parse args: ', error);
       }
-    } else {
-      setToolArgs(undefined);
+    }, [args, loading]);
+
+    if (loading) {
+      return (
+        <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading={true} className={className} />
+      );
     }
-  }, [args, loading]);
 
-  if (loading) {
-    return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading={true} />;
+    if (!!toolArgs && !toolArgs.success) {
+      return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" hasError className={className} />;
+    } else if (!toolArgs || !toolArgs.data) {
+      return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading className={className} />;
+    }
+
+    const { code_cell_position } = toolArgs.data;
+    return (
+      <ToolCard
+        icon={<LanguageIcon language="Formula" />}
+        label={'Formula'}
+        description={code_cell_position}
+        className={className}
+      />
+    );
   }
-
-  if (!!toolArgs && !toolArgs.success) {
-    return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" hasError />;
-  } else if (!toolArgs || !toolArgs.data) {
-    return <ToolCard icon={<LanguageIcon language="Formula" />} label="Formula" isLoading />;
-  }
-
-  const { code_cell_position } = toolArgs.data;
-  return <ToolCard icon={<LanguageIcon language="Formula" />} label={'Formula'} description={code_cell_position} />;
-});
+);

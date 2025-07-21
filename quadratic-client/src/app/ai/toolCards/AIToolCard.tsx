@@ -12,48 +12,50 @@ import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import { WebSearch } from '@/app/ai/toolCards/WebSearch';
+import { cn } from '@/shared/shadcn/utils';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo } from 'react';
 
 type AIToolCardProps = {
   toolCall: AIToolCall;
+  className?: string;
 };
 
-export const AIToolCard = memo(({ toolCall }: AIToolCardProps) => {
+export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
   if (!Object.values(AITool).includes(toolCall.name as AITool)) {
     return null;
   }
 
   switch (toolCall.name) {
     case AITool.AddDataTable:
-      return <AddDataTable toolCall={toolCall} />;
+      return <AddDataTable toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCellValues:
-      return <SetCellValues toolCall={toolCall} />;
+      return <SetCellValues toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCodeCellValue:
-      return <SetCodeCellValue toolCall={toolCall} />;
+      return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetFormulaCellValue:
-      return <SetFormulaCellValue toolCall={toolCall} />;
+      return <SetFormulaCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.MoveCells:
-      return <MoveCells toolCall={toolCall} />;
+      return <MoveCells toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.DeleteCells:
-      return <DeleteCells toolCall={toolCall} />;
+      return <DeleteCells toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.UpdateCodeCell:
-      return <UpdateCodeCell toolCall={toolCall} />;
+      return <UpdateCodeCell toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.UserPromptSuggestions:
-      return <UserPromptSuggestionsSkeleton toolCall={toolCall} />;
+      return <UserPromptSuggestionsSkeleton toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.PDFImport:
-      return <PDFImport toolCall={toolCall} />;
+      return <PDFImport toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.GetCellData:
-      return <GetCellData toolCall={toolCall} />;
+      return <GetCellData toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetTextFormats:
-      return <SetTextFormats toolCall={toolCall} />;
+      return <SetTextFormats toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.GetTextFormats:
-      return <GetTextFormats toolCall={toolCall} />;
+      return <GetTextFormats toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.ConvertToTable:
-      return <ConvertToTable toolCall={toolCall} />;
+      return <ConvertToTable toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.WebSearch:
-      return <WebSearch toolCall={toolCall} />;
+      return <WebSearch toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

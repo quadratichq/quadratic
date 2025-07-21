@@ -1,0 +1,4 @@
+.tool-card + .tool-card-name,
+div:has(.tool-card) + .tool-card-name {
+  display: none;
+}

@@ -20,6 +20,7 @@ export const Markdown = memo(({ text, onChange }: MarkdownProps) => {
         }}
         onKeyDown={(e) => e.stopPropagation()}
         autoHeight={true}
+        className="overflow-hidden p-0"
       />
     );
   }

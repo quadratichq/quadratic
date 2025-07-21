@@ -9,28 +9,30 @@ import type z from 'zod';
 
 type WebSearchResponse = z.infer<(typeof aiToolsSpec)[AITool.WebSearch]['responseSchema']>;
 
-export const WebSearch = memo(({ toolCall: { arguments: args, loading } }: { toolCall: AIToolCall }) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<WebSearchResponse, WebSearchResponse>>();
+export const WebSearch = memo(
+  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+    const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<WebSearchResponse, WebSearchResponse>>();
 
-  useEffect(() => {
-    if (!loading) {
-      try {
-        const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.WebSearch].responseSchema.safeParse(json));
-      } catch (error) {
+    useEffect(() => {
+      if (!loading) {
+        try {
+          const json = JSON.parse(args);
+          setToolArgs(aiToolsSpec[AITool.WebSearch].responseSchema.safeParse(json));
+        } catch (error) {
+          setToolArgs(undefined);
+          console.error('[WebSearch] Failed to parse args: ', error);
+        }
+      } else {
         setToolArgs(undefined);
-        console.error('[WebSearch] Failed to parse args: ', error);
       }
-    } else {
-      setToolArgs(undefined);
+    }, [args, loading]);
+
+    const label = 'Searching the web.';
+
+    if (!!toolArgs && !toolArgs.success) {
+      return <ToolCardQuery label={label} hasError className={className} />;
     }
-  }, [args, loading]);
 
-  const label = 'Searching the web.';
-
-  if (!!toolArgs && !toolArgs.success) {
-    return <ToolCardQuery label={label} hasError />;
+    return null;
   }
-
-  return null;
-});
+);
