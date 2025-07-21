@@ -1,47 +1,34 @@
+import './aiToolCardEditable.css';
+
 import { AIToolCard } from '@/app/ai/toolCards/AIToolCard';
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
+import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { cn } from '@/shared/shadcn/utils';
 import { Editor } from '@monaco-editor/react';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
-import type { ZodSchema } from 'zod';
-import './aiToolCardEditable.css';
 
 interface AIToolCardEditableProps {
   toolCall: AIToolCall;
   onToolCallChange?: (toolCall: AIToolCall) => void;
 }
 export const AIToolCardEditable = memo(({ toolCall, onToolCallChange }: AIToolCardEditableProps) => {
-  const toolSpec = useMemo(() => aiToolsSpec[toolCall.name as AITool], [toolCall.name]);
-
-  if (!onToolCallChange) {
-    return (
-      <div>
-        <AIToolCard toolCall={toolCall} />
-      </div>
-    );
+  if (onToolCallChange) {
+    return <FormField toolCall={toolCall} onToolCallChange={onToolCallChange} />;
   }
 
-  if (!toolSpec) {
-    return (
-      <div className="rounded-lg border bg-gray-50 p-4">
-        <p className="text-sm text-gray-600">Unknown tool: {toolCall.name}</p>
-
-        <AIToolCard toolCall={toolCall} />
-      </div>
-    );
-  }
-
-  return <FormField responseSchema={toolSpec.responseSchema} toolCall={toolCall} onToolCallChange={onToolCallChange} />;
+  return <AIToolCard toolCall={toolCall} />;
 });
 
 interface FormFieldProps {
-  responseSchema: ZodSchema;
   toolCall: AIToolCall;
   onToolCallChange: (newToolCall: AIToolCall) => void;
 }
-const FormField = memo(({ responseSchema, toolCall, onToolCallChange }: FormFieldProps) => {
+const FormField = memo(({ toolCall, onToolCallChange }: FormFieldProps) => {
+  const toolSpec = useMemo(() => aiToolsSpec[toolCall.name as AITool], [toolCall.name]);
+  const toolAction = useMemo(() => aiToolsActions[toolCall.name as AITool], [toolCall.name]);
+
   const prettyArguments = useMemo(() => {
     try {
       return JSON.stringify(JSON.parse(toolCall.arguments), null, 2);
@@ -54,24 +41,14 @@ const FormField = memo(({ responseSchema, toolCall, onToolCallChange }: FormFiel
   const [editing, setEditing] = useState(false);
   const [valid, setValid] = useState(false);
 
-  const handleChange = useCallback((newValue: string | undefined) => {
-    setEditorValue(newValue ?? '');
-  }, []);
-
-  const handleToggleEditing = useCallback(() => {
-    setEditing((prev) => {
-      const newEditing = !prev;
-      if (newEditing) {
-        setEditorValue(prettyArguments);
-      }
-      return newEditing;
-    });
+  useEffect(() => {
+    setEditorValue(prettyArguments);
   }, [prettyArguments]);
 
   useEffect(() => {
     try {
       const parsed = JSON.parse(editorValue);
-      responseSchema.parse(parsed);
+      toolSpec.responseSchema.parse(parsed);
       setValid(true);
       const stringified = JSON.stringify(parsed);
       if (stringified !== toolCall.arguments) {
@@ -80,7 +57,42 @@ const FormField = memo(({ responseSchema, toolCall, onToolCallChange }: FormFiel
     } catch {
       setValid(false);
     }
-  }, [editing, editorValue, onToolCallChange, responseSchema, toolCall]);
+  }, [editing, editorValue, onToolCallChange, toolCall, prettyArguments, toolSpec.responseSchema]);
+
+  const handleChange = useCallback((newValue: string | undefined) => {
+    setEditorValue(newValue ?? '');
+  }, []);
+
+  const handleClick = useCallback(
+    async (e: React.MouseEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (!valid) {
+        console.log('Invalid arguments');
+        return;
+      }
+
+      try {
+        const args = JSON.parse(editorValue);
+        const result = await toolAction(args, {
+          source: 'AIAnalyst',
+          chatId: '',
+          messageIndex: -1,
+        });
+        console.log(result);
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [editorValue, toolAction, valid]
+  );
+
+  const handleRightClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setEditing((prev) => !prev);
+  }, []);
 
   return (
     <div
@@ -89,11 +101,11 @@ const FormField = memo(({ responseSchema, toolCall, onToolCallChange }: FormFiel
         valid ? 'border-green-500' : 'border-red-500'
       )}
     >
-      <div className="cursor-pointer" onDoubleClick={handleToggleEditing}>
+      <div className="cursor-pointer" onClick={handleClick} onContextMenu={handleRightClick}>
         <AIToolCard toolCall={toolCall} />
       </div>
 
-      <div className="tool-card-name cursor-pointer" onDoubleClick={handleToggleEditing}>
+      <div className="tool-card-name cursor-pointer" onClick={handleClick} onContextMenu={handleRightClick}>
         <ToolCard label={toolCall.name} className="tool-card" />
       </div>
 

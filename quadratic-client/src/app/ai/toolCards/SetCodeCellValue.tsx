@@ -142,7 +142,11 @@ export const SetCodeCellValue = memo(
                 <Button
                   size="icon-sm"
                   variant="ghost"
-                  onClick={() => openDiffInEditor(toolArgs.data)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openDiffInEditor(toolArgs.data);
+                  }}
                   disabled={!codeCellPos}
                 >
                   <CodeIcon />
@@ -153,7 +157,11 @@ export const SetCodeCellValue = memo(
                 <Button
                   size="icon-sm"
                   variant="ghost"
-                  onClick={() => saveAndRun(toolArgs.data)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    saveAndRun(toolArgs.data);
+                  }}
                   disabled={!codeCellPos}
                 >
                   <SaveAndRunIcon />
