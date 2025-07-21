@@ -18,7 +18,7 @@ export const PDFImport = memo(
           setToolArgs(aiToolsSpec[AITool.PDFImport].responseSchema.safeParse(json));
         } catch (error) {
           setToolArgs(undefined);
-          console.error('[MoveCells] Failed to parse args: ', error);
+          console.error('[PDFImport] Failed to parse args: ', error);
         }
       } else {
         setToolArgs(undefined);

@@ -465,7 +465,7 @@ export type AIToolArgs = {
 const AIToolArgsSchema: z.ZodType<AIToolArgs> = z.lazy(() =>
   z.object({
     type: z.literal('object'),
-    properties: z.record(AIToolArgsPrimitiveSchema.or(AIToolArgsArraySchema)),
+    properties: z.record(AIToolArgsPrimitiveSchema.or(AIToolArgsArraySchema).or(AIToolArgsSchema)),
     required: z.array(z.string()),
     additionalProperties: z.boolean(),
   })
