@@ -19,7 +19,6 @@ impl GridController {
         value: String,
         cursor: Option<String>,
     ) -> Result<(), JsValue> {
-        panic!("Oh shit!");
         let pos = Pos::from((x, y));
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
 

@@ -1,4 +1,3 @@
-import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import './pixiApp.css';
 
 import { events } from '@/app/events/events';
@@ -28,7 +27,6 @@ import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
-import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
@@ -372,7 +370,7 @@ export class PixiApp {
 
   reset(): void {
     this.viewport.scale.set(1);
-    pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
+    // pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
   rebuild = () => {

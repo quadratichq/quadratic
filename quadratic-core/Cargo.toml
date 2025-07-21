@@ -116,7 +116,11 @@ encoding_rs_io = "0.1.7"
 rust_decimal = "1.37.2"
 zstd = "0.13.3"
 
+[target.'cfg(target_family = "wasm")'.dependencies]
+rust_xlsxwriter = { version = "0.89.1", features = [ "wasm", "chrono" ] }
+
 [target.'cfg(not(target_family = "wasm"))'.dependencies]
+rust_xlsxwriter = { version = "0.89.1", features = [ "chrono" ] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "benchmark",
 ] }
