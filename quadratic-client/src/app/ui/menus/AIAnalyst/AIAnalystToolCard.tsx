@@ -13,6 +13,8 @@ import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
 import { RenameSheet } from '@/app/ai/toolCards/RenameSheet';
 import { RerunCode } from '@/app/ai/toolCards/RerunCode';
+import { ResizeColumns } from '@/app/ai/toolCards/ResizeColumns';
+import { ResizeRows } from '@/app/ai/toolCards/ResizeRows';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
@@ -82,5 +84,9 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <HasCellData args={args} loading={loading} />;
     case AITool.RerunCode:
       return <RerunCode args={args} loading={loading} />;
+    case AITool.ResizeColumns:
+      return <ResizeColumns args={args} loading={loading} />;
+    case AITool.ResizeRows:
+      return <ResizeRows args={args} loading={loading} />;
   }
 });

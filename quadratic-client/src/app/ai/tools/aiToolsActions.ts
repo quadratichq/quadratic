@@ -2,6 +2,7 @@ import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
+import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -15,9 +16,10 @@ import type {
   NumericFormatKind,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
+import { stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
+import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
 import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -797,6 +799,109 @@ export const aiToolsActions: AIToolActionsRecord = {
       {
         type: 'text',
         text,
+      },
+    ];
+  },
+  [AITool.ResizeColumns]: async (args) => {
+    const { sheet_name, selection, size } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    let jsSelection: JsSelection | undefined;
+    try {
+      jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+    } catch (e: any) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing resize columns tool. Invalid selection: ${e.message}.`,
+        },
+      ];
+    }
+
+    const columns = jsSelection.getSelectedColumns();
+    if (columns.length === 0) {
+      return [
+        {
+          type: 'text',
+          text: 'No columns selected.',
+        },
+      ];
+    }
+    const resizing: ColumnRowResize[] = [];
+    for (const column of columns) {
+      let newSize: number;
+      if (size === 'auto') {
+        const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+        if (maxWidth === 0) {
+          newSize = CELL_WIDTH;
+        } else {
+          const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+          newSize = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+        }
+      } else {
+        newSize = CELL_WIDTH;
+      }
+      const originalSize = sheets.sheet.offsets.getColumnWidth(column);
+      if (originalSize !== newSize) {
+        resizing.push({ index: column, size: newSize });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
+    }
+    return [
+      {
+        type: 'text',
+        text: 'Resize columns tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.ResizeRows]: async (args) => {
+    const { sheet_name, selection, size } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    let jsSelection: JsSelection | undefined;
+    try {
+      jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+    } catch (e: any) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing resize rows tool. Invalid selection: ${e.message}.`,
+        },
+      ];
+    }
+
+    const rows = jsSelection.getSelectedRows();
+    if (rows.length === 0) {
+      return [
+        {
+          type: 'text',
+          text: 'No rows selected.',
+        },
+      ];
+    }
+    const resizing: ColumnRowResize[] = [];
+    for (const row of rows) {
+      let newSize: number;
+      if (size === 'auto') {
+        const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+        newSize = Math.max(maxHeight, CELL_HEIGHT);
+      } else {
+        newSize = CELL_HEIGHT;
+      }
+      const originalSize = sheets.sheet.offsets.getRowHeight(row);
+      if (originalSize !== newSize) {
+        resizing.push({ index: row, size: newSize });
+      }
+    }
+    if (resizing.length) {
+      const sheetId = sheets.current;
+      quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
+    }
+    return [
+      {
+        type: 'text',
+        text: 'Resize rows tool executed successfully.',
       },
     ];
   },

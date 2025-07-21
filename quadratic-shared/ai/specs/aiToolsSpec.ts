@@ -32,6 +32,9 @@ export enum AITool {
 
   TextSearch = 'text_search',
   RerunCode = 'rerun_code',
+
+  ResizeColumns = 'resize_columns',
+  ResizeRows = 'resize_rows',
 }
 
 export const AIToolSchema = z.enum([
@@ -62,6 +65,8 @@ export const AIToolSchema = z.enum([
   AITool.ColorSheets,
   AITool.TextSearch,
   AITool.RerunCode,
+  AITool.ResizeColumns,
+  AITool.ResizeRows,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -255,6 +260,16 @@ export const AIToolsArgsSchema = {
   [AITool.RerunCode]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string().optional(),
+  }),
+  [AITool.ResizeColumns]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    size: z.union([z.number(), z.enum(['auto', 'default'])]),
+  }),
+  [AITool.ResizeRows]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    size: z.union([z.number(), z.enum(['auto', 'default'])]),
   }),
 } as const;
 
@@ -1294,6 +1309,80 @@ You can optionally provide a sheet name and a selection (in A1 notation) to reru
 If you only provide a sheet name, then all code cells within that sheet will run.\n
 If you provide a selection and sheet name, then only code cells within that selection will run.\n
 If you provide neither a sheet name nor a selection, then all code cells in the file will run.\n
+`,
+  },
+  [AITool.ResizeColumns]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool resizes columns in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
+The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to resize columns in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) of columns to resize, for example: A1:D1 (the rows do not matter)',
+        },
+        size: {
+          type: 'string',
+          description:
+            'The size to resize the columns to. Either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.',
+        },
+      },
+      required: ['sheet_name', 'selection', 'size'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ResizeColumns],
+    prompt: `
+This tool resizes columns in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
+The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+`,
+  },
+  [AITool.ResizeRows]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool resizes rows in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
+The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to resize rows in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) of rows to resize, for example: A1:D1 (the columns do not matter)',
+        },
+        size: {
+          type: 'string',
+          description:
+            'The size to resize the rows to. Either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.',
+        },
+      },
+      required: ['sheet_name', 'selection', 'size'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ResizeRows],
+    prompt: `
+This tool resizes rows in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
+The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
 `,
   },
 } as const;
