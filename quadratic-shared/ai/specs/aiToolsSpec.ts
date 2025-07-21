@@ -264,12 +264,12 @@ export const AIToolsArgsSchema = {
   [AITool.ResizeColumns]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    size: z.union([z.number(), z.enum(['auto', 'default'])]),
+    size: z.enum(['auto', 'default']),
   }),
   [AITool.ResizeRows]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    size: z.union([z.number(), z.enum(['auto', 'default'])]),
+    size: z.enum(['auto', 'default']),
   }),
 } as const;
 

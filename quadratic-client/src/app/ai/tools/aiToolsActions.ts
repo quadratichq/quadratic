@@ -846,7 +846,6 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     }
     if (resizing.length) {
-      const sheetId = sheets.current;
       quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
     }
     return [
@@ -895,7 +894,6 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     }
     if (resizing.length) {
-      const sheetId = sheets.current;
       quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
     }
     return [
