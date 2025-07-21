@@ -36,9 +36,13 @@ impl TableMap {
     }
 
     pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
-        self.sheet_pos_to_table
-            .remove(&pos.to_sheet_pos(sheet_id))
-            .and_then(|table_name| self.tables.swap_remove(&table_name));
+        if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.to_sheet_pos(sheet_id)) {
+            if let Some(table) = self.tables.get(&table_name) {
+                if table.sheet_id == sheet_id && table.bounds.min == pos {
+                    self.tables.swap_remove(&table_name);
+                }
+            }
+        }
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
