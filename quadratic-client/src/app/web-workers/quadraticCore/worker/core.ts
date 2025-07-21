@@ -147,20 +147,16 @@ class Core {
     y: number;
     width: number;
     height: number;
-  }): Promise<Uint8Array | undefined> {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
-      try {
-        const renderCells = this.gridController.getRenderCells(
-          data.sheetId,
-          numbersToRectStringified(data.x, data.y, data.width, data.height)
-        );
-        resolve(renderCells);
-      } catch (e) {
-        this.handleCoreError('getRenderCells', e);
-        resolve(undefined);
-      }
-    });
+  }): Uint8Array | undefined {
+    if (!this.gridController) throw new Error('Expected gridController to be defined in Core.getRenderCells');
+    try {
+      return this.gridController.getRenderCells(
+        data.sheetId,
+        numbersToRectStringified(data.x, data.y, data.width, data.height)
+      );
+    } catch (e) {
+      this.handleCoreError('getRenderCells', e);
+    }
   }
 
   // Gets the SheetIds for the Grid.
@@ -1264,10 +1260,15 @@ class Core {
     }
   }
 
-  gridToDataTable(sheetRect: string, tableName: string | undefined, firstRowIsHeader: boolean, cursor: string) {
+  gridToDataTable(
+    sheetRect: string,
+    tableName: string | undefined,
+    firstRowIsHeader: boolean,
+    cursor: string
+  ): JsResponse | undefined {
     if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
-      this.gridController.gridToDataTable(sheetRect, tableName, firstRowIsHeader, cursor);
+      return this.gridController.gridToDataTable(sheetRect, tableName, firstRowIsHeader, cursor);
     } catch (e) {
       this.handleCoreError('gridToDataTable', e);
     }
