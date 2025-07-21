@@ -361,9 +361,9 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.5,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BuScSwIi': {
-    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BuScSwIi',
-    displayName: 'quad-mini-ft (latest: BuScSwIi)',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+    displayName: 'quad-mini-ft (latest: BupmrWcz)',
     temperature: 0.1,
     max_tokens: 16384,
     canStream: true,
