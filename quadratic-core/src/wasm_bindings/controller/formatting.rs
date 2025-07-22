@@ -299,7 +299,7 @@ impl GridController {
         let sheet = self
             .try_sheet(selection.sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
-        let format = sheet.format_selection(&selection);
+        let format = sheet.format_selection(&selection, self.a1_context());
         serde_wasm_bindgen::to_value(&format).map_err(|_| JsValue::UNDEFINED)
     }
 

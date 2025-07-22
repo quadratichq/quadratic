@@ -239,7 +239,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Err("Sheet not found".into());
         };
-        let format = sheet.format_selection(selection);
+        let format = sheet.format_selection(selection, self.a1_context());
         let (kind, symbol): (NumericFormatKind, Option<String>) = if format
             .numeric_format
             .is_some_and(|f| f.symbol == Some(symbol.clone()))
@@ -268,7 +268,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Err("Sheet not found".into());
         };
-        let format = sheet.format_selection(selection);
+        let format = sheet.format_selection(selection, self.a1_context());
         let kind = if format.numeric_format.is_some_and(|f| f.kind == kind) {
             NumericFormatKind::Number
         } else {
