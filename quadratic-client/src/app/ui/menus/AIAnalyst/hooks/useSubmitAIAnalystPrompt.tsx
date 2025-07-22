@@ -311,7 +311,6 @@ export function useSubmitAIAnalystPrompt() {
             chatMessages = nextChatMessages;
 
             if (response.toolCalls.length === 0) {
-              console.log('no tool calls');
               getUserPromptSuggestions();
               break;
             }
