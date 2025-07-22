@@ -5,7 +5,7 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { cn } from '@/shared/shadcn/utils';
 import { Editor } from '@monaco-editor/react';
-import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -15,19 +15,20 @@ interface AIToolCardEditableProps {
 }
 export const AIToolCardEditable = memo(({ toolCall, onToolCallChange }: AIToolCardEditableProps) => {
   if (onToolCallChange) {
-    return <FormField toolCall={toolCall} onToolCallChange={onToolCallChange} />;
+    return <AIToolCallEditor toolCall={toolCall} onToolCallChange={onToolCallChange} />;
   }
 
   return <AIToolCard toolCall={toolCall} />;
 });
 
-interface FormFieldProps {
+interface AIToolCallEditorProps {
   toolCall: AIToolCall;
   onToolCallChange: (newToolCall: AIToolCall) => void;
 }
-const FormField = memo(({ toolCall, onToolCallChange }: FormFieldProps) => {
-  const toolSpec = useMemo(() => aiToolsSpec[toolCall.name as AITool], [toolCall.name]);
-  const toolAction = useMemo(() => aiToolsActions[toolCall.name as AITool], [toolCall.name]);
+const AIToolCallEditor = memo(({ toolCall, onToolCallChange }: AIToolCallEditorProps) => {
+  const aiTool = useMemo(() => AIToolSchema.parse(toolCall.name), [toolCall.name]);
+  const toolSpec = useMemo(() => aiToolsSpec[aiTool], [aiTool]);
+  const toolAction = useMemo(() => aiToolsActions[aiTool], [aiTool]);
 
   const prettyArguments = useMemo(() => {
     try {
@@ -74,8 +75,8 @@ const FormField = memo(({ toolCall, onToolCallChange }: FormFieldProps) => {
       }
 
       try {
-        const args = JSON.parse(editorValue);
-        const result = await toolAction(args, {
+        const args = toolSpec.responseSchema.parse(JSON.parse(editorValue));
+        const result = await toolAction(args as any, {
           source: 'AIAnalyst',
           chatId: '',
           messageIndex: -1,
@@ -85,7 +86,7 @@ const FormField = memo(({ toolCall, onToolCallChange }: FormFieldProps) => {
         console.error(error);
       }
     },
-    [editorValue, toolAction, valid]
+    [editorValue, toolAction, toolSpec.responseSchema, valid]
   );
 
   const handleRightClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
