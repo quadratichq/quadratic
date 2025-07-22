@@ -6,7 +6,7 @@ use crate::grid::{
 
 /// Validates and fixes table names.
 pub fn sanitize_table_name(name: String) -> String {
-    let name = name.trim().to_string();
+    let name = name.trim().chars().take(255).collect::<String>();
     let mut result: String;
     if TABLE_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -37,7 +37,7 @@ pub fn sanitize_table_name(name: String) -> String {
 
 /// Validates and fixes column names.
 pub fn sanitize_column_name(name: String) -> String {
-    let name = name.trim().to_string();
+    let name = name.trim().chars().take(255).collect::<String>();
     let mut result: String;
     if COLUMN_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -269,8 +269,8 @@ mod tests {
         assert_eq!(sanitize_table_name("name😀test".to_string()), "name_test");
 
         // Very long name
-        let long_name = "a".repeat(1000) + "@" + &"b".repeat(1000);
-        let expected = "a".repeat(1000) + "_" + &"b".repeat(1000);
+        let long_name = "a".repeat(100) + "@" + &"b".repeat(100);
+        let expected = "a".repeat(100) + "_" + &"b".repeat(100);
         assert_eq!(sanitize_table_name(long_name), expected);
     }
 

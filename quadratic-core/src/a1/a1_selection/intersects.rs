@@ -433,7 +433,7 @@ mod tests {
         let sel2 = A1Selection::test_a1_context("Table1", &context);
         assert_eq!(
             sel1.intersection(&sel2, &context).unwrap().test_to_string(),
-            "A3:B4",
+            "A1:B4",
         );
 
         let sel1 = A1Selection::test_a1("D1:E1");

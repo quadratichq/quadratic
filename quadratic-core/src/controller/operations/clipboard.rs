@@ -442,8 +442,9 @@ impl GridController {
         selection: &A1Selection,
         clipboard: &Clipboard,
         special: PasteSpecial,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
+        let mut code_ops: Vec<_> = vec![];
         let mut cursor_translate_x = start_pos.x - clipboard.origin.x;
         let mut cursor_translate_y = start_pos.y - clipboard.origin.y;
 
@@ -494,13 +495,12 @@ impl GridController {
                     ops.extend(cell_value_ops);
                 }
 
-                let code_ops = self.clipboard_code_operations(
+                code_ops.extend(self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
                     tables,
                     clipboard,
                     &mut cursor,
-                )?;
-                ops.extend(code_ops);
+                )?);
 
                 let validations_ops = self.clipboard_validations_operations(
                     &clipboard.validations,
@@ -557,7 +557,7 @@ impl GridController {
             }
         }
 
-        Ok(ops)
+        Ok((ops, code_ops))
     }
 
     /// Collect the operations to paste the clipboard cells from plain text
@@ -679,6 +679,7 @@ impl GridController {
         special: PasteSpecial,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
+        let mut clipboard_ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
         let mut clipboard = Clipboard::decode(&html)?;
@@ -795,7 +796,7 @@ impl GridController {
                     }
                 }
 
-                compute_code_ops.extend(self.get_clipboard_ops(
+                let (clipboard_op, code_ops) = self.get_clipboard_ops(
                     pos,
                     Pos::new(start_x as i64, start_y as i64),
                     &mut cell_values,
@@ -804,23 +805,29 @@ impl GridController {
                     selection,
                     &clipboard,
                     special,
-                )?);
+                )?;
+                clipboard_ops.extend(clipboard_op);
+                compute_code_ops.extend(code_ops);
             }
         }
 
         // cell values need to be set before the compute_code_ops
         if matches!(special, PasteSpecial::None | PasteSpecial::Values) {
-            ops.push(Operation::SetCellValues {
-                sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
-                values: cell_values,
-            });
+            ops.extend(clipboard_ops);
+
+            if !cell_values.is_empty() {
+                ops.push(Operation::SetCellValues {
+                    sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
+                    values: cell_values,
+                });
+            }
+
+            ops.extend(compute_code_ops);
 
             data_table_ops.extend(GridController::grow_data_table_operations(
                 data_table_columns,
                 data_table_rows,
             ));
-
-            ops.extend(compute_code_ops);
         }
 
         if !formats.is_default() {

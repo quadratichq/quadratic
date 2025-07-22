@@ -57,7 +57,7 @@ impl DataTable {
         values: Option<Vec<CellValue>>,
     ) -> Result<()> {
         let column_name = self
-            .unique_column_header_name(column_header.as_deref(), column_index + 1)
+            .unique_column_header_name(column_header.as_deref(), column_index)
             .to_string();
 
         let array = self.mut_value_as_array()?;
