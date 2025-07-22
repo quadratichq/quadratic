@@ -43,3 +43,20 @@ export const assertCellValue = async (page: Page, { a1, value }: AssertCellValue
   await page.keyboard.press('Escape');
   await page.waitForTimeout(5 * 1000);
 };
+
+export const sheetRefreshPage = async (page: Page) => {
+  await page.reload();
+
+  const quadraticLoading = page.locator('html[data-loading-start]');
+  await page.waitForTimeout(10 * 1000);
+  await page.waitForLoadState('domcontentloaded');
+  await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
+  await page.waitForLoadState('networkidle');
+
+  // Close AI chat box as needed
+  try {
+    await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
+  } catch (e) {
+    console.error(e);
+  }
+};
