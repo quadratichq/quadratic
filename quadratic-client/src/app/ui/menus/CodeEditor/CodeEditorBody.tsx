@@ -132,10 +132,6 @@ export const CodeEditorBody = memo((props: CodeEditorBodyProps) => {
     setTimeout(() => {
       (model as any)?._commandManager?.clear();
     }, 250);
-
-    return () => {
-      (model as any)?._commandManager?.clear();
-    };
   }, [editorInst, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y, codeCell]);
 
   const addCommands = useCallback(
