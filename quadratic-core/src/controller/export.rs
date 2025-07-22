@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Context, Result, anyhow};
 use csv::Writer;
 use itertools::PeekingNext;
-use rust_decimal::prelude::ToPrimitive;
+use rust_decimal::{Decimal, prelude::ToPrimitive};
 use rust_xlsxwriter::{
     Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError, worksheet::Worksheet,
 };
@@ -98,7 +98,7 @@ impl GridController {
 
             let row_col = |pos: Pos| (pos.y as u32 - 1, pos.x as u16 - 1);
 
-            let get_formats = |v: &CellValue, pos: Pos| {
+            let get_formats = |mut v: CellValue, pos: Pos| {
                 let mut format = Format::new();
                 let formats = sheet.formats.to_owned();
                 let bold = formats.bold.get(pos).unwrap_or(false);
@@ -158,20 +158,34 @@ impl GridController {
 
                 if let Some(numeric_format) = formats.numeric_format.get(pos) {
                     match numeric_format.kind {
-                        NumericFormatKind::Percentage => num_format = "0.0%".to_string(),
-                        NumericFormatKind::Currency => num_format = "0.00".to_string(),
-                        NumericFormatKind::Number => num_format = "0.00".to_string(),
+                        NumericFormatKind::Percentage => {
+                            match &mut v {
+                                CellValue::Number(n) => {
+                                    *n = n
+                                        .checked_div(
+                                            Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO),
+                                        )
+                                        .unwrap_or(Decimal::ZERO);
+                                }
+                                _ => {}
+                            }
+                            num_format = "0.0%".to_string()
+                        }
+                        NumericFormatKind::Currency => num_format = "$0.00".to_string(),
+                        NumericFormatKind::Number => {}
                         NumericFormatKind::Exponential => num_format = "0.00E+00".to_string(),
+                    }
+                }
+
+                // this needs to be before the numeric decimals
+                if let Some(numeric_commas) = formats.numeric_commas.get(pos) {
+                    if numeric_commas {
+                        num_format = format!("#,##0");
                     }
                 }
 
                 if let Some(numeric_decimals) = formats.numeric_decimals.get(pos) {
                     num_format = format!("{num_format}.{}", "0".repeat(numeric_decimals as usize));
-                }
-
-                if let Some(numeric_commas) = formats.numeric_commas.get(pos) {
-                    num_format = format!("{num_format};{numeric_commas}");
-                    num_format = format!("{num_format};{numeric_commas}");
                 }
 
                 if !num_format.is_empty() {
@@ -198,14 +212,15 @@ impl GridController {
                     }
                 }
 
-                format
+                (v, format)
             };
 
             let write_value = |worksheet: &mut Worksheet, pos: Pos| -> Option<Result<()>> {
                 sheet.display_value(pos).and_then(|v| {
                     let (row, col) = row_col(pos);
+                    let (cell_value, format) = get_formats(v, pos);
 
-                    let result = match &v {
+                    let result = match &cell_value {
                         CellValue::Number(n) => {
                             worksheet.write_number(row, col, n.to_f64().unwrap_or(0.0))
                         }
@@ -214,12 +229,12 @@ impl GridController {
                         CellValue::Time(t) => worksheet.write_datetime(row, col, t),
                         CellValue::DateTime(dt) => worksheet.write_datetime(row, col, dt),
                         CellValue::Logical(b) => worksheet.write_boolean(row, col, *b),
-                        _ => worksheet.write_string(row, col, v.to_string()),
+                        _ => worksheet.write_string(row, col, cell_value.to_string()),
                     }
                     .map(|_| ())
                     .map_err(error);
 
-                    if let Err(e) = worksheet.set_cell_format(row, col, &get_formats(&v, pos)) {
+                    if let Err(e) = worksheet.set_cell_format(row, col, &format) {
                         dbgjs!(format!("Error setting cell format: {}", e));
                     }
 
