@@ -353,6 +353,15 @@ export const apiClient = {
         ApiSchemas['/v0/user.POST.response']
       );
     },
+    clientDataKv: {
+      update(body: ApiTypes['/v0/user/client-data-kv.POST.request']) {
+        return fetchFromApi(
+          `/v0/user/client-data-kv`,
+          { method: 'POST', body: JSON.stringify(body) },
+          ApiSchemas['/v0/user/client-data-kv.POST.response']
+        );
+      },
+    },
   },
 
   education: {
