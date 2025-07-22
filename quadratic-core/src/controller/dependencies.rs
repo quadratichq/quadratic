@@ -28,6 +28,7 @@ impl GridController {
                 continue;
             };
 
+            // ignore code cells that have self reference
             if !code_run
                 .cells_accessed
                 .contains(dependent_cell, self.a1_context())
