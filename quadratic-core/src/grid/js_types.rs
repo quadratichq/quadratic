@@ -512,9 +512,9 @@ pub struct JsResponse {
     pub result: bool,
     pub error: Option<String>,
 }
-impl Into<wasm_bindgen::JsValue> for JsResponse {
-    fn into(self) -> JsValue {
-        serde_wasm_bindgen::to_value(&self).unwrap_or(JsValue::UNDEFINED)
+impl From<JsResponse> for wasm_bindgen::JsValue {
+    fn from(response: JsResponse) -> Self {
+        serde_wasm_bindgen::to_value(&response).unwrap_or(JsValue::UNDEFINED)
     }
 }
 

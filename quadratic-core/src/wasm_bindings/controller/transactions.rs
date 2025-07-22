@@ -107,8 +107,7 @@ impl GridController {
             }
             Err(e) => {
                 let error = format!(
-                    "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {:?}, error: {:?}",
-                    unsaved_transaction, e
+                    "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {unsaved_transaction:?}, error: {e:?}",
                 );
                 dbgjs!(&error);
                 Ok(JsResponse {
