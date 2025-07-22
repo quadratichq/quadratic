@@ -20,6 +20,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
+import BigNumber from 'bignumber.js';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 
@@ -51,7 +52,7 @@ class InlineEditorHandler {
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
-    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('sheetOffsetsUpdated', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
     events.on('contextMenu', this.closeIfOpen);
@@ -178,7 +179,6 @@ class InlineEditorHandler {
     if (!input && !this.open) {
       return;
     }
-
     if (initialValue) {
       this.initialValue += initialValue;
       initialValue = this.initialValue;
@@ -199,9 +199,14 @@ class InlineEditorHandler {
         y: cursor.y,
       };
 
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
+        this.location.sheetId,
+        this.location.x,
+        this.location.y
+      );
+
       let value: string;
       let changeToFormula = false;
-
       if (initialValue) {
         changeToFormula = initialValue[0] === '=';
 
@@ -218,7 +223,16 @@ class InlineEditorHandler {
 
           const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
           if (jsCellValue) {
-            value = jsCellValue.kind === 'number' ? parseFloat(jsCellValue.value).toString() : jsCellValue.value;
+            if (jsCellValue.kind === 'number') {
+              this.formatSummary.align = this.formatSummary.align ?? 'right';
+            }
+            value = jsCellValue.kind === 'number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
+            if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
+              try {
+                const number = new BigNumber(value).multipliedBy(100).toString();
+                value = number + '%';
+              } catch (e) {}
+            }
 
             // open the calendar pick if the cell is a date
             if (['date', 'date time'].includes(jsCellValue.kind)) {
@@ -253,11 +267,6 @@ class InlineEditorHandler {
         editMode: cursorMode === CursorMode.Edit,
       }));
 
-      this.formatSummary = await quadraticCore.getCellFormatSummary(
-        this.location.sheetId,
-        this.location.x,
-        this.location.y
-      );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       this.temporaryUnderline = this.formatSummary?.underline || undefined;

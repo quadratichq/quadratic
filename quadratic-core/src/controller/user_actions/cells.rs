@@ -63,7 +63,7 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Pos, Rect, SheetPos,
+        CellValue, Duration, Pos, Rect, SheetPos,
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
         grid::{NumericFormat, SheetId, formats::FormatUpdate, sort::SortDirection},
@@ -213,7 +213,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(decimal_from_str("10.55").unwrap())
+            CellValue::Number(decimal_from_str(".1055").unwrap())
         );
         assert_eq!(
             get_cell_numeric_format(&gc),
@@ -821,5 +821,32 @@ mod test {
             1,
             CellValue::Number(decimal_from_str("0.1").unwrap()),
         );
+    }
+
+    #[test]
+    fn test_set_cell_value_5s() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!A1], "5s".to_string(), None);
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Duration(Duration::from_seconds(5.0)),
+        );
+
+        assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "5s");
+
+        let gc = test_export_and_import(&gc);
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Duration(Duration::from_seconds(5.0)),
+        );
+        assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "5s");
     }
 }
