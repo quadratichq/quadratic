@@ -413,7 +413,7 @@ impl GridController {
                 crate::wasm_bindings::js::jsClientMessage(message.to_owned(), severity.to_string());
             }
 
-            return message;
+            message
         };
 
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {

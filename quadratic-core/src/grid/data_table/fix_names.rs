@@ -7,6 +7,10 @@ use crate::grid::{
 /// Validates and fixes table names.
 pub fn sanitize_table_name(name: String) -> String {
     let name = name.trim().chars().take(255).collect::<String>();
+    if name.is_empty() {
+        return "Table".to_string();
+    }
+
     let mut result: String;
     if TABLE_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -38,6 +42,10 @@ pub fn sanitize_table_name(name: String) -> String {
 /// Validates and fixes column names.
 pub fn sanitize_column_name(name: String) -> String {
     let name = name.trim().chars().take(255).collect::<String>();
+    if name.is_empty() {
+        return "Column".to_string();
+    }
+
     let mut result: String;
     if COLUMN_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -241,7 +249,7 @@ mod tests {
     #[test]
     fn test_fix_table_name_edge_cases() {
         // Empty string
-        assert_eq!(sanitize_table_name("".to_string()), "_");
+        assert_eq!(sanitize_table_name("".to_string()), "Table");
 
         // Single invalid character
         assert_eq!(sanitize_table_name("@".to_string()), "_");
@@ -249,16 +257,16 @@ mod tests {
         assert_eq!(sanitize_table_name("#".to_string()), "_");
 
         // Only spaces
-        assert_eq!(sanitize_table_name("   ".to_string()), "_");
+        assert_eq!(sanitize_table_name("   ".to_string()), "Table");
 
         // Only tabs
-        assert_eq!(sanitize_table_name("\t\t".to_string()), "_");
+        assert_eq!(sanitize_table_name("\t\t".to_string()), "Table");
 
         // Only newlines
-        assert_eq!(sanitize_table_name("\n\n".to_string()), "_");
+        assert_eq!(sanitize_table_name("\n\n".to_string()), "Table");
 
         // Mixed whitespace
-        assert_eq!(sanitize_table_name(" \t\n".to_string()), "_");
+        assert_eq!(sanitize_table_name(" \t\n".to_string()), "Table");
 
         // Unicode characters
         assert_eq!(sanitize_table_name("café".to_string()), "café");
@@ -323,7 +331,7 @@ mod tests {
 
     #[test]
     fn test_column_name_empty_string() {
-        assert_eq!(sanitize_column_name("".to_string()), "_");
+        assert_eq!(sanitize_column_name("".to_string()), "Column");
     }
 
     #[test]
@@ -428,7 +436,7 @@ mod tests {
         assert_eq!(sanitize_column_name("@".to_string()), "@");
         assert_eq!(sanitize_column_name(".".to_string()), ".");
         assert_eq!(sanitize_column_name("(".to_string()), "(");
-        assert_eq!(sanitize_column_name(" ".to_string()), "_");
+        assert_eq!(sanitize_column_name(" ".to_string()), "Column");
         assert_eq!(sanitize_column_name("#".to_string()), "_");
     }
 

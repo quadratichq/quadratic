@@ -782,7 +782,7 @@ impl GridController {
             mut columns,
             show_name,
             show_columns,
-        } = op.to_owned()
+        } = op
         {
             // do grid mutations first to keep the borrow checker happy
             let sheet_id = sheet_pos.sheet_id;
@@ -923,7 +923,14 @@ impl GridController {
             let sheet = self.grid.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
-            let forward_operations = vec![op];
+            let forward_operations = vec![Operation::DataTableOptionMeta {
+                sheet_pos,
+                name,
+                alternating_colors,
+                columns,
+                show_name,
+                show_columns,
+            }];
             let reverse_operations = vec![Operation::DataTableOptionMeta {
                 sheet_pos,
                 name: Some(old_name),

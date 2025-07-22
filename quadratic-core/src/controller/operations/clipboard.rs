@@ -220,7 +220,6 @@ impl GridController {
         )
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn clipboard_code_operations(
         &self,
         start_pos: SheetPos,
@@ -237,14 +236,13 @@ impl GridController {
                     y: clipboard.origin.y + *y as i64,
                 };
 
-                let target_pos = SheetPos {
+                let target_pos = Pos {
                     x: start_pos.x + *x as i64,
                     y: start_pos.y + *y as i64,
-                    sheet_id: start_pos.sheet_id,
                 };
 
                 let paste_in_import = sheet
-                    .iter_code_output_in_rect(Rect::single_pos(Pos::from(target_pos)))
+                    .iter_code_output_in_rect(Rect::single_pos(target_pos))
                     .any(|(output_rect, data_table)| {
                         // this table is being moved in the same transaction
                         if matches!(clipboard.operation, ClipboardOperation::Cut)
@@ -256,7 +254,8 @@ impl GridController {
                             return false;
                         }
 
-                        matches!(data_table.kind, DataTableKind::Import(_))
+                        target_pos != output_rect.min
+                            && matches!(data_table.kind, DataTableKind::Import(_))
                     });
 
                 if paste_in_import {
@@ -289,7 +288,7 @@ impl GridController {
                     }
 
                     ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos,
+                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                         data_table: Some(data_table),
                         index: usize::MAX,
                     });
@@ -303,7 +302,7 @@ impl GridController {
 
                 if should_rerun {
                     ops.push(Operation::ComputeCode {
-                        sheet_pos: target_pos,
+                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                     });
                 }
             }
