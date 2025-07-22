@@ -123,7 +123,7 @@ export function OnboardingBanner() {
     },
     {
       label: 'Create a connection',
-      completed: connections.length > 0,
+      completed: connections.filter((c) => !c.isDemo).length > 0,
       content: (
         <>
           {/* TODO: (enhancement) set this up
