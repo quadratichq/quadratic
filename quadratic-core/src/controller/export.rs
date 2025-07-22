@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Context, Result, anyhow, bail};
 use csv::Writer;
 use itertools::PeekingNext;
+use lazy_static::lazy_static;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use rust_xlsxwriter::{
     Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError, worksheet::Worksheet,
@@ -15,6 +16,31 @@ use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{CellAlign, CellVerticalAlign, CodeCellLanguage, GridBounds, NumericFormatKind, Sheet},
 };
+
+lazy_static! {
+    static ref CHRONO_TO_EXCEL_MAPPING: HashMap<&'static str, &'static str> = {
+        let mut mapping = HashMap::new();
+
+        mapping.insert("%Y", "yyyy"); // Full year (e.g., 2025)
+        mapping.insert("%y", "yy"); // Two-digit year (e.g., 25)
+        mapping.insert("%m", "mm"); // Month number (01-12)
+        mapping.insert("%b", "mmm"); // Abbreviated month name (e.g., Jul)
+        mapping.insert("%h", "mmm"); // Alternative abbreviated month name
+        mapping.insert("%B", "mmmm"); // Full month name (e.g., July)
+        mapping.insert("%d", "dd"); // Day of the month (01-31)
+        mapping.insert("%e", "d"); // Day of the month (1-31), space-padded
+        mapping.insert("%H", "hh"); // Hour (00-23)
+        mapping.insert("%I", "hh"); // Hour (01-12) - Note: Excel doesn't distinguish, needs AM/PM
+        mapping.insert("%M", "mm"); // Minute (00-59)
+        mapping.insert("%S", "ss"); // Second (00-59)
+        mapping.insert("%F", "yyyy-mm-dd"); // ISO 8601 date format
+        mapping.insert("%T", "hh:mm:ss"); // 24-hour time format
+        mapping.insert("%p", "AM/PM"); // AM/PM indicator
+        mapping.insert("%P", "am/pm"); // am/pm indicator (lowercase)
+
+        mapping
+    };
+}
 
 impl GridController {
     /// exports a CSV string from a selection on the grid.
@@ -317,27 +343,9 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
 
 /// Converts a chrono format to an excel format.
 pub fn chrono_to_excel_format(chrono_format: &str) -> String {
-    let mut mapping = HashMap::new();
-
-    mapping.insert("%Y", "yyyy"); // Full year (e.g., 2025)
-    mapping.insert("%y", "yy"); // Two-digit year (e.g., 25)
-    mapping.insert("%m", "mm"); // Month number (01-12)
-    mapping.insert("%b", "mmm"); // Abbreviated month name (e.g., Jul)
-    mapping.insert("%h", "mmm"); // Alternative abbreviated month name
-    mapping.insert("%B", "mmmm"); // Full month name (e.g., July)
-    mapping.insert("%d", "dd"); // Day of the month (01-31)
-    mapping.insert("%e", "d"); // Day of the month (1-31), space-padded
-    mapping.insert("%H", "hh"); // Hour (00-23)
-    mapping.insert("%I", "hh"); // Hour (01-12) - Note: Excel doesn't distinguish, needs AM/PM
-    mapping.insert("%M", "mm"); // Minute (00-59)
-    mapping.insert("%S", "ss"); // Second (00-59)
-    mapping.insert("%F", "yyyy-mm-dd"); // ISO 8601 date format
-    mapping.insert("%T", "hh:mm:ss"); // 24-hour time format
-    mapping.insert("%p", "AM/PM"); // AM/PM indicator
-    mapping.insert("%P", "am/pm"); // am/pm indicator (lowercase)
-
     let mut result = String::new();
     let mut chars = chrono_format.chars().peekable();
+    let mapping = &*CHRONO_TO_EXCEL_MAPPING;
 
     while let Some(ch) = chars.next() {
         if ch == '%' {
