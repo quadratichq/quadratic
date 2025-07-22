@@ -80,7 +80,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
-  const { modelKey } = useAIModel();
+  const aiModel = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     () =>
@@ -224,7 +224,7 @@ export function useSubmitAIAnalystPrompt() {
                 content: [{ type: 'text', text: 'Request aborted by the user.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                modelKey,
+                modelKey: aiModel.modelKey,
               };
               return [...prevMessages, newLastMessage];
             }
@@ -289,7 +289,7 @@ export function useSubmitAIAnalystPrompt() {
               chatId,
               source: 'AIAnalyst',
               messageSource,
-              modelKey,
+              modelKey: aiModel.modelKey,
               messages: messagesForAI,
               useStream: USE_STREAM,
               toolName: undefined,
@@ -447,7 +447,7 @@ export function useSubmitAIAnalystPrompt() {
                 content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
                 contextType: 'userPrompt',
                 toolCalls: [],
-                modelKey,
+                modelKey: aiModel.modelKey,
               };
               return [...prevMessages, newLastMessage];
             }
@@ -460,7 +460,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, updateInternalContext, modelKey, importPDF, search]
+    [handleAIRequestToAPI, updateInternalContext, aiModel.modelKey, importPDF, search]
   );
 
   return { submitPrompt };
