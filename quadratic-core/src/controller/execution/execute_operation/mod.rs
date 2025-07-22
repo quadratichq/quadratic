@@ -29,7 +29,7 @@ mod execute_borders_old;
 mod execute_code;
 mod execute_col_rows;
 mod execute_cursor;
-mod execute_data_table;
+pub(crate) mod execute_data_table;
 mod execute_formats;
 mod execute_formats_old;
 mod execute_move_cells;

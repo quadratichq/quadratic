@@ -2,7 +2,6 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
 use crate::controller::GridController;
-use crate::grid::file;
 
 #[wasm_bindgen]
 impl GridController {

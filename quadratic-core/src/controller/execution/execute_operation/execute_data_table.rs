@@ -1998,7 +1998,7 @@ impl GridController {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use crate::test_util::*;
 
     use crate::{
