@@ -3,6 +3,7 @@ import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDateTimeContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
+import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
@@ -71,6 +72,7 @@ export type SubmitAIAnalystPromptArgs = {
 // }
 
 export function useSubmitAIAnalystPrompt() {
+  const aiModel = useAIModel();
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
@@ -80,7 +82,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
-  const aiModel = useAIModel();
+  const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
 
   const updateInternalContext = useRecoilCallback(
     () =>
@@ -309,6 +311,8 @@ export function useSubmitAIAnalystPrompt() {
             chatMessages = nextChatMessages;
 
             if (response.toolCalls.length === 0) {
+              console.log('no tool calls');
+              getUserPromptSuggestions();
               break;
             }
 
@@ -460,7 +464,7 @@ export function useSubmitAIAnalystPrompt() {
         set(aiAnalystAbortControllerAtom, undefined);
         set(aiAnalystLoadingAtom, false);
       },
-    [handleAIRequestToAPI, updateInternalContext, aiModel.modelKey, importPDF, search]
+    [aiModel.modelKey, handleAIRequestToAPI, updateInternalContext, importPDF, search, getUserPromptSuggestions]
   );
 
   return { submitPrompt };
