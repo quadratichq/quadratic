@@ -19,12 +19,12 @@ export class CellsImages extends Container<CellsImage> {
     super();
     this.cellsSheet = cellsSheet;
     events.on('updateImage', this.updateImage);
-    events.on('sheetOffsets', this.reposition);
+    events.on('sheetOffsetsUpdated', this.reposition);
   }
 
   destroy() {
     events.off('updateImage', this.updateImage);
-    events.off('sheetOffsets', this.reposition);
+    events.off('sheetOffsetsUpdated', this.reposition);
     super.destroy();
   }
 
@@ -32,7 +32,6 @@ export class CellsImages extends Container<CellsImage> {
     if (this.cellsSheet.sheetId === sheetId) {
       this.children.forEach((sprite) => sprite.reposition());
     }
-    // pixiApp.cellImages.dirtyBorders = true;
   };
 
   cheapCull(bounds: Rectangle) {

@@ -2,7 +2,7 @@ import { test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, uploadFile } from './helpers/file.helpers';
 import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
-import { assertCellValue, assertSelection, gotoCells } from './helpers/sheet.helper';
+import { assertCellValue, assertSelection, gotoCells, sheetRefreshPage } from './helpers/sheet.helper';
 
 test('Keyboard Navigation', async ({ page }) => {
   // Constants
@@ -236,6 +236,16 @@ test('Keyboard Editing', async ({ page }) => {
   await page.keyboard.type('14%', { delay: 250 });
   await page.keyboard.press('Enter', { delay: 100 });
   await assertCellValue(page, { a1: 'A2', value: '14%' });
+
+  await gotoCells(page, { a1: 'A3' });
+  await page.keyboard.type('5s', { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 100 });
+  await assertCellValue(page, { a1: 'A3', value: '5s' });
+
+  await sheetRefreshPage(page);
+  await assertCellValue(page, { a1: 'A1', value: 'Hello' });
+  await assertCellValue(page, { a1: 'A2', value: '14%' });
+  await assertCellValue(page, { a1: 'A3', value: '5s' });
 
   // All done
   await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
