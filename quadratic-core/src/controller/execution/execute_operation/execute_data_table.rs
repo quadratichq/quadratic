@@ -644,13 +644,13 @@ impl GridController {
             data_table.show_name = Some(true);
             data_table.show_columns = Some(true);
 
-            if let Some(format_update) = format_update {
-                if !format_update.is_default() {
-                    data_table
-                        .formats
-                        .get_or_insert_default()
-                        .apply_updates(&format_update);
-                }
+            if let Some(format_update) = format_update
+                && !format_update.is_default()
+            {
+                data_table
+                    .formats
+                    .get_or_insert_default()
+                    .apply_updates(&format_update);
             }
             let data_table_rect = data_table.output_sheet_rect(sheet_pos, true);
             let cell_value = CellValue::Import(import);
@@ -1142,12 +1142,12 @@ impl GridController {
 
                     dt.insert_column_sorted(index as usize, column_header, values)?;
 
-                    if let Some(format_update) = format_update {
-                        if !format_update.is_default() {
-                            dt.formats
-                                .get_or_insert_default()
-                                .apply_updates(&format_update);
-                        }
+                    if let Some(format_update) = format_update
+                        && !format_update.is_default()
+                    {
+                        dt.formats
+                            .get_or_insert_default()
+                            .apply_updates(&format_update);
                     }
 
                     Ok(())
@@ -1544,12 +1544,12 @@ impl GridController {
                 let (_, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                     dt.insert_row(index as usize, values)?;
 
-                    if let Some(format_update) = format_update {
-                        if !format_update.is_default() {
-                            dt.formats
-                                .get_or_insert_default()
-                                .apply_updates(&format_update);
-                        }
+                    if let Some(format_update) = format_update
+                        && !format_update.is_default()
+                    {
+                        dt.formats
+                            .get_or_insert_default()
+                            .apply_updates(&format_update);
                     }
 
                     Ok(())
