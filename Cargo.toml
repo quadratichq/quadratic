@@ -7,9 +7,7 @@ members = [
   "quadratic-multiplayer",
   "quadratic-rust-shared",
 ]
-exclude = [
-  "poc/number_type",
-]
+exclude = ["poc/number_type"]
 
 [workspace.package]
 authors = ["Quadratic"]
@@ -23,6 +21,3 @@ version = "0.14.1"
 [profile.release]
 # Tell `rustc` to optimize for small code size.
 opt-level = "s"
-
-[profile.bench]
-debug = true

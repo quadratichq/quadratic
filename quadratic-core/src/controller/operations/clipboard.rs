@@ -517,8 +517,6 @@ impl GridController {
                     .get(&source_pos)
                     .and_then(|data_table| data_table.cells_accessed(start_pos.sheet_id));
 
-                dbg!(&cells_accessed);
-
                 cells_accessed.as_ref().is_some_and(|ranges| {
                     ranges.iter().any(|range| {
                         let cut_intersects = cut_rects

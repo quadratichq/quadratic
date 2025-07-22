@@ -121,11 +121,6 @@ impl GridController {
             }
         }
 
-        dbgjs!(&format!(
-            "sheet_format_update: {:?}",
-            sheet_format_update.is_default()
-        ));
-
         if !sheet_format_update.is_default() {
             ops.push(Operation::SetCellFormatsA1 {
                 sheet_id: selection.sheet_id,
