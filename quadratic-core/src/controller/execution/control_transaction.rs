@@ -115,6 +115,8 @@ impl GridController {
 
         transaction.send_transaction();
 
+        transaction.send_ai_transaction(self);
+
         if cfg!(target_family = "wasm") || cfg!(test) {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)
                 .unwrap_or("Unknown".to_string());

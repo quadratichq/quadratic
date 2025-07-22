@@ -12,7 +12,10 @@ use crate::{
     Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
-        execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
+        GridController,
+        execution::TransactionSource,
+        operations::{ai_operation::AIOperation, operation::Operation},
+        transaction::Transaction,
     },
     grid::{
         CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
@@ -186,6 +189,21 @@ impl PendingTransaction {
             sequence_num: None,
             operations,
             cursor: self.cursor.clone(),
+        }
+    }
+
+    /// Sends the forward transaction to the AI.
+    pub fn send_ai_transaction(&self, gc: &GridController) {
+        if self.complete && (cfg!(target_family = "wasm") || cfg!(test)) {
+            let ops = self
+                .forward_operations
+                .iter()
+                .map(|op| AIOperation::from_operation(self.source, op, gc))
+                .collect::<Vec<_>>();
+
+            if !ops.is_empty() {
+                // send the ops to the client to populate the AI
+            }
         }
     }
 

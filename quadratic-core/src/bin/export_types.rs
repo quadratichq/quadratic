@@ -10,6 +10,7 @@ use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
+use quadratic_core::controller::execution::TransactionSource;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Value;
@@ -190,6 +191,7 @@ fn main() {
         TextCase,
         TextMatch,
         TransactionName,
+        TransactionSource,
         TransientResize,
         Validation,
         ValidationDateTime,
