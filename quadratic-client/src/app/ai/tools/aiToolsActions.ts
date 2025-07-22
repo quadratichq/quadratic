@@ -936,12 +936,18 @@ export const aiToolsActions: AIToolActionsRecord = {
       lineStyle = 'line1';
     }
 
+    const colorObject = color ? Color(color).rgb().object() : { red: 0, green: 0, blue: 0 };
     const style: BorderStyle = {
       line: lineStyle,
-      color: Color.
-    }
+      color: {
+        red: colorObject.red,
+        green: colorObject.green,
+        blue: colorObject.blue,
+        alpha: 1,
+      },
+    };
 
-    quadraticCore.setBorders(jsSelection.save(), borderSelection, style, sheets.getCursorPosition());
+    quadraticCore.setBorders(jsSelection.save(), borderSelection, style);
     return [
       {
         type: 'text',
