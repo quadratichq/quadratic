@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result, anyhow, bail};
 use csv::Writer;
 use itertools::PeekingNext;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
@@ -10,7 +10,7 @@ use rust_xlsxwriter::{
 
 use super::GridController;
 use crate::{
-    CellValue, Pos,
+    CellValue, Pos, Value,
     a1::{A1Selection, CellRefRange},
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{CellAlign, CellVerticalAlign, CodeCellLanguage, GridBounds, NumericFormatKind, Sheet},
@@ -109,26 +109,53 @@ impl GridController {
                 GridBounds::NonEmpty(rect) => {
                     for pos in rect.iter() {
                         let (row, col) = (pos.y as u32 - 1, pos.x as u16 - 1);
-                        let mut is_formula = false;
+                        let mut is_formula_output = false;
 
-                        // only preserve formula data tables
-                        if let Some(cell_value) = sheet.cell_value(pos) {
-                            if let CellValue::Code(code_cell_value) = &cell_value {
-                                if code_cell_value.language == CodeCellLanguage::Formula {
-                                    // TODO(ddimaria): handle array output
-                                    if let Some(value) = sheet.display_value(pos) {
-                                        worksheet
-                                            .write_formula(row, col, code_cell_value.code.as_str())
-                                            .map_err(error)?
-                                            .set_formula_result(row, col, value.to_string());
+                        // data table output
+                        if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos) {
+                            if let Some(cell_value) = sheet.cell_value(pos) {
+                                if let CellValue::Code(code_cell_value) = &cell_value {
+                                    let is_formula =
+                                        code_cell_value.language == CodeCellLanguage::Formula;
+                                    is_formula_output =
+                                        data_table.get_language() == CodeCellLanguage::Formula;
+
+                                    if is_formula {
+                                        let code = code_cell_value.code.as_str();
+                                        let display_value = data_table.display_value(false)?;
+
+                                        match display_value {
+                                            Value::Single(value) => {
+                                                worksheet
+                                                    .write_formula(row, col, code)
+                                                    .map_err(error)?
+                                                    .set_formula_result(
+                                                        row,
+                                                        col,
+                                                        value.to_string(),
+                                                    );
+                                            }
+                                            Value::Array(array) => {
+                                                let size = array.size();
+                                                let last_row = row + size.h.get() - 1;
+                                                let last_col = col + size.w.get() as u16 - 1;
+
+                                                worksheet
+                                                    .write_array_formula(
+                                                        row, col, last_row, last_col, code,
+                                                    )
+                                                    .map_err(error)?;
+                                            }
+                                            // we don't expect tuples
+                                            _ => bail!("Unexpected value type"),
+                                        }
                                     }
-                                    is_formula = true;
                                 }
                             }
                         }
 
-                        // flatten all non-formula data
-                        if !is_formula {
+                        if !is_formula_output {
+                            // flatten all non-formula data
                             write_excel_value(worksheet, pos, col, row, sheet)?;
                         }
                     }
@@ -406,7 +433,7 @@ mod tests {
 
         assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
 
-        // TODO(ddimaria): test excel file formatting by importing back into the grid
+        // TODO(ddimaria): test excel file formatting once import formatting is implemented
     }
 
     #[test]
@@ -421,6 +448,19 @@ mod tests {
         let buffer = workbook.save_to_buffer();
 
         assert!(buffer.is_ok());
+    }
+
+    #[test]
+    fn test_get_excel_formats() {
+        let cell_value = CellValue::Number(100.into());
+        let pos = Pos { x: 1, y: 1 };
+        let sheet = Sheet::test();
+        let (v, _format) = get_excel_formats(cell_value.clone(), pos, &sheet);
+        assert_eq!(v, cell_value);
+
+        // TODO(ddimaria): no getters exposed for the Format struct from xlsxwriter
+        // so we can't test the format. I may back contribute to the repo to open up
+        // the `has_*` members.
     }
 
     #[test]
