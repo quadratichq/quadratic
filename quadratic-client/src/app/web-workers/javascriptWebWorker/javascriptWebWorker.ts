@@ -48,7 +48,7 @@ class JavascriptWebWorker {
     }
   };
 
-  init() {
+  initWorker() {
     this.worker?.terminate();
     this.worker = new Worker(new URL('./worker/javascript.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
@@ -60,7 +60,7 @@ class JavascriptWebWorker {
 
   cancelExecution = () => {
     mixpanel.track('[JavascriptWebWorker].restartFromUser');
-    this.init();
+    this.initWorker();
     quadraticCore.sendCancelExecution('Javascript');
     events.emit('javascriptState', 'ready');
   };
