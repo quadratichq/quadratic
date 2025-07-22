@@ -6,6 +6,7 @@ use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
 use {
     super::{
+        DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT,
         date_time_to_date_time_string, date_to_date_string, i32_to_naive_time, i64_to_naive_date,
         naive_date_time_to_i64, naive_date_to_i64, naive_time_to_i32, parse_date, parse_time,
         time_to_time_string,
@@ -13,14 +14,10 @@ use {
     crate::CellValue,
 };
 
-pub const DEFAULT_DATE_TIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
-pub const DEFAULT_DATE_FORMAT: &str = "%Y-%m-%d";
-pub const DEFAULT_TIME_FORMAT: &str = "%H:%M:%S";
-
 /// Returns a formatted version of the date string. The date is expected to
 /// be in the format of %Y-%m-%d.
 pub(crate) fn format_date(date: &str, format: Option<String>) -> String {
-    let date = NaiveDate::parse_from_str(date, DEFAULT_DATE_FORMAT);
+    let date = NaiveDate::parse_from_str(date, "%Y-%m-%d");
     match date {
         Ok(date) => date_to_date_string(date, format),
         Err(_) => "".to_string(),
@@ -30,7 +27,7 @@ pub(crate) fn format_date(date: &str, format: Option<String>) -> String {
 /// Returns a formatted version of the date string. The date is expected to
 /// be in the format of %Y-%m-%d %H:%M:%S.
 pub(crate) fn format_date_time(date: &str, format: Option<String>) -> String {
-    let date = NaiveDateTime::parse_from_str(date, DEFAULT_DATE_TIME_FORMAT);
+    let date = NaiveDateTime::parse_from_str(date, "%Y-%m-%d %H:%M:%S");
     match date {
         Ok(date) => date_time_to_date_time_string(date, format),
         Err(_) => "".to_string(),
@@ -51,7 +48,7 @@ pub(crate) fn format_time(date: &str, format: Option<String>) -> String {
 /// string if unable to parse the date or time string.
 pub(crate) fn parse_time_from_format(date: &str, time: &str) -> String {
     if let (Ok(date), Some(parsed)) = (
-        NaiveDate::parse_from_str(date, DEFAULT_DATE_FORMAT),
+        NaiveDate::parse_from_str(date, "%Y-%m-%d"),
         CellValue::unpack_time(time),
     ) {
         match parsed {
@@ -68,7 +65,7 @@ pub(crate) fn parse_time_from_format(date: &str, time: &str) -> String {
 /// Converts a date-time string to an i64 for use in date_time validations.
 /// Expects the date-time to be in the format of %Y-%m-%d %H:%M:%S.
 pub(crate) fn date_to_number(date: &str) -> i64 {
-    let date = NaiveDateTime::parse_from_str(date, DEFAULT_DATE_TIME_FORMAT);
+    let date = NaiveDateTime::parse_from_str(date, "%Y-%m-%d %H:%M:%S");
     match date {
         Ok(date) => naive_date_time_to_i64(date),
         Err(_) => -1,
@@ -78,7 +75,7 @@ pub(crate) fn date_to_number(date: &str) -> i64 {
 /// Converts a time to an i32 for use in time validations. Expects the time to
 /// be in the format of %H:%M:%S.
 pub(crate) fn time_to_number(time: &str) -> i32 {
-    let time = NaiveTime::parse_from_str(time, DEFAULT_TIME_FORMAT);
+    let time = NaiveTime::parse_from_str(time, "%H:%M:%S");
     match time {
         Ok(time) => naive_time_to_i32(time),
         Err(_) => -1,
