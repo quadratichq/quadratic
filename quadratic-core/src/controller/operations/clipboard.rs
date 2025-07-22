@@ -2124,4 +2124,73 @@ mod test {
         );
         assert!(should_rerun);
     }
+
+    #[test]
+    fn test_copy_paste_table_column() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
+
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+
+        assert_data_table_column(
+            data_table,
+            1,
+            vec![
+                "region", "MA", "MA", "MA", "MA", "MA", "MO", "NJ", "OH", "OR", "NH",
+            ],
+        );
+
+        assert_data_table_column(
+            data_table,
+            3,
+            vec![
+                "population",
+                "9686",
+                "14061",
+                "29313",
+                "38334",
+                "152227",
+                "150443",
+                "14976",
+                "64325",
+                "56032",
+                "42605",
+            ],
+        );
+
+        let JsClipboard { html, plain_text } = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::test_a1_context(&format!("{file_name}[region]"), gc.a1_context()),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                false,
+            )
+            .unwrap();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_context(&format!("{file_name}[population]"), gc.a1_context()),
+            Some(plain_text),
+            Some(html),
+            PasteSpecial::None,
+            None,
+        );
+
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+
+        assert_data_table_column(
+            data_table,
+            1,
+            vec![
+                "region", "MA", "MA", "MA", "MA", "MA", "MO", "NJ", "OH", "OR", "NH",
+            ],
+        );
+
+        assert_data_table_column(
+            data_table,
+            3,
+            vec![
+                "region2", "MA", "MA", "MA", "MA", "MA", "MO", "NJ", "OH", "OR", "NH",
+            ],
+        );
+    }
 }
