@@ -230,23 +230,26 @@ export const AIUserMessageForm = memo(
         onSubmit={(e) => e.preventDefault()}
         onClick={handleClickForm}
         onPaste={handlePasteOrDrop}
-        onDrop={handlePasteOrDrop}
-        onDragEnter={handleDrag}
-        onDragOver={handleDrag}
       >
-        {editing && dragOver && (
-          <div
-            className="absolute bottom-[-2px] left-[-2px] right-[-2px] top-[-2px] z-20 flex flex-col items-center justify-center rounded bg-background opacity-90"
-            onDrop={handlePasteOrDrop}
-            onDragLeave={handleDrag}
-          >
-            <div className="absolute bottom-2 left-2 right-2 top-2 z-20 rounded-md border-4 border-dashed border-primary" />
-            <div className="pointer-events-none relative z-10 flex select-none flex-col items-center justify-center rounded-lg p-4">
-              <span className="text-sm font-bold">Drop files here</span>
-              <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
+        <div
+          className="absolute bottom-2 left-2 right-2 top-2 z-20"
+          onDrop={handlePasteOrDrop}
+          onDragEnter={handleDrag}
+        >
+          {editing && dragOver && (
+            <div
+              className="z-20 flex h-full w-full flex-col items-center justify-center rounded bg-background opacity-90"
+              onDrop={handlePasteOrDrop}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+            >
+              <div className="pointer-events-none relative z-10 flex h-full w-full select-none flex-col items-center justify-center rounded-md border-4 border-dashed border-primary p-4">
+                <span className="text-sm font-bold">Drop files here</span>
+                <span className="pl-4 pr-4 text-center text-xs text-muted-foreground">{dragOverMessage}</span>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         <EditButton
           show={!editing && !loading && waitingOnMessageIndex === undefined}
