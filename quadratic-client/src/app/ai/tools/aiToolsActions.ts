@@ -7,7 +7,10 @@ import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
+  BorderSelection,
+  BorderStyle,
   CellAlign,
+  CellBorderLine,
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
@@ -20,6 +23,7 @@ import { stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-cor
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
+import Color from 'color';
 import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -900,6 +904,48 @@ export const aiToolsActions: AIToolActionsRecord = {
       {
         type: 'text',
         text: 'Resize rows tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.SetBorders]: async (args) => {
+    const { sheet_name, selection, color, line, border_selection } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    let jsSelection: JsSelection | undefined;
+    try {
+      jsSelection = sheets.stringToSelection(selection, sheetId);
+    } catch (e: any) {
+      return [
+        {
+          type: 'text',
+          text: `Invalid selection in SetBorders tool call: ${e.message}.`,
+        },
+      ];
+    }
+
+    let borderSelection: BorderSelection = border_selection.toLowerCase() as BorderSelection;
+    if (
+      !['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'].includes(
+        borderSelection
+      )
+    ) {
+      borderSelection = 'all';
+    }
+
+    let lineStyle: CellBorderLine = line.toLowerCase() as CellBorderLine;
+    if (!['line1', 'line2', 'line3', 'dotted', 'dashed', 'double', 'clear'].includes(lineStyle)) {
+      lineStyle = 'line1';
+    }
+
+    const style: BorderStyle = {
+      line: lineStyle,
+      color: Color.
+    }
+
+    quadraticCore.setBorders(jsSelection.save(), borderSelection, style, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Set borders tool executed successfully.',
       },
     ];
   },
