@@ -1,5 +1,6 @@
 use crate::CellValue;
 use crate::Pos;
+use crate::a1::A1Context;
 use crate::grid::CellAlign;
 use crate::grid::CellVerticalAlign;
 use crate::grid::CellWrap;
@@ -12,18 +13,45 @@ use crate::{
 };
 
 // Macro to handle format checking logic
+// Example usage of check_format! macro:
+//
+// let mut bold: Option<Option<bool>> = Some(Some(true));
+// check_format!(bold, sheet.formats.bold, range, true);
+//
+// This expands to:
+// if !bold.as_ref().is_some_and(|format| format.is_none()) {
+//     let set = sheet.formats.bold.unique_values_in_range(range);
+//     if set.len() > 1 {
+//         // Multiple different values found, mark as inconsistent
+//         bold = Some(None);
+//     } else if let Some(Some(new_format)) = set.into_iter().next() {
+//         if let Some(Some(current_format)) = bold.as_ref() {
+//             if current_format != &new_format {
+//                 // New value differs from current, mark as inconsistent
+//                 bold = Some(None);
+//             }
+//         } else {
+//             // No current value, use the new value
+//             bold = Some(Some(new_format));
+//         }
+//     }
+// }
+
 macro_rules! check_format {
     ($format_var:ident, $formats_field:expr, $range:expr) => {
         if !$format_var.as_ref().is_some_and(|format| format.is_none()) {
             let set = $formats_field.unique_values_in_range($range);
             if set.len() > 1 {
+                // Multiple different values found, mark as inconsistent
                 $format_var = Some(None);
             } else if let Some(Some(new_format)) = set.into_iter().next() {
                 if let Some(Some(current_format)) = $format_var.as_ref() {
                     if current_format != &new_format {
+                        // New value differs from current, mark as inconsistent
                         $format_var = Some(None);
                     }
                 } else {
+                    // No current value, use the new value
                     $format_var = Some(Some(new_format));
                 }
             }
@@ -61,7 +89,11 @@ impl Sheet {
 
     /// Gets the common formatting for a selection. Note: this does not pass any
     /// information about date or time.
-    pub fn format_selection(&self, selection: &A1Selection) -> CellFormatSummary {
+    pub fn format_selection(
+        &self,
+        selection: &A1Selection,
+        context: &A1Context,
+    ) -> CellFormatSummary {
         // track styles set on ranges
         // - None means the style has not been set in the range
         // - Some(None) means the style is not consistent
@@ -79,23 +111,60 @@ impl Sheet {
         let mut underline: Option<Option<bool>> = None;
         let mut strike_through: Option<Option<bool>> = None;
 
-        selection.ranges.iter().for_each(|range| match range {
-            CellRefRange::Sheet { range } => {
-                check_format!(align, self.formats.align, *range);
-                check_format!(vertical_align, self.formats.vertical_align, *range);
-                check_format!(wrap, self.formats.wrap, *range);
-                check_format!(numeric_format, self.formats.numeric_format, *range);
-                check_format!(numeric_decimals, self.formats.numeric_decimals, *range);
-                check_format!(numeric_commas, self.formats.numeric_commas, *range);
-                check_format!(bold, self.formats.bold, *range);
-                check_format!(italic, self.formats.italic, *range);
-                check_format!(text_color, self.formats.text_color, *range);
-                check_format!(fill_color, self.formats.fill_color, *range);
-                check_format!(underline, self.formats.underline, *range);
-                check_format!(strike_through, self.formats.strike_through, *range);
+        selection.ranges.iter().for_each(|range| {
+            // convert table ranges to sheet ranges to make this easier
+            let range = match range {
+                CellRefRange::Table { range } => {
+                    if let Some(range) =
+                        range.convert_to_ref_range_bounds(false, context, false, false)
+                    {
+                        range
+                    } else {
+                        return;
+                    }
+                }
+                CellRefRange::Sheet { range } => *range,
+            };
+
+            check_format!(align, self.formats.align, range);
+            check_format!(vertical_align, self.formats.vertical_align, range);
+            check_format!(wrap, self.formats.wrap, range);
+            check_format!(numeric_format, self.formats.numeric_format, range);
+            check_format!(numeric_decimals, self.formats.numeric_decimals, range);
+            check_format!(numeric_commas, self.formats.numeric_commas, range);
+            check_format!(bold, self.formats.bold, range);
+            check_format!(italic, self.formats.italic, range);
+            check_format!(text_color, self.formats.text_color, range);
+            check_format!(fill_color, self.formats.fill_color, range);
+            check_format!(underline, self.formats.underline, range);
+            check_format!(strike_through, self.formats.strike_through, range);
+
+            if let Some(rect) = range.to_rect() {
+                self.data_tables_intersect_rect_sorted(rect)
+                    .for_each(|(_, pos, data_table)| {
+                        // adjust the range by the data table position and
+                        // add any formatting from the data table to the
+                        // current formatting
+                        let range = range.translate_unchecked(
+                            -pos.x + 1,
+                            -pos.y - data_table.y_adjustment(true) + 1,
+                        );
+                        if let Some(formats) = data_table.formats.as_ref() {
+                            check_format!(align, formats.align, range);
+                            check_format!(vertical_align, formats.vertical_align, range);
+                            check_format!(wrap, formats.wrap, range);
+                            check_format!(numeric_format, formats.numeric_format, range);
+                            check_format!(numeric_decimals, formats.numeric_decimals, range);
+                            check_format!(numeric_commas, formats.numeric_commas, range);
+                            check_format!(bold, formats.bold, range);
+                            check_format!(italic, formats.italic, range);
+                            check_format!(text_color, formats.text_color, range);
+                            check_format!(fill_color, formats.fill_color, range);
+                            check_format!(underline, formats.underline, range);
+                            check_format!(strike_through, formats.strike_through, range);
+                        }
+                    });
             }
-            // todo...
-            CellRefRange::Table { .. } => (),
         });
 
         CellFormatSummary {
@@ -118,7 +187,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use crate::{a1::A1Selection, test_util::*};
+    use crate::{a1::A1Selection, grid::formats::FormatUpdate, test_util::*};
 
     #[test]
     fn test_format_selection() {
@@ -132,20 +201,44 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
 
-        let summary = sheet.format_selection(&A1Selection::test_a1("A1:A5"));
+        let summary = sheet.format_selection(&A1Selection::test_a1("A1:A5"), gc.a1_context());
         assert_eq!(summary.bold, Some(true));
         assert_eq!(summary.italic, None);
 
-        let summary = sheet.format_selection(&A1Selection::test_a1("A1:A10"));
+        let summary = sheet.format_selection(&A1Selection::test_a1("A1:A10"), gc.a1_context());
         assert_eq!(summary.bold, None);
         assert_eq!(summary.italic, None);
 
-        let summary = sheet.format_selection(&A1Selection::test_a1("B1:B5"));
+        let summary = sheet.format_selection(&A1Selection::test_a1("B1:B5"), gc.a1_context());
         assert_eq!(summary.bold, None);
         assert_eq!(summary.italic, Some(true));
 
-        let summary = sheet.format_selection(&A1Selection::test_a1("A1:B5"));
+        let summary = sheet.format_selection(&A1Selection::test_a1("A1:B5"), gc.a1_context());
         assert_eq!(summary.bold, None);
         assert_eq!(summary.italic, None);
+    }
+
+    #[test]
+    fn test_format_selection_with_data_tables() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![B1], 2, 2);
+
+        gc.set_bold(&A1Selection::test_a1("B3"), Some(true), None)
+            .unwrap();
+
+        gc.set_formats(
+            &A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
+            FormatUpdate {
+                italic: Some(Some(true)),
+                ..Default::default()
+            },
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let summary = sheet.format_selection(&A1Selection::test_a1("B3"), gc.a1_context());
+        assert_eq!(summary.bold, Some(true));
+        assert_eq!(summary.italic, Some(true));
     }
 }
