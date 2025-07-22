@@ -213,7 +213,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(decimal_from_str("10.55").unwrap())
+            CellValue::Number(decimal_from_str(".1055").unwrap())
         );
         assert_eq!(
             get_cell_numeric_format(&gc),

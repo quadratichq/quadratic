@@ -6,7 +6,6 @@ use columns::SheetColumns;
 use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
 use regex::Regex;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
 
@@ -236,29 +235,12 @@ impl Sheet {
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
             ) {
-                let is_percent =
-                    self.cell_format_numeric_kind(pos) == NumericFormatKind::Percentage;
-                if is_percent {
-                    if let CellValue::Number(n) = cell_value {
-                        return Some(CellValue::Number(n * Decimal::from(100)));
-                    }
-                }
                 return Some(cell_value.clone());
             }
         }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
-        if let Some(cell_value) = self.get_code_cell_value(pos) {
-            let is_percent = self.cell_format_numeric_kind(pos) == NumericFormatKind::Percentage;
-            if is_percent {
-                if let CellValue::Number(n) = cell_value {
-                    return Some(CellValue::Number(n * Decimal::from(100)));
-                }
-            }
-            Some(cell_value.clone())
-        } else {
-            None
-        }
+        self.get_code_cell_value(pos)
     }
 
     /// Returns the JsCellValue at a position
