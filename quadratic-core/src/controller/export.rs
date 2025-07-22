@@ -13,7 +13,7 @@ use crate::{
     CellValue, Pos,
     a1::{A1Selection, CellRefRange},
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{CellAlign, CellVerticalAlign, CodeCellLanguage, GridBounds, NumericFormatKind},
+    grid::{CellAlign, CellVerticalAlign, CodeCellLanguage, GridBounds, NumericFormatKind, Sheet},
 };
 
 impl GridController {
@@ -51,11 +51,13 @@ impl GridController {
                     }
                 }
             }
+
             if !line.is_empty() {
                 writer.write_record(line)?;
             }
         }
         let output = String::from_utf8(writer.into_inner()?)?;
+
         Ok(output)
     }
 
@@ -68,198 +70,55 @@ impl GridController {
         let error = |e: XlsxError| anyhow!("Error exporting excel file: {}", e);
 
         for sheet in self.sheets() {
+            // add the sheet to the workbook and set the name
             let worksheet = workbook.add_worksheet();
             worksheet
                 .set_name(&sheet.name.to_string())
                 .map_err(|e| anyhow!("Error creating excel sheet: {}", e))?;
 
+            // column widths
             let custom_column_widths: Vec<(i64, f64)> =
                 sheet.offsets.custom_column_widths().collect();
 
             for (col, width) in custom_column_widths {
                 let excel_col = (col - 1) as u16;
+                // convert from pixels to Excel column width units
                 let excel_width = width / 7.0;
 
                 worksheet
                     .set_column_width(excel_col, excel_width)
-                    .map_err(|e| anyhow!("Error setting column width: {}", e))?;
+                    .map_err(error)?;
             }
 
+            // row heights
             let custom_row_heights: Vec<(i64, f64)> = sheet.offsets.custom_row_heights().collect();
 
             for (row, height) in custom_row_heights {
                 let excel_row = (row - 1) as u32;
-                let excel_height = height / 1.5; // Convert from pixels to Excel row height units
+                // convert from pixels to Excel row height units
+                let excel_height = height / 1.5;
 
                 worksheet
                     .set_row_height(excel_row, excel_height)
-                    .map_err(|e| anyhow!("Error setting row height: {}", e))?;
+                    .map_err(error)?;
             }
-
-            let row_col = |pos: Pos| (pos.y as u32 - 1, pos.x as u16 - 1);
-
-            let get_formats = |mut v: CellValue, pos: Pos| {
-                let mut format = Format::new();
-                let formats = sheet.formats.to_owned();
-                let bold = formats.bold.get(pos).unwrap_or(false);
-                let italic = formats.italic.get(pos).unwrap_or(false);
-                let underline = formats.underline.get(pos).unwrap_or(false);
-                let strike_through = formats.strike_through.get(pos).unwrap_or(false);
-                let date_time_format = formats.date_time.get(pos);
-
-                if bold {
-                    format = format.set_bold();
-                }
-
-                if italic {
-                    format = format.set_italic();
-                }
-
-                if underline {
-                    format = format.set_underline(FormatUnderline::Single);
-                }
-
-                if strike_through {
-                    format = format.set_font_strikethrough();
-                }
-
-                if let Some(text_color) = formats.text_color.get(pos) {
-                    format = format.set_font_color(text_color.as_str());
-                }
-
-                if let Some(fill_color) = formats.fill_color.get(pos) {
-                    format = format.set_pattern(FormatPattern::Solid);
-                    format = format.set_background_color(fill_color.as_str());
-                }
-
-                if let Some(align) = formats.align.get(pos) {
-                    let align = match align {
-                        CellAlign::Left => FormatAlign::Left,
-                        CellAlign::Center => FormatAlign::Center,
-                        CellAlign::Right => FormatAlign::Right,
-                    };
-                    format = format.set_align(align);
-                }
-
-                if let Some(vertical_align) = formats.vertical_align.get(pos) {
-                    let align = match vertical_align {
-                        CellVerticalAlign::Top => FormatAlign::Top,
-                        CellVerticalAlign::Middle => FormatAlign::VerticalCenter,
-                        CellVerticalAlign::Bottom => FormatAlign::Bottom,
-                    };
-                    format = format.set_align(align);
-                }
-
-                if let Some(_) = formats.wrap.get(pos) {
-                    format = format.set_text_wrap();
-                }
-
-                let mut num_format = String::new();
-
-                if let Some(numeric_format) = formats.numeric_format.get(pos) {
-                    match numeric_format.kind {
-                        NumericFormatKind::Percentage => {
-                            match &mut v {
-                                CellValue::Number(n) => {
-                                    *n = n
-                                        .checked_div(
-                                            Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO),
-                                        )
-                                        .unwrap_or(Decimal::ZERO);
-                                }
-                                _ => {}
-                            }
-                            num_format = "0.0%".to_string()
-                        }
-                        NumericFormatKind::Currency => num_format = "$0.00".to_string(),
-                        NumericFormatKind::Number => {}
-                        NumericFormatKind::Exponential => num_format = "0.00E+00".to_string(),
-                    }
-                }
-
-                // this needs to be before the numeric decimals
-                if let Some(numeric_commas) = formats.numeric_commas.get(pos) {
-                    if numeric_commas {
-                        num_format = format!("#,##0");
-                    }
-                }
-
-                if let Some(numeric_decimals) = formats.numeric_decimals.get(pos) {
-                    num_format = format!("{num_format}.{}", "0".repeat(numeric_decimals as usize));
-                }
-
-                if !num_format.is_empty() {
-                    format = format.set_num_format(num_format);
-                } else if let Some(date_time_format) = date_time_format {
-                    format = format.set_num_format(chrono_to_excel_format(&date_time_format));
-                } else {
-                    // we need to use default date time format for dates, times, and date times
-                    // where the format isn't explicitly set
-                    match v {
-                        CellValue::Date(_) => {
-                            format =
-                                format.set_num_format(chrono_to_excel_format(&DEFAULT_DATE_FORMAT))
-                        }
-                        CellValue::Time(_) => {
-                            format =
-                                format.set_num_format(chrono_to_excel_format(&DEFAULT_TIME_FORMAT))
-                        }
-                        CellValue::DateTime(_) => {
-                            format = format
-                                .set_num_format(chrono_to_excel_format(&DEFAULT_DATE_TIME_FORMAT))
-                        }
-                        _ => {}
-                    }
-                }
-
-                (v, format)
-            };
-
-            let write_value = |worksheet: &mut Worksheet, pos: Pos| -> Option<Result<()>> {
-                sheet.display_value(pos).and_then(|v| {
-                    let (row, col) = row_col(pos);
-                    let (cell_value, format) = get_formats(v, pos);
-
-                    let result = match &cell_value {
-                        CellValue::Number(n) => {
-                            worksheet.write_number(row, col, n.to_f64().unwrap_or(0.0))
-                        }
-                        CellValue::Text(s) => worksheet.write_string(row, col, s),
-                        CellValue::Date(d) => worksheet.write_datetime(row, col, d),
-                        CellValue::Time(t) => worksheet.write_datetime(row, col, t),
-                        CellValue::DateTime(dt) => worksheet.write_datetime(row, col, dt),
-                        CellValue::Logical(b) => worksheet.write_boolean(row, col, *b),
-                        _ => worksheet.write_string(row, col, cell_value.to_string()),
-                    }
-                    .map(|_| ())
-                    .map_err(error);
-
-                    if let Err(e) = worksheet.set_cell_format(row, col, &format) {
-                        dbgjs!(format!("Error setting cell format: {}", e));
-                    }
-
-                    Some(result)
-                })
-            };
 
             // add grid values to the worksheet
             match sheet.bounds(true) {
                 GridBounds::Empty => continue,
                 GridBounds::NonEmpty(rect) => {
-                    for Pos { x, y } in rect.iter() {
-                        let pos = Pos { x, y };
-                        let (row, col) = row_col(pos);
+                    for pos in rect.iter() {
+                        let (row, col) = (pos.y as u32 - 1, pos.x as u16 - 1);
                         let mut is_formula = false;
 
-                        // only preserve formulas
+                        // only preserve formula data tables
                         if let Some(cell_value) = sheet.cell_value(pos) {
                             if let CellValue::Code(code_cell_value) = &cell_value {
                                 if code_cell_value.language == CodeCellLanguage::Formula {
                                     // TODO(ddimaria): handle array output
                                     if let Some(value) = sheet.display_value(pos) {
-                                        let code = code_cell_value.code.as_str();
                                         worksheet
-                                            .write_formula(row, col, code)
+                                            .write_formula(row, col, code_cell_value.code.as_str())
                                             .map_err(error)?
                                             .set_formula_result(row, col, value.to_string());
                                     }
@@ -270,9 +129,7 @@ impl GridController {
 
                         // flatten all non-formula data
                         if !is_formula {
-                            if let Some(result) = write_value(worksheet, pos) {
-                                result?;
-                            }
+                            write_excel_value(worksheet, pos, col, row, sheet)?;
                         }
                     }
                 }
@@ -287,6 +144,151 @@ impl GridController {
     }
 }
 
+/// Writes a value to an excel worksheet and sets the format.
+fn write_excel_value(
+    worksheet: &mut Worksheet,
+    pos: Pos,
+    col: u16,
+    row: u32,
+    sheet: &Sheet,
+) -> Result<()> {
+    if let Some(v) = sheet.display_value(pos) {
+        let (cell_value, format) = get_excel_formats(v, pos, sheet);
+
+        let result = match &cell_value {
+            CellValue::Number(n) => worksheet.write_number(row, col, n.to_f64().unwrap_or(0.0)),
+            CellValue::Text(s) => worksheet.write_string(row, col, s),
+            CellValue::Date(d) => worksheet.write_datetime(row, col, d),
+            CellValue::Time(t) => worksheet.write_datetime(row, col, t),
+            CellValue::DateTime(dt) => worksheet.write_datetime(row, col, dt),
+            CellValue::Logical(b) => worksheet.write_boolean(row, col, *b),
+            _ => worksheet.write_string(row, col, cell_value.to_string()),
+        }
+        .map(|_| ())
+        .map_err(|e| anyhow!("Error writing excel value: {}", e));
+
+        worksheet.set_cell_format(row, col, &format)?;
+
+        return result;
+    }
+
+    Ok(())
+}
+
+/// Gets the excel formats for a cell value.
+fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, Format) {
+    let mut format = Format::new();
+    let formats = sheet.formats.to_owned();
+    let bold = formats.bold.get(pos).unwrap_or(false);
+    let italic = formats.italic.get(pos).unwrap_or(false);
+    let underline = formats.underline.get(pos).unwrap_or(false);
+    let strike_through = formats.strike_through.get(pos).unwrap_or(false);
+    let date_time_format = formats.date_time.get(pos);
+
+    if bold {
+        format = format.set_bold();
+    }
+
+    if italic {
+        format = format.set_italic();
+    }
+
+    if underline {
+        format = format.set_underline(FormatUnderline::Single);
+    }
+
+    if strike_through {
+        format = format.set_font_strikethrough();
+    }
+
+    if let Some(text_color) = formats.text_color.get(pos) {
+        format = format.set_font_color(text_color.as_str());
+    }
+
+    if let Some(fill_color) = formats.fill_color.get(pos) {
+        format = format.set_pattern(FormatPattern::Solid);
+        format = format.set_background_color(fill_color.as_str());
+    }
+
+    if let Some(align) = formats.align.get(pos) {
+        let align = match align {
+            CellAlign::Left => FormatAlign::Left,
+            CellAlign::Center => FormatAlign::Center,
+            CellAlign::Right => FormatAlign::Right,
+        };
+        format = format.set_align(align);
+    }
+
+    if let Some(vertical_align) = formats.vertical_align.get(pos) {
+        let align = match vertical_align {
+            CellVerticalAlign::Top => FormatAlign::Top,
+            CellVerticalAlign::Middle => FormatAlign::VerticalCenter,
+            CellVerticalAlign::Bottom => FormatAlign::Bottom,
+        };
+        format = format.set_align(align);
+    }
+
+    if let Some(_) = formats.wrap.get(pos) {
+        format = format.set_text_wrap();
+    }
+
+    let mut num_format = String::new();
+
+    if let Some(numeric_format) = formats.numeric_format.get(pos) {
+        match numeric_format.kind {
+            NumericFormatKind::Percentage => {
+                match &mut v {
+                    CellValue::Number(n) => {
+                        *n = n
+                            .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
+                            .unwrap_or(Decimal::ZERO);
+                    }
+                    _ => {}
+                }
+                num_format = "0.0%".to_string()
+            }
+            NumericFormatKind::Currency => num_format = "$0.00".to_string(),
+            NumericFormatKind::Number => {}
+            NumericFormatKind::Exponential => num_format = "0.00E+00".to_string(),
+        }
+    }
+
+    // this needs to be before the numeric decimals
+    if let Some(numeric_commas) = formats.numeric_commas.get(pos) {
+        if numeric_commas {
+            num_format = format!("#,##0");
+        }
+    }
+
+    if let Some(numeric_decimals) = formats.numeric_decimals.get(pos) {
+        num_format = format!("{num_format}.{}", "0".repeat(numeric_decimals as usize));
+    }
+
+    if !num_format.is_empty() {
+        format = format.set_num_format(num_format);
+    } else if let Some(date_time_format) = date_time_format {
+        format = format.set_num_format(chrono_to_excel_format(&date_time_format));
+    } else {
+        // we need to use default date time format for dates, times, and date times
+        // where the format isn't explicitly set
+        match v {
+            CellValue::Date(_) => {
+                format = format.set_num_format(chrono_to_excel_format(&DEFAULT_DATE_FORMAT))
+            }
+            CellValue::Time(_) => {
+                format = format.set_num_format(chrono_to_excel_format(&DEFAULT_TIME_FORMAT))
+            }
+            CellValue::DateTime(_) => {
+                format = format.set_num_format(chrono_to_excel_format(&DEFAULT_DATE_TIME_FORMAT))
+            }
+            _ => {}
+        }
+    }
+
+    (v, format)
+}
+
+/// Converts a chrono format to an excel format.
 pub fn chrono_to_excel_format(chrono_format: &str) -> String {
     let mut mapping = HashMap::new();
 
@@ -341,10 +343,10 @@ mod tests {
     use super::*;
 
     use crate::{
-        Array, SheetPos,
+        Array,
         controller::{
-            active_transactions::transaction_name::TransactionName,
-            operations::operation::Operation, user_actions::import::tests::simple_csv,
+            execution::execute_operation::execute_data_table::tests::assert_flattened_simple_csv,
+            user_actions::import::tests::simple_csv,
         },
     };
 
@@ -387,12 +389,46 @@ mod tests {
 
     #[test]
     fn exports_excel() {
-        let (mut gc, sheet_id, pos, _) = simple_csv();
-        let op = Operation::FlattenDataTable {
-            sheet_pos: SheetPos::from((pos, sheet_id)),
-        };
-        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
+        let (gc, ..) = simple_csv();
+        let file_name = "test.xlsx";
         let excel = gc.export_excel();
-        println!("{excel:?}");
+
+        assert!(excel.is_ok());
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        // avoid collision with the default sheet
+        gc.grid.update_sheet_name(sheet_id, "ignore").unwrap();
+
+        gc.import_excel(&excel.unwrap(), file_name, None).unwrap();
+        let sheet_id = gc.sheet_ids()[1];
+        let pos = Pos { x: 1, y: 1 };
+
+        assert_flattened_simple_csv(&gc, sheet_id, pos, file_name);
+
+        // TODO(ddimaria): test excel file formatting by importing back into the grid
+    }
+
+    #[test]
+    fn test_write_excel_value() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+        let pos = Pos { x: 1, y: 1 };
+        let mut workbook = Workbook::new();
+        let worksheet = workbook.add_worksheet();
+        write_excel_value(worksheet, pos, 0, 0, sheet).unwrap();
+        let buffer = workbook.save_to_buffer();
+
+        assert!(buffer.is_ok());
+    }
+
+    #[test]
+    fn test_converts_chrono_format_to_excel_format() {
+        let result = chrono_to_excel_format("%Y-%m-%d");
+        assert_eq!(result, "yyyy-mm-dd");
+
+        let result = chrono_to_excel_format("%Y-%m-%d %H:%M:%S");
+        assert_eq!(result, "yyyy-mm-dd hh:mm:ss");
     }
 }
