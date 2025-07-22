@@ -99,7 +99,7 @@ impl GridController {
             // add the sheet to the workbook and set the name
             let worksheet = workbook.add_worksheet();
             worksheet
-                .set_name(&sheet.name.to_string())
+                .set_name(sheet.name.to_string())
                 .map_err(|e| anyhow!("Error creating excel sheet: {}", e))?;
 
             // column widths
@@ -139,49 +139,44 @@ impl GridController {
 
                         // data table output
                         if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos) {
-                            if let Some(cell_value) = sheet.cell_value(pos) {
-                                if let CellValue::Code(code_cell_value) = &cell_value {
-                                    let is_formula =
-                                        code_cell_value.language == CodeCellLanguage::Formula;
-                                    is_formula_output =
-                                        data_table.get_language() == CodeCellLanguage::Formula;
+                            if let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
+                                let is_formula =
+                                    code_cell_value.language == CodeCellLanguage::Formula;
+                                is_formula_output =
+                                    data_table.get_language() == CodeCellLanguage::Formula;
 
-                                    if is_formula {
-                                        let code = code_cell_value.code.as_str();
-                                        let display_value = data_table.display_value(false)?;
+                                // we currently only care about formualas
+                                if is_formula {
+                                    let code = code_cell_value.code.as_str();
+                                    let display_value = data_table.display_value(false)?;
 
-                                        match display_value {
-                                            Value::Single(value) => {
-                                                worksheet
-                                                    .write_formula(row, col, code)
-                                                    .map_err(error)?
-                                                    .set_formula_result(
-                                                        row,
-                                                        col,
-                                                        value.to_string(),
-                                                    );
-                                            }
-                                            Value::Array(array) => {
-                                                let size = array.size();
-                                                let last_row = row + size.h.get() - 1;
-                                                let last_col = col + size.w.get() as u16 - 1;
-
-                                                worksheet
-                                                    .write_array_formula(
-                                                        row, col, last_row, last_col, code,
-                                                    )
-                                                    .map_err(error)?;
-                                            }
-                                            // we don't expect tuples
-                                            _ => bail!("Unexpected value type"),
+                                    match display_value {
+                                        Value::Single(value) => {
+                                            worksheet
+                                                .write_formula(row, col, code)
+                                                .map_err(error)?
+                                                .set_formula_result(row, col, value.to_string());
                                         }
+                                        Value::Array(array) => {
+                                            let size = array.size();
+                                            let last_row = row + size.h.get() - 1;
+                                            let last_col = col + size.w.get() as u16 - 1;
+
+                                            worksheet
+                                                .write_array_formula(
+                                                    row, col, last_row, last_col, code,
+                                                )
+                                                .map_err(error)?;
+                                        }
+                                        // we don't expect tuples
+                                        _ => bail!("Unexpected value type"),
                                     }
                                 }
                             }
                         }
 
+                        // flatten all non-formula data
                         if !is_formula_output {
-                            // flatten all non-formula data
                             write_excel_value(worksheet, pos, col, row, sheet)?;
                         }
                     }
@@ -281,7 +276,7 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
         format = format.set_align(align);
     }
 
-    if let Some(_) = formats.wrap.get(pos) {
+    if formats.wrap.get(pos).is_some() {
         format = format.set_text_wrap();
     }
 
@@ -290,15 +285,12 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
     if let Some(numeric_format) = formats.numeric_format.get(pos) {
         match numeric_format.kind {
             NumericFormatKind::Percentage => {
-                match &mut v {
-                    CellValue::Number(n) => {
-                        *n = n
-                            .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
-                            .unwrap_or(Decimal::ZERO);
-                    }
-                    _ => {}
+                if let CellValue::Number(n) = &mut v {
+                    *n = n
+                        .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
+                        .unwrap_or(Decimal::ZERO);
                 }
-                num_format = "0.0%".to_string()
+                num_format = "0.0%".to_string();
             }
             NumericFormatKind::Currency => num_format = "$0.00".to_string(),
             NumericFormatKind::Number => {}
@@ -309,7 +301,7 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
     // this needs to be before the numeric decimals
     if let Some(numeric_commas) = formats.numeric_commas.get(pos) {
         if numeric_commas {
-            num_format = format!("#,##0");
+            num_format = "#,##0".to_string();
         }
     }
 
@@ -326,13 +318,13 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
         // where the format isn't explicitly set
         match v {
             CellValue::Date(_) => {
-                format = format.set_num_format(chrono_to_excel_format(&DEFAULT_DATE_FORMAT))
+                format = format.set_num_format(chrono_to_excel_format(DEFAULT_DATE_FORMAT));
             }
             CellValue::Time(_) => {
-                format = format.set_num_format(chrono_to_excel_format(&DEFAULT_TIME_FORMAT))
+                format = format.set_num_format(chrono_to_excel_format(DEFAULT_TIME_FORMAT));
             }
             CellValue::DateTime(_) => {
-                format = format.set_num_format(chrono_to_excel_format(&DEFAULT_DATE_TIME_FORMAT))
+                format = format.set_num_format(chrono_to_excel_format(DEFAULT_DATE_TIME_FORMAT));
             }
             _ => {}
         }
@@ -350,7 +342,7 @@ pub fn chrono_to_excel_format(chrono_format: &str) -> String {
     while let Some(ch) = chars.next() {
         if ch == '%' {
             if let Some(&next_ch) = chars.peek() {
-                let specifier = format!("%{}", next_ch);
+                let specifier = format!("%{next_ch}");
 
                 if let Some(&excel_code) = mapping.get(specifier.as_str()) {
                     result.push_str(excel_code);
