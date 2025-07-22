@@ -803,7 +803,7 @@ The label is a descriptive label for the prompt suggestion with maximum 40 chara
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
     parameters: {
       type: 'object',
@@ -838,7 +838,7 @@ The label is a descriptive label for the prompt suggestion with maximum 40 chara
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
   },
   [AITool.PDFImport]: {
