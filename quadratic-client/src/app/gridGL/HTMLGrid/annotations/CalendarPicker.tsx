@@ -134,7 +134,7 @@ export const CalendarPicker = () => {
   if (!showCalendar || !date || !value) return null;
 
   return (
-    <div className="pointer-events-auto border bg-white shadow">
+    <div className="pointer-up-ignore pointer-events-auto border bg-white shadow">
       <div className="px-1 pb-0 pt-1 text-right">
         <IconButton sx={{ padding: 0, width: 20, height: 20 }} onClick={close}>
           <Close sx={{ padding: 0, width: 15, height: 15 }} />

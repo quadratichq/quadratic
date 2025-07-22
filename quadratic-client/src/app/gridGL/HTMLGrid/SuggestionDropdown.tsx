@@ -161,7 +161,7 @@ export const SuggestionDropDown = () => {
         maxHeight: `min(50vh, calc(${pixiApp.viewport.bottom - offsets.bottom}px))`,
       }}
     >
-      <div className="block w-full px-1">
+      <div className="pointer-up-ignore block w-full px-1">
         {filteredList.map((item, i) => (
           <div
             className={cn('block w-full whitespace-nowrap px-1 hover:bg-accent', i === index ? 'bg-accent' : '')}
