@@ -411,7 +411,7 @@ export class CellLabel {
     const chars = [];
     const lineWidths: number[] = [];
     const lineSpaces: number[] = [];
-    const displayText = originalText.replace(/(?:\r\n|\r)/g, '\n') || ' ';
+    const displayText = originalText.replace(/(?:\r\n|\r)/g, '\n') || '';
     const charsInput = splitTextToCharacters(displayText);
     const scale = this.fontSize / data.size;
     const maxWidth = this.maxWidth;
