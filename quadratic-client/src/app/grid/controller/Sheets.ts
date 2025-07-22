@@ -148,6 +148,7 @@ export class Sheets {
     pixiApp.gridLines.dirty = true;
     pixiApp.cursor.dirty = true;
     pixiApp.multiplayerCursor.dirty = true;
+    events.emit('sheetOffsetsUpdated', sheetId);
   };
 
   private setCursor = (selection?: string) => {

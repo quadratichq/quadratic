@@ -46,14 +46,14 @@ export class Borders extends Container {
     this.spriteLines = [];
 
     events.on('bordersSheet', this.drawSheetCells);
-    events.on('sheetOffsets', this.sheetOffsetsChanged);
+    events.on('sheetOffsetsUpdated', this.sheetOffsetsChanged);
     events.on('resizeHeadingColumn', this.sheetOffsetsChanged);
     events.on('resizeHeadingRow', this.sheetOffsetsChanged);
   }
 
   destroy() {
     events.off('bordersSheet', this.drawSheetCells);
-    events.off('sheetOffsets', this.sheetOffsetsChanged);
+    events.off('sheetOffsetsUpdated', this.sheetOffsetsChanged);
     events.off('resizeHeadingColumn', this.sheetOffsetsChanged);
     events.off('resizeHeadingRow', this.sheetOffsetsChanged);
     super.destroy();
