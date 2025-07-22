@@ -94,17 +94,19 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         match self.import_excel(&file, file_name, cursor) {
-            Ok(_) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
+            Ok(_) => Ok(JsResponse {
                 result: true,
                 error: None,
-            })?),
+            }
+            .into()),
             Err(e) => {
                 let error = format!("Error importing Excel file: {file_name:?}, error: {e:?}");
                 dbgjs!(&error);
-                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                Ok(JsResponse {
                     result: false,
                     error: Some(error),
-                })?)
+                }
+                .into())
             }
         }
     }

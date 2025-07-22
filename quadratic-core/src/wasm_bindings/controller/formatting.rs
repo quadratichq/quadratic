@@ -19,17 +19,15 @@ impl GridController {
     /// Returns a summary of the formatting in a region as a
     /// [`CellFormatSummary`].
     #[wasm_bindgen(js_name = "getCellFormatSummary")]
-    pub fn js_cell_format_summary(
-        &self,
-        sheet_id: String,
-        pos: String,
-    ) -> Result<JsValue, JsValue> {
-        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
+    pub fn js_cell_format_summary(&self, sheet_id: String, pos: String) -> JsValue {
+        let Ok(pos) = serde_json::from_str::<Pos>(&pos) else {
+            return JsValue::UNDEFINED;
+        };
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
-            return Result::Err("Sheet not found".into());
+            return JsValue::UNDEFINED;
         };
         let output: CellFormatSummary = sheet.cell_format_summary(pos);
-        Ok(serde_wasm_bindgen::to_value(&output)?)
+        serde_wasm_bindgen::to_value(&output).unwrap_or(JsValue::UNDEFINED)
     }
 
     /// Sets cell align formatting given as an optional [`CellAlign`].
@@ -207,10 +205,11 @@ impl GridController {
         cursor: Option<String>,
     ) -> Result<JsValue, JsValue> {
         if columns <= 0 || rows <= 0 {
-            return Ok(serde_wasm_bindgen::to_value(&JsResponse {
+            return Ok(JsResponse {
                 result: false,
                 error: Some("Invalid chart size".to_string()),
-            })?);
+            }
+            .into());
         }
 
         let sheet_pos =
@@ -218,10 +217,11 @@ impl GridController {
 
         self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
 
-        Ok(serde_wasm_bindgen::to_value(&JsResponse {
+        Ok(JsResponse {
             result: true,
             error: None,
-        })?)
+        }
+        .into())
     }
 
     #[wasm_bindgen(js_name = "setDateTimeFormat")]
@@ -309,14 +309,31 @@ impl GridController {
         sheet_id: String,
         selection: String,
         formats: String,
-    ) -> Result<(), JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
-        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-            .map_err(|_| "Unable to parse A1Selection")?;
-        let format = serde_json::from_str::<Format>(&formats).map_err(|e| {
-            dbgjs!(&e);
-            "Invalid formats"
-        })?;
+    ) -> JsValue {
+        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+            return JsResponse {
+                result: false,
+                error: Some("Invalid sheet ID".to_string()),
+            }
+            .into();
+        };
+
+        let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context()) else {
+            return JsResponse {
+                result: false,
+                error: Some("Invalid selection".to_string()),
+            }
+            .into();
+        };
+
+        let Ok(format) = serde_json::from_str::<Format>(&formats) else {
+            return JsResponse {
+                result: false,
+                error: Some("Invalid formats".to_string()),
+            }
+            .into();
+        };
+
         let mut format_update = FormatUpdate::from(format);
 
         // handle clear text and fill color properly
@@ -327,6 +344,7 @@ impl GridController {
         {
             format_update.text_color = Some(None);
         }
+
         if format_update
             .fill_color
             .as_ref()
@@ -334,7 +352,13 @@ impl GridController {
         {
             format_update.fill_color = Some(None);
         }
+
         self.set_formats(&selection, format_update);
-        Ok(())
+
+        JsResponse {
+            result: true,
+            error: None,
+        }
+        .into()
     }
 }

@@ -31,20 +31,23 @@ impl GridController {
         match serde_json::from_str::<SheetRect>(&sheet_rect) {
             Ok(sheet_rect) => {
                 match self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor) {
-                    Ok(_) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    Ok(_) => Ok(JsResponse {
                         result: true,
                         error: None,
-                    })?),
-                    Err(e) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                    }
+                    .into()),
+                    Err(e) => Ok(JsResponse {
                         result: false,
                         error: Some(e.to_string()),
-                    })?),
+                    }
+                    .into()),
                 }
             }
-            Err(e) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
+            Err(e) => Ok(JsResponse {
                 result: false,
                 error: Some(e.to_string()),
-            })?),
+            }
+            .into()),
         }
     }
 

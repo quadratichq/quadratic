@@ -512,6 +512,11 @@ pub struct JsResponse {
     pub result: bool,
     pub error: Option<String>,
 }
+impl Into<wasm_bindgen::JsValue> for JsResponse {
+    fn into(self) -> JsValue {
+        serde_wasm_bindgen::to_value(&self).unwrap_or(JsValue::UNDEFINED)
+    }
+}
 
 #[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsUpdateCodeCell {

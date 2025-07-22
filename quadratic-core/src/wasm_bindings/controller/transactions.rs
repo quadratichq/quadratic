@@ -71,10 +71,11 @@ impl GridController {
 
         self.received_transaction(transaction_id, sequence_num as u64, vec![]);
 
-        Ok(serde_wasm_bindgen::to_value(&JsResponse {
+        Ok(JsResponse {
             result: true,
             error: None,
-        })?)
+        }
+        .into())
     }
 
     #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
@@ -86,33 +87,35 @@ impl GridController {
         let transaction_id = match Uuid::parse_str(&transaction_id) {
             Ok(transaction_id) => transaction_id,
             Err(e) => {
-                return Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                return Ok(JsResponse {
                     result: false,
                     error: Some(format!(
                         "Invalid transaction id: {transaction_id:?}, error: {e:?}"
                     )),
-                })?);
+                }
+                .into());
             }
         };
         match serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction) {
             Ok(unsaved_transaction) => {
                 self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
-                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                Ok(JsResponse {
                     result: true,
                     error: None,
-                })?)
+                }
+                .into())
             }
             Err(e) => {
-                dbgjs!(format!(
+                let error = format!(
                     "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {:?}, error: {:?}",
                     unsaved_transaction, e
-                ));
-                Ok(serde_wasm_bindgen::to_value(&JsResponse {
+                );
+                dbgjs!(&error);
+                Ok(JsResponse {
                     result: false,
-                    error: Some(format!(
-                        "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {unsaved_transaction:?}, error: {e:?}"
-                    )),
-                })?)
+                    error: Some(error),
+                }
+                .into())
             }
         }
     }
