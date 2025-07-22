@@ -162,11 +162,17 @@ export function useSubmitAIAnalystPrompt() {
             return;
           }
 
+          set(aiAnalystCurrentChatMessagesAtom, (prev) => {
+            const currentMessage = [...prev];
+            currentMessage.pop();
+            messageIndex = currentMessage.length - 1;
+            return currentMessage;
+          });
+
           set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
 
           mixpanel.track('[Billing].ai.exceededBillingLimit', {
             exceededBillingLimit: exceededBillingLimit,
-
             location: 'AIAnalyst',
           });
         };
@@ -302,6 +308,11 @@ export function useSubmitAIAnalystPrompt() {
               signal: abortController.signal,
               onExceededBillingLimit,
             });
+
+            const waitingOnMessageIndex = await snapshot.getPromise(aiAnalystWaitingOnMessageIndexAtom);
+            if (waitingOnMessageIndex !== undefined) {
+              break;
+            }
 
             let nextChatMessages: ChatMessage[] = [];
             set(aiAnalystCurrentChatMessagesAtom, (prev) => {
