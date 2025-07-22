@@ -711,4 +711,10 @@ mod tests {
             27.0,
         );
     }
+
+    #[test]
+    fn test_duration_to_string() {
+        assert_eq!(Duration::from_seconds(5.0).to_string(), "5s");
+        assert_eq!(Duration::from_str("5s").unwrap().to_string(), "5s");
+    }
 }
