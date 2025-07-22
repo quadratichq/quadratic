@@ -936,13 +936,13 @@ export const aiToolsActions: AIToolActionsRecord = {
       lineStyle = 'line1';
     }
 
-    const colorObject = color ? Color(color).rgb().object() : { red: 0, green: 0, blue: 0 };
+    const colorObject = color ? Color(color).rgb().object() : { r: 0, g: 0, b: 0 };
     const style: BorderStyle = {
       line: lineStyle,
       color: {
-        red: colorObject.red,
-        green: colorObject.green,
-        blue: colorObject.blue,
+        red: colorObject.r,
+        green: colorObject.g,
+        blue: colorObject.b,
         alpha: 1,
       },
     };
