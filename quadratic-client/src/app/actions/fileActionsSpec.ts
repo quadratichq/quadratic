@@ -5,7 +5,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadExcelFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { DownloadIcon, FileRenameIcon, HistoryIcon, PersonAddIcon } from '@/shared/components/Icons';
+import { DownloadExcelIcon, DownloadIcon, FileRenameIcon, HistoryIcon, PersonAddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import mixpanel from 'mixpanel-browser';
 
@@ -54,7 +54,7 @@ export const fileActionsSpec: FileActionSpec = {
   },
   [Action.FileDownloadExcel]: {
     label: () => 'Export Excel',
-    Icon: DownloadIcon,
+    Icon: DownloadExcelIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownloadExcel]) => {
       if (!pixiAppSettings.setEditorInteractionState) return;
