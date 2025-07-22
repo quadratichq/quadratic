@@ -19,7 +19,7 @@ import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText'
 
 class RenderCore {
   private renderCorePort?: MessagePort;
-  private waitingForResponse: Map<number, Function> = new Map();
+  private waitingForResponse: Record<number, Function> = {};
   private id = 0;
 
   async clientInit(renderPort: MessagePort) {
@@ -129,7 +129,12 @@ class RenderCore {
         resolve([]);
         return;
       }
-      const id = this.id;
+
+      const id = this.id++;
+      this.waitingForResponse[id] = (cells: JsRenderCell[]) => {
+        resolve(cells);
+      };
+
       const message: RenderCoreRequestRenderCells = {
         type: 'renderCoreRequestRenderCells',
         id,
@@ -140,13 +145,9 @@ class RenderCore {
         height,
       };
       this.renderCorePort.postMessage(message);
-      this.waitingForResponse.set(id, (cells: JsRenderCell[]) => {
-        resolve(cells);
-      });
-      this.id++;
 
       abortSignal?.addEventListener('abort', () => {
-        this.waitingForResponse.set(id, () => {});
+        delete this.waitingForResponse[id];
         reject('Render cells request aborted');
       });
     });
@@ -158,17 +159,19 @@ class RenderCore {
 
   private renderCells(message: CoreRenderCells) {
     const { id, data } = message;
-    const response = this.waitingForResponse.get(id);
+
+    const response = this.waitingForResponse[id];
+    delete this.waitingForResponse[id];
     if (!response) {
       console.warn('No callback for requestRenderCells');
       return;
     }
+
     let cells = [] as JsRenderCell[];
     if (data) {
       cells = fromUint8Array<JsRenderCell[]>(data);
     }
     response(cells);
-    this.waitingForResponse.delete(id);
   }
 }
 
