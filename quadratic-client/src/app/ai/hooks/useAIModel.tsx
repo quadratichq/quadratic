@@ -67,7 +67,7 @@ export const useAIModel = (): {
   useEffect(() => {
     if (debug) return;
     if (!modelConfig || modelConfig.mode === 'disabled' || (!isOnPaidPlan && modelConfig.mode === 'pro')) {
-      setModelKey(DEFAULT_MODEL_FREE);
+      setModelKey(isOnPaidPlan ? DEFAULT_MODEL_PRO : DEFAULT_MODEL_FREE);
       if ('thinkingToggle' in defaultConfig) {
         setThinkingToggle(!!defaultConfig.thinkingToggle);
       }
