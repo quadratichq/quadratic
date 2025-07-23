@@ -314,6 +314,10 @@ export function useSubmitAIAnalystPrompt() {
               break;
             }
 
+            if (response.error) {
+              break;
+            }
+
             let nextChatMessages: ChatMessage[] = [];
             set(aiAnalystCurrentChatMessagesAtom, (prev) => {
               nextChatMessages = replaceOldGetToolCallResults(prev);

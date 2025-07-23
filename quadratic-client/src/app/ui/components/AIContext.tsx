@@ -27,12 +27,23 @@ type AIContextProps = {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  isFileSupported: (mimeType: string) => boolean;
   editing: boolean;
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 export const AIContext = memo(
-  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textareaRef }: AIContextProps) => {
+  ({
+    initialContext,
+    context,
+    setContext,
+    files,
+    setFiles,
+    isFileSupported,
+    editing,
+    disabled,
+    textareaRef,
+  }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
@@ -111,14 +122,16 @@ export const AIContext = memo(
           />
         )}
 
-        {files.map((file, index) => (
-          <FileContextPill
-            key={`${index}-${file.fileName}`}
-            disabled={disabled || !setFiles}
-            file={file}
-            onClick={() => handleOnClickFileContext(file)}
-          />
-        ))}
+        {files
+          .filter((file) => isFileSupported(file.mimeType))
+          .map((file, index) => (
+            <FileContextPill
+              key={`${index}-${file.fileName}`}
+              disabled={disabled || !setFiles}
+              file={file}
+              onClick={() => handleOnClickFileContext(file)}
+            />
+          ))}
 
         <CodeCellContextPill codeCell={context.codeCell} />
 
