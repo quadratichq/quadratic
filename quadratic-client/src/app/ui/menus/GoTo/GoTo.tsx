@@ -139,7 +139,7 @@ export const GoTo = memo(() => {
   }, [currentSheet]);
 
   return (
-    <Command shouldFilter={false}>
+    <Command shouldFilter={false} data-testid="goto-menu">
       <div className="flex w-full items-center justify-between">
         <div className="relative w-full flex-grow">
           <CommandInput

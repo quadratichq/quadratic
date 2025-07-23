@@ -308,7 +308,7 @@ mod tests {
         let sheet_pos = SheetPos::from((1, 1, sheet_id));
         let value = CellValue::Text("test".into());
         let operation = add_cell_value(sheet_pos, value.into());
-        let operation_undo = add_cell_value(sheet_pos, CellValues::new(1, 1));
+        let operation_undo = add_cell_value(sheet_pos, CellValues::new_blank(1, 1));
         (operation, operation_undo)
     }
 

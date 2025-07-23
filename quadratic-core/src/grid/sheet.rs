@@ -6,7 +6,6 @@ use columns::SheetColumns;
 use data_tables::SheetDataTables;
 use lazy_static::lazy_static;
 use regex::Regex;
-use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use validations::Validations;
 
@@ -16,7 +15,7 @@ use super::ids::SheetId;
 use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
-use crate::a1::{A1Context, A1Selection, CellRefRange};
+use crate::a1::{A1Context, UNBOUNDED};
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -205,38 +204,18 @@ impl Sheet {
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
-        let cell_value = self
-            .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y));
-
-        let is_percent = self.cell_format_numeric_kind(pos) == NumericFormatKind::Percentage;
-
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
-        if let Some(cell_value) = cell_value {
+        if let Some(cell_value) = self.cell_value_ref(pos) {
             if !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
             ) {
-                if is_percent {
-                    if let CellValue::Number(n) = cell_value {
-                        return Some(CellValue::Number(n * Decimal::from(100)));
-                    }
-                }
                 return Some(cell_value.clone());
             }
         }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
-        if let Some(cell_value) = self.get_code_cell_value(pos) {
-            if is_percent {
-                if let CellValue::Number(n) = cell_value {
-                    return Some(CellValue::Number(n * Decimal::from(100)));
-                }
-            }
-            Some(cell_value.clone())
-        } else {
-            None
-        }
+        self.get_code_cell_value(pos)
     }
 
     /// Returns the JsCellValue at a position
@@ -282,17 +261,16 @@ impl Sheet {
         rect_values
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
-    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y).cloned()
-    }
-
     /// Returns the ref of the cell_value at the Pos in column.values. This does
     /// not check or return results within data_tables.
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y)
+        self.get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+    }
+
+    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
+        self.cell_value_ref(pos).cloned()
     }
 
     /// Returns the cell value at a position, or an error if the cell value is not found.
@@ -341,7 +319,7 @@ impl Sheet {
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
-        if let Ok(data_table_pos) = self.data_table_pos_that_contains(pos) {
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos) {
             if let Some(data_table) = self.data_table_at(&data_table_pos) {
                 if !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
@@ -427,6 +405,7 @@ impl Sheet {
         self.columns.get_column(index)
     }
 
+    /// Returns the sheet id as a string.
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
     }
@@ -471,80 +450,45 @@ impl Sheet {
         }
     }
 
-    /// Returns true if the cell at Pos has wrap formatting.
-    pub fn check_if_wrap_in_cell(&self, pos: Pos) -> bool {
-        if !self.has_content(pos) {
-            return false;
-        }
-        self.formats.wrap.get(pos) == Some(CellWrap::Wrap)
+    /// Returns the rows with wrap formatting in a rect.
+    pub fn get_rows_with_wrap_in_rect(&self, rect: Rect, include_blanks: bool) -> Vec<i64> {
+        self.formats
+            .wrap
+            .nondefault_rects_in_rect(rect)
+            .filter(|(_, wrap)| wrap == &Some(CellWrap::Wrap))
+            .flat_map(|(rect, _)| {
+                if include_blanks {
+                    rect.y_range().collect::<Vec<i64>>()
+                } else {
+                    self.columns
+                        .get_nondefault_rects_in_rect(rect)
+                        .flat_map(|(rect, _)| rect.y_range())
+                        .chain(
+                            self.data_tables
+                                .get_nondefault_rects_in_rect(rect)
+                                .flat_map(|rect| rect.y_range()),
+                        )
+                        .collect()
+                }
+            })
+            .chain(self.iter_data_tables_intersects_rect(rect).flat_map(
+                |(output_rect, intersection_rect, data_table)| {
+                    let mut rows_to_resize = HashSet::new();
+                    data_table.get_rows_with_wrap_in_display_rect(
+                        &output_rect.min,
+                        &intersection_rect,
+                        include_blanks,
+                        &mut rows_to_resize,
+                    );
+                    rows_to_resize
+                },
+            ))
+            .collect()
     }
 
-    pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
-        self.formats.wrap.any_in_row(y, |wrap| {
-            let pos = Pos { x: 1, y };
-            self.has_content(pos) && *wrap == Some(CellWrap::Wrap)
-        })
-    }
-
-    pub fn get_rows_with_wrap_in_column(&self, x: i64) -> Vec<i64> {
-        let mut rows = vec![];
-        if let Some((start, end)) = self.column_bounds(x, true) {
-            for y in start..=end {
-                if self.has_content(Pos { x, y })
-                    && self
-                        .formats
-                        .wrap
-                        .get(Pos { x, y })
-                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
-                    rows.push(y);
-                }
-            }
-        }
-        rows
-    }
-
-    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect, include_blanks: bool) -> Vec<i64> {
-        let mut rows = vec![];
-        for y in rect.y_range() {
-            for x in rect.x_range() {
-                if (include_blanks || self.has_content(Pos { x, y }))
-                    && self
-                        .formats
-                        .wrap
-                        .get((x, y).into())
-                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
-                    rows.push(y);
-                    break;
-                }
-            }
-        }
-        rows
-    }
-
-    pub fn get_rows_with_wrap_in_selection(
-        &self,
-        selection: &A1Selection,
-        include_blanks: bool,
-        ignore_formatting: bool,
-        a1_context: &A1Context,
-    ) -> Vec<i64> {
-        let mut rows_set = HashSet::<i64>::new();
-        selection.ranges.iter().for_each(|range| {
-            if let Some(rect) = match range {
-                CellRefRange::Sheet { range } => {
-                    Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
-                }
-                CellRefRange::Table { range } => {
-                    self.table_ref_to_rect(range, false, false, a1_context)
-                }
-            } {
-                let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
-                rows_set.extend(rows);
-            }
-        });
-        rows_set.into_iter().collect()
+    /// Returns the rows with wrap formatting in a column.
+    pub fn get_rows_with_wrap_in_column(&self, x: i64, include_blanks: bool) -> Vec<i64> {
+        self.get_rows_with_wrap_in_rect(Rect::new(x, 1, x, UNBOUNDED), include_blanks)
     }
 
     /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
@@ -941,46 +885,19 @@ mod test {
     }
 
     #[test]
-    fn test_check_if_wrap_in_cell() {
-        let mut sheet = Sheet::test();
-        let pos = pos![A1];
-        sheet.set_cell_value(pos, "test");
-        assert!(!sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-        assert!(sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Overflow));
-        assert!(!sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-        assert!(sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
-        assert!(!sheet.check_if_wrap_in_cell(pos));
-    }
-
-    #[test]
-    fn test_check_if_wrap_in_row() {
-        let mut sheet = Sheet::test();
-        let pos = pos![A1];
-        sheet.set_cell_value(pos, "test");
-        assert!(!sheet.check_if_wrap_in_row(1));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-        assert!(sheet.check_if_wrap_in_row(1));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Overflow));
-        assert!(!sheet.check_if_wrap_in_row(1));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
-        assert!(!sheet.check_if_wrap_in_row(1));
-    }
-
-    #[test]
     fn test_get_rows_with_wrap_in_column() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(pos![A1], "test");
         sheet.set_cell_value(pos![A3], "test");
-        assert_eq!(sheet.get_rows_with_wrap_in_column(1), Vec::<i64>::new());
+        assert_eq!(
+            sheet.get_rows_with_wrap_in_column(1, false),
+            Vec::<i64>::new()
+        );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        assert_eq!(sheet.get_rows_with_wrap_in_column(1), vec![1, 3]);
+        assert_eq!(sheet.get_rows_with_wrap_in_column(1, false), vec![1, 3]);
     }
 
     #[test]
@@ -993,34 +910,14 @@ mod test {
             max: pos![A4],
         };
         assert_eq!(
-            sheet.get_rows_with_wrap_in_rect(&rect, false),
+            sheet.get_rows_with_wrap_in_rect(rect, false),
             Vec::<i64>::new()
         );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect, false), vec![1, 3]);
-    }
-
-    #[test]
-    fn test_get_rows_with_wrap_in_selection() {
-        let mut sheet = Sheet::test();
-        sheet.set_cell_value(pos![A1], "test");
-        sheet.set_cell_value(pos![A3], "test");
-        let selection = A1Selection::test_a1("A1:A4");
-        let a1_context = sheet.expensive_make_a1_context();
-        assert_eq!(
-            sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context),
-            Vec::<i64>::new()
-        );
-        sheet
-            .formats
-            .wrap
-            .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context);
-        rows.sort();
-        assert_eq!(rows, vec![1, 3]);
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(rect, false), vec![1, 3]);
     }
 
     #[test]

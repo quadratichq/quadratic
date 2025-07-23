@@ -62,6 +62,7 @@ interface EventTypes {
   gridSettings: () => void;
 
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
+  sheetOffsetsUpdated: (sheetId: string) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;

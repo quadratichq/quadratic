@@ -37,19 +37,20 @@ impl GridController {
 
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
-                    self.add_compute_operations(transaction, &sheet_rect, None);
+                    self.add_compute_operations(transaction, sheet_rect, None);
                     self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
                     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                     if transaction.is_user() {
                         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                            let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
-                            if !rows.is_empty() {
-                                let resize_rows = transaction
+                            let rows_to_resize =
+                                sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
+                            if !rows_to_resize.is_empty() {
+                                transaction
                                     .resize_rows
                                     .entry(sheet_pos.sheet_id)
-                                    .or_default();
-                                resize_rows.extend(rows);
+                                    .or_default()
+                                    .extend(rows_to_resize);
                             }
                         }
                     }
