@@ -1223,6 +1223,11 @@ export interface CoreClientGetFormatSelection {
   format: CellFormatSummary | undefined;
 }
 
+export interface CoreClientAIUpdates {
+  type: 'coreClientAIUpdates';
+  update: Uint8Array;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1393,4 +1398,5 @@ export type CoreClientMessage =
   | CoreClientContentCache
   | CoreClientSetCellRenderResize
   | CoreClientGetFormatSelection
-  | CoreClientHasCellData;
+  | CoreClientHasCellData
+  | CoreClientAIUpdates;

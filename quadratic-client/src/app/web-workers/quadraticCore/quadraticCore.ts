@@ -19,6 +19,7 @@ import type {
   CodeCellLanguage,
   DataTableSort,
   FormatUpdate,
+  JsAITransactions,
   JsBordersSheet,
   JsCellValue,
   JsClipboard,
@@ -214,6 +215,15 @@ class QuadraticCore {
       return;
     } else if (e.data.type === 'coreClientDataTablesCache') {
       events.emit('dataTablesCache', e.data.sheetId, new SheetDataTablesCache(e.data.dataTablesCache));
+      return;
+    } else if (e.data.type === 'coreClientAIUpdates') {
+      let update: JsAITransactions;
+      try {
+        update = JSON.parse(new TextDecoder().decode(e.data.update));
+      } catch (e: unknown) {
+        throw new Error(`Failed to parse AI updates: ${e instanceof Error ? e.message : 'Unknown error'}`);
+      }
+      events.emit('aiUpdates', update);
       return;
     }
     if (e.data.id !== undefined) {
