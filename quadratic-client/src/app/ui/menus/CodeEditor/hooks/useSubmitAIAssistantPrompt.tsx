@@ -92,6 +92,13 @@ export function useSubmitAIAssistantPrompt() {
             return;
           }
 
+          set(aiAssistantMessagesAtom, (prev) => {
+            const currentMessage = [...prev];
+            currentMessage.pop();
+            messageIndex = currentMessage.length - 1;
+            return currentMessage;
+          });
+
           set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
 
           mixpanel.track('[Billing].ai.exceededBillingLimit', {
@@ -205,6 +212,11 @@ export function useSubmitAIAssistantPrompt() {
               signal: abortController.signal,
               onExceededBillingLimit,
             });
+
+            const waitingOnMessageIndex = await snapshot.getPromise(aiAssistantWaitingOnMessageIndexAtom);
+            if (waitingOnMessageIndex !== undefined) {
+              break;
+            }
 
             if (response.toolCalls.length === 0) {
               break;

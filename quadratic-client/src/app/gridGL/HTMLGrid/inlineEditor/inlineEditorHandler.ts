@@ -52,7 +52,7 @@ class InlineEditorHandler {
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
-    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('sheetOffsetsUpdated', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
     events.on('contextMenu', this.closeIfOpen);
