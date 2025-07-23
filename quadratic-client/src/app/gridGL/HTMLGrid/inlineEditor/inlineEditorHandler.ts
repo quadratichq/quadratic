@@ -170,7 +170,7 @@ class InlineEditorHandler {
         this.updateMonacoCursorPosition();
       }
     } else {
-      this.close(0, 0, false, true);
+      this.close({ skipChangeSheet: true });
     }
   };
 
@@ -288,7 +288,7 @@ class InlineEditorHandler {
       // draws at 0,0 when editing in a data table
       this.open = true;
     } else {
-      this.close(0, 0, false);
+      this.close({});
     }
   };
 
@@ -459,7 +459,7 @@ class InlineEditorHandler {
 
   closeIfOpen = async () => {
     if (this.open) {
-      await this.close(0, 0, false);
+      await this.close({});
     }
   };
 
@@ -478,7 +478,20 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-  close = async (deltaX = 0, deltaY = 0, cancel: boolean, skipChangeSheet = false): Promise<boolean> => {
+
+  close = async ({
+    deltaX = 0,
+    deltaY = 0,
+    cancel = false,
+    skipChangeSheet = false,
+    skipFocusGrid = false,
+  }: {
+    deltaX?: number;
+    deltaY?: number;
+    cancel?: boolean;
+    skipChangeSheet?: boolean;
+    skipFocusGrid?: boolean;
+  }): Promise<boolean> => {
     if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
@@ -552,7 +565,9 @@ class InlineEditorHandler {
     }
 
     // Set focus back to Grid
-    focusGrid();
+    if (!skipFocusGrid) {
+      focusGrid();
+    }
     return true;
   };
 
@@ -591,7 +606,7 @@ class InlineEditorHandler {
         initialCode: inlineEditorMonaco.get().slice(1),
       },
     });
-    this.close(0, 0, true);
+    this.close({ cancel: true });
   };
 
   // Attaches the inline editor to a div created by React in InlineEditor.tsx
@@ -602,7 +617,7 @@ class InlineEditorHandler {
     }
     this.div = div;
 
-    this.close(0, 0, true);
+    this.close({ cancel: true });
   }
 
   detach() {
@@ -662,7 +677,7 @@ class InlineEditorHandler {
   async handleCellPointerDown(): Promise<boolean> {
     if (this.open) {
       if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
-        return await this.close(0, 0, false);
+        return await this.close({});
       } else {
         if (!this.cursorIsMoving) {
           this.cursorIsMoving = true;

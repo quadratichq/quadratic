@@ -102,7 +102,7 @@ export const HtmlValidationList = (props: Props) => {
         sheets.getCursorPosition()
       );
       setAnnotationState(undefined);
-      inlineEditorHandler.close(0, 0, true);
+      inlineEditorHandler.close({ cancel: true });
     },
     [setAnnotationState]
   );

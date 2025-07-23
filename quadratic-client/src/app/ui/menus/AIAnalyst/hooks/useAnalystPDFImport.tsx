@@ -128,7 +128,7 @@ How can I help you?`,
           const addDataTableToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.AddDataTable);
           for (const toolCall of addDataTableToolCalls) {
             try {
-              inlineEditorHandler.closeIfOpen();
+              inlineEditorHandler.close({ skipFocusGrid: true });
               const argsObject = JSON.parse(toolCall.arguments);
               const args = aiToolsSpec[AITool.AddDataTable].responseSchema.parse(argsObject);
               await aiToolsActions[AITool.AddDataTable](args, {

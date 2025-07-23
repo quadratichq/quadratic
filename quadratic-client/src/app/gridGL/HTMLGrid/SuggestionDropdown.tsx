@@ -102,7 +102,7 @@ export const SuggestionDropDown = () => {
 
   const changeValue = useCallback((value: string, moveRight: boolean) => {
     inlineEditorEvents.emit('replaceText', value, 0);
-    inlineEditorHandler.close(moveRight ? 1 : 0, moveRight ? 0 : 1, false);
+    inlineEditorHandler.close({ deltaX: moveRight ? 1 : 0, deltaY: moveRight ? 0 : 1 });
     inlineEditorMonaco.setShowingList(false);
     setIndex(-1);
   }, []);

@@ -95,7 +95,7 @@ export const CalendarPicker = () => {
       setDate(newDate);
       inlineEditorEvents.emit('replaceText', replacement, false);
       if (!showTime) {
-        inlineEditorHandler.close(0, 0, false);
+        inlineEditorHandler.close({});
       }
     },
     [date, showTime]
@@ -121,7 +121,7 @@ export const CalendarPicker = () => {
     const replacement = formatDateTime(dateToDateTimeString(newDate), dateFormat);
     setDate(newDate);
     inlineEditorEvents.emit('replaceText', replacement, false);
-    inlineEditorHandler.close(0, 0, false);
+    inlineEditorHandler.close({});
   }, [dateFormat]);
 
   const close = useCallback(() => {
@@ -129,7 +129,7 @@ export const CalendarPicker = () => {
     inlineEditorMonaco.focus();
   }, [setAnnotationState]);
 
-  const finish = useCallback(() => inlineEditorHandler.close(0, 0, false), []);
+  const finish = useCallback(() => inlineEditorHandler.close({}), []);
 
   if (!showCalendar || !date || !value) return null;
 

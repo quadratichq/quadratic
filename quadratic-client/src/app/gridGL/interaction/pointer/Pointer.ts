@@ -65,7 +65,7 @@ export class Pointer {
 
   private pointerUpOutsideViewport = (e: MouseEvent) => {
     if (e.target instanceof HTMLElement && !e.target.closest('.pointer-up-ignore')) {
-      inlineEditorHandler.closeIfOpen();
+      inlineEditorHandler.close({ skipFocusGrid: true });
       return;
     }
   };
