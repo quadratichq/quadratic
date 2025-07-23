@@ -405,7 +405,6 @@ impl GridController {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
     fn clipboard_code_operations(
         &self,
         start_pos: SheetPos,
@@ -422,14 +421,13 @@ impl GridController {
                     y: clipboard.origin.y + *y as i64,
                 };
 
-                let target_pos = SheetPos {
+                let target_pos = Pos {
                     x: start_pos.x + *x as i64,
                     y: start_pos.y + *y as i64,
-                    sheet_id: start_pos.sheet_id,
                 };
 
                 let paste_in_import = sheet
-                    .iter_data_tables_in_rect(Rect::single_pos(Pos::from(target_pos)))
+                    .iter_data_tables_in_rect(Rect::single_pos(target_pos))
                     .any(|(output_rect, data_table)| {
                         // this table is being moved in the same transaction
                         if matches!(clipboard.operation, ClipboardOperation::Cut)
@@ -441,7 +439,8 @@ impl GridController {
                             return false;
                         }
 
-                        matches!(data_table.kind, DataTableKind::Import(_))
+                        target_pos != output_rect.min
+                            && matches!(data_table.kind, DataTableKind::Import(_))
                     });
 
                 if paste_in_import {
@@ -474,7 +473,7 @@ impl GridController {
                     }
 
                     ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos,
+                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                         data_table: Some(data_table),
                         index: usize::MAX,
                     });
@@ -488,7 +487,7 @@ impl GridController {
 
                 if should_rerun {
                     ops.push(Operation::ComputeCode {
-                        sheet_pos: target_pos,
+                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
                     });
                 }
             }
@@ -623,8 +622,9 @@ impl GridController {
         selection: &A1Selection,
         clipboard: &Clipboard,
         special: PasteSpecial,
-    ) -> Result<Vec<Operation>> {
+    ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
+        let mut code_ops: Vec<_> = vec![];
         let mut cursor_translate_x = start_pos.x - clipboard.origin.x;
         let mut cursor_translate_y = start_pos.y - clipboard.origin.y;
 
@@ -675,13 +675,12 @@ impl GridController {
                     ops.extend(cell_value_ops);
                 }
 
-                let code_ops = self.clipboard_code_operations(
+                code_ops.extend(self.clipboard_code_operations(
                     start_pos.to_sheet_pos(selection.sheet_id),
                     tables,
                     clipboard,
                     &mut cursor,
-                )?;
-                ops.extend(code_ops);
+                )?);
 
                 let validations_ops = self.clipboard_validations_operations(
                     &clipboard.validations,
@@ -742,7 +741,7 @@ impl GridController {
             }
         }
 
-        Ok(ops)
+        Ok((ops, code_ops))
     }
 
     /// Collect the operations to paste the clipboard cells from plain text
@@ -866,6 +865,7 @@ impl GridController {
         special: PasteSpecial,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
+        let mut clipboard_ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
         let clipboard_rect = clipboard.to_rect(insert_at);
@@ -989,7 +989,7 @@ impl GridController {
                     }
                 }
 
-                compute_code_ops.extend(self.get_clipboard_ops(
+                let (clipboard_op, code_ops) = self.get_clipboard_ops(
                     Pos::new(tile_start_x, tile_start_y),
                     Pos::new(tile_start_x - insert_at.x, tile_start_y - insert_at.y),
                     &mut cell_values,
@@ -998,23 +998,29 @@ impl GridController {
                     selection,
                     &clipboard,
                     special,
-                )?);
+                )?;
+                clipboard_ops.extend(clipboard_op);
+                compute_code_ops.extend(code_ops);
             }
         }
 
         // cell values need to be set before the compute_code_ops
         if matches!(special, PasteSpecial::None | PasteSpecial::Values) {
-            ops.push(Operation::SetCellValues {
-                sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
-                values: cell_values,
-            });
+            ops.extend(clipboard_ops);
+
+            if !cell_values.is_empty() {
+                ops.push(Operation::SetCellValues {
+                    sheet_pos: insert_at.to_sheet_pos(selection.sheet_id),
+                    values: cell_values,
+                });
+            }
+
+            ops.extend(compute_code_ops);
 
             data_table_ops.extend(GridController::grow_data_table_operations(
                 data_table_columns,
                 data_table_rows,
             ));
-
-            ops.extend(compute_code_ops);
         }
 
         if matches!(special, PasteSpecial::None | PasteSpecial::Formats) {
@@ -2283,5 +2289,73 @@ mod test {
             pos![B1].to_sheet_pos(sheet_id),
         );
         assert!(should_rerun);
+    }
+
+    #[test]
+    fn test_copy_paste_table_column() {
+        let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
+
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+
+        assert_data_table_column(
+            data_table,
+            1,
+            vec![
+                "region", "MA", "MA", "MA", "MA", "MA", "MO", "NJ", "OH", "OR", "NH",
+            ],
+        );
+
+        assert_data_table_column(
+            data_table,
+            3,
+            vec![
+                "population",
+                "9686",
+                "14061",
+                "29313",
+                "38334",
+                "152227",
+                "150443",
+                "14976",
+                "64325",
+                "56032",
+                "42605",
+            ],
+        );
+
+        let js_clipboard = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::test_a1_context(&format!("{file_name}[region]"), gc.a1_context()),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                true,
+            )
+            .into();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_context(&format!("{file_name}[population]"), gc.a1_context()),
+            js_clipboard,
+            PasteSpecial::Values,
+            None,
+        );
+
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+
+        assert_data_table_column(
+            data_table,
+            1,
+            vec![
+                "region", "MA", "MA", "MA", "MA", "MA", "MO", "NJ", "OH", "OR", "NH",
+            ],
+        );
+
+        assert_data_table_column(
+            data_table,
+            3,
+            vec![
+                "region2", "MA", "MA", "MA", "MA", "MA", "MO", "NJ", "OH", "OR", "NH",
+            ],
+        );
     }
 }

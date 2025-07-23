@@ -11,6 +11,7 @@ use crate::{
     },
     grid::{
         DataTable, SheetId,
+        fix_names::{sanitize_column_name, sanitize_table_name},
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
         unique_data_table_name,
@@ -764,12 +765,12 @@ impl GridController {
     ) -> Result<()> {
         if let Operation::DataTableOptionMeta {
             sheet_pos,
-            name,
+            mut name,
             alternating_colors,
-            columns,
+            mut columns,
             show_name,
             show_columns,
-        } = op.to_owned()
+        } = op
         {
             // do grid mutations first to keep the borrow checker happy
             let sheet_id = sheet_pos.sheet_id;
@@ -783,57 +784,61 @@ impl GridController {
             let mut old_show_name = None;
             let mut old_show_columns = None;
 
-            if let Some(name) = name.to_owned() {
-                if old_name != name {
-                    // validate table name
-                    if let Err(e) =
-                        DataTable::validate_table_name(&name, sheet_pos, self.a1_context())
-                    {
-                        if cfg!(target_family = "wasm") || cfg!(test) {
-                            crate::wasm_bindings::js::jsClientMessage(
-                                e.to_owned(),
-                                JsSnackbarSeverity::Error.to_string(),
-                            );
-                        }
-                        // clear remaining operations
-                        transaction.operations.clear();
-                        bail!(e);
-                    }
+            if let Some(name) = name.as_mut() {
+                if old_name != *name {
+                    // sanitize table name
+                    let table_name = sanitize_table_name(name.to_string());
+
+                    *name = unique_data_table_name(
+                        &table_name,
+                        false,
+                        Some(data_table_sheet_pos),
+                        &self.a1_context,
+                    );
 
                     self.grid.update_data_table_name(
                         data_table_sheet_pos,
                         &old_name,
-                        &name,
+                        name,
                         &self.a1_context,
                         false,
                     )?;
+
                     // mark code cells dirty to update meta data
                     transaction.add_code_cell(sheet_id, data_table_pos);
                 }
             }
 
             // update column names that have changed in code cells
-            if let (Some(columns), Some(old_columns)) = (columns.to_owned(), old_columns.as_ref()) {
+            if let (Some(columns), Some(old_columns)) = (columns.as_mut(), old_columns.as_ref()) {
                 for (index, old_column) in old_columns.iter().enumerate() {
-                    if let Some(new_column) = columns.get(index) {
-                        if old_column.name != new_column.name {
-                            // validate column name
-                            if let Err(e) = DataTable::validate_column_name(
-                                &old_name,
-                                index,
-                                &new_column.name.to_string(),
-                                &self.a1_context,
-                            ) {
-                                if cfg!(target_family = "wasm") || cfg!(test) {
-                                    crate::wasm_bindings::js::jsClientMessage(
-                                        e.to_owned(),
-                                        JsSnackbarSeverity::Error.to_string(),
-                                    );
-                                }
-                                // clear remaining operations
-                                transaction.operations.clear();
-                                bail!(e);
+                    if let Some(new_column) = columns.get_mut(index) {
+                        let is_code_cell = new_column.name.is_code()
+                            || new_column.name.is_import()
+                            || new_column.name.is_image()
+                            || new_column.name.is_html();
+
+                        if is_code_cell {
+                            if cfg!(target_family = "wasm") || cfg!(test) {
+                                crate::wasm_bindings::js::jsClientMessage(
+                                    "Cannot add code cell to table".to_string(),
+                                    JsSnackbarSeverity::Error.to_string(),
+                                );
                             }
+                            // clear remaining operations
+                            transaction.operations.clear();
+                            bail!("Cannot add code cell to column header");
+                        }
+
+                        if old_column.name != new_column.name {
+                            // sanitize column name
+                            let column_name = sanitize_column_name(new_column.name.to_string());
+
+                            let data_table = self.grid.data_table_at(sheet_id, &data_table_pos)?;
+                            let unique_column_name =
+                                data_table.unique_column_header_name(Some(&column_name), index);
+
+                            new_column.name = CellValue::Text(unique_column_name);
 
                             self.grid.replace_table_column_name_in_code_cells(
                                 &old_name,
@@ -912,7 +917,14 @@ impl GridController {
             let sheet = self.grid.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
-            let forward_operations = vec![op];
+            let forward_operations = vec![Operation::DataTableOptionMeta {
+                sheet_pos,
+                name,
+                alternating_colors,
+                columns,
+                show_name,
+                show_columns,
+            }];
             let reverse_operations = vec![Operation::DataTableOptionMeta {
                 sheet_pos,
                 name: Some(old_name),
@@ -2431,15 +2443,13 @@ mod tests {
         println!("Initial data table name: {}", &data_table.name());
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
-        let op = Operation::DataTableMeta {
+        let op = Operation::DataTableOptionMeta {
             sheet_pos,
             name: Some(updated_name.into()),
             alternating_colors: None,
             columns: None,
-            show_ui: None,
             show_name: None,
             show_columns: None,
-            readonly: None,
         };
         gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
 
@@ -2467,15 +2477,13 @@ mod tests {
         assert_eq!(&data_table.name().to_string(), "My_Table");
 
         // ensure numbers aren't added for unique names
-        let op = Operation::DataTableMeta {
+        let op = Operation::DataTableOptionMeta {
             sheet_pos,
             name: Some("ABC".into()),
             alternating_colors: None,
             columns: None,
-            show_ui: None,
             show_name: None,
             show_columns: None,
-            readonly: None,
         };
         gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
         let data_table = gc.sheet_mut(sheet_id).data_table_at(&pos).unwrap();

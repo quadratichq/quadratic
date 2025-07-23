@@ -1,4 +1,3 @@
-use crate::a1::CellRefRange;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::{Clipboard, PasteSpecial};
@@ -34,41 +33,14 @@ impl GridController {
         special: PasteSpecial,
         cursor: Option<String>,
     ) {
-        let is_multi_cursor = selection.is_multi_cursor(self.a1_context());
-        let mut insert_at = selection.to_cursor_sheet_pos();
-        let mut insert_at_pos = Pos::from(insert_at);
-        let mut end_pos = insert_at_pos;
-
-        if is_multi_cursor {
-            if let Some(range) = selection.ranges.first() {
-                let rect = match &range {
-                    CellRefRange::Sheet { range } => range.to_rect(),
-                    CellRefRange::Table { range } => {
-                        // we need the entire table bounds for a paste operation
-                        self.a1_context()
-                            .try_table(&range.table_name)
-                            .map(|table| table.bounds)
-                    }
-                };
-                end_pos = rect
-                    .map_or_else(
-                        || None,
-                        |rect| {
-                            // update the insert_at to the min of the range
-                            // b/c the cursor could be in the upper left corner
-                            insert_at.replace_pos(rect.min);
-                            insert_at_pos = rect.min;
-                            Some(rect.max)
-                        },
-                    )
-                    .unwrap_or(insert_at_pos);
-            }
-        }
+        let rect = selection.largest_rect_finite(self.a1_context());
+        let insert_at = rect.min;
+        let end_pos = rect.max;
 
         // first try html
         if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html) {
             if let Ok((ops, data_table_ops)) =
-                self.paste_html_operations(insert_at_pos, end_pos, selection, clipboard, special)
+                self.paste_html_operations(insert_at, end_pos, selection, clipboard, special)
             {
                 self.start_user_transaction(ops, cursor.clone(), TransactionName::PasteClipboard);
 
@@ -86,7 +58,7 @@ impl GridController {
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(
-            insert_at,
+            insert_at.to_sheet_pos(selection.sheet_id),
             end_pos,
             selection,
             js_clipboard.plain_text,
