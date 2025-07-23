@@ -26,37 +26,33 @@ pub enum AIOperation {
 
     /// Data table operations - simplified since table info is in context
     SetDataTable {
-        sheet_pos: SheetPos,
+        selection: String,
+        name: Option<String>,
         deleted: bool,
     },
     DeleteDataTable {
-        sheet_pos: SheetPos,
+        selection: String,
     },
     FlattenDataTable {
-        sheet_pos: SheetPos,
+        selection: String,
     },
     GridToDataTable {
-        sheet_rect: SheetRect,
+        selection: String,
     },
 
     /// Table structure changes (AI only needs to know the operation type and position)
     DataTableColumnsChanged {
-        sheet_pos: SheetPos,
+        selection: String,
     },
     DataTableRowsChanged {
-        sheet_pos: SheetPos,
+        selection: String,
     },
     DataTableSorted {
-        sheet_pos: SheetPos,
+        selection: String,
     },
     DataTableHeaderToggled {
-        sheet_pos: SheetPos,
+        selection: String,
         first_row_is_header: bool,
-    },
-
-    /// Code execution
-    ComputeCode {
-        sheet_pos: SheetPos,
     },
 
     /// Formatting operations (simplified - just position info)

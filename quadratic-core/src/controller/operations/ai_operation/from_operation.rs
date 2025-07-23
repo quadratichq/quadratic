@@ -1,25 +1,53 @@
 use crate::{
-    SheetRect,
+    SheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController,
         operations::{ai_operation::AIOperation, operation::Operation},
     },
-    grid::file::sheet_schema::SheetSchema,
+    grid::{DataTable, file::sheet_schema::SheetSchema},
 };
+
+fn sheet_pos_to_selection(sheet_pos: SheetPos, gc: &GridController) -> String {
+    A1Selection::from_pos(sheet_pos.into(), sheet_pos.sheet_id, gc.a1_context())
+        .to_string(None, gc.a1_context())
+}
+
+fn sheet_rect_to_selection(sheet_rect: SheetRect, gc: &GridController) -> String {
+    A1Selection::from_rect(sheet_rect).to_string(None, gc.a1_context())
+}
+
+fn data_table_to_selection(
+    data_table: Option<&DataTable>,
+    sheet_pos: SheetPos,
+    gc: &GridController,
+) -> String {
+    if let Some(data_table) = data_table {
+        let output_rect = data_table.output_rect(sheet_pos.into(), false);
+        sheet_rect_to_selection(output_rect.to_sheet_rect(sheet_pos.sheet_id), gc)
+    } else {
+        sheet_pos_to_selection(sheet_pos, gc)
+    }
+}
+
+fn get_table_name(data_table: Option<&DataTable>) -> Option<String> {
+    data_table.as_ref().map(|dt| dt.name.to_string())
+}
 
 impl AIOperation {
     pub fn from_operation(operation: &Operation, gc: &GridController) -> Option<Self> {
         match operation {
             Operation::SetCellValues { sheet_pos, values } => Some(Self::SetCellValues {
-                selection: A1Selection::from_rect(SheetRect::new(
-                    sheet_pos.x,
-                    sheet_pos.y,
-                    sheet_pos.x - 1 + values.w as i64,
-                    sheet_pos.y - 1 + values.h as i64,
-                    sheet_pos.sheet_id,
-                ))
-                .to_string(Some(sheet_pos.sheet_id), gc.a1_context()),
+                selection: sheet_rect_to_selection(
+                    SheetRect::new(
+                        sheet_pos.x,
+                        sheet_pos.y,
+                        sheet_pos.x - 1 + values.w as i64,
+                        sheet_pos.y - 1 + values.h as i64,
+                        sheet_pos.sheet_id,
+                    ),
+                    gc,
+                ),
             }),
 
             // Data table operations
@@ -27,55 +55,58 @@ impl AIOperation {
                 sheet_pos,
                 data_table,
                 ..
+            } => {
+                return Some(Self::SetDataTable {
+                    selection: data_table_to_selection(data_table.as_ref(), *sheet_pos, gc),
+                    name: get_table_name(data_table.as_ref()),
+                    deleted: data_table.is_none(),
+                });
+            }
+            Operation::AddDataTable {
+                sheet_pos,
+                data_table,
+                ..
             } => Some(Self::SetDataTable {
-                sheet_pos: *sheet_pos,
-                deleted: data_table.is_none(),
-            }),
-            Operation::AddDataTable { sheet_pos, .. } => Some(Self::SetDataTable {
-                sheet_pos: *sheet_pos,
+                selection: data_table_to_selection(Some(data_table), *sheet_pos, gc),
+                name: get_table_name(Some(data_table)),
                 deleted: false,
             }),
             Operation::DeleteDataTable { sheet_pos } => Some(Self::DeleteDataTable {
-                sheet_pos: *sheet_pos,
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
             Operation::FlattenDataTable { sheet_pos } => Some(Self::FlattenDataTable {
-                sheet_pos: *sheet_pos,
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
             Operation::GridToDataTable { sheet_rect } => Some(Self::GridToDataTable {
-                sheet_rect: *sheet_rect,
+                selection: sheet_rect_to_selection(*sheet_rect, gc),
             }),
 
             // Simplified data table structure changes
             Operation::InsertDataTableColumns { sheet_pos, .. } => {
                 Some(Self::DataTableColumnsChanged {
-                    sheet_pos: *sheet_pos,
+                    selection: sheet_pos_to_selection(*sheet_pos, gc),
                 })
             }
             Operation::DeleteDataTableColumns { sheet_pos, .. } => {
                 Some(Self::DataTableColumnsChanged {
-                    sheet_pos: *sheet_pos,
+                    selection: sheet_pos_to_selection(*sheet_pos, gc),
                 })
             }
             Operation::InsertDataTableRows { sheet_pos, .. } => Some(Self::DataTableRowsChanged {
-                sheet_pos: *sheet_pos,
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
             Operation::DeleteDataTableRows { sheet_pos, .. } => Some(Self::DataTableRowsChanged {
-                sheet_pos: *sheet_pos,
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
             Operation::SortDataTable { sheet_pos, .. } => Some(Self::DataTableSorted {
-                sheet_pos: *sheet_pos,
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
             }),
             Operation::DataTableFirstRowAsHeader {
                 sheet_pos,
                 first_row_is_header,
             } => Some(Self::DataTableHeaderToggled {
-                sheet_pos: *sheet_pos,
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
                 first_row_is_header: *first_row_is_header,
-            }),
-
-            // Code execution
-            Operation::ComputeCode { sheet_pos } => Some(Self::ComputeCode {
-                sheet_pos: *sheet_pos,
             }),
 
             // Formatting operations (simplified)
@@ -280,6 +311,7 @@ impl AIOperation {
             | Operation::SetBordersSelection { .. }
             | Operation::SetCursor { .. }
             | Operation::SetCursorSelection { .. }
+            | Operation::ComputeCode { .. }
             | Operation::SetValidationWarning { .. } => None,
         }
     }
