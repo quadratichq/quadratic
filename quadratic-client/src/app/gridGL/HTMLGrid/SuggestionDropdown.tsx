@@ -102,7 +102,7 @@ export const SuggestionDropDown = () => {
 
   const changeValue = useCallback((value: string, moveRight: boolean) => {
     inlineEditorEvents.emit('replaceText', value, 0);
-    inlineEditorHandler.close(moveRight ? 1 : 0, moveRight ? 0 : 1, false);
+    inlineEditorHandler.close({ deltaX: moveRight ? 1 : 0, deltaY: moveRight ? 0 : 1 });
     inlineEditorMonaco.setShowingList(false);
     setIndex(-1);
   }, []);
@@ -161,7 +161,7 @@ export const SuggestionDropDown = () => {
         maxHeight: `min(50vh, calc(${pixiApp.viewport.bottom - offsets.bottom}px))`,
       }}
     >
-      <div className="block w-full px-1">
+      <div className="pointer-up-ignore block w-full px-1">
         {filteredList.map((item, i) => (
           <div
             className={cn('block w-full whitespace-nowrap px-1 hover:bg-accent', i === index ? 'bg-accent' : '')}

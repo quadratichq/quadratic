@@ -1,6 +1,6 @@
 use super::current;
 use crate::{
-    CellValue,
+    CellValue, Duration,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
     number::decimal_from_str,
@@ -107,7 +107,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
             CellValue::Instant(serde_json::from_str(&instant).unwrap_or_default())
         }
         current::CellValueSchema::Duration(duration) => {
-            CellValue::Duration(serde_json::from_str(&duration).unwrap_or_default())
+            CellValue::Duration(Duration::from_str(&duration).unwrap_or_default())
         }
         current::CellValueSchema::Date(date) => CellValue::Date(date),
         current::CellValueSchema::Time(time) => CellValue::Time(time),
