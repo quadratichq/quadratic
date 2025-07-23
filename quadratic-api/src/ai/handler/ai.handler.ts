@@ -160,6 +160,7 @@ export const handleAIRequest = async (
       modelKey,
       isOnPaidPlan,
       exceededBillingLimit,
+      error: true,
     };
     const options = getModelOptions(modelKey, args);
     if (!options.stream || !response?.headersSent) {
