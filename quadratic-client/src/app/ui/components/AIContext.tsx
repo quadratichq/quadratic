@@ -17,7 +17,8 @@ import {
   getFileTypeLabel,
   isSupportedImageMimeType,
 } from 'quadratic-shared/ai/helpers/files.helper';
-import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import { getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -27,12 +28,23 @@ type AIContextProps = {
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
   setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  isFileSupported: (mimeType: string) => boolean;
   editing: boolean;
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 export const AIContext = memo(
-  ({ initialContext, context, setContext, files, setFiles, editing, disabled, textareaRef }: AIContextProps) => {
+  ({
+    initialContext,
+    context,
+    setContext,
+    files,
+    setFiles,
+    isFileSupported,
+    editing,
+    disabled,
+    textareaRef,
+  }: AIContextProps) => {
     const loading = useRecoilValue(aiAnalystLoadingAtom);
     const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
     const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
@@ -60,11 +72,7 @@ export const AIContext = memo(
     // use last user message context as initial context in the bottom user message form
     useEffect(() => {
       if (!loading && initialContext === undefined && !!setContext && messagesCount > 0) {
-        const lastUserMessage = messages
-          .filter(
-            (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
-          )
-          .at(-1);
+        const lastUserMessage = getUserPromptMessages(messages).at(-1);
         if (lastUserMessage) {
           setContext(lastUserMessage.context ?? defaultAIAnalystContext);
         }
@@ -111,14 +119,16 @@ export const AIContext = memo(
           />
         )}
 
-        {files.map((file, index) => (
-          <FileContextPill
-            key={`${index}-${file.fileName}`}
-            disabled={disabled || !setFiles}
-            file={file}
-            onClick={() => handleOnClickFileContext(file)}
-          />
-        ))}
+        {files
+          .filter((file) => isFileSupported(file.mimeType))
+          .map((file, index) => (
+            <FileContextPill
+              key={`${index}-${file.fileName}`}
+              disabled={disabled || !setFiles}
+              file={file}
+              onClick={() => handleOnClickFileContext(file)}
+            />
+          ))}
 
         <CodeCellContextPill codeCell={context.codeCell} />
 

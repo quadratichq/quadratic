@@ -30,6 +30,7 @@ import {
   getLastAIPromptMessageIndex,
   getMessagesForAI,
   getPromptAndInternalMessages,
+  getUserPromptMessages,
   isContentFile,
   removeOldFilesInToolResult,
   replaceOldGetToolCallResults,
@@ -278,8 +279,7 @@ export function useSubmitAIAnalystPrompt() {
 
             if (debugFlag('debugLogReadableAIInternalContext')) {
               console.log(
-                messagesForAI
-                  .filter((message) => message.role === 'user' && message.contextType === 'userPrompt')
+                getUserPromptMessages(messagesForAI)
                   .map((message) => {
                     return `${message.role}: ${message.content.map((content) => {
                       if ('type' in content && content.type === 'text') {
@@ -311,6 +311,10 @@ export function useSubmitAIAnalystPrompt() {
 
             const waitingOnMessageIndex = await snapshot.getPromise(aiAnalystWaitingOnMessageIndexAtom);
             if (waitingOnMessageIndex !== undefined) {
+              break;
+            }
+
+            if (response.error) {
               break;
             }
 
