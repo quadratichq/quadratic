@@ -123,7 +123,7 @@ export class Multiplayer {
         break;
 
       case 'multiplayerClientUsersInRoom':
-        this.receiveUsersInRoom(e.data.room);
+        await this.receiveUsersInRoom(e.data.room);
         break;
 
       case 'multiplayerClientReload':
@@ -412,14 +412,13 @@ export class Multiplayer {
         setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
       }
     } catch (e) {
-      console.error('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
+      console.warn('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
       setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
     }
   }
 
   // updates the React hook to populate the Avatar list
-  private receiveUsersInRoom(room: ReceiveRoom) {
-    this.checkVersion(room.version);
+  private async receiveUsersInRoom(room: ReceiveRoom) {
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {
@@ -476,6 +475,8 @@ export class Multiplayer {
     });
     events.emit('multiplayerUpdate', this.getUsers());
     pixiApp.multiplayerCursor.dirty = true;
+
+    await this.checkVersion(room.version);
   }
 }
 

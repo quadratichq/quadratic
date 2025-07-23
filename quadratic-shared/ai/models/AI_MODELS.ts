@@ -2,19 +2,14 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 19;
+export const DEFAULT_MODEL_VERSION = 20;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL_PRO: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
-export const DEFAULT_MODEL_FREE: AIModelKey = 'vertexai:gemini-2.5-pro:thinking';
-
-export const DEFAULT_SQL_MODEL: AIModelKey =
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
-export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
+export const DEFAULT_MODEL_PRO: AIModelKey = 'vertexai-anthropic:claude-sonnet-4:thinking';
+export const DEFAULT_MODEL_FREE: AIModelKey = 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
@@ -39,7 +34,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'pro',
+    mode: 'disabled',
     provider: 'quadratic',
     promptCaching: false,
     thinking: false,
@@ -53,13 +48,26 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'pro',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
     thinkingToggle: true,
     thinkingBudget: 32768,
     ...AI_RATES.gemini_2_5_pro_rate,
+  },
+  'vertexai-anthropic:claude-sonnet-4:thinking': {
+    model: 'claude-sonnet-4@20250514',
+    displayName: 'claude sonnet 4',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'pro',
+    provider: 'vertexai-anthropic',
+    promptCaching: true,
+    thinking: true,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4@20250514',
@@ -126,7 +134,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'basic',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
@@ -361,9 +369,9 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.5,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba': {
-    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
-    displayName: 'quad-mini-ft (latest: BtkM9uba)',
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW': {
+    model: 'ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+    displayName: 'quad-ft-BvusunQW',
     temperature: 0.1,
     max_tokens: 16384,
     canStream: true,
@@ -372,9 +380,41 @@ export const MODELS_CONFIGURATION: {
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: false,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 12,
+    rate_per_million_cache_read_tokens: 0.75,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+    displayName: 'quad-mini-ft-BupmrWcz',
+    temperature: 0.1,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'basic',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: false,
     rate_per_million_input_tokens: 0.8,
     rate_per_million_output_tokens: 3.2,
     rate_per_million_cache_read_tokens: 0.2,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'openai:ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n': {
+    model: 'ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
+    displayName: 'quad-nano-ft-BuLAij8n',
+    temperature: 0.1,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: false,
+    rate_per_million_input_tokens: 0.2,
+    rate_per_million_output_tokens: 0.8,
+    rate_per_million_cache_read_tokens: 0.05,
     rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-4.1-mini-2025-04-14': {

@@ -32,7 +32,9 @@ const AnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-20241022',
 ]);
 const OpenAIModelSchema = z.enum([
-  'ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
+  'ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+  'ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
   'gpt-4.1-2025-04-14',
   'gpt-4.1-mini-2025-04-14',
   'o4-mini-2025-04-16',
@@ -73,6 +75,7 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
+  'vertexai-anthropic:claude-sonnet-4:thinking',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
 ]);
@@ -113,7 +116,9 @@ const AnthropicModelKeySchema = z.enum([
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+  'openai:ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
   'openai:gpt-4.1-2025-04-14',
   'openai:gpt-4.1-mini-2025-04-14',
   'openai:o4-mini-2025-04-16',
