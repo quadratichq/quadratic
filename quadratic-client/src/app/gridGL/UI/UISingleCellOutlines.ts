@@ -14,19 +14,15 @@ export class UISingleCellOutlines extends Graphics {
     super();
 
     events.on('sheetInfoUpdate', this.setDirty);
-    events.on('sheetOffsets', this.setDirty);
+    events.on('sheetOffsetsUpdated', this.setDirty);
     events.on('resizeHeadingColumn', this.setDirty);
-    events.on('resizeHeadingColumn', this.setDirty);
-    events.on('resizeHeadingRow', this.setDirty);
     events.on('resizeHeadingRow', this.setDirty);
   }
 
   destroy() {
     events.off('sheetInfoUpdate', this.setDirty);
-    events.off('sheetOffsets', this.setDirty);
+    events.off('sheetOffsetsUpdated', this.setDirty);
     events.off('resizeHeadingColumn', this.setDirty);
-    events.off('resizeHeadingColumn', this.setDirty);
-    events.off('resizeHeadingRow', this.setDirty);
     events.off('resizeHeadingRow', this.setDirty);
 
     super.destroy();
