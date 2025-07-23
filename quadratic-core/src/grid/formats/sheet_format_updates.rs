@@ -8,8 +8,8 @@ use crate::{
     a1::A1Selection,
     clear_option::ClearOption,
     grid::{
-        CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, SheetFormatting,
-        sheet_formatting::SheetFormattingType,
+        CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, GridBounds, NumericFormat,
+        SheetFormatting, sheet_formatting::SheetFormattingType,
     },
 };
 
