@@ -69,7 +69,7 @@ export class Tables extends Container<Table> {
 
     events.on('cursorPosition', this.cursorPosition);
     events.on('a1ContextUpdated', this.handleA1ContextUpdated);
-    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('sheetOffsetsUpdated', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
 
@@ -86,7 +86,7 @@ export class Tables extends Container<Table> {
 
     events.off('cursorPosition', this.cursorPosition);
     events.off('a1ContextUpdated', this.handleA1ContextUpdated);
-    events.off('sheetOffsets', this.sheetOffsets);
+    events.off('sheetOffsetsUpdated', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
 

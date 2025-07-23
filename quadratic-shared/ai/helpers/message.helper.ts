@@ -82,9 +82,15 @@ export const removeOldFilesInToolResult = (messages: ChatMessage[], files: Set<s
   });
 };
 
-export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
+export const getUserMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
   return getPromptMessages(messages).filter(
     (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'
+  );
+};
+
+export const getUserPromptMessages = (messages: ChatMessage[]): UserMessagePrompt[] => {
+  return messages.filter(
+    (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
   );
 };
 
@@ -93,7 +99,7 @@ const getAIPromptMessages = (messages: ChatMessage[]): AIMessagePrompt[] => {
 };
 
 export const getLastUserMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
-  const userPromptMessage = getUserPromptMessages(messages);
+  const userPromptMessage = getUserMessages(messages);
   return userPromptMessage[userPromptMessage.length - 1].contextType;
 };
 
@@ -166,14 +172,14 @@ export const isContentFile = (
 };
 
 export const filterImageFilesInChatMessages = (messages: ChatMessage[]): ImageContent[] => {
-  return getUserPromptMessages(messages)
+  return getUserMessages(messages)
     .filter((message) => message.contextType === 'userPrompt')
     .flatMap((message) => message.content)
     .filter(isContentImage);
 };
 
 export const filterPdfFilesInChatMessages = (messages: ChatMessage[]): PdfFileContent[] => {
-  return getUserPromptMessages(messages)
+  return getUserMessages(messages)
     .filter((message) => message.contextType === 'userPrompt')
     .flatMap((message) => message.content)
     .filter(isContentPdfFile);
