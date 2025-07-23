@@ -469,6 +469,7 @@ export const ApiSchemas = {
     z.object({
       isOnPaidPlan: z.boolean(),
       exceededBillingLimit: z.boolean(),
+      error: z.boolean().optional(),
     })
   ),
 

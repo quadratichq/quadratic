@@ -205,6 +205,7 @@ impl GridController {
                 Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
             }
         }
+
         #[cfg(feature = "show-first-sheet-operations")]
         print_first_sheet!(&self);
     }

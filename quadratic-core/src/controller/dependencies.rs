@@ -8,10 +8,34 @@ use super::GridController;
 
 impl GridController {
     /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
-    pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
-        let dependent_cells = self
+    pub fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
+        let all_dependent_cells = self
             .cells_accessed()
             .get_positions_associated_with_region(sheet_rect.to_region());
+
+        let mut dependent_cells = HashSet::new();
+
+        for dependent_cell in all_dependent_cells {
+            let Some(sheet) = self.try_sheet(dependent_cell.sheet_id) else {
+                continue;
+            };
+
+            let Some(data_table) = sheet.data_table_at(&dependent_cell.into()) else {
+                continue;
+            };
+
+            let Some(code_run) = data_table.code_run() else {
+                continue;
+            };
+
+            // ignore code cells that have self reference
+            if !code_run
+                .cells_accessed
+                .contains(dependent_cell, self.a1_context())
+            {
+                dependent_cells.insert(dependent_cell);
+            }
+        }
 
         if dependent_cells.is_empty() {
             None
@@ -90,26 +114,26 @@ mod test {
         );
 
         assert_eq!(
-            gc.get_dependent_code_cells(&sheet_pos_00.into())
+            gc.get_dependent_code_cells(sheet_pos_00.into())
                 .unwrap()
                 .len(),
             1
         );
         assert_eq!(
-            gc.get_dependent_code_cells(&sheet_pos_00.into())
+            gc.get_dependent_code_cells(sheet_pos_00.into())
                 .unwrap()
                 .iter()
                 .next(),
             Some(&sheet_pos_02)
         );
         assert_eq!(
-            gc.get_dependent_code_cells(&sheet_pos_01.into())
+            gc.get_dependent_code_cells(sheet_pos_01.into())
                 .unwrap()
                 .iter()
                 .next(),
             Some(&sheet_pos_02)
         );
-        assert_eq!(gc.get_dependent_code_cells(&sheet_pos_02.into()), None);
+        assert_eq!(gc.get_dependent_code_cells(sheet_pos_02.into()), None);
     }
 
     #[test]
@@ -137,7 +161,7 @@ mod test {
             None,
         );
         assert_eq!(
-            gc.get_dependent_code_cells(&SheetRect {
+            gc.get_dependent_code_cells(SheetRect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 1, y: 1 },
                 sheet_id

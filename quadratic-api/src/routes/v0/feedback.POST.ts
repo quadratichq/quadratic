@@ -59,7 +59,7 @@ async function handler(req: RequestWithUser, res: express.Response) {
       ].join('\n\n'),
     };
     axios.post(SLACK_FEEDBACK_URL, payload).catch((error: Error) => {
-      console.log({ message: 'Failed to post feedback to Slack', error });
+      console.log(JSON.stringify({ message: 'Failed to post feedback to Slack', error }));
     });
   }
 
