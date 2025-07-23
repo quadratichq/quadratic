@@ -192,9 +192,7 @@ impl Sheet {
                                 whole_cell,
                                 false, // data_tables can never have code within them (although that would be cool if they did ;)
                             ) {
-                                let y = data_table_pos.y
-                                    + data_table.y_adjustment(true)
-                                    + display_row as i64;
+                                let y = data_table_pos.y + y_adjustment + display_row as i64;
                                 if y >= data_table_pos.y {
                                     results.push(JsSheetPosText {
                                         sheet_id: self.id.to_string(),
