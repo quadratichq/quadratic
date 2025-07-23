@@ -3,11 +3,15 @@ import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
+import { DeleteColumns } from '@/app/ai/toolCards/DeleteColumns';
+import { DeleteRows } from '@/app/ai/toolCards/DeleteRows';
 import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
 import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { HasCellData } from '@/app/ai/toolCards/HasCellData';
+import { InsertColumns } from '@/app/ai/toolCards/InsertColumns';
+import { InsertRows } from '@/app/ai/toolCards/InsertRows';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
@@ -91,6 +95,14 @@ export const AIAnalystToolCard = memo(({ name, args, loading }: AIAnalystToolCar
       return <ResizeRows args={args} loading={loading} />;
     case AITool.SetBorders:
       return <SetBorders args={args} loading={loading} />;
+    case AITool.InsertColumns:
+      return <InsertColumns args={args} loading={loading} />;
+    case AITool.InsertRows:
+      return <InsertRows args={args} loading={loading} />;
+    case AITool.DeleteColumns:
+      return <DeleteColumns args={args} loading={loading} />;
+    case AITool.DeleteRows:
+      return <DeleteRows args={args} loading={loading} />;
     default:
       return null;
   }
