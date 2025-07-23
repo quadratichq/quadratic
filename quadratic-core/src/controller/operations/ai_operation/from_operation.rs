@@ -9,8 +9,7 @@ use crate::{
 };
 
 fn sheet_pos_to_selection(sheet_pos: SheetPos, gc: &GridController) -> String {
-    A1Selection::from_pos(sheet_pos.into(), sheet_pos.sheet_id, gc.a1_context())
-        .to_string(None, gc.a1_context())
+    A1Selection::from_pos(sheet_pos.into(), sheet_pos.sheet_id).to_string(None, gc.a1_context())
 }
 
 fn sheet_rect_to_selection(sheet_rect: SheetRect, gc: &GridController) -> String {
