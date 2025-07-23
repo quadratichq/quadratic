@@ -1,12 +1,17 @@
 use crate::grid::{
     COLUMN_NAME_FIRST_CHARACTER_COMPILED, COLUMN_NAME_REMAINING_CHARS_COMPILED,
-    COLUMN_NAME_VALID_CHARS_COMPILED, TABLE_NAME_FIRST_CHAR_COMPILED,
-    TABLE_NAME_REMAINING_CHARACTERS_COMPILED, TABLE_NAME_VALID_CHARS_COMPILED,
+    COLUMN_NAME_VALID_CHARS_COMPILED, MAX_COLUMN_NAME_LENGTH, MAX_TABLE_NAME_LENGTH,
+    TABLE_NAME_FIRST_CHAR_COMPILED, TABLE_NAME_REMAINING_CHARACTERS_COMPILED,
+    TABLE_NAME_VALID_CHARS_COMPILED,
 };
 
 /// Validates and fixes table names.
 pub fn sanitize_table_name(name: String) -> String {
-    let name = name.trim().chars().take(255).collect::<String>();
+    let name = name
+        .trim()
+        .chars()
+        .take(MAX_TABLE_NAME_LENGTH)
+        .collect::<String>();
     if name.is_empty() {
         return "Table".to_string();
     }
@@ -41,7 +46,11 @@ pub fn sanitize_table_name(name: String) -> String {
 
 /// Validates and fixes column names.
 pub fn sanitize_column_name(name: String) -> String {
-    let name = name.trim().chars().take(255).collect::<String>();
+    let name = name
+        .trim()
+        .chars()
+        .take(MAX_COLUMN_NAME_LENGTH)
+        .collect::<String>();
     if name.is_empty() {
         return "Column".to_string();
     }
