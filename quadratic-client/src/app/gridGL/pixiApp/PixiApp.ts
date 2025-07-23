@@ -1,3 +1,4 @@
+import { defaultEditorInteractionState } from '@/app/atoms/editorInteractionStateAtom';
 import './pixiApp.css';
 
 import { events } from '@/app/events/events';
