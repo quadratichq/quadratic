@@ -44,11 +44,7 @@ const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct']);
 const OpenRouterModelSchema = z.enum([
-  'qwen/qwen3-32b',
-  'qwen/qwen3-235b-a22b',
   'deepseek/deepseek-r1-0528',
-  'deepseek/deepseek-r1-0528-qwen3-8b',
-  'deepseek/deepseek-r1-distill-qwen-7b',
   'deepseek/deepseek-chat-v3-0324',
   'moonshotai/kimi-k2',
 ]);
@@ -136,11 +132,7 @@ const BasetenModelKeySchema = z.enum(['baseten:moonshotai/Kimi-K2-Instruct']);
 export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
 const OpenRouterModelKeySchema = z.enum([
-  'open-router:qwen/qwen3-32b',
-  'open-router:qwen/qwen3-235b-a22b',
   'open-router:deepseek/deepseek-r1-0528',
-  'open-router:deepseek/deepseek-r1-0528-qwen3-8b',
-  'open-router:deepseek/deepseek-r1-distill-qwen-7b',
   'open-router:deepseek/deepseek-chat-v3-0324',
   'open-router:moonshotai/kimi-k2',
 ]);
@@ -186,6 +178,7 @@ export const AIModelConfigSchema = z
     thinking: z.boolean().optional(),
     thinkingToggle: z.boolean().optional(),
     thinkingBudget: z.number().optional(),
+    imageSupport: z.boolean(),
   })
   .extend(AIRatesSchema.shape);
 export type AIModelConfig = z.infer<typeof AIModelConfigSchema>;
