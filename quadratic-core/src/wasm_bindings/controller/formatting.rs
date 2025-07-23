@@ -295,11 +295,11 @@ impl GridController {
     #[wasm_bindgen(js_name = "getFormatSelection")]
     pub fn js_get_format_selection(&self, selection: String) -> Result<JsValue, JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
-            .map_err(|_| "Unable to parse A1Selection")?;
+            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
         let sheet = self
             .try_sheet(selection.sheet_id)
             .ok_or(JsValue::UNDEFINED)?;
-        let format = sheet.format_selection(&selection);
+        let format = sheet.format_selection(&selection, self.a1_context());
         serde_wasm_bindgen::to_value(&format).map_err(|_| JsValue::UNDEFINED)
     }
 

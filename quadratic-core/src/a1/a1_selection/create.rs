@@ -166,7 +166,7 @@ impl A1Selection {
         }
     }
 
-    pub fn from_sheet_ranges(
+    fn from_sheet_ranges(
         ranges: Vec<RefRangeBounds>,
         sheet: SheetId,
         a1_context: &A1Context,

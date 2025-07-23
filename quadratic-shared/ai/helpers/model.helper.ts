@@ -81,6 +81,7 @@ export const getModelOptions = (
   thinkingBudget?: number;
   promptCaching: boolean;
   strictParams: boolean;
+  imageSupport: boolean;
 } => {
   const config = MODELS_CONFIGURATION[modelKey];
   const { canStream, canStreamWithToolCalls, max_tokens } = config;
@@ -103,5 +104,7 @@ export const getModelOptions = (
 
   const strictParams = !!config.strictParams;
 
-  return { stream, temperature, max_tokens, thinking, thinkingBudget, promptCaching, strictParams };
+  const imageSupport = config.imageSupport;
+
+  return { stream, temperature, max_tokens, thinking, thinkingBudget, promptCaching, strictParams, imageSupport };
 };

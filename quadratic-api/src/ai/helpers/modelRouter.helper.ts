@@ -1,16 +1,17 @@
 import {
   getLastAIPromptMessageModelKey,
   getPromptMessagesForAI,
+  getUserPromptMessages,
+  isContentImage,
   isContentText,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   DEFAULT_BACKUP_MODEL,
   DEFAULT_MODEL_FREE,
+  DEFAULT_MODEL_FREE_WITH_IMAGE,
+  DEFAULT_MODEL_PRO,
   DEFAULT_MODEL_ROUTER_MODEL,
-  DEFAULT_SQL_MODEL,
-  DEFAULT_SQL_MODEL_THINKING,
-  MODELS_CONFIGURATION,
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
@@ -27,28 +28,41 @@ export const getModelKey = async (
       return modelKey;
     }
 
-    if (!isOnPaidPlan) {
-      return DEFAULT_MODEL_FREE;
-    }
-
-    if (inputArgs.source === 'AIAssistant' && inputArgs.language === 'Connection') {
-      const thinking = MODELS_CONFIGURATION[modelKey].thinking;
-      return thinking ? DEFAULT_SQL_MODEL_THINKING : DEFAULT_SQL_MODEL;
-    }
-
-    if (!isQuadraticModel(modelKey)) {
-      return modelKey;
+    // if the user is on a paid plan and the model is the default pro model, return the default pro model
+    if (isOnPaidPlan && modelKey === DEFAULT_MODEL_PRO) {
+      return DEFAULT_MODEL_PRO;
     }
 
     const messages = inputArgs.messages;
     if (messages.length === 0) {
-      throw new Error('No messages provided');
+      throw new Error('Messages are empty');
     }
 
     const promptMessages = getPromptMessagesForAI(messages);
+
+    // if the last message is not a user prompt, use the last AI prompt message model key
     const lastPromptMessage = promptMessages[promptMessages.length - 1];
     if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
       return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
+    }
+
+    // if the model is the default free model, check if the user prompt contains an image file
+    if (modelKey === DEFAULT_MODEL_FREE) {
+      const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
+        message.content.some(isContentImage)
+      );
+
+      return hasImageFile ? DEFAULT_MODEL_FREE_WITH_IMAGE : DEFAULT_MODEL_FREE;
+    }
+
+    // if the user is not on a paid plan, return the default free model
+    if (!isOnPaidPlan) {
+      return DEFAULT_MODEL_FREE;
+    }
+
+    // if the model is not the model router model, return the model key
+    if (!isQuadraticModel(modelKey)) {
+      return modelKey;
     }
 
     const userTextPrompt = lastPromptMessage.content
@@ -238,7 +252,7 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    console.error({ message: 'Error in getModelKey', error });
+    console.error(JSON.stringify({ message: 'Error in getModelKey', error }));
   }
 
   return DEFAULT_BACKUP_MODEL;
