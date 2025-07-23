@@ -252,7 +252,7 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    console.error({ message: 'Error in getModelKey', error });
+    console.error(JSON.stringify({ message: 'Error in getModelKey', error }));
   }
 
   return DEFAULT_BACKUP_MODEL;
