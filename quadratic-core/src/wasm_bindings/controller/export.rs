@@ -21,7 +21,7 @@ impl GridController {
 impl GridController {
     /// Returns [`TransactionSummary`]
     #[wasm_bindgen(js_name = "exportExcel")]
-    pub fn js_export_excel(self) -> Result<Vec<u8>, JsValue> {
+    pub fn js_export_excel(&self) -> Result<Vec<u8>, JsValue> {
         match self.export_excel() {
             Ok(file) => Ok(file),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
