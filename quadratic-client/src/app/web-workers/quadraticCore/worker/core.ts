@@ -764,26 +764,21 @@ class Core {
 
   pasteFromClipboard({
     selection,
-    plainText,
-    html,
+    jsClipboard,
     special,
     cursor,
   }: {
     selection: string;
-    plainText: string | undefined;
-    html: string | undefined;
+    jsClipboard: Uint8Array;
     special: string;
     cursor: string;
   }) {
-    return new Promise((resolve) => {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      try {
-        this.gridController.pasteFromClipboard(selection, plainText, html, special, cursor);
-      } catch (e) {
-        this.handleCoreError('pasteFromClipboard', e);
-      }
-      resolve(undefined);
-    });
+    if (!this.gridController) throw new Error('Expected gridController to be defined');
+    try {
+      this.gridController.pasteFromClipboard(selection, jsClipboard, special, cursor);
+    } catch (e) {
+      this.handleCoreError('pasteFromClipboard', e);
+    }
   }
 
   //#endregion
