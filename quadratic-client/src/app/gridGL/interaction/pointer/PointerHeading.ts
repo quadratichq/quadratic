@@ -99,7 +99,7 @@ export class PointerHeading {
     if (!intersects) return false;
 
     // exit out of inline editor
-    inlineEditorHandler.closeIfOpen();
+    inlineEditorHandler.close({ skipFocusGrid: true });
     const cursor = sheets.sheet.cursor;
 
     const hasPermission = hasPermissionToEditFile(pixiAppSettings.editorInteractionState.permissions);
