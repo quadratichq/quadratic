@@ -205,10 +205,6 @@ impl GridController {
                 Operation::MoveRows { .. } => self.execute_move_rows(transaction, op),
             }
         }
-        #[cfg(feature = "show-operations")]
-        if cfg!(target_family = "wasm") {
-            crate::wasm_bindings::js::timeEnd("execute_operation");
-        }
 
         #[cfg(feature = "show-first-sheet-operations")]
         print_first_sheet!(&self);
