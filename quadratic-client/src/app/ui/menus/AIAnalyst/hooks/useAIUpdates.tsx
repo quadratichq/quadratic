@@ -25,15 +25,15 @@ const translateOp = (op: AIOperation): string => {
     case 'SetCellValues':
       return `The cell values in range ${op.selection} have been changed.`;
     case 'SetDataTable':
-      return `The data table anchored at ${op.sheet_pos} has been changed. You can find more information about this change in the data table context above.`;
+      return `The data table anchored at ${op.selection} has been changed. You can find more information about this change in the data table context above.`;
     case 'DeleteDataTable':
-      return `The data table anchored at ${op.sheet_pos} has been deleted.`;
+      return `The data table anchored at ${op.selection} has been deleted.`;
     case 'FlattenDataTable':
-      return `The data table anchored at ${op.sheet_pos} has been flattened. All of its data has been moved to the grid.`;
+      return `The data table anchored at ${op.selection} has been flattened. All of its data has been moved to the grid.`;
     case 'GridToDataTable':
-      return `Convert grid to data table at ${op.sheet_rect}.`;
+      return `Convert grid to data table at ${op.selection}.`;
     case 'DataTableColumnsChanged':
-      return `Change data table columns in range ${op.sheet_pos}.`;
+      return `Change data table columns in range ${op.selection}.`;
     case 'DataTableRowsChanged':
       return ``;
     case 'DataTableSorted':
@@ -41,7 +41,7 @@ const translateOp = (op: AIOperation): string => {
     case 'DataTableHeaderToggled':
       return ``;
     case 'ComputeCode':
-      return ``;
+      return `Compute code in range ${op.selection}.`;
     case 'FormatsChanged':
       return ``;
     case 'AddSheet':

@@ -170,4 +170,8 @@ pub enum AIOperation {
         from_range: (i64, i64),
         to: i64,
     },
+
+    ComputeCode {
+        selection: String,
+    },
 }

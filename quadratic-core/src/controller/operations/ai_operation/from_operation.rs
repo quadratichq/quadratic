@@ -295,6 +295,10 @@ impl AIOperation {
                 to: *to,
             }),
 
+            Operation::ComputeCode { sheet_pos, .. } => Some(Self::ComputeCode {
+                selection: sheet_pos_to_selection(*sheet_pos, gc),
+            }),
+
             // Deprecated operations that we don't need to support
             Operation::SetChartSize { .. }
             | Operation::SetChartCellSize { .. }
@@ -310,7 +314,6 @@ impl AIOperation {
             | Operation::SetBordersSelection { .. }
             | Operation::SetCursor { .. }
             | Operation::SetCursorSelection { .. }
-            | Operation::ComputeCode { .. }
             | Operation::SetValidationWarning { .. } => None,
         }
     }
