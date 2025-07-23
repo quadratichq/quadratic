@@ -42,7 +42,7 @@ class InlineEditorKeyboard {
         }
         // if we're not moving and the formula is valid, close the editor
         else if (!(await this.handleValidationError())) {
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+          inlineEditorHandler.close({ deltaX: isRight ? 1 : -1 });
         }
       }
     }
@@ -52,7 +52,7 @@ class InlineEditorKeyboard {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
-          inlineEditorHandler.close(isRight ? 1 : -1, 0, false);
+          inlineEditorHandler.close({ deltaX: isRight ? 1 : -1 });
         }
       }
     }
@@ -90,7 +90,7 @@ class InlineEditorKeyboard {
           keyboardPosition(e);
         } else {
           if (!(await this.handleValidationError())) {
-            inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+            inlineEditorHandler.close({ deltaY: isDown ? 1 : -1 });
           }
           return;
         }
@@ -102,7 +102,7 @@ class InlineEditorKeyboard {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
-          inlineEditorHandler.close(0, isDown ? 1 : -1, false);
+          inlineEditorHandler.close({ deltaY: isDown ? 1 : -1 });
         }
       }
     }
@@ -163,7 +163,7 @@ class InlineEditorKeyboard {
         inlineEditorFormula.removeInsertingCells();
         this.resetKeyboardPosition();
       } else {
-        inlineEditorHandler.close(0, 0, true);
+        inlineEditorHandler.close({ cancel: true });
       }
     }
 
@@ -177,7 +177,7 @@ class InlineEditorKeyboard {
       e.stopPropagation();
       e.preventDefault();
       if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(0, 1, false);
+        inlineEditorHandler.close({ deltaY: 1 });
       }
     }
 
@@ -186,7 +186,7 @@ class InlineEditorKeyboard {
       e.stopPropagation();
       e.preventDefault();
       if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(0, -1, false);
+        inlineEditorHandler.close({ deltaY: -1 });
       }
     }
 
@@ -204,7 +204,7 @@ class InlineEditorKeyboard {
         e.stopPropagation();
         e.preventDefault();
         if (!(await this.handleValidationError())) {
-          inlineEditorHandler.close(1, 0, false);
+          inlineEditorHandler.close({ deltaX: 1 });
         }
       }
     }
@@ -214,7 +214,7 @@ class InlineEditorKeyboard {
       e.stopPropagation();
       e.preventDefault();
       if (!(await this.handleValidationError())) {
-        inlineEditorHandler.close(-1, 0, false);
+        inlineEditorHandler.close({ deltaX: -1 });
       }
     }
 
@@ -348,7 +348,7 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ShowGoToMenu, e)) {
       e.stopPropagation();
       e.preventDefault();
-      inlineEditorHandler.close(0, 0, false).then(() => {
+      inlineEditorHandler.close({}).then(() => {
         defaultActionSpec[Action.ShowGoToMenu].run();
       });
     }
@@ -357,7 +357,7 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.FindInCurrentSheet, e)) {
       e.stopPropagation();
       e.preventDefault();
-      inlineEditorHandler.close(0, 0, false).then(() => {
+      inlineEditorHandler.close({}).then(() => {
         defaultActionSpec[Action.FindInCurrentSheet].run();
       });
     }
@@ -366,7 +366,7 @@ class InlineEditorKeyboard {
     else if (matchShortcut(Action.ShowCommandPalette, e)) {
       e.stopPropagation();
       e.preventDefault();
-      inlineEditorHandler.close(0, 0, false).then(() => {
+      inlineEditorHandler.close({}).then(() => {
         defaultActionSpec[Action.ShowCommandPalette].run();
       });
     }

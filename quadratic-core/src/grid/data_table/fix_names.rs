@@ -1,12 +1,21 @@
 use crate::grid::{
     COLUMN_NAME_FIRST_CHARACTER_COMPILED, COLUMN_NAME_REMAINING_CHARS_COMPILED,
-    COLUMN_NAME_VALID_CHARS_COMPILED, TABLE_NAME_FIRST_CHAR_COMPILED,
-    TABLE_NAME_REMAINING_CHARACTERS_COMPILED, TABLE_NAME_VALID_CHARS_COMPILED,
+    COLUMN_NAME_VALID_CHARS_COMPILED, MAX_COLUMN_NAME_LENGTH, MAX_TABLE_NAME_LENGTH,
+    TABLE_NAME_FIRST_CHAR_COMPILED, TABLE_NAME_REMAINING_CHARACTERS_COMPILED,
+    TABLE_NAME_VALID_CHARS_COMPILED,
 };
 
 /// Validates and fixes table names.
 pub fn sanitize_table_name(name: String) -> String {
-    let name = name.trim().to_string();
+    let name = name
+        .trim()
+        .chars()
+        .take(MAX_TABLE_NAME_LENGTH)
+        .collect::<String>();
+    if name.is_empty() {
+        return "Table".to_string();
+    }
+
     let mut result: String;
     if TABLE_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -37,7 +46,15 @@ pub fn sanitize_table_name(name: String) -> String {
 
 /// Validates and fixes column names.
 pub fn sanitize_column_name(name: String) -> String {
-    let name = name.trim().to_string();
+    let name = name
+        .trim()
+        .chars()
+        .take(MAX_COLUMN_NAME_LENGTH)
+        .collect::<String>();
+    if name.is_empty() {
+        return "Column".to_string();
+    }
+
     let mut result: String;
     if COLUMN_NAME_VALID_CHARS_COMPILED.is_match(&name) {
         return name;
@@ -241,7 +258,7 @@ mod tests {
     #[test]
     fn test_fix_table_name_edge_cases() {
         // Empty string
-        assert_eq!(sanitize_table_name("".to_string()), "_");
+        assert_eq!(sanitize_table_name("".to_string()), "Table");
 
         // Single invalid character
         assert_eq!(sanitize_table_name("@".to_string()), "_");
@@ -249,16 +266,16 @@ mod tests {
         assert_eq!(sanitize_table_name("#".to_string()), "_");
 
         // Only spaces
-        assert_eq!(sanitize_table_name("   ".to_string()), "_");
+        assert_eq!(sanitize_table_name("   ".to_string()), "Table");
 
         // Only tabs
-        assert_eq!(sanitize_table_name("\t\t".to_string()), "_");
+        assert_eq!(sanitize_table_name("\t\t".to_string()), "Table");
 
         // Only newlines
-        assert_eq!(sanitize_table_name("\n\n".to_string()), "_");
+        assert_eq!(sanitize_table_name("\n\n".to_string()), "Table");
 
         // Mixed whitespace
-        assert_eq!(sanitize_table_name(" \t\n".to_string()), "_");
+        assert_eq!(sanitize_table_name(" \t\n".to_string()), "Table");
 
         // Unicode characters
         assert_eq!(sanitize_table_name("café".to_string()), "café");
@@ -269,8 +286,8 @@ mod tests {
         assert_eq!(sanitize_table_name("name😀test".to_string()), "name_test");
 
         // Very long name
-        let long_name = "a".repeat(1000) + "@" + &"b".repeat(1000);
-        let expected = "a".repeat(1000) + "_" + &"b".repeat(1000);
+        let long_name = "a".repeat(100) + "@" + &"b".repeat(100);
+        let expected = "a".repeat(100) + "_" + &"b".repeat(100);
         assert_eq!(sanitize_table_name(long_name), expected);
     }
 
@@ -323,7 +340,7 @@ mod tests {
 
     #[test]
     fn test_column_name_empty_string() {
-        assert_eq!(sanitize_column_name("".to_string()), "_");
+        assert_eq!(sanitize_column_name("".to_string()), "Column");
     }
 
     #[test]
@@ -428,7 +445,7 @@ mod tests {
         assert_eq!(sanitize_column_name("@".to_string()), "@");
         assert_eq!(sanitize_column_name(".".to_string()), ".");
         assert_eq!(sanitize_column_name("(".to_string()), "(");
-        assert_eq!(sanitize_column_name(" ".to_string()), "_");
+        assert_eq!(sanitize_column_name(" ".to_string()), "Column");
         assert_eq!(sanitize_column_name("#".to_string()), "_");
     }
 
