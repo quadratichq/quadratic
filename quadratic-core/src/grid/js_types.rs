@@ -14,6 +14,8 @@ use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat, SheetId};
 use crate::Pos;
+use crate::controller::execution::TransactionSource;
+use crate::controller::operations::ai_operation::AIOperation;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
@@ -546,4 +548,10 @@ pub struct JsSheetPosText {
     pub x: i64,
     pub y: i64,
     pub text: Option<String>,
+}
+
+#[derive(Debug, Serialize, TS, PartialEq)]
+pub struct JsAITransactions {
+    pub ops: Vec<AIOperation>,
+    pub source: TransactionSource,
 }

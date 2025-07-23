@@ -4,6 +4,7 @@ import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import type {
+  JsAITransactions,
   JsBordersSheet,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -158,6 +159,8 @@ interface EventTypes {
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
 
   debugFlags: () => void;
+
+  aiUpdates: (update: JsAITransactions) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

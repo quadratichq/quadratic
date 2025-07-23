@@ -18,7 +18,8 @@ use crate::{
         transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, CodeCellValue, Sheet, SheetId,
+        js_types::{JsAITransactions, JsValidationWarning},
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -193,16 +194,22 @@ impl PendingTransaction {
     }
 
     /// Sends the forward transaction to the AI.
-    pub fn send_ai_transaction(&self, gc: &GridController) {
+    pub fn send_ai_updates(&self, gc: &GridController) {
         if self.complete && (cfg!(target_family = "wasm") || cfg!(test)) {
             let ops = self
                 .forward_operations
                 .iter()
-                .map(|op| AIOperation::from_operation(self.source, op, gc))
+                .flat_map(|op| AIOperation::from_operation(op, gc))
                 .collect::<Vec<_>>();
 
             if !ops.is_empty() {
                 // send the ops to the client to populate the AI
+                if let Ok(ops_str) = serde_json::to_string(&JsAITransactions {
+                    ops,
+                    source: self.source,
+                }) {
+                    crate::wasm_bindings::js::jsSendAIUpdates(ops_str.into_bytes());
+                }
             }
         }
     }

@@ -12,6 +12,7 @@ import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { useAIAnalystPanelWidth } from '@/app/ui/menus/AIAnalyst/hooks/useAIAnalystPanelWidth';
+import { useAIUpdates } from '@/app/ui/menus/AIAnalyst/hooks/useAIUpdates';
 import { cn } from '@/shared/shadcn/utils';
 import { memo, useCallback, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -24,6 +25,8 @@ export const AIAnalyst = memo(() => {
   const aiPanelRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { panelWidth, setPanelWidth } = useAIAnalystPanelWidth();
+
+  useAIUpdates();
 
   const initialLoadRef = useRef(true);
   const autoFocusRef = useRef(false);

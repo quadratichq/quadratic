@@ -325,6 +325,7 @@ const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+
   const lastContext = useMemo(
     () =>
       getUserPromptMessages(messages)

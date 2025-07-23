@@ -200,11 +200,14 @@ const InternalContextTypeSchema = z.enum([
   'modelRouter',
   'currentDate',
   'sheetNames',
+  'aiUpdates',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');
 export type ToolResultContextType = z.infer<typeof ToolResultContextTypeSchema>;
 const UserPromptContextTypeSchema = z.literal('userPrompt');
 export type UserPromptContextType = z.infer<typeof UserPromptContextTypeSchema>;
+const AIUpdateContextTypeSchema = z.literal('aiUpdates');
+export type AIUpdateContextType = z.infer<typeof AIUpdateContextTypeSchema>;
 
 const CodeCellLanguageSchema = z.enum(['Python', 'Javascript', 'Formula', 'Import']).or(
   z.object({
@@ -349,6 +352,14 @@ export type UserMessagePrompt = z.infer<typeof UserMessagePromptSchema>;
 const UserMessageSchema = z.union([SystemMessageSchema, ToolResultSchema, UserMessagePromptSchema]);
 export type UserMessage = z.infer<typeof UserMessageSchema>;
 
+const AIUpdateMessageSchema = z.object({
+  role: z.literal('user'),
+  content: ContentSchema,
+  contextType: AIUpdateContextTypeSchema,
+  context: ContextSchema.optional(),
+});
+export type AIUpdateMessage = z.infer<typeof AIUpdateMessageSchema>;
+
 const AIMessageInternalSchema = z.object({
   role: z.literal('assistant'),
   content: z.array(TextContentSchema),
@@ -406,7 +417,7 @@ export const AIMessagePromptSchema = z.preprocess(
 );
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
-const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]);
+const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema, AIUpdateMessageSchema]);
 export type AIMessage = z.infer<typeof AIMessageSchema>;
 
 const InternalWebSearchContextTypeSchema = z.literal('webSearchInternal');

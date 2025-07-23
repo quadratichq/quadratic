@@ -15,6 +15,7 @@ use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Response;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Value;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Values;
+use quadratic_core::controller::operations::ai_operation::AIOperation;
 use quadratic_core::controller::operations::clipboard::PasteSpecial;
 use quadratic_core::controller::transaction_types::JsCellValueResult;
 use quadratic_core::controller::transaction_types::JsCodeResult;
@@ -22,6 +23,7 @@ use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
+use quadratic_core::grid::js_types::JsAITransactions;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsColumnWidth;
@@ -100,6 +102,7 @@ fn main() {
     s += &generate_type_declarations!(
         A1Error,
         A1Selection,
+        AIOperation,
         ArraySize,
         Axis,
         BorderSelection,
@@ -123,6 +126,7 @@ fn main() {
         Format,
         FormatUpdate,
         GridBounds,
+        JsAITransactions,
         JsBorderHorizontal,
         JsBorderVertical,
         JsBordersSheet,
