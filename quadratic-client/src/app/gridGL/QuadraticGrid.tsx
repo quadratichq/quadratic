@@ -51,6 +51,7 @@ export default function QuadraticGrid() {
 
   return (
     <div
+      className="pointer-up-ignore"
       ref={containerRef}
       style={{
         position: 'relative',

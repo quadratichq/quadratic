@@ -5,6 +5,7 @@ import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessage
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -127,6 +128,7 @@ How can I help you?`,
           const addDataTableToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.AddDataTable);
           for (const toolCall of addDataTableToolCalls) {
             try {
+              inlineEditorHandler.close({ skipFocusGrid: true });
               const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const args = aiToolsSpec[AITool.AddDataTable].responseSchema.parse(argsObject);
               await aiToolsActions[AITool.AddDataTable](args, {
