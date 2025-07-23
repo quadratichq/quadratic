@@ -14,7 +14,10 @@ use crate::{
     CellValue, Pos, Value,
     a1::{A1Selection, CellRefRange},
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
-    grid::{CellAlign, CellVerticalAlign, CodeCellLanguage, GridBounds, NumericFormatKind, Sheet},
+    grid::{
+        CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, GridBounds, NumericFormatKind,
+        Sheet,
+    },
 };
 
 lazy_static! {
@@ -134,7 +137,7 @@ impl GridController {
                 GridBounds::Empty => continue,
                 GridBounds::NonEmpty(rect) => {
                     for pos in rect.iter() {
-                        let (row, col) = (pos.y as u32 - 1, pos.x as u16 - 1);
+                        let (col, row) = (pos.x as u16 - 1, pos.y as u32 - 1);
                         let mut is_formula_output = false;
 
                         // data table output
@@ -142,10 +145,11 @@ impl GridController {
                             if let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
                                 let is_formula =
                                     code_cell_value.language == CodeCellLanguage::Formula;
+
                                 is_formula_output =
                                     data_table.get_language() == CodeCellLanguage::Formula;
 
-                                // we currently only care about formualas
+                                // we currently only care about formulas
                                 if is_formula {
                                     let code = code_cell_value.code.as_str();
                                     let display_value = data_table.display_value(false)?;
@@ -226,12 +230,12 @@ fn write_excel_value(
 /// Gets the excel formats for a cell value.
 fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, Format) {
     let mut format = Format::new();
-    let formats = sheet.formats.to_owned();
-    let bold = formats.bold.get(pos).unwrap_or(false);
-    let italic = formats.italic.get(pos).unwrap_or(false);
-    let underline = formats.underline.get(pos).unwrap_or(false);
-    let strike_through = formats.strike_through.get(pos).unwrap_or(false);
-    let date_time_format = formats.date_time.get(pos);
+    let cell_format = sheet.cell_format(pos);
+    let bold = cell_format.bold.unwrap_or(false);
+    let italic = cell_format.italic.unwrap_or(false);
+    let underline = cell_format.underline.unwrap_or(false);
+    let strike_through = cell_format.strike_through.unwrap_or(false);
+    let date_time_format = cell_format.date_time;
 
     if bold {
         format = format.set_bold();
@@ -249,16 +253,16 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
         format = format.set_font_strikethrough();
     }
 
-    if let Some(text_color) = formats.text_color.get(pos) {
+    if let Some(text_color) = cell_format.text_color {
         format = format.set_font_color(text_color.as_str());
     }
 
-    if let Some(fill_color) = formats.fill_color.get(pos) {
+    if let Some(fill_color) = cell_format.fill_color {
         format = format.set_pattern(FormatPattern::Solid);
         format = format.set_background_color(fill_color.as_str());
     }
 
-    if let Some(align) = formats.align.get(pos) {
+    if let Some(align) = cell_format.align {
         let align = match align {
             CellAlign::Left => FormatAlign::Left,
             CellAlign::Center => FormatAlign::Center,
@@ -267,7 +271,7 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
         format = format.set_align(align);
     }
 
-    if let Some(vertical_align) = formats.vertical_align.get(pos) {
+    if let Some(vertical_align) = cell_format.vertical_align {
         let align = match vertical_align {
             CellVerticalAlign::Top => FormatAlign::Top,
             CellVerticalAlign::Middle => FormatAlign::VerticalCenter,
@@ -276,13 +280,13 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
         format = format.set_align(align);
     }
 
-    if formats.wrap.get(pos).is_some() {
+    if cell_format.wrap == Some(CellWrap::Wrap) {
         format = format.set_text_wrap();
     }
 
     let mut num_format = String::new();
 
-    if let Some(numeric_format) = formats.numeric_format.get(pos) {
+    if let Some(numeric_format) = cell_format.numeric_format {
         match numeric_format.kind {
             NumericFormatKind::Percentage => {
                 if let CellValue::Number(n) = &mut v {
@@ -299,13 +303,13 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
     }
 
     // this needs to be before the numeric decimals
-    if let Some(numeric_commas) = formats.numeric_commas.get(pos) {
+    if let Some(numeric_commas) = cell_format.numeric_commas {
         if numeric_commas {
             num_format = "#,##0".to_string();
         }
     }
 
-    if let Some(numeric_decimals) = formats.numeric_decimals.get(pos) {
+    if let Some(numeric_decimals) = cell_format.numeric_decimals {
         num_format = format!("{num_format}.{}", "0".repeat(numeric_decimals as usize));
     }
 
@@ -334,7 +338,7 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
 }
 
 /// Converts a chrono format to an excel format.
-pub fn chrono_to_excel_format(chrono_format: &str) -> String {
+fn chrono_to_excel_format(chrono_format: &str) -> String {
     let mut result = String::new();
     let mut chars = chrono_format.chars().peekable();
     let mapping = &*CHRONO_TO_EXCEL_MAPPING;
