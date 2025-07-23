@@ -989,7 +989,14 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.DeleteColumns]: async (args) => {
     const { sheet_name, columns } = args;
     const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    quadraticCore.deleteColumns(sheetId, columns.map(Number), sheets.getCursorPosition());
+    const columnIndicies = columns.flatMap((column) => {
+      const columnIndex = columnNameToIndex(column);
+      if (columnIndex === undefined) {
+        return [];
+      }
+      return [Number(columnIndex)];
+    });
+    quadraticCore.deleteColumns(sheetId, columnIndicies, sheets.getCursorPosition());
     return [
       {
         type: 'text',

@@ -41,7 +41,7 @@ export const InsertRows = memo(({ args, loading }: InsertRowsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  const description = `${toolArgs.data.count} rows have been inserted in sheet "${toolArgs.data.sheet_name}" at row "${toolArgs.data.row}".`;
+  const description = `${toolArgs.data.count > 1 ? `${toolArgs.data.count} rows have` : 'A row has'} been inserted in sheet "${toolArgs.data.sheet_name}" at row "${toolArgs.data.row}".`;
 
   return <ToolCard icon={icon} label={label} description={description} />;
 });

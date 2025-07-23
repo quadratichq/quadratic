@@ -41,7 +41,7 @@ export const InsertColumns = memo(({ args, loading }: InsertColumnsProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  const description = `${toolArgs.data.count} columns have been inserted in sheet "${toolArgs.data.sheet_name}" at column "${toolArgs.data.column}".`;
+  const description = `${toolArgs.data.count > 1 ? `${toolArgs.data.count} columns have` : 'A column has'} been inserted in sheet "${toolArgs.data.sheet_name}" at column "${toolArgs.data.column}".`;
 
   return <ToolCard icon={icon} label={label} description={description} />;
 });
