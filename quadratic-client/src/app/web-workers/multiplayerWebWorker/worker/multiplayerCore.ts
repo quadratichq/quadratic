@@ -9,8 +9,9 @@ import type {
 } from '@/app/web-workers/multiplayerWebWorker/multiplayerCoreMessages';
 import type { ReceiveTransaction, ReceiveTransactions } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { multiplayerServer } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerServer';
+import { Singleton } from '@/app/web-workers/Singleton';
 
-class MultiplayerCore {
+class MultiplayerCore extends Singleton {
   private coreMessagePort?: MessagePort;
 
   init(coreMessagePort: MessagePort) {

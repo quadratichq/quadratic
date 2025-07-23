@@ -8,13 +8,14 @@ import type {
   PythonCoreMessage,
 } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { Singleton } from '@/app/web-workers/Singleton';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
   };
 
-class CorePython {
+class CorePython extends Singleton {
   private corePythonPort?: MessagePort;
   private id = 0;
   private getCellsResponses: Record<number, Uint8Array> = {};

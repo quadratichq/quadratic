@@ -8,7 +8,7 @@ export const bitmapFonts = ['OpenSans', 'OpenSans-Bold', 'OpenSans-Italic', 'Ope
 
 const TIMEOUT = 10000;
 
-let assetsLoaded = false;
+export let assetsLoaded = false;
 
 async function loadFont(fontName: string): Promise<void> {
   const font = new FontFaceObserver(fontName);

@@ -11,15 +11,17 @@ import type {
 import type { MessageUserUpdate, ReceiveRoom } from '@/app/web-workers/multiplayerWebWorker/multiplayerTypes';
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
 import { cellEditDefault, multiplayerServer } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerServer';
+import { Singleton } from '@/app/web-workers/Singleton';
 
 declare var self: WorkerGlobalScope & typeof globalThis;
 
-class MultiplayerClient {
+class MultiplayerClient extends Singleton {
   // messages pending a reconnect
   private waitingForConnection: Record<number, Function> = {};
   private id = 0;
 
   constructor() {
+    super();
     self.onmessage = this.handleMessage;
   }
 

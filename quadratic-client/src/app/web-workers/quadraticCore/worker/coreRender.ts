@@ -13,6 +13,7 @@ import type {
   RenderCoreRequestRenderCells,
 } from '@/app/web-workers/quadraticCore/coreRenderMessages';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
+import { Singleton } from '@/app/web-workers/Singleton';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -31,7 +32,7 @@ declare var self: WorkerGlobalScope &
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
   };
 
-class CoreRender {
+class CoreRender extends Singleton {
   private coreRenderPort?: MessagePort;
 
   async init(renderPort: MessagePort) {

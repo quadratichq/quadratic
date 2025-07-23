@@ -20,6 +20,7 @@ import { coreJavascript } from '@/app/web-workers/quadraticCore/worker/coreJavas
 import { coreMultiplayer } from '@/app/web-workers/quadraticCore/worker/coreMultiplayer';
 import { corePython } from '@/app/web-workers/quadraticCore/worker/corePython';
 import { offline } from '@/app/web-workers/quadraticCore/worker/offline';
+import { Singleton } from '@/app/web-workers/Singleton';
 
 declare var self: WorkerGlobalScope &
   typeof globalThis & {
@@ -61,7 +62,7 @@ declare var self: WorkerGlobalScope &
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
   };
 
-class CoreClient {
+class CoreClient extends Singleton {
   private id = 0;
   private waitingForResponse: Record<number, Function> = {};
   env: Record<string, string> = {};
