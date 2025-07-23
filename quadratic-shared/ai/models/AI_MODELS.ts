@@ -10,6 +10,7 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL_PRO: AIModelKey = 'vertexai-anthropic:claude-sonnet-4:thinking';
 export const DEFAULT_MODEL_FREE: AIModelKey = 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz';
+export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';

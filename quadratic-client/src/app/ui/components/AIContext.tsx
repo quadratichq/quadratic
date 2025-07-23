@@ -17,7 +17,8 @@ import {
   getFileTypeLabel,
   isSupportedImageMimeType,
 } from 'quadratic-shared/ai/helpers/files.helper';
-import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
+import { getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -71,11 +72,7 @@ export const AIContext = memo(
     // use last user message context as initial context in the bottom user message form
     useEffect(() => {
       if (!loading && initialContext === undefined && !!setContext && messagesCount > 0) {
-        const lastUserMessage = messages
-          .filter(
-            (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
-          )
-          .at(-1);
+        const lastUserMessage = getUserPromptMessages(messages).at(-1);
         if (lastUserMessage) {
           setContext(lastUserMessage.context ?? defaultAIAnalystContext);
         }

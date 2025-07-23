@@ -1,5 +1,4 @@
 import { Action } from '@/app/actions/actions';
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
@@ -15,13 +14,14 @@ import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubm
 import mixpanel from 'mixpanel-browser';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
-import { forwardRef, memo, useCallback, useMemo, useState } from 'react';
+import { forwardRef, memo, useCallback, useState } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
+
+const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
 
 type AIAnalystUserMessageFormProps = AIUserMessageFormWrapperProps & {
   initialContext?: Context;
 };
-
 export const AIAnalystUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>((props: AIAnalystUserMessageFormProps, ref) => {
     const { initialContext, ...rest } = props;
@@ -30,13 +30,8 @@ export const AIAnalystUserMessageForm = memo(
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
-
-    const aiModel = useAIModel();
-    const fileTypes = useMemo(() => {
-      return aiModel.modelConfig.imageSupport ? ['image/*', '.pdf'] : ['.pdf'];
-    }, [aiModel.modelConfig.imageSupport]);
-
     const { submitPrompt } = useSubmitAIAnalystPrompt();
+
     const handleSubmit = useCallback(
       ({ content }: SubmitPromptArgs) => {
         mixpanel.track('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
@@ -68,10 +63,8 @@ export const AIAnalystUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        isFileSupported={(mimeType) =>
-          (aiModel.modelConfig.imageSupport && isSupportedImageMimeType(mimeType)) || isSupportedPdfMimeType(mimeType)
-        }
-        fileTypes={fileTypes}
+        isFileSupported={(mimeType) => isSupportedImageMimeType(mimeType) || isSupportedPdfMimeType(mimeType)}
+        fileTypes={ANALYST_FILE_TYPES}
         submitPrompt={handleSubmit}
         formOnKeyDown={formOnKeyDown}
         ctx={{

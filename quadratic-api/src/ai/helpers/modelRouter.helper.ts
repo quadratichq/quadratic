@@ -1,12 +1,16 @@
 import {
   getLastAIPromptMessageModelKey,
   getPromptMessagesForAI,
+  getUserPromptMessages,
+  isContentImage,
   isContentText,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   DEFAULT_BACKUP_MODEL,
   DEFAULT_MODEL_FREE,
+  DEFAULT_MODEL_FREE_WITH_IMAGE,
+  DEFAULT_MODEL_PRO,
   DEFAULT_MODEL_ROUTER_MODEL,
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -24,23 +28,41 @@ export const getModelKey = async (
       return modelKey;
     }
 
-    if (!isOnPaidPlan) {
-      return DEFAULT_MODEL_FREE;
-    }
-
-    if (!isQuadraticModel(modelKey)) {
-      return modelKey;
+    // if the user is on a paid plan and the model is the default pro model, return the default pro model
+    if (isOnPaidPlan && modelKey === DEFAULT_MODEL_PRO) {
+      return DEFAULT_MODEL_PRO;
     }
 
     const messages = inputArgs.messages;
     if (messages.length === 0) {
-      throw new Error('No messages provided');
+      throw new Error('Messages are empty');
     }
 
     const promptMessages = getPromptMessagesForAI(messages);
+
+    // if the last message is not a user prompt, use the last AI prompt message model key
     const lastPromptMessage = promptMessages[promptMessages.length - 1];
     if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
       return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
+    }
+
+    // if the model is the default free model, check if the user prompt contains an image file
+    if (modelKey === DEFAULT_MODEL_FREE) {
+      const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
+        message.content.some(isContentImage)
+      );
+
+      return hasImageFile ? DEFAULT_MODEL_FREE_WITH_IMAGE : DEFAULT_MODEL_FREE;
+    }
+
+    // if the user is not on a paid plan, return the default free model
+    if (!isOnPaidPlan) {
+      return DEFAULT_MODEL_FREE;
+    }
+
+    // if the model is not the model router model, return the model key
+    if (!isQuadraticModel(modelKey)) {
+      return modelKey;
     }
 
     const userTextPrompt = lastPromptMessage.content

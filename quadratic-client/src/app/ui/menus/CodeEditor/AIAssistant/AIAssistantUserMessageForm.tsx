@@ -1,4 +1,3 @@
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   aiAssistantAbortControllerAtom,
   aiAssistantLoadingAtom,
@@ -10,8 +9,10 @@ import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
 import mixpanel from 'mixpanel-browser';
 import { isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import { forwardRef, memo, useCallback, useMemo } from 'react';
+import { forwardRef, memo, useCallback } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
+
+const ASSISTANT_FILE_TYPES = ['image/*'];
 
 export const AIAssistantUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
@@ -19,13 +20,8 @@ export const AIAssistantUserMessageForm = memo(
     const abortController = useRecoilValue(aiAssistantAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAssistantLoadingAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAssistantWaitingOnMessageIndexAtom);
-
-    const aiModel = useAIModel();
-    const fileTypes = useMemo(() => {
-      return aiModel.modelConfig.imageSupport ? ['image/*'] : [];
-    }, [aiModel.modelConfig.imageSupport]);
-
     const { submitPrompt } = useSubmitAIAssistantPrompt();
+
     const handleSubmit = useCallback(
       ({ content }: SubmitPromptArgs) => {
         mixpanel.track('[AIAssistant].submitPrompt');
@@ -44,8 +40,8 @@ export const AIAssistantUserMessageForm = memo(
         abortController={abortController}
         loading={loading}
         setLoading={setLoading}
-        isFileSupported={(mimeType) => aiModel.modelConfig.imageSupport && isSupportedImageMimeType(mimeType)}
-        fileTypes={fileTypes}
+        isFileSupported={isSupportedImageMimeType}
+        fileTypes={ASSISTANT_FILE_TYPES}
         submitPrompt={handleSubmit}
         ctx={{ context: { sheets: [], currentSheet: '', codeCell } }}
         waitingOnMessageIndex={waitingOnMessageIndex}

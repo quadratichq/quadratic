@@ -1,4 +1,3 @@
-import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import {
   filterImageFilesInChatMessages,
   filterPdfFilesInChatMessages,
@@ -7,11 +6,9 @@ import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
 export function useFilesContextMessages() {
-  const aiModel = useAIModel();
-
   const getFilesContext = useCallback(
     async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-      const imageFiles = aiModel.modelConfig.imageSupport ? filterImageFilesInChatMessages(chatMessages) : [];
+      const imageFiles = filterImageFilesInChatMessages(chatMessages);
       const pdfFiles = filterPdfFilesInChatMessages(chatMessages);
 
       return [
@@ -72,7 +69,7 @@ How can I help you?`,
         },
       ];
     },
-    [aiModel.modelConfig.imageSupport]
+    []
   );
 
   return { getFilesContext };
