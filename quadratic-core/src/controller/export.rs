@@ -130,7 +130,7 @@ impl GridController {
             }
 
             // add grid values to the worksheet
-            match sheet.bounds(true) {
+            match sheet.bounds(false) {
                 GridBounds::Empty => continue,
                 GridBounds::NonEmpty(rect) => {
                     for pos in rect.iter() {
