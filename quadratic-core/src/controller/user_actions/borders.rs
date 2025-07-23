@@ -12,9 +12,9 @@ impl GridController {
         style: Option<BorderStyle>,
         cursor: Option<String>,
     ) {
-        if let Some(ops) =
-            self.set_borders_a1_selection_operations(selection, border_selection, style, true)
-        {
+        let ops =
+            self.set_borders_a1_selection_operations(selection, border_selection, style, true);
+        if !ops.is_empty() {
             self.start_user_transaction(ops, cursor, TransactionName::SetBorders);
         }
     }

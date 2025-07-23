@@ -1,4 +1,5 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
+import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -7,6 +8,7 @@ import {
   aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
+  aiAnalystPromptSuggestionsLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
@@ -48,6 +50,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
+  const promptSuggestionsLoading = useRecoilValue(aiAnalystPromptSuggestionsLoadingAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -247,6 +250,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       <WebSearchLoading />
 
+      <UserPromptSuggestionsSkeleton args={''} loading={promptSuggestionsLoading} />
+
       <AILoading loading={loading} />
     </div>
   );
@@ -325,13 +330,7 @@ const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const lastContext = useMemo(
-    () =>
-      getUserPromptMessages(messages)
-        .filter((message) => message.contextType === 'userPrompt')
-        .at(-1)?.context,
-    [messages]
-  );
+  const lastContext = useMemo(() => getUserPromptMessages(messages).at(-1)?.context, [messages]);
 
   if (!messages.length || !promptSuggestions.suggestions.length) {
     return null;

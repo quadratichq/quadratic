@@ -32,7 +32,9 @@ const AnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-20241022',
 ]);
 const OpenAIModelSchema = z.enum([
-  'ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
+  'ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+  'ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
   'gpt-4.1-2025-04-14',
   'gpt-4.1-mini-2025-04-14',
   'o4-mini-2025-04-16',
@@ -42,11 +44,7 @@ const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct']);
 const OpenRouterModelSchema = z.enum([
-  'qwen/qwen3-32b',
-  'qwen/qwen3-235b-a22b',
   'deepseek/deepseek-r1-0528',
-  'deepseek/deepseek-r1-0528-qwen3-8b',
-  'deepseek/deepseek-r1-distill-qwen-7b',
   'deepseek/deepseek-chat-v3-0324',
   'moonshotai/kimi-k2',
 ]);
@@ -73,6 +71,7 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
+  'vertexai-anthropic:claude-sonnet-4:thinking',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
 ]);
@@ -113,7 +112,9 @@ const AnthropicModelKeySchema = z.enum([
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BtkM9uba',
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+  'openai:ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
   'openai:gpt-4.1-2025-04-14',
   'openai:gpt-4.1-mini-2025-04-14',
   'openai:o4-mini-2025-04-16',
@@ -131,11 +132,7 @@ const BasetenModelKeySchema = z.enum(['baseten:moonshotai/Kimi-K2-Instruct']);
 export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
 const OpenRouterModelKeySchema = z.enum([
-  'open-router:qwen/qwen3-32b',
-  'open-router:qwen/qwen3-235b-a22b',
   'open-router:deepseek/deepseek-r1-0528',
-  'open-router:deepseek/deepseek-r1-0528-qwen3-8b',
-  'open-router:deepseek/deepseek-r1-distill-qwen-7b',
   'open-router:deepseek/deepseek-chat-v3-0324',
   'open-router:moonshotai/kimi-k2',
 ]);
@@ -181,6 +178,7 @@ export const AIModelConfigSchema = z
     thinking: z.boolean().optional(),
     thinkingToggle: z.boolean().optional(),
     thinkingBudget: z.number().optional(),
+    imageSupport: z.boolean(),
   })
   .extend(AIRatesSchema.shape);
 export type AIModelConfig = z.infer<typeof AIModelConfigSchema>;

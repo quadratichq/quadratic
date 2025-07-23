@@ -132,7 +132,16 @@ impl TableRef {
         let mut min_x = bounds.max.x;
         let mut max_x = bounds.min.x;
         let mut min_y = bounds.min.y;
-        let max_y = bounds.max.y;
+        let max_y = match (self.headers, self.data) {
+            (true, false) => {
+                if !table.show_columns {
+                    return None;
+                } else {
+                    bounds.min.y + (if table.show_name { 1 } else { 0 })
+                }
+            }
+            _ => bounds.max.y,
+        };
 
         match &self.col_range {
             ColRange::All => {

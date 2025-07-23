@@ -869,17 +869,18 @@ class QuadraticCore {
     });
   }
 
-  pasteFromClipboard(options: {
-    selection: string;
-    plainText: string | undefined;
-    html: string | undefined;
-    special: PasteSpecial;
-    cursor: string;
-  }) {
-    this.send({
-      type: 'clientCorePasteFromClipboard',
-      ...options,
-    });
+  pasteFromClipboard(options: { selection: string; jsClipboard: Uint8Array; special: PasteSpecial; cursor: string }) {
+    const { selection, jsClipboard, special, cursor } = options;
+    this.send(
+      {
+        type: 'clientCorePasteFromClipboard',
+        selection,
+        jsClipboard,
+        special,
+        cursor,
+      },
+      jsClipboard.buffer
+    );
   }
 
   //#endregion
