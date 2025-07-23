@@ -46,18 +46,18 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
-    pub fn js_receive_multiplayer_transactions(
-        &mut self,
-        transactions: JsValue,
-    ) -> Result<JsValue, JsValue> {
-        match serde_wasm_bindgen::from_value::<Vec<TransactionServer>>(transactions) {
-            Ok(transactions) => Ok(serde_wasm_bindgen::to_value(
-                &self.received_transactions(transactions),
-            )?),
-            Err(e) => Err(JsValue::from_str(&format!(
-                "Invalid transactions received in receiveMultiplayerTransactions: {e}"
-            ))),
-        }
+    pub fn js_receive_multiplayer_transactions(&mut self, transactions: JsValue) -> JsValue {
+        capture_core_error(|| {
+            match serde_wasm_bindgen::from_value::<Vec<TransactionServer>>(transactions) {
+                Ok(transactions) => {
+                    self.received_transactions(transactions);
+                    Ok(None)
+                }
+                Err(e) => Err(format!(
+                    "Invalid transactions received in receiveMultiplayerTransactions: {e}"
+                )),
+            }
+        })
     }
 
     #[wasm_bindgen(js_name = "receiveMultiplayerTransactionAck")]
@@ -65,17 +65,14 @@ impl GridController {
         &mut self,
         transaction_id: String,
         sequence_num: u32,
-    ) -> Result<JsValue, JsValue> {
-        let transaction_id = Uuid::parse_str(&transaction_id)
-            .map_err(|e| JsValue::from_str(&format!("Invalid transaction id: {e}")))?;
-
-        self.received_transaction(transaction_id, sequence_num as u64, vec![]);
-
-        Ok(JsResponse {
-            result: true,
-            error: None,
-        }
-        .into())
+    ) -> JsValue {
+        capture_core_error(|| match Uuid::parse_str(&transaction_id) {
+            Ok(transaction_id) => {
+                self.received_transaction(transaction_id, sequence_num as u64, vec![]);
+                Ok(None)
+            }
+            Err(e) => Err(format!("Invalid transaction id: {e}")),
+        })
     }
 
     #[wasm_bindgen(js_name = "applyOfflineUnsavedTransaction")]
@@ -83,39 +80,22 @@ impl GridController {
         &mut self,
         transaction_id: String,
         unsaved_transaction: String,
-    ) -> Result<JsValue, JsValue> {
-        let transaction_id = match Uuid::parse_str(&transaction_id) {
-            Ok(transaction_id) => transaction_id,
-            Err(e) => {
-                return Ok(JsResponse {
-                    result: false,
-                    error: Some(format!(
-                        "Invalid transaction id: {transaction_id:?}, error: {e:?}"
+    ) -> JsValue {
+        capture_core_error(|| match Uuid::parse_str(&transaction_id) {
+            Ok(transaction_id) => {
+                match serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction) {
+                    Ok(unsaved_transaction) => {
+                        self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
+                        Ok(None)
+                    }
+                    Err(e) => Err(format!(
+                        "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {unsaved_transaction}, error: {e}"
                     )),
                 }
-                .into());
             }
-        };
-        match serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction) {
-            Ok(unsaved_transaction) => {
-                self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
-                Ok(JsResponse {
-                    result: true,
-                    error: None,
-                }
-                .into())
-            }
-            Err(e) => {
-                let error = format!(
-                    "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {unsaved_transaction:?}, error: {e:?}",
-                );
-                dbgjs!(&error);
-                Ok(JsResponse {
-                    result: false,
-                    error: Some(error),
-                }
-                .into())
-            }
-        }
+            Err(e) => Err(format!(
+                "Invalid transaction id: {transaction_id}, error: {e}"
+            )),
+        })
     }
 }
