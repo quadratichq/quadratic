@@ -20,7 +20,7 @@ export function useAIRequestToAPI() {
   const { isOnPaidPlan, setIsOnPaidPlan } = useIsOnPaidPlan();
 
   const handleAIRequestToAPI = useRecoilCallback(
-    ({ set, snapshot }) =>
+    ({ snapshot }) =>
       async ({
         setMessages,
         signal,
@@ -130,7 +130,11 @@ export function useAIRequestToAPI() {
           setIsOnPaidPlan(responseMessage.isOnPaidPlan);
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
 
-          return { content: responseMessage.content, toolCalls: responseMessage.toolCalls };
+          return {
+            content: responseMessage.content,
+            toolCalls: responseMessage.toolCalls,
+            error: responseMessage.error,
+          };
         } catch (err: any) {
           if (err.name === 'AbortError') {
             return { error: false, content: [{ type: 'text', text: 'Aborted by user' }], toolCalls: [] };

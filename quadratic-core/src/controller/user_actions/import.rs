@@ -147,7 +147,7 @@ pub(crate) mod tests {
         // data table should be at `pos`
         assert_eq!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(pos)
+                .data_table_pos_that_contains_result(pos)
                 .unwrap(),
             pos
         );

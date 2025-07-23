@@ -211,7 +211,7 @@ class Core {
     }
   }
 
-  getFormatSelection(selection: string): CellFormatSummary | undefined {
+  getFormatSelection(selection: string): CellFormatSummary | JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       return this.gridController.getFormatSelection(selection);
@@ -651,20 +651,18 @@ class Core {
 
   pasteFromClipboard({
     selection,
-    plainText,
-    html,
+    jsClipboard,
     special,
     cursor,
   }: {
     selection: string;
-    plainText: string | undefined;
-    html: string | undefined;
+    jsClipboard: Uint8Array;
     special: string;
     cursor: string;
   }) {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.pasteFromClipboard(selection, plainText, html, special, cursor);
+      this.gridController.pasteFromClipboard(selection, jsClipboard, special, cursor);
     } catch (e) {
       this.handleCoreError('pasteFromClipboard', e);
     }

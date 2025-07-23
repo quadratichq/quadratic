@@ -29,8 +29,11 @@ impl GridController {
             }
 
             if !rows.is_empty() && transaction.is_user() {
-                let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                resize_rows.extend(rows);
+                transaction
+                    .resize_rows
+                    .entry(sheet_id)
+                    .or_default()
+                    .extend(rows);
             }
 
             if fills_changed {

@@ -77,7 +77,7 @@ impl GridController {
                                 .map(|&column| RefAdjust::new_delete_column(sheet_id, column))
                                 .collect_vec(),
                         );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
             }
@@ -142,7 +142,7 @@ impl GridController {
                                 .map(|&row| RefAdjust::new_delete_row(sheet_id, row))
                                 .collect_vec(),
                         );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
             }
@@ -217,7 +217,7 @@ impl GridController {
                             transaction,
                             &[RefAdjust::new_insert_column(sheet_id, column)],
                         );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
             }
@@ -254,7 +254,7 @@ impl GridController {
                             &[RefAdjust::new_insert_row(sheet_id, row)],
                         );
 
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
             }
