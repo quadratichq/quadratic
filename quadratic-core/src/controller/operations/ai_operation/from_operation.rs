@@ -57,27 +57,23 @@ impl AIOperation {
             }),
 
             // Simplified data table structure changes
-            Operation::InsertDataTableColumns {
-                sheet_pos, columns, ..
-            } => Some(Self::DataTableColumnsChanged {
+            Operation::InsertDataTableColumns { sheet_pos, .. } => {
+                Some(Self::DataTableColumnsChanged {
+                    source,
+                    sheet_pos: *sheet_pos,
+                })
+            }
+            Operation::DeleteDataTableColumns { sheet_pos, .. } => {
+                Some(Self::DataTableColumnsChanged {
+                    source,
+                    sheet_pos: *sheet_pos,
+                })
+            }
+            Operation::InsertDataTableRows { sheet_pos, .. } => Some(Self::DataTableRowsChanged {
                 source,
                 sheet_pos: *sheet_pos,
             }),
-            Operation::DeleteDataTableColumns {
-                sheet_pos, columns, ..
-            } => Some(Self::DataTableColumnsChanged {
-                source,
-                sheet_pos: *sheet_pos,
-            }),
-            Operation::InsertDataTableRows {
-                sheet_pos, rows, ..
-            } => Some(Self::DataTableRowsChanged {
-                source,
-                sheet_pos: *sheet_pos,
-            }),
-            Operation::DeleteDataTableRows {
-                sheet_pos, rows, ..
-            } => Some(Self::DataTableRowsChanged {
+            Operation::DeleteDataTableRows { sheet_pos, .. } => Some(Self::DataTableRowsChanged {
                 source,
                 sheet_pos: *sheet_pos,
             }),
@@ -104,21 +100,29 @@ impl AIOperation {
             Operation::SetCellFormatsA1 {
                 sheet_id, formats, ..
             } => {
-                return Some(Self::FormatsChanged {
-                    source,
-                    sheet_id: *sheet_id,
-                    selection: formats
-                        .to_selection(*sheet_id)
-                        .to_string(Some(*sheet_id), gc.a1_context()),
-                });
+                if let Some(rect) = formats.to_bounding_rect() {
+                    let selection = A1Selection::from_rect(rect.to_sheet_rect(*sheet_id));
+                    Some(Self::FormatsChanged {
+                        source,
+                        sheet_id: sheet_id.to_string(),
+                        selection: selection.to_string(Some(*sheet_id), gc.a1_context()),
+                    })
+                } else {
+                    None
+                }
             }
-            Operation::SetBordersA1 { borders, .. } => {
+            Operation::SetBordersA1 { .. } => {
                 None
                 // return Some(Self::FormatsChanged {
                 //     source,
                 //     selection: selection.clone(),
                 // });
             }
+
+            Operation::AddSheet { sheet } => Some(Self::AddSheet {
+                source,
+                sheet_id: (*sheet).id.to_string(),
+            }),
 
             // Sheet operations
             Operation::AddSheetSchema { schema } => Some(Self::AddSheet {
@@ -138,21 +142,21 @@ impl AIOperation {
                 new_sheet_id,
             } => Some(Self::DuplicateSheet {
                 source,
-                sheet_id: *sheet_id,
-                new_sheet_id: *new_sheet_id,
+                sheet_id: sheet_id.to_string(),
+                new_sheet_id: new_sheet_id.to_string(),
             }),
             Operation::DeleteSheet { sheet_id } => Some(Self::DeleteSheet {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
             }),
             Operation::SetSheetName { sheet_id, name } => Some(Self::SetSheetName {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 name: name.clone(),
             }),
             Operation::SetSheetColor { sheet_id, color } => Some(Self::SetSheetColor {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 color: color.clone(),
             }),
             Operation::ReorderSheet { target, order } => Some(Self::ReorderSheet {
@@ -169,7 +173,7 @@ impl AIOperation {
                 ..
             } => Some(Self::ResizeColumn {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 column: *column,
                 new_size: *new_size,
             }),
@@ -180,7 +184,7 @@ impl AIOperation {
                 ..
             } => Some(Self::ResizeRow {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 row: *row,
                 new_size: *new_size,
             }),
@@ -189,7 +193,7 @@ impl AIOperation {
                 column_widths,
             } => Some(Self::ColumnsResized {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 count: column_widths.len(),
             }),
             Operation::ResizeRows {
@@ -197,17 +201,17 @@ impl AIOperation {
                 row_heights,
             } => Some(Self::RowsResized {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 count: row_heights.len(),
             }),
             Operation::DefaultRowSize { sheet_id, size } => Some(Self::DefaultRowSize {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 size: *size,
             }),
             Operation::DefaultColumnSize { sheet_id, size } => Some(Self::DefaultColumnSize {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 size: *size,
             }),
 
@@ -223,22 +227,13 @@ impl AIOperation {
                 dest,
                 columns,
                 rows,
-            } => {
-                let move_type = if *columns {
-                    "columns"
-                } else if *rows {
-                    "rows"
-                } else {
-                    "cells"
-                };
-                Some(Self::MoveCells {
-                    source,
-                    from: *from,
-                    to: *dest,
-                    columns: *columns,
-                    rows: *rows,
-                })
-            }
+            } => Some(Self::MoveCells {
+                source,
+                from: *from,
+                to: *dest,
+                columns: *columns,
+                rows: *rows,
+            }),
 
             // Data validation (simplified)
             Operation::SetValidation { validation } => Some(Self::ValidationSet {
@@ -250,7 +245,7 @@ impl AIOperation {
                 validation_id,
             } => Some(Self::ValidationRemoved {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 validation_id: *validation_id,
             }),
 
@@ -259,36 +254,36 @@ impl AIOperation {
                 sheet_id, column, ..
             } => Some(Self::ColumnInserted {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 column: *column,
             }),
             Operation::DeleteColumn {
                 sheet_id, column, ..
             } => Some(Self::ColumnDeleted {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 column: *column,
             }),
             Operation::InsertRow { sheet_id, row, .. } => Some(Self::RowInserted {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 row: *row,
             }),
             Operation::DeleteRow { sheet_id, row, .. } => Some(Self::RowDeleted {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 row: *row,
             }),
             Operation::DeleteColumns {
                 sheet_id, columns, ..
             } => Some(Self::ColumnsDeleted {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 columns: columns.clone(),
             }),
             Operation::DeleteRows { sheet_id, rows, .. } => Some(Self::RowsDeleted {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 rows: rows.clone(),
             }),
             Operation::MoveColumns {
@@ -298,7 +293,7 @@ impl AIOperation {
                 to,
             } => Some(Self::ColumnsMoved {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 from_range: (*col_start, *col_end),
                 to: *to,
             }),
@@ -309,12 +304,12 @@ impl AIOperation {
                 to,
             } => Some(Self::RowsMoved {
                 source,
-                sheet_id: *sheet_id,
+                sheet_id: sheet_id.to_string(),
                 from_range: (*row_start, *row_end),
                 to: *to,
             }),
 
-            // Operations that deprecated
+            // Deprecated operations that we don't need to support
             Operation::SetChartSize { .. }
             | Operation::SetChartCellSize { .. }
             | Operation::SetDataTableAt { .. }
@@ -329,8 +324,7 @@ impl AIOperation {
             | Operation::SetBordersSelection { .. }
             | Operation::SetCursor { .. }
             | Operation::SetCursorSelection { .. }
-            | Operation::SetValidationWarning { .. }
-            | Operation::AddSheet { .. } => None,
+            | Operation::SetValidationWarning { .. } => None,
         }
     }
 }

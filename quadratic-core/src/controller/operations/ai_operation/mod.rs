@@ -72,7 +72,7 @@ pub enum AIOperation {
     /// Formatting operations (simplified - just position info)
     FormatsChanged {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         selection: String,
     },
 
@@ -83,21 +83,21 @@ pub enum AIOperation {
     },
     DeleteSheet {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
     },
     DuplicateSheet {
         source: TransactionSource,
-        sheet_id: SheetId,
-        new_sheet_id: SheetId,
+        sheet_id: String,
+        new_sheet_id: String,
     },
     SetSheetName {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         name: String,
     },
     SetSheetColor {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         color: Option<String>,
     },
     ReorderSheet {
@@ -109,34 +109,34 @@ pub enum AIOperation {
     /// Grid structure changes
     ResizeColumn {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         column: i64,
         new_size: f64,
     },
     ResizeRow {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         row: i64,
         new_size: f64,
     },
     ColumnsResized {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         count: usize,
     },
     RowsResized {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         count: usize,
     },
     DefaultRowSize {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         size: f64,
     },
     DefaultColumnSize {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         size: f64,
     },
 
@@ -162,50 +162,50 @@ pub enum AIOperation {
     },
     ValidationRemoved {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         validation_id: Uuid,
     },
 
     /// Column/row structure changes
     ColumnInserted {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         column: i64,
     },
     ColumnDeleted {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         column: i64,
     },
     RowInserted {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         row: i64,
     },
     RowDeleted {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         row: i64,
     },
     ColumnsDeleted {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         columns: Vec<i64>,
     },
     RowsDeleted {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         rows: Vec<i64>,
     },
     ColumnsMoved {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         from_range: (i64, i64),
         to: i64,
     },
     RowsMoved {
         source: TransactionSource,
-        sheet_id: SheetId,
+        sheet_id: String,
         from_range: (i64, i64),
         to: i64,
     },

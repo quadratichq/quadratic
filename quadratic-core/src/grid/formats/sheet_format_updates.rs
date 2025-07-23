@@ -8,8 +8,8 @@ use crate::{
     a1::A1Selection,
     clear_option::ClearOption,
     grid::{
-        CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, NumericFormat, SheetFormatting,
-        SheetId,
+        CellAlign, CellVerticalAlign, CellWrap, Contiguous2D, GridBounds, NumericFormat,
+        SheetFormatting,
     },
 };
 
@@ -302,58 +302,60 @@ impl SheetFormatUpdates {
             .is_some_and(|fills| !fills.is_all_default())
     }
 
-    pub fn to_selection(&self, sheet_id: SheetId) -> Option<Rect> {
-        let align_rect = self.align.as_ref().and_then(|align| align.bounding_rect());
-        let vertical_align_rect = self
-            .vertical_align
+    /// Returns the bounding rect of the format updates.
+    pub fn to_bounding_rect(&self) -> Option<Rect> {
+        let mut bounds = GridBounds::default();
+        self.align
             .as_ref()
-            .and_then(|vertical_align| vertical_align.bounding_rect());
-        let wrap_rect = self.wrap.as_ref().and_then(|wrap| wrap.bounding_rect());
-        let numeric_format_rect = self
-            .numeric_format
+            .and_then(|align| align.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.vertical_align.as_ref().and_then(|vertical_align| {
+            vertical_align
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.wrap
             .as_ref()
-            .and_then(|numeric_format| numeric_format.bounding_rect());
-        let numeric_decimals_rect = self
-            .numeric_decimals
+            .and_then(|wrap| wrap.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.numeric_format.as_ref().and_then(|numeric_format| {
+            numeric_format
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.numeric_decimals.as_ref().and_then(|numeric_decimals| {
+            numeric_decimals
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.numeric_commas.as_ref().and_then(|numeric_commas| {
+            numeric_commas
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+        self.bold
             .as_ref()
-            .and_then(|numeric_decimals| numeric_decimals.bounding_rect());
-        let numeric_commas_rect = self
-            .numeric_commas
+            .and_then(|bold| bold.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.italic
             .as_ref()
-            .and_then(|numeric_commas| numeric_commas.bounding_rect());
-        let bold_rect = self.bold.as_ref().and_then(|bold| bold.bounding_rect());
-        // let vertical_align_rect = self
-        //     .vertical_align
-        //     .map(|vertical_align| Self::get_rect_item::<CellVerticalAlign>(&vertical_align));
-        // let wrap_rect = self.wrap.map(|wrap| Self::get_rect_item::<CellWrap>(&wrap));
-        // let numeric_format_rect = self
-        //     .numeric_format
-        //     .map(|numeric_format| Self::get_rect_item::<NumericFormat>(&numeric_format));
-        // let numeric_decimals_rect = self
-        //     .numeric_decimals
-        //     .map(|numeric_decimals| Self::get_rect_item::<i16>(&numeric_decimals));
-        // let numeric_commas_rect = self
-        //     .numeric_commas
-        //     .map(|numeric_commas| Self::get_rect_item::<bool>(&numeric_commas));
-        // let bold_rect = self.bold.map(|bold| Self::get_rect_item::<bool>(&bold));
-        // let italic_rect = self
-        //     .italic
-        //     .map(|italic| Self::get_rect_item::<bool>(&italic));
-        // let text_color_rect = self
-        //     .text_color
-        //     .map(|text_color| Self::get_rect_item::<String>(&text_color));
-        // let fill_color_rect = self
-        //     .fill_color
-        //     .map(|fill_color| Self::get_rect_item::<String>(&fill_color));
-        // let date_time_rect = self
-        //     .date_time
-        //     .map(|date_time| Self::get_rect_item::<String>(&date_time));
-        // let underline_rect = self
-        //     .underline
-        //     .map(|underline| Self::get_rect_item::<bool>(&underline));
-        // let strike_through_rect = self
-        //     .strike_through
-        //     .map(|strike_through| Self::get_rect_item::<bool>(&strike_through));
+            .and_then(|italic| italic.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.text_color
+            .as_ref()
+            .and_then(|text_color| text_color.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.fill_color
+            .as_ref()
+            .and_then(|fill_color| fill_color.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.date_time
+            .as_ref()
+            .and_then(|date_time| date_time.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.underline
+            .as_ref()
+            .and_then(|underline| underline.bounding_rect().map(|rect| bounds.add_rect(rect)));
+        self.strike_through.as_ref().and_then(|strike_through| {
+            strike_through
+                .bounding_rect()
+                .map(|rect| bounds.add_rect(rect))
+        });
+
+        bounds.into()
     }
 }
 
