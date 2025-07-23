@@ -19,7 +19,7 @@ import type {
   NumericFormatKind,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { columnNameToIndex, stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -952,6 +952,59 @@ export const aiToolsActions: AIToolActionsRecord = {
       {
         type: 'text',
         text: 'Set borders tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.InsertColumns]: async (args) => {
+    const { sheet_name, column, right, count } = args;
+    const columnIndex = columnNameToIndex(column);
+    if (columnIndex === undefined) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing insert columns tool. Invalid column: ${column}.`,
+        },
+      ];
+    }
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    quadraticCore.insertColumns(sheetId, Number(columnIndex), count, right, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Insert columns tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.InsertRows]: async (args) => {
+    const { sheet_name, row, below, count } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    quadraticCore.insertRows(sheetId, row, count, below, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Insert rows tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.DeleteColumns]: async (args) => {
+    const { sheet_name, columns } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    quadraticCore.deleteColumns(sheetId, columns.map(Number), sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Delete columns tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.DeleteRows]: async (args) => {
+    const { sheet_name, rows } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    quadraticCore.deleteRows(sheetId, rows, sheets.getCursorPosition());
+    return [
+      {
+        type: 'text',
+        text: 'Delete rows tool executed successfully.',
       },
     ];
   },

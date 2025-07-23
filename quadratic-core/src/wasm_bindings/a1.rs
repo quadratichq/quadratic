@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    a1::{A1Selection, CellRefRange, RefRangeBounds},
+    a1::{A1Selection, CellRefRange, RefRangeBounds, column_from_name},
     grid::SheetId,
     wasm_bindings::js_selection::JsSelection,
 };
@@ -113,4 +113,9 @@ pub fn convert_table_to_range(
         .get_context()
         .convert_table_to_range(table_name, sheet_id)
         .map_err(|e| e.to_string())
+}
+
+#[wasm_bindgen(js_name = "columnNameToIndex")]
+pub fn column_name_to_index(column: &str) -> Option<i64> {
+    column_from_name(column)
 }
