@@ -395,11 +395,32 @@ impl GridController {
         delete_value: bool,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
+
+        let handle_paste_table_in_import = |paste_table_in_import: &CellValue| {
+            let cell_type = match paste_table_in_import {
+                CellValue::Code(_) => "code",
+                CellValue::Import(_) => "table",
+                CellValue::Image(_) => "chart",
+                CellValue::Html(_) => "chart",
+                _ => "unknown",
+            };
+
+            let message = format!("Cannot place {cell_type} within a table");
+
+            #[cfg(any(target_family = "wasm", test))]
+            {
+                let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                crate::wasm_bindings::js::jsClientMessage(message.to_owned(), severity.to_string());
+            }
+
+            message
+        };
+
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
             let rect =
                 Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
 
-            for (output_rect, intersection_rect, data_table) in
+            for (output_rect, mut intersection_rect, data_table) in
                 sheet.iter_code_output_intersects_rect(rect)
             {
                 let contains_source_cell = intersection_rect.contains(output_rect.min);
@@ -414,6 +435,16 @@ impl GridController {
 
                 // there is no pasting on top of code cell output
                 if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
+                    let columns_y =
+                        output_rect.min.y + if data_table.get_show_name() { 1 } else { 0 };
+
+                    let contains_header = data_table.get_show_columns()
+                        && intersection_rect.y_range().contains(&columns_y);
+
+                    if data_table.get_show_columns() {
+                        intersection_rect.min.y = intersection_rect.min.y.max(columns_y + 1);
+                    }
+
                     let adjusted_rect = Rect::from_numbers(
                         intersection_rect.min.x - start_pos.x,
                         intersection_rect.min.y - start_pos.y,
@@ -434,58 +465,51 @@ impl GridController {
                         });
 
                     if let Some(paste_table_in_import) = paste_table_in_import {
-                        let cell_type = match paste_table_in_import {
-                            CellValue::Code(_) => "code",
-                            CellValue::Import(_) => "table",
-                            CellValue::Image(_) => "chart",
-                            CellValue::Html(_) => "chart",
-                            _ => "unknown",
-                        };
-                        let message = format!("Cannot place {cell_type} within a table");
-
-                        #[cfg(any(target_family = "wasm", test))]
-                        {
-                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
-                            crate::wasm_bindings::js::jsClientMessage(
-                                message.to_owned(),
-                                severity.to_string(),
-                            );
-                        }
-
-                        return Err(Error::msg(message));
+                        return Err(Error::msg(handle_paste_table_in_import(
+                            paste_table_in_import,
+                        )));
                     }
 
-                    let headers = data_table.column_headers.to_owned();
-                    let contains_header = data_table.get_show_columns()
-                        && intersection_rect.y_range().contains(&output_rect.min.y);
-
-                    if let (Some(mut headers), true) = (headers, contains_header) {
-                        let y = output_rect.min.y - start_pos.y;
+                    if let (Some(mut headers), true) =
+                        (data_table.column_headers.to_owned(), contains_header)
+                    {
+                        let y = columns_y - start_pos.y;
 
                         for x in intersection_rect.x_range() {
-                            let new_x = x - output_rect.min.x;
+                            let column_index = data_table.get_column_index_from_display_index(
+                                u32::try_from(x - output_rect.min.x).unwrap_or(0),
+                                true,
+                            );
 
-                            if let Some(header) = headers.get_mut(new_x as usize) {
+                            if let Some(header) = headers.get_mut(column_index as usize) {
                                 let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
                                 let safe_y = u32::try_from(y).unwrap_or(0);
 
                                 let cell_value =
                                     values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
 
+                                if cell_value.is_code()
+                                    || cell_value.is_import()
+                                    || cell_value.is_image()
+                                    || cell_value.is_html()
+                                {
+                                    return Err(Error::msg(handle_paste_table_in_import(
+                                        &cell_value,
+                                    )));
+                                }
+
                                 header.name = cell_value;
                             }
                         }
 
                         let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
-                        ops.push(Operation::DataTableMeta {
+                        ops.push(Operation::DataTableOptionMeta {
                             sheet_pos,
                             name: None,
                             alternating_colors: None,
                             columns: Some(headers.to_vec()),
-                            show_ui: None,
                             show_name: None,
                             show_columns: None,
-                            readonly: None,
                         });
                     }
 
