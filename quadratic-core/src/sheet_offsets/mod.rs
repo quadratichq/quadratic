@@ -339,12 +339,12 @@ impl SheetOffsets {
     }
 
     /// Returns an iterator over custom column widths (non-default widths).
-    pub fn custom_column_widths(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
+    pub fn iter_column_widths(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.column_widths.iter_sizes()
     }
 
     /// Returns an iterator over custom row heights (non-default heights).
-    pub fn custom_row_heights(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
+    pub fn iter_row_heights(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
         self.row_heights.iter_sizes()
     }
 }

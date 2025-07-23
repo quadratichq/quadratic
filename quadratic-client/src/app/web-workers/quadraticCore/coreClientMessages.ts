@@ -100,7 +100,7 @@ export interface ClientCoreExportExcel {
 
 export interface CoreClientExportExcel {
   type: 'coreClientExportExcel';
-  excel: ArrayBufferLike;
+  excel: Uint8Array;
   id: number;
 }
 

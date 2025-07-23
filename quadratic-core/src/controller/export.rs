@@ -104,7 +104,7 @@ impl GridController {
 
             // column widths
             let custom_column_widths: Vec<(i64, f64)> =
-                sheet.offsets.custom_column_widths().collect();
+                sheet.offsets.iter_column_widths().collect();
 
             for (col, width) in custom_column_widths {
                 let excel_col = (col - 1) as u16;
@@ -117,7 +117,7 @@ impl GridController {
             }
 
             // row heights
-            let custom_row_heights: Vec<(i64, f64)> = sheet.offsets.custom_row_heights().collect();
+            let custom_row_heights: Vec<(i64, f64)> = sheet.offsets.iter_row_heights().collect();
 
             for (row, height) in custom_row_heights {
                 let excel_row = (row - 1) as u32;
@@ -371,10 +371,7 @@ mod tests {
 
     use crate::{
         Array,
-        controller::{
-            execution::execute_operation::execute_data_table::tests::assert_flattened_simple_csv,
-            user_actions::import::tests::simple_csv,
-        },
+        controller::user_actions::import::tests::{assert_flattened_simple_csv, simple_csv},
     };
 
     #[test]

@@ -277,8 +277,8 @@ class CoreClient {
         return;
 
       case 'clientCoreExportExcel':
-        const exportExcel = await core.exportExcel();
-        this.send({ type: 'coreClientExportExcel', id: e.data.id, excel: exportExcel }, exportExcel);
+        const exportExcel = core.exportExcel();
+        this.send({ type: 'coreClientExportExcel', id: e.data.id, excel: exportExcel }, exportExcel.buffer);
         return;
 
       case 'clientCoreSearch':

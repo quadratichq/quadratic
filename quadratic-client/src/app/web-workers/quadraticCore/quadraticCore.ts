@@ -57,6 +57,7 @@ import type {
   ClientCoreUpgradeGridFile,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
+  CoreClientExportExcel,
   CoreClientGetAIFormats,
   CoreClientGetCellFormatSummary,
   CoreClientGetCodeCell,
@@ -305,7 +306,7 @@ class QuadraticCore {
   async exportExcel(): Promise<Uint8Array> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { excel: Uint8Array }) => {
+      this.waitingForResponse[id] = (message: CoreClientExportExcel) => {
         resolve(message.excel);
       };
       this.send({ type: 'clientCoreExportExcel', id });

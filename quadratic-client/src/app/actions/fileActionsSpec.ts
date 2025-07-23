@@ -57,12 +57,20 @@ export const fileActionsSpec: FileActionSpec = {
     Icon: DownloadExcelIcon,
     isAvailable: isAvailableBecauseCanEditFile,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownloadExcel]) => {
-      if (!pixiAppSettings.setEditorInteractionState) return;
-      mixpanel.track('[Files].exportExcel', { id: uuid });
-      pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: true }));
-      const data = await quadraticCore.exportExcel();
-      downloadExcelFile(name, data);
-      pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: false }));
+      try {
+        if (!pixiAppSettings.setEditorInteractionState) return;
+        mixpanel.track('[Files].exportExcel', { id: uuid });
+        pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: true }));
+        const data = await quadraticCore.exportExcel();
+        downloadExcelFile(name, data);
+        pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: false }));
+      } catch (e) {
+        pixiAppSettings.setEditorInteractionState?.((prev) => ({ ...prev, isRunningAsyncAction: false }));
+        pixiAppSettings.addGlobalSnackbar?.('Failed to export Excel', {
+          severity: 'error',
+        });
+        console.error(e);
+      }
     },
   },
   [Action.FileVersionHistory]: {
