@@ -34,9 +34,7 @@ impl GridController {
                     "calculationGetCellsA1: Failed to serialize get cells a1 response: {:?}",
                     e
                 ));
-                Err(format!(
-                    "Failed to serialize get cells a1 response: {e:?}"
-                ))
+                Err(format!("Failed to serialize get cells a1 response: {e:?}"))
             }
         }
     }
@@ -46,15 +44,17 @@ impl GridController {
     ///
     /// * CodeCell.evaluation_result is a stringified version of the output (used for AI models)
     #[wasm_bindgen(js_name = "getCodeCell")]
-    pub fn js_get_code_string(&self, sheet_id: String, pos: String) -> Result<JsValue, JsValue> {
-        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
+    pub fn js_get_code_string(&self, sheet_id: String, pos: String) -> JsValue {
+        let Ok(pos) = serde_json::from_str::<Pos>(&pos) else {
+            return JsValue::UNDEFINED;
+        };
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
-            return Ok(JsValue::null());
+            return JsValue::UNDEFINED;
         };
         if let Some(edit_code) = sheet.edit_code_value(pos, self.a1_context()) {
-            Ok(serde_wasm_bindgen::to_value(&edit_code)?)
+            serde_wasm_bindgen::to_value(&edit_code).unwrap_or(JsValue::UNDEFINED)
         } else {
-            Ok(JsValue::null())
+            JsValue::UNDEFINED
         }
     }
 

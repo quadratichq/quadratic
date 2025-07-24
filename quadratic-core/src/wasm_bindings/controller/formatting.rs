@@ -8,7 +8,7 @@ use crate::a1::A1Selection;
 use crate::controller::GridController;
 use crate::grid::Format;
 use crate::grid::formats::FormatUpdate;
-use crate::grid::js_types::JsResponse;
+use crate::wasm_bindings::capture_core_error;
 
 use super::CellFormatSummary;
 use super::NumericFormatKind;
@@ -19,17 +19,15 @@ impl GridController {
     /// Returns a summary of the formatting in a region as a
     /// [`CellFormatSummary`].
     #[wasm_bindgen(js_name = "getCellFormatSummary")]
-    pub fn js_cell_format_summary(
-        &self,
-        sheet_id: String,
-        pos: String,
-    ) -> Result<JsValue, JsValue> {
-        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
+    pub fn js_cell_format_summary(&self, sheet_id: String, pos: String) -> JsValue {
+        let Ok(pos) = serde_json::from_str::<Pos>(&pos) else {
+            return JsValue::UNDEFINED;
+        };
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
-            return Result::Err("Sheet not found".into());
+            return JsValue::UNDEFINED;
         };
         let output: CellFormatSummary = sheet.cell_format_summary(pos);
-        Ok(serde_wasm_bindgen::to_value(&output)?)
+        serde_wasm_bindgen::to_value(&output).unwrap_or(JsValue::UNDEFINED)
     }
 
     /// Sets cell align formatting given as an optional [`CellAlign`].
@@ -205,23 +203,20 @@ impl GridController {
         columns: i32,
         rows: i32,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        if columns <= 0 || rows <= 0 {
-            return Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                result: false,
-                error: Some("Invalid chart size".to_string()),
-            })?);
-        }
+    ) -> JsValue {
+        capture_core_error(|| {
+            if columns <= 0 || rows <= 0 {
+                return Err("Invalid chart size".to_string());
+            }
 
-        let sheet_pos =
-            serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
-
-        self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
-
-        Ok(serde_wasm_bindgen::to_value(&JsResponse {
-            result: true,
-            error: None,
-        })?)
+            match serde_json::from_str::<SheetPos>(&sheet_pos) {
+                Ok(sheet_pos) => {
+                    self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
+                    Ok(None)
+                }
+                Err(e) => Err(e.to_string()),
+            }
+        })
     }
 
     #[wasm_bindgen(js_name = "setDateTimeFormat")]
@@ -293,14 +288,21 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "getFormatSelection")]
-    pub fn js_get_format_selection(&self, selection: String) -> Result<JsValue, JsValue> {
-        let selection = serde_json::from_str::<A1Selection>(&selection)
-            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
-        let sheet = self
-            .try_sheet(selection.sheet_id)
-            .ok_or(JsValue::UNDEFINED)?;
-        let format = sheet.format_selection(&selection, self.a1_context());
-        serde_wasm_bindgen::to_value(&format).map_err(|_| JsValue::UNDEFINED)
+    pub fn js_get_format_selection(&self, selection: String) -> JsValue {
+        capture_core_error(|| {
+            let Ok(selection) = serde_json::from_str::<A1Selection>(&selection) else {
+                return Err("Unable to parse A1Selection".to_string());
+            };
+
+            let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+                return Err("Invalid sheet ID".to_string());
+            };
+
+            let format = sheet.format_selection(&selection, self.a1_context());
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&format).map_err(|e| e.to_string())?,
+            ))
+        })
     }
 
     #[wasm_bindgen(js_name = "setFormats")]
@@ -309,32 +311,43 @@ impl GridController {
         sheet_id: String,
         selection: String,
         formats: String,
-    ) -> Result<(), JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| JsValue::UNDEFINED)?;
-        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-            .map_err(|_| "Unable to parse A1Selection")?;
-        let format = serde_json::from_str::<Format>(&formats).map_err(|e| {
-            dbgjs!(&e);
-            "Invalid formats"
-        })?;
-        let mut format_update = FormatUpdate::from(format);
+    ) -> JsValue {
+        capture_core_error(|| {
+            let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
+                return Err("Invalid sheet ID".to_string());
+            };
 
-        // handle clear text and fill color properly
-        if format_update
-            .text_color
-            .as_ref()
-            .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
-        {
-            format_update.text_color = Some(None);
-        }
-        if format_update
-            .fill_color
-            .as_ref()
-            .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
-        {
-            format_update.fill_color = Some(None);
-        }
-        self.set_formats(&selection, format_update);
-        Ok(())
+            let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            else {
+                return Err("Invalid selection".to_string());
+            };
+
+            let Ok(format) = serde_json::from_str::<Format>(&formats) else {
+                return Err("Invalid formats".to_string());
+            };
+
+            let mut format_update = FormatUpdate::from(format);
+
+            // handle clear text and fill color properly
+            if format_update
+                .text_color
+                .as_ref()
+                .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+            {
+                format_update.text_color = Some(None);
+            }
+
+            if format_update
+                .fill_color
+                .as_ref()
+                .is_some_and(|color| color.as_ref().is_some_and(|color| color.is_empty()))
+            {
+                format_update.fill_color = Some(None);
+            }
+
+            self.set_formats(&selection, format_update);
+
+            Ok(None)
+        })
     }
 }
