@@ -74,7 +74,7 @@ export class Table extends Container {
       this.codeCell.spill_error ? 1 : this.codeCell.h
     );
     this.position.set(this.tableBounds.x, this.tableBounds.y);
-
+    this.checkVisible();
     this.header.update(false);
     this.outline.update();
 
@@ -123,6 +123,16 @@ export class Table extends Container {
 
     const y = Math.min(this.header.bottomOfTable, this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top);
     return new Rectangle(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
+  };
+
+  private checkVisible = () => {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    if (!intersects.rectangleRectangle(this.tableBounds, bounds)) {
+      this.visible = false;
+      this.header.visible = false;
+      this.header.toGrid();
+      this.inOverHeadings = false;
+    }
   };
 
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
