@@ -214,6 +214,8 @@ fn write_excel_value(
             CellValue::Time(t) => worksheet.write_datetime(row, col, t),
             CellValue::DateTime(dt) => worksheet.write_datetime(row, col, dt),
             CellValue::Logical(b) => worksheet.write_boolean(row, col, *b),
+            // skip these for now
+            CellValue::Html(_) | CellValue::Image(_) => Ok(()),
             _ => worksheet.write_string(row, col, cell_value.to_string()),
         }
         .map(|_| ())
