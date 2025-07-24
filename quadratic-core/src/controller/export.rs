@@ -6,8 +6,7 @@ use itertools::PeekingNext;
 use lazy_static::lazy_static;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use rust_xlsxwriter::{
-    Color, Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError,
-    worksheet::Worksheet,
+    Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError, worksheet::Worksheet,
 };
 
 use super::GridController;
@@ -152,7 +151,9 @@ impl GridController {
                                     data_table.get_language() == CodeCellLanguage::Formula;
 
                                 // we currently only care about formulas
-                                if is_formula && !data_table.has_spill() {
+                                // skip spill and error formulas
+                                if is_formula && !data_table.has_spill() && !data_table.has_error()
+                                {
                                     let code = code_cell_value.code.as_str();
                                     let display_value = data_table.display_value(false)?;
 
