@@ -62,9 +62,9 @@ type QuestionProps = {
 };
 
 export const questionStackIdsByUse: Record<string, string[]> = {
-  work: ['use', 'work-role', 'languages[]', 'goals[]'],
-  personal: ['use', 'personal-uses[]', 'languages[]', 'goals[]'],
-  education: ['use', 'education-identity', 'education-subjects[]', 'languages[]', 'goals[]'],
+  work: ['use', 'work-role', 'languages[]', 'goals[]', 'final-prompts'],
+  personal: ['use', 'personal-uses[]', 'languages[]', 'goals[]', 'final-prompts'],
+  education: ['use', 'education-identity', 'education-subjects[]', 'languages[]', 'goals[]', 'final-prompts'],
 };
 
 export const questionsById: Record<
@@ -361,6 +361,160 @@ export const questionsById: Record<
       );
     },
   },
+  'final-prompts': {
+    title: "Welcome to Quadratic! Let's get you started.",
+    subtitle: 'Choose an example to try, connect your data, or start with a blank sheet.',
+    optionsByValue: {
+      'btc-eth-correlation': 'BTC/ETH Correlation',
+      'google-analytics': 'Financial Analysis',
+      blank: 'Start with a blank sheet',
+    },
+    Form: (props) => {
+      const navigate = useNavigate();
+
+      const promptsByValue: Record<string, string> = {
+        'btc-eth-correlation': 'Find the correlation between BTC and ETH based on the data in the sheet.',
+        'google-analytics': 'Analyze the things.',
+        blank: '',
+      };
+
+      const handlePromptClick = (value: string) => {
+        const prompt = promptsByValue[value];
+        navigate(`/files/create?private=false${prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''}`);
+      };
+
+      const examplePrompts = ['btc-eth-correlation', 'google-analytics'];
+
+      const blankOption = ['blank'];
+
+      return (
+        <div className="flex flex-col gap-10">
+          <header className="flex flex-col gap-2">
+            <h2 className="text-center text-4xl font-bold">{props.title}</h2>
+            {props.subtitle && <p className="text-center text-lg text-muted-foreground">{props.subtitle}</p>}
+          </header>
+
+          <div className="flex gap-6">
+            {/* Left side - YouTube Video (wider) */}
+            <div className="flex flex-[2.5] flex-col">
+              <div
+                className="group relative min-h-[400px] flex-1 cursor-pointer overflow-hidden rounded-lg bg-gray-100 transition-all hover:shadow-lg"
+                onClick={() => window.open('https://www.youtube.com/watch?v=AGCyIjBa9hk', '_blank')}
+              >
+                <img
+                  src="https://img.youtube.com/vi/DmN53iVKhQY/maxresdefault.jpg"
+                  alt="Getting Started with Quadratic"
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition-all group-hover:bg-black/30">
+                  <div className="rounded-full bg-red-600 p-4 shadow-lg transition-transform group-hover:scale-110">
+                    <svg className="ml-1 h-8 w-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="absolute bottom-4 left-4 right-4">
+                  <div className="rounded bg-black/70 px-3 py-2 backdrop-blur-sm">
+                    <h3 className="text-sm font-medium text-white">Getting Started with Quadratic</h3>
+                    <p className="text-xs text-white/80">Click to watch on YouTube</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Right side - Options */}
+            <div className="flex flex-1 flex-col">
+              {/* Try Examples Section */}
+              <div className="mb-6">
+                <h3 className="mb-4 text-lg font-semibold">Start with an example</h3>
+                <div className="space-y-2">
+                  {examplePrompts.map((value) => (
+                    <button
+                      key={value}
+                      onClick={() => handlePromptClick(value)}
+                      className={cn(
+                        'w-full rounded-lg border border-border p-3 text-left',
+                        'transition-all hover:border-primary hover:shadow-md',
+                        'group relative'
+                      )}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="mb-1 text-sm font-medium">{props.optionsByValue[value]}</h4>
+                          <p className="text-xs text-muted-foreground">
+                            {value === 'btc-eth-correlation' && 'Find the correlation.'}
+                            {value === 'google-analytics' && 'Analyze the things.'}
+                          </p>
+                        </div>
+                        <ArrowRightIcon className="ml-2 opacity-20 transition-all group-hover:text-primary group-hover:opacity-100" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Connect Your Data Section */}
+              <div className="mb-6">
+                <h3 className="mb-4 text-lg font-semibold">Start with your data</h3>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => handlePromptClick('database-connection')}
+                    className={cn(
+                      'w-full rounded-lg border border-border p-3 text-left',
+                      'transition-all hover:border-primary hover:shadow-md',
+                      'group relative'
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="mb-1 text-sm font-medium">Connect a database (PostgreSQL, BigQuery, etc.)</h4>
+                      </div>
+                      <ArrowRightIcon className="ml-2 opacity-20 transition-all group-hover:text-primary group-hover:opacity-100" />
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => handlePromptClick('file-import')}
+                    className={cn(
+                      'w-full rounded-lg border border-border p-3 text-left',
+                      'transition-all hover:border-primary hover:shadow-md',
+                      'group relative'
+                    )}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="mb-1 text-sm font-medium">Import a file (CSV, Excel, Parquet)</h4>
+                      </div>
+                      <ArrowRightIcon className="ml-2 opacity-20 transition-all group-hover:text-primary group-hover:opacity-100" />
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Start Blank Section */}
+              <div className="border-t pt-4">
+                {blankOption.map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => handlePromptClick(value)}
+                    className={cn(
+                      'w-full rounded-lg border border-border p-3 text-left',
+                      'transition-all hover:border-primary hover:shadow-md',
+                      'group relative'
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-medium">{props.optionsByValue[value]}</h4>
+                      <ArrowRightIcon className="ml-2 opacity-20 transition-all group-hover:text-primary group-hover:opacity-100" />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    },
+  },
 };
 
 export function Questions() {
@@ -380,10 +534,12 @@ export function Questions() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="mx-auto flex max-w-lg flex-col gap-10 pt-16">
-        <Logo />
-
-        <div className="relative w-full max-w-xl transition-all">
+      <div
+        className={cn('mx-auto flex flex-col gap-10 pt-24', currentId === 'final-prompts' ? 'max-w-4xl' : 'max-w-lg')}
+      >
+        <div
+          className={cn('relative w-full transition-all', currentId === 'final-prompts' ? 'max-w-none' : 'max-w-xl')}
+        >
           <div className="relative min-h-[4rem]">
             {questionIds.map((id) => {
               const { Form, ...props } = questionsById[id];
@@ -477,19 +633,6 @@ function FreePromptsMsg({ isLastQuestion }: { isLastQuestion: boolean }) {
         </>
       )}
     </aside>
-  );
-}
-
-function Logo() {
-  const className = 'h-5 w-5 bg-border transition-colors';
-  return (
-    <div className="inline-grid grid-cols-2 justify-center gap-0.5">
-      <div className={cn(className, 'justify-self-end', 'bg-[#CB8999]')} />
-      <div className={cn(className, 'bg-[#8ECB89]')} />
-      <div className={cn(className, 'justify-self-end', 'bg-[#5D576B]')} />
-      <div className={cn(className, 'bg-[#6CD4FF]')} />
-      <div className={cn(className, 'col-start-2', 'bg-[#FFC800]')} />
-    </div>
   );
 }
 

@@ -1,12 +1,11 @@
 import { requireAuth } from '@/auth/auth';
-import { getPrompt } from '@/dashboard/onboarding/getPrompt';
 import { OnboardingResponseV1Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
-import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
+import { useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { RecoilRoot } from 'recoil';
 
 /**
@@ -71,6 +70,8 @@ export const Component = () => {
 /**
  * All question answers are stored in the URL search params.
  * When submitted, we parse them into JSON and save them to the server.
+ * Note: The final step (final-prompts) handles navigation directly,
+ * so this action is only called for the intermediate steps.
  */
 export const action = async ({ request }: ActionFunctionArgs) => {
   // Pull the form data from the URL
@@ -102,9 +103,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   // Save the responses to the server and mixpanel and log any errors
   const sentryPromises: Promise<unknown>[] = [];
-  let prompt = '';
   if (result.success) {
-    prompt = getPrompt(result.data);
     try {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
       const uploadToMixpanelPromise = new Promise((resolve, reject) => {
@@ -161,6 +160,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     await Promise.all(sentryPromises).catch(console.error);
   }
 
-  // Hard-redirect user to a new file
-  return redirectDocument(`/files/create?private=false${prompt ? `&prompt=${encodeURIComponent(prompt)}` : ''}`);
+  // For non-final steps, we don't redirect - the form handles navigation
+  // The final step handles its own navigation when a prompt is selected
+  return null;
 };
