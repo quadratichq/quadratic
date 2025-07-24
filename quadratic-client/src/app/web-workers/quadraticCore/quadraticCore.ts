@@ -60,6 +60,7 @@ import type {
   CoreClientDeleteCellValues,
   CoreClientExport,
   CoreClientExportCsvSelection,
+  CoreClientExportExcel,
   CoreClientGetAICells,
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
@@ -311,6 +312,16 @@ class QuadraticCore {
         resolve(message.grid);
       };
       this.send({ type: 'clientCoreExport', id });
+    });
+  }
+
+  async exportExcel(): Promise<Uint8Array> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientExportExcel) => {
+        resolve(message.excel);
+      };
+      this.send({ type: 'clientCoreExportExcel', id });
     });
   }
 

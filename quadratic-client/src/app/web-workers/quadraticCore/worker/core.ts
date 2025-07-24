@@ -593,6 +593,16 @@ class Core {
     }
   }
 
+  exportExcel(): Uint8Array {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.exportExcel();
+    } catch (e) {
+      this.handleCoreError('exportExcel', e);
+      return new Uint8Array(0);
+    }
+  }
+
   search(search: string, searchOptions: SearchOptions): SheetPos[] {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');

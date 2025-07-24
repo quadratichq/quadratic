@@ -337,6 +337,16 @@ impl SheetOffsets {
     pub fn clear_heights(&mut self) -> Vec<(i64, f64)> {
         self.row_heights.clear()
     }
+
+    /// Returns an iterator over custom column widths (non-default widths).
+    pub fn iter_column_widths(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
+        self.column_widths.iter_sizes()
+    }
+
+    /// Returns an iterator over custom row heights (non-default heights).
+    pub fn iter_row_heights(&self) -> impl '_ + Iterator<Item = (i64, f64)> {
+        self.row_heights.iter_sizes()
+    }
 }
 
 #[cfg(test)]
