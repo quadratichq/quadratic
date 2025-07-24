@@ -35,6 +35,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           reverse: false,
         })
         .then((pos) => {
+          if (!pos) return;
           const min = { x: Number(pos.x), y: Number(pos.y) };
           if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
             setCodeCell((prev) => ({ ...prev, pos: min }));
@@ -69,6 +70,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           reverse: false,
         })
         .then((pos) => {
+          if (!pos) return;
           const min = { x: Number(pos.x), y: Number(pos.y) };
           if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
             setCodeCell((prev) => ({ ...prev, pos: min }));
