@@ -263,13 +263,13 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
     }
 
     if let Some(text_color) = cell_format.text_color {
-        if let Ok(color) = Rgba::from_str(&text_color) {
+        if let Ok(color) = Rgba::try_from(text_color.as_str()) {
             format = format.set_font_color(color.as_rgb_hex().as_str());
         }
     }
 
     if let Some(fill_color) = cell_format.fill_color {
-        if let Ok(color) = Rgba::from_str(&fill_color) {
+        if let Ok(color) = Rgba::try_from(fill_color.as_str()) {
             format = format.set_pattern(FormatPattern::Solid);
             format = format.set_background_color(color.as_rgb_hex().as_str());
         }

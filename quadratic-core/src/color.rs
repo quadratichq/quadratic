@@ -33,16 +33,6 @@ impl Rgba {
         }
     }
 
-    pub fn from_str(color_str: &str) -> Result<Self> {
-        if color_str.starts_with("#") {
-            Self::color_from_str(color_str).map_err(|e| anyhow!("Invalid color string: {}", e))
-        } else if color_str.starts_with("rgb(") {
-            Self::from_css_str(color_str)
-        } else {
-            bail!("Invalid color string: {}", color_str);
-        }
-    }
-
     pub fn color_from_str(color_str: &str) -> Result<Self, ParseIntError> {
         // TODO(jrice): serde
         assert_eq!(&color_str[0..=0], "#");
@@ -97,6 +87,20 @@ impl Rgba {
     }
 }
 
+impl TryFrom<&str> for Rgba {
+    type Error = anyhow::Error;
+
+    fn try_from(value: &str) -> Result<Self> {
+        if value.starts_with("#") {
+            Self::color_from_str(value).map_err(|e| anyhow!("Invalid color string: {}", e))
+        } else if value.starts_with("rgb(") {
+            Self::from_css_str(value)
+        } else {
+            bail!("Invalid color string: {}", value);
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -137,9 +141,9 @@ mod tests {
     #[test]
     fn test_from_str() {
         let css = "rgb(1, 2, 3)";
-        assert_eq!(Rgba::from_str(css).unwrap().as_string(), "#010203ff");
+        assert_eq!(Rgba::try_from(css).unwrap().as_string(), "#010203ff");
 
         let css = "#010203FF";
-        assert_eq!(Rgba::from_str(css).unwrap().as_string(), "#010203ff");
+        assert_eq!(Rgba::try_from(css).unwrap().as_string(), "#010203ff");
     }
 }
