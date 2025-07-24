@@ -1,9 +1,10 @@
+import { shouldAutoSummaryOnImportAtom } from '@/app/atoms/aiAnalystAtom';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { supportedFileTypesFromGrid } from '@/app/helpers/files';
 import { useFileImport } from '@/app/ui/hooks/useFileImport';
 import { useRef } from 'react';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const FILE_INPUT_ID = 'global-file-input-element';
 
@@ -16,6 +17,7 @@ export function GridFileInput() {
   const handleFileImport = useFileImport();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
+  const setShouldAutoSummary = useSetRecoilState(shouldAutoSummaryOnImportAtom);
 
   return (
     <input
@@ -28,6 +30,9 @@ export function GridFileInput() {
         const files = e.target.files;
 
         if (files) {
+          // Set flag to trigger auto-summary after import
+          setShouldAutoSummary(true);
+
           handleFileImport({
             files: Array.from(files),
             sheetId: sheets.current,

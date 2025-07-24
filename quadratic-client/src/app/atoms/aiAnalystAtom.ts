@@ -369,3 +369,8 @@ export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
     });
   },
 });
+
+export const shouldAutoSummaryOnImportAtom = atom<boolean>({
+  key: 'shouldAutoSummaryOnImport',
+  default: false,
+});

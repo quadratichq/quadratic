@@ -1,8 +1,14 @@
+import { Action } from '@/app/actions/actions';
+import { insertActionsSpec } from '@/app/actions/insertActionsSpec';
+import { shouldAutoSummaryOnImportAtom } from '@/app/atoms/aiAnalystAtom';
+import { editorInteractionStateShowConnectionsMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { useAutoSummaryOnImport } from '@/app/ui/menus/AIAnalyst/hooks/useAutoSummaryOnImport';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import { CodeIcon, InsertChartIcon, TableIcon } from '@/shared/components/Icons';
+import { CodeIcon, DatabaseIcon, DraftIcon, InsertChartIcon, TableIcon } from '@/shared/components/Icons';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
+import { useSetRecoilState } from 'recoil';
 
 const examples = [
   {
@@ -27,6 +33,22 @@ const examples = [
 
 export function AIAnalystExamplePrompts() {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
+  const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const setShouldAutoSummary = useSetRecoilState(shouldAutoSummaryOnImportAtom);
+
+  // Use the shared auto-summary hook
+  useAutoSummaryOnImport();
+
+  const handleFileImport = () => {
+    mixpanel.track('[AIAnalyst].startWithOwnData', { type: 'file' });
+    setShouldAutoSummary(true);
+    insertActionsSpec[Action.InsertFile].run();
+  };
+
+  const handleConnectionsMenu = () => {
+    mixpanel.track('[AIAnalyst].startWithOwnData', { type: 'connection' });
+    setShowConnectionsMenu(true);
+  };
 
   return (
     <div className="flex flex-col justify-center gap-2 px-2 pt-1">
@@ -53,6 +75,33 @@ export function AIAnalystExamplePrompts() {
           </div>
         </button>
       ))}
+
+      <div className="mt-2">
+        <h3 className="mb-2 text-center text-sm font-medium text-muted-foreground">Or start with your own data</h3>
+        <div className="flex flex-col gap-2">
+          <button
+            className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
+            onClick={handleFileImport}
+          >
+            <DraftIcon className="text-primary" />
+            <div className="flex flex-col text-left text-sm">
+              <h3 className="font-semibold">From file</h3>
+              <p className="text-xs text-muted-foreground">CSV, Excel, or Parquet</p>
+            </div>
+          </button>
+
+          <button
+            className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
+            onClick={handleConnectionsMenu}
+          >
+            <DatabaseIcon className="text-primary" />
+            <div className="flex flex-col text-left text-sm">
+              <h3 className="font-semibold">From connection</h3>
+              <p className="text-xs text-muted-foreground">PostgreSQL, MySQL, BigQuery, etc.</p>
+            </div>
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
