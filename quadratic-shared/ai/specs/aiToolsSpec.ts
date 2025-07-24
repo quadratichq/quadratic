@@ -1510,7 +1510,7 @@ It requires the sheet name, the column to insert the columns at, whether to inse
         column: {
           type: 'string',
           description:
-            'The column to insert the columns at. This must be a valid column name, for example "A" or "ZA". The new columns will share the formatting of this column.',
+            'The column to insert the columns at. This must be a valid column name, for example A or ZA. The new columns will share the formatting of this column.',
         },
         right: {
           type: 'boolean',
@@ -1582,6 +1582,10 @@ It requires the sheet name, the columns to delete.\n
         columns: {
           type: 'array',
           description: 'The columns to delete. These must be a valid column name, for example ["A", "B", "C"].',
+          items: {
+            type: 'string',
+            description: 'The column to delete. This must be a valid column name, for example "A" or "ZB".',
+          },
         },
       },
       required: ['sheet_name', 'columns'],
@@ -1608,6 +1612,10 @@ It requires the sheet name, the rows to delete.\n
         rows: {
           type: 'array',
           description: 'The rows to delete. These must be a number, for example [1, 2, 3].',
+          items: {
+            type: 'number',
+            description: 'The row to delete. This must be a number, for example 1, 2, 35, etc.',
+          },
         },
       },
       required: ['sheet_name', 'rows'],

@@ -967,7 +967,15 @@ export const aiToolsActions: AIToolActionsRecord = {
       ];
     }
     const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    quadraticCore.insertColumns(sheetId, Number(columnIndex), count, right, sheets.getCursorPosition());
+
+    // the "right" if weird: it's what column we use for formatting, so we need to add 1 if we're inserting to the right
+    quadraticCore.insertColumns(
+      sheetId,
+      Number(columnIndex) + (right ? 1 : 0),
+      count,
+      !right,
+      sheets.getCursorPosition()
+    );
     return [
       {
         type: 'text',
@@ -978,7 +986,9 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.InsertRows]: async (args) => {
     const { sheet_name, row, below, count } = args;
     const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    quadraticCore.insertRows(sheetId, row, count, below, sheets.getCursorPosition());
+
+    // the "below" is weird: it's what row we use for formatting, so we need to add 1 if we're inserting below
+    quadraticCore.insertRows(sheetId, row + (below ? 1 : 0), count, !below, sheets.getCursorPosition());
     return [
       {
         type: 'text',

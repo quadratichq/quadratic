@@ -23,26 +23,26 @@ export const ToolCard = memo(
     return (
       <div
         className={cn(
-          'flex h-12 min-w-0 items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow-sm',
+          'flex min-w-0 items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow-sm',
           className
         )}
       >
         <div className="flex min-w-0 items-center gap-2">
-          <div className="flex h-6 w-6 shrink-0 select-none items-center justify-center">
-            {icon ? icon : isLoading ? <Skeleton className="h-6 w-6 bg-accent" /> : null}
+          <div className="flex w-6 shrink-0 select-none items-center justify-center">
+            {icon ? icon : isLoading ? <Skeleton className="w-6 bg-accent" /> : null}
           </div>
 
           <div className="min-w-0 flex-1">
-            <div className="truncate font-bold">
-              {label ? label : isLoading ? <Skeleton className="h-3 w-64 bg-accent" /> : null}
+            <div className="font-bold">
+              {label ? label : isLoading ? <Skeleton className="w-64 bg-accent" /> : null}
             </div>
-            <div className="h-4 truncate text-xs text-muted-foreground">
+            <div className="text-xs text-muted-foreground">
               {hasError ? (
                 <span className="text-destructive">Something went wrong (try again)</span>
               ) : description ? (
                 description
               ) : isLoading ? (
-                <Skeleton className="h-3 w-24 bg-accent" />
+                <Skeleton className="w-24 bg-accent" />
               ) : null}
             </div>
           </div>
