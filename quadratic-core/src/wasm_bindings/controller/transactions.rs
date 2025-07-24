@@ -48,15 +48,16 @@ impl GridController {
     #[wasm_bindgen(js_name = "receiveMultiplayerTransactions")]
     pub fn js_receive_multiplayer_transactions(&mut self, transactions: JsValue) -> JsValue {
         capture_core_error(|| {
-            match serde_wasm_bindgen::from_value::<Vec<TransactionServer>>(transactions) {
-                Ok(transactions) => {
-                    self.received_transactions(transactions);
-                    Ok(None)
-                }
-                Err(e) => Err(format!(
-                    "Invalid transactions received in receiveMultiplayerTransactions: {e}"
-                )),
-            }
+            let transactions = serde_wasm_bindgen::from_value::<Vec<TransactionServer>>(
+                transactions,
+            )
+            .map_err(|e| {
+                format!("Invalid transactions received in receiveMultiplayerTransactions: {e}")
+            })?;
+
+            self.received_transactions(transactions);
+
+            Ok(None)
         })
     }
 
@@ -66,12 +67,13 @@ impl GridController {
         transaction_id: String,
         sequence_num: u32,
     ) -> JsValue {
-        capture_core_error(|| match Uuid::parse_str(&transaction_id) {
-            Ok(transaction_id) => {
-                self.received_transaction(transaction_id, sequence_num as u64, vec![]);
-                Ok(None)
-            }
-            Err(e) => Err(format!("Invalid transaction id: {e}")),
+        capture_core_error(|| {
+            let transaction_id = Uuid::parse_str(&transaction_id)
+                .map_err(|e| format!("Invalid transaction id: {e}"))?;
+
+            self.received_transaction(transaction_id, sequence_num as u64, vec![]);
+
+            Ok(None)
         })
     }
 
@@ -81,21 +83,20 @@ impl GridController {
         transaction_id: String,
         unsaved_transaction: String,
     ) -> JsValue {
-        capture_core_error(|| match Uuid::parse_str(&transaction_id) {
-            Ok(transaction_id) => {
-                match serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction) {
-                    Ok(unsaved_transaction) => {
-                        self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
-                        Ok(None)
-                    }
-                    Err(e) => Err(format!(
+        capture_core_error(|| {
+            let transaction_id = Uuid::parse_str(&transaction_id)
+                .map_err(|e| format!("Invalid transaction id: {e}"))?;
+
+            let unsaved_transaction = serde_json::from_str::<UnsavedTransaction>(&unsaved_transaction)
+                .map_err(|e| {
+                    format!(
                         "Invalid unsaved transaction received in applyOfflineUnsavedTransaction {unsaved_transaction}, error: {e}"
-                    )),
-                }
-            }
-            Err(e) => Err(format!(
-                "Invalid transaction id: {transaction_id}, error: {e}"
-            )),
+                    )
+                })?;
+
+            self.apply_offline_unsaved_transaction(transaction_id, unsaved_transaction);
+
+            Ok(None)
         })
     }
 }
