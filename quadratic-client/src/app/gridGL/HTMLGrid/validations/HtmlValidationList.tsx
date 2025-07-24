@@ -102,7 +102,7 @@ export const HtmlValidationList = (props: Props) => {
         sheets.getCursorPosition()
       );
       setAnnotationState(undefined);
-      inlineEditorHandler.close(0, 0, true);
+      inlineEditorHandler.close({ cancel: true });
     },
     [setAnnotationState]
   );
@@ -158,7 +158,7 @@ export const HtmlValidationList = (props: Props) => {
         maxHeight: `min(50vh, calc(${pixiApp.viewport.bottom - offsets.bottom}px))`,
       }}
     >
-      <div className="block w-full px-1">
+      <div className="pointer-up-ignore block w-full px-1">
         {list
           .filter((item) => {
             if (!filter) return true;

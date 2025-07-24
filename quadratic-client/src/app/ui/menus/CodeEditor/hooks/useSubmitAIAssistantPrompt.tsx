@@ -19,6 +19,7 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import mixpanel from 'mixpanel-browser';
@@ -246,18 +247,31 @@ export function useSubmitAIAssistantPrompt() {
 
             for (const toolCall of response.toolCalls) {
               if (Object.values(AITool).includes(toolCall.name as AITool)) {
-                const aiTool = toolCall.name as AITool;
-                const argsObject = JSON.parse(toolCall.arguments);
-                const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const toolResultContent = await aiToolsActions[aiTool](args as any, {
-                  source: 'AIAssistant',
-                  chatId,
-                  messageIndex: lastMessageIndex + 1,
-                });
-                toolResultMessage.content.push({
-                  id: toolCall.id,
-                  content: toolResultContent,
-                });
+                try {
+                  inlineEditorHandler.close({ skipFocusGrid: true });
+                  const aiTool = toolCall.name as AITool;
+                  const argsObject = JSON.parse(toolCall.arguments);
+                  const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+                  const toolResultContent = await aiToolsActions[aiTool](args as any, {
+                    source: 'AIAssistant',
+                    chatId,
+                    messageIndex: lastMessageIndex + 1,
+                  });
+                  toolResultMessage.content.push({
+                    id: toolCall.id,
+                    content: toolResultContent,
+                  });
+                } catch (error) {
+                  toolResultMessage.content.push({
+                    id: toolCall.id,
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                      },
+                    ],
+                  });
+                }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,

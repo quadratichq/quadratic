@@ -12,7 +12,7 @@ impl Sheet {
         format: SheetFormatUpdatesType<T>,
         needs_resize: bool,
         dirty_hashes: &mut HashSet<Pos>,
-        resize_rows: &mut HashSet<i64>,
+        rows_to_resize: &mut HashSet<i64>,
     ) {
         let sheet_bounds =
             |ignore_formatting: bool| -> Option<Rect> { self.bounds(ignore_formatting).into() };
@@ -29,8 +29,8 @@ impl Sheet {
                     let rect = Rect::new(x1, y1, x2, y2);
                     dirty_hashes.extend(rect.to_hashes());
                     if needs_resize {
-                        let rows = self.get_rows_with_wrap_in_rect(&rect, false);
-                        resize_rows.extend(rows);
+                        let rows = self.get_rows_with_wrap_in_rect(rect, false);
+                        rows_to_resize.extend(rows);
                     }
                 });
         }
@@ -40,7 +40,7 @@ impl Sheet {
         &self,
         wrap: SheetFormatUpdatesType<CellWrap>,
         dirty_hashes: &mut HashSet<Pos>,
-        resize_rows: &mut HashSet<i64>,
+        rows_to_resize: &mut HashSet<i64>,
     ) {
         let sheet_bounds =
             |ignore_formatting: bool| -> Option<Rect> { self.bounds(ignore_formatting).into() };
@@ -60,7 +60,7 @@ impl Sheet {
                     if value == ClearOption::Some(CellWrap::Wrap) {
                         for y in y1..=y2 {
                             if self.row_bounds(y, true).is_some() {
-                                resize_rows.insert(y);
+                                rows_to_resize.insert(y);
                             }
                         }
                     }
@@ -75,102 +75,106 @@ impl Sheet {
         reverse_formats: &SheetFormatUpdates,
     ) -> (HashSet<Pos>, HashSet<i64>, bool) {
         let mut dirty_hashes = HashSet::new();
-        let mut resize_rows = HashSet::new();
+        let mut rows_to_resize = HashSet::new();
         let mut fills_changed = false;
 
         self.format_transaction_changes(
             formats.align.to_owned(),
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.vertical_align.to_owned(),
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.numeric_format.to_owned(),
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.numeric_decimals.to_owned(),
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.numeric_commas.to_owned(),
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.bold.to_owned(),
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.italic.to_owned(),
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.text_color.to_owned(),
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.date_time.to_owned(),
             true,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.underline.to_owned(),
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
         self.format_transaction_changes(
             formats.strike_through.to_owned(),
             false,
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
 
         // for wrap, we need to check if the new formats is wrap or old is wrap
         // no need to resize rows if wrap is not present in both new and old formats
-        self.wrap_transaction_changes(formats.wrap.to_owned(), &mut dirty_hashes, &mut resize_rows);
+        self.wrap_transaction_changes(
+            formats.wrap.to_owned(),
+            &mut dirty_hashes,
+            &mut rows_to_resize,
+        );
         self.wrap_transaction_changes(
             reverse_formats.wrap.to_owned(),
             &mut dirty_hashes,
-            &mut resize_rows,
+            &mut rows_to_resize,
         );
 
         if formats.fill_color.is_some() {
             fills_changed = true;
         }
 
-        (dirty_hashes, resize_rows, fills_changed)
+        (dirty_hashes, rows_to_resize, fills_changed)
     }
 
     /// Sets formats using SheetFormatUpdates.
     ///
-    /// Returns (reverse_operations, dirty_hashes, resize_rows)
+    /// Returns (reverse_operations, dirty_hashes, rows_to_resize)
     pub fn set_formats_a1(
         &mut self,
         formats: &SheetFormatUpdates,
     ) -> (Vec<Operation>, HashSet<Pos>, HashSet<i64>, bool) {
         let reverse_formats = self.formats.apply_updates(formats);
 
-        let (dirty_hashes, resize_rows, fills_changed) =
+        let (dirty_hashes, rows_to_resize, fills_changed) =
             self.formats_transaction_changes(formats, &reverse_formats);
 
         let reverse_op = Operation::SetCellFormatsA1 {
@@ -178,7 +182,12 @@ impl Sheet {
             formats: reverse_formats,
         };
 
-        (vec![reverse_op], dirty_hashes, resize_rows, fills_changed)
+        (
+            vec![reverse_op],
+            dirty_hashes,
+            rows_to_resize,
+            fills_changed,
+        )
     }
 }
 

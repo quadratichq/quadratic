@@ -51,6 +51,7 @@
     "dgraph",
     "docgen",
     "domcontentloaded",
+    "dont",
     "dotenv",
     "dpkg",
     "elif",
@@ -78,7 +79,6 @@
     "healthchecks",
     "hljs",
     "HLOOKUP",
-    "htmlescape",
     "iloc",
     "indexeddb",
     "indexmap",
@@ -200,6 +200,7 @@
     "websockets",
     "Westborough",
     "XLOOKUP",
+    "xlsxwriter",
     "xyxy",
     "zstd"
   ],

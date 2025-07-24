@@ -23,6 +23,7 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
 import mixpanel from 'mixpanel-browser';
@@ -350,6 +351,7 @@ export function useSubmitAIAnalystPrompt() {
 
               if (Object.values(AITool).includes(toolCall.name as AITool)) {
                 try {
+                  inlineEditorHandler.close({ skipFocusGrid: true });
                   const aiTool = toolCall.name as AITool;
                   const argsObject = JSON.parse(toolCall.arguments);
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use super::operation::Operation;
 use crate::{
-    Array, ArraySize, CellValue, CopyFormats, Pos, Rect, SheetPos, SheetRect,
+    Array, ArraySize, CellValue, ClearOption, CopyFormats, Pos, Rect, SheetPos, SheetRect,
     cellvalue::Import,
     controller::GridController,
     grid::{
@@ -58,15 +58,13 @@ impl GridController {
                     });
                 }
                 if let Some(table_name) = table_name {
-                    ops.push(Operation::DataTableMeta {
+                    ops.push(Operation::DataTableOptionMeta {
                         sheet_pos: sheet_rect.into(),
                         name: Some(table_name),
                         alternating_colors: None,
                         columns: None,
                         show_name: None,
                         show_columns: None,
-                        show_ui: None,
-                        readonly: None,
                     });
                 }
             }
@@ -229,15 +227,13 @@ impl GridController {
                 sheet_pos,
                 first_row_is_header,
             },
-            Operation::DataTableMeta {
+            Operation::DataTableOptionMeta {
                 sheet_pos,
                 name: None,
                 alternating_colors: None,
                 columns: None,
-                show_ui: None,
                 show_name: None,
-                show_columns: Some(true),
-                readonly: None,
+                show_columns: Some(ClearOption::Some(true)),
             },
         ]
     }

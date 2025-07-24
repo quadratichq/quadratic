@@ -151,7 +151,7 @@ class InlineEditorMonaco {
     });
 
     // horizontal text alignment
-    domNode.setAttribute('data-text-align', textAlign);
+    domNode.dataset.textAlign = textAlign;
 
     this.setUnderline(underline);
     this.setStrikeThrough(strikeThrough);
@@ -255,9 +255,9 @@ class InlineEditorMonaco {
       throw new Error('Expected domNode to be defined in setUnderline');
     }
     if (underline && !inlineEditorHandler.formula) {
-      domNode.setAttribute('data-underline', 'true');
+      domNode.dataset.underline = 'true';
     } else {
-      domNode.removeAttribute('data-underline');
+      delete domNode.dataset.underline;
     }
   }
 
@@ -270,9 +270,9 @@ class InlineEditorMonaco {
       throw new Error('Expected domNode to be defined in setUnderline');
     }
     if (strikeThrough && !inlineEditorHandler.formula) {
-      domNode.setAttribute('data-strike-through', 'true');
+      domNode.dataset.strikeThrough = 'true';
     } else {
-      domNode.removeAttribute('data-strike-through');
+      delete domNode.dataset.strikeThrough;
     }
   }
 

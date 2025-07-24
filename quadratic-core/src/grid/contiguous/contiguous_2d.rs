@@ -190,7 +190,15 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
 
     /// Returns a list of rectangles containing non-default values.
     pub fn nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, T)> {
-        let [x1, x2, y1, y2] = range_to_rect(RefRangeBounds::new_relative_rect(rect));
+        self.nondefault_rects_in_range(RefRangeBounds::new_relative_rect(rect))
+    }
+
+    /// Returns a list of rectangles containing non-default values.
+    pub fn nondefault_rects_in_range(
+        &self,
+        range: RefRangeBounds,
+    ) -> impl Iterator<Item = (Rect, T)> {
+        let [x1, x2, y1, y2] = range_to_rect(range);
         let u64_to_i64 = |u: u64| u.try_into().unwrap_or(i64::MAX);
         self.0
             .blocks_for_range(x1, x2)
@@ -663,25 +671,6 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
             })
     }
 
-    /// Returns the set of rectangles that have values. Each rectangle is `(x1,
-    /// y1, x2, y2, value)` with inclusive coordinates. Unlike `to_rects()`,
-    /// this returns concrete coordinates rather than potentially infinite
-    /// bounds.
-    ///
-    /// `None` values are skipped.
-    pub fn to_rects_with_rect_bounds(
-        &self,
-        rect: Rect,
-    ) -> impl '_ + Iterator<Item = (i64, i64, i64, i64, T)> {
-        self.to_rects()
-            .map(move |(x1, y1, x2, y2, value)| match (x2, y2) {
-                (Some(x2), Some(y2)) => (x1, y1, x2, y2, value),
-                (None, Some(y2)) => (x1, y1, rect.max.x.max(x1), y2, value),
-                (Some(x2), None) => (x1, y1, x2, rect.max.y.max(y1), value),
-                _ => (x1, y1, rect.max.x.max(x1), rect.max.y.max(y1), value),
-            })
-    }
-
     /// Constructs an update for a selection, taking values from `self` at every
     /// location in the selection.
     pub fn get_update_for_selection(
@@ -706,6 +695,51 @@ impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
             CellRefRange::Table { .. } => (),
         });
         c
+    }
+
+    /// Constructs an update for a range, taking values from `self` at every
+    /// location in the range.
+    ///
+    /// `clear_on_none` controls whether to clear the value if it is `None`.
+    /// If `false`, the value will be left as is.
+    pub fn get_update_for_range(
+        &self,
+        range: RefRangeBounds,
+        clear_on_none: bool,
+    ) -> Contiguous2D<Option<crate::ClearOption<T>>> {
+        let mut c: Contiguous2D<Option<crate::ClearOption<T>>> = Contiguous2D::new();
+        for xy_block in self.xy_blocks_in_range(range) {
+            c.0.update_range(xy_block.start, xy_block.end, |column| {
+                for y_block in &xy_block.value {
+                    column.update_range(y_block.start, y_block.end, |old_value| {
+                        match y_block.value {
+                            Some(_) => {
+                                *old_value = Some(crate::ClearOption::from(y_block.value.clone()));
+                            }
+                            None => {
+                                if clear_on_none {
+                                    *old_value = Some(crate::ClearOption::Clear);
+                                }
+                            }
+                        }
+                    });
+                }
+            });
+        }
+        c
+    }
+
+    /// Constructs an update for a rect, taking values from `self` at every
+    /// location in the rect.
+    ///
+    /// `clear_on_none` controls whether to clear the value if it is `None`.
+    /// If `false`, the value will be left as is.
+    pub fn get_update_for_rect(
+        &self,
+        rect: Rect,
+        clear_on_none: bool,
+    ) -> Contiguous2D<Option<crate::ClearOption<T>>> {
+        self.get_update_for_range(RefRangeBounds::new_relative_rect(rect), clear_on_none)
     }
 
     /// Returns an iterator over the blocks in the contiguous 2d.

@@ -8,7 +8,7 @@ use super::GridController;
 
 impl GridController {
     /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
-    pub fn get_dependent_code_cells(&self, sheet_rect: &SheetRect) -> Option<HashSet<SheetPos>> {
+    pub fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
         let all_dependent_cells = self
             .cells_accessed()
             .get_positions_associated_with_region(sheet_rect.to_region());
@@ -114,26 +114,26 @@ mod test {
         );
 
         assert_eq!(
-            gc.get_dependent_code_cells(&sheet_pos_00.into())
+            gc.get_dependent_code_cells(sheet_pos_00.into())
                 .unwrap()
                 .len(),
             1
         );
         assert_eq!(
-            gc.get_dependent_code_cells(&sheet_pos_00.into())
+            gc.get_dependent_code_cells(sheet_pos_00.into())
                 .unwrap()
                 .iter()
                 .next(),
             Some(&sheet_pos_02)
         );
         assert_eq!(
-            gc.get_dependent_code_cells(&sheet_pos_01.into())
+            gc.get_dependent_code_cells(sheet_pos_01.into())
                 .unwrap()
                 .iter()
                 .next(),
             Some(&sheet_pos_02)
         );
-        assert_eq!(gc.get_dependent_code_cells(&sheet_pos_02.into()), None);
+        assert_eq!(gc.get_dependent_code_cells(sheet_pos_02.into()), None);
     }
 
     #[test]
@@ -161,7 +161,7 @@ mod test {
             None,
         );
         assert_eq!(
-            gc.get_dependent_code_cells(&SheetRect {
+            gc.get_dependent_code_cells(SheetRect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 1, y: 1 },
                 sheet_id
