@@ -62,6 +62,7 @@ impl Rgba {
             alpha,
         })
     }
+
     pub fn from_css_str(css: &str) -> Result<Self> {
         let colors = css
             .trim_start_matches("rgb(")
@@ -116,7 +117,7 @@ mod tests {
     }
 
     #[test]
-    fn test_from_str() {
+    fn test_color_from_str() {
         let maybe_color = Rgba::color_from_str("#224466FF");
         assert!(maybe_color.is_ok());
 
@@ -130,8 +131,15 @@ mod tests {
     #[test]
     fn test_from_css_str() {
         let css = "rgb(1, 2, 3)";
-        println!("{}", Rgba::from_css_str(css).unwrap().as_string());
-        // let maybe_color = Rgba::from_css_str(css);
-        // assert_eq!(maybe_color.unwrap().as_string(), "#010203ff");
+        assert_eq!(Rgba::from_css_str(css).unwrap().as_string(), "#010203ff");
+    }
+
+    #[test]
+    fn test_from_str() {
+        let css = "rgb(1, 2, 3)";
+        assert_eq!(Rgba::from_str(css).unwrap().as_string(), "#010203ff");
+
+        let css = "#010203FF";
+        assert_eq!(Rgba::from_str(css).unwrap().as_string(), "#010203ff");
     }
 }

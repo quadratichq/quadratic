@@ -326,13 +326,13 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<v1_4::Sheet> {
         let column = sheet.column(border.x);
         let column_id = column.id.to_string();
         let top = border.horizontal.map(|horizontal| v1_4::CellBorder {
-            color: Rgba::from_css_str(&horizontal.color.unwrap_or("rgb(0, 0, 0)".into()))
+            color: Rgba::from_str(&horizontal.color.unwrap_or("rgb(0, 0, 0)".into()))
                 .unwrap_or_default()
                 .as_string(),
             line: horizontal.border_type.unwrap_or("line1".into()),
         });
         let left = border.vertical.map(|vertical| v1_4::CellBorder {
-            color: Rgba::from_css_str(&vertical.color.unwrap_or("rgb(0, 0, 0)".into()))
+            color: Rgba::from_str(&vertical.color.unwrap_or("rgb(0, 0, 0)".into()))
                 .unwrap_or_default()
                 .as_string(),
             line: vertical.border_type.unwrap_or("line1".into()),

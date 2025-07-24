@@ -234,14 +234,14 @@ impl From<Clipboard> for JsClipboard {
                                 style.push_str("font-style:italic;");
                             }
                             if let Some(text_color) = format.text_color {
-                                if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
+                                if let Ok(text_color) = Rgba::from_str(text_color.as_str()) {
                                     style.push_str(
                                         format!("color:{};", text_color.as_rgb_hex()).as_str(),
                                     );
                                 }
                             }
                             if let Some(fill_color) = format.fill_color {
-                                if let Ok(fill_color) = Rgba::from_css_str(fill_color.as_str()) {
+                                if let Ok(fill_color) = Rgba::from_str(fill_color.as_str()) {
                                     style.push_str(
                                         format!("background-color:{};", fill_color.as_rgb_hex())
                                             .as_str(),
