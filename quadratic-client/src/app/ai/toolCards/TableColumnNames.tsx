@@ -4,24 +4,24 @@ import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type RenameSheetResponse = z.infer<(typeof aiToolsSpec)[AITool.RenameSheet]['responseSchema']>;
+type TableColumnNamesResponse = z.infer<(typeof aiToolsSpec)[AITool.TableColumnNames]['responseSchema']>;
 
-type RenameSheetProps = {
+type TableColumnNamesProps = {
   args: string;
   loading: boolean;
 };
 
-export const RenameSheet = memo(({ args, loading }: RenameSheetProps) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<RenameSheetResponse, RenameSheetResponse>>();
+export const TableColumnNames = memo(({ args, loading }: TableColumnNamesProps) => {
+  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<TableColumnNamesResponse, TableColumnNamesResponse>>();
 
   useEffect(() => {
     if (!loading) {
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.RenameSheet].responseSchema.safeParse(json));
+        setToolArgs(aiToolsSpec[AITool.TableColumnNames].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
-        console.error('[RenameSheet] Failed to parse args: ', error);
+        console.error('[TableColumnNames] Failed to parse args: ', error);
       }
     } else {
       setToolArgs(undefined);
@@ -29,7 +29,7 @@ export const RenameSheet = memo(({ args, loading }: RenameSheetProps) => {
   }, [args, loading]);
 
   const icon = <GridActionIcon />;
-  const label = 'Rename sheet';
+  const label = 'Table column names';
 
   if (loading) {
     return <ToolCard icon={icon} label={label} isLoading />;
@@ -41,11 +41,7 @@ export const RenameSheet = memo(({ args, loading }: RenameSheetProps) => {
     return <ToolCard icon={icon} label={label} isLoading />;
   }
 
-  return (
-    <ToolCard
-      icon={icon}
-      label={label}
-      description={`"Renamed ${toolArgs.data.sheet_name}" to "${toolArgs.data.new_name}"`}
-    />
-  );
+  let description = `Table at ${toolArgs.data.table_location} renamed columns`;
+
+  return <ToolCard icon={icon} label={label} description={description} />;
 });
