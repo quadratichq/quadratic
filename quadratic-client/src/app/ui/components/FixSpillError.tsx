@@ -1,6 +1,7 @@
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
+import type { Pos } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -20,9 +21,40 @@ type FixSpillErrorProps = {
   evaluationResult: EvaluationResult;
   onClick?: () => void;
 };
-
 export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillErrorProps) => {
   const setCodeEditor = useSetRecoilState(codeEditorAtom);
+
+  const updateCodeEditor = useCallback(
+    (pos?: Pos) => {
+      if (!pos) return;
+      const min = { x: Number(pos.x), y: Number(pos.y) };
+      if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
+        setCodeEditor((prev) => {
+          if (!prev.showCodeEditor) {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            codeString: prev.editorContent,
+            diffEditorContent: undefined,
+            waitingForEditorClose: {
+              codeCell: { ...codeCell, pos: min },
+              showCellTypeMenu: false,
+              initialCode: prev.editorContent ?? '',
+              inlineEditor: false,
+            },
+          };
+        });
+        const max = {
+          x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
+          y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
+        };
+        ensureRectVisible(codeCell.sheetId, min, max);
+      }
+    },
+    [codeCell, evaluationResult?.size?.h, evaluationResult?.size?.w, setCodeEditor]
+  );
 
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
@@ -34,31 +66,10 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           sheetEnd,
           reverse: false,
         })
-        .then((pos) => {
-          if (!pos) return;
-          const min = { x: Number(pos.x), y: Number(pos.y) };
-          if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
-            setCodeEditor((prev) => ({
-              ...prev,
-              codeString: prev.editorContent,
-              diffEditorContent: undefined,
-              waitingForEditorClose: {
-                codeCell: { ...codeCell, pos: min },
-                showCellTypeMenu: false,
-                initialCode: prev.editorContent ?? '',
-                inlineEditor: false,
-              },
-            }));
-            const max = {
-              x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
-              y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
-            };
-            ensureRectVisible(codeCell.sheetId, min, max);
-          }
-        });
+        .then(updateCodeEditor);
       onClick?.();
     },
-    [codeCell, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeEditor]
+    [codeCell.pos.x, codeCell.pos.y, onClick, updateCodeEditor]
   );
 
   const handleModeCodeCellRight = useCallback(
@@ -71,31 +82,10 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           sheetEnd,
           reverse: false,
         })
-        .then((pos) => {
-          if (!pos) return;
-          const min = { x: Number(pos.x), y: Number(pos.y) };
-          if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
-            setCodeEditor((prev) => ({
-              ...prev,
-              codeString: prev.editorContent,
-              diffEditorContent: undefined,
-              waitingForEditorClose: {
-                codeCell: { ...codeCell, pos: min },
-                showCellTypeMenu: false,
-                initialCode: prev.editorContent ?? '',
-                inlineEditor: false,
-              },
-            }));
-            const max = {
-              x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
-              y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
-            };
-            ensureRectVisible(codeCell.sheetId, min, max);
-          }
-        });
+        .then(updateCodeEditor);
       onClick?.();
     },
-    [codeCell, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeEditor]
+    [codeCell.pos.x, codeCell.pos.y, onClick, updateCodeEditor]
   );
 
   return (
