@@ -117,10 +117,8 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
     bottom = bottomRightCell.bottom;
     y = bottom - viewport.worldScreenHeight;
   }
-  if (topLeftCell.top - headingHeight < viewport.top) {
-    top = topLeftCell.top - headingHeight;
-    y = top;
-  }
+  top = topLeftCell.top - headingHeight;
+  y = top;
 
   // calculate the new rowWidth when at new Y location
   const newHeadingSize = pixiApp.headings.getFutureSizes(y);
@@ -129,10 +127,7 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   if (bottomRightCell.right > viewport.right) {
     right = bottomRightCell.right;
   }
-
-  if (topLeftCell.left - headingWidth < viewport.left) {
-    left = topLeftCell.left - headingWidth;
-  }
+  left = topLeftCell.left - headingWidth;
 
   let x = -viewport.x * scale;
   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
