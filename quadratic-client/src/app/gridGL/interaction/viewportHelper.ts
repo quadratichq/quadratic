@@ -117,8 +117,10 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
     bottom = bottomRightCell.bottom;
     y = bottom - viewport.worldScreenHeight;
   }
-  top = topLeftCell.top - headingHeight;
-  y = top;
+  if (topLeftCell.top - headingHeight < viewport.top) {
+    top = topLeftCell.top - headingHeight;
+    y = top;
+  }
 
   // calculate the new rowWidth when at new Y location
   const newHeadingSize = pixiApp.headings.getFutureSizes(y);
@@ -127,12 +129,22 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   if (bottomRightCell.right > viewport.right) {
     right = bottomRightCell.right;
   }
-  left = topLeftCell.left - headingWidth;
+  if (topLeftCell.left - headingWidth < viewport.left) {
+    left = topLeftCell.left - headingWidth;
+  }
 
   let x = -viewport.x * scale;
   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
     x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : -viewport.x * scale;
     y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : -viewport.y * scale;
+  }
+
+  if (topLeftCell.left - headingWidth < x) {
+    x = topLeftCell.left - headingWidth;
+  }
+
+  if (topLeftCell.top - headingHeight < y) {
+    y = topLeftCell.top - headingHeight;
   }
 
   const futureVisibleBounds = new Rectangle(x, y, viewport.worldScreenWidth, viewport.worldScreenHeight);
