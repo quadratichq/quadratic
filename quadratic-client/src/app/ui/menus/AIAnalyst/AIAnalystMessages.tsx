@@ -305,7 +305,15 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       <WebSearchLoading />
 
-      <UserPromptSuggestionsSkeleton args={''} loading={promptSuggestionsLoading} />
+      <UserPromptSuggestionsSkeleton
+        toolCall={{
+          id: 'user_prompt_suggestions',
+          name: 'UserPromptSuggestions',
+          arguments: '',
+          loading: promptSuggestionsLoading,
+        }}
+        className="tool-card"
+      />
 
       <AILoading loading={loading} />
     </div>

@@ -256,7 +256,7 @@ export async function parseGenAIStream(
                 text: '',
               };
             }
-            currentContent.text += part.text.trim();
+            currentContent.text += part.text;
             responseMessage.content.push(currentContent);
           }
           // chat text
@@ -271,7 +271,7 @@ export async function parseGenAIStream(
                 text: '',
               };
             }
-            currentContent.text += part.text.trim();
+            currentContent.text += part.text;
             responseMessage.content.push(currentContent);
           }
         }

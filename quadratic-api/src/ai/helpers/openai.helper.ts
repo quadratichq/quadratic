@@ -215,7 +215,7 @@ export async function parseOpenAIStream(
               text: '',
             }),
           };
-          currentContent.text += chunk.choices[0].delta.content.trim();
+          currentContent.text += chunk.choices[0].delta.content;
           responseMessage.content.push(currentContent);
 
           responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({

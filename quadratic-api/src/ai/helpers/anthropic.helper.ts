@@ -260,7 +260,7 @@ export async function parseAnthropicStream(
             if (chunk.content_block.text.trim()) {
               responseMessage.content.push({
                 type: 'text',
-                text: chunk.content_block.text.trim(),
+                text: chunk.content_block.text,
               });
 
               responseMessage.toolCalls.forEach((toolCall) => {
