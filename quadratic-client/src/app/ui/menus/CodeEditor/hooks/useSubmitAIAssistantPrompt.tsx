@@ -2,6 +2,7 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
@@ -47,13 +48,21 @@ export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
+  const { getFilesContext } = useFilesContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
   const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ snapshot }) =>
-      async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
-        const [currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
+      async ({
+        codeCell,
+        chatMessages,
+      }: {
+        codeCell: CodeCell;
+        chatMessages: ChatMessage[];
+      }): Promise<ChatMessage[]> => {
+        const [filesContext, currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
+          getFilesContext({ chatMessages }),
           getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
           getVisibleContext(),
           getCodeCellContext({ codeCell }),
@@ -61,6 +70,7 @@ export function useSubmitAIAssistantPrompt() {
         ]);
 
         const messagesWithContext: ChatMessage[] = [
+          ...filesContext,
           ...currentSheetContext,
           ...visibleContext,
           ...codeContext,
@@ -191,7 +201,7 @@ export function useSubmitAIAssistantPrompt() {
             toolCallIterations++;
 
             // Update internal context
-            chatMessages = await updateInternalContext({ codeCell });
+            chatMessages = await updateInternalContext({ codeCell, chatMessages });
             set(aiAssistantMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
@@ -215,6 +225,10 @@ export function useSubmitAIAssistantPrompt() {
 
             const waitingOnMessageIndex = await snapshot.getPromise(aiAssistantWaitingOnMessageIndexAtom);
             if (waitingOnMessageIndex !== undefined) {
+              break;
+            }
+
+            if (response.error) {
               break;
             }
 

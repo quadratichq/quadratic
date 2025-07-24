@@ -330,13 +330,7 @@ const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const lastContext = useMemo(
-    () =>
-      getUserPromptMessages(messages)
-        .filter((message) => message.contextType === 'userPrompt')
-        .at(-1)?.context,
-    [messages]
-  );
+  const lastContext = useMemo(() => getUserPromptMessages(messages).at(-1)?.context, [messages]);
 
   if (!messages.length || !promptSuggestions.suggestions.length) {
     return null;
