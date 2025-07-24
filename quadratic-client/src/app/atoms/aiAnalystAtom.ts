@@ -360,6 +360,10 @@ export const aiAnalystPromptSuggestionsCountAtom = selector<number>({
   key: 'aiAnalystPromptSuggestionsCountAtom',
   get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).suggestions.length,
 });
+export const aiAnalystPromptSuggestionsLoadingAtom = selector<boolean>({
+  key: 'aiAnalystPromptSuggestionsLoadingAtom',
+  get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).abortController !== undefined,
+});
 
 export const aiAnalystPDFImportAtom = createSelector('pdfImport');
 export const aiAnalystPDFImportLoadingAtom = selector<boolean>({

@@ -2,6 +2,7 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
 import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystCurrentChatAtom } from '@/app/atoms/aiAnalystAtom';
@@ -18,6 +19,7 @@ import {
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import mixpanel from 'mixpanel-browser';
@@ -46,13 +48,21 @@ export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
+  const { getFilesContext } = useFilesContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
   const { modelKey } = useAIModel();
 
   const updateInternalContext = useRecoilCallback(
     ({ snapshot }) =>
-      async ({ codeCell }: { codeCell: CodeCell }): Promise<ChatMessage[]> => {
-        const [currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
+      async ({
+        codeCell,
+        chatMessages,
+      }: {
+        codeCell: CodeCell;
+        chatMessages: ChatMessage[];
+      }): Promise<ChatMessage[]> => {
+        const [filesContext, currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
+          getFilesContext({ chatMessages }),
           getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
           getVisibleContext(),
           getCodeCellContext({ codeCell }),
@@ -60,6 +70,7 @@ export function useSubmitAIAssistantPrompt() {
         ]);
 
         const messagesWithContext: ChatMessage[] = [
+          ...filesContext,
           ...currentSheetContext,
           ...visibleContext,
           ...codeContext,
@@ -90,6 +101,13 @@ export function useSubmitAIAssistantPrompt() {
           if (!exceededBillingLimit) {
             return;
           }
+
+          set(aiAssistantMessagesAtom, (prev) => {
+            const currentMessage = [...prev];
+            currentMessage.pop();
+            messageIndex = currentMessage.length - 1;
+            return currentMessage;
+          });
 
           set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
 
@@ -183,7 +201,7 @@ export function useSubmitAIAssistantPrompt() {
             toolCallIterations++;
 
             // Update internal context
-            chatMessages = await updateInternalContext({ codeCell });
+            chatMessages = await updateInternalContext({ codeCell, chatMessages });
             set(aiAssistantMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
@@ -205,6 +223,15 @@ export function useSubmitAIAssistantPrompt() {
               onExceededBillingLimit,
             });
 
+            const waitingOnMessageIndex = await snapshot.getPromise(aiAssistantWaitingOnMessageIndexAtom);
+            if (waitingOnMessageIndex !== undefined) {
+              break;
+            }
+
+            if (response.error) {
+              break;
+            }
+
             if (response.toolCalls.length === 0) {
               break;
             }
@@ -220,18 +247,31 @@ export function useSubmitAIAssistantPrompt() {
 
             for (const toolCall of response.toolCalls) {
               if (Object.values(AITool).includes(toolCall.name as AITool)) {
-                const aiTool = toolCall.name as AITool;
-                const argsObject = JSON.parse(toolCall.arguments);
-                const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
-                const toolResultContent = await aiToolsActions[aiTool](args as any, {
-                  source: 'AIAssistant',
-                  chatId,
-                  messageIndex: lastMessageIndex + 1,
-                });
-                toolResultMessage.content.push({
-                  id: toolCall.id,
-                  content: toolResultContent,
-                });
+                try {
+                  inlineEditorHandler.close({ skipFocusGrid: true });
+                  const aiTool = toolCall.name as AITool;
+                  const argsObject = JSON.parse(toolCall.arguments);
+                  const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+                  const toolResultContent = await aiToolsActions[aiTool](args as any, {
+                    source: 'AIAssistant',
+                    chatId,
+                    messageIndex: lastMessageIndex + 1,
+                  });
+                  toolResultMessage.content.push({
+                    id: toolCall.id,
+                    content: toolResultContent,
+                  });
+                } catch (error) {
+                  toolResultMessage.content.push({
+                    id: toolCall.id,
+                    content: [
+                      {
+                        type: 'text',
+                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
+                      },
+                    ],
+                  });
+                }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,

@@ -86,7 +86,8 @@ pub(crate) mod tests {
     use super::*;
 
     use crate::{
-        CellValue, Rect, RunError, RunErrorMsg, Span,
+        CellValue, Rect, RunError, RunErrorMsg, SheetPos, Span,
+        controller::operations::operation::Operation,
         grid::{CodeCellLanguage, CodeCellValue},
         number::decimal_from_str,
         test_util::*,
@@ -147,7 +148,7 @@ pub(crate) mod tests {
         // data table should be at `pos`
         assert_eq!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(pos)
+                .data_table_pos_that_contains_result(pos)
                 .unwrap(),
             pos
         );
@@ -158,6 +159,75 @@ pub(crate) mod tests {
         let last_row = vec!["Concord", "NH", "United States", "42605"];
         assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 11, last_row);
 
+        (gc, sheet_id, pos, file_name)
+    }
+
+    #[track_caller]
+    pub(crate) fn flatten_data_table<'a>(
+        gc: &'a mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) {
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let op = Operation::FlattenDataTable { sheet_pos };
+
+        assert_simple_csv(gc, sheet_id, pos, file_name);
+
+        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
+
+        assert!(
+            gc.sheet(sheet_id)
+                .data_table_pos_that_contains_result(pos)
+                .is_err()
+        );
+
+        assert_flattened_simple_csv(gc, sheet_id, pos, file_name);
+
+        print_table_in_rect(gc, sheet_id, Rect::new(1, 1, 4, 12));
+    }
+
+    #[track_caller]
+    pub(crate) fn assert_flattened_simple_csv<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) -> (&'a GridController, SheetId, Pos, &'a str) {
+        // there should be no data tables
+        assert!(
+            gc.sheet(sheet_id)
+                .data_table_pos_that_contains_result(pos)
+                .is_err()
+        );
+
+        let first_row = vec!["city", "region", "country", "population"];
+        assert_cell_value_row(gc, sheet_id, 1, 4, pos.y + 1, first_row);
+
+        let last_row = vec!["Concord", "NH", "United States", "42605"];
+        assert_cell_value_row(gc, sheet_id, 1, 4, pos.y + 11, last_row);
+
+        (gc, sheet_id, pos, file_name)
+    }
+
+    #[track_caller]
+    pub(crate) fn assert_sorted_data_table<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) -> (&'a GridController, SheetId, Pos, &'a str) {
+        let first_row = vec!["Concord", "NH", "United States", "42605"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 3, first_row);
+
+        let second_row = vec!["Marlborough", "MA", "United States", "38334"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 4, second_row);
+
+        let third_row = vec!["Northbridge", "MA", "United States", "14061"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 5, third_row);
+
+        let last_row = vec!["Westborough", "MA", "United States", "29313"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 12, last_row);
         (gc, sheet_id, pos, file_name)
     }
 

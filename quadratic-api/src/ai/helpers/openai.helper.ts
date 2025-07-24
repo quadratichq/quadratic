@@ -36,12 +36,12 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 
-function convertContent(content: Content): Array<ChatCompletionContentPart> {
+function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
     .filter((content) => !('text' in content) || !!content.text.trim())
     .filter(
       (content): content is TextContent | ImageContent =>
-        isContentImage(content) || (isContentText(content) && !!content.text.trim())
+        (imageSupport && isContentImage(content)) || (isContentText(content) && !!content.text.trim())
     )
     .map((content) => {
       if (isContentText(content)) {
@@ -68,7 +68,8 @@ function convertToolResultContent(content: ToolResultContent): Array<ChatComplet
 
 export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
-  strictParams: boolean
+  strictParams: boolean,
+  imageSupport: boolean
 ): {
   messages: ChatCompletionMessageParam[];
   tools: ChatCompletionTool[] | undefined;
@@ -112,7 +113,7 @@ export function getOpenAIApiArgs(
     } else if (message.role === 'user') {
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
-        content: convertContent(message.content),
+        content: convertContent(message.content, imageSupport),
       };
       return [...acc, openaiMessage];
     } else {
