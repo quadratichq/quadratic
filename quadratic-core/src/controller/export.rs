@@ -6,13 +6,15 @@ use itertools::PeekingNext;
 use lazy_static::lazy_static;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use rust_xlsxwriter::{
-    Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError, worksheet::Worksheet,
+    Color, Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError,
+    worksheet::Worksheet,
 };
 
 use super::GridController;
 use crate::{
     CellValue, Pos, Value,
     a1::{A1Selection, CellRefRange},
+    color::Rgba,
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, GridBounds, NumericFormatKind,
@@ -150,7 +152,7 @@ impl GridController {
                                     data_table.get_language() == CodeCellLanguage::Formula;
 
                                 // we currently only care about formulas
-                                if is_formula {
+                                if is_formula && !data_table.has_spill() {
                                     let code = code_cell_value.code.as_str();
                                     let display_value = data_table.display_value(false)?;
 
@@ -204,33 +206,37 @@ fn write_excel_value(
     row: u32,
     sheet: &Sheet,
 ) -> Result<()> {
-    if let Some(v) = sheet.display_value(pos) {
-        let (cell_value, format) = get_excel_formats(v, pos, sheet);
+    let format;
 
-        let result = match &cell_value {
-            CellValue::Number(n) => worksheet.write_number(row, col, n.to_f64().unwrap_or(0.0)),
-            CellValue::Text(s) => worksheet.write_string(row, col, s),
-            CellValue::Date(d) => worksheet.write_datetime(row, col, d),
-            CellValue::Time(t) => worksheet.write_datetime(row, col, t),
-            CellValue::DateTime(dt) => worksheet.write_datetime(row, col, dt),
-            CellValue::Logical(b) => worksheet.write_boolean(row, col, *b),
-            // skip these for now
-            CellValue::Html(_) | CellValue::Image(_) => Ok(()),
-            _ => worksheet.write_string(row, col, cell_value.to_string()),
+    if let Some(cell_value) = sheet.display_value(pos) {
+        format = get_excel_formats(Some(&cell_value), pos, sheet);
+
+        if !cell_value.is_html() && !cell_value.is_image() {
+            match &cell_value {
+                CellValue::Number(n) => worksheet.write_number(row, col, n.to_f64().unwrap_or(0.0)),
+                CellValue::Text(s) => worksheet.write_string(row, col, s),
+                CellValue::Date(d) => worksheet.write_datetime(row, col, d),
+                CellValue::Time(t) => worksheet.write_datetime(row, col, t),
+                CellValue::DateTime(dt) => worksheet.write_datetime(row, col, dt),
+                CellValue::Logical(b) => worksheet.write_boolean(row, col, *b),
+                _ => worksheet.write_string(row, col, cell_value.to_string()),
+            }
+            .map(|_| ())
+            .map_err(|e| anyhow!("Error writing excel value: {}", e))?;
         }
-        .map(|_| ())
-        .map_err(|e| anyhow!("Error writing excel value: {}", e));
 
-        worksheet.set_cell_format(row, col, &format)?;
-
-        return result;
+        adjust_cell_value_for_excel(cell_value, pos, sheet);
+    } else {
+        format = get_excel_formats(None, pos, sheet);
     }
+
+    worksheet.set_cell_format(row, col, &format)?;
 
     Ok(())
 }
 
 /// Gets the excel formats for a cell value.
-fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, Format) {
+fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
     let mut format = Format::new();
     let cell_format = sheet.cell_format(pos);
     let bold = cell_format.bold.unwrap_or(false);
@@ -256,12 +262,16 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
     }
 
     if let Some(text_color) = cell_format.text_color {
-        format = format.set_font_color(text_color.as_str());
+        if let Ok(color) = Rgba::from_str(&text_color) {
+            format = format.set_font_color(color.as_rgb_hex().as_str());
+        }
     }
 
     if let Some(fill_color) = cell_format.fill_color {
-        format = format.set_pattern(FormatPattern::Solid);
-        format = format.set_background_color(fill_color.as_str());
+        if let Ok(color) = Rgba::from_str(&fill_color) {
+            format = format.set_pattern(FormatPattern::Solid);
+            format = format.set_background_color(color.as_rgb_hex().as_str());
+        }
     }
 
     if let Some(align) = cell_format.align {
@@ -290,14 +300,7 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
 
     if let Some(numeric_format) = cell_format.numeric_format {
         match numeric_format.kind {
-            NumericFormatKind::Percentage => {
-                if let CellValue::Number(n) = &mut v {
-                    *n = n
-                        .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
-                        .unwrap_or(Decimal::ZERO);
-                }
-                num_format = "0.0%".to_string();
-            }
+            NumericFormatKind::Percentage => num_format = "0.0%".to_string(),
             NumericFormatKind::Currency => num_format = "$0.00".to_string(),
             NumericFormatKind::Number => {}
             NumericFormatKind::Exponential => num_format = "0.00E+00".to_string(),
@@ -322,21 +325,38 @@ fn get_excel_formats(mut v: CellValue, pos: Pos, sheet: &Sheet) -> (CellValue, F
     } else {
         // we need to use default date time format for dates, times, and date times
         // where the format isn't explicitly set
-        match v {
-            CellValue::Date(_) => {
-                format = format.set_num_format(chrono_to_excel_format(DEFAULT_DATE_FORMAT));
+        if let Some(v) = v {
+            match v {
+                CellValue::Date(_) => {
+                    format = format.set_num_format(chrono_to_excel_format(DEFAULT_DATE_FORMAT));
+                }
+                CellValue::Time(_) => {
+                    format = format.set_num_format(chrono_to_excel_format(DEFAULT_TIME_FORMAT));
+                }
+                CellValue::DateTime(_) => {
+                    format =
+                        format.set_num_format(chrono_to_excel_format(DEFAULT_DATE_TIME_FORMAT));
+                }
+                _ => {}
             }
-            CellValue::Time(_) => {
-                format = format.set_num_format(chrono_to_excel_format(DEFAULT_TIME_FORMAT));
-            }
-            CellValue::DateTime(_) => {
-                format = format.set_num_format(chrono_to_excel_format(DEFAULT_DATE_TIME_FORMAT));
-            }
-            _ => {}
         }
     }
 
-    (v, format)
+    format
+}
+
+fn adjust_cell_value_for_excel(mut v: CellValue, pos: Pos, sheet: &Sheet) {
+    let cell_format = sheet.cell_format(pos);
+
+    if let Some(numeric_format) = cell_format.numeric_format {
+        if numeric_format.kind == NumericFormatKind::Percentage {
+            if let CellValue::Number(n) = &mut v {
+                *n = n
+                    .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
+                    .unwrap_or(Decimal::ZERO);
+            }
+        }
+    }
 }
 
 /// Converts a chrono format to an excel format.
@@ -458,8 +478,7 @@ mod tests {
         let cell_value = CellValue::Number(100.into());
         let pos = Pos { x: 1, y: 1 };
         let sheet = Sheet::test();
-        let (v, _format) = get_excel_formats(cell_value.clone(), pos, &sheet);
-        assert_eq!(v, cell_value);
+        let _format = get_excel_formats(Some(&cell_value), pos, &sheet);
 
         // TODO(ddimaria): no getters exposed for the Format struct from xlsxwriter
         // so we can't test the format. I may back contribute to the repo to open up

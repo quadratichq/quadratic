@@ -1,4 +1,4 @@
-use anyhow::{Result, bail};
+use anyhow::{Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 use std::fmt::Write;
 use std::num::ParseIntError;
@@ -30,6 +30,16 @@ impl Rgba {
             green,
             blue,
             alpha,
+        }
+    }
+
+    pub fn from_str(color_str: &str) -> Result<Self> {
+        if color_str.starts_with("#") {
+            Self::color_from_str(color_str).map_err(|e| anyhow!("Invalid color string: {}", e))
+        } else if color_str.starts_with("rgb(") {
+            Self::from_css_str(color_str)
+        } else {
+            bail!("Invalid color string: {}", color_str);
         }
     }
 
