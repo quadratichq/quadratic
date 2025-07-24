@@ -41,6 +41,9 @@ export enum AITool {
   InsertRows = 'insert_rows',
   DeleteColumns = 'delete_columns',
   DeleteRows = 'delete_rows',
+
+  TableMeta = 'table_meta',
+  TableColumnNames = 'table_column_names',
 }
 
 export const AIToolSchema = z.enum([
@@ -315,6 +318,25 @@ export const AIToolsArgsSchema = {
   [AITool.DeleteRows]: z.object({
     sheet_name: z.string().optional(),
     rows: z.array(z.number()),
+  }),
+  [AITool.TableMeta]: z.object({
+    sheet_name: z.string().optional(),
+    table_location: z.string(),
+    new_table_name: z.string().optional(),
+    first_row_is_column_names: z.boolean().optional(),
+    show_name: z.boolean().optional(),
+    show_columns: z.boolean().optional(),
+    alternating_row_colors: z.boolean().optional(),
+  }),
+  [AITool.TableColumnNames]: z.object({
+    sheet_name: z.string().optional(),
+    table_location: z.string(),
+    column_names: z.array(
+      z.object({
+        old_name: z.string(),
+        new_name: z.string(),
+      })
+    ),
   }),
 } as const;
 
@@ -1625,5 +1647,97 @@ It requires the sheet name, the rows to delete.\n
     prompt: `
 This tool deletes rows in a sheet, adjusting rows below the deletion.\n
 It requires the sheet name, the rows to delete.\n`,
+  },
+  [AITool.TableMeta]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name that contains the table',
+        },
+        table_location: {
+          type: 'string',
+          description: 'The anchor location of the table (ie, the top-left cell of the table). For example: A5',
+        },
+        new_table_name: {
+          type: 'string',
+          description: 'The optional new name of the table.',
+        },
+        first_row_is_column_names: {
+          type: 'boolean',
+          description:
+            'The optional boolean as to whether the first row of the table contains the column names. If set to true, the first row will be used as the column names for the table. If set to false, default column names will be used instead.',
+        },
+        show_name: {
+          type: 'boolean',
+          description:
+            'The optional boolean that toggles whether the table name is shown for the table. This is true by default. If true, then the top row of the table only contains the table name.',
+        },
+        show_columns: {
+          type: 'boolean',
+          description:
+            'The optional boolean that toggles whether the column names are shown for the table. This is true by default. If true, then the first row of the table contains the column names.',
+        },
+        alternating_row_colors: {
+          type: 'boolean',
+          description:
+            'The optional boolean that toggles whether the table has alternating row colors. This is true by default. If true, then the table will have alternating row colors.',
+        },
+      },
+      required: ['sheet_name', 'table_location'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.TableMeta],
+    prompt: `
+This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
+`,
+  },
+  [AITool.TableColumnNames]: {
+    sources: ['AIAnalyst'],
+    description: `
+This tool renames the columns of a table.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name that contains the table',
+        },
+        table_location: {
+          type: 'string',
+          description: 'The anchor location of the table (ie, the top-left cell of the table). For example: A5',
+        },
+        column_names: {
+          type: 'array',
+          description: 'The column names to rename. These must be a valid column name, for example ["A", "B", "C"].',
+          items: {
+            type: 'object',
+            properties: {
+              old_name: {
+                type: 'string',
+                description: 'The old name of the column',
+              },
+              new_name: {
+                type: 'string',
+                description: 'The new name of the column',
+              },
+            },
+            required: ['old_name', 'new_name'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['sheet_name', 'table_location', 'column_names'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.TableColumnNames],
+    prompt: `
+This tool renames the columns of a table.\n`,
   },
 } as const;
