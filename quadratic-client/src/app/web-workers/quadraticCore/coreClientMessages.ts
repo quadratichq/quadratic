@@ -89,7 +89,7 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: ArrayBufferLike;
+  grid: Uint8Array;
   id: number;
 }
 
@@ -421,6 +421,7 @@ export interface ClientCoreDeleteCellValues {
 export interface CoreClientDeleteCellValues {
   type: 'coreClientDeleteCellValues';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreSetCodeCellValue {
@@ -779,7 +780,7 @@ export interface ClientCoreMoveCodeCellVertically {
 
 export interface CoreClientMoveCodeCellVertically {
   type: 'coreClientMoveCodeCellVertically';
-  pos: Pos;
+  pos: Pos | undefined;
   id: number;
 }
 
@@ -796,7 +797,7 @@ export interface ClientCoreMoveCodeCellHorizontally {
 
 export interface CoreClientMoveCodeCellHorizontally {
   type: 'coreClientMoveCodeCellHorizontally';
-  pos: Pos;
+  pos: Pos | undefined;
   id: number;
 }
 
@@ -1130,7 +1131,7 @@ export interface ClientCoreGetAICells {
 export interface CoreClientGetAICells {
   type: 'coreClientGetAICells';
   id: number;
-  aiCells: string;
+  aiCells: string | JsResponse | undefined;
 }
 
 export interface ClientCoreSetFormats {
@@ -1144,6 +1145,7 @@ export interface ClientCoreSetFormats {
 export interface CoreClientSetFormats {
   type: 'coreClientSetFormats';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreGetAIFormats {
@@ -1157,7 +1159,7 @@ export interface ClientCoreGetAIFormats {
 export interface CoreClientGetAIFormats {
   type: 'coreClientGetAIFormats';
   id: number;
-  formats: string;
+  formats: string | JsResponse | undefined;
 }
 
 export interface ClientCoreResizeColumns {
@@ -1209,7 +1211,7 @@ export interface ClientCoreGetFormatSelection {
 export interface CoreClientGetFormatSelection {
   type: 'coreClientGetFormatSelection';
   id: number;
-  format: CellFormatSummary | undefined;
+  format: CellFormatSummary | JsResponse | undefined;
 }
 
 export type ClientCoreMessage =
