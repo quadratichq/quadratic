@@ -357,7 +357,11 @@ impl MultiCellTablesCache {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::A1Selection, test_util::*};
+    use crate::{
+        Rect,
+        a1::{A1Selection, RefRangeBounds},
+        test_util::*,
+    };
 
     #[test]
     fn test_has_content_ignore_blank_table() {
@@ -436,5 +440,45 @@ mod tests {
         // Test selection with no code tables
         let selection = A1Selection::test_a1("A1");
         assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
+    }
+
+    #[test]
+    fn test_tables_in_range() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+
+        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
+
+        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let tables = sheet_data_tables_cache
+            .tables_in_range(RefRangeBounds::new_relative(1, 1, 6, 6))
+            .collect::<Vec<_>>();
+
+        assert_eq!(tables, vec![pos![2, 2], pos![5, 5]]);
+    }
+
+    #[test]
+    fn test_get_nondefault_rects_in_rect() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+
+        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
+
+        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let rects = sheet_data_tables_cache
+            .get_nondefault_rects_in_rect(Rect::new(1, 1, 12, 12))
+            .collect::<Vec<_>>();
+
+        assert_eq!(rects, vec![rect![B2:B2], rect![E5:G9], rect![J10:L12]]);
     }
 }
