@@ -1,10 +1,10 @@
 use std::str::FromStr;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-use crate::Pos;
 use crate::a1::A1Selection;
 use crate::controller::operations::clipboard::ClipboardOperation;
 use crate::grid::js_types::JsClipboard;
+use crate::wasm_bindings::capture_core_error;
 use crate::{
     SheetPos, SheetRect,
     controller::{GridController, operations::clipboard::PasteSpecial},
@@ -83,11 +83,16 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
-    ) -> Option<Pos> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return None;
-        };
-        self.move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor)
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            match serde_wasm_bindgen::to_value(
+                &self.move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor),
+            ) {
+                Ok(value) => Ok(Some(value)),
+                Err(e) => Err(e.to_string()),
+            }
+        })
     }
 
     #[wasm_bindgen(js_name = "moveCodeCellHorizontally")]
@@ -99,10 +104,15 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
-    ) -> Option<Pos> {
-        let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-            return None;
-        };
-        self.move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor)
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            match serde_wasm_bindgen::to_value(
+                &self.move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor),
+            ) {
+                Ok(value) => Ok(Some(value)),
+                Err(e) => Err(e.to_string()),
+            }
+        })
     }
 }
