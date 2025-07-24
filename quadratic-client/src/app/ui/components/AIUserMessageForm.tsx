@@ -74,7 +74,14 @@ export const AIUserMessageForm = memo(
     const [editing, setEditing] = useState(!initialContent?.length);
     const [dragOver, setDragOver] = useState(false);
     const dragOverMessage = useMemo(
-      () => (fileTypes.includes('.pdf') ? 'Images and PDFs are supported' : 'Images supported'),
+      () =>
+        fileTypes.includes('.pdf') && fileTypes.includes('image/*')
+          ? 'PDFs and images supported'
+          : fileTypes.includes('.pdf')
+            ? 'PDFs supported'
+            : fileTypes.includes('image/*')
+              ? 'Images supported'
+              : 'Files not supported by this model',
       [fileTypes]
     );
 
@@ -260,6 +267,7 @@ export const AIUserMessageForm = memo(
           files={files}
           setFiles={setFiles}
           editing={editing}
+          isFileSupported={isFileSupported}
           disabled={disabled}
           textareaRef={textareaRef}
         />

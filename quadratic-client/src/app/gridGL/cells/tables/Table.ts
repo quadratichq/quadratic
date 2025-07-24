@@ -163,7 +163,7 @@ export class Table extends Container {
     if (this.inOverHeadings) this.header.update(true);
   }
 
-  activate = (active: boolean) => {
+  private activate = (active: boolean) => {
     if (active === this.active) return;
     this.active = active;
     this.outline.update();
