@@ -106,9 +106,8 @@ impl GridController {
     #[wasm_bindgen(js_name = "deleteCellValues")]
     pub fn js_delete_cell_values(&mut self, selection: String, cursor: Option<String>) -> JsValue {
         capture_core_error(|| {
-            let Ok(selection) = serde_json::from_str::<A1Selection>(&selection) else {
-                return Err("Unable to parse A1Selection".to_string());
-            };
+            let selection = serde_json::from_str::<A1Selection>(&selection)
+                .map_err(|_| "Unable to parse A1Selection".to_string())?;
 
             self.delete_cells(&selection, cursor);
 
@@ -119,12 +118,9 @@ impl GridController {
     #[wasm_bindgen(js_name = "getAICells")]
     pub fn js_get_ai_cells(&self, a1: String, sheet_id: String, page: i32) -> JsValue {
         capture_core_error(|| {
-            let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-                return Err("Unable to parse SheetId".to_string());
-            };
-            let Ok(selection) = A1Selection::parse_a1(&a1, sheet_id, self.a1_context()) else {
-                return Err("Unable to parse A1Selection".to_string());
-            };
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
+                .map_err(|_| "Unable to parse A1Selection")?;
 
             match &self.get_ai_cells(selection, page as u32) {
                 Ok(ai_cells) => Ok(Some(
@@ -138,12 +134,9 @@ impl GridController {
     #[wasm_bindgen(js_name = "getAICellFormats")]
     pub fn js_get_ai_cell_formats(&self, sheet_id: String, a1: String, page: i32) -> JsValue {
         capture_core_error(|| {
-            let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-                return Err("Unable to parse SheetId".to_string());
-            };
-            let Ok(selection) = A1Selection::parse_a1(&a1, sheet_id, self.a1_context()) else {
-                return Err("Unable to parse A1Selection".to_string());
-            };
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
+                .map_err(|_| "Unable to parse A1Selection")?;
 
             match &self.get_ai_cell_formats(selection, page as u32) {
                 Ok(ai_cell_formats) => Ok(Some(

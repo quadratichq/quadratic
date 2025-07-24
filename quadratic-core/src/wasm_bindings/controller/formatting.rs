@@ -209,13 +209,10 @@ impl GridController {
                 return Err("Invalid chart size".to_string());
             }
 
-            match serde_json::from_str::<SheetPos>(&sheet_pos) {
-                Ok(sheet_pos) => {
-                    self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
-                    Ok(None)
-                }
-                Err(e) => Err(e.to_string()),
-            }
+            let sheet_pos =
+                serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
+            self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
+            Ok(None)
         })
     }
 
@@ -290,18 +287,18 @@ impl GridController {
     #[wasm_bindgen(js_name = "getFormatSelection")]
     pub fn js_get_format_selection(&self, selection: String) -> JsValue {
         capture_core_error(|| {
-            let Ok(selection) = serde_json::from_str::<A1Selection>(&selection) else {
-                return Err("Unable to parse A1Selection".to_string());
-            };
+            let selection = serde_json::from_str::<A1Selection>(&selection)
+                .map_err(|_| "Unable to parse A1Selection")?;
 
-            let Some(sheet) = self.try_sheet(selection.sheet_id) else {
-                return Err("Invalid sheet ID".to_string());
-            };
+            let sheet = self
+                .try_sheet(selection.sheet_id)
+                .ok_or("Invalid sheet ID")?;
 
             let format = sheet.format_selection(&selection, self.a1_context());
-            Ok(Some(
-                serde_wasm_bindgen::to_value(&format).map_err(|e| e.to_string())?,
-            ))
+            match serde_wasm_bindgen::to_value(&format) {
+                Ok(value) => Ok(Some(value)),
+                Err(e) => Err(e.to_string()),
+            }
         })
     }
 
@@ -313,18 +310,12 @@ impl GridController {
         formats: String,
     ) -> JsValue {
         capture_core_error(|| {
-            let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
-                return Err("Invalid sheet ID".to_string());
-            };
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
 
-            let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-            else {
-                return Err("Invalid selection".to_string());
-            };
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|_| "Invalid selection")?;
 
-            let Ok(format) = serde_json::from_str::<Format>(&formats) else {
-                return Err("Invalid formats".to_string());
-            };
+            let format = serde_json::from_str::<Format>(&formats).map_err(|_| "Invalid formats")?;
 
             let mut format_update = FormatUpdate::from(format);
 
@@ -346,7 +337,6 @@ impl GridController {
             }
 
             self.set_formats(&selection, format_update);
-
             Ok(None)
         })
     }
