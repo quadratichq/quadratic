@@ -1,4 +1,4 @@
-import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
+import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import type { CodeCell } from '@/app/shared/types/codeCell';
@@ -22,7 +22,7 @@ type FixSpillErrorProps = {
 };
 
 export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillErrorProps) => {
-  const setCodeCell = useSetRecoilState(codeEditorCodeCellAtom);
+  const setCodeEditor = useSetRecoilState(codeEditorAtom);
 
   const handleModeCodeCellDown = useCallback(
     (sheetEnd: boolean) => {
@@ -38,7 +38,17 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           if (!pos) return;
           const min = { x: Number(pos.x), y: Number(pos.y) };
           if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
-            setCodeCell((prev) => ({ ...prev, pos: min }));
+            setCodeEditor((prev) => ({
+              ...prev,
+              codeString: prev.editorContent,
+              diffEditorContent: undefined,
+              waitingForEditorClose: {
+                codeCell: { ...codeCell, pos: min },
+                showCellTypeMenu: false,
+                initialCode: prev.editorContent ?? '',
+                inlineEditor: false,
+              },
+            }));
             const max = {
               x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
               y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
@@ -48,15 +58,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
         });
       onClick?.();
     },
-    [
-      codeCell.pos.x,
-      codeCell.pos.y,
-      codeCell.sheetId,
-      evaluationResult?.size?.h,
-      evaluationResult?.size?.w,
-      onClick,
-      setCodeCell,
-    ]
+    [codeCell, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeEditor]
   );
 
   const handleModeCodeCellRight = useCallback(
@@ -73,7 +75,17 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
           if (!pos) return;
           const min = { x: Number(pos.x), y: Number(pos.y) };
           if (min.x !== codeCell.pos.x || min.y !== codeCell.pos.y) {
-            setCodeCell((prev) => ({ ...prev, pos: min }));
+            setCodeEditor((prev) => ({
+              ...prev,
+              codeString: prev.editorContent,
+              diffEditorContent: undefined,
+              waitingForEditorClose: {
+                codeCell: { ...codeCell, pos: min },
+                showCellTypeMenu: false,
+                initialCode: prev.editorContent ?? '',
+                inlineEditor: false,
+              },
+            }));
             const max = {
               x: Number(pos.x) + (evaluationResult?.size?.w ?? 1) - 1,
               y: Number(pos.y) + (evaluationResult?.size?.h ?? 1) - 1,
@@ -83,15 +95,7 @@ export const FixSpillError = ({ codeCell, evaluationResult, onClick }: FixSpillE
         });
       onClick?.();
     },
-    [
-      codeCell.pos.x,
-      codeCell.pos.y,
-      codeCell.sheetId,
-      evaluationResult?.size?.h,
-      evaluationResult?.size?.w,
-      onClick,
-      setCodeCell,
-    ]
+    [codeCell, evaluationResult?.size?.h, evaluationResult?.size?.w, onClick, setCodeEditor]
   );
 
   return (
