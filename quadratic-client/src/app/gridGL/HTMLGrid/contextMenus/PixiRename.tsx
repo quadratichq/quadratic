@@ -35,7 +35,6 @@ export const PixiRename = (props: Props) => {
       if (node) {
         getElement?.(node);
         setTimeout(() => {
-          node.select();
           node.focus();
           waitingForOpenRef.current = false;
         });
