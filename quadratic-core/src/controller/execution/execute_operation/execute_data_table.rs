@@ -835,8 +835,11 @@ impl GridController {
                             let column_name = sanitize_column_name(new_column.name.to_string());
 
                             let data_table = self.grid.data_table_at(sheet_id, &data_table_pos)?;
-                            let unique_column_name =
-                                data_table.unique_column_header_name(Some(&column_name), index);
+                            let unique_column_name = data_table.unique_column_header_name(
+                                Some(&column_name),
+                                index,
+                                Some(index),
+                            );
 
                             new_column.name = CellValue::Text(unique_column_name);
 
@@ -2851,5 +2854,23 @@ mod tests {
         assert_validation_id(&gc, checkbox_pos, None);
 
         assert_validation_count(&gc, sheet_id, 0);
+    }
+
+    #[test]
+    fn test_execute_unique_column_header_name_on_insert_column() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!E5];
+
+        test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 5, 25);
+
+        gc.data_table_insert_columns(sheet_pos, vec![2], false, None, None, None);
+
+        let data_table = gc.sheet(sheet_id).data_table_at(&sheet_pos.into()).unwrap();
+        assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 6);
+        assert_eq!(
+            data_table.column_headers.as_ref().unwrap()[2].name,
+            CellValue::Text("Column 6".to_string())
+        );
     }
 }
