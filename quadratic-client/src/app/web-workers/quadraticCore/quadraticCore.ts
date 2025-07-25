@@ -89,6 +89,7 @@ import type {
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
   CoreClientRerunCodeCells,
+  CoreClientResizeColumns,
   CoreClientSearch,
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
@@ -1498,21 +1499,35 @@ class QuadraticCore {
   }
   //#endregion
 
-  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
-    this.send({
-      type: 'clientCoreResizeColumns',
-      sheetId,
-      columns,
-      cursor,
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreResizeColumns',
+        id,
+        sheetId,
+        columns,
+        cursor,
+      });
     });
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
-    this.send({
-      type: 'clientCoreResizeRows',
-      sheetId,
-      rows,
-      cursor,
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreResizeRows',
+        id,
+        sheetId,
+        rows,
+        cursor,
+      });
     });
   }
 

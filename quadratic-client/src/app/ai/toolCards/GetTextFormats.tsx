@@ -1,7 +1,7 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type GetTextFormatsResponse = z.infer<(typeof aiToolsSpec)[AITool.GetTextFormats]['responseSchema']>;
@@ -25,10 +25,14 @@ export const GetTextFormats = memo(
       }
     }, [args, loading]);
 
-    let label =
-      toolArgs?.data?.sheet_name && toolArgs?.data?.selection
-        ? `Reading formats in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
-        : 'Reading formats...';
+    let label = useMemo(
+      () =>
+        toolArgs?.data?.sheet_name && toolArgs?.data?.selection
+          ? `Reading formats in ${toolArgs.data.sheet_name} from ${toolArgs.data.selection}`
+          : 'Reading formats...',
+      [toolArgs?.data?.sheet_name, toolArgs?.data?.selection]
+    );
+
     if (toolArgs?.data?.page) {
       label += ` in page ${toolArgs.data.page + 1}`;
     }

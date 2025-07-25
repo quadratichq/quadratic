@@ -1243,16 +1243,30 @@ export interface CoreClientGetAIFormats {
 
 export interface ClientCoreResizeColumns {
   type: 'clientCoreResizeColumns';
+  id: number;
   sheetId: string;
   columns: ColumnRowResize[];
   cursor: string;
 }
 
+export interface CoreClientResizeColumns {
+  type: 'coreClientResizeColumns';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreResizeRows {
   type: 'clientCoreResizeRows';
+  id: number;
   sheetId: string;
   rows: ColumnRowResize[];
   cursor: string;
+}
+
+export interface CoreClientResizeRows {
+  type: 'coreClientResizeRows';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreResizeAllColumns {
@@ -1473,4 +1487,6 @@ export type CoreClientMessage =
   | CoreClientSetSheetsColorResponse
   | CoreClientDuplicateSheetResponse
   | CoreClientHasCellData
-  | CoreClientRerunCodeCells;
+  | CoreClientRerunCodeCells
+  | CoreClientResizeColumns
+  | CoreClientResizeRows;

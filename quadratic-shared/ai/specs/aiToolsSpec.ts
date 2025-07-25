@@ -30,6 +30,8 @@ export enum AITool {
   ColorSheets = 'color_sheets',
   TextSearch = 'text_search',
   RerunCode = 'rerun_code',
+  ResizeColumns = 'resize_columns',
+  ResizeRows = 'resize_rows',
 }
 
 export const AIToolSchema = z.enum([
@@ -60,6 +62,8 @@ export const AIToolSchema = z.enum([
   AITool.ColorSheets,
   AITool.TextSearch,
   AITool.RerunCode,
+  AITool.ResizeColumns,
+  AITool.ResizeRows,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -269,6 +273,16 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().nullable().optional(),
     selection: z.string().nullable().optional(),
   }),
+  [AITool.ResizeColumns]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    size: z.enum(['auto', 'default']),
+  }),
+  [AITool.ResizeRows]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    size: z.enum(['auto', 'default']),
+  }),
 } as const;
 
 export type AIToolSpecRecord = {
@@ -381,7 +395,7 @@ IMPORTANT: If the results include page information:\n
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n
 `,
@@ -1113,7 +1127,7 @@ It requires the query to search for.\n
   },
   [AITool.AddSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
@@ -1142,7 +1156,7 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
   },
   [AITool.DuplicateSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
@@ -1170,7 +1184,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
   },
   [AITool.RenameSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool renames a sheet in the file.\n
 It requires the name of the sheet to rename and the new name. This must be a unique name.\n
@@ -1198,7 +1212,7 @@ It requires the name of the sheet to rename and the new name. This must be a uni
   },
   [AITool.DeleteSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool deletes a sheet in the file.\n
 It requires the name of the sheet to delete.\n
@@ -1222,7 +1236,7 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool moves a sheet within the sheet list.\n
 It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
@@ -1251,7 +1265,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool colors the sheet tabs in the file.\n
 It requires a array of objects with sheet names and new colors.\n
@@ -1289,7 +1303,7 @@ It requires a array of objects with sheet names and new colors.\n
   },
   [AITool.TextSearch]: {
     sources: ['AIAnalyst', 'AIAssistant'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
 `,
@@ -1328,7 +1342,7 @@ This tool searches for text in cells within a specific sheet or the entire file.
   },
   [AITool.RerunCode]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['pro'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool reruns the code in code cells. This may also be known as "refresh the data" or "update the data".\n
 You can optionally provide a sheet name and/or a selection (in A1 notation) to rerun specific code cells.\n
@@ -1359,6 +1373,82 @@ You can optionally provide a sheet name and a selection (in A1 notation) to reru
 If you only provide a sheet name, then all code cells within that sheet will run.\n
 If you provide a selection and sheet name, then only code cells within that selection will run.\n
 If you provide neither a sheet name nor a selection, then all code cells in the file will run.\n
+`,
+  },
+  [AITool.ResizeColumns]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool resizes columns in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
+The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to resize columns in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) of columns to resize, for example: A1:D1 (the rows do not matter)',
+        },
+        size: {
+          type: 'string',
+          description:
+            'The size to resize the columns to. Either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.',
+        },
+      },
+      required: ['sheet_name', 'selection', 'size'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ResizeColumns],
+    prompt: `
+This tool resizes columns in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
+The selection is a range of columns, for example: A1:D1 (the rows do not matter).\n
+The size is either "default" or "auto". Auto will resize the column to the width of the largest cell in the column. Default will resize the column to its default width.\n
+`,
+  },
+  [AITool.ResizeRows]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool resizes rows in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
+The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to resize rows in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) of rows to resize, for example: A1:D1 (the columns do not matter)',
+        },
+        size: {
+          type: 'string',
+          description:
+            'The size to resize the rows to. Either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.',
+        },
+      },
+      required: ['sheet_name', 'selection', 'size'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.ResizeRows],
+    prompt: `
+This tool resizes rows in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
+The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
+The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
 `,
   },
 } as const;

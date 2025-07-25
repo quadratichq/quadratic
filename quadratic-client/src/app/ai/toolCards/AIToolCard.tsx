@@ -13,6 +13,8 @@ import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
 import { RenameSheet } from '@/app/ai/toolCards/RenameSheet';
 import { RerunCode } from '@/app/ai/toolCards/RerunCode';
+import { ResizeColumns } from '@/app/ai/toolCards/ResizeColumns';
+import { ResizeRows } from '@/app/ai/toolCards/ResizeRows';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
@@ -83,6 +85,10 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <HasCellData toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RerunCode:
       return <RerunCode toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.ResizeColumns:
+      return <ResizeColumns toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.ResizeRows:
+      return <ResizeRows toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

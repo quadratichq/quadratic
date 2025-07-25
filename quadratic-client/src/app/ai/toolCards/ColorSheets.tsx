@@ -33,10 +33,9 @@ export const ColorSheets = memo(
       if (!toolArgs?.success) {
         return '';
       }
-      const results = `Changed sheet colors: ${toolArgs.data.sheet_names_to_color
+      return `Changed sheet colors: ${toolArgs.data.sheet_names_to_color
         .map((sheet_name_to_color) => sheet_name_to_color.sheet_name)
         .join(', ')}\n`;
-      return results;
     }, [toolArgs?.data?.sheet_names_to_color, toolArgs?.success]);
 
     if (loading) {
