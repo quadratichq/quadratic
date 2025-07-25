@@ -375,6 +375,7 @@ IMPORTANT: If the results include page information:\n
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
     description: `
 This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n
 `,
@@ -392,7 +393,7 @@ This tool checks if the cells in the chosen selection have any data. This tool i
 The string representation (in a1 notation) of the selection of cells to check for data. If the user is requesting data from another sheet, use that sheet name in the selection (e.g., "Sheet 2!A1")`,
         },
       },
-      required: ['selection', 'sheet_name'],
+      required: ['sheet_name', 'selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.HasCellData],
