@@ -9,6 +9,7 @@ import type {
   CellAlign,
   CellVerticalAlign,
   CellWrap,
+  CodeCellLanguage,
   FormatUpdate,
   NumericFormat,
   NumericFormatKind,
@@ -17,33 +18,21 @@ import type {
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
-import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolsArgsSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import type { z } from 'zod';
 
-const convertToCodeCellLanguage = (language: any): any => {
-  if (typeof language === 'string') {
-    return language;
+export function convertArgsToCodeCellLanguage(
+  code_cell_language: z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>['code_cell_language'],
+  connection_id: z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>['connection_id']
+): CodeCellLanguage {
+  if (code_cell_language === 'Python' || code_cell_language === 'Javascript') {
+    return code_cell_language;
   }
-  if (language?.Connection?.kind) {
-    // convert connection kind to proper enum values
-    const kindMap: Record<string, string> = {
-      Postgres: 'POSTGRES',
-      Mysql: 'MYSQL',
-      Mssql: 'MSSQL',
-      Snowflake: 'SNOWFLAKE',
-      Bigquery: 'BIGQUERY',
-      Cockroachdb: 'COCKROACHDB',
-      Mariadb: 'MARIADB',
-      Neon: 'NEON',
-      Supabase: 'SUPABASE',
-    };
-    const convertedKind = kindMap[language.Connection.kind] || language.Connection.kind;
-    return { Connection: { kind: convertedKind, id: language.Connection.id } };
-  }
-  return language;
-};
+
+  return { Connection: { kind: code_cell_language, id: connection_id ?? '' } };
+}
 
 const waitForSetCodeCellValue = (transactionId: string) => {
   return new Promise((resolve) => {
@@ -265,12 +254,18 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
     try {
-      let { sheet_name, code_cell_language, code_string, code_cell_position, code_cell_name } = args;
+      let { sheet_name, code_cell_name, code_cell_language, code_string, code_cell_position, connection_id } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
       if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [{ type: 'text', text: 'Invalid code cell position, this should be a single cell, not a range' }];
       }
+
+      const language = convertArgsToCodeCellLanguage(code_cell_language, connection_id);
+      if (typeof language === 'object' && !connection_id) {
+        return [{ type: 'text', text: 'No connection id provided, this is required for SQL connections' }];
+      }
+
       const { x, y } = selection.getCursor();
 
       const transactionId = await quadraticCore.setCodeCellValue({
@@ -278,7 +273,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         x,
         y,
         codeString: code_string,
-        language: convertToCodeCellLanguage(code_cell_language),
+        language,
         codeCellName: code_cell_name,
         cursor: sheets.getCursorPosition(),
       });
@@ -546,9 +541,11 @@ export const aiToolsActions: AIToolActionsRecord = {
         strike_through: args.strike_through ?? null,
         text_color: args.text_color ?? null,
         fill_color: args.fill_color ?? null,
-        align: expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']),
-        vertical_align: expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom']),
-        wrap: expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']),
+        align: args.align ? expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']) : null,
+        vertical_align: args.vertical_align
+          ? expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom'])
+          : null,
+        wrap: args.wrap ? expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']) : null,
         numeric_commas: args.numeric_commas ?? null,
         numeric_format: numericFormat,
         date_time: args.date_time ?? null,
@@ -667,92 +664,67 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
-  [AITool.GetDatabaseSchemas]: async (args, messageMetaData) => {
+  [AITool.GetDatabaseSchemas]: async (args) => {
+    const { connection_ids } = args;
+    const connectionIds = connection_ids.filter((id) => !!id);
+
+    // Get team UUID from the current context
+    const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
+    if (!teamUuid) {
+      return [
+        {
+          type: 'text',
+          text: 'Unable to retrieve database schemas. Access to team is required.',
+        },
+      ];
+    }
+
+    // Import the connection client
+    let connectionClient;
     try {
-      const { connection_ids } = args;
+      connectionClient = (await import('@/shared/api/connectionClient')).connectionClient;
+    } catch (error) {
+      return [
+        {
+          type: 'text',
+          text: 'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.',
+        },
+      ];
+    }
 
-      // Get team UUID from the current context
-      const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
-      if (!teamUuid) {
+    // Get all team connections or specific ones
+    let connections;
+    try {
+      const teamConnections = await apiClient.connections.list(teamUuid);
+      connections =
+        connectionIds.length > 0
+          ? teamConnections.filter((connection) => connectionIds.includes(connection.uuid))
+          : teamConnections;
+
+      if (connections.length === 0) {
         return [
           {
             type: 'text',
-            text: 'Error: No team context available to retrieve database schemas. Make sure you are working within a team context.',
+            text: `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`,
           },
         ];
       }
+    } catch (connectionError) {
+      console.warn('[GetDatabaseSchemas] Failed to fetch team connections:', connectionError);
+      return [
+        {
+          type: 'text',
+          text: `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`,
+        },
+      ];
+    }
 
-      // Import the connection client
-      const { connectionClient } = await import('@/shared/api/connectionClient');
-
-      // Get all team connections or specific ones
-      let connections;
-      try {
-        if (connection_ids && connection_ids.length > 0) {
-          // Validate connection IDs - they should be UUIDs
-          const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-          const invalidIds = connection_ids.filter((id) => !uuidRegex.test(id));
-
-          if (invalidIds.length > 0) {
-            return [
-              {
-                type: 'text',
-                text: `Error: Invalid connection IDs provided: ${invalidIds.join(', ')}. Connection IDs must be valid UUIDs. To get all available connections, call this tool without the connection_ids parameter.`,
-              },
-            ];
-          }
-
-          // Get specific connections
-          connections = await Promise.all(
-            connection_ids.map(async (id) => {
-              try {
-                return await apiClient.connections.get({ connectionUuid: id, teamUuid });
-              } catch (error) {
-                console.warn(`[GetDatabaseSchemas] Failed to get connection ${id}:`, error);
-                return null;
-              }
-            })
-          );
-          connections = connections.filter(Boolean);
-
-          if (connections.length === 0) {
-            return [
-              {
-                type: 'text',
-                text: `Error: None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct and that you have access to them. To see all available connections, call this tool without the connection_ids parameter.`,
-              },
-            ];
-          }
-        } else {
-          // Get all team connections
-          connections = await apiClient.connections.list(teamUuid);
-        }
-      } catch (connectionError) {
-        console.error('[GetDatabaseSchemas] Failed to fetch team connections:', connectionError);
-        return [
-          {
-            type: 'text',
-            text: 'Error: Unable to retrieve database connections. This could be because:\n\n1. The Quadratic API server is not running (check if localhost:8000 is accessible)\n2. The connection service is unavailable\n3. Network connectivity issues\n\nIn development, make sure to run `npm start` or `npm run docker:base` to start all required services.',
-          },
-        ];
-      }
-
-      if (!connections || connections.length === 0) {
-        return [
-          {
-            type: 'text',
-            text: 'No database connections found for this team. Please set up database connections in the team settings first.',
-          },
-        ];
-      }
-
+    try {
       // Get schemas for each connection
       const schemas = await Promise.all(
         connections.map(async (connection) => {
-          if (!connection) return null;
           try {
-            const connectionType = connection.type.toLowerCase() as 'postgres' | 'mysql' | 'mssql' | 'snowflake';
-            const schema = await connectionClient.schemas.get(connectionType, connection.uuid, teamUuid);
+            const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid);
 
             if (!schema) {
               return {
@@ -782,9 +754,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       );
 
       // Filter out null results
-      const validSchemas = schemas.filter(Boolean);
-
-      if (validSchemas.length === 0) {
+      if (schemas.length === 0) {
         return [
           {
             type: 'text',
@@ -794,9 +764,8 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       // Format the response
-      const schemaText = validSchemas
+      const schemaText = schemas
         .map((item) => {
-          if (!item) return '';
           if ('error' in item) {
             return `Connection: ${item.connectionName} (${item.connectionType})\nID: ${item.connectionId}\nError: ${item.error}\n`;
           }
@@ -818,7 +787,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         .join('\n---\n\n');
 
       // Add connection summary for future reference
-      const connectionSummary = validSchemas
+      const connectionSummary = schemas
         .filter((item) => item && !('error' in item))
         .map((item) => `- ${item!.connectionName} (${item!.connectionType}): ${item!.connectionId}`)
         .join('\n');

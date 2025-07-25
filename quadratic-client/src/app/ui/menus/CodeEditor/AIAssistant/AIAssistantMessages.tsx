@@ -1,3 +1,4 @@
+import { AIToolCard } from '@/app/ai/toolCards/AIToolCard';
 import {
   aiAssistantCurrentChatMessagesCountAtom,
   aiAssistantLoadingAtom,
@@ -5,7 +6,6 @@ import {
 } from '@/app/atoms/codeEditorAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
-import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { AIAssistantUserMessageForm } from '@/app/ui/menus/CodeEditor/AIAssistant/AIAssistantUserMessageForm';
 import { AICodeBlockParser } from '@/app/ui/menus/CodeEditor/AIAssistant/AICodeBlockParser';
@@ -16,7 +16,7 @@ import {
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRecoilValue } from 'recoil';
 
 type AIAssistantMessagesProps = {
@@ -25,6 +25,7 @@ type AIAssistantMessagesProps = {
 
 export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesProps) => {
   const { debug, debugFlags } = useDebugFlags();
+  const debugShowAIInternalContext = useMemo(() => debugFlags.getFlag('debugShowAIInternalContext'), [debugFlags]);
 
   const messages = useRecoilValue(aiAssistantMessagesAtom);
   const messagesCount = useRecoilValue(aiAssistantCurrentChatMessagesCountAtom);
@@ -103,10 +104,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (
-          !debugFlags.getFlag('debugShowAIInternalContext') &&
-          !['userPrompt', 'webSearchInternal'].includes(message.contextType)
-        ) {
+        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
           return null;
         }
 
@@ -147,27 +145,22 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  (item.type === 'anthropic_thinking' || item.type === 'google_thinking') && !!item.text ? (
+                  item.type === 'anthropic_thinking' || item.type === 'google_thinking' ? (
                     <ThinkingBlock
-                      key={item.text}
+                      key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
                       expandedDefault={false}
                     />
-                  ) : item.type === 'text' && !!item.text ? (
-                    <AICodeBlockParser key={item.text} input={item.text} />
+                  ) : item.type === 'text' ? (
+                    <AICodeBlockParser key={`${index}-${contentIndex}-${item.type}`} input={item.text} />
                   ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
                   message.toolCalls.map((toolCall, index) => (
-                    <AIAnalystToolCard
-                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
-                      name={toolCall.name}
-                      args={toolCall.arguments}
-                      loading={toolCall.loading}
-                    />
+                    <AIToolCard key={`${index}-${toolCall.id}-${toolCall.arguments}`} toolCall={toolCall} />
                   ))}
               </>
             )}

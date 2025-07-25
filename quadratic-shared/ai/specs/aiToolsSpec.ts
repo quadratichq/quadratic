@@ -49,15 +49,24 @@ export const AIToolSchema = z.enum([
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   sources: AISource[];
   description: string; // this is sent with tool definition, has a maximum character limit
-  parameters: {
-    type: 'object';
-    properties: Record<string, AIToolArgs>;
-    required: string[];
-    additionalProperties: boolean;
-  };
+  parameters: AIToolArgs;
   responseSchema: (typeof AIToolsArgsSchema)[T];
   prompt: string; // this is sent as internal message to AI, no character limit
 };
+
+const numberSchema = z.preprocess((val) => {
+  if (typeof val === 'number') {
+    return val;
+  }
+  return Number(val);
+}, z.number());
+
+const booleanSchema = z.preprocess((val) => {
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean());
 
 const array2DSchema = z
   .array(
@@ -96,46 +105,41 @@ const array2DSchema = z
 const cellLanguageSchema = z
   .string()
   .transform((val) => val.toLowerCase())
-  .pipe(z.enum(['python', 'javascript']))
-  .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-  .pipe(z.enum(['Python', 'Javascript']))
-  .or(
-    z.object({
-      Connection: z.object({
-        kind: z
-          .string()
-          .transform((val) => val.toLowerCase())
-          .pipe(
-            z.enum([
-              'postgres',
-              'mysql',
-              'mssql',
-              'snowflake',
-              'bigquery',
-              'cockroachdb',
-              'mariadb',
-              'neon',
-              'supabase',
-            ])
-          )
-          .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-          .pipe(
-            z.enum([
-              'Postgres',
-              'Mysql',
-              'Mssql',
-              'Snowflake',
-              'Bigquery',
-              'Cockroachdb',
-              'Mariadb',
-              'Neon',
-              'Supabase',
-            ])
-          ),
-        id: z.string(),
-      }),
-    })
+  .pipe(
+    z.enum([
+      'python',
+      'javascript',
+      'postgres',
+      'mysql',
+      'mssql',
+      'snowflake',
+      'bigquery',
+      'cockroachdb',
+      'mariadb',
+      'supabase',
+      'neon',
+    ])
+  )
+  .transform((val) =>
+    val === 'python' || val === 'javascript' ? val.charAt(0).toUpperCase() + val.slice(1) : val.toUpperCase()
+  )
+  .pipe(
+    z.enum([
+      'Python',
+      'Javascript',
+      'POSTGRES',
+      'MYSQL',
+      'MSSQL',
+      'SNOWFLAKE',
+      'BIGQUERY',
+      'COCKROACHDB',
+      'MARIADB',
+      'SUPABASE',
+      'NEON',
+    ])
   );
+
+const connectionIdSchema = z.preprocess((val) => (val ? val : null), z.string().uuid().nullable().optional());
 
 const modelRouterModels = z
   .string()
@@ -156,29 +160,30 @@ export const AIToolsArgsSchema = {
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    sheet_name: z.string().optional(),
-    code_cell_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
+    code_cell_name: z.string(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
+    connection_id: connectionIdSchema,
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     code_cell_position: z.string(),
     formula_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     top_left_position: z.string(),
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     source_selection_rect: z.string(),
     target_top_left_position: z.string(),
   }),
   [AITool.DeleteCells]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
   [AITool.UpdateCodeCell]: z.object({
@@ -200,37 +205,37 @@ export const AIToolsArgsSchema = {
     prompt: z.string(),
   }),
   [AITool.GetCellData]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    bold: z.boolean().optional(),
-    italic: z.boolean().optional(),
-    underline: z.boolean().optional(),
-    strike_through: z.boolean().optional(),
-    text_color: z.string().optional(),
-    fill_color: z.string().optional(),
-    align: z.string().optional(),
-    vertical_align: z.string().optional(),
-    wrap: z.string().optional(),
-    numeric_commas: z.boolean().optional(),
-    number_type: z.string().optional(),
-    currency_symbol: z.string().optional(),
-    date_time: z.string().optional(),
+    bold: booleanSchema.nullable().optional(),
+    italic: booleanSchema.nullable().optional(),
+    underline: booleanSchema.nullable().optional(),
+    strike_through: booleanSchema.nullable().optional(),
+    text_color: z.string().nullable().optional(),
+    fill_color: z.string().nullable().optional(),
+    align: z.string().nullable().optional(),
+    vertical_align: z.string().nullable().optional(),
+    wrap: z.string().nullable().optional(),
+    numeric_commas: booleanSchema.nullable().optional(),
+    number_type: z.string().nullable().optional(),
+    currency_symbol: z.string().nullable().optional(),
+    date_time: z.string().nullable().optional(),
   }),
   [AITool.GetTextFormats]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.ConvertToTable]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     table_name: z.string(),
-    first_row_is_column_names: z.boolean(),
+    first_row_is_column_names: booleanSchema,
   }),
   [AITool.WebSearch]: z.object({
     query: z.string(),
@@ -239,7 +244,9 @@ export const AIToolsArgsSchema = {
     query: z.string(),
   }),
   [AITool.GetDatabaseSchemas]: z.object({
-    connection_ids: z.array(z.string()).optional(),
+    connection_ids: z
+      .preprocess((val) => (val ? val : []), z.array(connectionIdSchema))
+      .transform((val) => val.filter((id) => !!id)),
   }),
 } as const;
 
@@ -332,7 +339,7 @@ The string representation (in a1 notation) of the selection of cells to get the 
             'The page number of the results to return. The first page is always 0. Use the parameters with a different page to get the next set of results.',
         },
       },
-      required: ['selection', 'sheet_name', 'page'],
+      required: ['sheet_name', 'selection', 'page'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
@@ -483,9 +490,9 @@ This tool is for Python, Javascript, and SQL Connection code. For formulas, use 
             'What to name the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed). First letter capitalized is preferred.',
         },
         code_cell_language: {
-          type: ['string', 'object'],
+          type: 'string',
           description:
-            'The language of the code cell. For Python/Javascript, use strings: "Python" or "Javascript". For SQL connections, use object format: {"Connection": {"kind": "POSTGRES|MYSQL|MSSQL|SNOWFLAKE", "id": "connection-uuid"}}. This is case sensitive.',
+            'The language of the code cell, this can be one of Python, Javascript or SQL Connection. SQL Connection should be POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON. When using SQL Connection, connection_id is required and should be the exact uuid of the SQL Connection.',
         },
         code_cell_position: {
           type: 'string',
@@ -496,8 +503,20 @@ This tool is for Python, Javascript, and SQL Connection code. For formulas, use 
           type: 'string',
           description: 'The code which will run in the cell',
         },
+        connection_id: {
+          type: ['string', 'null'],
+          description:
+            'Required for SQL Connection code cells. This is uuid string corresponding to the connection ID of the SQL Connection code cell. SQL language should be provided in code_cell_language and should be one of POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON',
+        },
       },
-      required: ['sheet_name', 'code_cell_name', 'code_cell_language', 'code_cell_position', 'code_string'],
+      required: [
+        'sheet_name',
+        'code_cell_name',
+        'code_cell_language',
+        'code_cell_position',
+        'code_string',
+        'connection_id',
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
@@ -509,17 +528,17 @@ set_code_cell_value function requires language, codeString, and the cell positio
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function for Python/Javascript. Don't add values manually in code cells.\n
 This tool is for Python, Javascript, and SQL Connection code. For formulas, use set_formula_cell_value.\n
 For SQL Connection code cells:\n
-- Use the Connection language format: {"Connection": {"kind": "postgres|mysql|mssql|snowflake|bigquery|cockroachdb|mariadb|neon|supabase", "id": "connection-uuid"}}\n
-- The connection ID must be from an available database connection in the team\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON\n
+- The Connection ID must be from an available database connection in the team\n
 - Use the GetDatabaseSchemas tool to get the database schemas for the connection\n
 - Write SQL queries that reference the database tables and schemas provided in context\n
-- Follow database-specific syntax rules (quotes for Postgres, backticks for MySQL, Schema scoping in Bigquery, etc.)\n
+- Follow database-specific syntax rules (quotes for POSTGRES, backticks for MYSQL, Schema scoping in BIGQUERY, etc.)\n
 - POSTGRES uses advanced features like arrays, JSON operations, and custom data types with the most SQL standard compliance\n
 - MYSQL employs backticks for identifier quoting and has unique storage engine syntax (MyISAM, InnoDB) with more relaxed SQL standards\n
 - MSSQL uses square brackets for identifiers and T-SQL extensions like TOP clause, OUTPUT clause, and proprietary functions\n
 - SNOWFLAKE features cloud-native syntax with VARIANT data type for semi-structured data and unique clustering/warehouse scaling commands\n
 - BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
-- COCKROACHDB, NEON, and SUPABASE have the same syntax as Postgres\n
+- COCKROACHDB, NEON, and SUPABASE have the same syntax as POSTGRES\n
 - MARIADB has the same syntax as MySQL\n
 
 
@@ -750,64 +769,80 @@ There must be at least one format to set.\n
           description: 'The selection of cells to set the formats of, in a1 notation',
         },
         bold: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to bold',
         },
         italic: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to italic',
         },
         underline: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to underline',
         },
         strike_through: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to strike through',
         },
         text_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
         },
         fill_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
         },
         align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The horizontal alignment of the text, this can be one of "left", "center", "right"',
         },
         vertical_align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The vertical alignment of the text, this can be one of "top", "middle", "bottom"',
         },
         wrap: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The wrapping of the text, this can be one of "wrap", "clip", "overflow"',
         },
         numeric_commas: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description:
             'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas.',
         },
         number_type: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.',
         },
         currency_symbol: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR',
         },
         date_time: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
         },
       },
-      required: ['sheet_name', 'selection'],
+      required: [
+        'sheet_name',
+        'selection',
+        'bold',
+        'italic',
+        'underline',
+        'strike_through',
+        'text_color',
+        'fill_color',
+        'align',
+        'vertical_align',
+        'wrap',
+        'numeric_commas',
+        'number_type',
+        'currency_symbol',
+        'date_time',
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
@@ -1040,7 +1075,7 @@ It requires the query to search for.\n
 Retrieves detailed database table schemas including column names, data types, and constraints.\n
 Use this tool when you need detailed column information beyond the table names already available in context.\n
 Essential for writing accurate SQL queries that reference specific columns and their data types.\n
-If connection_ids is not provided, it will return detailed schemas for all available team connections.\n
+If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
 `,
     parameters: {
       type: 'object',
@@ -1049,12 +1084,12 @@ If connection_ids is not provided, it will return detailed schemas for all avail
           type: 'array',
           items: {
             type: 'string',
+            description:
+              'UUID string corresponding to the connection ID of the SQL Connection for which you want to get the schemas.',
           },
-          description:
-            'Optional array of specific connection IDs to get schemas for. If not provided, returns schemas for all team connections.',
         },
       },
-      required: [],
+      required: ['connection_ids'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
