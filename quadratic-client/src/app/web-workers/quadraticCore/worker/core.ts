@@ -1349,8 +1349,8 @@ class Core {
   }
 
   hasCellData(sheetId: string, selection: string): boolean {
-    if (!this.gridController) throw new Error('Expected gridController to be defined');
     try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
       return this.gridController.hasCellData(sheetId, selection);
     } catch (e) {
       this.handleCoreError('hasCellData', e);

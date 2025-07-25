@@ -11,7 +11,7 @@ export const HasCellData = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<HasCellDataResponse, HasCellDataResponse>>();
 
     useEffect(() => {
-      if (!loading) {
+      if (loading) {
         setToolArgs(undefined);
         return;
       }

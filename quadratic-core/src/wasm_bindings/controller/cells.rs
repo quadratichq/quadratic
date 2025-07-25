@@ -150,15 +150,23 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "hasCellData")]
-    pub fn js_has_cell_data(&self, sheet_id: String, selection: String) -> Result<bool, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id)
-            .map_err(|_| JsValue::from_str("Unable to parse SheetId"))?;
-        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-            .map_err(|_| JsValue::from_str("Unable to parse a1 string"))?;
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            Ok(sheet.has_content_in_selection(selection, self.a1_context()))
-        } else {
-            Ok(false)
-        }
+    pub fn js_has_cell_data(&self, sheet_id: String, selection: String) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|_| "Unable to parse A1Selection")?;
+
+            let has_data = if let Some(sheet) = self.try_sheet(sheet_id) {
+                sheet.has_content_in_selection(selection, self.a1_context())
+            } else {
+                false
+            };
+
+            Ok(Some(if has_data {
+                JsValue::TRUE
+            } else {
+                JsValue::FALSE
+            }))
+        })
     }
 }
