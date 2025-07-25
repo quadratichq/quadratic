@@ -358,7 +358,7 @@ export function useSubmitAIAnalystPrompt() {
                 try {
                   inlineEditorHandler.close({ skipFocusGrid: true });
                   const aiTool = toolCall.name as AITool;
-                  const argsObject = JSON.parse(toolCall.arguments);
+                  const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
                   const toolResultContent = await aiToolsActions[aiTool](args as any, {
                     source: 'AIAnalyst',
@@ -399,7 +399,7 @@ export function useSubmitAIAnalystPrompt() {
 
             const importPDFToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.PDFImport);
             for (const toolCall of importPDFToolCalls) {
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
               const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
@@ -410,7 +410,7 @@ export function useSubmitAIAnalystPrompt() {
 
             const webSearchToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.WebSearch);
             for (const toolCall of webSearchToolCalls) {
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
               const { toolResultContent, internal } = await search({ searchArgs });
               toolResultMessage.content.push({

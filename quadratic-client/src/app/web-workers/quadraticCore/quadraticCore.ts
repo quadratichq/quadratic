@@ -88,6 +88,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientRerunCodeCells,
   CoreClientSearch,
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
@@ -812,12 +813,23 @@ class QuadraticCore {
     });
   }
 
-  rerunCodeCells(sheetId: string | undefined, selection: string | undefined, cursor: string) {
-    this.send({
-      type: 'clientCoreRerunCodeCells',
-      sheetId,
-      selection,
-      cursor,
+  rerunCodeCells(
+    sheetId: string | undefined,
+    selection: string | undefined,
+    cursor: string
+  ): Promise<string | JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientRerunCodeCells) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreRerunCodeCells',
+        id,
+        sheetId,
+        selection,
+        cursor,
+      });
     });
   }
 

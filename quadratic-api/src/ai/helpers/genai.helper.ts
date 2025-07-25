@@ -94,7 +94,7 @@ export function getGenAIApiArgs(
           ...message.toolCalls.map((toolCall) => ({
             functionCall: {
               name: toolCall.name,
-              args: JSON.parse(toolCall.arguments),
+              args: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
             },
           })),
         ],

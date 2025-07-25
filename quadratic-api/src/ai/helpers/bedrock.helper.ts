@@ -108,7 +108,7 @@ export function getBedrockApiArgs(
             toolUse: {
               toolUseId: toolCall.id,
               name: toolCall.name,
-              input: JSON.parse(toolCall.arguments),
+              input: toolCall.arguments ? JSON.parse(toolCall.arguments) : {},
             },
           })),
         ],

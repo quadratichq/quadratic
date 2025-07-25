@@ -457,9 +457,16 @@ export interface CoreClientSheetMetaFills {
 
 export interface ClientCoreRerunCodeCells {
   type: 'clientCoreRerunCodeCells';
+  id: number;
   sheetId?: string;
   selection?: string;
   cursor: string;
+}
+
+export interface CoreClientRerunCodeCells {
+  type: 'coreClientRerunCodeCells';
+  id: number;
+  response: string | JsResponse | undefined;
 }
 
 export interface ClientCoreSetBorders {
@@ -1465,4 +1472,5 @@ export type CoreClientMessage =
   | CoreClientSetSheetColorResponse
   | CoreClientSetSheetsColorResponse
   | CoreClientDuplicateSheetResponse
-  | CoreClientHasCellData;
+  | CoreClientHasCellData
+  | CoreClientRerunCodeCells;

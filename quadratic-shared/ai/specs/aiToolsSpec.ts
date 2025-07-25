@@ -29,6 +29,7 @@ export enum AITool {
   MoveSheet = 'move_sheet',
   ColorSheets = 'color_sheets',
   TextSearch = 'text_search',
+  RerunCode = 'rerun_code',
 }
 
 export const AIToolSchema = z.enum([
@@ -58,6 +59,7 @@ export const AIToolSchema = z.enum([
   AITool.MoveSheet,
   AITool.ColorSheets,
   AITool.TextSearch,
+  AITool.RerunCode,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -231,7 +233,7 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.AddSheet]: z.object({
     sheet_name: z.string(),
-    insert_before_sheet_name: z.string().optional(),
+    insert_before_sheet_name: z.string().nullable().optional(),
   }),
   [AITool.DuplicateSheet]: z.object({
     sheet_name_to_duplicate: z.string(),
@@ -246,7 +248,7 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.MoveSheet]: z.object({
     sheet_name: z.string(),
-    insert_before_sheet_name: z.string().optional(),
+    insert_before_sheet_name: z.string().nullable().optional(),
   }),
   [AITool.ColorSheets]: z.object({
     sheet_names_to_color: z.array(
@@ -262,6 +264,10 @@ export const AIToolsArgsSchema = {
     whole_cell: z.boolean(),
     search_code: z.boolean(),
     sheet_name: z.string().optional(),
+  }),
+  [AITool.RerunCode]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    selection: z.string().nullable().optional(),
   }),
 } as const;
 
@@ -642,7 +648,7 @@ Moves a rectangular selection of cells from one location to another on the curre
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
 IMPORTANT: When moving a table, provide only the anchor cell of the table (the top-left cell of the table) in the source selection rectangle.\n
-Before moving a table, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
+IMPORTANT: Before moving a table, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
@@ -1120,12 +1126,12 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
           description: 'The name of the new sheet. This must be a unique name.',
         },
         insert_before_sheet_name: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The name of a sheet to insert the new sheet before. If not provided, the new sheet will be added to the end of the sheet list.',
         },
       },
-      required: ['sheet_name'],
+      required: ['sheet_name', 'insert_before_sheet_name'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddSheet],
@@ -1229,12 +1235,12 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
           description: 'The name of the sheet to move',
         },
         insert_before_sheet_name: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The name of a sheet to insert the moved sheet before. If not provided, the sheet will be added to the end of the sheet list.',
         },
       },
-      required: ['sheet_name'],
+      required: ['sheet_name', 'insert_before_sheet_name'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveSheet],
@@ -1318,6 +1324,41 @@ This tool searches for text in cells within a specific sheet or the entire file.
     responseSchema: AIToolsArgsSchema[AITool.TextSearch],
     prompt: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
+`,
+  },
+  [AITool.RerunCode]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
+    description: `
+This tool reruns the code in code cells. This may also be known as "refresh the data" or "update the data".\n
+You can optionally provide a sheet name and/or a selection (in A1 notation) to rerun specific code cells.\n
+If you only provide a sheet name, then all code cells within that sheet will run.\n
+If you provide a selection and sheet name, then only code cells within that selection will run.\n
+If you provide neither a sheet name nor a selection, then all code cells in the file will run.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: ['string', 'null'],
+          description: 'The sheet name to rerun code in. If not provided, then it reruns all code cells in the file.',
+        },
+        selection: {
+          type: ['string', 'null'],
+          description:
+            'The selection (in A1 notation) of code cells to rerun. If not provided, then it reruns all code cells in the sheet. For example, A1:D100',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.RerunCode],
+    prompt: `
+This tool reruns the code in code cells.\n
+You can optionally provide a sheet name and a selection (in A1 notation) to rerun specific code cells.\n
+If you only provide a sheet name, then all code cells within that sheet will run.\n
+If you provide a selection and sheet name, then only code cells within that selection will run.\n
+If you provide neither a sheet name nor a selection, then all code cells in the file will run.\n
 `,
   },
 } as const;

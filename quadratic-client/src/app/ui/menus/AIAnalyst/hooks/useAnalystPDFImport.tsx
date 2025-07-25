@@ -129,7 +129,7 @@ How can I help you?`,
           for (const toolCall of addDataTableToolCalls) {
             try {
               inlineEditorHandler.close({ skipFocusGrid: true });
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const args = aiToolsSpec[AITool.AddDataTable].responseSchema.parse(argsObject);
               await aiToolsActions[AITool.AddDataTable](args, {
                 source: 'PDFImport',
