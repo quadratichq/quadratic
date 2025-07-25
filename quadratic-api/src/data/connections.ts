@@ -1,5 +1,6 @@
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import type { Connection } from 'quadratic-shared/typesAndSchemasConnections';
+import { convertError } from 'quadratic-shared/utils/error';
 import { CONNECTION_DEMO } from '../env-vars';
 
 /**
@@ -28,7 +29,7 @@ try {
   console.log(
     JSON.stringify({
       message: '`CONNECTION_DEMO` env var is missing or malformed. No demo connection will be available.',
-      error,
+      error: convertError(error),
     })
   );
 }

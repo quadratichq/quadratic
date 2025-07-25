@@ -209,7 +209,7 @@ fn upgrade_columns(column: Vec<(i64, current::Column)>) -> Vec<(i64, v1_7::Colum
 
 fn upgrade_borders(borders: current::Borders) -> Result<v1_7::BordersSchema> {
     fn convert_border_style(border_style: current::CellBorder) -> Result<BorderStyle> {
-        let mut color = Rgba::color_from_str(&border_style.color)?;
+        let mut color = Rgba::try_from(border_style.color.as_str())?;
 
         // the alpha was set incorrectly to 1; should be 255
         color.alpha = 255;

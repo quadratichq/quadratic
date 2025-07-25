@@ -8,7 +8,10 @@ import { useRecoilState, useRecoilValue } from 'recoil';
 
 export const AIAnalystDebugChatInput = memo(() => {
   const { debug, debugFlags } = useDebugFlags();
-  const debugAIAnalystDebugChatInput = useMemo(() => debugFlags.getFlag('debugAIAnalystDebugChatInput'), [debugFlags]);
+  const debugAIAnalystChatStringInput = useMemo(
+    () => debugFlags.getFlag('debugAIAnalystChatStringInput'),
+    [debugFlags]
+  );
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const [currentChat, setCurrentChat] = useRecoilState(aiAnalystCurrentChatAtom);
   const [error, setError] = useState<string | null>(null);
@@ -40,7 +43,7 @@ export const AIAnalystDebugChatInput = memo(() => {
     [setCurrentChat]
   );
 
-  if (!debug || !debugAIAnalystDebugChatInput) {
+  if (!debug || !debugAIAnalystChatStringInput) {
     return null;
   }
 

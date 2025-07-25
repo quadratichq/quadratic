@@ -1,4 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
+import { convertError } from 'quadratic-shared/utils/error';
 import type { infer as ZodInfer, ZodObject, ZodTypeAny } from 'zod';
 import { NODE_ENV } from '../env-vars';
 import type { ResponseError } from '../types/Response';
@@ -73,7 +74,7 @@ export const parseRequest = <S extends RequestSchema>(req: Request, schema: S): 
     return data;
   } catch (error) {
     if (NODE_ENV === 'development') {
-      console.error(JSON.stringify({ message: 'Error in parseRequest', error }));
+      console.error(JSON.stringify({ message: 'Error in parseRequest', error: convertError(error) }));
     }
     throw new ApiError(400, 'Bad request. Schema validation failed', error);
   }

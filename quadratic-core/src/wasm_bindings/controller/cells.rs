@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::SheetPos;
 use crate::a1::A1Selection;
+use crate::wasm_bindings::capture_core_error;
 use crate::{Pos, controller::GridController, grid::SheetId};
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -103,68 +104,69 @@ impl GridController {
 
     /// Deletes a region of cells.
     #[wasm_bindgen(js_name = "deleteCellValues")]
-    pub fn js_delete_cell_values(
-        &mut self,
-        selection: String,
-        cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let selection = serde_json::from_str::<A1Selection>(&selection)
-            .map_err(|_| JsValue::from_str("Unable to parse A1Selection"))?;
+    pub fn js_delete_cell_values(&mut self, selection: String, cursor: Option<String>) -> JsValue {
+        capture_core_error(|| {
+            let selection = serde_json::from_str::<A1Selection>(&selection)
+                .map_err(|_| "Unable to parse A1Selection".to_string())?;
 
-        self.delete_cells(&selection, cursor);
-        Ok(())
+            self.delete_cells(&selection, cursor);
+
+            Ok(None)
+        })
     }
 
     #[wasm_bindgen(js_name = "getAICells")]
-    pub fn js_get_ai_cells(
-        &self,
-        a1: String,
-        sheet_id: String,
-        page: i32,
-    ) -> Result<String, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id)
-            .map_err(|_| JsValue::from_str("Unable to parse SheetId"))?;
-        let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
-            .map_err(|_| JsValue::from_str("Unable to parse a1 string"))?;
+    pub fn js_get_ai_cells(&self, a1: String, sheet_id: String, page: i32) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
+                .map_err(|_| "Unable to parse A1Selection")?;
 
-        match &self.get_ai_cells(selection, page as u32) {
-            Ok(ai_cells) => serde_json::to_string(ai_cells)
-                .map_err(|_| JsValue::from_str("Unable to parse AICells")),
-            Err(e) => Err(JsValue::from_str(&format!("Unable to parse AICells: {e}"))),
-        }
+            let page = u32::try_from(page).map_err(|_| "Unable to parse page")?;
+
+            match &self.get_ai_cells(selection, page) {
+                Ok(ai_cells) => Ok(Some(
+                    serde_wasm_bindgen::to_value(ai_cells).unwrap_or(JsValue::UNDEFINED),
+                )),
+                Err(e) => Err(format!("Unable to parse AICells: {e}")),
+            }
+        })
     }
 
     #[wasm_bindgen(js_name = "getAICellFormats")]
-    pub fn js_get_ai_cell_formats(
-        &self,
-        sheet_id: String,
-        a1: String,
-        page: i32,
-    ) -> Result<String, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id)
-            .map_err(|_| JsValue::from_str("Unable to parse SheetId"))?;
-        let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
-            .map_err(|_| JsValue::from_str("Unable to parse a1 string"))?;
+    pub fn js_get_ai_cell_formats(&self, sheet_id: String, a1: String, page: i32) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
+                .map_err(|_| "Unable to parse A1Selection")?;
 
-        match &self.get_ai_cell_formats(selection, page as u32) {
-            Ok(ai_cell_formats) => serde_json::to_string(ai_cell_formats)
-                .map_err(|_| JsValue::from_str("Unable to parse AICellFormats")),
-            Err(e) => Err(JsValue::from_str(&format!(
-                "Unable to parse AICellFormats: {e}"
-            ))),
-        }
+            match &self.get_ai_cell_formats(selection, page as u32) {
+                Ok(ai_cell_formats) => Ok(Some(
+                    serde_wasm_bindgen::to_value(ai_cell_formats).unwrap_or(JsValue::UNDEFINED),
+                )),
+                Err(e) => Err(format!("Unable to parse AICellFormats: {e}")),
+            }
+        })
     }
 
     #[wasm_bindgen(js_name = "hasCellData")]
-    pub fn js_has_cell_data(&self, sheet_id: String, selection: String) -> Result<bool, JsValue> {
-        let sheet_id = SheetId::from_str(&sheet_id)
-            .map_err(|_| JsValue::from_str("Unable to parse SheetId"))?;
-        let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-            .map_err(|_| JsValue::from_str("Unable to parse a1 string"))?;
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            Ok(sheet.has_content_in_selection(selection, self.a1_context()))
-        } else {
-            Ok(false)
-        }
+    pub fn js_has_cell_data(&self, sheet_id: String, selection: String) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|_| "Unable to parse A1Selection")?;
+
+            let has_data = if let Some(sheet) = self.try_sheet(sheet_id) {
+                sheet.has_content_in_selection(selection, self.a1_context())
+            } else {
+                false
+            };
+
+            Ok(Some(if has_data {
+                JsValue::TRUE
+            } else {
+                JsValue::FALSE
+            }))
+        })
     }
 }
