@@ -72,6 +72,7 @@ export const TableRename = () => {
   return (
     <PixiRename
       defaultValue={contextMenu.table.name}
+      initialValue={contextMenu.initialValue}
       width={width}
       className="reverse-selection origin-bottom-left bg-primary px-3 text-sm font-bold text-primary-foreground"
       styles={{

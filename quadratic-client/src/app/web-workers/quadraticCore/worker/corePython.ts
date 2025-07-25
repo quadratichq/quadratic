@@ -22,10 +22,13 @@ class CorePython {
   // last running transaction (used to cancel execution)
   lastTransactionId?: string;
 
+  constructor() {
+    self.sendRunPython = this.sendRunPython;
+  }
+
   init = async (pythonPort: MessagePort) => {
     this.corePythonPort = pythonPort;
     this.corePythonPort.onmessage = this.handleMessage;
-    self.sendRunPython = this.sendRunPython;
     if (await debugFlagWait('debugWebWorkers')) console.log('[corePython] initialized');
   };
 

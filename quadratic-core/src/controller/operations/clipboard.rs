@@ -234,14 +234,14 @@ impl From<Clipboard> for JsClipboard {
                                 style.push_str("font-style:italic;");
                             }
                             if let Some(text_color) = format.text_color {
-                                if let Ok(text_color) = Rgba::from_css_str(text_color.as_str()) {
+                                if let Ok(text_color) = Rgba::try_from(text_color.as_str()) {
                                     style.push_str(
                                         format!("color:{};", text_color.as_rgb_hex()).as_str(),
                                     );
                                 }
                             }
                             if let Some(fill_color) = format.fill_color {
-                                if let Ok(fill_color) = Rgba::from_css_str(fill_color.as_str()) {
+                                if let Ok(fill_color) = Rgba::try_from(fill_color.as_str()) {
                                     style.push_str(
                                         format!("background-color:{};", fill_color.as_rgb_hex())
                                             .as_str(),
@@ -315,8 +315,9 @@ impl From<Clipboard> for JsClipboard {
 
                 let display_value = clipboard.values.get(x, y);
                 if let Some(value) = display_value {
-                    plain_text.push_str(&value.to_string());
-                    html_body.push_str(&value.to_string());
+                    let value = value.to_string();
+                    html_body.push_str(&value);
+                    plain_text.push_str(&value.replace("\n", " ").replace("\t", " "));
                 }
             }
         }
@@ -2356,6 +2357,39 @@ mod test {
             vec![
                 "region2", "MA", "MA", "MA", "MA", "MA", "MO", "NJ", "OH", "OR", "NH",
             ],
+        );
+    }
+
+    #[test]
+    fn paste_plain_text_with_newline_and_tab() {
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+
+        let pos = pos![sheet_id!B2];
+
+        gc.set_cell_value(pos, "ab\ncd\tef".to_string(), None);
+
+        let mut js_clipboard: JsClipboard = gc
+            .sheet(sheet_id)
+            .copy_to_clipboard(
+                &A1Selection::test_a1_sheet_id("B2", sheet_id),
+                gc.a1_context(),
+                ClipboardOperation::Copy,
+                true,
+            )
+            .into();
+        js_clipboard.html = "".to_string();
+
+        gc.paste_from_clipboard(
+            &A1Selection::test_a1_sheet_id("E2", sheet_id),
+            js_clipboard,
+            PasteSpecial::Values,
+            None,
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).display_value(pos![E2]).unwrap(),
+            CellValue::Text("ab cd ef".to_string())
         );
     }
 }

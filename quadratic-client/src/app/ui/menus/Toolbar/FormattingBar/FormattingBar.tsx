@@ -96,7 +96,11 @@ export const FormattingBar = memo(() => {
       if (transactionsInfo.length > 0) return;
       try {
         const summary = await quadraticCore.getFormatSelection(sheets.sheet.cursor.save());
-        setFormatSummary(summary);
+        if (summary && 'error' in summary) {
+          console.error('[FormattingBar] Error getting format summary', summary.error);
+        } else {
+          setFormatSummary(summary);
+        }
       } catch (e) {
         console.error('[FormattingBar] Error getting format summary', e);
       }
