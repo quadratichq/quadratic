@@ -27,7 +27,6 @@ export enum AITool {
   DeleteSheet = 'delete_sheet',
   MoveSheet = 'move_sheet',
   ColorSheets = 'color_sheets',
-
   TextSearch = 'text_search',
 }
 

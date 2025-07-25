@@ -14,15 +14,16 @@ export const TextSearch = memo(
 
     useEffect(() => {
       if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.TextSearch].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[TextSearch] Failed to parse args: ', error);
-        }
-      } else {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.TextSearch].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[TextSearch] Failed to parse args: ', error);
       }
     }, [args, loading]);
 

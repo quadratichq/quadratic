@@ -630,48 +630,46 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.TextSearch]: async (args) => {
-    const { query, case_sensitive, whole_cell, search_code, sheet_name } = args;
-    let sheet_id = null;
-    if (sheet_name) {
-      sheet_id = sheets.getSheetIdFromName(sheet_name) ?? null;
-      if (sheet_id === '') {
-        sheet_id = null;
+    try {
+      const { query, case_sensitive, whole_cell, search_code, sheet_name } = args;
+      let sheet_id = null;
+      if (sheet_name) {
+        sheet_id = sheets.getSheetIdFromName(sheet_name) ?? null;
+        if (sheet_id === '') {
+          sheet_id = null;
+        }
       }
-    }
-    const results = await quadraticCore.search(query, {
-      case_sensitive: case_sensitive ?? null,
-      whole_cell: whole_cell ?? null,
-      search_code: search_code ?? null,
-      sheet_id,
-    });
-    const sortedResults: Record<string, JsSheetPosText[]> = {};
-    results.forEach((result) => {
-      if (!sortedResults[result.sheet_id]) {
-        sortedResults[result.sheet_id] = [];
-      }
-      sortedResults[result.sheet_id].push(result);
-    });
 
-    let text = '';
-    Object.entries(sortedResults).forEach(([sheet_id, results]) => {
-      const sheet = sheets.getById(sheet_id);
-      if (sheet) {
-        text += `For Sheet "${sheet.name}": `;
-        results.forEach((result, index) => {
-          text += `Cell: ${xyToA1(Number(result.x), Number(result.y))} is "${result.text}"`;
-          if (index < results.length - 1) {
-            text += ', ';
+      const results = await quadraticCore.search(query, {
+        case_sensitive: case_sensitive ?? null,
+        whole_cell: whole_cell ?? null,
+        search_code: search_code ?? null,
+        sheet_id,
+      });
+
+      const sortedResults: Record<string, JsSheetPosText[]> = {};
+      results.forEach((result) => {
+        if (!sortedResults[result.sheet_id]) {
+          sortedResults[result.sheet_id] = [];
+        }
+        sortedResults[result.sheet_id].push(result);
+      });
+
+      const text = Object.entries(sortedResults)
+        .map(([sheet_id, results]) => {
+          const sheet = sheets.getById(sheet_id);
+          if (sheet) {
+            return `For Sheet "${sheet.name}": ${results
+              .map((result) => `Cell: ${xyToA1(Number(result.x), Number(result.y))} is "${result.text}"`)
+              .join(', ')}`;
           } else {
-            text += '.\n';
+            return '';
           }
-        });
-      }
-    });
-    return [
-      {
-        type: 'text',
-        text,
-      },
-    ];
+        })
+        .join('.\n');
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing text search tool: ${e}`)];
+    }
   },
 } as const;
