@@ -691,10 +691,15 @@ class Core {
 
   //#endregion
 
-  setBorders(selection: string, borderSelection: BorderSelection, style: BorderStyle | undefined, cursor: string) {
+  setBorders(
+    selection: string,
+    borderSelection: BorderSelection,
+    style: BorderStyle | undefined,
+    cursor: string
+  ): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setBorders(selection, JSON.stringify(borderSelection), JSON.stringify(style), cursor);
+      return this.gridController.setBorders(selection, JSON.stringify(borderSelection), JSON.stringify(style), cursor);
     } catch (e) {
       this.handleCoreError('setBorders', e);
     }

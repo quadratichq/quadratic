@@ -91,6 +91,7 @@ import type {
   CoreClientRerunCodeCells,
   CoreClientResizeColumns,
   CoreClientSearch,
+  CoreClientSetBorders,
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
@@ -977,13 +978,24 @@ class QuadraticCore {
 
   //#region Borders
 
-  setBorders(selection: string, borderSelection: BorderSelection, style?: BorderStyle) {
-    this.send({
-      type: 'clientCoreSetBorders',
-      selection,
-      borderSelection,
-      style,
-      cursor: sheets.getCursorPosition(),
+  setBorders(
+    selection: string,
+    borderSelection: BorderSelection,
+    style?: BorderStyle
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetBorders) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreSetBorders',
+        id,
+        selection,
+        borderSelection,
+        style,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 

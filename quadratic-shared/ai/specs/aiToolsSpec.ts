@@ -32,6 +32,8 @@ export enum AITool {
   RerunCode = 'rerun_code',
   ResizeColumns = 'resize_columns',
   ResizeRows = 'resize_rows',
+
+  SetBorders = 'set_borders',
 }
 
 export const AIToolSchema = z.enum([
@@ -64,6 +66,7 @@ export const AIToolSchema = z.enum([
   AITool.RerunCode,
   AITool.ResizeColumns,
   AITool.ResizeRows,
+  AITool.SetBorders,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -282,6 +285,19 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().optional(),
     selection: z.string(),
     size: z.enum(['auto', 'default']),
+  }),
+  [AITool.SetBorders]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    color: z.string(),
+    line: z
+      .string()
+      .transform((val) => val.toLowerCase())
+      .pipe(z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double', 'clear'])),
+    border_selection: z
+      .string()
+      .transform((val) => val.toLowerCase())
+      .pipe(z.enum(['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'])),
   }),
 } as const;
 
@@ -1449,6 +1465,71 @@ This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
 The selection is a range of rows, for example: A1:D1 (the columns do not matter).\n
 The size is either "default" or "auto". Auto will resize the row to the height of the largest cell in the row. Default will resize the row to its default height.\n
+`,
+  },
+  [AITool.SetBorders]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool sets the borders in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of cells to set the borders on, and the color, line type, and border_selection of the borders.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to set borders in',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection (in A1 notation) of cells to set borders on. For example: A1:D1. For border_selection like "Outer", it will draw borders around the outside of the selection box.',
+        },
+        color: {
+          type: 'string',
+          description: 'The color of the borders. This must be a valid CSS color string.',
+        },
+        line: {
+          type: 'string',
+          description: `
+This provides the line type of the borders.\n
+It must be one of the following: line1, line2, line3, dotted, dashed, double, clear.\n
+"line1" is a thin line.\n
+"line2" is a thicker line.\n
+"line3" is the thickest line.\n
+"dotted" is a dotted line.\n
+"dashed" is a dashed line.\n
+"double" is a doubled line.\n
+"clear" will remove all borders in selection.`,
+        },
+        border_selection: {
+          type: 'string',
+          description: `
+The border selection to set the borders on. This must be one of the following: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
+"all" will set borders on all cells in the selection.\n
+"inner" will set borders on the inside of the selection box.\n
+"outer" will set borders on the outside of the selection box.\n
+"horizontal" will set borders on the horizontal sides of the selection box.\n
+"vertical" will set borders on the vertical sides of the selection box.\n
+"left" will set borders on the left side of the selection box.\n
+"top" will set borders on the top side of the selection box.\n
+"right" will set borders on the right side of the selection box.\n
+"bottom" will set borders on the bottom side of the selection box.\n
+"clear" will remove all borders in selection.`,
+        },
+      },
+      required: ['sheet_name', 'selection', 'color', 'line', 'border_selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetBorders],
+    prompt: `
+This tool sets the borders in a sheet.\n
+It requires the sheet name, a selection (in A1 notation) of cells to set the borders on, and the color, line type, and border_selection of the borders.\n
+The selection is a range of cells, for example: A1:D1.\n
+The color must be a valid CSS color string.\n
+The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
+The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
 `,
   },
 } as const;

@@ -370,7 +370,11 @@ class CoreClient {
         return;
 
       case 'clientCoreSetBorders':
-        core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor);
+        this.send({
+          type: 'coreClientSetBorders',
+          id: e.data.id,
+          response: core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor),
+        });
         return;
 
       case 'clientCoreSetCellRenderResize':
