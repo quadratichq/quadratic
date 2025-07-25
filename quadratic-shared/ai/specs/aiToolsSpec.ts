@@ -43,7 +43,7 @@ export enum AITool {
   DeleteRows = 'delete_rows',
 
   TableMeta = 'table_meta',
-  TableColumnNames = 'table_column_names',
+  TableColumnSettings = 'table_column_settings',
 }
 
 export const AIToolSchema = z.enum([
@@ -328,13 +328,14 @@ export const AIToolsArgsSchema = {
     show_columns: z.boolean().optional(),
     alternating_row_colors: z.boolean().optional(),
   }),
-  [AITool.TableColumnNames]: z.object({
+  [AITool.TableColumnSettings]: z.object({
     sheet_name: z.string().optional(),
     table_location: z.string(),
     column_names: z.array(
       z.object({
         old_name: z.string(),
         new_name: z.string(),
+        show: z.boolean(),
       })
     ),
   }),
@@ -1697,11 +1698,11 @@ This tool sets the meta data for a table. One or more options can be changed on 
 This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
 `,
   },
-  [AITool.TableColumnNames]: {
+  [AITool.TableColumnSettings]: {
     sources: ['AIAnalyst'],
     description: `
-This tool renames the columns of a table.\n
-`,
+This tool changes the columns of a table. It can rename them or show or hide them.\n
+In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -1715,7 +1716,7 @@ This tool renames the columns of a table.\n
         },
         column_names: {
           type: 'array',
-          description: 'The column names to rename. These must be a valid column name, for example ["A", "B", "C"].',
+          description: 'All columns in the table with any necessary changes.',
           items: {
             type: 'object',
             properties: {
@@ -1725,10 +1726,15 @@ This tool renames the columns of a table.\n
               },
               new_name: {
                 type: 'string',
-                description: 'The new name of the column',
+                description:
+                  'The new name of the column. If the new name is the same as the old name, the column will not be renamed.',
+              },
+              show: {
+                type: 'boolean',
+                description: 'Whether the column is shown in the table. This is true by default.',
               },
             },
-            required: ['old_name', 'new_name'],
+            required: ['old_name', 'new_name', 'show'],
             additionalProperties: false,
           },
         },
@@ -1736,8 +1742,9 @@ This tool renames the columns of a table.\n
       required: ['sheet_name', 'table_location', 'column_names'],
       additionalProperties: false,
     },
-    responseSchema: AIToolsArgsSchema[AITool.TableColumnNames],
+    responseSchema: AIToolsArgsSchema[AITool.TableColumnSettings],
     prompt: `
-This tool renames the columns of a table.\n`,
+This tool changes the columns of a table. It can rename them or show or hide them.\n
+In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
 } as const;

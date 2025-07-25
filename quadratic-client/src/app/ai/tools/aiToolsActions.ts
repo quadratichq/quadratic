@@ -14,6 +14,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
+  JsDataTableColumnHeader,
   JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
@@ -1036,28 +1037,35 @@ export const aiToolsActions: AIToolActionsRecord = {
       alternating_row_colors,
     } = args;
     const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    const sheetRect = sheets.selectionToSheetRect(sheetId, table_location);
+    const sheetRect = sheets.selectionToSheetRectParsed(sheetId, table_location);
     if (first_row_is_column_names !== undefined) {
       quadraticCore.dataTableFirstRowAsHeader(
         sheetId,
-        sheetRect.min.x,
-        sheetRect.min.y,
+        Number(sheetRect.min.x),
+        Number(sheetRect.min.y),
         first_row_is_column_names,
         sheets.getCursorPosition()
       );
     }
-    quadraticCore.dataTableMeta(
-      sheetId,
-      Number(sheetRect.min.x),
-      Number(sheetRect.min.y),
-      {
-        name: new_table_name,
-        alternatingColors: alternating_row_colors,
-        showName: show_name,
-        showColumns: show_columns,
-      },
-      sheets.getCursorPosition()
-    );
+    if (
+      new_table_name !== undefined ||
+      show_name !== undefined ||
+      show_columns !== undefined ||
+      alternating_row_colors !== undefined
+    ) {
+      quadraticCore.dataTableMeta(
+        sheetId,
+        Number(sheetRect.min.x),
+        Number(sheetRect.min.y),
+        {
+          name: new_table_name,
+          alternatingColors: alternating_row_colors,
+          showName: show_name,
+          showColumns: show_columns,
+        },
+        sheets.getCursorPosition()
+      );
+    }
     return [
       {
         type: 'text',
@@ -1065,23 +1073,46 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
-  [AITool.TableColumnNames]: async (args) => {
+  [AITool.TableColumnSettings]: async (args) => {
     const { sheet_name, table_location, column_names } = args;
     const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
     const sheetRect = sheets.selectionToSheetRectParsed(sheetId, table_location);
-    quadraticCore.dataTableMeta({
-      sheetId,
-      x: Number(sheetRect.min.x),
-      y: Number(sheetRect.min.y),
-      select_table: true,
-      columns_to_add: column_names.map((column) => {
-        const columnIndex = columnNameToIndex(column.old_name);
-        if (columnIndex === undefined) {
-          return undefined;
-        }
-        return Number(columnIndex);
-      }),
-      cursor: sheets.getCursorPosition(),
+    const sheet = pixiApp.cellsSheets.getById(sheetId);
+    if (!sheet) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing table column settings tool. Sheet not found: ${sheet_name}.`,
+        },
+      ];
+    }
+    const table = sheet.tables.getTable(sheetRect.min.x, sheetRect.min.y);
+    if (!table) {
+      return [
+        {
+          type: 'text',
+          text: `Error executing table column settings tool. Table not found at ${table_location}.`,
+        },
+      ];
+    }
+    // convert the ai response to the format expected by the core
+    const columns: JsDataTableColumnHeader[] = table.codeCell.columns.map((column, i) => {
+      const changedColumn = column_names.find((c) => c.old_name.toLowerCase() === column.name.toLowerCase());
+      if (!changedColumn) {
+        return {
+          valueIndex: i,
+          name: column.name,
+          display: column.display,
+        };
+      }
+      return {
+        valueIndex: i,
+        name: changedColumn.new_name,
+        display: changedColumn.show,
+      };
+    });
+    quadraticCore.dataTableMeta(sheetId, Number(sheetRect.min.x), Number(sheetRect.min.y), {
+      columns,
     });
     return [
       {

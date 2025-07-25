@@ -4,7 +4,7 @@ import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
-type TableColumnNamesResponse = z.infer<(typeof aiToolsSpec)[AITool.TableColumnNames]['responseSchema']>;
+type TableColumnNamesResponse = z.infer<(typeof aiToolsSpec)[AITool.TableColumnSettings]['responseSchema']>;
 
 type TableColumnNamesProps = {
   args: string;
@@ -18,7 +18,7 @@ export const TableColumnNames = memo(({ args, loading }: TableColumnNamesProps) 
     if (!loading) {
       try {
         const json = JSON.parse(args);
-        setToolArgs(aiToolsSpec[AITool.TableColumnNames].responseSchema.safeParse(json));
+        setToolArgs(aiToolsSpec[AITool.TableColumnSettings].responseSchema.safeParse(json));
       } catch (error) {
         setToolArgs(undefined);
         console.error('[TableColumnNames] Failed to parse args: ', error);
