@@ -86,7 +86,7 @@ The code cell run has resulted in an error:
 \`\`\`
 ${codeCell.std_err}
 \`\`\`
-Think and reason about the error and try to fix it.
+Think and reason about the error and try to fix it. Do not attempt the same fix repeatedly. If it failed once, it will fail again.
 `,
       },
     ];
@@ -102,7 +102,7 @@ The code cell has spilled, because the output overlaps with existing data on the
 ${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
 \`\`\`
 Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.
-Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet.
+Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet. Do not attempt the same location repeatedly. If it failed once, it will fail again.
 `,
       },
     ];
