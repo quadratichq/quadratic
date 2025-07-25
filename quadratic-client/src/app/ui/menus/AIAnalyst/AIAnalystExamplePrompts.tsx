@@ -12,7 +12,7 @@ import { useSetRecoilState } from 'recoil';
 
 const examples = [
   {
-    title: 'Give me sample data',
+    title: 'Create sample data',
     description: 'Sample data is a great way to get started with Quadratic.',
     icon: <TableIcon className="text-primary" />,
     prompt: 'Create sample data in my sheet.',
@@ -53,53 +53,53 @@ export function AIAnalystExamplePrompts() {
   return (
     <div className="flex flex-col justify-center gap-2 px-2 pt-1">
       <TypewriterHeader />
-      {examples.map(({ title, description, icon, prompt }) => (
-        <button
-          key={title}
-          className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
-          onClick={() => {
-            mixpanel.track('[AIAnalyst].submitExamplePrompt', { title });
-            submitPrompt({
-              messageSource: 'ExamplePrompts',
-              content: [{ type: 'text', text: prompt }],
-              context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
-              messageIndex: 0,
-            });
-          }}
-        >
-          {icon}
 
+      {/* Data import options at the top */}
+      <div className="flex flex-col gap-2">
+        <button
+          className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
+          onClick={handleFileImport}
+        >
+          <DraftIcon className="text-primary" />
           <div className="flex flex-col text-left text-sm">
-            <h3 className="font-semibold">{title}</h3>
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <h3 className="font-semibold">From a file</h3>
+            <p className="text-xs text-muted-foreground">CSV, Excel, or Parquet</p>
           </div>
         </button>
-      ))}
 
-      <div className="mt-2">
-        <h3 className="mb-2 text-center text-sm font-medium text-muted-foreground">Or start with your own data</h3>
-        <div className="flex flex-col gap-2">
-          <button
-            className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
-            onClick={handleFileImport}
-          >
-            <DraftIcon className="text-primary" />
-            <div className="flex flex-col text-left text-sm">
-              <h3 className="font-semibold">From file</h3>
-              <p className="text-xs text-muted-foreground">CSV, Excel, or Parquet</p>
-            </div>
-          </button>
+        <button
+          className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
+          onClick={handleConnectionsMenu}
+        >
+          <DatabaseIcon className="text-primary" />
+          <div className="flex flex-col text-left text-sm">
+            <h3 className="font-semibold">From a connection</h3>
+            <p className="text-xs text-muted-foreground">PostgreSQL, MySQL, MS SQL, BigQuery, etc.</p>
+          </div>
+        </button>
+      </div>
 
-          <button
-            className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
-            onClick={handleConnectionsMenu}
-          >
-            <DatabaseIcon className="text-primary" />
-            <div className="flex flex-col text-left text-sm">
-              <h3 className="font-semibold">From connection</h3>
-              <p className="text-xs text-muted-foreground">PostgreSQL, MySQL, BigQuery, etc.</p>
-            </div>
-          </button>
+      {/* Sample prompts at the bottom */}
+      <div className="mt-4">
+        <h3 className="mb-2 text-center text-sm font-medium text-muted-foreground">Or start with a sample prompt</h3>
+        <div className="flex flex-wrap justify-center gap-2">
+          {examples.map(({ title, prompt }) => (
+            <button
+              key={title}
+              className="rounded border border-border px-3 py-1 text-sm hover:bg-accent"
+              onClick={() => {
+                mixpanel.track('[AIAnalyst].submitExamplePrompt', { title });
+                submitPrompt({
+                  messageSource: 'ExamplePrompts',
+                  content: [{ type: 'text', text: prompt }],
+                  context: { sheets: [], currentSheet: sheets.sheet.name, selection: undefined },
+                  messageIndex: 0,
+                });
+              }}
+            >
+              {title}
+            </button>
+          ))}
         </div>
       </div>
     </div>
@@ -107,7 +107,7 @@ export function AIAnalystExamplePrompts() {
 }
 
 function TypewriterHeader() {
-  const fullText = 'What can I help with?';
+  const fullText = 'Start with your data';
   const [displayText, setDisplayText] = useState('');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [startTyping, setStartTyping] = useState(false);
