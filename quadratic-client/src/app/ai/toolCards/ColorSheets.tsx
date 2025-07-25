@@ -33,8 +33,8 @@ export const ColorSheets = memo(
         return '';
       }
       let results = 'Changed sheet colors: ';
-      for (const key in toolArgs.data.sheet_name_to_color) {
-        results += `"${key}"${key !== Object.keys(toolArgs.data.sheet_name_to_color)[Object.keys(toolArgs.data.sheet_name_to_color).length - 1] ? ', ' : ''}`;
+      for (const key in toolArgs.data.sheet_names_to_color) {
+        results += `"${key}"${key !== Object.keys(toolArgs.data.sheet_names_to_color)[Object.keys(toolArgs.data.sheet_names_to_color).length - 1] ? ', ' : ''}`;
       }
       return results + '\n';
     }, [toolArgs?.data]);

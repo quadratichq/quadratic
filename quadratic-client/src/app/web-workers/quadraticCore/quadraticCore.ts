@@ -56,9 +56,12 @@ import type {
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
+  CoreClientAddSheetResponse,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
   CoreClientDeleteCellValues,
+  CoreClientDeleteSheetResponse,
+  CoreClientDuplicateSheetResponse,
   CoreClientExport,
   CoreClientExportCsvSelection,
   CoreClientExportExcel,
@@ -82,11 +85,15 @@ import type {
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
   CoreClientMoveCodeCellVertically,
+  CoreClientMoveSheetResponse,
   CoreClientNeighborText,
   CoreClientSearch,
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
   CoreClientSetFormats,
+  CoreClientSetSheetColorResponse,
+  CoreClientSetSheetNameResponse,
+  CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
@@ -816,32 +823,74 @@ class QuadraticCore {
 
   //#region Sheet Operations
 
-  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string) {
-    this.send({ type: 'clientCoreAddSheet', sheetName, insertBeforeSheetName, cursor });
+  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientAddSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreAddSheet', id, sheetName, insertBeforeSheetName, cursor });
+    });
   }
 
-  deleteSheet(sheetId: string, cursor: string) {
-    this.send({ type: 'clientCoreDeleteSheet', sheetId, cursor });
+  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDuplicateSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreDuplicateSheet', id, sheetId, nameOfNewSheet, cursor });
+    });
   }
 
-  moveSheet(sheetId: string, previous: string | undefined, cursor: string) {
-    this.send({ type: 'clientCoreMoveSheet', sheetId, previous, cursor });
+  deleteSheet(sheetId: string, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDeleteSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreDeleteSheet', id, sheetId, cursor });
+    });
   }
 
-  setSheetName(sheetId: string, name: string, cursor: string) {
-    this.send({ type: 'clientCoreSetSheetName', sheetId, name, cursor });
+  moveSheet(sheetId: string, previous: string | undefined, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMoveSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreMoveSheet', id, sheetId, previous, cursor });
+    });
   }
 
-  setSheetColor(sheetId: string, color: string | undefined, cursor: string) {
-    this.send({ type: 'clientCoreSetSheetColor', sheetId, color, cursor });
+  setSheetName(sheetId: string, name: string, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetSheetNameResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreSetSheetName', id, sheetId, name, cursor });
+    });
   }
 
-  setSheetColors(sheetNameToColor: JsSheetNameToColor[], cursor: string) {
-    this.send({ type: 'clientCoreSetSheetColors', sheetNameToColor, cursor });
+  setSheetColor(sheetId: string, color: string | undefined, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetSheetColorResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreSetSheetColor', id, sheetId, color, cursor });
+    });
   }
 
-  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string) {
-    this.send({ type: 'clientCoreDuplicateSheet', sheetId, nameOfNewSheet, cursor });
+  setSheetsColor(sheetNameToColor: JsSheetNameToColor[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetSheetsColorResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreSetSheetsColor', id, sheetNameToColor, cursor });
+    });
   }
 
   //#endregion

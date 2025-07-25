@@ -544,9 +544,16 @@ export interface CoreClientSheetBoundsUpdate {
 
 export interface ClientCoreAddSheet {
   type: 'clientCoreAddSheet';
+  id: number;
   sheetName?: string;
   insertBeforeSheetName?: string;
   cursor?: string;
+}
+
+export interface CoreClientAddSheetResponse {
+  type: 'coreClientAddSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientAddSheet {
@@ -555,10 +562,31 @@ export interface CoreClientAddSheet {
   user: boolean;
 }
 
+export interface ClientCoreDuplicateSheet {
+  type: 'clientCoreDuplicateSheet';
+  id: number;
+  sheetId: string;
+  nameOfNewSheet?: string;
+  cursor: string;
+}
+
+export interface CoreClientDuplicateSheetResponse {
+  type: 'coreClientDuplicateSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreDeleteSheet {
   type: 'clientCoreDeleteSheet';
+  id: number;
   sheetId: string;
   cursor: string;
+}
+
+export interface CoreClientDeleteSheetResponse {
+  type: 'coreClientDeleteSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientDeleteSheet {
@@ -569,9 +597,16 @@ export interface CoreClientDeleteSheet {
 
 export interface ClientCoreMoveSheet {
   type: 'clientCoreMoveSheet';
+  id: number;
   sheetId: string;
   previous?: string;
   cursor: string;
+}
+
+export interface CoreClientMoveSheetResponse {
+  type: 'coreClientMoveSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientSheetInfoUpdate {
@@ -581,29 +616,43 @@ export interface CoreClientSheetInfoUpdate {
 
 export interface ClientCoreSetSheetName {
   type: 'clientCoreSetSheetName';
+  id: number;
   sheetId: string;
   name: string;
   cursor: string;
 }
 
+export interface CoreClientSetSheetNameResponse {
+  type: 'coreClientSetSheetNameResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreSetSheetColor {
   type: 'clientCoreSetSheetColor';
+  id: number;
   sheetId: string;
   color: string | undefined;
   cursor: string;
 }
 
-export interface ClientCoreSetSheetColors {
-  type: 'clientCoreSetSheetColors';
+export interface CoreClientSetSheetColorResponse {
+  type: 'coreClientSetSheetColorResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreSetSheetsColor {
+  type: 'clientCoreSetSheetsColor';
+  id: number;
   sheetNameToColor: JsSheetNameToColor[];
   cursor: string;
 }
 
-export interface ClientCoreDuplicateSheet {
-  type: 'clientCoreDuplicateSheet';
-  sheetId: string;
-  nameOfNewSheet?: string;
-  cursor: string;
+export interface CoreClientSetSheetsColorResponse {
+  type: 'coreClientSetSheetsColorResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientSetCursor {
@@ -1257,7 +1306,7 @@ export type ClientCoreMessage =
   | ClientCoreMoveSheet
   | ClientCoreSetSheetName
   | ClientCoreSetSheetColor
-  | ClientCoreSetSheetColors
+  | ClientCoreSetSheetsColor
   | ClientCoreDuplicateSheet
   | ClientCoreUndo
   | ClientCoreRedo
@@ -1394,4 +1443,11 @@ export type CoreClientMessage =
   | CoreClientDataTablesCache
   | CoreClientContentCache
   | CoreClientSetCellRenderResize
-  | CoreClientGetFormatSelection;
+  | CoreClientGetFormatSelection
+  | CoreClientAddSheetResponse
+  | CoreClientDeleteSheetResponse
+  | CoreClientMoveSheetResponse
+  | CoreClientSetSheetNameResponse
+  | CoreClientSetSheetColorResponse
+  | CoreClientSetSheetsColorResponse
+  | CoreClientDuplicateSheetResponse;

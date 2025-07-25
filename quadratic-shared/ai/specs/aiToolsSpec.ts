@@ -241,7 +241,7 @@ export const AIToolsArgsSchema = {
     insert_before_sheet_name: z.string().optional(),
   }),
   [AITool.ColorSheets]: z.object({
-    sheet_name_to_color: z.array(
+    sheet_names_to_color: z.array(
       z.object({
         sheet_name: z.string(),
         color: z.string(),
@@ -1209,7 +1209,7 @@ It requires a record of sheet names to change mapped to the new color.\n
     parameters: {
       type: 'object',
       properties: {
-        sheet_name_to_color: {
+        sheet_names_to_color: {
           type: 'array',
           items: {
             type: 'object',
@@ -1228,7 +1228,7 @@ It requires a record of sheet names to change mapped to the new color.\n
           },
         },
       },
-      required: ['sheet_name_to_color'],
+      required: ['sheet_names_to_color'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.ColorSheets],

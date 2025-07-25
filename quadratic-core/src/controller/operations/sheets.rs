@@ -21,11 +21,11 @@ impl GridController {
         vec![Operation::SetSheetColor { sheet_id, color }]
     }
 
-    pub fn set_sheet_colors_operations(
+    pub fn set_sheets_color_operations(
         &mut self,
-        sheet_name_to_color: Vec<JsSheetNameToColor>,
+        sheet_names_to_color: Vec<JsSheetNameToColor>,
     ) -> Vec<Operation> {
-        sheet_name_to_color
+        sheet_names_to_color
             .into_iter()
             .filter_map(|JsSheetNameToColor { sheet_name, color }| {
                 self.grid
