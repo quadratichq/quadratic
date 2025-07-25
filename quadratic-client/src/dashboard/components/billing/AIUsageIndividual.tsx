@@ -30,6 +30,7 @@ export function AIUsageIndividual({
   const creditsAdditionalExceeded = creditsAdditional && creditsAdditional.used > creditsAdditional.limit;
   const isProPlan = creditsAdditional !== undefined;
   const isProPlanAndUsageBasedPricingEnabled = isProPlan && creditsAdditional.onChangeLimit !== undefined;
+  const hasHitMonthlyLimit = creditsMonthly.used === creditsMonthly.limit;
 
   return (
     <div className="grid grid-cols-2 gap-8 rounded-lg border border-border p-4 shadow-sm">
@@ -64,9 +65,9 @@ export function AIUsageIndividual({
               )}
               <span
                 className={cn(
-                  creditsAdditionalExceeded
+                  creditsAdditionalExceeded && hasHitMonthlyLimit
                     ? 'font-semibold text-destructive'
-                    : isProPlanAndUsageBasedPricingEnabled
+                    : isProPlanAndUsageBasedPricingEnabled && hasHitMonthlyLimit
                       ? 'font-semibold text-foreground'
                       : 'text-muted-foreground'
                 )}
