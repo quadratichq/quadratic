@@ -17,6 +17,7 @@ import type {
   JsRenderCell,
   JsResponse,
   JsSelectionContext,
+  JsSheetNameToColor,
   JsSheetPosText,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
@@ -89,7 +90,18 @@ export interface ClientCoreExport {
 
 export interface CoreClientExport {
   type: 'coreClientExport';
-  grid: ArrayBufferLike;
+  grid: Uint8Array;
+  id: number;
+}
+
+export interface ClientCoreExportExcel {
+  type: 'clientCoreExportExcel';
+  id: number;
+}
+
+export interface CoreClientExportExcel {
+  type: 'coreClientExportExcel';
+  excel: Uint8Array;
   id: number;
 }
 
@@ -410,6 +422,7 @@ export interface ClientCoreDeleteCellValues {
 export interface CoreClientDeleteCellValues {
   type: 'coreClientDeleteCellValues';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreSetCodeCellValue {
@@ -531,9 +544,16 @@ export interface CoreClientSheetBoundsUpdate {
 
 export interface ClientCoreAddSheet {
   type: 'clientCoreAddSheet';
+  id: number;
   sheetName?: string;
   insertBeforeSheetName?: string;
   cursor?: string;
+}
+
+export interface CoreClientAddSheetResponse {
+  type: 'coreClientAddSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientAddSheet {
@@ -542,10 +562,31 @@ export interface CoreClientAddSheet {
   user: boolean;
 }
 
+export interface ClientCoreDuplicateSheet {
+  type: 'clientCoreDuplicateSheet';
+  id: number;
+  sheetId: string;
+  nameOfNewSheet?: string;
+  cursor: string;
+}
+
+export interface CoreClientDuplicateSheetResponse {
+  type: 'coreClientDuplicateSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreDeleteSheet {
   type: 'clientCoreDeleteSheet';
+  id: number;
   sheetId: string;
   cursor: string;
+}
+
+export interface CoreClientDeleteSheetResponse {
+  type: 'coreClientDeleteSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientDeleteSheet {
@@ -556,9 +597,16 @@ export interface CoreClientDeleteSheet {
 
 export interface ClientCoreMoveSheet {
   type: 'clientCoreMoveSheet';
+  id: number;
   sheetId: string;
   previous?: string;
   cursor: string;
+}
+
+export interface CoreClientMoveSheetResponse {
+  type: 'coreClientMoveSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientSheetInfoUpdate {
@@ -568,29 +616,43 @@ export interface CoreClientSheetInfoUpdate {
 
 export interface ClientCoreSetSheetName {
   type: 'clientCoreSetSheetName';
+  id: number;
   sheetId: string;
   name: string;
   cursor: string;
 }
 
+export interface CoreClientSetSheetNameResponse {
+  type: 'coreClientSetSheetNameResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreSetSheetColor {
   type: 'clientCoreSetSheetColor';
+  id: number;
   sheetId: string;
   color: string | undefined;
   cursor: string;
 }
 
-export interface ClientCoreSetSheetColors {
-  type: 'clientCoreSetSheetColors';
-  sheetNameToColor: Record<string, string>;
+export interface CoreClientSetSheetColorResponse {
+  type: 'coreClientSetSheetColorResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreSetSheetsColor {
+  type: 'clientCoreSetSheetsColor';
+  id: number;
+  sheetNameToColor: JsSheetNameToColor[];
   cursor: string;
 }
 
-export interface ClientCoreDuplicateSheet {
-  type: 'clientCoreDuplicateSheet';
-  sheetId: string;
-  nameOfNewSheet?: string;
-  cursor: string;
+export interface CoreClientSetSheetsColorResponse {
+  type: 'coreClientSetSheetsColorResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientSetCursor {
@@ -777,7 +839,7 @@ export interface ClientCoreMoveCodeCellVertically {
 
 export interface CoreClientMoveCodeCellVertically {
   type: 'coreClientMoveCodeCellVertically';
-  pos: Pos;
+  pos: Pos | undefined;
   id: number;
 }
 
@@ -794,7 +856,7 @@ export interface ClientCoreMoveCodeCellHorizontally {
 
 export interface CoreClientMoveCodeCellHorizontally {
   type: 'coreClientMoveCodeCellHorizontally';
-  pos: Pos;
+  pos: Pos | undefined;
   id: number;
 }
 
@@ -1128,7 +1190,7 @@ export interface ClientCoreGetAICells {
 export interface CoreClientGetAICells {
   type: 'coreClientGetAICells';
   id: number;
-  aiCells: string;
+  aiCells: string | JsResponse | undefined;
 }
 
 export interface ClientCoreSetFormats {
@@ -1142,6 +1204,7 @@ export interface ClientCoreSetFormats {
 export interface CoreClientSetFormats {
   type: 'coreClientSetFormats';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreGetAIFormats {
@@ -1155,7 +1218,7 @@ export interface ClientCoreGetAIFormats {
 export interface CoreClientGetAIFormats {
   type: 'coreClientGetAIFormats';
   id: number;
-  formats: string;
+  formats: string | JsResponse | undefined;
 }
 
 export interface ClientCoreResizeColumns {
@@ -1207,7 +1270,7 @@ export interface ClientCoreGetFormatSelection {
 export interface CoreClientGetFormatSelection {
   type: 'coreClientGetFormatSelection';
   id: number;
-  format: CellFormatSummary | undefined;
+  format: CellFormatSummary | JsResponse | undefined;
 }
 
 export type ClientCoreMessage =
@@ -1243,12 +1306,13 @@ export type ClientCoreMessage =
   | ClientCoreMoveSheet
   | ClientCoreSetSheetName
   | ClientCoreSetSheetColor
-  | ClientCoreSetSheetColors
+  | ClientCoreSetSheetsColor
   | ClientCoreDuplicateSheet
   | ClientCoreUndo
   | ClientCoreRedo
   | ClientCoreUpgradeGridFile
   | ClientCoreExport
+  | ClientCoreExportExcel
   | ClientCoreSearch
   | ClientCoreRerunCodeCells
   | ClientCoreCopyToClipboard
@@ -1323,6 +1387,7 @@ export type CoreClientMessage =
   | CoreClientSheetOffsets
   | CoreClientUpgradeFile
   | CoreClientExport
+  | CoreClientExportExcel
   | CoreClientSearch
   | CoreClientCopyToClipboard
   | CoreClientCutToClipboard
@@ -1378,4 +1443,11 @@ export type CoreClientMessage =
   | CoreClientDataTablesCache
   | CoreClientContentCache
   | CoreClientSetCellRenderResize
-  | CoreClientGetFormatSelection;
+  | CoreClientGetFormatSelection
+  | CoreClientAddSheetResponse
+  | CoreClientDeleteSheetResponse
+  | CoreClientMoveSheetResponse
+  | CoreClientSetSheetNameResponse
+  | CoreClientSetSheetColorResponse
+  | CoreClientSetSheetsColorResponse
+  | CoreClientDuplicateSheetResponse;

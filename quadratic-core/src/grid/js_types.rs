@@ -512,6 +512,11 @@ pub struct JsResponse {
     pub result: bool,
     pub error: Option<String>,
 }
+impl From<JsResponse> for wasm_bindgen::JsValue {
+    fn from(response: JsResponse) -> Self {
+        serde_wasm_bindgen::to_value(&response).unwrap_or(JsValue::UNDEFINED)
+    }
+}
 
 #[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsUpdateCodeCell {
@@ -534,6 +539,12 @@ pub enum Direction {
     Down,
     Left,
     Right,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+pub struct JsSheetNameToColor {
+    pub sheet_name: String,
+    pub color: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
