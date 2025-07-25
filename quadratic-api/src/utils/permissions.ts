@@ -131,7 +131,7 @@ export const getFilePermissions = ({
   }
 
   // Note: we should never reach here
-  console.warn('This code path should never be reached');
+  console.warn(JSON.stringify({ message: 'This code path should never be reached' }));
   Sentry.captureEvent({
     message: 'Invalid combination of arguments to `getFilePermissions`. This code path should never be reached.',
     extra: { publicLinkAccess, userFileRelationship },

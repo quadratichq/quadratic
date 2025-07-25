@@ -1,4 +1,5 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
+import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -7,10 +8,11 @@ import {
   aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
+  aiAnalystPromptSuggestionsLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debugFlag } from '@/app/debugFlags/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
@@ -41,11 +43,14 @@ type AIAnalystMessagesProps = {
 };
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
+  const { debug, debugFlags } = useDebugFlags();
+
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
+  const promptSuggestionsLoading = useRecoilValue(aiAnalystPromptSuggestionsLoadingAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -165,7 +170,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     >
       {messages.map((message, index) => {
         if (
-          !debugFlag('debugShowAIInternalContext') &&
+          !debugFlags.getFlag('debugShowAIInternalContext') &&
           !['userPrompt', 'webSearchInternal'].includes(message.contextType)
         ) {
           return null;
@@ -184,7 +189,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {debugFlag('debug') && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
             {isInternalMessage(message) ? (
               isContentGoogleSearchInternal(message.content) ? (
@@ -244,6 +249,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       <PDFImportLoading />
 
       <WebSearchLoading />
+
+      <UserPromptSuggestionsSkeleton args={''} loading={promptSuggestionsLoading} />
 
       <AILoading loading={loading} />
     </div>
@@ -323,13 +330,7 @@ const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const lastContext = useMemo(
-    () =>
-      getUserPromptMessages(messages)
-        .filter((message) => message.contextType === 'userPrompt')
-        .at(-1)?.context,
-    [messages]
-  );
+  const lastContext = useMemo(() => getUserPromptMessages(messages).at(-1)?.context, [messages]);
 
   if (!messages.length || !promptSuggestions.suggestions.length) {
     return null;

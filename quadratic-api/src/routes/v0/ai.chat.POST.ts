@@ -176,7 +176,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         data: { s3Key },
       });
     }
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(JSON.stringify({ message: 'Error in ai.chat.POST handler', error }));
   }
 }

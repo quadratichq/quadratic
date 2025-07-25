@@ -11,7 +11,9 @@ const AIProvidersSchema = z.enum([
   'anthropic',
   'openai',
   'xai',
+  'baseten',
   'open-router',
+  'azure-openai',
 ]);
 
 const QuadraticModelSchema = z.enum(['quadratic-auto']);
@@ -30,20 +32,21 @@ const AnthropicModelSchema = z.enum([
   'claude-3-5-sonnet-20241022',
 ]);
 const OpenAIModelSchema = z.enum([
-  'ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
+  'ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+  'ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+  'ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
   'gpt-4.1-2025-04-14',
   'gpt-4.1-mini-2025-04-14',
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
 ]);
+const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
+const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct']);
 const OpenRouterModelSchema = z.enum([
-  'qwen/qwen3-32b',
-  'qwen/qwen3-235b-a22b',
   'deepseek/deepseek-r1-0528',
-  'deepseek/deepseek-r1-0528-qwen3-8b',
-  'deepseek/deepseek-r1-distill-qwen-7b',
   'deepseek/deepseek-chat-v3-0324',
+  'moonshotai/kimi-k2',
 ]);
 const AIModelSchema = z.union([
   QuadraticModelSchema,
@@ -54,7 +57,9 @@ const AIModelSchema = z.union([
   BedrockModelSchema,
   AnthropicModelSchema,
   OpenAIModelSchema,
+  AzureOpenAIModelSchema,
   XAIModelSchema,
+  BasetenModelSchema,
   OpenRouterModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
@@ -66,6 +71,7 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
+  'vertexai-anthropic:claude-sonnet-4:thinking',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
 ]);
@@ -106,7 +112,9 @@ const AnthropicModelKeySchema = z.enum([
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
 const OpenAIModelKeySchema = z.enum([
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+  'openai:ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
   'openai:gpt-4.1-2025-04-14',
   'openai:gpt-4.1-mini-2025-04-14',
   'openai:o4-mini-2025-04-16',
@@ -114,16 +122,19 @@ const OpenAIModelKeySchema = z.enum([
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
+const AzureOpenAIModelKeySchema = z.enum(['azure-openai:gpt-4.1', 'azure-openai:gpt-4.1-mini']);
+export type AzureOpenAIModelKey = z.infer<typeof AzureOpenAIModelKeySchema>;
+
 const XAIModelKeySchema = z.enum(['xai:grok-4-0709']);
 export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 
+const BasetenModelKeySchema = z.enum(['baseten:moonshotai/Kimi-K2-Instruct']);
+export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
+
 const OpenRouterModelKeySchema = z.enum([
-  'open-router:qwen/qwen3-32b',
-  'open-router:qwen/qwen3-235b-a22b',
   'open-router:deepseek/deepseek-r1-0528',
-  'open-router:deepseek/deepseek-r1-0528-qwen3-8b',
-  'open-router:deepseek/deepseek-r1-distill-qwen-7b',
   'open-router:deepseek/deepseek-chat-v3-0324',
+  'open-router:moonshotai/kimi-k2',
 ]);
 export type OpenRouterModelKey = z.infer<typeof OpenRouterModelKeySchema>;
 
@@ -136,7 +147,9 @@ const AIModelKeySchema = z.union([
   BedrockModelKeySchema,
   AnthropicModelKeySchema,
   OpenAIModelKeySchema,
+  AzureOpenAIModelKeySchema,
   XAIModelKeySchema,
+  BasetenModelKeySchema,
   OpenRouterModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;
@@ -165,6 +178,7 @@ export const AIModelConfigSchema = z
     thinking: z.boolean().optional(),
     thinkingToggle: z.boolean().optional(),
     thinkingBudget: z.number().optional(),
+    imageSupport: z.boolean(),
   })
   .extend(AIRatesSchema.shape);
 export type AIModelConfig = z.infer<typeof AIModelConfigSchema>;
@@ -235,10 +249,18 @@ const ContextSchema = z.object({
 });
 export type Context = z.infer<typeof ContextSchema>;
 
-const TextContentSchema = z.object({
-  type: z.literal('text'),
-  text: z.string(),
-});
+const TextContentSchema = z.preprocess(
+  (val: any) => {
+    if (typeof val === 'string') {
+      return { type: 'text', text: val };
+    }
+    return val;
+  },
+  z.object({
+    type: z.literal('text'),
+    text: z.string(),
+  })
+);
 export type TextContent = z.infer<typeof TextContentSchema>;
 
 export const ImageContentSchema = z.object({
@@ -279,15 +301,12 @@ export type Content = z.infer<typeof ContentSchema>;
 
 const SystemMessageSchema = z.object({
   role: z.literal('user'),
-  content: z.union([
-    z.string().transform((str) => [
-      {
-        type: 'text' as const,
-        text: str,
-      },
-    ]),
-    z.array(TextContentSchema),
-  ]),
+  content: z.preprocess((val) => {
+    if (typeof val === 'string') {
+      return [{ type: 'text', text: val }];
+    }
+    return val;
+  }, z.array(TextContentSchema)),
   contextType: InternalContextTypeSchema,
 });
 export type SystemMessage = z.infer<typeof SystemMessageSchema>;
@@ -306,7 +325,7 @@ const ToolResultSchema = z.object({
 });
 export type ToolResultMessage = z.infer<typeof ToolResultSchema>;
 
-const convertStringToContent = (val: any): Content => {
+const convertStringToContent = (val: any): TextContent[] => {
   // old chat messages are single strings, being migrated to array of text objects
   if (typeof val === 'string') {
     return val
@@ -358,31 +377,31 @@ const AIResponseContentSchema = z.array(
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
-const convertStringToTextContent = (val: any): AIResponseContent => {
-  // old chat messages are single strings, being migrated to array of text objects
-  if (typeof val === 'string') {
-    return val
-      .split('\n')
-      .map((line) => line.trim())
-      .filter((line) => !!line)
-      .map((line) => ({ type: 'text', text: line }));
-  }
-  return val;
-};
-export const AIMessagePromptSchema = z.object({
-  role: z.literal('assistant'),
-  content: z.preprocess(convertStringToTextContent, AIResponseContentSchema),
-  contextType: UserPromptContextTypeSchema,
-  toolCalls: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string(),
-      arguments: z.string(),
-      loading: z.boolean(),
-    })
-  ),
-  modelKey: AIModelKeySchema,
-});
+export const AIMessagePromptSchema = z.preprocess(
+  (val: any) => {
+    if (typeof val === 'object' && 'model' in val) {
+      return {
+        ...val,
+        modelKey: val.model,
+      };
+    }
+    return val;
+  },
+  z.object({
+    role: z.literal('assistant'),
+    content: z.preprocess(convertStringToContent, AIResponseContentSchema),
+    contextType: UserPromptContextTypeSchema,
+    toolCalls: z.array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        arguments: z.string(),
+        loading: z.boolean(),
+      })
+    ),
+    modelKey: z.string(),
+  })
+);
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
 
 const AIMessageSchema = z.union([AIMessageInternalSchema, AIMessagePromptSchema]);
@@ -408,11 +427,13 @@ export type InternalMessage = z.infer<typeof InternalMessageSchema>;
 const ChatMessageSchema = z.union([UserMessageSchema, AIMessageSchema, InternalMessageSchema]);
 export type ChatMessage = z.infer<typeof ChatMessageSchema>;
 
+export const ChatMessagesSchema = z.array(ChatMessageSchema);
+
 export const ChatSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   lastUpdated: z.number(),
-  messages: z.array(ChatMessageSchema),
+  messages: ChatMessagesSchema,
 });
 export type Chat = z.infer<typeof ChatSchema>;
 

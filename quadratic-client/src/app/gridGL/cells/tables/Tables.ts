@@ -68,8 +68,8 @@ export class Tables extends Container<Table> {
     events.on('updateCodeCells', this.updateCodeCells);
 
     events.on('cursorPosition', this.cursorPosition);
-    events.on('a1ContextUpdated', this.cursorPosition);
-    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('a1ContextUpdated', this.handleA1ContextUpdated);
+    events.on('sheetOffsetsUpdated', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
 
@@ -85,8 +85,8 @@ export class Tables extends Container<Table> {
     events.off('updateCodeCells', this.updateCodeCells);
 
     events.off('cursorPosition', this.cursorPosition);
-    events.off('a1ContextUpdated', this.cursorPosition);
-    events.off('sheetOffsets', this.sheetOffsets);
+    events.off('a1ContextUpdated', this.handleA1ContextUpdated);
+    events.off('sheetOffsetsUpdated', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
 
@@ -222,7 +222,7 @@ export class Tables extends Container<Table> {
       }
     }
 
-    this.cursorPosition();
+    this.cursorPosition(true);
     pixiApp.singleCellOutlines.setDirty();
     pixiApp.setViewportDirty();
   };
@@ -256,7 +256,7 @@ export class Tables extends Container<Table> {
       }
     });
     // ensures that a table at A1 gets highlighted
-    this.cursorPosition();
+    this.cursorPosition(true);
   };
 
   /// Returns the tables that are visible in the viewport.
@@ -296,13 +296,19 @@ export class Tables extends Container<Table> {
     }
   };
 
+  private handleA1ContextUpdated = () => {
+    this.cursorPosition(true);
+  };
+
   // Updates the active table when the cursor moves.
-  private cursorPosition = () => {
+  private cursorPosition = (checkForTableRef = false) => {
     if (this.sheet.id !== sheets.current) {
       return;
     }
 
-    sheets.sheet.cursor.checkForTableRef();
+    if (checkForTableRef) {
+      sheets.sheet.cursor.checkForTableRef();
+    }
 
     const tables = sheets.sheet.cursor.getSelectedTableNames();
 

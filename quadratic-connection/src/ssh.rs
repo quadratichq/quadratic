@@ -23,15 +23,15 @@ where
             .port()
             .ok_or(ConnectionError::Ssh("Port is required".into()))??;
 
-        let ssh_host = connection
-            .ssh_host()
-            .ok_or(ConnectionError::Ssh("SSH host is required".into()))?;
+        let database_host = connection.host();
 
         let config = connection.clone().try_into().map_err(Into::into)?;
-        let mut tunnel = SshTunnel::new(config, ssh_host, forwarding_port);
+        let mut tunnel = SshTunnel::new(config, database_host, forwarding_port);
         let addr = tunnel.open().await?;
 
         connection.set_port(addr.port());
+        connection.set_host("127.0.0.1".to_string());
+
         ssh_tunnel = Some(tunnel);
     }
 

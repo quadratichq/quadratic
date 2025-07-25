@@ -28,6 +28,7 @@ import type {
   ToolResultContent,
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { v4 } from 'uuid';
 
 function convertContent(content: Content): Part[] {
   return content.map((content) => {
@@ -245,7 +246,7 @@ export async function parseGenAIStream(
         // tool call
         if (part.functionCall?.name) {
           responseMessage.toolCalls.push({
-            id: part.functionCall.id ?? part.functionCall.name,
+            id: part.functionCall.id ?? v4(),
             name: part.functionCall.name,
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
@@ -317,7 +318,7 @@ export function parseGenAIResponse(
       });
     } else if (message.functionCall?.name) {
       responseMessage.toolCalls.push({
-        id: message.functionCall.id ?? message.functionCall.name,
+        id: message.functionCall.id ?? v4(),
         name: message.functionCall.name,
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,

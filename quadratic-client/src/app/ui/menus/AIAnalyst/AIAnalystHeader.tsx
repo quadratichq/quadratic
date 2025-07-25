@@ -9,6 +9,7 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
 import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
@@ -101,12 +102,16 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
           </TooltipPopover>
         </div>
       </div>
+
       {showStartFreshMsg && (
         <SubheaderMessage caretPosFromRight={86}>Long chat? New topic? Fresh chats = better results.</SubheaderMessage>
       )}
+
       {showHistoryMsg && (
         <SubheaderMessage caretPosFromRight={49}>Previous chats are saved in history.</SubheaderMessage>
       )}
+
+      <AIAnalystDebugChatInput />
     </div>
   );
 });

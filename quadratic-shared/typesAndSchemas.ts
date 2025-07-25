@@ -464,10 +464,14 @@ export const ApiSchemas = {
    * AI
    */
   '/v0/ai/chat.POST.request': AIRequestBodySchema,
-  '/v0/ai/chat.POST.response': AIMessagePromptSchema.extend({
-    isOnPaidPlan: z.boolean(),
-    exceededBillingLimit: z.boolean(),
-  }),
+  '/v0/ai/chat.POST.response': z.intersection(
+    AIMessagePromptSchema,
+    z.object({
+      isOnPaidPlan: z.boolean(),
+      exceededBillingLimit: z.boolean(),
+      error: z.boolean().optional(),
+    })
+  ),
 
   '/v0/ai/feedback.PATCH.request': z.object({
     chatId: z.string().uuid(),

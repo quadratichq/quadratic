@@ -69,8 +69,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
       jwt,
     });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(JSON.stringify({ message: 'Error in examples.POST handler', error }));
     throw new ApiError(500, 'Failed to fetch example file. Ensure the file exists and is publicly accessible.');
   }
 }

@@ -156,29 +156,29 @@ export const AIToolsArgsSchema = {
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    sheet_name: z.string(),
-    code_cell_name: z.string(),
+    sheet_name: z.string().optional(),
+    code_cell_name: z.string().optional(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     code_cell_position: z.string(),
     formula_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     top_left_position: z.string(),
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     source_selection_rect: z.string(),
     target_top_left_position: z.string(),
   }),
   [AITool.DeleteCells]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     selection: z.string(),
   }),
   [AITool.UpdateCodeCell]: z.object({
@@ -200,12 +200,12 @@ export const AIToolsArgsSchema = {
     prompt: z.string(),
   }),
   [AITool.GetCellData]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     selection: z.string(),
     page: z.number(),
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     selection: z.string(),
     bold: z.boolean().optional(),
     italic: z.boolean().optional(),
@@ -222,12 +222,12 @@ export const AIToolsArgsSchema = {
     date_time: z.string().optional(),
   }),
   [AITool.GetTextFormats]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     selection: z.string(),
     page: z.number(),
   }),
   [AITool.ConvertToTable]: z.object({
-    sheet_name: z.string(),
+    sheet_name: z.string().optional(),
     selection: z.string(),
     table_name: z.string(),
     first_row_is_column_names: z.boolean(),
@@ -251,7 +251,7 @@ export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
   claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
-  '4.1': 'openai:gpt-4.1-2025-04-14',
+  '4.1': 'azure-openai:gpt-4.1',
 };
 
 export const aiToolsSpec: AIToolSpecRecord = {
@@ -267,7 +267,7 @@ Choose the AI model for this user prompt based on the following instructions, al
         ai_model: {
           type: 'string',
           description:
-            'Value can be only one of the following: "claude" or "pro" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+            'Value can be only one of the following: "claude" or "4.1" models exactly, this is the model best suited for the user prompt based on examples and model capabilities.\n',
         },
       },
       required: ['ai_model'],
@@ -859,7 +859,7 @@ The label is a descriptive label for the prompt suggestion with maximum 40 chara
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
     parameters: {
       type: 'object',
@@ -894,7 +894,7 @@ The label is a descriptive label for the prompt suggestion with maximum 40 chara
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
   },
   [AITool.PDFImport]: {

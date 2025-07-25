@@ -139,14 +139,21 @@ impl DataTable {
     }
 
     /// Create a unique column header name.
-    pub fn unique_column_header_name(&self, name: Option<&str>, index: usize) -> String {
-        let default_name = format!("Column {index}");
+    pub fn unique_column_header_name(
+        &self,
+        name: Option<&str>,
+        index: usize,
+        skip_index: Option<usize>,
+    ) -> String {
+        let default_name = format!("Column {}", index + 1);
         let name = name.unwrap_or(&default_name);
 
         if let Some(columns) = self.column_headers.as_ref() {
             let all_names = columns
                 .iter()
-                .map(|c| c.name.to_string())
+                .enumerate()
+                .filter(|(i, _)| skip_index.is_none_or(|skip_index| *i != skip_index))
+                .map(|(_, c)| c.name.to_string())
                 .collect::<Vec<_>>();
 
             let check_name = |name: &str| !all_names.contains(&name.to_string());

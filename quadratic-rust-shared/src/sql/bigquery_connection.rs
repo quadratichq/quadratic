@@ -244,7 +244,6 @@ impl<'a> Connection<'a> for BigqueryConnection {
         let project_id = self.project_id.to_owned();
         let dataset = self.dataset.to_owned();
 
-        let dataset_id = "all_native_data_types".to_owned();
         let sql = format!(
             "
             SELECT 
@@ -280,7 +279,7 @@ impl<'a> Connection<'a> for BigqueryConnection {
             .map_err(schema_error)?;
 
         let mut schema = DatabaseSchema {
-            database: dataset_id.to_owned(),
+            database: dataset.to_owned(),
             tables: BTreeMap::new(),
         };
 
@@ -299,7 +298,7 @@ impl<'a> Connection<'a> for BigqueryConnection {
                 .entry(table_name.to_owned())
                 .or_insert_with(|| SchemaTable {
                     name: table_name,
-                    schema: dataset_id.to_owned(),
+                    schema: dataset.to_owned(),
                     columns: vec![],
                 })
                 .columns

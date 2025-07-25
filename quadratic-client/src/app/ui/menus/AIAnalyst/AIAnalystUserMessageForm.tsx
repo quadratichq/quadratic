@@ -22,7 +22,6 @@ const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
 type AIAnalystUserMessageFormProps = AIUserMessageFormWrapperProps & {
   initialContext?: Context;
 };
-
 export const AIAnalystUserMessageForm = memo(
   forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>((props: AIAnalystUserMessageFormProps, ref) => {
     const { initialContext, ...rest } = props;

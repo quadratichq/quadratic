@@ -33,6 +33,7 @@ import type {
   ParsedAIResponse,
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { v4 } from 'uuid';
 
 function convertContent(content: Content): ContentBlock[] {
   return content.map((content) => {
@@ -204,7 +205,7 @@ export async function parseBedrockStream(
         // tool use start
         if (chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
           const toolCall = {
-            id: chunk.contentBlockStart.start.toolUse.toolUseId ?? '',
+            id: chunk.contentBlockStart.start.toolUse.toolUseId ?? v4(),
             name: chunk.contentBlockStart.start.toolUse.name ?? '',
             arguments: '',
             loading: true,
@@ -306,7 +307,7 @@ export function parseBedrockResponse(
 
     if ('toolUse' in contentBlock && contentBlock.toolUse) {
       responseMessage.toolCalls.push({
-        id: contentBlock.toolUse.toolUseId ?? '',
+        id: contentBlock.toolUse.toolUseId ?? v4(),
         name: contentBlock.toolUse.name ?? '',
         arguments: JSON.stringify(contentBlock.toolUse.input),
         loading: false,

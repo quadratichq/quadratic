@@ -34,7 +34,10 @@ export const SetCodeCellValue = memo(({ args, loading }: SetCodeCellValueProps) 
 
         if (toolArgs.success) {
           try {
-            const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheets.current);
+            const sheetId = toolArgs.data.sheet_name
+              ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+              : sheets.current;
+            const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
             const { x, y } = selection.getCursor();
             selection.free();
             setCodeCellPos({ x, y });

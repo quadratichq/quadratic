@@ -40,11 +40,9 @@ export const getPromptAndInternalMessages = (
   );
 };
 
-const getPromptMessagesWithoutPDF = (
-  messages: ChatMessage[]
-): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
-  return getPromptMessages(messages).map((message) => {
-    if (message.role !== 'user' || message.contextType === 'toolResult') {
+const getPromptMessagesWithoutPDF = (messages: ChatMessage[]): ChatMessage[] => {
+  return messages.map((message) => {
+    if (message.role !== 'user' || message.contextType !== 'userPrompt') {
       return message;
     }
 
@@ -55,10 +53,14 @@ const getPromptMessagesWithoutPDF = (
   });
 };
 
+export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
+  return getPromptMessagesWithoutPDF(messages);
+};
+
 export const getPromptMessagesForAI = (
   messages: ChatMessage[]
 ): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
-  return getPromptMessagesWithoutPDF(messages);
+  return getPromptMessages(getPromptMessagesWithoutPDF(messages));
 };
 
 export const removeOldFilesInToolResult = (messages: ChatMessage[], files: Set<string>): ChatMessage[] => {
@@ -80,9 +82,15 @@ export const removeOldFilesInToolResult = (messages: ChatMessage[], files: Set<s
   });
 };
 
-export const getUserPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
+export const getUserMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage)[] => {
   return getPromptMessages(messages).filter(
     (message): message is UserMessagePrompt | ToolResultMessage => message.role === 'user'
+  );
+};
+
+export const getUserPromptMessages = (messages: ChatMessage[]): UserMessagePrompt[] => {
+  return messages.filter(
+    (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
   );
 };
 
@@ -91,7 +99,7 @@ const getAIPromptMessages = (messages: ChatMessage[]): AIMessagePrompt[] => {
 };
 
 export const getLastUserMessageType = (messages: ChatMessage[]): UserPromptContextType | ToolResultContextType => {
-  const userPromptMessage = getUserPromptMessages(messages);
+  const userPromptMessage = getUserMessages(messages);
   return userPromptMessage[userPromptMessage.length - 1].contextType;
 };
 
@@ -103,8 +111,8 @@ export const getLastAIPromptMessageModelKey = (messages: ChatMessage[]): AIModel
   const aiPromptMessages = getAIPromptMessages(messages);
   for (let i = aiPromptMessages.length - 1; i >= 0; i--) {
     const message = aiPromptMessages[i];
-    if (!!message.modelKey && !isQuadraticModel(message.modelKey)) {
-      return message.modelKey;
+    if (!!message.modelKey && !isQuadraticModel(message.modelKey as AIModelKey)) {
+      return message.modelKey as AIModelKey;
     }
   }
 };
@@ -164,14 +172,14 @@ export const isContentFile = (
 };
 
 export const filterImageFilesInChatMessages = (messages: ChatMessage[]): ImageContent[] => {
-  return getUserPromptMessages(messages)
+  return getUserMessages(messages)
     .filter((message) => message.contextType === 'userPrompt')
     .flatMap((message) => message.content)
     .filter(isContentImage);
 };
 
 export const filterPdfFilesInChatMessages = (messages: ChatMessage[]): PdfFileContent[] => {
-  return getUserPromptMessages(messages)
+  return getUserMessages(messages)
     .filter((message) => message.contextType === 'userPrompt')
     .flatMap((message) => message.content)
     .filter(isContentPdfFile);
@@ -201,22 +209,39 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
   // If we have multiple get_cell_data messages, keep only the tool call after a
   // certain number of calls
   return messages.map((message, i) => {
-    if (i < messages.length - CLEAN_UP_AFTER && message.role === 'user' && message.contextType === 'toolResult') {
+    if (message.role === 'user' && message.contextType === 'toolResult') {
       return {
         ...message,
-        content: message.content.map((content) => {
-          if (getToolIds.has(content.id)) {
-            return {
-              id: content.id,
-              content: [
-                {
-                  type: 'text' as const,
-                  text: CLEAN_UP_MESSAGE,
-                },
-              ],
-            };
+        content: message.content.map((toolResult) => {
+          if (getToolIds.has(toolResult.id)) {
+            if (i < messages.length - CLEAN_UP_AFTER) {
+              return {
+                id: toolResult.id,
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: CLEAN_UP_MESSAGE,
+                  },
+                ],
+              };
+            } else {
+              return toolResult;
+            }
           } else {
-            return content;
+            // clean up plotly images in tool result
+            const content = toolResult.content.filter((content) => !isContentImage(content));
+            return {
+              id: toolResult.id,
+              content:
+                content.length > 0
+                  ? content
+                  : [
+                      {
+                        type: 'text' as const,
+                        text: 'NOTE: the results from this tool call have been removed from the context.',
+                      },
+                    ],
+            };
           }
         }),
       };

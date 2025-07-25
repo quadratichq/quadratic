@@ -129,7 +129,6 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   if (bottomRightCell.right > viewport.right) {
     right = bottomRightCell.right;
   }
-
   if (topLeftCell.left - headingWidth < viewport.left) {
     left = topLeftCell.left - headingWidth;
   }
@@ -138,6 +137,14 @@ export function calculateRectVisible(min: JsCoordinate, max?: JsCoordinate): JsC
   if (left !== undefined || right !== undefined || top !== undefined || bottom !== undefined) {
     x = left !== undefined ? left : right !== undefined ? right - viewport.worldScreenWidth : -viewport.x * scale;
     y = top !== undefined ? top : bottom !== undefined ? bottom - viewport.worldScreenHeight : -viewport.y * scale;
+  }
+
+  if (topLeftCell.left - headingWidth < x) {
+    x = topLeftCell.left - headingWidth;
+  }
+
+  if (topLeftCell.top - headingHeight < y) {
+    y = topLeftCell.top - headingHeight;
   }
 
   const futureVisibleBounds = new Rectangle(x, y, viewport.worldScreenWidth, viewport.worldScreenHeight);

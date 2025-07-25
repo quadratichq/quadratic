@@ -148,6 +148,7 @@ export class Sheets {
     pixiApp.gridLines.dirty = true;
     pixiApp.cursor.dirty = true;
     pixiApp.multiplayerCursor.dirty = true;
+    events.emit('sheetOffsetsUpdated', sheetId);
   };
 
   private setCursor = (selection?: string) => {
@@ -367,7 +368,7 @@ export class Sheets {
   };
 
   // Changes the cursor to the incoming selection
-  changeSelection = (jsSelection: JsSelection, ensureVisible = true) => {
+  changeSelection = (jsSelection: JsSelection) => {
     // change the sheet id if needed
     const sheetId = jsSelection.getSheetId();
     if (sheetId !== this.current) {
@@ -378,6 +379,7 @@ export class Sheets {
 
     const cursor = this.sheet.cursor;
     cursor.loadFromSelection(jsSelection);
+    cursor.checkForTableRef();
     cursor.updatePosition(true);
   };
 
