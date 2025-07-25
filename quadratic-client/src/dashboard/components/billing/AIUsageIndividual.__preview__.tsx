@@ -76,7 +76,12 @@ function Example() {
             <Label htmlFor="paid-plan">Paid plan</Label>
           </div>
           <div className="flex flex-row items-center gap-1">
-            <Switch id="usage-based-pricing" checked={usageBasedPricing} onCheckedChange={setUsageBasedPricing} />
+            <Switch
+              disabled={!isPaidPlan}
+              id="usage-based-pricing"
+              checked={usageBasedPricing}
+              onCheckedChange={setUsageBasedPricing}
+            />
             <Label htmlFor="usage-based-pricing">Usage-based pricing</Label>
           </div>
           <div className="flex flex-row items-center gap-1">
