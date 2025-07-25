@@ -716,104 +716,116 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.ResizeColumns]: async (args) => {
-    const { sheet_name, selection, size } = args;
-    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    let jsSelection: JsSelection | undefined;
     try {
-      jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
-    } catch (e: any) {
-      return [
-        {
-          type: 'text',
-          text: `Error executing resize columns tool. Invalid selection: ${e.message}.`,
-        },
-      ];
-    }
+      const { sheet_name, selection, size } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
 
-    const columns = jsSelection.getSelectedColumns();
-    if (columns.length === 0) {
-      return [
-        {
-          type: 'text',
-          text: 'No columns selected.',
-        },
-      ];
-    }
-    const resizing: ColumnRowResize[] = [];
-    for (const column of columns) {
-      let newSize: number;
-      if (size === 'auto') {
-        const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
-        if (maxWidth === 0) {
-          newSize = CELL_WIDTH;
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+      } catch (e: any) {
+        return [createTextContent(`Error executing resize columns tool. Invalid selection: ${e.message}.`)];
+      }
+
+      let columns: Uint32Array;
+      try {
+        columns = jsSelection.getColumnsWithSelectedCells(sheets.jsA1Context);
+      } catch (e: any) {
+        return [
+          createTextContent(`Error executing resize columns tool. Unable to get selected columns: ${e.message}.`),
+        ];
+      }
+
+      if (columns.length === 0) {
+        return [createTextContent('No columns selected.')];
+      }
+
+      const resizing: ColumnRowResize[] = [];
+      for (const column of columns) {
+        let newSize: number;
+        if (size === 'auto') {
+          const maxWidth = await pixiApp.cellsSheets.getCellsContentMaxWidth(column);
+          if (maxWidth === 0) {
+            newSize = CELL_WIDTH;
+          } else {
+            const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
+            newSize = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+          }
         } else {
-          const contentSizePlusMargin = maxWidth + CELL_TEXT_MARGIN_LEFT * 3;
-          newSize = Math.max(contentSizePlusMargin, MIN_CELL_WIDTH);
+          newSize = CELL_WIDTH;
+        }
+
+        const originalSize = sheets.sheet.offsets.getColumnWidth(column);
+        if (originalSize !== newSize) {
+          resizing.push({ index: column, size: newSize });
+        }
+      }
+
+      if (resizing.length) {
+        const response = await quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
+        if (response?.result) {
+          return [createTextContent(`Resize columns tool executed successfully.`)];
+        } else {
+          return [createTextContent(`Error executing resize columns tool: ${response?.error}`)];
         }
       } else {
-        newSize = CELL_WIDTH;
+        return [createTextContent('No columns selected.')];
       }
-      const originalSize = sheets.sheet.offsets.getColumnWidth(column);
-      if (originalSize !== newSize) {
-        resizing.push({ index: column, size: newSize });
-      }
+    } catch (e) {
+      return [createTextContent(`Error executing resize columns tool: ${e}`)];
     }
-    if (resizing.length) {
-      quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
-    }
-    return [
-      {
-        type: 'text',
-        text: 'Resize columns tool executed successfully.',
-      },
-    ];
   },
   [AITool.ResizeRows]: async (args) => {
-    const { sheet_name, selection, size } = args;
-    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    let jsSelection: JsSelection | undefined;
     try {
-      jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
-    } catch (e: any) {
-      return [
-        {
-          type: 'text',
-          text: `Error executing resize rows tool. Invalid selection: ${e.message}.`,
-        },
-      ];
-    }
+      const { sheet_name, selection, size } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
 
-    const rows = jsSelection.getSelectedRows();
-    if (rows.length === 0) {
-      return [
-        {
-          type: 'text',
-          text: 'No rows selected.',
-        },
-      ];
-    }
-    const resizing: ColumnRowResize[] = [];
-    for (const row of rows) {
-      let newSize: number;
-      if (size === 'auto') {
-        const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
-        newSize = Math.max(maxHeight, CELL_HEIGHT);
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+      } catch (e: any) {
+        return [createTextContent(`Error executing resize rows tool. Invalid selection: ${e.message}.`)];
+      }
+
+      let rows: Uint32Array;
+      try {
+        rows = jsSelection.getRowsWithSelectedCells(sheets.jsA1Context);
+      } catch (e: any) {
+        return [createTextContent(`Error executing resize rows tool. Unable to get selected rows: ${e.message}.`)];
+      }
+
+      if (rows.length === 0) {
+        return [createTextContent('No rows selected.')];
+      }
+
+      const resizing: ColumnRowResize[] = [];
+      for (const row of rows) {
+        let newSize: number;
+        if (size === 'auto') {
+          const maxHeight = await pixiApp.cellsSheets.getCellsContentMaxHeight(row);
+          newSize = Math.max(maxHeight, CELL_HEIGHT);
+        } else {
+          newSize = CELL_HEIGHT;
+        }
+
+        const originalSize = sheets.sheet.offsets.getRowHeight(row);
+        if (originalSize !== newSize) {
+          resizing.push({ index: row, size: newSize });
+        }
+      }
+
+      if (resizing.length) {
+        const response = await quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
+        if (response?.result) {
+          return [createTextContent('Resize rows tool executed successfully.')];
+        } else {
+          return [createTextContent(`Error executing resize rows tool: ${response?.error}`)];
+        }
       } else {
-        newSize = CELL_HEIGHT;
+        return [createTextContent('No rows selected.')];
       }
-      const originalSize = sheets.sheet.offsets.getRowHeight(row);
-      if (originalSize !== newSize) {
-        resizing.push({ index: row, size: newSize });
-      }
+    } catch (e) {
+      return [createTextContent(`Error executing resize rows tool: ${e}`)];
     }
-    if (resizing.length) {
-      quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
-    }
-    return [
-      {
-        type: 'text',
-        text: 'Resize rows tool executed successfully.',
-      },
-    ];
   },
 } as const;

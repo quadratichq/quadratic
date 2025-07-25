@@ -689,11 +689,19 @@ class CoreClient {
         return;
 
       case 'clientCoreResizeColumns':
-        core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        this.send({
+          type: 'coreClientResizeColumns',
+          id: e.data.id,
+          response: core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor),
+        });
         return;
 
       case 'clientCoreResizeRows':
-        core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        this.send({
+          type: 'coreClientResizeRows',
+          id: e.data.id,
+          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor),
+        });
         return;
 
       case 'clientCoreResizeAllColumns':

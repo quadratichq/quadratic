@@ -1304,27 +1304,27 @@ class Core {
     }
   }
 
-  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       const sizes: JsColumnWidth[] = columns.map((column) => ({
         column: BigInt(column.index),
         width: column.size,
       }));
-      this.gridController.resizeColumns(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+      return this.gridController.resizeColumns(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
     } catch (e) {
       this.handleCoreError('resizeColumns', e);
     }
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       const sizes: JsRowHeight[] = rows.map((row) => ({
         row: BigInt(row.index),
         height: row.size,
       }));
-      this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
+      return this.gridController.resizeRows(sheetId, JSON.stringify(sizes, bigIntReplacer), cursor);
     } catch (e) {
       this.handleCoreError('resizeRows', e);
     }
