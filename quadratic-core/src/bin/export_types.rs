@@ -31,6 +31,7 @@ use quadratic_core::grid::js_types::JsHashValidationWarnings;
 use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
+use quadratic_core::grid::js_types::JsSheetNameToColor;
 use quadratic_core::grid::js_types::JsTablesContext;
 use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
@@ -159,6 +160,7 @@ fn main() {
         JsRowHeight,
         JsSelectionContext,
         JsSheetFill,
+        JsSheetNameToColor,
         JsSnackbarSeverity,
         JsSummarizeSelectionResult,
         JsTableInfo,

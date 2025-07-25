@@ -26,15 +26,18 @@ const HACK_TO_NOT_BLUR_ON_RENAME = 250;
 
 interface SheetBarTabProps {
   sheet: Sheet;
+  id: string;
+  color?: string;
   order: string;
   active: boolean;
+  name: string;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
   forceRename: boolean;
   clearRename: () => void;
 }
 
 export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
-  const { sheet, order, active, onPointerDown, forceRename, clearRename } = props;
+  const { sheet, id, order, active, onPointerDown, forceRename, clearRename } = props;
 
   const [isOpenDropdown, setIsOpenDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
@@ -65,8 +68,8 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
       style={{
         order,
       }}
-      data-id={sheet.id}
-      data-order={sheet.order}
+      data-id={id}
+      data-order={order}
       data-actual-order={order}
       onPointerDown={(event) => {
         if (isRenaming) return;
@@ -84,6 +87,7 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
     >
       <TabWrapper sheet={sheet} active={active}>
         <TabName
+          name={sheet.name}
           active={active}
           clearRename={clearRename}
           isRenaming={isRenaming}
@@ -91,7 +95,7 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
           setIsRenaming={setIsRenaming}
           sheet={sheet}
         />
-        {sheet.id !== sheets.current && <TabMultiplayer sheetId={sheet.id} />}
+        {id !== sheets.current && <TabMultiplayer sheetId={id} />}
         <div className={cn('flex', !active && 'invisible opacity-0 group-hover:visible group-hover:opacity-100')}>
           {hasPermission && (
             <SheetBarTabDropdownMenu
@@ -172,6 +176,7 @@ const TabName = memo(
     setErrorMessage,
     setIsRenaming,
     sheet,
+    name,
   }: {
     active: SheetBarTabProps['active'];
     clearRename: SheetBarTabProps['clearRename'];
@@ -179,6 +184,7 @@ const TabName = memo(
     setIsRenaming: React.Dispatch<React.SetStateAction<boolean>>;
     setErrorMessage: React.Dispatch<React.SetStateAction<string | undefined>>;
     sheet: SheetBarTabProps['sheet'];
+    name: SheetBarTabProps['name'];
   }) => {
     const contentEditableRef = useRef<HTMLDivElement | null>(null);
     const isRenamingTimeRef = useRef(0);
@@ -220,7 +226,7 @@ const TabName = memo(
           const div = event.currentTarget as HTMLDivElement;
           const value = (div.textContent || '').trim();
           if (event.code === 'Enter') {
-            if (value !== sheet.name) {
+            if (value !== name) {
               if (!validateName(value)) {
                 event.preventDefault();
                 div.focus();
@@ -264,7 +270,7 @@ const TabName = memo(
           if (!isRenaming) return;
           setIsRenaming((isRenaming) => {
             if (!isRenaming) return false;
-            if (!!value && value !== sheet.name && validateName(value)) {
+            if (!!value && value !== name && validateName(value)) {
               sheet.setName(value);
             }
             return false;
@@ -282,11 +288,11 @@ const TabName = memo(
             .replace(/(\r\n|\n|\r)/gm, '')
             .slice(0, SHEET_NAME_MAX_LENGTH);
         }}
-        dangerouslySetInnerHTML={{ __html: sheet.name }}
+        dangerouslySetInnerHTML={{ __html: name }}
       />
     ) : (
       <div
-        data-title={sheet.name}
+        data-title={name}
         className={cn(
           active && 'font-bold',
           // Little trick to bold the text without making the content of
@@ -294,7 +300,7 @@ const TabName = memo(
           'after:visibility-hidden after:block after:h-[1px] after:overflow-hidden after:font-bold after:text-transparent after:content-[attr(data-title)]'
         )}
       >
-        {sheet.name}
+        {name}
       </div>
     );
   }

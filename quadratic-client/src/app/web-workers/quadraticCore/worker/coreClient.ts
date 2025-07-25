@@ -240,27 +240,59 @@ class CoreClient {
         return;
 
       case 'clientCoreAddSheet':
-        core.addSheet(e.data.cursor);
-        return;
-
-      case 'clientCoreDeleteSheet':
-        core.deleteSheet(e.data.sheetId, e.data.cursor);
-        return;
-
-      case 'clientCoreMoveSheet':
-        core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor);
-        return;
-
-      case 'clientCoreSetSheetName':
-        core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor);
-        return;
-
-      case 'clientCoreSetSheetColor':
-        core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor);
+        this.send({
+          type: 'coreClientAddSheetResponse',
+          id: e.data.id,
+          response: core.addSheet(e.data.sheetName, e.data.insertBeforeSheetName, e.data.cursor),
+        });
         return;
 
       case 'clientCoreDuplicateSheet':
-        core.duplicateSheet(e.data.sheetId, e.data.cursor);
+        this.send({
+          type: 'coreClientDuplicateSheetResponse',
+          id: e.data.id,
+          response: core.duplicateSheet(e.data.sheetId, e.data.nameOfNewSheet, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreDeleteSheet':
+        this.send({
+          type: 'coreClientDeleteSheetResponse',
+          id: e.data.id,
+          response: core.deleteSheet(e.data.sheetId, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreMoveSheet':
+        this.send({
+          type: 'coreClientMoveSheetResponse',
+          id: e.data.id,
+          response: core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreSetSheetName':
+        this.send({
+          type: 'coreClientSetSheetNameResponse',
+          id: e.data.id,
+          response: core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreSetSheetColor':
+        this.send({
+          type: 'coreClientSetSheetColorResponse',
+          id: e.data.id,
+          response: core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor),
+        });
+        return;
+
+      case 'clientCoreSetSheetsColor':
+        this.send({
+          type: 'coreClientSetSheetsColorResponse',
+          id: e.data.id,
+          response: core.setSheetsColor(e.data.sheetNameToColor, e.data.cursor),
+        });
         return;
 
       case 'clientCoreUndo':

@@ -26,6 +26,7 @@ import type {
   JsResponse,
   JsRowHeight,
   JsSelectionContext,
+  JsSheetNameToColor,
   JsSummarizeSelectionResult,
   JsTablesContext,
   Pos,
@@ -511,57 +512,66 @@ class Core {
     }
   }
 
-  addSheet(cursor?: string) {
+  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.addSheet(cursor);
+      return this.gridController.addSheet(sheetName, insertBeforeSheetName, cursor);
     } catch (e) {
       this.handleCoreError('addSheet', e);
     }
   }
 
-  deleteSheet(sheetId: string, cursor: string) {
+  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.deleteSheet(sheetId, cursor);
+      return this.gridController.duplicateSheet(sheetId, nameOfNewSheet, cursor);
+    } catch (e) {
+      this.handleCoreError('duplicateSheet', e);
+    }
+  }
+
+  deleteSheet(sheetId: string, cursor: string): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.deleteSheet(sheetId, cursor);
     } catch (e) {
       this.handleCoreError('deleteSheet', e);
     }
   }
 
-  moveSheet(sheetId: string, previous: string | undefined, cursor: string) {
+  moveSheet(sheetId: string, previous: string | undefined, cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.moveSheet(sheetId, previous, cursor);
+      return this.gridController.moveSheet(sheetId, previous, cursor);
     } catch (e) {
       this.handleCoreError('moveSheet', e);
     }
   }
 
-  setSheetName(sheetId: string, name: string, cursor: string) {
+  setSheetName(sheetId: string, name: string, cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setSheetName(sheetId, name, cursor);
+      return this.gridController.setSheetName(sheetId, name, cursor);
     } catch (e) {
       this.handleCoreError('setSheetName', e);
     }
   }
 
-  setSheetColor(sheetId: string, color: string | undefined, cursor: string) {
+  setSheetColor(sheetId: string, color: string | undefined, cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.setSheetColor(sheetId, color, cursor);
+      return this.gridController.setSheetColor(sheetId, color, cursor);
     } catch (e) {
       this.handleCoreError('setSheetColor', e);
     }
   }
 
-  duplicateSheet(sheetId: string, cursor: string) {
+  setSheetsColor(sheetNameToColor: JsSheetNameToColor[], cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.duplicateSheet(sheetId, cursor);
+      return this.gridController.setSheetsColor(sheetNameToColor, cursor);
     } catch (e) {
-      this.handleCoreError('duplicateSheet', e);
+      this.handleCoreError('setSheetsColor', e);
     }
   }
 

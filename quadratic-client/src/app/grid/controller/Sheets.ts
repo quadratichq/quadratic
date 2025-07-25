@@ -106,7 +106,7 @@ export class Sheets {
     this.sheets.splice(index, 1);
 
     // todo: this code should be in quadratic-core, not here
-    if (user) {
+    if (user && this.current === sheetId) {
       if (index - 1 >= 0 && index - 1 < this.sheets.length) {
         this.current = this.sheets[index - 1].id;
       } else {
@@ -226,10 +226,12 @@ export class Sheets {
     }
   }
 
+  /// Gets sheet by name, case insensitive
   getSheetIdFromName(name: string): string {
-    return this.sheets.find((sheet) => sheet.name === name)?.id || '';
+    return this.sheets.find((sheet) => sheet.name.toLowerCase() === name.toLowerCase())?.id || '';
   }
 
+  /// Gets sheet by name, case insensitive
   getSheetByName(name: string, urlCompare?: boolean): Sheet | undefined {
     for (const sheet of this.sheets) {
       if (sheet.name === name || (urlCompare && decodeURI(name).toLowerCase() === sheet.name.toLowerCase())) {
@@ -313,11 +315,11 @@ export class Sheets {
   }
 
   userAddSheet() {
-    quadraticCore.addSheet(this.getCursorPosition());
+    quadraticCore.addSheet(undefined, undefined, this.getCursorPosition());
   }
 
   duplicate() {
-    quadraticCore.duplicateSheet(this.current, this.getCursorPosition());
+    quadraticCore.duplicateSheet(this.current, undefined, this.getCursorPosition());
   }
 
   userDeleteSheet(id: string) {

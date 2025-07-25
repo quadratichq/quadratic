@@ -4,6 +4,7 @@
 
 import axios from 'axios';
 import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
+import { convertError } from 'quadratic-shared/utils/error';
 import type z from 'zod';
 import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
@@ -29,7 +30,7 @@ export const licenseClient = {
         console.error(
           JSON.stringify({
             message: 'Failed to get the license info from the license service',
-            error,
+            error: convertError(error),
           })
         );
         throw new ApiError(402, 'Failed to get the license info from the license service');

@@ -5,6 +5,7 @@ import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetCo
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -78,6 +79,7 @@ export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  const { getSheetInfoContext } = useSheetInfoMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
@@ -89,9 +91,10 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [filesContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
+        const [filesContext, sheetInfoContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
           await Promise.all([
             getFilesContext({ chatMessages }),
+            getSheetInfoContext({ sheets: sheets.sheets }),
             getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
@@ -100,6 +103,7 @@ export function useSubmitAIAnalystPrompt() {
 
         const messagesWithContext: ChatMessage[] = [
           ...filesContext,
+          ...sheetInfoContext,
           ...otherSheetsContext,
           ...tablesContext,
           ...getCurrentDateTimeContext(),
@@ -117,6 +121,7 @@ export function useSubmitAIAnalystPrompt() {
       getCurrentSheetContext,
       getVisibleContext,
       getFilesContext,
+      getSheetInfoContext,
     ]
   );
 

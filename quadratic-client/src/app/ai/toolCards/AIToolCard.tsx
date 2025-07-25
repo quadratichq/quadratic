@@ -1,10 +1,16 @@
 import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
+import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
+import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
 import { DeleteCells } from '@/app/ai/toolCards/DeleteCells';
+import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
+import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
+import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
+import { RenameSheet } from '@/app/ai/toolCards/RenameSheet';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
@@ -56,6 +62,18 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <ConvertToTable toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.WebSearch:
       return <WebSearch toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddSheet:
+      return <NewSheet toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.DuplicateSheet:
+      return <DuplicateSheet toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.RenameSheet:
+      return <RenameSheet toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.DeleteSheet:
+      return <DeleteSheet toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.MoveSheet:
+      return <MoveSheet toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.ColorSheets:
+      return <ColorSheets toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

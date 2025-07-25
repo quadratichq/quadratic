@@ -540,3 +540,9 @@ pub enum Direction {
     Left,
     Right,
 }
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+pub struct JsSheetNameToColor {
+    pub sheet_name: String,
+    pub color: String,
+}
