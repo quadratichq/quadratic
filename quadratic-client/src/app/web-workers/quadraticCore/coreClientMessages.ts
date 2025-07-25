@@ -471,10 +471,17 @@ export interface CoreClientRerunCodeCells {
 
 export interface ClientCoreSetBorders {
   type: 'clientCoreSetBorders';
+  id: number;
   selection: string;
   borderSelection: BorderSelection;
   style?: BorderStyle;
   cursor: string;
+}
+
+export interface CoreClientSetBorders {
+  type: 'coreClientSetBorders';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreSetCellRenderResize {
@@ -1489,4 +1496,5 @@ export type CoreClientMessage =
   | CoreClientHasCellData
   | CoreClientRerunCodeCells
   | CoreClientResizeColumns
-  | CoreClientResizeRows;
+  | CoreClientResizeRows
+  | CoreClientSetBorders;

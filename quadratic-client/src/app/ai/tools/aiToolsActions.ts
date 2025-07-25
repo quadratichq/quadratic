@@ -7,10 +7,8 @@ import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type {
-  BorderSelection,
   BorderStyle,
   CellAlign,
-  CellBorderLine,
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
@@ -833,51 +831,31 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
   },
   [AITool.SetBorders]: async (args) => {
-    const { sheet_name, selection, color, line, border_selection } = args;
-    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    let jsSelection: JsSelection | undefined;
     try {
-      jsSelection = sheets.stringToSelection(selection, sheetId);
-    } catch (e: any) {
-      return [
-        {
-          type: 'text',
-          text: `Invalid selection in SetBorders tool call: ${e.message}.`,
-        },
-      ];
+      const { sheet_name, selection, color, line, border_selection } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      let jsSelection: JsSelection | undefined;
+      try {
+        jsSelection = sheets.stringToSelection(selection, sheetId);
+      } catch (e: any) {
+        return [createTextContent(`Invalid selection in SetBorders tool call: ${e.message}.`)];
+      }
+
+      const colorObject = color ? Color(color).rgb().object() : { r: 0, g: 0, b: 0 };
+      const style: BorderStyle = {
+        line,
+        color: { red: colorObject.r, green: colorObject.g, blue: colorObject.b, alpha: 1 },
+      };
+
+      const response = await quadraticCore.setBorders(jsSelection.save(), border_selection, style);
+      if (response?.result) {
+        return [createTextContent('Set borders tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing set borders tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing set borders tool: ${e}`)];
     }
-
-    let borderSelection: BorderSelection = border_selection.toLowerCase() as BorderSelection;
-    if (
-      !['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'].includes(
-        borderSelection
-      )
-    ) {
-      borderSelection = 'all';
-    }
-
-    let lineStyle: CellBorderLine = line.toLowerCase() as CellBorderLine;
-    if (!['line1', 'line2', 'line3', 'dotted', 'dashed', 'double', 'clear'].includes(lineStyle)) {
-      lineStyle = 'line1';
-    }
-
-    const colorObject = color ? Color(color).rgb().object() : { r: 0, g: 0, b: 0 };
-    const style: BorderStyle = {
-      line: lineStyle,
-      color: {
-        red: colorObject.r,
-        green: colorObject.g,
-        blue: colorObject.b,
-        alpha: 1,
-      },
-    };
-
-    quadraticCore.setBorders(jsSelection.save(), borderSelection, style);
-    return [
-      {
-        type: 'text',
-        text: 'Set borders tool executed successfully.',
-      },
-    ];
   },
 } as const;

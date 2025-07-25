@@ -290,19 +290,14 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().optional(),
     selection: z.string(),
     color: z.string(),
-    line: z.enum(['Line1', 'Line2', 'Line3', 'Dotted', 'Dashed', 'Double', 'Clear']),
-    border_selection: z.enum([
-      'All',
-      'Inner',
-      'Outer',
-      'Horizontal',
-      'Vertical',
-      'Left',
-      'Top',
-      'Right',
-      'Bottom',
-      'Clear',
-    ]),
+    line: z
+      .string()
+      .transform((val) => val.toLowerCase())
+      .pipe(z.enum(['line1', 'line2', 'line3', 'dotted', 'dashed', 'double', 'clear'])),
+    border_selection: z
+      .string()
+      .transform((val) => val.toLowerCase())
+      .pipe(z.enum(['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'])),
   }),
 } as const;
 
@@ -1499,29 +1494,29 @@ It requires the sheet name, a selection (in A1 notation) of cells to set the bor
           type: 'string',
           description: `
 This provides the line type of the borders.\n
-It must be one of the following: Line1, Line2, Line3, Dotted, Dashed, Double, Clear.\n
-"Clear" will remove any borders in the border_selection.\n
-"Line 1" is a thin line.\n
-"Line 2" is a thicker line.\n
-"Line 3" is the thickest line.\n
-"Dotted" is a dotted line.\n
-"Dashed" is a dashed line.\n
-"Double" is a doubled line.`,
+It must be one of the following: line1, line2, line3, dotted, dashed, double, clear.\n
+"line1" is a thin line.\n
+"line2" is a thicker line.\n
+"line3" is the thickest line.\n
+"dotted" is a dotted line.\n
+"dashed" is a dashed line.\n
+"double" is a doubled line.\n
+"clear" will remove all borders in selection.`,
         },
         border_selection: {
           type: 'string',
           description: `
-The border selection to set the borders on. This must be one of the following: All, Inner, Outer, Horizontal, Vertical, Left, Top, Right, Bottom, Clear.\n
-"All" will set borders on all cells in the selection.\n
-"Inner" will set borders on the inside of the selection box.\n
-"Outer" will set borders on the outside of the selection box.\n
-"Horizontal" will set borders on the horizontal sides of the selection box.\n
-"Vertical" will set borders on the vertical sides of the selection box.\n
-"Left" will set borders on the left side of the selection box.\n
-"Top" will set borders on the top side of the selection box.\n
-"Right" will set borders on the right side of the selection box.\n
-"Bottom" will set borders on the bottom side of the selection box.\n
-"Clear" will remove all borders in selection.`,
+The border selection to set the borders on. This must be one of the following: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
+"all" will set borders on all cells in the selection.\n
+"inner" will set borders on the inside of the selection box.\n
+"outer" will set borders on the outside of the selection box.\n
+"horizontal" will set borders on the horizontal sides of the selection box.\n
+"vertical" will set borders on the vertical sides of the selection box.\n
+"left" will set borders on the left side of the selection box.\n
+"top" will set borders on the top side of the selection box.\n
+"right" will set borders on the right side of the selection box.\n
+"bottom" will set borders on the bottom side of the selection box.\n
+"clear" will remove all borders in selection.`,
         },
       },
       required: ['sheet_name', 'selection', 'color', 'line', 'border_selection'],
@@ -1533,8 +1528,8 @@ This tool sets the borders in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of cells to set the borders on, and the color, line type, and border_selection of the borders.\n
 The selection is a range of cells, for example: A1:D1.\n
 The color must be a valid CSS color string.\n
-The line type must be one of: Line1, Line2, Line3, Dotted, Dashed, Double, Clear.\n
-The border_selection must be one of: All, Inner, Outer, Horizontal, Vertical, Left, Top, Right, Bottom, Clear.\n
+The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
+The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
 `,
   },
 } as const;
