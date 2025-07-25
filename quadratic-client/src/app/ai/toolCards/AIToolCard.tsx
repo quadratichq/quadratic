@@ -7,6 +7,7 @@ import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
 import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
+import { HasCellData } from '@/app/ai/toolCards/HasCellData';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
@@ -77,6 +78,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <ColorSheets toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.TextSearch:
       return <TextSearch toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.HasCellData:
+      return <HasCellData toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

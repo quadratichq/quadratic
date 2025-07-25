@@ -672,4 +672,20 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(`Error executing text search tool: ${e}`)];
     }
   },
+  [AITool.HasCellData]: async (args) => {
+    try {
+      const { selection, sheet_name } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const response = await quadraticCore.hasCellData(sheetId, selection);
+      return [
+        createTextContent(
+          response
+            ? `The selection "${args.selection}" in Sheet "${args.sheet_name}" has data.`
+            : `The selection "${args.selection}" in Sheet "${args.sheet_name}" does not have data.`
+        ),
+      ];
+    } catch (e) {
+      return [createTextContent(`Error executing has cell data tool: ${e}`)];
+    }
+  },
 } as const;

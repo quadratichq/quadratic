@@ -759,6 +759,19 @@ export interface ClientCoreCommitSingleResize {
   cursor: string;
 }
 
+export interface ClientCoreHasCellData {
+  type: 'clientCoreHasCellData';
+  sheetId: string;
+  selection: string;
+  id: number;
+}
+
+export interface CoreClientHasCellData {
+  type: 'coreClientHasCellData';
+  id: number;
+  hasData: boolean;
+}
+
 //#endregion
 
 //#region transactions
@@ -1369,7 +1382,8 @@ export type ClientCoreMessage =
   | ClientCoreResizeRows
   | ClientCoreResizeAllColumns
   | ClientCoreResizeAllRows
-  | ClientCoreGetFormatSelection;
+  | ClientCoreGetFormatSelection
+  | ClientCoreHasCellData;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1450,4 +1464,5 @@ export type CoreClientMessage =
   | CoreClientSetSheetNameResponse
   | CoreClientSetSheetColorResponse
   | CoreClientSetSheetsColorResponse
-  | CoreClientDuplicateSheetResponse;
+  | CoreClientDuplicateSheetResponse
+  | CoreClientHasCellData;

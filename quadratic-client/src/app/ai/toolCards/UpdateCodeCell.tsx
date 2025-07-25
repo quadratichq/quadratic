@@ -76,16 +76,17 @@ export const UpdateCodeCell = memo(
     );
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.UpdateCodeCell].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[UpdateCodeCell] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.UpdateCodeCell].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[UpdateCodeCell] Failed to parse args: ', error);
       }
     }, [args, loading]);
 

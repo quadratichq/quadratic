@@ -13,7 +13,7 @@ export const TextSearch = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<TextSearchResponse, TextSearchResponse>>();
 
     useEffect(() => {
-      if (!loading) {
+      if (loading) {
         setToolArgs(undefined);
         return;
       }

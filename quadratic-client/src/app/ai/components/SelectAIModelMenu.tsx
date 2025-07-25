@@ -35,7 +35,8 @@ interface SelectAIModelMenuProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
-  const { debug } = useDebugFlags();
+  const { debugFlags } = useDebugFlags();
+  const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
   const {
     isOnPaidPlan,
@@ -54,8 +55,8 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
 
   const modelConfigs = useMemo(() => {
     const configs = Object.entries(MODELS_CONFIGURATION) as [AIModelKey, AIModelConfig][];
-    return debug ? configs : configs.filter(([_, config]) => config.mode !== 'disabled');
-  }, [debug]);
+    return debugShowAIModelMenu ? configs : configs.filter(([_, config]) => config.mode !== 'disabled');
+  }, [debugShowAIModelMenu]);
 
   const dropdownModels = useMemo(
     () =>
@@ -135,7 +136,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         <div className="mr-auto flex h-7 items-center !gap-0 rounded-full px-1 py-1 text-xs font-normal" />
       )}
 
-      {debug ? (
+      {debugShowAIModelMenu ? (
         <DropdownMenu>
           <DropdownMenuTrigger
             disabled={loading}
@@ -165,8 +166,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
               >
                 <div className="flex w-full items-center justify-between text-xs">
                   <span className="pr-4">
-                    {(debug ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - ` : '') +
-                      modelConfig.displayName}
+                    {(debugShowAIModelMenu
+                      ? `${modelConfig.mode === 'disabled' ? '(debug) ' : ''}${modelConfig.provider} - `
+                      : '') + modelConfig.displayName}
                   </span>
                 </div>
               </DropdownMenuCheckboxItem>

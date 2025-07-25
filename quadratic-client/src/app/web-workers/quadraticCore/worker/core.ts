@@ -1347,6 +1347,16 @@ class Core {
       this.handleCoreError('resizeAllRows', e);
     }
   }
+
+  hasCellData(sheetId: string, selection: string): boolean {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.hasCellData(sheetId, selection);
+    } catch (e) {
+      this.handleCoreError('hasCellData', e);
+      return false;
+    }
+  }
 }
 
 export const core = new Core();
