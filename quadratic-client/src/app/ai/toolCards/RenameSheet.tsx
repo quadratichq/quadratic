@@ -12,16 +12,17 @@ export const RenameSheet = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<RenameSheetResponse, RenameSheetResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.RenameSheet].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[RenameSheet] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.RenameSheet].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[RenameSheet] Failed to parse args: ', error);
       }
     }, [args, loading]);
 

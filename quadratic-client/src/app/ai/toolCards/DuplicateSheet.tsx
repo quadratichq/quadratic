@@ -12,16 +12,17 @@ export const DuplicateSheet = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<DuplicateSheetResponse, DuplicateSheetResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.DuplicateSheet].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[DuplicateSheet] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.DuplicateSheet].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[DuplicateSheet] Failed to parse args: ', error);
       }
     }, [args, loading]);
 
