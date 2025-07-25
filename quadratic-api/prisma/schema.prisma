@@ -278,7 +278,6 @@ enum AIChatSource {
     PDFImport                @map("pdf_import")
     ModelRouter              @map("model_router")
     WebSearch                @map("web_search")
-    GetDatabaseSchemas       @map("get_database_schemas")
 }
 
 enum AIChatMessageType {
