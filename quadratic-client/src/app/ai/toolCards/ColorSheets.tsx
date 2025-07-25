@@ -30,15 +30,14 @@ export const ColorSheets = memo(
     const label = 'Color sheets';
 
     const results = useMemo(() => {
-      if (!toolArgs?.data) {
+      if (!toolArgs?.success) {
         return '';
       }
-      let results = 'Changed sheet colors: ';
-      for (const key in toolArgs.data.sheet_names_to_color) {
-        results += `"${key}"${key !== Object.keys(toolArgs.data.sheet_names_to_color)[Object.keys(toolArgs.data.sheet_names_to_color).length - 1] ? ', ' : ''}`;
-      }
-      return results + '\n';
-    }, [toolArgs?.data]);
+      const results = `Changed sheet colors: ${toolArgs.data.sheet_names_to_color
+        .map((sheet_name_to_color) => sheet_name_to_color.sheet_name)
+        .join(', ')}\n`;
+      return results;
+    }, [toolArgs?.data?.sheet_names_to_color, toolArgs?.success]);
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;

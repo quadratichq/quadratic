@@ -18,12 +18,12 @@ import type {
   JsResponse,
   JsSelectionContext,
   JsSheetNameToColor,
+  JsSheetPosText,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsTablesContext,
   Pos,
   SearchOptions,
-  SheetPos,
   SheetRect,
   TransactionName,
   Validation,
@@ -199,7 +199,7 @@ export interface ClientCoreSearch {
 
 export interface CoreClientSearch {
   type: 'coreClientSearch';
-  results: SheetPos[];
+  results: JsSheetPosText[];
   id: number;
 }
 

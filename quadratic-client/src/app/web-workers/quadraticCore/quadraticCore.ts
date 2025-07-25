@@ -32,6 +32,7 @@ import type {
   JsSelectionContext,
   JsSheetFill,
   JsSheetNameToColor,
+  JsSheetPosText,
   JsSummarizeSelectionResult,
   JsTablesContext,
   JsUpdateCodeCell,
@@ -40,7 +41,6 @@ import type {
   SearchOptions,
   SheetBounds,
   SheetInfo,
-  SheetPos,
   SheetRect,
   Validation,
 } from '@/app/quadratic-core-types';
@@ -781,9 +781,9 @@ class QuadraticCore {
     });
   }
 
-  search(search: string, searchOptions: SearchOptions) {
+  search(search: string, searchOptions: SearchOptions): Promise<JsSheetPosText[]> {
     const id = this.id++;
-    return new Promise<SheetPos[]>((resolve) => {
+    return new Promise<JsSheetPosText[]>((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientSearch) => {
         resolve(message.results);
       };

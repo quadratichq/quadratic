@@ -23,28 +23,29 @@ export const SetCodeCellValue = memo(
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
     useEffect(() => {
-      if (!loading) {
-        const fullJson = parseFullJson(args);
-        if (fullJson) {
-          const toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
-          setToolArgs(toolArgs);
+      if (loading) {
+        setToolArgs(undefined);
+        return;
+      }
 
-          if (toolArgs.success) {
-            try {
-              const sheetId = toolArgs.data.sheet_name
-                ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
-                : sheets.current;
-              const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
-              const { x, y } = selection.getCursor();
-              selection.free();
-              setCodeCellPos({ x, y });
-            } catch (e) {
-              console.error('[SetCodeCellValue] Failed to parse args: ', e);
-              setCodeCellPos(undefined);
-            }
+      const fullJson = parseFullJson(args);
+      if (fullJson) {
+        const toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
+        setToolArgs(toolArgs);
+
+        if (toolArgs.success) {
+          try {
+            const sheetId = toolArgs.data.sheet_name
+              ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+              : sheets.current;
+            const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
+            const { x, y } = selection.getCursor();
+            selection.free();
+            setCodeCellPos({ x, y });
+          } catch (e) {
+            console.error('[SetCodeCellValue] Failed to parse args: ', e);
+            setCodeCellPos(undefined);
           }
-        } else {
-          setToolArgs(undefined);
         }
       }
     }, [args, loading]);

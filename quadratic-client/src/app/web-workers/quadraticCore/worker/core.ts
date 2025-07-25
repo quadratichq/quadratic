@@ -27,6 +27,7 @@ import type {
   JsRowHeight,
   JsSelectionContext,
   JsSheetNameToColor,
+  JsSheetPosText,
   JsSummarizeSelectionResult,
   JsTablesContext,
   Pos,
@@ -613,7 +614,7 @@ class Core {
     }
   }
 
-  search(search: string, searchOptions: SearchOptions): SheetPos[] {
+  search(search: string, searchOptions: SearchOptions): JsSheetPosText[] {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       return this.gridController.search(search, searchOptions) ?? [];
