@@ -1,4 +1,4 @@
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
@@ -46,6 +46,7 @@ export const AIToolSchema = z.enum([
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   sources: AISource[];
+  aiModelModes: ModelMode[];
   description: string; // this is sent with tool definition, has a maximum character limit
   parameters: AIToolArgs;
   responseSchema: (typeof AIToolsArgsSchema)[T];
@@ -224,6 +225,7 @@ export const MODELS_ROUTER_CONFIGURATION: {
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
     sources: ['ModelRouter'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the AI Model to use for this user prompt.\n
 Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
@@ -245,6 +247,7 @@ Choose the AI model for this user prompt based on the following instructions, al
   },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Set the name of the user chat with AI assistant, this is the name of the chat in the chat history\n
 You should use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
@@ -268,6 +271,7 @@ This name should be from user's perspective, not the assistant's.\n
   },
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
@@ -317,6 +321,7 @@ IMPORTANT: If the results include page information:\n
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
@@ -372,6 +377,7 @@ Don't attempt to add formulas or code to data tables.\n`,
   },
   [AITool.SetCellValues]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
@@ -426,6 +432,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
@@ -490,6 +497,7 @@ Code cell (Python and Javascript) placement instructions:\n
   },
   [AITool.SetFormulaCellValue]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
@@ -548,6 +556,7 @@ Examples:
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
@@ -584,6 +593,7 @@ Target position is the top left corner of the target position on the current ope
   },
   [AITool.DeleteCells]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
@@ -614,6 +624,7 @@ delete_cells functions requires the current sheet name provided in the context, 
   },
   [AITool.UpdateCodeCell]: {
     sources: ['AIAssistant'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
 The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
@@ -646,6 +657,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
   },
   [AITool.GetTextFormats]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
@@ -686,6 +698,7 @@ CRITICALLY IMPORTANT: If too large, the results will include page information:\n
   },
   [AITool.SetTextFormats]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
 It requires the sheet name, the selection of cells to set the formats of, and any formats to set.\n
@@ -796,6 +809,7 @@ You MAY want to use the get_text_formats function if you need to check the curre
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool provides inline completions for the code in the code cell you are currently editing, requires the completion for the code in the code cell.\n
 You are provided with the prefix and suffix of the cursor position in the code cell.\n
@@ -821,6 +835,7 @@ Completion is the delta that will be inserted at the cursor position in the code
   },
   [AITool.UserPromptSuggestions]: {
     sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
@@ -868,6 +883,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
   },
   [AITool.PDFImport]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
 This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
@@ -908,6 +924,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
   },
   [AITool.ConvertToTable]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool converts a selection of cells on a specified sheet into a data table.\n
 IMPORTANT: the selection can NOT contain any code cells or data tables.\n
@@ -952,6 +969,7 @@ The data table will include a table name as the first row, which will push down 
   },
   [AITool.WebSearch]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool searches the web for information based on the query.\n
 Use this tool when the user asks for information that is not already available in the context.\n
@@ -982,6 +1000,7 @@ It requires the query to search for.\n
   // This is tool internal to AI model and is called by `WebSearch` tool.
   [AITool.WebSearchInternal]: {
     sources: ['WebSearch'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for.\n

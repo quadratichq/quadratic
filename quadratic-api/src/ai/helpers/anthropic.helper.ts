@@ -28,6 +28,7 @@ import type {
   AnthropicModelKey,
   BedrockAnthropicModelKey,
   Content,
+  ModelMode,
   ParsedAIResponse,
   ToolResultContent,
   VertexAIAnthropicModelKey,
@@ -105,6 +106,7 @@ function convertToolResultContent(content: ToolResultContent): Array<TextBlockPa
 
 export function getAnthropicApiArgs(
   args: AIRequestHelperArgs,
+  aiModelMode: ModelMode,
   promptCaching: boolean,
   thinking: boolean | undefined
 ): {
@@ -193,14 +195,17 @@ export function getAnthropicApiArgs(
     }
   }, []);
 
-  const tools = getAnthropicTools(source, toolName);
+  const tools = getAnthropicTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getAnthropicToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getAnthropicTools(source: AISource, toolName?: AITool): Tool[] | undefined {
+function getAnthropicTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }

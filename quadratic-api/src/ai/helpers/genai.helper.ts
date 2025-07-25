@@ -26,6 +26,7 @@ import type {
   AIUsage,
   Content,
   GeminiAIModelKey,
+  ModelMode,
   ParsedAIResponse,
   TextContent,
   ToolResultContent,
@@ -57,7 +58,10 @@ function convertToolResultContent(content: ToolResultContent): string {
     .join('\n');
 }
 
-export function getGenAIApiArgs(args: AIRequestHelperArgs): {
+export function getGenAIApiArgs(
+  args: AIRequestHelperArgs,
+  aiModelMode: ModelMode
+): {
   system: GenAIContent | undefined;
   messages: GenAIContent[];
   tools: Tool[] | undefined;
@@ -123,7 +127,7 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
     }
   }, []);
 
-  const tools = getGenAITools(source, toolName);
+  const tools = getGenAITools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getGenAIToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
@@ -161,10 +165,10 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
   }
 }
 
-function getGenAITools(source: AISource, toolName?: AITool): Tool[] | undefined {
+function getGenAITools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
-    if (!toolSpec.sources.includes(source)) {
+    if (!toolSpec.sources.includes(source) || !toolSpec.aiModelModes.includes(aiModelMode)) {
       return false;
     }
     if (name === AITool.WebSearchInternal) {
