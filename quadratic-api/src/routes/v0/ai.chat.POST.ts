@@ -3,6 +3,7 @@ import { getLastAIPromptMessageIndex, getLastUserMessageType } from 'quadratic-s
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
+import { convertError } from 'quadratic-shared/utils/error';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
 import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
@@ -93,7 +94,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(args.source);
+    const toolUseContext = getToolUseContext(args.source, modelKey);
     args.messages = [...toolUseContext, ...args.messages];
   }
 
@@ -177,6 +178,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       });
     }
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in ai.chat.POST handler', error }));
+    console.error(JSON.stringify({ message: 'Error in ai.chat.POST handler', error: convertError(error) }));
   }
 }

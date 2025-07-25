@@ -104,6 +104,7 @@ export type JsReturnInfo = { line_number: number | null, output_type: string | n
 export type JsRowHeight = { row: bigint, height: number, };
 export type JsSelectionContext = { sheet_name: string, data_rects: Array<JsCellValuePosContext>, errored_code_cells: Array<JsCodeCell> | null, tables_summary: Array<JsTableSummaryContext> | null, charts_summary: Array<JsChartSummaryContext> | null, };
 export type JsSheetFill = { x: number, y: number, w: number | null, h: number | null, color: string, };
+export type JsSheetNameToColor = { sheet_name: string, color: string, };
 export type JsSnackbarSeverity = "error" | "warning" | "success";
 export type JsSummarizeSelectionResult = { count: bigint, sum: number | null, average: number | null, };
 export type JsTableInfo = { name: string, sheet_id: string, chart: boolean, language: CodeCellLanguage, };

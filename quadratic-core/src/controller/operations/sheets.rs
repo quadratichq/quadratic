@@ -1,10 +1,8 @@
-use std::collections::HashMap;
-
 use lexicon_fractional_index::key_between;
 
 use crate::{
     controller::GridController,
-    grid::{Sheet, SheetId},
+    grid::{Sheet, SheetId, js_types::JsSheetNameToColor},
     util,
 };
 
@@ -25,11 +23,11 @@ impl GridController {
 
     pub fn set_sheet_colors_operations(
         &mut self,
-        sheet_name_to_color: HashMap<String, String>,
+        sheet_name_to_color: Vec<JsSheetNameToColor>,
     ) -> Vec<Operation> {
         sheet_name_to_color
             .into_iter()
-            .filter_map(|(sheet_name, color)| {
+            .filter_map(|JsSheetNameToColor { sheet_name, color }| {
                 self.grid
                     .try_sheet_from_name(&sheet_name)
                     .map(|sheet| Operation::SetSheetColor {

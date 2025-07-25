@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use super::*;
 
 #[wasm_bindgen]
@@ -123,7 +121,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "setSheetColors")]
     pub fn js_set_sheet_colors(&mut self, sheet_name_to_color: JsValue, cursor: Option<String>) {
         if let Ok(sheet_name_to_color) =
-            serde_wasm_bindgen::from_value::<HashMap<String, String>>(sheet_name_to_color)
+            serde_wasm_bindgen::from_value::<Vec<JsSheetNameToColor>>(sheet_name_to_color)
         {
             self.set_sheet_colors(sheet_name_to_color, cursor);
         }

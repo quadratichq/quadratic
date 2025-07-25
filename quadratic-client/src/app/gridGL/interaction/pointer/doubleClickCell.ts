@@ -97,6 +97,7 @@ export async function doubleClickCell(options: {
               rename: true,
               column: codeCell.x,
               row: codeCell.y,
+              initialValue: cell,
             });
           } else if (isColumnHeader) {
             const contextMenu = {

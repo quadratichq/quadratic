@@ -1,8 +1,6 @@
-use std::collections::HashMap;
-
 use crate::{
     controller::{GridController, active_transactions::transaction_name::TransactionName},
-    grid::SheetId,
+    grid::{SheetId, js_types::JsSheetNameToColor},
 };
 
 impl GridController {
@@ -28,7 +26,7 @@ impl GridController {
 
     pub fn set_sheet_colors(
         &mut self,
-        sheet_name_to_color: HashMap<String, String>,
+        sheet_name_to_color: Vec<JsSheetNameToColor>,
         cursor: Option<String>,
     ) {
         let ops = self.set_sheet_colors_operations(sheet_name_to_color);
@@ -81,8 +79,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::collections::HashMap;
-
     use crate::{
         CellValue, SheetPos,
         a1::A1Selection,
@@ -90,7 +86,7 @@ mod test {
         controller::GridController,
         grid::{
             CodeCellLanguage, SheetId,
-            js_types::JsUpdateCodeCell,
+            js_types::{JsSheetNameToColor, JsUpdateCodeCell},
             sheet::borders::{BorderSelection, BorderStyle},
         },
         wasm_bindings::{
@@ -172,10 +168,16 @@ mod test {
         g.set_sheet_color(s2, Some(String::from("green")), None);
 
         // Test setting multiple sheet colors at once
-        let mut sheet_name_to_color = HashMap::new();
-        sheet_name_to_color.insert(g.sheet(s1).name.clone(), String::from("red"));
-        sheet_name_to_color.insert(g.sheet(s2).name.clone(), String::from("yellow"));
-
+        let sheet_name_to_color = vec![
+            JsSheetNameToColor {
+                sheet_name: g.sheet(s1).name.clone(),
+                color: String::from("red"),
+            },
+            JsSheetNameToColor {
+                sheet_name: g.sheet(s2).name.clone(),
+                color: String::from("yellow"),
+            },
+        ];
         g.set_sheet_colors(sheet_name_to_color, None);
 
         // Verify colors were set correctly
@@ -193,10 +195,16 @@ mod test {
         assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
 
         // Test setting colors for non-existent sheets (should not affect existing sheets)
-        let mut invalid_sheet_name_to_color = HashMap::new();
-        invalid_sheet_name_to_color.insert("NonExistentSheet".to_string(), String::from("purple"));
-        invalid_sheet_name_to_color.insert(g.sheet(s1).name.clone(), String::from("orange"));
-
+        let invalid_sheet_name_to_color = vec![
+            JsSheetNameToColor {
+                sheet_name: "NonExistentSheet".to_string(),
+                color: String::from("purple"),
+            },
+            JsSheetNameToColor {
+                sheet_name: g.sheet(s1).name.clone(),
+                color: String::from("orange"),
+            },
+        ];
         g.set_sheet_colors(invalid_sheet_name_to_color, None);
 
         // Only the existing sheet should be affected
@@ -204,7 +212,7 @@ mod test {
         assert_eq!(g.sheet(s2).color, Some(String::from("yellow")));
 
         // Test setting empty HashMap (should not change anything)
-        let empty_sheet_name_to_color = HashMap::new();
+        let empty_sheet_name_to_color = vec![];
         g.set_sheet_colors(empty_sheet_name_to_color, None);
 
         // Colors should remain unchanged

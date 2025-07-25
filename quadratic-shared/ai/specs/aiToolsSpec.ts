@@ -1,4 +1,4 @@
-import type { AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
@@ -21,7 +21,6 @@ export enum AITool {
   ConvertToTable = 'convert_to_table',
   WebSearch = 'web_search',
   WebSearchInternal = 'web_search_internal',
-
   AddSheet = 'add_sheet',
   DuplicateSheet = 'duplicate_sheet',
   RenameSheet = 'rename_sheet',
@@ -59,16 +58,26 @@ export const AIToolSchema = z.enum([
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   sources: AISource[];
+  aiModelModes: ModelMode[];
   description: string; // this is sent with tool definition, has a maximum character limit
-  parameters: {
-    type: 'object';
-    properties: Record<string, AIToolArgs>;
-    required: string[];
-    additionalProperties: boolean;
-  };
+  parameters: AIToolArgs;
   responseSchema: (typeof AIToolsArgsSchema)[T];
   prompt: string; // this is sent as internal message to AI, no character limit
 };
+
+const numberSchema = z.preprocess((val) => {
+  if (typeof val === 'number') {
+    return val;
+  }
+  return Number(val);
+}, z.number());
+
+const booleanSchema = z.preprocess((val) => {
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean());
 
 const array2DSchema = z
   .array(
@@ -130,29 +139,29 @@ export const AIToolsArgsSchema = {
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    sheet_name: z.string().optional(),
-    code_cell_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
+    code_cell_name: z.string(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     code_cell_position: z.string(),
     formula_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     top_left_position: z.string(),
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     source_selection_rect: z.string(),
     target_top_left_position: z.string(),
   }),
   [AITool.DeleteCells]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
   [AITool.UpdateCodeCell]: z.object({
@@ -174,37 +183,37 @@ export const AIToolsArgsSchema = {
     prompt: z.string(),
   }),
   [AITool.GetCellData]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    bold: z.boolean().optional(),
-    italic: z.boolean().optional(),
-    underline: z.boolean().optional(),
-    strike_through: z.boolean().optional(),
-    text_color: z.string().optional(),
-    fill_color: z.string().optional(),
-    align: z.string().optional(),
-    vertical_align: z.string().optional(),
-    wrap: z.string().optional(),
-    numeric_commas: z.boolean().optional(),
-    number_type: z.string().optional(),
-    currency_symbol: z.string().optional(),
-    date_time: z.string().optional(),
+    bold: booleanSchema.nullable().optional(),
+    italic: booleanSchema.nullable().optional(),
+    underline: booleanSchema.nullable().optional(),
+    strike_through: booleanSchema.nullable().optional(),
+    text_color: z.string().nullable().optional(),
+    fill_color: z.string().nullable().optional(),
+    align: z.string().nullable().optional(),
+    vertical_align: z.string().nullable().optional(),
+    wrap: z.string().nullable().optional(),
+    numeric_commas: booleanSchema.nullable().optional(),
+    number_type: z.string().nullable().optional(),
+    currency_symbol: z.string().nullable().optional(),
+    date_time: z.string().nullable().optional(),
   }),
   [AITool.GetTextFormats]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.ConvertToTable]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     table_name: z.string(),
-    first_row_is_column_names: z.boolean(),
+    first_row_is_column_names: booleanSchema,
   }),
   [AITool.WebSearch]: z.object({
     query: z.string(),
@@ -232,7 +241,12 @@ export const AIToolsArgsSchema = {
     insert_before_sheet_name: z.string().optional(),
   }),
   [AITool.ColorSheets]: z.object({
-    sheet_name_to_color: z.record(z.string(), z.string()),
+    sheet_name_to_color: z.array(
+      z.object({
+        sheet_name: z.string(),
+        color: z.string(),
+      })
+    ),
   }),
 } as const;
 
@@ -250,6 +264,7 @@ export const MODELS_ROUTER_CONFIGURATION: {
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
     sources: ['ModelRouter'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the AI Model to use for this user prompt.\n
 Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
@@ -271,6 +286,7 @@ Choose the AI model for this user prompt based on the following instructions, al
   },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Set the name of the user chat with AI assistant, this is the name of the chat in the chat history\n
 You should use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
@@ -294,6 +310,7 @@ This name should be from user's perspective, not the assistant's.\n
   },
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
@@ -325,7 +342,7 @@ The string representation (in a1 notation) of the selection of cells to get the 
             'The page number of the results to return. The first page is always 0. Use the parameters with a different page to get the next set of results.',
         },
       },
-      required: ['selection', 'sheet_name', 'page'],
+      required: ['sheet_name', 'selection', 'page'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
@@ -343,6 +360,7 @@ IMPORTANT: If the results include page information:\n
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
@@ -398,6 +416,7 @@ Don't attempt to add formulas or code to data tables.\n`,
   },
   [AITool.SetCellValues]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
@@ -452,6 +471,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
@@ -516,6 +536,7 @@ Code cell (Python and Javascript) placement instructions:\n
   },
   [AITool.SetFormulaCellValue]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
@@ -574,6 +595,7 @@ Examples:
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
@@ -610,6 +632,7 @@ Target position is the top left corner of the target position on the current ope
   },
   [AITool.DeleteCells]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
@@ -640,6 +663,7 @@ delete_cells functions requires the current sheet name provided in the context, 
   },
   [AITool.UpdateCodeCell]: {
     sources: ['AIAssistant'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
 The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
@@ -672,6 +696,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
   },
   [AITool.GetTextFormats]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
@@ -712,6 +737,7 @@ CRITICALLY IMPORTANT: If too large, the results will include page information:\n
   },
   [AITool.SetTextFormats]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
 It requires the sheet name, the selection of cells to set the formats of, and any formats to set.\n
@@ -729,64 +755,80 @@ There must be at least one format to set.\n
           description: 'The selection of cells to set the formats of, in a1 notation',
         },
         bold: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to bold',
         },
         italic: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to italic',
         },
         underline: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to underline',
         },
         strike_through: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to strike through',
         },
         text_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
         },
         fill_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
         },
         align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The horizontal alignment of the text, this can be one of "left", "center", "right"',
         },
         vertical_align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The vertical alignment of the text, this can be one of "top", "middle", "bottom"',
         },
         wrap: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The wrapping of the text, this can be one of "wrap", "clip", "overflow"',
         },
         numeric_commas: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description:
             'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas.',
         },
         number_type: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.',
         },
         currency_symbol: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR',
         },
         date_time: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
         },
       },
-      required: ['sheet_name', 'selection'],
+      required: [
+        'sheet_name',
+        'selection',
+        'bold',
+        'italic',
+        'underline',
+        'strike_through',
+        'text_color',
+        'fill_color',
+        'align',
+        'vertical_align',
+        'wrap',
+        'numeric_commas',
+        'number_type',
+        'currency_symbol',
+        'date_time',
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
@@ -806,6 +848,7 @@ You MAY want to use the get_text_formats function if you need to check the curre
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool provides inline completions for the code in the code cell you are currently editing, requires the completion for the code in the code cell.\n
 You are provided with the prefix and suffix of the cursor position in the code cell.\n
@@ -831,6 +874,7 @@ Completion is the delta that will be inserted at the cursor position in the code
   },
   [AITool.UserPromptSuggestions]: {
     sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
@@ -878,6 +922,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
   },
   [AITool.PDFImport]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
 This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
@@ -918,6 +963,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
   },
   [AITool.ConvertToTable]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool converts a selection of cells on a specified sheet into a data table.\n
 IMPORTANT: the selection can NOT contain any code cells or data tables.\n
@@ -962,6 +1008,7 @@ The data table will include a table name as the first row, which will push down 
   },
   [AITool.WebSearch]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool searches the web for information based on the query.\n
 Use this tool when the user asks for information that is not already available in the context.\n
@@ -992,6 +1039,7 @@ It requires the query to search for.\n
   // This is tool internal to AI model and is called by `WebSearch` tool.
   [AITool.WebSearchInternal]: {
     sources: ['WebSearch'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for.\n
@@ -1015,6 +1063,7 @@ It requires the query to search for.\n
   },
   [AITool.AddSheet]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
     description: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
@@ -1043,6 +1092,7 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
   },
   [AITool.DuplicateSheet]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
     description: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
@@ -1070,6 +1120,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
   },
   [AITool.RenameSheet]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
     description: `
 This tool renames a sheet in the file.\n
 It requires the name of the sheet to rename and the new name. This must be a unique name.\n
@@ -1097,6 +1148,7 @@ It requires the name of the sheet to rename and the new name. This must be a uni
   },
   [AITool.DeleteSheet]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
     description: `
 This tool deletes a sheet in the file.\n
 It requires the name of the sheet to delete.\n
@@ -1120,6 +1172,7 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
     description: `
 This tool moves a sheet within the sheet list.\n
 It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
@@ -1148,6 +1201,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
+    aiModelModes: ['pro'],
     description: `
 This tool colors the sheet tabs in the file.\n
 It requires a record of sheet names to change mapped to the new color.\n
@@ -1156,12 +1210,21 @@ It requires a record of sheet names to change mapped to the new color.\n
       type: 'object',
       properties: {
         sheet_name_to_color: {
-          type: 'object',
-          description:
-            'A record of sheet names to change mapped to the new color. The color must be a valid CSS color string.',
-          additionalProperties: {
-            type: 'string',
-            description: 'The new color of the sheet. This must be a valid CSS color string.',
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              sheet_name: {
+                type: 'string',
+                description: 'The name of the sheet to color',
+              },
+              color: {
+                type: 'string',
+                description: 'The new color of the sheet. This must be a valid CSS color string.',
+              },
+            },
+            required: ['sheet_name', 'color'],
+            additionalProperties: false,
           },
         },
       },

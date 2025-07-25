@@ -9,6 +9,10 @@ impl GridController {
         self.grid.sheet_ids()
     }
 
+    pub fn sheets(&self) -> Vec<&Sheet> {
+        self.grid.sheets().values().collect()
+    }
+
     pub fn try_sheet(&self, sheet_id: SheetId) -> Option<&Sheet> {
         self.grid.try_sheet(sheet_id)
     }

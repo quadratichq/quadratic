@@ -233,6 +233,14 @@ x += 1
 
 Do NOT try to use formatting options like f-strings (f"") or .format() on numerical return types. Returning formatted data will not flow through to the sheet; the sheet will read formatted numerical values as strings, keeping formatting options like currencies and significant digits from working on the returned values. 
 
+### Supported sizes 
+
+When returning DataFrames, default to returning the entire DataFrame. Do not use df.head() unless the user asks for it. The spreadsheet can comfortably handle a few million rows of data.
+
+### Return single item per code cell 
+
+You can only return a single item per code cell. For example, you  can only return one table or one chart etc. You can not return both a table and a chart to the sheet from the same cell. Use individual code cells for each subsequent step you want to return to the sheet.
+
 ## Packages
 
 Using and installing Python packages.
