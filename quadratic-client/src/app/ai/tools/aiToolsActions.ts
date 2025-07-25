@@ -523,9 +523,11 @@ export const aiToolsActions: AIToolActionsRecord = {
         strike_through: args.strike_through ?? null,
         text_color: args.text_color ?? null,
         fill_color: args.fill_color ?? null,
-        align: expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']),
-        vertical_align: expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom']),
-        wrap: expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']),
+        align: args.align ? expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']) : null,
+        vertical_align: args.vertical_align
+          ? expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom'])
+          : null,
+        wrap: args.wrap ? expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']) : null,
         numeric_commas: args.numeric_commas ?? null,
         numeric_format: numericFormat,
         date_time: args.date_time ?? null,

@@ -437,8 +437,9 @@ export const ChatSchema = z.object({
 });
 export type Chat = z.infer<typeof ChatSchema>;
 
+const AIToolPrimitiveTypeSchema = z.enum(['string', 'number', 'boolean', 'null']);
 const AIToolArgsPrimitiveSchema = z.object({
-  type: z.enum(['string', 'number', 'boolean']),
+  type: AIToolPrimitiveTypeSchema.or(z.array(AIToolPrimitiveTypeSchema)),
   description: z.string(),
 });
 export type AIToolArgsPrimitive = z.infer<typeof AIToolArgsPrimitiveSchema>;
