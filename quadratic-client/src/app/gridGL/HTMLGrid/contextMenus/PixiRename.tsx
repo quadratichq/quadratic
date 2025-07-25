@@ -35,13 +35,15 @@ export const PixiRename = (props: Props) => {
       if (node) {
         getElement?.(node);
         setTimeout(() => {
-          node.select();
+          if (initialValue === undefined) {
+            node.select();
+          }
           node.focus();
           waitingForOpenRef.current = false;
         });
       }
     },
-    [getElement]
+    [getElement, initialValue]
   );
 
   const close = useCallback(() => {

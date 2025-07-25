@@ -120,9 +120,13 @@ impl TableMap {
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        self.tables.values().find(|table| {
-            table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
-        })
+        if let Some(table_name) = self.sheet_pos_to_table.get(&sheet_pos) {
+            self.tables.get(table_name)
+        } else {
+            self.tables.values().find(|table| {
+                table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
+            })
+        }
     }
 
     pub fn hide_column(&mut self, table_name: &str, column_name: &str) {

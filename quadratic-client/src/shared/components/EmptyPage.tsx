@@ -6,6 +6,7 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import { Button } from '@/shared/shadcn/ui/button';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
+import { convertError } from 'quadratic-shared/utils/error';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
 
@@ -38,21 +39,12 @@ export function EmptyPage(props: EmptyPageProps) {
   // If this is an error, log it
   useEffect(() => {
     if (error) {
-      const errorString = JSON.stringify(
-        error instanceof Error
-          ? {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            }
-          : error
-      );
       // for core errors, we send the source but don't share it with the user
       const sourceTitle = source ? `Core Error in ${source}` : title;
       mixpanel.track('[Empty].error', {
         title: sourceTitle,
         description,
-        error: errorString,
+        error: JSON.stringify(convertError(error)),
       });
       Sentry.captureException(new Error('error-page'), {
         extra: {
