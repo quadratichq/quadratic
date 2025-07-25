@@ -86,7 +86,7 @@ The code cell run has resulted in an error:
 \`\`\`
 ${codeCell.std_err}
 \`\`\`
-Think and reason about the error and try to fix it.
+Think and reason about the error and try to fix it. Do not attempt the same fix repeatedly. If it failed once, it will fail again.
 `,
       },
     ];
