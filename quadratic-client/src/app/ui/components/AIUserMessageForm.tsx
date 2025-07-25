@@ -138,7 +138,7 @@ export const AIUserMessageForm = memo(
     const handlePromptChange = useCallback(
       (event: React.ChangeEvent<HTMLTextAreaElement>) => {
         setPrompt(event.target.value);
-        onContentChange?.([...files, { type: 'text', text: event.target.value.trim() }]);
+        onContentChange?.([...files, { type: 'text', text: event.target.value }]);
       },
       [files, onContentChange]
     );
@@ -146,7 +146,7 @@ export const AIUserMessageForm = memo(
     const handleFilesChange = useCallback(
       (newFiles: FileContent[]) => {
         setFiles(newFiles);
-        onContentChange?.([...newFiles, { type: 'text', text: prompt.trim() }]);
+        onContentChange?.([...newFiles, { type: 'text', text: prompt }]);
       },
       [onContentChange, prompt]
     );
