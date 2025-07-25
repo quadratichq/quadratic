@@ -233,7 +233,7 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.AddSheet]: z.object({
     sheet_name: z.string(),
-    insert_before_sheet_name: z.string().optional(),
+    insert_before_sheet_name: z.string().nullable().optional(),
   }),
   [AITool.DuplicateSheet]: z.object({
     sheet_name_to_duplicate: z.string(),
@@ -248,7 +248,7 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.MoveSheet]: z.object({
     sheet_name: z.string(),
-    insert_before_sheet_name: z.string().optional(),
+    insert_before_sheet_name: z.string().nullable().optional(),
   }),
   [AITool.ColorSheets]: z.object({
     sheet_names_to_color: z.array(
@@ -266,8 +266,8 @@ export const AIToolsArgsSchema = {
     sheet_name: z.string().optional(),
   }),
   [AITool.RerunCode]: z.object({
-    sheet_name: z.string().optional(),
-    selection: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
+    selection: z.string().nullable().optional(),
   }),
 } as const;
 
@@ -1126,12 +1126,12 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
           description: 'The name of the new sheet. This must be a unique name.',
         },
         insert_before_sheet_name: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The name of a sheet to insert the new sheet before. If not provided, the new sheet will be added to the end of the sheet list.',
         },
       },
-      required: ['sheet_name'],
+      required: ['sheet_name', 'insert_before_sheet_name'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddSheet],
@@ -1235,12 +1235,12 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
           description: 'The name of the sheet to move',
         },
         insert_before_sheet_name: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The name of a sheet to insert the moved sheet before. If not provided, the sheet will be added to the end of the sheet list.',
         },
       },
-      required: ['sheet_name'],
+      required: ['sheet_name', 'insert_before_sheet_name'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.MoveSheet],
@@ -1340,16 +1340,16 @@ If you provide neither a sheet name nor a selection, then all code cells in the 
       type: 'object',
       properties: {
         sheet_name: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The sheet name to rerun code in. If not provided, then it reruns all code cells in the file.',
         },
         selection: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The selection (in A1 notation) of code cells to rerun. If not provided, then it reruns all code cells in the sheet. For example, A1:D100',
         },
       },
-      required: [],
+      required: ['sheet_name', 'selection'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.RerunCode],

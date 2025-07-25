@@ -535,7 +535,11 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.AddSheet]: async (args) => {
     try {
       const { sheet_name, insert_before_sheet_name } = args;
-      const response = await quadraticCore.addSheet(sheet_name, insert_before_sheet_name, sheets.getCursorPosition());
+      const response = await quadraticCore.addSheet(
+        sheet_name,
+        insert_before_sheet_name ?? undefined,
+        sheets.getCursorPosition()
+      );
       if (response?.result) {
         return [createTextContent('Create new sheet tool executed successfully.')];
       } else {
@@ -692,14 +696,19 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { sheet_name, selection } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : undefined;
-      quadraticCore.rerunCodeCells(sheetId, selection, sheets.getCursorPosition());
-      const text =
-        sheet_name && selection
-          ? `Code in sheet "${sheet_name}" within selection "${selection}" has been rerun.`
-          : sheet_name && !selection
-            ? `Code in sheet "${sheet_name}" has been rerun.`
-            : 'Code in all sheets has been rerun.';
-      return [createTextContent(text)];
+      const response = await quadraticCore.rerunCodeCells(sheetId, selection ?? undefined, sheets.getCursorPosition());
+      if (typeof response === 'string') {
+        await waitForSetCodeCellValue(response);
+        const text =
+          sheet_name && selection
+            ? `Code in sheet "${sheet_name}" within selection "${selection}" has been rerun.`
+            : sheet_name && !selection
+              ? `Code in sheet "${sheet_name}" has been rerun.`
+              : 'Code in all sheets has been rerun.';
+        return [createTextContent(text)];
+      } else {
+        return [createTextContent(`There was an error executing the rerun code tool: ${response?.error}`)];
+      }
     } catch (e) {
       return [createTextContent(`Error executing rerun code tool: ${e}`)];
     }

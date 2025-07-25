@@ -434,7 +434,11 @@ class CoreClient {
         return;
 
       case 'clientCoreRerunCodeCells':
-        core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor);
+        this.send({
+          type: 'coreClientRerunCodeCells',
+          id: e.data.id,
+          response: core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor),
+        });
         return;
 
       case 'clientCoreCancelExecution':
