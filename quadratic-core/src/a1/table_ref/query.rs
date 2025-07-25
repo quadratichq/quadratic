@@ -251,7 +251,7 @@ impl TableRef {
                 if let (Some(start), Some(end)) =
                     (table.try_col_index(start), table.try_col_index(end))
                 {
-                    for col in start..=end {
+                    for col in start.min(end)..=start.max(end) {
                         cols.push(col);
                     }
                 } else {
@@ -548,6 +548,17 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
+            data: true,
+            headers: true,
+            totals: false,
+        };
+        let cols = table_ref.table_column_selection("test_table", &context);
+        assert_eq!(cols, Some(vec![0, 1]));
+
+        // Test reversed column range
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColRange("B".to_string(), "A".to_string()),
             data: true,
             headers: true,
             totals: false,

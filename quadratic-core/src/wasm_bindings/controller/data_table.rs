@@ -27,25 +27,16 @@ impl GridController {
         table_name: Option<String>,
         first_row_is_header: bool,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        match serde_json::from_str::<SheetRect>(&sheet_rect) {
+    ) -> JsValue {
+        capture_core_error(|| match serde_json::from_str::<SheetRect>(&sheet_rect) {
             Ok(sheet_rect) => {
                 match self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor) {
-                    Ok(_) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                        result: true,
-                        error: None,
-                    })?),
-                    Err(e) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                        result: false,
-                        error: Some(e.to_string()),
-                    })?),
+                    Ok(_) => Ok(None),
+                    Err(e) => Err(e.to_string()),
                 }
             }
-            Err(e) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                result: false,
-                error: Some(e.to_string()),
-            })?),
-        }
+            Err(e) => Err(e.to_string()),
+        })
     }
 
     /// Converts a DataTableKind::CodeRun to DataTableKind::Import

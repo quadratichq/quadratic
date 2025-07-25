@@ -17,6 +17,7 @@ import {
 import { DEFAULT_BACKUP_MODEL, DEFAULT_BACKUP_MODEL_THINKING } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
+import { convertError } from 'quadratic-shared/utils/error';
 import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
 import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
 import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
@@ -129,7 +130,7 @@ export const handleAIRequest = async (
 
     return parsedResponse;
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in handleAIRequest', modelKey, error }));
+    console.error(JSON.stringify({ message: 'Error in handleAIRequest', modelKey, error: convertError(error) }));
 
     Sentry.captureException(error, {
       level: 'error',

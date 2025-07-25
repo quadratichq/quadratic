@@ -139,7 +139,12 @@ impl DataTable {
     }
 
     /// Create a unique column header name.
-    pub fn unique_column_header_name(&self, name: Option<&str>, index: usize) -> String {
+    pub fn unique_column_header_name(
+        &self,
+        name: Option<&str>,
+        index: usize,
+        skip_index: Option<usize>,
+    ) -> String {
         let default_name = format!("Column {}", index + 1);
         let name = name.unwrap_or(&default_name);
 
@@ -147,7 +152,7 @@ impl DataTable {
             let all_names = columns
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| *i != index)
+                .filter(|(i, _)| skip_index.is_none_or(|skip_index| *i != skip_index))
                 .map(|(_, c)| c.name.to_string())
                 .collect::<Vec<_>>();
 

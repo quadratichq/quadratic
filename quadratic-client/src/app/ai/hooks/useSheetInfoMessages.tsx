@@ -22,6 +22,16 @@ ${sheets.map((sheet) => `${sheet.name} is ${sheet.color ?? 'not colored'}`).join
         ],
         contextType: 'sheetNames',
       },
+      {
+        role: 'assistant',
+        content: [
+          {
+            type: 'text',
+            text: `I understand the sheet names and colors, I will reference it to answer following messages. How can I help you?`,
+          },
+        ],
+        contextType: 'sheetNames',
+      },
     ];
   }, []);
 

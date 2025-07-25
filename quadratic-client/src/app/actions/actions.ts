@@ -1,6 +1,7 @@
 export enum Action {
   CmdClick = 'cmd_click',
   FileDownload = 'file_download',
+  FileDownloadExcel = 'file_download_excel',
   FileShare = 'file_share',
   FileRename = 'file_rename',
   FileVersionHistory = 'file_version_history',

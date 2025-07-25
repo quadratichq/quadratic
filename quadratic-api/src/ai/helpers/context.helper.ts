@@ -1,5 +1,6 @@
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
 import { FormulaDocs } from '../docs/FormulaDocs';
 import { JavascriptDocs } from '../docs/JavascriptDocs';
@@ -52,7 +53,8 @@ I will follow all your instructions with context of quadratic documentation, and
   },
 ];
 
-export const getToolUseContext = (source: AISource): ChatMessage[] => {
+export const getToolUseContext = (source: AISource, modelKey: AIModelKey): ChatMessage[] => {
+  const aiModelMode = MODELS_CONFIGURATION[modelKey].mode;
   return [
     {
       role: 'user',
@@ -75,7 +77,7 @@ ${
 }
 
 ${Object.entries(aiToolsSpec)
-  .filter(([_, { sources }]) => sources.includes(source))
+  .filter(([_, { sources, aiModelModes }]) => sources.includes(source) && aiModelModes.includes(aiModelMode))
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 
