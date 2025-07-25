@@ -31,6 +31,7 @@ export const SetCodeCellValue = memo(
       const fullJson = parseFullJson(args);
       if (!fullJson) {
         setToolArgs(undefined);
+        setCodeCellPos(undefined);
         return;
       }
 

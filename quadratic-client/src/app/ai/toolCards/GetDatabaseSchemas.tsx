@@ -1,7 +1,7 @@
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import type { z } from 'zod';
 
 type GetDatabaseSchemasResponse = z.infer<(typeof aiToolsSpec)[AITool.GetDatabaseSchemas]['responseSchema']>;
@@ -25,14 +25,17 @@ export const GetDatabaseSchemas = memo(
       }
     }, [args, loading]);
 
-    let label = 'Retrieving database schemas';
-    if (toolArgs?.data?.connection_ids && toolArgs.data.connection_ids.length > 0) {
-      const connectionCount = toolArgs.data.connection_ids.length;
-      label = `Retrieving schemas for ${connectionCount} database connection${connectionCount === 1 ? '' : 's'}`;
-    } else {
-      label = 'Retrieving schemas for all team database connections';
-    }
-    label += '...';
+    const label = useMemo(() => {
+      let label = 'Retrieving database schemas';
+      if (toolArgs?.data?.connection_ids && toolArgs.data.connection_ids.length > 0) {
+        const connectionCount = toolArgs.data.connection_ids.length;
+        label = `Retrieving schemas for ${connectionCount} database connection${connectionCount === 1 ? '' : 's'}`;
+      } else {
+        label = 'Retrieving schemas for all team database connections';
+      }
+      label += '...';
+      return label;
+    }, [toolArgs?.data?.connection_ids]);
 
     if (loading) {
       return <ToolCardQuery label={label} isLoading className={className} />;

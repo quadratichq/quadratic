@@ -10,7 +10,7 @@ export function useSqlContextMessages() {
       async (): Promise<ChatMessage[]> => {
         const teamUuid = await snapshot.getPromise(editorInteractionStateTeamUuidAtom);
         if (!teamUuid) {
-          console.log('[SQL Context] No team UUID available');
+          console.warn('[SQL Context] No team UUID available');
           return [];
         }
 
@@ -25,7 +25,6 @@ export function useSqlContextMessages() {
           }
 
           if (!connections || connections.length === 0) {
-            console.log('[SQL Context] No database connections found');
             return [];
           }
 
@@ -62,7 +61,7 @@ export function useSqlContextMessages() {
           const validConnections = connectionTableInfo.filter((conn) => !conn.error);
 
           if (validConnections.length === 0) {
-            console.log('[SQL Context] No valid database connections with table information');
+            console.warn('[SQL Context] No valid database connections with table information');
             return [];
           }
 

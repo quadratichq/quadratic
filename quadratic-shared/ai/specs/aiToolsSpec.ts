@@ -538,7 +538,7 @@ For SQL Connection code cells:\n
 - MSSQL uses square brackets for identifiers and T-SQL extensions like TOP clause, OUTPUT clause, and proprietary functions\n
 - SNOWFLAKE features cloud-native syntax with VARIANT data type for semi-structured data and unique clustering/warehouse scaling commands\n
 - BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
-- COCKROACHDB, NEON, and SUPABASE have the same syntax as POSTGRES\n
+- COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES\n
 - MARIADB has the same syntax as MySQL\n
 
 
