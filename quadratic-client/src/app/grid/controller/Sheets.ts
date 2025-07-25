@@ -10,6 +10,7 @@ import type {
   Rect,
   RefRangeBounds,
   SheetInfo,
+  SheetRect,
 } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import {
@@ -441,6 +442,11 @@ export class Sheets {
 
   selectionToSheetRect = (sheetId: string, selection: string): string => {
     return selectionToSheetRect(sheetId, selection, this.jsA1Context);
+  };
+
+  selectionToSheetRectParsed = (sheetId: string, selection: string): SheetRect => {
+    const sheetRect = this.selectionToSheetRect(sheetId, selection);
+    return JSON.parse(sheetRect, bigIntReplacer);
   };
 
   getTableInfo = (): JsTableInfo[] => {

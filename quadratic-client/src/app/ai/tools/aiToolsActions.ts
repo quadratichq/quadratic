@@ -1025,4 +1025,69 @@ export const aiToolsActions: AIToolActionsRecord = {
       },
     ];
   },
+  [AITool.TableMeta]: async (args) => {
+    const {
+      sheet_name,
+      table_location,
+      first_row_is_column_names,
+      new_table_name,
+      show_name,
+      show_columns,
+      alternating_row_colors,
+    } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    const sheetRect = sheets.selectionToSheetRect(sheetId, table_location);
+    if (first_row_is_column_names !== undefined) {
+      quadraticCore.dataTableFirstRowAsHeader(
+        sheetId,
+        sheetRect.min.x,
+        sheetRect.min.y,
+        first_row_is_column_names,
+        sheets.getCursorPosition()
+      );
+    }
+    quadraticCore.dataTableMeta(
+      sheetId,
+      Number(sheetRect.min.x),
+      Number(sheetRect.min.y),
+      {
+        name: new_table_name,
+        alternatingColors: alternating_row_colors,
+        showName: show_name,
+        showColumns: show_columns,
+      },
+      sheets.getCursorPosition()
+    );
+    return [
+      {
+        type: 'text',
+        text: 'Set table meta tool executed successfully.',
+      },
+    ];
+  },
+  [AITool.TableColumnNames]: async (args) => {
+    const { sheet_name, table_location, column_names } = args;
+    const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    const sheetRect = sheets.selectionToSheetRectParsed(sheetId, table_location);
+    quadraticCore.dataTableMeta({
+      sheetId,
+      x: Number(sheetRect.min.x),
+      y: Number(sheetRect.min.y),
+      select_table: true,
+      columns_to_add: column_names.map((column) => {
+        const columnIndex = columnNameToIndex(column.old_name);
+        if (columnIndex === undefined) {
+          return undefined;
+        }
+        return Number(columnIndex);
+      }),
+      cursor: sheets.getCursorPosition(),
+    });
+    return [
+      {
+        type: 'text',
+        text: 'Rename table columns tool executed successfully.',
+      },
+    ];
+  },
 } as const;
