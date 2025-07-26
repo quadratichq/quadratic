@@ -21,7 +21,6 @@ export enum AITool {
   ConvertToTable = 'convert_to_table',
   WebSearch = 'web_search',
   WebSearchInternal = 'web_search_internal',
-
   AddSheet = 'add_sheet',
   DuplicateSheet = 'duplicate_sheet',
   RenameSheet = 'rename_sheet',
