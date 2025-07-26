@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
+    SheetRect,
     a1::{A1Selection, CellRefRange, RefRangeBounds, column_from_name},
     grid::SheetId,
     wasm_bindings::js_selection::JsSelection,
@@ -22,12 +23,11 @@ pub fn toggle_reference_types(reference: &str) -> Result<String, String> {
     Ok(cell_ref.to_string())
 }
 
-#[wasm_bindgen(js_name = "selectionToSheetRect")]
-pub fn selection_to_sheet_rect(
+fn selection_to_sheet_rect(
     sheet_id: &str,
     selection: &str,
     context: &JsA1Context,
-) -> Result<String, String> {
+) -> Result<SheetRect, String> {
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
     let selection = A1Selection::parse_a1(selection, sheet_id, context.get_context())
         .map_err(|e| format!("Invalid selection: {e}"))?;
@@ -40,7 +40,26 @@ pub fn selection_to_sheet_rect(
     let rect = range
         .to_rect(context.get_context())
         .ok_or("Invalid selection: not a rectangle")?;
-    let sheet_rect = rect.to_sheet_rect(sheet_id);
+    Ok(rect.to_sheet_rect(sheet_id))
+}
+
+#[wasm_bindgen(js_name = "selectionToSheetRect")]
+pub fn selection_to_sheet_rect_value(
+    sheet_id: &str,
+    selection: &str,
+    context: &JsA1Context,
+) -> Result<JsValue, String> {
+    let sheet_rect = selection_to_sheet_rect(sheet_id, selection, context)?;
+    serde_wasm_bindgen::to_value(&sheet_rect).map_err(|e| e.to_string())
+}
+
+#[wasm_bindgen(js_name = "selectionToSheetRectString")]
+pub fn selection_to_sheet_rect_string(
+    sheet_id: &str,
+    selection: &str,
+    context: &JsA1Context,
+) -> Result<String, String> {
+    let sheet_rect = selection_to_sheet_rect(sheet_id, selection, context)?;
     serde_json::to_string(&sheet_rect).map_err(|e| e.to_string())
 }
 

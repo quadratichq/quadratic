@@ -104,7 +104,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             let transaction_id = self.rerun_sheet_code_cells(sheet_id, cursor);
             Ok(Some(
                 serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
@@ -121,9 +122,10 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-                .map_err(|_| "Invalid selection")?;
+                .map_err(|e| format!("Invalid selection: {e}"))?;
             let transaction_id = self.rerun_code_cell(selection, cursor);
             Ok(Some(
                 serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),

@@ -517,7 +517,6 @@ class InlineEditorHandler {
           y: this.location.y,
           language: 'Formula',
           codeString: value.slice(1),
-          cursor: sheets.getCursorPosition(),
         });
         mixpanel.track('[CodeEditor].cellRun', {
           type: 'Formula',
@@ -541,13 +540,7 @@ class InlineEditorHandler {
           }
           return false;
         } else {
-          quadraticCore.setCellValue(
-            location.sheetId,
-            location.x,
-            location.y,
-            value.trim(),
-            sheets.getCursorPosition()
-          );
+          quadraticCore.setCellValue(location.sheetId, location.x, location.y, value.trim());
           if (!skipChangeSheet) {
             events.emit('hoverCell');
           }

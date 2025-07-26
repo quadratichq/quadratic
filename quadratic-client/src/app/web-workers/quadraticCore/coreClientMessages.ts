@@ -1132,6 +1132,7 @@ export interface CoreClientGridToDataTable {
 
 export interface ClientCoreDataTableMeta {
   type: 'clientCoreDataTableMeta';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
@@ -1141,6 +1142,12 @@ export interface ClientCoreDataTableMeta {
   showName?: boolean;
   showColumns?: boolean;
   cursor: string;
+}
+
+export interface CoreClientDataTableMeta {
+  type: 'coreClientDataTableMeta';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreDataTableMutations {
@@ -1162,6 +1169,7 @@ export interface ClientCoreDataTableMutations {
 export interface CoreClientDataTableMutations {
   type: 'coreClientDataTableMutations';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreSortDataTable {
@@ -1175,11 +1183,18 @@ export interface ClientCoreSortDataTable {
 
 export interface ClientCoreDataTableFirstRowAsHeader {
   type: 'clientCoreDataTableFirstRowAsHeader';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
   firstRowAsHeader: boolean;
   cursor: string;
+}
+
+export interface CoreClientDataTableFirstRowAsHeader {
+  type: 'coreClientDataTableFirstRowAsHeader';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientClientMessage {
@@ -1529,4 +1544,6 @@ export type CoreClientMessage =
   | CoreClientDeleteColumns
   | CoreClientDeleteRows
   | CoreClientInsertColumns
-  | CoreClientInsertRows;
+  | CoreClientInsertRows
+  | CoreClientDataTableFirstRowAsHeader
+  | CoreClientDataTableMeta;

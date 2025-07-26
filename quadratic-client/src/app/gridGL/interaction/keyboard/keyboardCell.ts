@@ -117,7 +117,7 @@ export function keyboardCell(event: React.KeyboardEvent<HTMLElement>): boolean {
       }
     }
     // delete a range or a single cell, depending on if MultiCursor is active
-    quadraticCore.deleteCellValues(sheets.getRustSelection(), sheets.getCursorPosition());
+    quadraticCore.deleteCellValues(sheets.getRustSelection());
     return true;
   }
 

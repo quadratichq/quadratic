@@ -32,7 +32,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             self.duplicate_sheet(sheet_id, name_of_new_sheet, cursor);
             Ok(None)
         })
@@ -42,7 +43,8 @@ impl GridController {
     #[wasm_bindgen(js_name = "deleteSheet")]
     pub fn js_delete_sheet(&mut self, sheet_id: String, cursor: Option<String>) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             self.delete_sheet(sheet_id, cursor);
             Ok(None)
         })
@@ -58,11 +60,13 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             let to_before = match to_before {
-                Some(to_before) => {
-                    Some(SheetId::from_str(&to_before).map_err(|_| "Invalid to before sheet ID")?)
-                }
+                Some(to_before) => Some(
+                    SheetId::from_str(&to_before)
+                        .map_err(|e| format!("Invalid to before sheet ID: {e}"))?,
+                ),
                 None => None,
             };
             self.move_sheet(sheet_id, to_before, cursor);
@@ -113,7 +117,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             self.set_sheet_name(sheet_id, name, cursor);
             Ok(None)
         })
@@ -127,7 +132,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             self.set_sheet_color(sheet_id, color, cursor);
             Ok(None)
         })

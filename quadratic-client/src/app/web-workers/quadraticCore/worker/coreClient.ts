@@ -627,36 +627,40 @@ class CoreClient {
         return;
 
       case 'clientCoreDataTableMeta':
-        core.dataTableMeta(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.name,
-          e.data.alternatingColors,
-          e.data.columns,
-          e.data.showName,
-          e.data.showColumns,
-          e.data.cursor
-        );
+        this.send({
+          type: 'coreClientDataTableMeta',
+          id: e.data.id,
+          response: core.dataTableMeta(
+            e.data.sheetId,
+            e.data.x,
+            e.data.y,
+            e.data.name,
+            e.data.alternatingColors,
+            e.data.columns,
+            e.data.showName,
+            e.data.showColumns,
+            e.data.cursor
+          ),
+        });
         return;
 
       case 'clientCoreDataTableMutations':
-        core.dataTableMutations({
-          sheetId: e.data.sheetId,
-          x: e.data.x,
-          y: e.data.y,
-          select_table: e.data.select_table,
-          columns_to_add: e.data.columns_to_add,
-          columns_to_remove: e.data.columns_to_remove,
-          rows_to_add: e.data.rows_to_add,
-          rows_to_remove: e.data.rows_to_remove,
-          flatten_on_delete: e.data.flatten_on_delete,
-          swallow_on_insert: e.data.swallow_on_insert,
-          cursor: e.data.cursor,
-        });
         this.send({
           type: 'coreClientDataTableMutations',
           id: e.data.id,
+          response: core.dataTableMutations({
+            sheetId: e.data.sheetId,
+            x: e.data.x,
+            y: e.data.y,
+            select_table: e.data.select_table,
+            columns_to_add: e.data.columns_to_add,
+            columns_to_remove: e.data.columns_to_remove,
+            rows_to_add: e.data.rows_to_add,
+            rows_to_remove: e.data.rows_to_remove,
+            flatten_on_delete: e.data.flatten_on_delete,
+            swallow_on_insert: e.data.swallow_on_insert,
+            cursor: e.data.cursor,
+          }),
         });
         return;
 
@@ -665,7 +669,17 @@ class CoreClient {
         return;
 
       case 'clientCoreDataTableFirstRowAsHeader':
-        core.dataTableFirstRowAsHeader(e.data.sheetId, e.data.x, e.data.y, e.data.firstRowAsHeader, e.data.cursor);
+        this.send({
+          type: 'coreClientDataTableFirstRowAsHeader',
+          id: e.data.id,
+          response: core.dataTableFirstRowAsHeader(
+            e.data.sheetId,
+            e.data.x,
+            e.data.y,
+            e.data.firstRowAsHeader,
+            e.data.cursor
+          ),
+        });
         return;
 
       case 'clientCoreAddDataTable':

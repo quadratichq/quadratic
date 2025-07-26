@@ -24,6 +24,8 @@ import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
 import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
+import { TableColumnSettings } from '@/app/ai/toolCards/TableColumnSettings';
+import { TableMeta } from '@/app/ai/toolCards/TableMeta';
 import { TextSearch } from '@/app/ai/toolCards/TextSearch';
 import { UpdateCodeCell } from '@/app/ai/toolCards/UpdateCodeCell';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
@@ -104,6 +106,10 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <DeleteColumns toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.DeleteRows:
       return <DeleteRows toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.TableMeta:
+      return <TableMeta toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.TableColumnSettings:
+      return <TableColumnSettings toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;
