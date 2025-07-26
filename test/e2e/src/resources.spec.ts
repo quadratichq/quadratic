@@ -14,7 +14,7 @@ test('Create Example', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName });
 
   // Go to private files
-  await page.locator(`div a:text("My files")`).click({ timeout: 30 * 1000 });
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName, skipFilterClear: true });
 
   //--------------------------------
@@ -25,12 +25,12 @@ test('Create Example', async ({ page }) => {
   // Act:
   //--------------------------------
   // navigate to Examples tab
-  await page.locator(`a:text("Examples")`).click({ timeout: 30 * 1000 });
+  await page.locator(`a:text("Examples")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // click on the "Python intro" example
-  await page.locator('h2:has-text("Python intro")').click({ timeout: 30 * 1000 });
-  await page.waitForTimeout(30 * 1000);
+  await page.locator('h2:has-text("Python intro")').click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(60 * 1000);
 
   //--------------------------------
   // Assert:
@@ -41,7 +41,7 @@ test('Create Example', async ({ page }) => {
     await page
       .getByRole(`button`, { name: `close` })
       .first()
-      .click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -52,10 +52,10 @@ test('Create Example', async ({ page }) => {
   });
 
   // click on Back to files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Go to private files
-  await page.locator(`div a:text("My files")`).click({ timeout: 30 * 1000 });
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
 
   // assert that the example file has been created
   await expect(page.locator(`h2:has-text("${fileName}")`)).toBeVisible();

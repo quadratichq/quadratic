@@ -95,8 +95,7 @@ export class PointerCellMoving {
       throw new Error('Expected moving to be defined in pointerMoveMoving');
     }
     pixiApp.viewport.enableMouseEdges();
-    const sheet = sheets.sheet;
-    const position = sheet.getColumnRowFromScreen(world.x, world.y);
+    const position = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
     this.movingCells.toColumn = Math.max(1, position.column + this.movingCells.offset.x);
     this.movingCells.toRow = Math.max(1, position.row + this.movingCells.offset.y);
     pixiApp.cellMoving.dirty = true;

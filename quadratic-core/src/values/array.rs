@@ -199,17 +199,13 @@ impl Array {
     /// Constructs an array of random float values.
     #[cfg(test)]
     pub fn from_random_floats(size: ArraySize) -> Self {
-        use bigdecimal::BigDecimal;
         use rand::Rng;
 
         let mut rng = rand::rng();
-        let values = std::iter::from_fn(|| {
-            Some(CellValue::Number(BigDecimal::from(
-                &rng.random_range(-100..=100),
-            )))
-        })
-        .take(size.len())
-        .collect();
+        let values =
+            std::iter::from_fn(|| Some(CellValue::Number(rng.random_range(-100..=100).into())))
+                .take(size.len())
+                .collect();
         Self::new_row_major(size, values).expect("error constructing random float array")
     }
     /// Constructs an array from a list of values in row-major order.

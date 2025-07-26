@@ -48,7 +48,7 @@ async function handler(req: RequestWithUser, res: express.Response) {
 
   // Post to Slack
   // SLACK_FEEDBACK_URL is the Quadratic product feedback slack app webhook URL
-   // We filter out spammy feedback by requiring at least 15 characters
+  // We filter out spammy feedback by requiring at least 15 characters
   if (SLACK_FEEDBACK_URL && feedback.length >= 15) {
     const payload = {
       text: [
@@ -58,8 +58,8 @@ async function handler(req: RequestWithUser, res: express.Response) {
         feedback,
       ].join('\n\n'),
     };
-    axios.post(SLACK_FEEDBACK_URL, payload).catch((e: Error) => {
-      console.log('Failed to post feedback to Slack', e);
+    axios.post(SLACK_FEEDBACK_URL, payload).catch((error: Error) => {
+      console.log(JSON.stringify({ message: 'Failed to post feedback to Slack', error }));
     });
   }
 

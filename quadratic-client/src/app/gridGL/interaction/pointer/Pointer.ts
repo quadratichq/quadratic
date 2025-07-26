@@ -1,3 +1,4 @@
+import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { PointerAutoComplete } from '@/app/gridGL/interaction/pointer/PointerAutoComplete';
 import { PointerCellMoving } from '@/app/gridGL/interaction/pointer/PointerCellMoving';
 import { PointerCursor } from '@/app/gridGL/interaction/pointer/pointerCursor';
@@ -49,6 +50,7 @@ export class Pointer {
     }
     window.addEventListener('blur', this.pointerLeave);
     window.addEventListener('visibilitychange', this.visibilityChange);
+    window.addEventListener('mouseup', this.pointerUpOutsideViewport);
   }
 
   private visibilityChange = () => {
@@ -61,6 +63,13 @@ export class Pointer {
     multiplayer.sendMouseMove();
   };
 
+  private pointerUpOutsideViewport = (e: MouseEvent) => {
+    if (e.target instanceof HTMLElement && !e.target.closest('.pointer-up-ignore')) {
+      inlineEditorHandler.close({ skipFocusGrid: true });
+      return;
+    }
+  };
+
   destroy() {
     const viewport = pixiApp.viewport;
     viewport.off('pointerdown', this.handlePointerDown);
@@ -70,6 +79,7 @@ export class Pointer {
     pixiApp.canvas.removeEventListener('pointerleave', this.pointerLeave);
     window.removeEventListener('blur', this.pointerLeave);
     window.removeEventListener('visibilitychange', this.visibilityChange);
+    window.removeEventListener('mouseup', this.pointerUpOutsideViewport);
     this.pointerDown.destroy();
     this.pointerHtmlCells.destroy();
   }

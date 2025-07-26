@@ -13,6 +13,7 @@ export class CLI {
     skipTypes: boolean;
     all: boolean;
     perf: boolean;
+    functionTimer: boolean;
     hideReact: boolean;
     hideAPI: boolean;
     hideCore: boolean;
@@ -49,6 +50,10 @@ export class CLI {
       .option(
         "-p, --perf",
         "Run quadratic-core in perf mode (slower to link but faster runtime)",
+      )
+      .option(
+        "-ft, --function-timer",
+        "Run quadratic-core with function timer (log metrics to console)",
       )
       .option("-R, --hideReact", "Hide React output")
       .option("-A, --hideAPI", "Hide React output")

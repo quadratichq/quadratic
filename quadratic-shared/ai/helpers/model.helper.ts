@@ -4,10 +4,13 @@ import type {
   AIModelKey,
   AIRequestBody,
   AnthropicModelKey,
+  AzureOpenAIModelKey,
+  BasetenModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
   GeminiAIModelKey,
   OpenAIModelKey,
+  OpenRouterModelKey,
   QuadraticModelKey,
   VertexAIAnthropicModelKey,
   VertexAIModelKey,
@@ -31,12 +34,24 @@ export function isAnthropicModel(modelKey: AIModelKey): modelKey is AnthropicMod
   return MODELS_CONFIGURATION[modelKey].provider === 'anthropic';
 }
 
+export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'openai';
+}
+
 export function isXAIModel(modelKey: AIModelKey): modelKey is XAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'xai';
 }
 
-export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey {
-  return MODELS_CONFIGURATION[modelKey].provider === 'openai';
+export function isAzureOpenAIModel(modelKey: AIModelKey): modelKey is AzureOpenAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'azure-openai';
+}
+
+export function isBasetenModel(modelKey: AIModelKey): modelKey is BasetenModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'baseten';
+}
+
+export function isOpenRouterModel(modelKey: AIModelKey): modelKey is OpenRouterModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'open-router';
 }
 
 export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModelKey {
@@ -66,6 +81,7 @@ export const getModelOptions = (
   thinkingBudget?: number;
   promptCaching: boolean;
   strictParams: boolean;
+  imageSupport: boolean;
 } => {
   const config = MODELS_CONFIGURATION[modelKey];
   const { canStream, canStreamWithToolCalls, max_tokens } = config;
@@ -88,5 +104,7 @@ export const getModelOptions = (
 
   const strictParams = !!config.strictParams;
 
-  return { stream, temperature, max_tokens, thinking, thinkingBudget, promptCaching, strictParams };
+  const imageSupport = config.imageSupport;
+
+  return { stream, temperature, max_tokens, thinking, thinkingBudget, promptCaching, strictParams, imageSupport };
 };

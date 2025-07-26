@@ -13,14 +13,15 @@ use serde::{Deserialize, Serialize};
 pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
-pub use v1_10 as current;
+pub use v1_11 as current;
 
 mod migrate_code_cell_references;
 mod migrate_data_table_spills;
 pub mod serialize;
 pub mod sheet_schema;
 mod shift_negative_offsets;
-pub mod v1_10;
+mod v1_10;
+pub mod v1_11;
 mod v1_3;
 mod v1_4;
 mod v1_5;
@@ -30,9 +31,12 @@ mod v1_7_1;
 mod v1_8;
 mod v1_9;
 
-pub static CURRENT_VERSION: &str = "1.10";
+// Default values serialization and compression formats (current version)
+pub static CURRENT_VERSION: &str = "1.11";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
-pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zlib;
+pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zstd;
+
+// Header serialization format, this should remain unchanged.
 pub static HEADER_SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Bincode;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -43,6 +47,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.11")]
+    V1_11 {
+        #[serde(flatten)]
+        grid: v1_11::GridSchema,
+    },
     #[serde(rename = "1.10")]
     V1_10 {
         #[serde(flatten)]
@@ -90,33 +99,63 @@ enum GridFile {
     },
 }
 
-// TODO(ddimaria): refactor to be recursive
 impl GridFile {
-    fn into_latest(self) -> Result<v1_10::GridSchema> {
-        match self {
-            GridFile::V1_10 { grid } => Ok(grid),
-            GridFile::V1_9 { grid } => v1_9::upgrade(grid),
-            GridFile::V1_8 { grid } => v1_9::upgrade(v1_8::upgrade(grid)?),
-            GridFile::V1_7_1 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(grid)?)?),
-            GridFile::V1_7 { grid } => {
-                v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(grid)?)?)?)
+    // Upgrade to the next version
+    fn upgrade_next(self) -> Result<GridFile> {
+        let next = match self {
+            GridFile::V1_11 { grid } => GridFile::V1_11 { grid },
+            GridFile::V1_10 { grid } => GridFile::V1_11 {
+                grid: v1_10::upgrade(grid)?,
+            },
+            GridFile::V1_9 { grid } => GridFile::V1_10 {
+                grid: v1_9::upgrade(grid)?,
+            },
+            GridFile::V1_8 { grid } => GridFile::V1_9 {
+                grid: v1_8::upgrade(grid)?,
+            },
+            GridFile::V1_7_1 { grid } => GridFile::V1_8 {
+                grid: v1_7_1::upgrade(grid)?,
+            },
+            GridFile::V1_7 { grid } => GridFile::V1_7_1 {
+                grid: v1_7::upgrade(grid)?,
+            },
+            GridFile::V1_6 { grid } => GridFile::V1_7 {
+                grid: v1_6::file::upgrade(grid)?,
+            },
+            GridFile::V1_5 { grid } => GridFile::V1_6 {
+                grid: v1_5::file::upgrade(grid)?,
+            },
+            GridFile::V1_4 { grid } => GridFile::V1_5 {
+                grid: v1_4::file::upgrade(grid)?,
+            },
+            GridFile::V1_3 { grid } => GridFile::V1_4 {
+                grid: v1_3::file::upgrade(grid)?,
+            },
+        };
+
+        Ok(next)
+    }
+
+    // recursively upgrade from any version to the latest
+    fn into_latest(self) -> Result<current::GridSchema> {
+        let mut file = self;
+
+        loop {
+            if let GridFile::V1_11 { grid } = file {
+                // Sanity check to ensure that the above GridFile is the current version.
+                // This is to break tests the the current version isn't updated.
+                if grid.version != Some(CURRENT_VERSION.into()) {
+                    anyhow::bail!(
+                        "into_latest() is not checking for the current version. Expected: {:?}, Got: {:?}",
+                        CURRENT_VERSION,
+                        grid.version
+                    );
+                }
+
+                return Ok(grid);
             }
-            GridFile::V1_6 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
-                v1_7::upgrade(v1_6::file::upgrade(grid)?)?,
-            )?)?),
-            GridFile::V1_5 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
-                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(grid)?)?)?,
-            )?)?),
-            GridFile::V1_4 { grid } => {
-                v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(
-                    v1_6::file::upgrade(v1_5::file::upgrade(v1_4::file::upgrade(grid)?)?)?,
-                )?)?)?)
-            }
-            GridFile::V1_3 { grid } => v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(
-                v1_7::upgrade(v1_6::file::upgrade(v1_5::file::upgrade(
-                    v1_4::file::upgrade(v1_3::file::upgrade(grid)?)?,
-                )?)?)?,
-            )?)?),
+
+            file = file.upgrade_next()?;
         }
     }
 }
@@ -138,81 +177,85 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     let mut check_for_negative_offsets = false;
     let mut migrate_data_table_spills = false;
 
-    let mut grid = match file_version.version.as_str() {
+    let schema = match file_version.version.as_str() {
         "1.6" => {
             check_for_negative_offsets = true;
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
-            drop(file_contents);
-            let schema = v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(
-                v1_6::file::upgrade(schema)?,
-            )?)?)?)?;
-            Ok(serialize::import(schema)?)
+
+            GridFile::V1_6 { grid: schema }.into_latest()
         }
         "1.7" => {
             check_for_negative_offsets = true;
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_7::schema::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
-            drop(file_contents);
-            let schema = v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(v1_7::upgrade(schema)?)?)?)?;
-            Ok(serialize::import(schema)?)
+
+            GridFile::V1_7 { grid: schema }.into_latest()
         }
         "1.7.1" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_7_1::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
-            drop(file_contents);
-            let schema = v1_9::upgrade(v1_8::upgrade(v1_7_1::upgrade(schema)?)?)?;
-            Ok(serialize::import(schema)?)
+
+            GridFile::V1_7_1 { grid: schema }.into_latest()
         }
         "1.8" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_8::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
-            drop(file_contents);
-            let schema = v1_9::upgrade(v1_8::upgrade(schema)?)?;
-            Ok(serialize::import(schema)?)
+
+            GridFile::V1_8 { grid: schema }.into_latest()
         }
         "1.9" => {
             migrate_data_table_spills = true;
             let schema = decompress_and_deserialize::<v1_9::GridSchema>(
-                &SERIALIZATION_FORMAT,
-                &COMPRESSION_FORMAT,
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
                 data,
             )?;
-            drop(file_contents);
-            let schema = v1_9::upgrade(schema)?;
-            Ok(serialize::import(schema)?)
+
+            GridFile::V1_9 { grid: schema }.into_latest()
         }
         "1.10" => {
             migrate_data_table_spills = true;
-            let schema = decompress_and_deserialize::<current::GridSchema>(
+            let schema = decompress_and_deserialize::<v1_10::GridSchema>(
+                &SerializationFormat::Json,
+                &CompressionFormat::Zlib,
+                data,
+            )?;
+
+            GridFile::V1_10 { grid: schema }.into_latest()
+        }
+        "1.11" => {
+            let schema = decompress_and_deserialize::<v1_11::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
                 data,
             )?;
-            drop(file_contents);
-            Ok(serialize::import(schema)?)
+
+            GridFile::V1_11 { grid: schema }.into_latest()
         }
         _ => Err(anyhow::anyhow!(
             "Unsupported file version: {}",
             file_version.version
         )),
-    };
+    }?;
+
+    let mut grid = serialize::import(schema);
 
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
     handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
@@ -277,6 +320,7 @@ fn import_json(file_contents: String) -> Result<Grid> {
     grid
 }
 
+#[function_timer::function_timer]
 pub fn export(grid: Grid) -> Result<Vec<u8>> {
     let version = FileVersion {
         version: CURRENT_VERSION.into(),
@@ -313,7 +357,6 @@ mod tests {
             sheet::borders::{BorderSelection, BorderStyle},
         },
     };
-    use bigdecimal::BigDecimal;
 
     const V1_3_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_3.grid");
@@ -333,8 +376,6 @@ mod tests {
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_4_airports_distance.grid");
     const V1_5_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_simple.grid");
-    const V1_6_FILE: &[u8] =
-        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
     const V1_5_QAWOLF_TEST_FILE: &[u8] =
         include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_5_(Main)_QAWolf_test.grid");
     const V1_5_UPGRADE_CODE_RUNS: &[u8] =
@@ -342,6 +383,10 @@ mod tests {
     const V1_5_JAVASCRIPT_GETTING_STARTED_EXAMPLE: &[u8] = include_bytes!(
         "../../../../quadratic-rust-shared/data/grid/v1_5_JavaScript_getting_started_(example).grid"
     );
+    const V1_6_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_6_simple.grid");
+    const V1_11_FILE: &[u8] =
+        include_bytes!("../../../../quadratic-rust-shared/data/grid/v1_11_simple.grid");
 
     #[test]
     fn process_a_number_v1_3_file() {
@@ -461,14 +506,6 @@ mod tests {
     }
 
     #[test]
-    fn imports_and_exports_a_v1_6_grid() {
-        let imported = import(V1_6_FILE.to_vec()).unwrap();
-        let exported = export(imported.clone()).unwrap();
-        let imported_copy = import(exported).unwrap();
-        assert_eq!(imported_copy, imported);
-    }
-
-    #[test]
     fn imports_and_exports_v1_5_qawolf_test_file() {
         import(V1_5_QAWOLF_TEST_FILE.to_vec()).unwrap();
 
@@ -536,6 +573,14 @@ mod tests {
     }
 
     #[test]
+    fn imports_and_exports_a_v1_6_grid() {
+        let imported = import(V1_6_FILE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let imported_copy = import(exported).unwrap();
+        assert_eq!(imported_copy, imported);
+    }
+
+    #[test]
     fn test_code_cell_references_migration_to_q_cells_for_v_1_7_1() {
         let file = include_bytes!("../../../test-files/test_getCells_migration.grid");
         let imported = import(file.to_vec()).unwrap();
@@ -543,19 +588,19 @@ mod tests {
         let sheet2 = &imported.sheets[1];
         assert_eq!(
             sheet1.cell_value(pos![A1]).unwrap(),
-            CellValue::Number(BigDecimal::from(1))
+            CellValue::Number(1.into())
         );
         assert_eq!(
             sheet1.cell_value(pos![F6]).unwrap(),
-            CellValue::Number(BigDecimal::from(1))
+            CellValue::Number(1.into())
         );
         assert_eq!(
             sheet2.cell_value(pos![A1]).unwrap(),
-            CellValue::Number(BigDecimal::from(100))
+            CellValue::Number(100.into())
         );
         assert_eq!(
             sheet2.cell_value(pos![D5]).unwrap(),
-            CellValue::Number(BigDecimal::from(100))
+            CellValue::Number(100.into())
         );
 
         assert_eq!(
@@ -741,6 +786,14 @@ mod tests {
         let exported = export(gc.grid().clone()).unwrap();
         let imported = import(exported).unwrap();
         assert_eq!(imported, gc.grid().clone());
+    }
+
+    #[test]
+    fn imports_and_exports_a_v1_11_grid() {
+        let imported = import(V1_11_FILE.to_vec()).unwrap();
+        let exported = export(imported.clone()).unwrap();
+        let imported_copy = import(exported).unwrap();
+        assert_eq!(imported_copy, imported);
     }
 
     #[test]

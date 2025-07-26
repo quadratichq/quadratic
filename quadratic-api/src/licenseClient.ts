@@ -24,9 +24,14 @@ export const licenseClient = {
       const response = await axios.post(`${LICENSE_API_URI}/api/license/${LICENSE_KEY}`, body);
 
       return LicenseSchema.parse(response.data) as LicenseResponse;
-    } catch (err) {
-      if (err instanceof Error) {
-        console.error('Failed to get the license info from the license service:', err.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error(
+          JSON.stringify({
+            message: 'Failed to get the license info from the license service',
+            error,
+          })
+        );
         throw new ApiError(402, 'Failed to get the license info from the license service');
       }
 

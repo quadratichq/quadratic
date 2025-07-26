@@ -286,6 +286,8 @@ pub struct CellFormatSummary {
 
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
+
+    pub numeric_format: Option<NumericFormat>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
@@ -509,6 +511,11 @@ mod test {
 pub struct JsResponse {
     pub result: bool,
     pub error: Option<String>,
+}
+impl From<JsResponse> for wasm_bindgen::JsValue {
+    fn from(response: JsResponse) -> Self {
+        serde_wasm_bindgen::to_value(&response).unwrap_or(JsValue::UNDEFINED)
+    }
 }
 
 #[derive(Serialize, Debug, PartialEq, TS)]

@@ -45,8 +45,8 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
       .then((res) => res.data);
 
     return response;
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(JSON.stringify({ message: 'Error in upload to file service', error }));
     throw new Error(`Failed to upload file to ${url}`);
   }
 };

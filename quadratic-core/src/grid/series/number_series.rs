@@ -1,6 +1,6 @@
-use bigdecimal::{BigDecimal, Zero};
+use rust_decimal::prelude::*;
 
-use crate::CellValue;
+use crate::{CellValue, number::normalize};
 
 use super::SeriesOptions;
 
@@ -10,23 +10,23 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
         return None;
     }
 
-    let mut addition: Option<BigDecimal> = None;
-    let mut multiplication: Option<BigDecimal> = None;
+    let mut addition: Option<Decimal> = None;
+    let mut multiplication: Option<Decimal> = None;
     let SeriesOptions {
         series,
         spaces,
         negative,
     } = options;
 
-    // convert every cell value to BigDecimal
-    let zero = BigDecimal::zero();
+    // convert every cell value to Decimal
+    let zero = Decimal::zero();
     let numbers = series
         .iter()
         .map(|(s, _)| match s {
             CellValue::Number(number) => number,
             _ => &zero,
         })
-        .collect::<Vec<&BigDecimal>>();
+        .collect::<Vec<&Decimal>>();
 
     // determine if addition or multiplication are possible
     // if possible, store the difference or quotient
@@ -42,7 +42,7 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
         }
 
         // no divide by zero
-        if numbers[number - 1] == &BigDecimal::zero() {
+        if numbers[number - 1] == &Decimal::zero() {
             multiplication = None;
         } else {
             let quotient = numbers[number] / numbers[number - 1];
@@ -68,7 +68,7 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
         numbers[0].clone_into(&mut current);
     }
 
-    let calc = |val: &BigDecimal| match (&addition, &multiplication, negative) {
+    let calc = |val: &Decimal| match (&addition, &multiplication, negative) {
         (Some(add), _, false) => val + add,
         (Some(add), _, true) => val - add,
         (_, Some(bd), false) => val * bd,
@@ -78,7 +78,7 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
 
     let mut results = (0..*spaces)
         .map(|_| {
-            current = calc(&current);
+            current = normalize(calc(&current));
             CellValue::Number(current.to_owned())
         })
         .collect::<Vec<CellValue>>();

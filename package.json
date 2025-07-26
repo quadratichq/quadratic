@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.13.1",
+  "version": "0.15.2",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -34,6 +34,8 @@
     "build:wasm:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js",
     "watch:wasm:perf:javascript": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs'",
     "build:wasm:perf:javascript": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs",
+    "watch:wasm:javascript:function-timer": "cd quadratic-core && cargo watch -s 'CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js,function-timer'",
+    "build:wasm:javascript:function-timer": "cd quadratic-core && CC=clang AR=llvm-ar wasm-pack build --dev --target web --out-dir ../quadratic-client/src/app/quadratic-core --weak-refs --features js,function-timer",
     "watch:python": "cd quadratic-kernels/python-wasm && npm run dev",
     "build:python": "./quadratic-kernels/python-wasm/package.sh",
     "build:file:blank": "cd quadratic-core && cargo run --bin generate_blank_current_file",
@@ -53,8 +55,8 @@
     "lint:ts": "npm run lint:ts --workspace=quadratic-client",
     "lint:ts:write": "npm run lint:ts:write --workspace=quadratic-client",
     "lint:prettier": "npm run lint:prettier --workspace=quadratic-client",
-    "lint:clippy": "cd quadratic-core && cargo clippy --all-targets --all-features -- -D warnings",
-    "lint:clippy:fix": "cd quadratic-core && cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings",
+    "lint:clippy": "cargo clippy --all-targets --all-features --all -- -D warnings",
+    "lint:clippy:fix": "cargo clippy --all-targets --all-features --all --fix --allow-dirty -- -D warnings",
     "heroku-postbuild": "npm run build --workspace=quadratic-api",
     "kill": "kill-port 3000 && kill-port 8000 && kill-port 3001 && kill-port 3002 && kill-port 3003 && kill-port 6379 && kill-port 8001 && kill-port 5432 && kill-port 4566 && kill-port 80 && kill-port 443",
     "prisma:migrate": "cd quadratic-api && npm run prisma:migrate",

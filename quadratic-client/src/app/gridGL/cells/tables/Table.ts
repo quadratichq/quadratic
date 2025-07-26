@@ -74,7 +74,7 @@ export class Table extends Container {
       this.codeCell.spill_error ? 1 : this.codeCell.h
     );
     this.position.set(this.tableBounds.x, this.tableBounds.y);
-
+    this.hideIfNotVisible();
     this.header.update(false);
     this.outline.update();
 
@@ -125,6 +125,16 @@ export class Table extends Container {
     return new Rectangle(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
   };
 
+  private hideIfNotVisible = () => {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    if (!intersects.rectangleRectangle(this.tableBounds, bounds)) {
+      this.visible = false;
+      this.header.visible = false;
+      this.header.toGrid();
+      this.inOverHeadings = false;
+    }
+  };
+
   private headingPosition = (bounds: Rectangle, gridHeading: number) => {
     const codeCell = this.codeCell;
     if (
@@ -163,7 +173,7 @@ export class Table extends Container {
     if (this.inOverHeadings) this.header.update(true);
   }
 
-  activate = (active: boolean) => {
+  private activate = (active: boolean) => {
     if (active === this.active) return;
     this.active = active;
     this.outline.update();

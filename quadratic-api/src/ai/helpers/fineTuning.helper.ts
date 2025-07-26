@@ -14,10 +14,10 @@ export const createFileForFineTuning = (
   const copyArgs = { ...args };
   const copyResponse = { ...parsedResponse.responseMessage };
   copyArgs.messages.push({ ...copyResponse });
-  const { messages, tools } = getOpenAIApiArgs(args, true);
+  const { messages, tools } = getOpenAIApiArgs(args, true, true);
   const fineTuningInput = {
     messages,
-    ...(tools ? { functions: tools.map((tool) => tool.function) } : {}),
+    ...(tools ? { tools } : {}),
   };
 
   // write local file at quadratic/finetuning/<model>_<timestamp>.json

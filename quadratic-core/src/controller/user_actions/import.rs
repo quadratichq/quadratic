@@ -10,10 +10,11 @@ impl GridController {
     ///
     /// Using `cursor` here also as a flag to denote import into new / existing file.
     #[allow(clippy::too_many_arguments)]
+    #[function_timer::function_timer]
     pub fn import_csv(
         &mut self,
         sheet_id: SheetId,
-        file: Vec<u8>,
+        file: &[u8],
         file_name: &str,
         insert_at: Pos,
         cursor: Option<String>,
@@ -83,16 +84,16 @@ impl GridController {
 #[cfg(test)]
 pub(crate) mod tests {
     use super::*;
-    use std::str::FromStr;
 
     use crate::{
-        CellValue, Rect, RunError, RunErrorMsg, Span,
+        CellValue, Rect, RunError, RunErrorMsg, SheetPos, Span,
+        controller::operations::operation::Operation,
         grid::{CodeCellLanguage, CodeCellValue},
+        number::decimal_from_str,
         test_util::*,
         wasm_bindings::js::clear_js_calls,
     };
 
-    use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime};
 
     use crate::wasm_bindings::js::expect_js_call_count;
@@ -125,7 +126,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -147,7 +148,7 @@ pub(crate) mod tests {
         // data table should be at `pos`
         assert_eq!(
             gc.sheet(sheet_id)
-                .data_table_pos_that_contains(pos)
+                .data_table_pos_that_contains_result(pos)
                 .unwrap(),
             pos
         );
@@ -158,6 +159,75 @@ pub(crate) mod tests {
         let last_row = vec!["Concord", "NH", "United States", "42605"];
         assert_cell_value_row(gc, sheet_id, pos.x, pos.x + 3, pos.y + 11, last_row);
 
+        (gc, sheet_id, pos, file_name)
+    }
+
+    #[track_caller]
+    pub(crate) fn flatten_data_table<'a>(
+        gc: &'a mut GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) {
+        let sheet_pos = SheetPos::from((pos, sheet_id));
+        let op = Operation::FlattenDataTable { sheet_pos };
+
+        assert_simple_csv(gc, sheet_id, pos, file_name);
+
+        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
+
+        assert!(
+            gc.sheet(sheet_id)
+                .data_table_pos_that_contains_result(pos)
+                .is_err()
+        );
+
+        assert_flattened_simple_csv(gc, sheet_id, pos, file_name);
+
+        print_table_in_rect(gc, sheet_id, Rect::new(1, 1, 4, 12));
+    }
+
+    #[track_caller]
+    pub(crate) fn assert_flattened_simple_csv<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) -> (&'a GridController, SheetId, Pos, &'a str) {
+        // there should be no data tables
+        assert!(
+            gc.sheet(sheet_id)
+                .data_table_pos_that_contains_result(pos)
+                .is_err()
+        );
+
+        let first_row = vec!["city", "region", "country", "population"];
+        assert_cell_value_row(gc, sheet_id, 1, 4, pos.y + 1, first_row);
+
+        let last_row = vec!["Concord", "NH", "United States", "42605"];
+        assert_cell_value_row(gc, sheet_id, 1, 4, pos.y + 11, last_row);
+
+        (gc, sheet_id, pos, file_name)
+    }
+
+    #[track_caller]
+    pub(crate) fn assert_sorted_data_table<'a>(
+        gc: &'a GridController,
+        sheet_id: SheetId,
+        pos: Pos,
+        file_name: &'a str,
+    ) -> (&'a GridController, SheetId, Pos, &'a str) {
+        let first_row = vec!["Concord", "NH", "United States", "42605"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 3, first_row);
+
+        let second_row = vec!["Marlborough", "MA", "United States", "38334"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 4, second_row);
+
+        let third_row = vec!["Northbridge", "MA", "United States", "14061"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 5, third_row);
+
+        let last_row = vec!["Westborough", "MA", "United States", "29313"];
+        assert_cell_value_row(gc, sheet_id, 1, 3, 12, last_row);
         (gc, sheet_id, pos, file_name)
     }
 
@@ -176,7 +246,7 @@ pub(crate) mod tests {
 
         let result = grid_controller.import_csv(
             sheet_id,
-            "".as_bytes().to_vec(),
+            "".as_bytes(),
             "smallpop.csv",
             pos,
             None,
@@ -202,7 +272,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             gc.grid.sheets()[0].id,
-            csv.as_bytes().to_vec(),
+            csv.as_bytes(),
             "large.csv",
             Pos { x: 0, y: 0 },
             None,
@@ -221,7 +291,7 @@ pub(crate) mod tests {
         let ops = gc
             .import_csv_operations(
                 gc.grid.sheets()[0].id,
-                csv.as_bytes().to_vec(),
+                csv.as_bytes(),
                 "bad line",
                 Pos { x: 0, y: 0 },
                 Some(b','),
@@ -271,7 +341,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             sheet.cell_value((5, 2).into()).unwrap(),
-            CellValue::Number(BigDecimal::from_str("1.1").unwrap())
+            CellValue::Number(decimal_from_str("1.1").unwrap())
         );
         assert_eq!(
             sheet.cell_value((6, 2).into()).unwrap(),
@@ -281,7 +351,7 @@ pub(crate) mod tests {
         );
         assert_eq!(
             sheet.cell_value((7, 2).into()).unwrap(),
-            CellValue::Number(BigDecimal::from_str("1").unwrap())
+            CellValue::Number(decimal_from_str("1").unwrap())
         );
         assert_eq!(
             sheet.cell_value((8, 2).into()).unwrap(),
@@ -480,7 +550,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -508,7 +578,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -535,7 +605,7 @@ pub(crate) mod tests {
 
         gc.import_csv(
             sheet_id,
-            csv_file.as_slice().to_vec(),
+            csv_file.as_slice(),
             file_name,
             pos,
             None,
@@ -591,7 +661,7 @@ pub(crate) mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
             .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Dataset_Name");
         assert_display_cell_value(&gc, sheet_id, 1, 101, "Pima Indians Diabetes Database");
@@ -605,7 +675,7 @@ pub(crate) mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
             .unwrap();
         assert_display_cell_value(&gc, sheet_id, 1, 1, "test_special_character_.csv");
         assert_cell_value_row(
@@ -651,7 +721,7 @@ pub(crate) mod tests {
         let sheet_id = first_sheet_id(&gc);
         let file_name = "customers-100.csv";
         let csv_file = read_test_csv_file(file_name);
-        gc.import_csv(sheet_id, csv_file, file_name, pos![A1], None, None, None)
+        gc.import_csv(sheet_id, &csv_file, file_name, pos![A1], None, None, None)
             .unwrap();
         assert_table_count(&gc, sheet_id, 1);
     }

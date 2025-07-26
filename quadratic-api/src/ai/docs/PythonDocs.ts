@@ -103,6 +103,8 @@ By default, the last line of code is output to the spreadsheet. Primarily return
 
 Only one value or variable (single value, single list, single dataframe, single series, single chart, etc) can be returned per code cell. If you need to return multiple things, such as numerical results of an analysis and a chart, you should use multiple code cells, outputting the analysis in one cell and the chart in another.
 
+IMPORTANT: only one value or variable being returned means that you cannot return some kind of data and a chart in the same cell. You should return the data in one cell and the chart in another. In all cases, only one value or variable can be returned to the sheet per code cell.
+
 Tuples, dictionaries, and sets are not ideal return types because they are output to a single cell formatted as they would if printed.
 
 ### Single value
@@ -230,6 +232,14 @@ x += 1
 ### Formatting 
 
 Do NOT try to use formatting options like f-strings (f"") or .format() on numerical return types. Returning formatted data will not flow through to the sheet; the sheet will read formatted numerical values as strings, keeping formatting options like currencies and significant digits from working on the returned values. 
+
+### Supported sizes 
+
+When returning DataFrames, default to returning the entire DataFrame. Do not use df.head() unless the user asks for it. The spreadsheet can comfortably handle a few million rows of data.
+
+### Return single item per code cell 
+
+You can only return a single item per code cell. For example, you  can only return one table or one chart etc. You can not return both a table and a chart to the sheet from the same cell. Use individual code cells for each subsequent step you want to return to the sheet.
 
 ## Packages
 

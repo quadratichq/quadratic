@@ -1,4 +1,4 @@
-import type { GenerateContentResponse } from '@google/genai';
+import type { GenerateContentResponse, Schema } from '@google/genai';
 import {
   FunctionCallingConfigMode,
   Type,
@@ -20,6 +20,9 @@ import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
   AISource,
+  AIToolArgs,
+  AIToolArgsArray,
+  AIToolArgsPrimitive,
   AIUsage,
   Content,
   GeminiAIModelKey,
@@ -28,26 +31,29 @@ import type {
   ToolResultContent,
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { v4 } from 'uuid';
 
 function convertContent(content: Content): Part[] {
-  return content.map((content) => {
-    if (isContentText(content)) {
-      return { text: content.text };
-    } else {
-      return {
-        inlineData: {
-          data: content.data,
-          mimeType: content.mimeType,
-        },
-      };
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentText(content)) {
+        return { text: content.text.trim() };
+      } else {
+        return {
+          inlineData: {
+            data: content.data,
+            mimeType: content.mimeType,
+          },
+        };
+      }
+    });
 }
 
 function convertToolResultContent(content: ToolResultContent): string {
   return content
-    .filter((content): content is TextContent => isContentText(content))
-    .map((content) => content.text)
+    .filter((content): content is TextContent => isContentText(content) && !!content.text.trim())
+    .map((content) => content.text.trim())
     .join('\n');
 }
 
@@ -65,7 +71,7 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
     systemMessages.length > 0
       ? {
           role: 'user',
-          parts: systemMessages.map((message) => ({ text: message })),
+          parts: systemMessages.map((message) => ({ text: message.trim() })),
         }
       : undefined;
 
@@ -77,9 +83,9 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
         role: 'model',
         parts: [
           ...message.content
-            .filter((content) => content.text && content.type === 'text')
+            .filter((content) => content.type === 'text' && !!content.text.trim())
             .map((content) => ({
-              text: content.text,
+              text: content.text.trim(),
             })),
           ...message.toolCalls.map((toolCall) => ({
             functionCall: {
@@ -123,6 +129,38 @@ export function getGenAIApiArgs(args: AIRequestHelperArgs): {
   return { system, messages, tools, tool_choice };
 }
 
+function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolArgsArray | AIToolArgs): Schema {
+  switch (parameter.type) {
+    case 'object':
+      return {
+        type: Type.OBJECT,
+        properties: Object.fromEntries(
+          Object.entries(parameter.properties).map(([key, value]) => [key, convertParametersToGenAISchema(value)])
+        ),
+        required: parameter.required,
+      };
+    case 'array':
+      return {
+        type: Type.ARRAY,
+        items: convertParametersToGenAISchema(parameter.items),
+      };
+    case 'string':
+      return {
+        type: Type.STRING,
+      };
+    case 'number':
+      return {
+        type: Type.NUMBER,
+      };
+    case 'boolean':
+      return {
+        type: Type.BOOLEAN,
+      };
+    default:
+      throw new Error(`Unknown parameter: ${parameter}`);
+  }
+}
+
 function getGenAITools(source: AISource, toolName?: AITool): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
@@ -143,14 +181,10 @@ function getGenAITools(source: AISource, toolName?: AITool): Tool[] | undefined 
   const genaiTools: Tool[] = [
     {
       functionDeclarations: tools.map(
-        ([name, { description, parameters: input_schema }]): FunctionDeclaration => ({
+        ([name, { description, parameters }]): FunctionDeclaration => ({
           name,
           description,
-          parameters: {
-            type: Type.OBJECT,
-            properties: input_schema.properties,
-            required: input_schema.required,
-          },
+          parameters: convertParametersToGenAISchema(parameters),
         })
       ),
       googleSearch: hasWebSearchInternal ? {} : undefined,
@@ -209,12 +243,12 @@ export async function parseGenAIStream(
 
       // text and tool calls
       for (const part of candidate?.content?.parts ?? []) {
-        if (part.text) {
+        if (part.text?.trim()) {
           // thinking text
           if (part.thought) {
             let currentContent = responseMessage.content.pop();
             if (currentContent?.type !== 'google_thinking') {
-              if (currentContent?.text) {
+              if (currentContent?.text.trim()) {
                 responseMessage.content.push(currentContent);
               }
               currentContent = {
@@ -229,7 +263,7 @@ export async function parseGenAIStream(
           else {
             let currentContent = responseMessage.content.pop();
             if (currentContent?.type !== 'text') {
-              if (currentContent?.text) {
+              if (currentContent?.text.trim()) {
                 responseMessage.content.push(currentContent);
               }
               currentContent = {
@@ -245,7 +279,7 @@ export async function parseGenAIStream(
         // tool call
         if (part.functionCall?.name) {
           responseMessage.toolCalls.push({
-            id: part.functionCall.id ?? part.functionCall.name,
+            id: part.functionCall.id ?? v4(),
             name: part.functionCall.name,
             arguments: JSON.stringify(part.functionCall.args),
             loading: false,
@@ -313,11 +347,11 @@ export function parseGenAIResponse(
     if (message.text) {
       responseMessage.content.push({
         type: 'text',
-        text: message.text,
+        text: message.text.trim(),
       });
     } else if (message.functionCall?.name) {
       responseMessage.toolCalls.push({
-        id: message.functionCall.id ?? message.functionCall.name,
+        id: message.functionCall.id ?? v4(),
         name: message.functionCall.name,
         arguments: JSON.stringify(message.functionCall.args),
         loading: false,

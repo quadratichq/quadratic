@@ -7,18 +7,6 @@
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
-// Icons are hidden by default and we only show them once the font loads
-if (document.fonts) {
-  document.fonts
-    .load('1em Material Symbols Outlined')
-    .then(() => {
-      document.documentElement.setAttribute('data-material-symbols-loaded', 'true');
-    })
-    .catch(() => {
-      console.error('Failed to load Material Symbols font. Things are going to look funky.');
-    });
-}
-
 const sizes = {
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
@@ -291,6 +279,10 @@ export const DownloadIcon: IconComponent = (props) => {
   return <Icon {...props}>download</Icon>;
 };
 
+export const DownloadExcelIcon: IconComponent = (props) => {
+  return <Icon {...props}>file_export</Icon>;
+};
+
 export const DraftIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
 };
@@ -333,6 +325,10 @@ export const ExpandCircleUpIcon: IconComponent = (props) => {
 
 export const ExternalLinkIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_outward</Icon>;
+};
+
+export const FastForwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>fast_forward</Icon>;
 };
 
 export const FormatAlignCenterIcon: IconComponent = (props) => {

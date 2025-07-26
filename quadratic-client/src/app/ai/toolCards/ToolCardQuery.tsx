@@ -14,14 +14,14 @@ export const ToolCardQuery = memo(
   }: {
     label: string | React.ReactNode;
     hasError?: boolean;
-    className?: string;
+    className: string;
     isLoading?: boolean;
   }) => {
     return (
       <div className={className}>
         <div
           className={cn(
-            'flex items-center text-sm text-muted-foreground',
+            'flex select-none items-center text-sm text-muted-foreground',
             isLoading &&
               // Black shimmer (better for readability)
               'bg-[linear-gradient(to_left,hsl(var(--foreground))_0%,hsl(var(--muted-foreground))_10%,hsl(var(--muted-foreground))_90%,hsl(var(--foreground))_100%)]',

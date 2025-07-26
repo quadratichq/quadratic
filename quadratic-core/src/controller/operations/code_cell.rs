@@ -36,15 +36,13 @@ impl GridController {
         // change the code cell name if it is provided and the code cell doesn't already have a name
         if let Some(code_cell_name) = code_cell_name {
             if self.data_table_at(sheet_pos).is_none() {
-                ops.push(Operation::DataTableMeta {
+                ops.push(Operation::DataTableOptionMeta {
                     sheet_pos,
                     name: Some(code_cell_name),
                     alternating_colors: None,
                     columns: None,
-                    show_ui: None,
                     show_name: None,
                     show_columns: None,
-                    readonly: None,
                 });
             }
         }
@@ -170,8 +168,6 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use bigdecimal::BigDecimal;
-
     use super::*;
     use crate::{Pos, constants::SHEET_NAME};
 
@@ -310,15 +306,15 @@ mod test {
 
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet_2.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
 
         check_operations(&gc);
