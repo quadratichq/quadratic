@@ -6,6 +6,7 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
+import { convertError } from 'quadratic-shared/utils/error';
 import { CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import { logRequestInfo } from './middleware/logRequestInfo';
 import internal_router from './routes/internal';
@@ -52,9 +53,9 @@ registerRoutes().then(() => {
     if (NODE_ENV !== 'test') {
       if (error.status >= 500) {
         if (NODE_ENV === 'production') {
-          console.error(JSON.stringify({ error }));
+          console.error(JSON.stringify({ error: convertError(error) }));
         } else {
-          console.log(JSON.stringify({ error }));
+          console.log(JSON.stringify({ error: convertError(error) }));
         }
       }
     }
@@ -72,7 +73,7 @@ registerRoutes().then(() => {
     if (error instanceof ApiError) {
       res.status(error.status).json({ error: { message: error.message, ...(error.meta ? { meta: error.meta } : {}) } });
     } else {
-      console.error(JSON.stringify({ error }));
+      console.error(JSON.stringify({ error: convertError(error) }));
 
       // Generic error handling
       res.status(error.status || 500).json({
@@ -120,8 +121,14 @@ async function registerRoutes() {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
-      } catch (err) {
-        console.error(JSON.stringify({ message: 'Failed to register route', expressRoute, error: err }));
+      } catch (error) {
+        console.error(
+          JSON.stringify({
+            message: 'Failed to register route',
+            expressRoute,
+            error: convertError(error),
+          })
+        );
       }
     }
   }

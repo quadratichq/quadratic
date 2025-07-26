@@ -30,51 +30,59 @@ import type {
   AIUsage,
   BedrockModelKey,
   Content,
+  ModelMode,
   ParsedAIResponse,
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
 
 function convertContent(content: Content): ContentBlock[] {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const image: ImageBlock = {
-        format: content.mimeType.split('/')[1] as ImageFormat,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { image };
-    } else if (isContentPdfFile(content) || isContentTextFile(content)) {
-      const document: DocumentBlock = {
-        format: content.mimeType.split('/')[1] as DocumentFormat,
-        name: content.fileName,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { document };
-    } else {
-      return {
-        text: content.text,
-      };
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const image: ImageBlock = {
+          format: content.mimeType.split('/')[1] as ImageFormat,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { image };
+      } else if (isContentPdfFile(content) || isContentTextFile(content)) {
+        const document: DocumentBlock = {
+          format: content.mimeType.split('/')[1] as DocumentFormat,
+          name: content.fileName,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { document };
+      } else {
+        return {
+          text: content.text.trim(),
+        };
+      }
+    });
 }
 
 function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const image: ImageBlock = {
-        format: content.mimeType.split('/')[1] as ImageFormat,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { image };
-    } else {
-      return {
-        text: content.text,
-      };
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const image: ImageBlock = {
+          format: content.mimeType.split('/')[1] as ImageFormat,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { image };
+      } else {
+        return {
+          text: content.text.trim(),
+        };
+      }
+    });
 }
 
-export function getBedrockApiArgs(args: AIRequestHelperArgs): {
+export function getBedrockApiArgs(
+  args: AIRequestHelperArgs,
+  aiModelMode: ModelMode
+): {
   system: SystemContentBlock[] | undefined;
   messages: Message[];
   tools: Tool[] | undefined;
@@ -83,7 +91,7 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
-  const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
+  const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message.trim() }));
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
     if (isInternalMessage(message)) {
       return acc;
@@ -92,9 +100,9 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
         role: message.role,
         content: [
           ...message.content
-            .filter((content) => content.text && content.type === 'text')
+            .filter((content) => content.type === 'text' && !!content.text.trim())
             .map((content) => ({
-              text: content.text,
+              text: content.text.trim(),
             })),
           ...message.toolCalls.map((toolCall) => ({
             toolUse: {
@@ -131,14 +139,17 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
     }
   }, []);
 
-  const tools = getBedrockTools(source, toolName);
+  const tools = getBedrockTools(source, aiModelMode, toolName);
   const tool_choice = tools?.length ? getBedrockToolChoice(toolName) : undefined;
 
   return { system, messages, tools, tool_choice };
 }
 
-function getBedrockTools(source: AISource, toolName?: AITool): Tool[] | undefined {
+function getBedrockTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }
@@ -301,7 +312,7 @@ export function parseBedrockResponse(
     if ('text' in contentBlock && contentBlock.text) {
       responseMessage.content.push({
         type: 'text',
-        text: contentBlock.text,
+        text: contentBlock.text.trim(),
       });
     }
 

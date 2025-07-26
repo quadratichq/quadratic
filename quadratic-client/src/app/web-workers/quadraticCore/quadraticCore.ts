@@ -31,6 +31,7 @@ import type {
   JsResponse,
   JsSelectionContext,
   JsSheetFill,
+  JsSheetNameToColor,
   JsSheetPosText,
   JsSummarizeSelectionResult,
   JsTablesContext,
@@ -55,27 +56,54 @@ import type {
   ClientCoreMessage,
   ClientCoreSummarizeSelection,
   ClientCoreUpgradeGridFile,
+  CoreClientAddSheetResponse,
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
+  CoreClientDeleteCellValues,
+  CoreClientDeleteColumns,
+  CoreClientDeleteRows,
+  CoreClientDeleteSheetResponse,
+  CoreClientDuplicateSheetResponse,
+  CoreClientExport,
+  CoreClientExportCsvSelection,
+  CoreClientExportExcel,
+  CoreClientGetAICells,
   CoreClientGetAIFormats,
+  CoreClientGetAISelectionContexts,
+  CoreClientGetAITablesContext,
   CoreClientGetCellFormatSummary,
+  CoreClientGetCellValue,
   CoreClientGetCodeCell,
   CoreClientGetDisplayCell,
   CoreClientGetEditCell,
   CoreClientGetFormatSelection,
   CoreClientGetJwt,
+  CoreClientGetValidationFromPos,
   CoreClientGetValidationList,
+  CoreClientGetValidations,
   CoreClientGridToDataTable,
   CoreClientHasCellData,
+  CoreClientImportFile,
+  CoreClientInsertColumns,
+  CoreClientInsertRows,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
   CoreClientMoveCodeCellVertically,
+  CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientRerunCodeCells,
+  CoreClientResizeColumns,
   CoreClientSearch,
+  CoreClientSetBorders,
   CoreClientSetCellRenderResize,
   CoreClientSetCodeCellValue,
+  CoreClientSetFormats,
+  CoreClientSetSheetColorResponse,
+  CoreClientSetSheetNameResponse,
+  CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
+  CoreClientUpgradeFile,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
@@ -295,10 +323,20 @@ class QuadraticCore {
   async export(): Promise<Uint8Array> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { grid: Uint8Array }) => {
+      this.waitingForResponse[id] = (message: CoreClientExport) => {
         resolve(message.grid);
       };
       this.send({ type: 'clientCoreExport', id });
+    });
+  }
+
+  async exportExcel(): Promise<Uint8Array> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientExportExcel) => {
+        resolve(message.excel);
+      };
+      this.send({ type: 'clientCoreExportExcel', id });
     });
   }
 
@@ -357,7 +395,7 @@ class QuadraticCore {
   getCellValue(sheetId: string, x: number, y: number): Promise<JsCellValue | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { value: JsCellValue | undefined }) => {
+      this.waitingForResponse[id] = (message: CoreClientGetCellValue) => {
         resolve(message.value);
       };
       this.send({
@@ -370,10 +408,10 @@ class QuadraticCore {
     });
   }
 
-  getAICells(selection: string, sheetId: string, page: number): Promise<string | undefined> {
+  getAICells(selection: string, sheetId: string, page: number): Promise<string | JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { aiCells: string }) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAICells) => {
         resolve(message.aiCells);
       };
       this.send({ type: 'clientCoreGetAICells', id, selection, sheetId, page });
@@ -389,7 +427,7 @@ class QuadraticCore {
   }): Promise<JsSelectionContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { selectionContexts: JsSelectionContext[] | undefined }) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAISelectionContexts) => {
         resolve(message.selectionContexts);
       };
       this.send({
@@ -407,7 +445,7 @@ class QuadraticCore {
   getAITablesContext(): Promise<JsTablesContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { tablesContext: JsTablesContext[] | undefined }) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAITablesContext) => {
         resolve(message.tablesContext);
       };
       this.send({ type: 'clientCoreGetAITablesContext', id });
@@ -498,7 +536,7 @@ class QuadraticCore {
   }> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: CoreClientUpgradeFile) => {
         resolve(message);
       };
       const message: ClientCoreUpgradeGridFile = {
@@ -520,7 +558,7 @@ class QuadraticCore {
   }> => {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { contents?: ArrayBufferLike; version?: string; error?: string }) => {
+      this.waitingForResponse[id] = (message: CoreClientImportFile) => {
         resolve(message);
       };
       this.send(
@@ -703,11 +741,11 @@ class QuadraticCore {
     });
   }
 
-  setFormats(sheetId: string, selection: string, formats: FormatUpdate) {
+  setFormats(sheetId: string, selection: string, formats: FormatUpdate): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = () => {
-        resolve(undefined);
+      this.waitingForResponse[id] = (message: CoreClientSetFormats) => {
+        resolve(message.response);
       };
       this.send({
         type: 'clientCoreSetFormats',
@@ -719,7 +757,7 @@ class QuadraticCore {
     });
   }
 
-  getAICellFormats(sheetId: string, selection: string, page: number) {
+  getAICellFormats(sheetId: string, selection: string, page: number): Promise<string | JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientGetAIFormats) => {
@@ -735,11 +773,11 @@ class QuadraticCore {
     });
   }
 
-  deleteCellValues(selection: string, cursor?: string) {
+  deleteCellValues(selection: string, cursor?: string): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = () => {
-        resolve(undefined);
+      this.waitingForResponse[id] = (message: CoreClientDeleteCellValues) => {
+        resolve(message.response);
       };
       this.send({
         type: 'clientCoreDeleteCellValues',
@@ -781,43 +819,96 @@ class QuadraticCore {
     });
   }
 
-  rerunCodeCells(sheetId: string | undefined, selection: string | undefined, cursor: string) {
-    this.send({
-      type: 'clientCoreRerunCodeCells',
-      sheetId,
-      selection,
-      cursor,
+  rerunCodeCells(
+    sheetId: string | undefined,
+    selection: string | undefined,
+    cursor: string
+  ): Promise<string | JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientRerunCodeCells) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreRerunCodeCells',
+        id,
+        sheetId,
+        selection,
+        cursor,
+      });
     });
   }
 
   //#region Sheet Operations
 
-  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string) {
-    this.send({ type: 'clientCoreAddSheet', sheetName, insertBeforeSheetName, cursor });
+  addSheet(sheetName?: string, insertBeforeSheetName?: string, cursor?: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientAddSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreAddSheet', id, sheetName, insertBeforeSheetName, cursor });
+    });
   }
 
-  deleteSheet(sheetId: string, cursor: string) {
-    this.send({ type: 'clientCoreDeleteSheet', sheetId, cursor });
+  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDuplicateSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreDuplicateSheet', id, sheetId, nameOfNewSheet, cursor });
+    });
   }
 
-  moveSheet(sheetId: string, previous: string | undefined, cursor: string) {
-    this.send({ type: 'clientCoreMoveSheet', sheetId, previous, cursor });
+  deleteSheet(sheetId: string, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDeleteSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreDeleteSheet', id, sheetId, cursor });
+    });
   }
 
-  setSheetName(sheetId: string, name: string, cursor: string) {
-    this.send({ type: 'clientCoreSetSheetName', sheetId, name, cursor });
+  moveSheet(sheetId: string, previous: string | undefined, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientMoveSheetResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreMoveSheet', id, sheetId, previous, cursor });
+    });
   }
 
-  setSheetColor(sheetId: string, color: string | undefined, cursor: string) {
-    this.send({ type: 'clientCoreSetSheetColor', sheetId, color, cursor });
+  setSheetName(sheetId: string, name: string, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetSheetNameResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreSetSheetName', id, sheetId, name, cursor });
+    });
   }
 
-  setSheetColors(sheetNameToColor: Record<string, string>, cursor: string) {
-    this.send({ type: 'clientCoreSetSheetColors', sheetNameToColor, cursor });
+  setSheetColor(sheetId: string, color: string | undefined, cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetSheetColorResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreSetSheetColor', id, sheetId, color, cursor });
+    });
   }
 
-  duplicateSheet(sheetId: string, nameOfNewSheet: string | undefined, cursor: string) {
-    this.send({ type: 'clientCoreDuplicateSheet', sheetId, nameOfNewSheet, cursor });
+  setSheetsColor(sheetNameToColor: JsSheetNameToColor[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetSheetsColorResponse) => {
+        resolve(message.response);
+      };
+      this.send({ type: 'clientCoreSetSheetsColor', id, sheetNameToColor, cursor });
+    });
   }
 
   //#endregion
@@ -891,13 +982,24 @@ class QuadraticCore {
 
   //#region Borders
 
-  setBorders(selection: string, borderSelection: BorderSelection, style?: BorderStyle) {
-    this.send({
-      type: 'clientCoreSetBorders',
-      selection,
-      borderSelection,
-      style,
-      cursor: sheets.getCursorPosition(),
+  setBorders(
+    selection: string,
+    borderSelection: BorderSelection,
+    style?: BorderStyle
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientSetBorders) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreSetBorders',
+        id,
+        selection,
+        borderSelection,
+        style,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 
@@ -953,7 +1055,7 @@ class QuadraticCore {
   exportCsvSelection(selection: string): Promise<string> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { csv: string }) => {
+      this.waitingForResponse[id] = (message: CoreClientExportCsvSelection) => {
         resolve(message.csv);
       };
       return this.send({
@@ -1003,7 +1105,7 @@ class QuadraticCore {
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
-  }): Promise<Pos> {
+  }): Promise<Pos | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellVertically) => {
@@ -1034,7 +1136,7 @@ class QuadraticCore {
     y: number;
     sheetEnd: boolean;
     reverse: boolean;
-  }): Promise<Pos> {
+  }): Promise<Pos | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientMoveCodeCellHorizontally) => {
@@ -1104,7 +1206,7 @@ class QuadraticCore {
   getValidationFromPos(sheetId: string, x: number, y: number): Promise<Validation | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { validation: Validation | undefined }) => {
+      this.waitingForResponse[id] = (message: CoreClientGetValidationFromPos) => {
         resolve(message.validation);
       };
       this.send({
@@ -1120,7 +1222,7 @@ class QuadraticCore {
   getValidations(sheetId: string): Promise<Validation[]> {
     const id = this.id++;
     return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: { validations: Validation[] }) => {
+      this.waitingForResponse[id] = (message: CoreClientGetValidations) => {
         resolve(message.validations);
       };
       this.send({
@@ -1192,43 +1294,83 @@ class QuadraticCore {
   //#endregion
   //#region manipulate columns and rows
 
-  deleteColumns(sheetId: string, columns: number[], cursor: string) {
-    this.send({
-      type: 'clientCoreDeleteColumns',
-      sheetId,
-      columns,
-      cursor,
+  deleteColumns(sheetId: string, columns: number[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDeleteColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreDeleteColumns',
+        id,
+        sheetId,
+        columns,
+        cursor,
+      });
     });
   }
 
-  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
-    this.send({
-      type: 'clientCoreInsertColumns',
-      sheetId,
-      column,
-      count,
-      right,
-      cursor,
+  insertColumns(
+    sheetId: string,
+    column: number,
+    count: number,
+    right: boolean,
+    cursor: string
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientInsertColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreInsertColumns',
+        id,
+        sheetId,
+        column,
+        count,
+        right,
+        cursor,
+      });
     });
   }
 
-  deleteRows(sheetId: string, rows: number[], cursor: string) {
-    this.send({
-      type: 'clientCoreDeleteRows',
-      sheetId,
-      rows,
-      cursor,
+  deleteRows(sheetId: string, rows: number[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDeleteRows) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreDeleteRows',
+        id,
+        sheetId,
+        rows,
+        cursor,
+      });
     });
   }
 
-  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
-    this.send({
-      type: 'clientCoreInsertRows',
-      sheetId,
-      row,
-      count,
-      below,
-      cursor,
+  insertRows(
+    sheetId: string,
+    row: number,
+    count: number,
+    below: boolean,
+    cursor: string
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientInsertRows) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreInsertRows',
+        id,
+        sheetId,
+        row,
+        count,
+        below,
+        cursor,
+      });
     });
   }
 
@@ -1413,21 +1555,35 @@ class QuadraticCore {
   }
   //#endregion
 
-  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string) {
-    this.send({
-      type: 'clientCoreResizeColumns',
-      sheetId,
-      columns,
-      cursor,
+  resizeColumns(sheetId: string, columns: ColumnRowResize[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreResizeColumns',
+        id,
+        sheetId,
+        columns,
+        cursor,
+      });
     });
   }
 
-  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string) {
-    this.send({
-      type: 'clientCoreResizeRows',
-      sheetId,
-      rows,
-      cursor,
+  resizeRows(sheetId: string, rows: ColumnRowResize[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientResizeColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreResizeRows',
+        id,
+        sheetId,
+        rows,
+        cursor,
+      });
     });
   }
 
@@ -1449,7 +1605,7 @@ class QuadraticCore {
     });
   }
 
-  getFormatSelection(selection: string): Promise<CellFormatSummary | undefined> {
+  getFormatSelection(selection: string): Promise<CellFormatSummary | JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientGetFormatSelection) => {

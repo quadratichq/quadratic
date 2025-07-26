@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
+import { convertError } from 'quadratic-shared/utils/error';
 import z from 'zod';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -70,7 +71,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in examples.POST handler', error }));
+    console.error(JSON.stringify({ message: 'Error in examples.POST handler', error: convertError(error) }));
     throw new ApiError(500, 'Failed to fetch example file. Ensure the file exists and is publicly accessible.');
   }
 }

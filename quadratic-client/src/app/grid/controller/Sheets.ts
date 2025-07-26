@@ -106,7 +106,7 @@ export class Sheets {
     this.sheets.splice(index, 1);
 
     // todo: this code should be in quadratic-core, not here
-    if (user) {
+    if (user && this.current === sheetId) {
       if (index - 1 >= 0 && index - 1 < this.sheets.length) {
         this.current = this.sheets[index - 1].id;
       } else {

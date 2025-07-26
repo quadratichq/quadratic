@@ -4,12 +4,18 @@ use super::*;
 impl GridController {
     #[allow(non_snake_case)]
     #[wasm_bindgen(js_name = "deleteColumns")]
-    pub fn js_delete_columns(&mut self, sheet_id: &str, columns: String, cursor: Option<String>) {
-        if let (Ok(sheet_id), Ok(columns)) =
-            (SheetId::from_str(sheet_id), serde_json::from_str(&columns))
-        {
+    pub fn js_delete_columns(
+        &mut self,
+        sheet_id: &str,
+        columns: String,
+        cursor: Option<String>,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let columns = serde_json::from_str(&columns).map_err(|_| "Unable to parse columns")?;
             self.delete_columns(sheet_id, columns, cursor);
-        }
+            Ok(None)
+        })
     }
 
     #[allow(non_snake_case)]
@@ -21,20 +27,29 @@ impl GridController {
         count: i32,
         after: bool,
         cursor: Option<String>,
-    ) {
-        if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
             let count = count.max(1);
             self.insert_columns(sheet_id, column, count as u32, after, cursor);
-        }
+            Ok(None)
+        })
     }
 
     #[allow(non_snake_case)]
     #[wasm_bindgen(js_name = "deleteRows")]
-    pub fn js_delete_row(&mut self, sheet_id: &str, rows: String, cursor: Option<String>) {
-        if let (Ok(sheet_id), Ok(rows)) = (SheetId::from_str(sheet_id), serde_json::from_str(&rows))
-        {
+    pub fn js_delete_row(
+        &mut self,
+        sheet_id: &str,
+        rows: String,
+        cursor: Option<String>,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
+            let rows = serde_json::from_str(&rows).map_err(|_| "Unable to parse rows")?;
             self.delete_rows(sheet_id, rows, cursor);
-        }
+            Ok(None)
+        })
     }
 
     #[allow(non_snake_case)]
@@ -46,11 +61,13 @@ impl GridController {
         count: i32,
         after: bool,
         cursor: Option<String>,
-    ) {
-        if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
             let count = count.max(1);
             self.insert_rows(sheet_id, row, count as u32, after, cursor);
-        }
+            Ok(None)
+        })
     }
 
     #[allow(non_snake_case)]
