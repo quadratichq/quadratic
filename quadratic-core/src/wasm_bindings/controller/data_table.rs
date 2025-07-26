@@ -27,25 +27,16 @@ impl GridController {
         table_name: Option<String>,
         first_row_is_header: bool,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        match serde_json::from_str::<SheetRect>(&sheet_rect) {
+    ) -> JsValue {
+        capture_core_error(|| match serde_json::from_str::<SheetRect>(&sheet_rect) {
             Ok(sheet_rect) => {
                 match self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor) {
-                    Ok(_) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                        result: true,
-                        error: None,
-                    })?),
-                    Err(e) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                        result: false,
-                        error: Some(e.to_string()),
-                    })?),
+                    Ok(_) => Ok(None),
+                    Err(e) => Err(e.to_string()),
                 }
             }
-            Err(e) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                result: false,
-                error: Some(e.to_string()),
-            })?),
-        }
+            Err(e) => Err(format!("Unable to parse SheetRect: {e}")),
+        })
     }
 
     /// Converts a DataTableKind::CodeRun to DataTableKind::Import
@@ -93,16 +84,21 @@ impl GridController {
         pos: String,
         first_row_is_header: bool,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.data_table_first_row_as_header(
-            pos.to_sheet_pos(sheet_id),
-            first_row_is_header,
-            cursor,
-        );
+    ) -> JsValue {
+        capture_core_error(|| {
+            let pos = serde_json::from_str::<Pos>(&pos)
+                .map_err(|e| format!("Unable to parse Pos: {e}"))?;
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
 
-        Ok(())
+            self.data_table_first_row_as_header(
+                pos.to_sheet_pos(sheet_id),
+                first_row_is_header,
+                cursor,
+            );
+
+            Ok(None)
+        })
     }
     /// Update a Data Table's name
     #[allow(clippy::too_many_arguments)]
@@ -117,29 +113,33 @@ impl GridController {
         show_name: Option<bool>,
         show_columns: Option<bool>,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+    ) -> JsValue {
+        capture_core_error(|| {
+            let pos = serde_json::from_str::<Pos>(&pos)
+                .map_err(|e| format!("Unable to parse Pos: {e}"))?;
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
 
-        let columns = columns_js
-            .map(|c| {
-                serde_json::from_str::<Vec<JsDataTableColumnHeader>>(&c)
-                    .map_err(|e| e.to_string())
-                    .map(|c| c.into_iter().map(|c| c.into()).collect())
-            })
-            .transpose()?;
+            let columns = columns_js
+                .map(|c| {
+                    serde_json::from_str::<Vec<JsDataTableColumnHeader>>(&c)
+                        .map_err(|e| format!("Unable to parse columns: {e}"))
+                        .map(|c| c.into_iter().map(|c| c.into()).collect())
+                })
+                .transpose()?;
 
-        self.data_table_meta(
-            pos.to_sheet_pos(sheet_id),
-            name,
-            alternating_colors,
-            columns,
-            show_name.map(Some),
-            show_columns.map(Some),
-            cursor,
-        );
+            self.data_table_meta(
+                pos.to_sheet_pos(sheet_id),
+                name,
+                alternating_colors,
+                columns,
+                show_name.map(Some),
+                show_columns.map(Some),
+                cursor,
+            );
 
-        Ok(())
+            Ok(None)
+        })
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -156,23 +156,27 @@ impl GridController {
         flatten_on_delete: Option<bool>,
         swallow_on_insert: Option<bool>,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
-        let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
+    ) -> JsValue {
+        capture_core_error(|| {
+            let pos = serde_json::from_str::<Pos>(&pos)
+                .map_err(|e| format!("Unable to parse Pos: {e}"))?;
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
 
-        self.data_table_mutations(
-            pos.to_sheet_pos(sheet_id),
-            select_table,
-            columns_to_add,
-            columns_to_remove,
-            rows_to_add,
-            rows_to_remove,
-            flatten_on_delete,
-            swallow_on_insert,
-            cursor,
-        );
+            self.data_table_mutations(
+                pos.to_sheet_pos(sheet_id),
+                select_table,
+                columns_to_add,
+                columns_to_remove,
+                rows_to_add,
+                rows_to_remove,
+                flatten_on_delete,
+                swallow_on_insert,
+                cursor,
+            );
 
-        Ok(())
+            Ok(None)
+        })
     }
 
     #[wasm_bindgen(js_name = "addDataTable")]

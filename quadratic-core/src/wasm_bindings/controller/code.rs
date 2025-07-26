@@ -34,9 +34,7 @@ impl GridController {
                     "calculationGetCellsA1: Failed to serialize get cells a1 response: {:?}",
                     e
                 ));
-                Err(format!(
-                    "Failed to serialize get cells a1 response: {e:?}"
-                ))
+                Err(format!("Failed to serialize get cells a1 response: {e:?}"))
             }
         }
     }
@@ -46,15 +44,17 @@ impl GridController {
     ///
     /// * CodeCell.evaluation_result is a stringified version of the output (used for AI models)
     #[wasm_bindgen(js_name = "getCodeCell")]
-    pub fn js_get_code_string(&self, sheet_id: String, pos: String) -> Result<JsValue, JsValue> {
-        let pos: Pos = serde_json::from_str(&pos).map_err(|_| JsValue::UNDEFINED)?;
+    pub fn js_get_code_string(&self, sheet_id: String, pos: String) -> JsValue {
+        let Ok(pos) = serde_json::from_str::<Pos>(&pos) else {
+            return JsValue::UNDEFINED;
+        };
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
-            return Ok(JsValue::null());
+            return JsValue::UNDEFINED;
         };
         if let Some(edit_code) = sheet.edit_code_value(pos, self.a1_context()) {
-            Ok(serde_wasm_bindgen::to_value(&edit_code)?)
+            serde_wasm_bindgen::to_value(&edit_code).unwrap_or(JsValue::UNDEFINED)
         } else {
-            Ok(JsValue::null())
+            JsValue::UNDEFINED
         }
     }
 
@@ -87,8 +87,13 @@ impl GridController {
 
     /// Reruns all code cells in grid.
     #[wasm_bindgen(js_name = "rerunAllCodeCells")]
-    pub fn js_rerun_code_cells(&mut self, cursor: Option<String>) -> Option<String> {
-        Some(self.rerun_all_code_cells(cursor))
+    pub fn js_rerun_code_cells(&mut self, cursor: Option<String>) -> JsValue {
+        capture_core_error(|| {
+            let transaction_id = self.rerun_all_code_cells(cursor);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 
     /// Reruns all code cells in a sheet.
@@ -97,11 +102,15 @@ impl GridController {
         &mut self,
         sheet_id: String,
         cursor: Option<String>,
-    ) -> Option<String> {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            return Some(self.rerun_sheet_code_cells(sheet_id, cursor));
-        }
-        None
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+            let transaction_id = self.rerun_sheet_code_cells(sheet_id, cursor);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 
     /// Reruns one code cell
@@ -111,13 +120,17 @@ impl GridController {
         sheet_id: String,
         selection: String,
         cursor: Option<String>,
-    ) -> Option<String> {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            if let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context()) {
-                return Some(self.rerun_code_cell(selection, cursor));
-            }
-        }
-        None
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|e| format!("Invalid selection: {e}"))?;
+            let transaction_id = self.rerun_code_cell(selection, cursor);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 
     #[wasm_bindgen(js_name = "connectionComplete")]

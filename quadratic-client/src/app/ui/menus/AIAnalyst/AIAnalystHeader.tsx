@@ -1,5 +1,6 @@
 import { Action } from '@/app/actions/actions';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
+import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import {
   aiAnalystChatsCountAtom,
   aiAnalystCurrentChatAtom,
@@ -9,14 +10,16 @@ import {
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIAnalystDebugChatInput } from '@/app/ui/menus/AIAnalyst/AIAnalystDebugChatInput';
-import { AddIcon, CloseIcon, HistoryIcon } from '@/shared/components/Icons';
+import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
+import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useMemo } from 'react';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
 type AIAnalystHeaderProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -27,21 +30,53 @@ const THRESHOLD = import.meta.env.VITE_AI_ANALYST_START_NEW_CHAT_MSG_THRESHOLD
   : 15;
 
 export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
+  const { debugFlags } = useDebugFlags();
+  const debugAIAnalystChatEditing = useMemo(
+    () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
+    [debugFlags]
+  );
+
   const [showChatHistory, setShowChatHistory] = useRecoilState(aiAnalystShowChatHistoryAtom);
   const chatsCount = useRecoilValue(aiAnalystChatsCountAtom);
   const setCurrentChat = useSetRecoilState(aiAnalystCurrentChatAtom);
   const setWaitingOnMessageIndex = useSetRecoilState(aiAnalystWaitingOnMessageIndexAtom);
-  const currentUserMessages = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+  const currentUserMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   const setShowAIAnalyst = useSetRecoilState(showAIAnalystAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
 
   const showStartFreshMsg = useMemo(
-    () => currentUserMessages >= THRESHOLD && !showChatHistory,
-    [currentUserMessages, showChatHistory]
+    () => currentUserMessagesCount >= THRESHOLD && !showChatHistory,
+    [currentUserMessagesCount, showChatHistory]
   );
   const showHistoryMsg = useMemo(
-    () => currentUserMessages === 0 && !showChatHistory && !loading && chatsCount > 0,
-    [currentUserMessages, showChatHistory, loading, chatsCount]
+    () => currentUserMessagesCount === 0 && !showChatHistory && !loading && chatsCount > 0,
+    [currentUserMessagesCount, showChatHistory, loading, chatsCount]
+  );
+
+  const handleExecuteAllToolCalls = useRecoilCallback(
+    ({ snapshot }) =>
+      async () => {
+        const currentChat = await snapshot.getPromise(aiAnalystCurrentChatAtom);
+        for (const message of currentChat.messages) {
+          if ('toolCalls' in message) {
+            for (const toolCall of message.toolCalls) {
+              try {
+                const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
+                aiToolsSpec[toolCall.name as AITool].responseSchema.parse(args);
+                const result = await aiToolsActions[toolCall.name as AITool](args, {
+                  source: 'AIAnalyst',
+                  chatId: '',
+                  messageIndex: -1,
+                });
+                console.log(result);
+              } catch (error) {
+                console.error(error);
+              }
+            }
+          }
+        }
+      },
+    []
   );
 
   return (
@@ -53,14 +88,28 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
         </span>
 
         <div className="flex items-center gap-2">
+          {debugAIAnalystChatEditing && (
+            <TooltipPopover label="Execute all tool calls">
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground hover:text-foreground"
+                disabled={loading || (currentUserMessagesCount === 0 && !showChatHistory)}
+                onClick={handleExecuteAllToolCalls}
+              >
+                <FastForwardIcon />
+              </Button>
+            </TooltipPopover>
+          )}
+
           <TooltipPopover label="New chat">
             <Button
               variant={showStartFreshMsg ? 'outline' : 'ghost'}
               size="icon-sm"
               className="text-muted-foreground hover:text-foreground"
-              disabled={loading || (currentUserMessages === 0 && !showChatHistory)}
+              disabled={loading || (currentUserMessagesCount === 0 && !showChatHistory)}
               onClick={() => {
-                mixpanel.track('[AIAnalyst].startNewChat', { messageCount: currentUserMessages });
+                mixpanel.track('[AIAnalyst].startNewChat', { messageCount: currentUserMessagesCount });
                 setCurrentChat({
                   id: '',
                   name: '',

@@ -21,6 +21,7 @@ import {
   getTableInfo,
   JsA1Context,
   selectionToSheetRect,
+  selectionToSheetRectString,
   stringToSelection,
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -107,7 +108,7 @@ export class Sheets {
     this.sheets.splice(index, 1);
 
     // todo: this code should be in quadratic-core, not here
-    if (user) {
+    if (user && this.current === sheetId) {
       if (index - 1 >= 0 && index - 1 < this.sheets.length) {
         this.current = this.sheets[index - 1].id;
       } else {
@@ -316,15 +317,15 @@ export class Sheets {
   }
 
   userAddSheet() {
-    quadraticCore.addSheet(undefined, undefined, this.getCursorPosition());
+    quadraticCore.addSheet(undefined, undefined);
   }
 
   duplicate() {
-    quadraticCore.duplicateSheet(this.current, undefined, this.getCursorPosition());
+    quadraticCore.duplicateSheet(this.current, undefined);
   }
 
   userDeleteSheet(id: string) {
-    quadraticCore.deleteSheet(id, this.getCursorPosition());
+    quadraticCore.deleteSheet(id);
   }
 
   moveSheet(options: { id: string; toBefore?: string; delta?: number }) {
@@ -340,7 +341,7 @@ export class Sheets {
 
         const nextNext = next ? this.getNext(next.order) : undefined;
 
-        quadraticCore.moveSheet(id, nextNext?.id, this.getCursorPosition());
+        quadraticCore.moveSheet(id, nextNext?.id);
       } else if (delta === -1) {
         const previous = this.getPrevious(sheet.order);
 
@@ -348,12 +349,12 @@ export class Sheets {
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        quadraticCore.moveSheet(id, previous?.id, this.getCursorPosition());
+        quadraticCore.moveSheet(id, previous?.id);
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
     } else {
-      quadraticCore.moveSheet(id, toBefore, this.getCursorPosition());
+      quadraticCore.moveSheet(id, toBefore);
     }
     this.sort();
   }
@@ -440,13 +441,12 @@ export class Sheets {
     return cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange, bigIntReplacer), isPython, this.jsA1Context);
   };
 
-  selectionToSheetRect = (sheetId: string, selection: string): string => {
-    return selectionToSheetRect(sheetId, selection, this.jsA1Context);
+  selectionToSheetRectString = (sheetId: string, selection: string): string => {
+    return selectionToSheetRectString(sheetId, selection, this.jsA1Context);
   };
 
-  selectionToSheetRectParsed = (sheetId: string, selection: string): SheetRect => {
-    const sheetRect = this.selectionToSheetRect(sheetId, selection);
-    return JSON.parse(sheetRect, bigIntReplacer);
+  selectionToSheetRect = (sheetId: string, selection: string): SheetRect => {
+    return selectionToSheetRect(sheetId, selection, this.jsA1Context);
   };
 
   getTableInfo = (): JsTableInfo[] => {

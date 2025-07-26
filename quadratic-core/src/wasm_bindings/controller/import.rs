@@ -5,8 +5,8 @@ use wasm_bindgen::prelude::wasm_bindgen;
 
 use crate::Pos;
 use crate::controller::GridController;
-use crate::grid::js_types::JsResponse;
 use crate::grid::{Grid, SheetId};
+use crate::wasm_bindings::capture_core_error;
 use crate::wasm_bindings::js::jsImportProgress;
 
 #[wasm_bindgen]
@@ -92,21 +92,15 @@ impl GridController {
         file: Vec<u8>,
         file_name: &str,
         cursor: Option<String>,
-    ) -> Result<JsValue, JsValue> {
-        match self.import_excel(&file, file_name, cursor) {
-            Ok(_) => Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                result: true,
-                error: None,
-            })?),
+    ) -> JsValue {
+        capture_core_error(|| match self.import_excel(&file, file_name, cursor) {
+            Ok(_) => Ok(None),
             Err(e) => {
                 let error = format!("Error importing Excel file: {file_name:?}, error: {e:?}");
                 dbgjs!(&error);
-                Ok(serde_wasm_bindgen::to_value(&JsResponse {
-                    result: false,
-                    error: Some(error),
-                })?)
+                Err(error)
             }
-        }
+        })
     }
 }
 
