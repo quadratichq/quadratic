@@ -1097,37 +1097,43 @@ class Core {
     }
   }
 
-  deleteColumns(sheetId: string, columns: number[], cursor: string) {
+  deleteColumns(sheetId: string, columns: number[], cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
+      return this.gridController.deleteColumns(sheetId, JSON.stringify(columns), cursor);
     } catch (e) {
       this.handleCoreError('deleteColumns', e);
     }
   }
 
-  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
+  insertColumns(
+    sheetId: string,
+    column: number,
+    count: number,
+    right: boolean,
+    cursor: string
+  ): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.insertColumns(sheetId, BigInt(column), count, right, cursor);
+      return this.gridController.insertColumns(sheetId, BigInt(column), count, right, cursor);
     } catch (e) {
       this.handleCoreError('insertColumns', e);
     }
   }
 
-  deleteRows(sheetId: string, rows: number[], cursor: string) {
+  deleteRows(sheetId: string, rows: number[], cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
+      return this.gridController.deleteRows(sheetId, JSON.stringify(rows), cursor);
     } catch (e) {
       this.handleCoreError('deleteRows', e);
     }
   }
 
-  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
+  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.insertRows(sheetId, BigInt(row), count, below, cursor);
+      return this.gridController.insertRows(sheetId, BigInt(row), count, below, cursor);
     } catch (e) {
       this.handleCoreError('insertRows', e);
     }

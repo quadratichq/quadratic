@@ -1,5 +1,4 @@
-import type { AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, AISource, AIToolArgs, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
@@ -32,8 +31,11 @@ export enum AITool {
   RerunCode = 'rerun_code',
   ResizeColumns = 'resize_columns',
   ResizeRows = 'resize_rows',
-
   SetBorders = 'set_borders',
+  InsertColumns = 'insert_columns',
+  InsertRows = 'insert_rows',
+  DeleteColumns = 'delete_columns',
+  DeleteRows = 'delete_rows',
 }
 
 export const AIToolSchema = z.enum([
@@ -67,6 +69,10 @@ export const AIToolSchema = z.enum([
   AITool.ResizeColumns,
   AITool.ResizeRows,
   AITool.SetBorders,
+  AITool.InsertColumns,
+  AITool.InsertRows,
+  AITool.DeleteColumns,
+  AITool.DeleteRows,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -298,6 +304,26 @@ export const AIToolsArgsSchema = {
       .string()
       .transform((val) => val.toLowerCase())
       .pipe(z.enum(['all', 'inner', 'outer', 'horizontal', 'vertical', 'left', 'top', 'right', 'bottom', 'clear'])),
+  }),
+  [AITool.InsertColumns]: z.object({
+    sheet_name: z.string().optional(),
+    column: z.string(),
+    right: z.boolean(),
+    count: z.number(),
+  }),
+  [AITool.InsertRows]: z.object({
+    sheet_name: z.string().optional(),
+    row: z.number(),
+    below: z.boolean(),
+    count: z.number(),
+  }),
+  [AITool.DeleteColumns]: z.object({
+    sheet_name: z.string().optional(),
+    columns: z.array(z.string()),
+  }),
+  [AITool.DeleteRows]: z.object({
+    sheet_name: z.string().optional(),
+    rows: z.array(z.number()),
   }),
 } as const;
 
@@ -1531,5 +1557,139 @@ The color must be a valid CSS color string.\n
 The line type must be one of: line1, line2, line3, dotted, dashed, double, clear.\n
 The border_selection must be one of: all, inner, outer, horizontal, vertical, left, top, right, bottom, clear.\n
 `,
+  },
+  [AITool.InsertColumns]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool inserts columns in a sheet, adjusted columns to the right of the insertion. The new columns will share the formatting of the column provided.\n
+It requires the sheet name, the column to insert the columns at, whether to insert to the right or left of the column, and the number of columns to insert.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to insert columns in',
+        },
+        column: {
+          type: 'string',
+          description:
+            'The column to insert the columns at. This must be a valid column name, for example A or ZA. The new columns will share the formatting of this column.',
+        },
+        right: {
+          type: 'boolean',
+          description:
+            'Whether to insert to the right or left of the column. If true, insert to the right of the column. If false, insert to the left of the column.',
+        },
+        count: {
+          type: 'number',
+          description: 'The number of columns to insert',
+        },
+      },
+      required: ['sheet_name', 'column', 'right', 'count'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.InsertColumns],
+    prompt: `
+This tool inserts columns in a sheet, adjusted columns to the right of the insertion.\n
+It requires the sheet name, the column to insert the columns at, whether to insert to the right or left of the column, and the number of columns to insert.\n`,
+  },
+  [AITool.InsertRows]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool inserts rows in a sheet, adjusted rows below the insertion.\n
+It requires the sheet name, the row to insert the rows at, whether to insert below or above the row, and the number of rows to insert. The new rows will share the formatting of the row provided.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to insert rows in',
+        },
+        row: {
+          type: 'number',
+          description:
+            'The row to insert the rows at. This should be a number, for example 1, 2, 35, etc. The new rows will share the formatting of this row.',
+        },
+        below: {
+          type: 'boolean',
+          description:
+            'Whether to insert below or above the row. If true, insert below the row. If false, insert above the row.',
+        },
+        count: {
+          type: 'number',
+          description: 'The number of rows to insert',
+        },
+      },
+      required: ['sheet_name', 'row', 'below', 'count'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.InsertRows],
+    prompt: `
+This tool inserts rows in a sheet, adjusted rows below the insertion.\n
+It requires the sheet name, the row to insert the rows at, whether to insert below or above the row, and the number of rows to insert. The new rows will share the formatting of the row provided.\n`,
+  },
+  [AITool.DeleteColumns]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool deletes columns in a sheet, adjusting columns to the right of the deletion.\n
+It requires the sheet name and an array of sheet columns to delete.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to delete columns in',
+        },
+        columns: {
+          type: 'array',
+          items: {
+            type: 'string',
+            description: 'The column to delete. This must be a valid column name, for example "A" or "ZB".',
+          },
+        },
+      },
+      required: ['sheet_name', 'columns'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.DeleteColumns],
+    prompt: `
+This tool deletes columns in a sheet, adjusting columns to the right of the deletion.\n
+It requires the sheet name and an array of sheet columns to delete.\n`,
+  },
+  [AITool.DeleteRows]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool deletes rows in a sheet, adjusting rows below the deletion.\n
+It requires the sheet name and an array of sheet rows to delete.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to delete rows in',
+        },
+        rows: {
+          type: 'array',
+          items: {
+            type: 'number',
+            description: 'The row to delete. This must be a number, for example 1, 2, 35, etc.',
+          },
+        },
+      },
+      required: ['sheet_name', 'rows'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.DeleteRows],
+    prompt: `
+This tool deletes rows in a sheet, adjusting rows below the deletion.\n
+It requires the sheet name and an array of sheet rows to delete.\n`,
   },
 } as const;

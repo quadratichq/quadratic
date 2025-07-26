@@ -579,19 +579,35 @@ class CoreClient {
         return;
 
       case 'clientCoreDeleteColumns':
-        core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor);
+        this.send({
+          type: 'coreClientDeleteColumns',
+          id: e.data.id,
+          response: core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor),
+        });
         return;
 
       case 'clientCoreDeleteRows':
-        core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor);
+        this.send({
+          type: 'coreClientDeleteRows',
+          id: e.data.id,
+          response: core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor),
+        });
         return;
 
       case 'clientCoreInsertColumns':
-        core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor);
+        this.send({
+          type: 'coreClientInsertColumns',
+          id: e.data.id,
+          response: core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor),
+        });
         return;
 
       case 'clientCoreInsertRows':
-        core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor);
+        this.send({
+          type: 'coreClientInsertRows',
+          id: e.data.id,
+          response: core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor),
+        });
         return;
 
       case 'clientCoreFlattenDataTable':

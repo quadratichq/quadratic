@@ -60,6 +60,8 @@ import type {
   CoreClientCopyToClipboard,
   CoreClientCutToClipboard,
   CoreClientDeleteCellValues,
+  CoreClientDeleteColumns,
+  CoreClientDeleteRows,
   CoreClientDeleteSheetResponse,
   CoreClientDuplicateSheetResponse,
   CoreClientExport,
@@ -82,6 +84,8 @@ import type {
   CoreClientGridToDataTable,
   CoreClientHasCellData,
   CoreClientImportFile,
+  CoreClientInsertColumns,
+  CoreClientInsertRows,
   CoreClientLoad,
   CoreClientMessage,
   CoreClientMoveCodeCellHorizontally,
@@ -1290,43 +1294,83 @@ class QuadraticCore {
   //#endregion
   //#region manipulate columns and rows
 
-  deleteColumns(sheetId: string, columns: number[], cursor: string) {
-    this.send({
-      type: 'clientCoreDeleteColumns',
-      sheetId,
-      columns,
-      cursor,
+  deleteColumns(sheetId: string, columns: number[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDeleteColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreDeleteColumns',
+        id,
+        sheetId,
+        columns,
+        cursor,
+      });
     });
   }
 
-  insertColumns(sheetId: string, column: number, count: number, right: boolean, cursor: string) {
-    this.send({
-      type: 'clientCoreInsertColumns',
-      sheetId,
-      column,
-      count,
-      right,
-      cursor,
+  insertColumns(
+    sheetId: string,
+    column: number,
+    count: number,
+    right: boolean,
+    cursor: string
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientInsertColumns) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreInsertColumns',
+        id,
+        sheetId,
+        column,
+        count,
+        right,
+        cursor,
+      });
     });
   }
 
-  deleteRows(sheetId: string, rows: number[], cursor: string) {
-    this.send({
-      type: 'clientCoreDeleteRows',
-      sheetId,
-      rows,
-      cursor,
+  deleteRows(sheetId: string, rows: number[], cursor: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientDeleteRows) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreDeleteRows',
+        id,
+        sheetId,
+        rows,
+        cursor,
+      });
     });
   }
 
-  insertRows(sheetId: string, row: number, count: number, below: boolean, cursor: string) {
-    this.send({
-      type: 'clientCoreInsertRows',
-      sheetId,
-      row,
-      count,
-      below,
-      cursor,
+  insertRows(
+    sheetId: string,
+    row: number,
+    count: number,
+    below: boolean,
+    cursor: string
+  ): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientInsertRows) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreInsertRows',
+        id,
+        sheetId,
+        row,
+        count,
+        below,
+        cursor,
+      });
     });
   }
 

@@ -17,7 +17,7 @@ import type {
   NumericFormatKind,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
+import { columnNameToIndex, stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -856,6 +856,90 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     } catch (e) {
       return [createTextContent(`Error executing set borders tool: ${e}`)];
+    }
+  },
+  [AITool.InsertColumns]: async (args) => {
+    try {
+      const { sheet_name, column, right, count } = args;
+      const columnIndex = columnNameToIndex(column);
+      if (columnIndex === undefined) {
+        return [createTextContent(`Error executing insert columns tool. Invalid column: ${column}.`)];
+      }
+
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // the "right" if weird: it's what column we use for formatting, so we need to add 1 if we're inserting to the right
+      const response = await quadraticCore.insertColumns(
+        sheetId,
+        Number(columnIndex) + (right ? 1 : 0),
+        count,
+        !right,
+        sheets.getCursorPosition()
+      );
+      if (response?.result) {
+        return [createTextContent('Insert columns tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing insert columns tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing insert columns tool: ${e}`)];
+    }
+  },
+  [AITool.InsertRows]: async (args) => {
+    try {
+      const { sheet_name, row, below, count } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+
+      // the "below" is weird: it's what row we use for formatting, so we need to add 1 if we're inserting below
+      const response = await quadraticCore.insertRows(
+        sheetId,
+        row + (below ? 1 : 0),
+        count,
+        !below,
+        sheets.getCursorPosition()
+      );
+      if (response?.result) {
+        return [createTextContent('Insert rows tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing insert rows tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing insert rows tool: ${e}`)];
+    }
+  },
+  [AITool.DeleteColumns]: async (args) => {
+    try {
+      const { sheet_name, columns } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const columnIndicies = columns.flatMap((column) => {
+        const columnIndex = columnNameToIndex(column);
+        if (columnIndex === undefined) {
+          return [];
+        }
+        return [Number(columnIndex)];
+      });
+      const response = await quadraticCore.deleteColumns(sheetId, columnIndicies, sheets.getCursorPosition());
+      if (response?.result) {
+        return [createTextContent('Delete columns tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing delete columns tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing delete columns tool: ${e}`)];
+    }
+  },
+  [AITool.DeleteRows]: async (args) => {
+    try {
+      const { sheet_name, rows } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const response = await quadraticCore.deleteRows(sheetId, rows, sheets.getCursorPosition());
+      if (response?.result) {
+        return [createTextContent('Delete rows tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing delete rows tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing delete rows tool: ${e}`)];
     }
   },
 } as const;

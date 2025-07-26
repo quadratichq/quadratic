@@ -1041,20 +1041,35 @@ export interface CoreClientNeighborText {
 
 export interface ClientCoreDeleteColumns {
   type: 'clientCoreDeleteColumns';
+  id: number;
   sheetId: string;
   columns: number[];
   cursor: string;
 }
 
+export interface CoreClientDeleteColumns {
+  type: 'coreClientDeleteColumns';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreDeleteRows {
   type: 'clientCoreDeleteRows';
+  id: number;
   sheetId: string;
   rows: number[];
   cursor: string;
 }
 
+export interface CoreClientDeleteRows {
+  type: 'coreClientDeleteRows';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreInsertColumns {
   type: 'clientCoreInsertColumns';
+  id: number;
   sheetId: string;
   column: number;
   count: number;
@@ -1062,13 +1077,26 @@ export interface ClientCoreInsertColumns {
   cursor: string;
 }
 
+export interface CoreClientInsertColumns {
+  type: 'coreClientInsertColumns';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreInsertRows {
   type: 'clientCoreInsertRows';
+  id: number;
   sheetId: string;
   row: number;
   count: number;
   below: boolean;
   cursor: string;
+}
+
+export interface CoreClientInsertRows {
+  type: 'coreClientInsertRows';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreFlattenDataTable {
@@ -1497,4 +1525,8 @@ export type CoreClientMessage =
   | CoreClientRerunCodeCells
   | CoreClientResizeColumns
   | CoreClientResizeRows
-  | CoreClientSetBorders;
+  | CoreClientSetBorders
+  | CoreClientDeleteColumns
+  | CoreClientDeleteRows
+  | CoreClientInsertColumns
+  | CoreClientInsertRows;
