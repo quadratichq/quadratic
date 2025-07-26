@@ -25,6 +25,7 @@ export const SetCodeCellValue = memo(
 
     useEffect(() => {
       if (loading) {
+        setToolArgs(undefined);
         return;
       }
 
@@ -92,7 +93,6 @@ export const SetCodeCellValue = memo(
           y: codeCellPos.y,
           codeString: toolArgs.code_string,
           language: convertArgsToCodeCellLanguage(toolArgs.code_cell_language, toolArgs.connection_id),
-          cursor: sheets.getCursorPosition(),
         });
       },
       [codeCellPos]

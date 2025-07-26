@@ -61,7 +61,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
           if ('toolCalls' in message) {
             for (const toolCall of message.toolCalls) {
               try {
-                const args = JSON.parse(toolCall.arguments);
+                const args = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
                 aiToolsSpec[toolCall.name as AITool].responseSchema.parse(args);
                 const result = await aiToolsActions[toolCall.name as AITool](args, {
                   source: 'AIAnalyst',
