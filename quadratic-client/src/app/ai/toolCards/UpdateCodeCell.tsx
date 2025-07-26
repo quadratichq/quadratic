@@ -1,6 +1,5 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
@@ -69,7 +68,6 @@ export const UpdateCodeCell = memo(
             y: codeCell.pos.y,
             codeString: code_string ?? '',
             language: codeCell.language,
-            cursor: sheets.getCursorPosition(),
           });
         },
       [toolArgs]

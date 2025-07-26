@@ -80,8 +80,10 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
-            let columns = serde_json::from_str(&columns).map_err(|_| "Unable to parse columns")?;
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let columns = serde_json::from_str(&columns)
+                .map_err(|e| format!("Unable to parse columns: {e}"))?;
             self.resize_columns(sheet_id, columns, cursor);
             Ok(None)
         })
@@ -95,8 +97,10 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
-            let rows = serde_json::from_str(&rows).map_err(|_| "Unable to parse rows")?;
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let rows =
+                serde_json::from_str(&rows).map_err(|e| format!("Unable to parse rows: {e}"))?;
             self.resize_rows(sheet_id, rows, cursor);
             Ok(None)
         })

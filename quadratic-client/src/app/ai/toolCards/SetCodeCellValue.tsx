@@ -88,7 +88,6 @@ export const SetCodeCellValue = memo(
           y: codeCellPos.y,
           codeString: toolArgs.code_string,
           language: toolArgs.code_cell_language,
-          cursor: sheets.getCursorPosition(),
         });
       },
       [codeCellPos]

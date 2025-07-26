@@ -12,6 +12,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
+  JsDataTableColumnHeader,
   JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
@@ -37,8 +38,8 @@ const waitForSetCodeCellValue = (transactionId: string) => {
     if (!isTransactionRunning) {
       resolve(undefined);
     } else {
-      events.once('transactionEnd', (transactionEnd) => {
-        if (transactionEnd.transactionId === transactionId) {
+      events.once('transactionInfoUpdated', (transactionInfoId) => {
+        if (transactionInfoId === transactionId) {
           resolve(undefined);
         } else {
           waitForSetCodeCellValue(transactionId).then(resolve);
@@ -194,7 +195,6 @@ export const aiToolsActions: AIToolActionsRecord = {
           name: table_name,
           values: table_data,
           firstRowIsHeader: true,
-          cursor: sheets.getCursorPosition(),
         });
 
         ensureRectVisible(sheetId, { x, y }, { x: x + table_data[0].length - 1, y: y + table_data.length - 1 });
@@ -218,7 +218,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { x, y } = selection.getCursor();
 
       if (cell_values.length > 0 && cell_values[0].length > 0) {
-        await quadraticCore.setCellValues(sheetId, x, y, cell_values, sheets.getCursorPosition());
+        await quadraticCore.setCellValues(sheetId, x, y, cell_values);
 
         ensureRectVisible(sheetId, { x, y }, { x: x + cell_values[0].length - 1, y: y + cell_values.length - 1 });
 
@@ -247,7 +247,6 @@ export const aiToolsActions: AIToolActionsRecord = {
         codeString: code_string,
         language: code_cell_language,
         codeCellName: code_cell_name,
-        cursor: sheets.getCursorPosition(),
       });
 
       if (transactionId) {
@@ -290,7 +289,6 @@ export const aiToolsActions: AIToolActionsRecord = {
         y,
         codeString: formula_string,
         language: 'Formula',
-        cursor: sheets.getCursorPosition(),
       });
 
       if (transactionId) {
@@ -355,7 +353,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const sourceSelection = sheets.stringToSelection(selection, sheetId);
 
-      const response = await quadraticCore.deleteCellValues(sourceSelection.save(), sheets.getCursorPosition());
+      const response = await quadraticCore.deleteCellValues(sourceSelection.save());
       if (response?.result) {
         return [createTextContent(`The selection ${args.selection} was deleted successfully.`)];
       } else {
@@ -396,7 +394,6 @@ export const aiToolsActions: AIToolActionsRecord = {
         y: codeCell.pos.y,
         codeString: code_string,
         language: codeCell.language,
-        cursor: sheets.getCursorPosition(),
       });
 
       if (transactionId) {
@@ -511,16 +508,11 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.ConvertToTable]: async (args) => {
     try {
       const sheetId = args.sheet_name ? (sheets.getSheetByName(args.sheet_name)?.id ?? sheets.current) : sheets.current;
-      const sheetRect = sheets.selectionToSheetRect(sheetId, args.selection);
+      const sheetRect = sheets.selectionToSheetRectString(sheetId, args.selection);
       if (!sheetRect) {
         return [createTextContent('Invalid selection, this should be a single rectangle, not a range')];
       }
-      const response = await quadraticCore.gridToDataTable(
-        sheetRect,
-        args.table_name,
-        args.first_row_is_column_names,
-        sheets.getCursorPosition()
-      );
+      const response = await quadraticCore.gridToDataTable(sheetRect, args.table_name, args.first_row_is_column_names);
       if (response?.result) {
         return [createTextContent('Converted sheet data to table.')];
       } else {
@@ -539,11 +531,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.AddSheet]: async (args) => {
     try {
       const { sheet_name, insert_before_sheet_name } = args;
-      const response = await quadraticCore.addSheet(
-        sheet_name,
-        insert_before_sheet_name ?? undefined,
-        sheets.getCursorPosition()
-      );
+      const response = await quadraticCore.addSheet(sheet_name, insert_before_sheet_name ?? undefined);
       if (response?.result) {
         return [createTextContent('Create new sheet tool executed successfully.')];
       } else {
@@ -560,7 +548,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (!sheetId) {
         return [createTextContent('Error executing duplicate sheet tool, sheet not found')];
       }
-      const response = await quadraticCore.duplicateSheet(sheetId, name_of_new_sheet, sheets.getCursorPosition());
+      const response = await quadraticCore.duplicateSheet(sheetId, name_of_new_sheet);
       if (response?.result) {
         return [createTextContent('Duplicate sheet tool executed successfully.')];
       } else {
@@ -577,7 +565,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (!sheetId) {
         return [createTextContent('Error executing rename sheet tool, sheet not found')];
       }
-      const response = await quadraticCore.setSheetName(sheetId, new_name, sheets.getCursorPosition());
+      const response = await quadraticCore.setSheetName(sheetId, new_name);
       if (response?.result) {
         return [createTextContent('Rename sheet tool executed successfully.')];
       } else {
@@ -594,7 +582,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (!sheetId) {
         return [createTextContent('Error executing delete sheet tool, sheet not found')];
       }
-      const response = await quadraticCore.deleteSheet(sheetId, sheets.getCursorPosition());
+      const response = await quadraticCore.deleteSheet(sheetId);
       if (response?.result) {
         return [createTextContent('Delete sheet tool executed successfully.')];
       } else {
@@ -614,7 +602,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       if (!sheetId) {
         return [createTextContent('Error executing move sheet tool, sheet not found')];
       }
-      const response = await quadraticCore.moveSheet(sheetId, insertBeforeSheetId, sheets.getCursorPosition());
+      const response = await quadraticCore.moveSheet(sheetId, insertBeforeSheetId);
       if (response?.result) {
         return [createTextContent('Move sheet tool executed successfully.')];
       } else {
@@ -627,7 +615,7 @@ export const aiToolsActions: AIToolActionsRecord = {
   [AITool.ColorSheets]: async (args) => {
     try {
       const { sheet_names_to_color } = args;
-      const response = await quadraticCore.setSheetsColor(sheet_names_to_color, sheets.getCursorPosition());
+      const response = await quadraticCore.setSheetsColor(sheet_names_to_color);
       if (response?.result) {
         return [createTextContent('Color sheets tool executed successfully.')];
       } else {
@@ -700,7 +688,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { sheet_name, selection } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : undefined;
-      const response = await quadraticCore.rerunCodeCells(sheetId, selection ?? undefined, sheets.getCursorPosition());
+      const response = await quadraticCore.rerunCodeCells(sheetId, selection ?? undefined);
       if (typeof response === 'string') {
         await waitForSetCodeCellValue(response);
         const text =
@@ -764,7 +752,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       if (resizing.length) {
-        const response = await quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
+        const response = await quadraticCore.resizeColumns(sheetId, resizing);
         if (response?.result) {
           return [createTextContent(`Resize columns tool executed successfully.`)];
         } else {
@@ -817,7 +805,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
 
       if (resizing.length) {
-        const response = await quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
+        const response = await quadraticCore.resizeRows(sheetId, resizing);
         if (response?.result) {
           return [createTextContent('Resize rows tool executed successfully.')];
         } else {
@@ -869,13 +857,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
 
       // the "right" if weird: it's what column we use for formatting, so we need to add 1 if we're inserting to the right
-      const response = await quadraticCore.insertColumns(
-        sheetId,
-        Number(columnIndex) + (right ? 1 : 0),
-        count,
-        !right,
-        sheets.getCursorPosition()
-      );
+      const response = await quadraticCore.insertColumns(sheetId, Number(columnIndex) + (right ? 1 : 0), count, !right);
       if (response?.result) {
         return [createTextContent('Insert columns tool executed successfully.')];
       } else {
@@ -891,13 +873,7 @@ export const aiToolsActions: AIToolActionsRecord = {
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
 
       // the "below" is weird: it's what row we use for formatting, so we need to add 1 if we're inserting below
-      const response = await quadraticCore.insertRows(
-        sheetId,
-        row + (below ? 1 : 0),
-        count,
-        !below,
-        sheets.getCursorPosition()
-      );
+      const response = await quadraticCore.insertRows(sheetId, row + (below ? 1 : 0), count, !below);
       if (response?.result) {
         return [createTextContent('Insert rows tool executed successfully.')];
       } else {
@@ -918,7 +894,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         }
         return [Number(columnIndex)];
       });
-      const response = await quadraticCore.deleteColumns(sheetId, columnIndicies, sheets.getCursorPosition());
+      const response = await quadraticCore.deleteColumns(sheetId, columnIndicies);
       if (response?.result) {
         return [createTextContent('Delete columns tool executed successfully.')];
       } else {
@@ -932,7 +908,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     try {
       const { sheet_name, rows } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-      const response = await quadraticCore.deleteRows(sheetId, rows, sheets.getCursorPosition());
+      const response = await quadraticCore.deleteRows(sheetId, rows);
       if (response?.result) {
         return [createTextContent('Delete rows tool executed successfully.')];
       } else {
@@ -940,6 +916,87 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     } catch (e) {
       return [createTextContent(`Error executing delete rows tool: ${e}`)];
+    }
+  },
+  [AITool.TableMeta]: async (args) => {
+    try {
+      const {
+        sheet_name,
+        table_location,
+        first_row_is_column_names,
+        new_table_name,
+        show_name,
+        show_columns,
+        alternating_row_colors,
+      } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const sheetRect = sheets.selectionToSheetRect(sheetId, table_location);
+      if (first_row_is_column_names !== undefined && first_row_is_column_names !== null) {
+        const response = await quadraticCore.dataTableFirstRowAsHeader(
+          sheetId,
+          Number(sheetRect.min.x),
+          Number(sheetRect.min.y),
+          first_row_is_column_names
+        );
+        if (!response?.result) {
+          return [createTextContent(`Error executing table meta tool: ${response?.error}`)];
+        }
+      }
+      if (
+        new_table_name !== undefined ||
+        new_table_name !== null ||
+        show_name !== undefined ||
+        show_name !== null ||
+        show_columns !== undefined ||
+        show_columns !== null ||
+        alternating_row_colors !== undefined ||
+        alternating_row_colors !== null
+      ) {
+        const response = await quadraticCore.dataTableMeta(sheetId, Number(sheetRect.min.x), Number(sheetRect.min.y), {
+          name: new_table_name ?? undefined,
+          alternatingColors: alternating_row_colors ?? undefined,
+          showName: show_name ?? undefined,
+          showColumns: show_columns ?? undefined,
+        });
+        if (!response?.result) {
+          return [createTextContent(`Error executing table meta tool: ${response?.error}`)];
+        }
+      }
+      return [createTextContent('Set table meta tool executed successfully.')];
+    } catch (e) {
+      return [createTextContent(`Error executing table meta tool: ${e}`)];
+    }
+  },
+  [AITool.TableColumnSettings]: async (args) => {
+    try {
+      const { sheet_name, table_location, column_names } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const sheetRect = sheets.selectionToSheetRect(sheetId, table_location);
+      const sheet = pixiApp.cellsSheets.getById(sheetId);
+      if (!sheet) {
+        return [createTextContent(`Error executing table column settings tool. Sheet not found: ${sheet_name}.`)];
+      }
+      const table = sheet.tables.getTable(sheetRect.min.x, sheetRect.min.y);
+      if (!table) {
+        return [createTextContent(`Error executing table column settings tool. Table not found at ${table_location}.`)];
+      }
+      // convert the ai response to the format expected by the core
+      const columns: JsDataTableColumnHeader[] = table.codeCell.columns.map((column, i) => {
+        const changedColumn = column_names.find((c) => c.old_name.toLowerCase() === column.name.toLowerCase());
+        return changedColumn
+          ? { valueIndex: i, name: changedColumn.new_name, display: changedColumn.show }
+          : { valueIndex: i, name: column.name, display: column.display };
+      });
+      const response = await quadraticCore.dataTableMeta(sheetId, Number(sheetRect.min.x), Number(sheetRect.min.y), {
+        columns,
+      });
+      if (response?.result) {
+        return [createTextContent('Rename table columns tool executed successfully.')];
+      } else {
+        return [createTextContent(`Error executing rename table columns tool: ${response?.error}`)];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing table column settings tool: ${e}`)];
     }
   },
 } as const;

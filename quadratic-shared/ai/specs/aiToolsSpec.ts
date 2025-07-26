@@ -36,6 +36,8 @@ export enum AITool {
   InsertRows = 'insert_rows',
   DeleteColumns = 'delete_columns',
   DeleteRows = 'delete_rows',
+  TableMeta = 'table_meta',
+  TableColumnSettings = 'table_column_settings',
 }
 
 export const AIToolSchema = z.enum([
@@ -73,6 +75,8 @@ export const AIToolSchema = z.enum([
   AITool.InsertRows,
   AITool.DeleteColumns,
   AITool.DeleteRows,
+  AITool.TableMeta,
+  AITool.TableColumnSettings,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -273,9 +277,9 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.TextSearch]: z.object({
     query: z.string(),
-    case_sensitive: z.boolean(),
-    whole_cell: z.boolean(),
-    search_code: z.boolean(),
+    case_sensitive: booleanSchema,
+    whole_cell: booleanSchema,
+    search_code: booleanSchema,
     sheet_name: z.string().optional(),
   }),
   [AITool.RerunCode]: z.object({
@@ -308,14 +312,14 @@ export const AIToolsArgsSchema = {
   [AITool.InsertColumns]: z.object({
     sheet_name: z.string().optional(),
     column: z.string(),
-    right: z.boolean(),
-    count: z.number(),
+    right: booleanSchema,
+    count: numberSchema,
   }),
   [AITool.InsertRows]: z.object({
     sheet_name: z.string().optional(),
-    row: z.number(),
-    below: z.boolean(),
-    count: z.number(),
+    row: numberSchema,
+    below: booleanSchema,
+    count: numberSchema,
   }),
   [AITool.DeleteColumns]: z.object({
     sheet_name: z.string().optional(),
@@ -323,7 +327,27 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.DeleteRows]: z.object({
     sheet_name: z.string().optional(),
-    rows: z.array(z.number()),
+    rows: z.array(numberSchema),
+  }),
+  [AITool.TableMeta]: z.object({
+    sheet_name: z.string().optional(),
+    table_location: z.string(),
+    new_table_name: z.string().nullable().optional(),
+    first_row_is_column_names: booleanSchema.nullable().optional(),
+    show_name: booleanSchema.nullable().optional(),
+    show_columns: booleanSchema.nullable().optional(),
+    alternating_row_colors: booleanSchema.nullable().optional(),
+  }),
+  [AITool.TableColumnSettings]: z.object({
+    sheet_name: z.string().optional(),
+    table_location: z.string(),
+    column_names: z.array(
+      z.object({
+        old_name: z.string(),
+        new_name: z.string(),
+        show: booleanSchema,
+      })
+    ),
   }),
 } as const;
 
@@ -1691,5 +1715,112 @@ It requires the sheet name and an array of sheet rows to delete.\n
     prompt: `
 This tool deletes rows in a sheet, adjusting rows below the deletion.\n
 It requires the sheet name and an array of sheet rows to delete.\n`,
+  },
+  [AITool.TableMeta]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name that contains the table',
+        },
+        table_location: {
+          type: 'string',
+          description: 'The anchor location of the table (ie, the top-left cell of the table). For example: A5',
+        },
+        new_table_name: {
+          type: ['string', 'null'],
+          description: 'The optional new name of the table.',
+        },
+        first_row_is_column_names: {
+          type: ['boolean', 'null'],
+          description:
+            'The optional boolean as to whether the first row of the table contains the column names. If set to true, the first row will be used as the column names for the table. If set to false, default column names will be used instead.',
+        },
+        show_name: {
+          type: ['boolean', 'null'],
+          description:
+            'The optional boolean that toggles whether the table name is shown for the table. This is true by default. If true, then the top row of the table only contains the table name.',
+        },
+        show_columns: {
+          type: ['boolean', 'null'],
+          description:
+            'The optional boolean that toggles whether the column names are shown for the table. This is true by default. If true, then the first row of the table contains the column names.',
+        },
+        alternating_row_colors: {
+          type: ['boolean', 'null'],
+          description:
+            'The optional boolean that toggles whether the table has alternating row colors. This is true by default. If true, then the table will have alternating row colors.',
+        },
+      },
+      required: [
+        'sheet_name',
+        'table_location',
+        'new_table_name',
+        'first_row_is_column_names',
+        'show_name',
+        'show_columns',
+        'alternating_row_colors',
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.TableMeta],
+    prompt: `
+This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
+`,
+  },
+  [AITool.TableColumnSettings]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool changes the columns of a table. It can rename them or show or hide them.\n
+In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name that contains the table',
+        },
+        table_location: {
+          type: 'string',
+          description: 'The anchor location of the table (ie, the top-left cell of the table). For example: A5',
+        },
+        column_names: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              old_name: {
+                type: 'string',
+                description: 'The old name of the column',
+              },
+              new_name: {
+                type: 'string',
+                description:
+                  'The new name of the column. If the new name is the same as the old name, the column will not be renamed.',
+              },
+              show: {
+                type: 'boolean',
+                description: 'Whether the column is shown in the table. This is true by default.',
+              },
+            },
+            required: ['old_name', 'new_name', 'show'],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ['sheet_name', 'table_location', 'column_names'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.TableColumnSettings],
+    prompt: `
+This tool changes the columns of a table. It can rename them or show or hide them.\n
+In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
 } as const;

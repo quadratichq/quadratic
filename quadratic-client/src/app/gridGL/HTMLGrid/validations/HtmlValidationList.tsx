@@ -94,13 +94,7 @@ export const HtmlValidationList = (props: Props) => {
 
   const changeValue = useCallback(
     (value: string) => {
-      quadraticCore.setCellValue(
-        sheets.current,
-        sheets.sheet.cursor.position.x,
-        sheets.sheet.cursor.position.y,
-        value,
-        sheets.getCursorPosition()
-      );
+      quadraticCore.setCellValue(sheets.current, sheets.sheet.cursor.position.x, sheets.sheet.cursor.position.y, value);
       setAnnotationState(undefined);
       inlineEditorHandler.close({ cancel: true });
     },

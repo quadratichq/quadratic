@@ -138,13 +138,7 @@ export class UIValidations extends Container<SpecialSprite> {
       const special = child as SpecialSprite;
       if (special.column === column && special.row === row) {
         if (special.type === 'checkbox' && (world === true || intersects.rectanglePoint(special.rectangle, world))) {
-          quadraticCore.setCellValue(
-            sheets.current,
-            column,
-            row,
-            special.checkbox ? 'false' : 'true',
-            sheets.getCursorPosition()
-          );
+          quadraticCore.setCellValue(sheets.current, column, row, special.checkbox ? 'false' : 'true');
         } else if (
           special.type === 'dropdown' &&
           (world === true || intersects.rectanglePoint(special.rectangle, world))

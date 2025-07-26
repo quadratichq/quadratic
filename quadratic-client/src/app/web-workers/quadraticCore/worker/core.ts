@@ -1181,10 +1181,10 @@ class Core {
     showName?: boolean,
     showColumns?: boolean,
     cursor?: string
-  ) {
+  ): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.dataTableMeta(
+      return this.gridController.dataTableMeta(
         sheetId,
         posToPos(x, y),
         name,
@@ -1211,10 +1211,10 @@ class Core {
     flatten_on_delete?: boolean;
     swallow_on_insert?: boolean;
     cursor?: string;
-  }) {
+  }): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.dataTableMutations(
+      return this.gridController.dataTableMutations(
         args.sheetId,
         posToPos(args.x, args.y),
         args.select_table,
@@ -1240,10 +1240,16 @@ class Core {
     }
   }
 
-  dataTableFirstRowAsHeader(sheetId: string, x: number, y: number, firstRowAsHeader: boolean, cursor: string) {
+  dataTableFirstRowAsHeader(
+    sheetId: string,
+    x: number,
+    y: number,
+    firstRowAsHeader: boolean,
+    cursor: string
+  ): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
+      return this.gridController.dataTableFirstRowAsHeader(sheetId, posToPos(x, y), firstRowAsHeader, cursor);
     } catch (e) {
       this.handleCoreError('dataTableFirstRowAsHeader', e);
     }
