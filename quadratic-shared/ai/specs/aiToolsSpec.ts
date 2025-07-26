@@ -70,6 +70,10 @@ export const AIToolSchema = z.enum([
   AITool.ResizeColumns,
   AITool.ResizeRows,
   AITool.SetBorders,
+  AITool.InsertColumns,
+  AITool.InsertRows,
+  AITool.DeleteColumns,
+  AITool.DeleteRows,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -1634,7 +1638,7 @@ It requires the sheet name, the row to insert the rows at, whether to insert bel
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool deletes columns in a sheet, adjusting columns to the right of the deletion.\n
-It requires the sheet name, the columns to delete.\n
+It requires the sheet name and an array of sheet columns to delete.\n
 `,
     parameters: {
       type: 'object',
@@ -1657,14 +1661,14 @@ It requires the sheet name, the columns to delete.\n
     responseSchema: AIToolsArgsSchema[AITool.DeleteColumns],
     prompt: `
 This tool deletes columns in a sheet, adjusting columns to the right of the deletion.\n
-It requires the sheet name, the columns to delete.\n`,
+It requires the sheet name and an array of sheet columns to delete.\n`,
   },
   [AITool.DeleteRows]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool deletes rows in a sheet, adjusting rows below the deletion.\n
-It requires the sheet name, the rows to delete.\n
+It requires the sheet name and an array of sheet rows to delete.\n
 `,
     parameters: {
       type: 'object',
@@ -1687,6 +1691,6 @@ It requires the sheet name, the rows to delete.\n
     responseSchema: AIToolsArgsSchema[AITool.DeleteRows],
     prompt: `
 This tool deletes rows in a sheet, adjusting rows below the deletion.\n
-It requires the sheet name, the rows to delete.\n`,
+It requires the sheet name and an array of sheet rows to delete.\n`,
   },
 } as const;
