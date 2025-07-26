@@ -155,7 +155,7 @@ Default size of a new chart is ${DEFAULT_HTML_CELL_WIDTH}x${DEFAULT_HTML_CELL_HE
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code, always reference data from the sheet.
 - In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(Table_Name[#DATA])\` or \`=SUM(Table_Name[#HEADERS])\` or \`=SUM(Table_Name[#ALL])\` or \`=SUM(Table_Name[Column_Name])\`.\n
 - In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
-- Tables can be referenced using \`q.cells("Table_Name")\` to reference the entire table.\n
+- **PREFERRED**: Always use table names (Table_Name) when working with entire tables. Use A1 notation only for non-table data or partial table selections.\n
 - In Formulas and JavaScript use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header. This does not work in Python.\n
 - In all languages use \`q.cells("Table_Name[#HEADERS]")\` to reference the headers of the table.\n
 - In Formulas and JavaScript use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table. This does not work in Python.\n`,

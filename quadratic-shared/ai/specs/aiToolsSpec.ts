@@ -870,8 +870,7 @@ CRITICALLY IMPORTANT: If too large, the results will include page information:\n
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
-It requires the sheet name, the selection of cells to set the formats of, and any formats to set.\n
-There must be at least one format to set.\n
+There must be at least one non-null format to set.\n
 `,
     parameters: {
       type: 'object',
@@ -882,7 +881,8 @@ There must be at least one format to set.\n
         },
         selection: {
           type: 'string',
-          description: 'The selection of cells to set the formats of, in a1 notation',
+          description:
+            'The selection of cells to set the formats of, in a1 notation. ALWAYS use table names when formatting entire tables (e.g., "Table1"). Only use A1 notation for partial table selections or non-table data.',
         },
         bold: {
           type: ['boolean', 'null'],
