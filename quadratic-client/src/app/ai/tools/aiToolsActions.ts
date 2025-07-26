@@ -1111,7 +1111,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         display: changedColumn.show,
       };
     });
-    quadraticCore.dataTableMeta(sheetId, Number(sheetRect.min.x), Number(sheetRect.min.y), {
+    await quadraticCore.dataTableMeta(sheetId, Number(sheetRect.min.x), Number(sheetRect.min.y), {
       columns,
     });
     return [

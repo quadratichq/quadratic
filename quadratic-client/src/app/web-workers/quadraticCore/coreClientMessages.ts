@@ -1028,6 +1028,7 @@ export interface CoreClientGridToDataTable {
 
 export interface ClientCoreDataTableMeta {
   type: 'clientCoreDataTableMeta';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
@@ -1223,6 +1224,11 @@ export interface CoreClientGetFormatSelection {
   format: CellFormatSummary | undefined;
 }
 
+export interface CoreClientResponse {
+  type: 'coreClientResponse';
+  id: number;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1393,4 +1399,5 @@ export type CoreClientMessage =
   | CoreClientContentCache
   | CoreClientSetCellRenderResize
   | CoreClientGetFormatSelection
-  | CoreClientHasCellData;
+  | CoreClientHasCellData
+  | CoreClientResponse;

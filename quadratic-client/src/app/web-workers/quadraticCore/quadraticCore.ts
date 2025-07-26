@@ -1311,18 +1311,25 @@ class QuadraticCore {
       showColumns?: boolean;
     },
     cursor?: string
-  ) {
-    this.send({
-      type: 'clientCoreDataTableMeta',
-      sheetId,
-      x,
-      y,
-      name: options.name,
-      alternatingColors: options.alternatingColors,
-      columns: options.columns,
-      showName: options.showName,
-      showColumns: options.showColumns,
-      cursor: cursor || '',
+  ): Promise<void> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = () => {
+        resolve(undefined);
+      };
+      this.send({
+        type: 'clientCoreDataTableMeta',
+        id,
+        sheetId,
+        x,
+        y,
+        name: options.name,
+        alternatingColors: options.alternatingColors,
+        columns: options.columns,
+        showName: options.showName,
+        showColumns: options.showColumns,
+        cursor: cursor || '',
+      });
     });
   }
 

@@ -578,6 +578,10 @@ class CoreClient {
           e.data.showColumns,
           e.data.cursor
         );
+        this.send({
+          type: 'coreClientResponse',
+          id: e.data.id,
+        });
         return;
 
       case 'clientCoreDataTableMutations':
