@@ -1,5 +1,4 @@
-import type { AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { type AISource, type AIToolArgs } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, AISource, AIToolArgs, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {

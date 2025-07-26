@@ -6,7 +6,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "deleteColumns")]
     pub fn js_delete_columns(
         &mut self,
-        sheet_id: &str,
+        sheet_id: String,
         columns: String,
         cursor: Option<String>,
     ) -> JsValue {
@@ -22,7 +22,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "insertColumns")]
     pub fn js_insert_columns(
         &mut self,
-        sheet_id: &str,
+        sheet_id: String,
         column: i64,
         count: i32,
         after: bool,
@@ -40,7 +40,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "deleteRows")]
     pub fn js_delete_row(
         &mut self,
-        sheet_id: &str,
+        sheet_id: String,
         rows: String,
         cursor: Option<String>,
     ) -> JsValue {
@@ -56,7 +56,7 @@ impl GridController {
     #[wasm_bindgen(js_name = "insertRows")]
     pub fn js_insert_rows(
         &mut self,
-        sheet_id: &str,
+        sheet_id: String,
         row: i64,
         count: i32,
         after: bool,
@@ -74,13 +74,14 @@ impl GridController {
     #[wasm_bindgen(js_name = "moveColumns")]
     pub fn js_move_columns(
         &mut self,
-        sheet_id: &str,
+        sheet_id: String,
         col_start: i32,
         col_end: i32,
         to: i32,
         cursor: Option<String>,
-    ) {
-        if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
             self.move_columns(
                 sheet_id,
                 col_start as i64,
@@ -88,20 +89,22 @@ impl GridController {
                 to as i64,
                 cursor,
             );
-        }
+            Ok(None)
+        })
     }
 
     #[allow(non_snake_case)]
     #[wasm_bindgen(js_name = "moveRows")]
     pub fn js_move_rows(
         &mut self,
-        sheet_id: &str,
+        sheet_id: String,
         row_start: i32,
         row_end: i32,
         to: i32,
         cursor: Option<String>,
-    ) {
-        if let Ok(sheet_id) = SheetId::from_str(sheet_id) {
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
             self.move_rows(
                 sheet_id,
                 row_start as i64,
@@ -109,6 +112,7 @@ impl GridController {
                 to as i64,
                 cursor,
             );
-        }
+            Ok(None)
+        })
     }
 }
