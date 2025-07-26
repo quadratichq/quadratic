@@ -38,7 +38,7 @@ const waitForSetCodeCellValue = (transactionId: string) => {
     if (!isTransactionRunning) {
       resolve(undefined);
     } else {
-      events.once('transactionInfoUpdated', (transactionInfoId) => {
+      events.once('transactionEndUpdated', (transactionInfoId) => {
         if (transactionInfoId === transactionId) {
           resolve(undefined);
         } else {
