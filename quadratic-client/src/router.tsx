@@ -25,6 +25,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from '
  *  - *.quadratichq.com/logout
  *  - *.quadratichq.com/education
  *  - *.quadratichq.com/onboarding
+ *  - *.quadratichq.com/chat TODO: handle this redirect to /teams/:teamUuid/chat?private=false
  *  - *.quadratichq.com/iframe-indexeddb
  *
  *  To add a new route:
@@ -123,6 +124,7 @@ export const router = createBrowserRouter(
               <Route path="members" lazy={() => import('./routes/teams.$teamUuid.members')} />
               <Route path="settings" lazy={() => import('./routes/teams.$teamUuid.settings')} />
               <Route path="connections" lazy={() => import('./routes/teams.$teamUuid.connections')} />
+              <Route path="chat" lazy={() => import('./routes/teams.$teamUuid.chat')} />
             </Route>
           </Route>
         </Route>

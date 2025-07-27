@@ -229,7 +229,7 @@ export class UrlParamsUser {
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
       chatId,
-      content: [...aiFiles, { type: 'text', text: prompt }],
+      content: [...aiFiles, { type: 'text', text: decodeURIComponent(prompt) }],
       messageSource: chatId ? 'MarketingSite' : 'UrlPrompt',
       context: {
         sheets: [],

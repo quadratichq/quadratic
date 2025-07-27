@@ -8,6 +8,7 @@ import type { TeamAction } from '@/routes/teams.$teamUuid';
 import { Avatar } from '@/shared/components/Avatar';
 import {
   AddIcon,
+  AIIcon,
   ArrowDropDownIcon,
   CheckIcon,
   DatabaseIcon,
@@ -103,10 +104,28 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <DraftIcon className={classNameIcons} />
               Files
             </SidebarNavLink>
+
             {canEditTeam && (
               <SidebarNavLinkCreateButton isPrivate={false} teamUuid={activeTeamUuid}>
                 New file
               </SidebarNavLinkCreateButton>
+            )}
+            {canEditTeam && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="icon-sm"
+                    className="absolute right-9 top-1 ml-auto !bg-transparent opacity-30 hover:opacity-100"
+                  >
+                    <Link to={ROUTES.TEAM_CHAT(activeTeamUuid, false)}>
+                      <AIIcon size="xs" />
+                    </Link>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>New file from chat</TooltipContent>
+              </Tooltip>
             )}
           </div>
           {canEditTeam && (
@@ -319,12 +338,13 @@ function SidebarNavLink({
   const navigation = useNavigation();
   const submit = useSubmit();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const toPathname = new URL(to.startsWith('/') ? window.location.origin + to : to).pathname;
 
   const isActive =
     // We're currently on this page and not navigating elsewhere
-    (to === location.pathname && navigation.state !== 'loading') ||
+    (toPathname === location.pathname && navigation.state !== 'loading') ||
     // We're navigating to this page
-    to === navigation.location?.pathname;
+    toPathname === navigation.location?.pathname;
 
   const isDroppable = dropTarget !== undefined && to !== location.pathname;
   const dropProps = isDroppable
