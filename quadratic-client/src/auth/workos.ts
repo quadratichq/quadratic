@@ -117,14 +117,16 @@ export const workosClient: AuthClient = {
    * Get the access token for the current authenticated user.
    * If the user is not authenticated, redirect to the login page.
    */
-  async getTokenOrRedirect() {
-    const client = await getClient();
+  async getTokenOrRedirect(skipRedirect?: boolean) {
     try {
+      const client = await getClient();
       const token = await client.getAccessToken();
       return token;
     } catch (e) {
-      const { pathname, search } = new URL(window.location.href);
-      await this.login(pathname + search);
+      if (!skipRedirect) {
+        const { pathname, search } = new URL(window.location.href);
+        await this.login(pathname + search);
+      }
     }
     return '';
   },

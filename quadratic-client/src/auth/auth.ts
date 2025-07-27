@@ -22,7 +22,7 @@ export interface AuthClient {
   login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
-  getTokenOrRedirect(): Promise<string>;
+  getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
 }
 
 const getAuthClient = () => {

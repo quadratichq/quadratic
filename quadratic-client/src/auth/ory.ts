@@ -115,15 +115,20 @@ export const oryClient: AuthClient = {
    * it will fail and we will manually redirect the user to auth0 to re-authenticate
    * and get a new token.
    */
-  async getTokenOrRedirect() {
-    const session = await getSession();
-
-    if (!session || !session.tokenized) {
-      const { pathname, search } = new URL(window.location.href);
-      await this.login(pathname + search);
-      return '';
+  async getTokenOrRedirect(skipRedirect?: boolean) {
+    try {
+      const session = await getSession();
+      if (session && session.tokenized) {
+        return session.tokenized;
+      } else {
+        throw new Error('Session is not tokenized');
+      }
+    } catch (e) {
+      if (!skipRedirect) {
+        const { pathname, search } = new URL(window.location.href);
+        await this.login(pathname + search);
+      }
     }
-
-    return session.tokenized;
+    return '';
   },
 };

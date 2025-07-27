@@ -151,8 +151,8 @@ export class Multiplayer {
     }
   }
 
-  private async getJwt() {
-    this.jwt = await authClient.getTokenOrRedirect();
+  private async getJwt(skipRedirect?: boolean) {
+    this.jwt = await authClient.getTokenOrRedirect(skipRedirect);
   }
 
   private async addJwtCookie(force: boolean = false) {
@@ -161,7 +161,7 @@ export class Multiplayer {
 
       if (this.jwt) {
         let domain = parseDomain(window.location.host);
-        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain};`;
+        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain}; SameSite=Lax; Secure`;
       }
     }
   }

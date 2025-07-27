@@ -84,14 +84,16 @@ export const auth0Client: AuthClient = {
    * it will fail and we will manually redirect the user to auth0 to re-authenticate
    * and get a new token.
    */
-  async getTokenOrRedirect() {
-    const client = await getClient();
+  async getTokenOrRedirect(skipRedirect?: boolean) {
     try {
+      const client = await getClient();
       const token = await client.getTokenSilently();
       return token;
     } catch (e) {
-      const { pathname, search } = new URL(window.location.href);
-      await this.login(pathname + search);
+      if (!skipRedirect) {
+        const { pathname, search } = new URL(window.location.href);
+        await this.login(pathname + search);
+      }
       return '';
     }
   },
