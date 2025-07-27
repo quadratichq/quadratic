@@ -4,17 +4,20 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { showAIAnalystAtom } from '@/app/atoms/aiAnalystAtom';
 import { codeEditorShowCodeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import {
-  editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowCommandPaletteAtom,
+  editorInteractionStateShowConnectionsMenuAtom,
   editorInteractionStateShowIsRunningAsyncActionAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
+import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { KernelMenu } from '@/app/ui/menus/BottomBar/KernelMenu';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { AIIcon, DatabaseIcon, ManageSearch, MemoryIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
 import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
@@ -23,16 +26,17 @@ import { cn } from '@/shared/shadcn/utils';
 import mixpanel from 'mixpanel-browser';
 import React from 'react';
 import { Link } from 'react-router';
-import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
+import { useRecoilState, useRecoilValue } from 'recoil';
 
-const toggleCodeEditor = defaultActionSpec[Action.ShowCellTypeMenu];
 const toggleAIChat = defaultActionSpec[Action.ToggleAIAnalyst];
 
 export const QuadraticSidebar = () => {
   const isRunningAsyncAction = useRecoilValue(editorInteractionStateShowIsRunningAsyncActionAtom);
   const [showAIAnalyst, setShowAIAnalyst] = useRecoilState(showAIAnalystAtom);
   const showCodeEditor = useRecoilValue(codeEditorShowCodeEditorAtom);
-  const setShowCellTypeMenu = useSetRecoilState(editorInteractionStateShowCellTypeMenuAtom);
+
+  const [, setShowConnectionsMenu] = useRecoilState(editorInteractionStateShowConnectionsMenuAtom);
+  const { connections } = useConnectionsFetcher();
 
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
 
@@ -67,12 +71,30 @@ export const QuadraticSidebar = () => {
         {canEditFile && isAuthenticated && (
           <SidebarTooltip label={toggleAIChat.label()} shortcut={keyboardShortcutEnumToDisplay(Action.ToggleAIAnalyst)}>
             <SidebarToggle pressed={showAIAnalyst} onPressedChange={() => setShowAIAnalyst((prev) => !prev)}>
-              <AIIcon />
+              <AIIcon className="text-primary" />
             </SidebarToggle>
           </SidebarTooltip>
         )}
 
+        <hr className="mx-auto h-[1px] w-9 border-t border-border" />
+
         {canEditFile && (
+          <>
+            <SidebarTooltip label={'Python'} shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}>
+              <SidebarToggle pressed={showCodeEditor} onPressedChange={() => openCodeEditor('Python')}>
+                <LanguageIcon language="python" />
+              </SidebarToggle>
+            </SidebarTooltip>
+            <SidebarTooltip label={'JavaScript'} shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}>
+              <SidebarToggle pressed={showCodeEditor} onPressedChange={() => openCodeEditor('Javascript')}>
+                <LanguageIcon language="javascript" />
+              </SidebarToggle>
+            </SidebarTooltip>
+          </>
+        )}
+
+        {/* maybe keep this for like 10 or more connections? need to handle this case...
+        canEditFile && (
           <SidebarTooltip
             label={toggleCodeEditor.label()}
             shortcut={keyboardShortcutEnumToDisplay(Action.ShowCellTypeMenu)}
@@ -81,15 +103,31 @@ export const QuadraticSidebar = () => {
               {toggleCodeEditor.Icon && <toggleCodeEditor.Icon />}
             </SidebarToggle>
           </SidebarTooltip>
-        )}
+        )*/}
+
+        <hr className="mx-auto h-[1px] w-9 border-t border-border" />
 
         {canDoTeamsStuff && (
-          <SidebarTooltip label="Connections">
-            <SidebarToggle pressed={false} onPressedChange={() => setShowCellTypeMenu('connections')}>
-              <DatabaseIcon />
-            </SidebarToggle>
-          </SidebarTooltip>
+          <>
+            {connections.map((connection) => (
+              <SidebarTooltip label={connection.name /* TODO: handle really long names */} key={connection.uuid}>
+                <SidebarToggle
+                  pressed={false}
+                  onPressedChange={() => openCodeEditor({ Connection: { kind: connection.type, id: connection.uuid } })}
+                >
+                  <LanguageIcon language={connection.type} />
+                </SidebarToggle>
+              </SidebarTooltip>
+            ))}
+            <SidebarTooltip label="Manage connections…">
+              <SidebarToggle pressed={false} onPressedChange={() => setShowConnectionsMenu(true)}>
+                <DatabaseIcon />
+              </SidebarToggle>
+            </SidebarTooltip>
+          </>
         )}
+
+        <hr className="mx-auto h-[1px] w-9 border-t border-border" />
 
         {canEditFile && <KernelMenu triggerIcon={<MemoryIcon />} />}
 
@@ -113,7 +151,7 @@ export const SidebarToggle = React.forwardRef<HTMLButtonElement, React.Component
         {...props}
         ref={ref}
         className={cn(
-          'relative h-9 w-9 rounded text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
+          'h-9 w-9 rounded px-0 text-muted-foreground hover:bg-border hover:text-foreground aria-pressed:bg-border data-[state=open]:bg-border',
           props.className
         )}
       >
