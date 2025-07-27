@@ -1,4 +1,10 @@
-import type { AIModelKey, AISource, AIToolArgs, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIModelKey,
+  AISource,
+  AIToolArgs,
+  AIToolArgsPrimitive,
+  ModelMode,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
@@ -38,6 +44,14 @@ export enum AITool {
   DeleteRows = 'delete_rows',
   TableMeta = 'table_meta',
   TableColumnSettings = 'table_column_settings',
+
+  GetValidations = 'get_validations',
+  AddLogicalValidation = 'add_logical_validation',
+  AddListValidation = 'add_list_validation',
+  AddTextValidation = 'add_text_validation',
+  AddNumberValidation = 'add_number_validation',
+  AddDateTimeValidation = 'add_date_time_validation',
+  RemoveValidations = 'remove_validation',
 }
 
 export const AIToolSchema = z.enum([
@@ -77,6 +91,13 @@ export const AIToolSchema = z.enum([
   AITool.DeleteRows,
   AITool.TableMeta,
   AITool.TableColumnSettings,
+  AITool.GetValidations,
+  AITool.AddLogicalValidation,
+  AITool.AddListValidation,
+  AITool.AddTextValidation,
+  AITool.AddNumberValidation,
+  AITool.AddDateTimeValidation,
+  AITool.RemoveValidations,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -147,6 +168,18 @@ const modelRouterModels = z
   .string()
   .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
   .pipe(z.enum(['claude', '4.1']));
+
+// Common schema for validation message and error
+const validationMessageErrorSchema = () => ({
+  show_message: booleanSchema.optional(),
+  message_title: z.string().optional(),
+  message_text: z.string().optional(),
+
+  show_error: booleanSchema.optional(),
+  error_style: z.enum(['stop', 'warning', 'information']).optional(),
+  error_message: z.string().optional(),
+  error_title: z.string().optional(),
+});
 
 export const AIToolsArgsSchema = {
   [AITool.SetAIModel]: z.object({
@@ -349,6 +382,49 @@ export const AIToolsArgsSchema = {
       })
     ),
   }),
+  [AITool.GetValidations]: z.object({
+    sheet_name: z.string().optional(),
+  }),
+  [AITool.AddLogicalValidation]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    show_checkbox: booleanSchema.optional(),
+    ignore_blank: booleanSchema.optional(),
+    ...validationMessageErrorSchema(),
+  }),
+  [AITool.AddListValidation]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    ignore_blank: booleanSchema,
+    drop_down: booleanSchema,
+    list_source: z.array(z.string()),
+    ...validationMessageErrorSchema(),
+  }),
+  [AITool.AddTextValidation]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    ignore_blank: booleanSchema,
+    text_match: z.array(z.string()),
+    ...validationMessageErrorSchema(),
+  }),
+  [AITool.AddNumberValidation]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    ignore_blank: booleanSchema,
+    number_match: z.array(z.string()),
+    ...validationMessageErrorSchema(),
+  }),
+  [AITool.AddDateTimeValidation]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    ignore_blank: booleanSchema,
+    date_time_match: z.array(z.string()),
+    ...validationMessageErrorSchema(),
+  }),
+  [AITool.RemoveValidations]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+  }),
 } as const;
 
 export type AIToolSpecRecord = {
@@ -361,6 +437,39 @@ export const MODELS_ROUTER_CONFIGURATION: {
   claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   '4.1': 'azure-openai:gpt-4.1',
 };
+
+const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => ({
+  show_message: {
+    type: ['boolean', 'null'],
+    description:
+      'Whether the message is shown whenever the cursor is on the cell with this validation. The defaults to false.',
+  },
+  message_title: {
+    type: ['string', 'null'],
+    description: 'The title of the message to show when the cursor is on the cell with this validation',
+  },
+  message_text: {
+    type: ['string', 'null'],
+    description: 'The text of the message to show when the cursor is on the cell with this validation',
+  },
+
+  show_error: {
+    type: ['boolean', 'null'],
+    description: 'Whether an error message is shown when the validation fails. This defaults to true.',
+  },
+  error_style: {
+    type: ['string', 'null'],
+    description: `The style of the error. It can be "stop" - which stops the user from saving the cell; "warning" - which shows a warning message but allows the user to enter the value; or "information" -- which shows an information message if the validation fails. The default is "stop".`,
+  },
+  error_message: {
+    type: ['string', 'null'],
+    description: 'The text of the error message to show when the validation fails.',
+  },
+  error_title: {
+    type: ['string', 'null'],
+    description: 'The title of the error message to show when the validation fails.',
+  },
+});
 
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
@@ -1822,5 +1931,160 @@ In the parameters, include only columns that you want to change. The remaining c
     prompt: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
+  },
+  [AITool.GetValidations]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool gets the validations in a sheet.\n
+It requires the sheet name.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to get the validations in',
+        },
+      },
+      required: ['sheet_name'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetValidations],
+    prompt: `
+This tool gets the validations in a sheet.\n
+It requires the sheet name.\n
+`,
+  },
+  [AITool.AddLogicalValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the logical validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the logical validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        show_checkbox: {
+          type: 'boolean',
+          description:
+            'Whether to show a checkbox in the cell to allow the user to toggle the cell between true and false',
+        },
+        ignore_blank: {
+          type: 'boolean',
+          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+        },
+        ...validationMessageErrorPrompt(),
+      },
+      required: ['sheet_name', 'selection', 'show_checkbox', 'ignore_blank'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddLogicalValidation],
+    prompt: `
+This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
+  },
+  [AITool.AddListValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a list validation to a sheet. This can be used to limit the values that can be entered into a cell to a list of values.\n
+The list should have either a list_source_list or a list_source_selection, but not both.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the list validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the list validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: 'boolean',
+          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+        },
+        drop_down: {
+          type: 'boolean',
+          description: 'Whether to show a drop down list of values in the cell. This defaults to false.',
+        },
+        list_source_list: {
+          type: ['string', 'null'],
+          description:
+            'The value to add to the list validation. The items should be in a list format, for example: "Item 1, Item 2, Item 3"',
+        },
+        list_source_selection: {
+          type: ['string', 'null'],
+          description:
+            'The selection of cells to add to the list validation. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ...validationMessageErrorPrompt(),
+      },
+      required: ['sheet_name', 'selection', 'ignore_blank', 'drop_down'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddListValidation],
+    prompt: `
+This tool adds a list validation to a sheet. This can be used to limit the values that can be entered into a cell to a list of values.\n
+The list should have either a list_source_list or a list_source_selection, but not both.\n`,
+  },
+  [AITool.AddTextValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to a text value.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the text validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the text validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: 'boolean',
+          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+        },
+        max_length: {
+          type: ['number', 'null'],
+          description: 'The maximum length of the text. This defaults to null.',
+        },
+        min_length: {
+          type: ['number', 'null'],
+          description: 'The minimum length of the text. This defaults to null.',
+        },
+        contains: {
+          type: ['string', 'null'],
+          description: 'The text to check if the cell contains it. This should be This defaults to null.',
+        },
+        not_contains: {
+          type: ['string', 'null'],
+          description: 'The text to check if the cell does not contain it. This defaults to null.',
+        },
+        exactly: {
+          type: ['string', 'null'],
+          description: 'The text to check if the cell exactly matches it. This defaults to null.',
+        },
+        ...validationMessageErrorPrompt(),
+      },
+      required: ['sheet_name', 'selection', 'ignore_blank'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddTextValidation],
+    prompt: `
+This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to a text value.\n`,
   },
 } as const;
