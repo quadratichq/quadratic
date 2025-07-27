@@ -62,6 +62,7 @@ export class MultiplayerServer {
   private sessionId?: string;
   private fileId?: string;
   private user?: User;
+  private anonymous?: boolean;
 
   private connectionTimeout: number | undefined;
 
@@ -80,6 +81,7 @@ export class MultiplayerServer {
     this.sessionId = message.sessionId;
     this.fileId = message.fileId;
     this.user = message.user;
+    this.anonymous = message.anonymous;
 
     this.userData = {
       sheetId: message.sheetId,
@@ -194,7 +196,7 @@ export class MultiplayerServer {
     this.connectionTimeout = self.setTimeout(async () => {
       this.state = 'not connected';
       this.connectionTimeout = undefined;
-      this.connect();
+      this.connect(this.anonymous);
     }, RECONNECT_AFTER_ERROR_TIMEOUT);
   };
 
