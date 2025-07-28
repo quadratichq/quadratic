@@ -47,15 +47,24 @@ export const AIToolSchema = z.enum([
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   sources: AISource[];
   description: string; // this is sent with tool definition, has a maximum character limit
-  parameters: {
-    type: 'object';
-    properties: Record<string, AIToolArgs>;
-    required: string[];
-    additionalProperties: boolean;
-  };
+  parameters: AIToolArgs;
   responseSchema: (typeof AIToolsArgsSchema)[T];
   prompt: string; // this is sent as internal message to AI, no character limit
 };
+
+const numberSchema = z.preprocess((val) => {
+  if (typeof val === 'number') {
+    return val;
+  }
+  return Number(val);
+}, z.number());
+
+const booleanSchema = z.preprocess((val) => {
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean());
 
 const array2DSchema = z
   .array(
@@ -117,29 +126,29 @@ export const AIToolsArgsSchema = {
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    sheet_name: z.string().optional(),
-    code_cell_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
+    code_cell_name: z.string(),
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     code_cell_position: z.string(),
     formula_string: z.string(),
   }),
   [AITool.SetCellValues]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     top_left_position: z.string(),
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     source_selection_rect: z.string(),
     target_top_left_position: z.string(),
   }),
   [AITool.DeleteCells]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
   }),
   [AITool.UpdateCodeCell]: z.object({
@@ -161,37 +170,37 @@ export const AIToolsArgsSchema = {
     prompt: z.string(),
   }),
   [AITool.GetCellData]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    bold: z.boolean().optional(),
-    italic: z.boolean().optional(),
-    underline: z.boolean().optional(),
-    strike_through: z.boolean().optional(),
-    text_color: z.string().optional(),
-    fill_color: z.string().optional(),
-    align: z.string().optional(),
-    vertical_align: z.string().optional(),
-    wrap: z.string().optional(),
-    numeric_commas: z.boolean().optional(),
-    number_type: z.string().optional(),
-    currency_symbol: z.string().optional(),
-    date_time: z.string().optional(),
+    bold: booleanSchema.nullable().optional(),
+    italic: booleanSchema.nullable().optional(),
+    underline: booleanSchema.nullable().optional(),
+    strike_through: booleanSchema.nullable().optional(),
+    text_color: z.string().nullable().optional(),
+    fill_color: z.string().nullable().optional(),
+    align: z.string().nullable().optional(),
+    vertical_align: z.string().nullable().optional(),
+    wrap: z.string().nullable().optional(),
+    numeric_commas: booleanSchema.nullable().optional(),
+    number_type: z.string().nullable().optional(),
+    currency_symbol: z.string().nullable().optional(),
+    date_time: z.string().nullable().optional(),
   }),
   [AITool.GetTextFormats]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
-    page: z.number(),
+    page: numberSchema,
   }),
   [AITool.ConvertToTable]: z.object({
-    sheet_name: z.string().optional(),
+    sheet_name: z.string().nullable().optional(),
     selection: z.string(),
     table_name: z.string(),
-    first_row_is_column_names: z.boolean(),
+    first_row_is_column_names: booleanSchema,
   }),
   [AITool.WebSearch]: z.object({
     query: z.string(),
@@ -290,7 +299,7 @@ The string representation (in a1 notation) of the selection of cells to get the 
             'The page number of the results to return. The first page is always 0. Use the parameters with a different page to get the next set of results.',
         },
       },
-      required: ['selection', 'sheet_name', 'page'],
+      required: ['sheet_name', 'selection', 'page'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
@@ -694,64 +703,80 @@ There must be at least one format to set.\n
           description: 'The selection of cells to set the formats of, in a1 notation',
         },
         bold: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to bold',
         },
         italic: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to italic',
         },
         underline: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to underline',
         },
         strike_through: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to strike through',
         },
         text_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
         },
         fill_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
         },
         align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The horizontal alignment of the text, this can be one of "left", "center", "right"',
         },
         vertical_align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The vertical alignment of the text, this can be one of "top", "middle", "bottom"',
         },
         wrap: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The wrapping of the text, this can be one of "wrap", "clip", "overflow"',
         },
         numeric_commas: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description:
             'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas.',
         },
         number_type: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.',
         },
         currency_symbol: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR',
         },
         date_time: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
         },
       },
-      required: ['sheet_name', 'selection'],
+      required: [
+        'sheet_name',
+        'selection',
+        'bold',
+        'italic',
+        'underline',
+        'strike_through',
+        'text_color',
+        'fill_color',
+        'align',
+        'vertical_align',
+        'wrap',
+        'numeric_commas',
+        'number_type',
+        'currency_symbol',
+        'date_time',
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],

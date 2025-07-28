@@ -86,7 +86,7 @@ The code cell run has resulted in an error:
 \`\`\`
 ${codeCell.std_err}
 \`\`\`
-Think and reason about the error and try to fix it.
+Think and reason about the error and try to fix it. Do not attempt the same fix repeatedly. If it failed once, it will fail again.
 `,
       },
     ];
@@ -102,7 +102,7 @@ The code cell has spilled, because the output overlaps with existing data on the
 ${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
 \`\`\`
 Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.
-Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet.
+Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet. Do not attempt the same location repeatedly. If it failed once, it will fail again.
 `,
       },
     ];
@@ -523,9 +523,11 @@ export const aiToolsActions: AIToolActionsRecord = {
         strike_through: args.strike_through ?? null,
         text_color: args.text_color ?? null,
         fill_color: args.fill_color ?? null,
-        align: expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']),
-        vertical_align: expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom']),
-        wrap: expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']),
+        align: args.align ? expectedEnum<CellAlign>(args.align, ['left', 'center', 'right']) : null,
+        vertical_align: args.vertical_align
+          ? expectedEnum<CellVerticalAlign>(args.vertical_align, ['top', 'middle', 'bottom'])
+          : null,
+        wrap: args.wrap ? expectedEnum<CellWrap>(args.wrap, ['wrap', 'overflow', 'clip']) : null,
         numeric_commas: args.numeric_commas ?? null,
         numeric_format: numericFormat,
         date_time: args.date_time ?? null,
