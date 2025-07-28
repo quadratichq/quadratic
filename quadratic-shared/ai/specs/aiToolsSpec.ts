@@ -442,7 +442,8 @@ export const AIToolsArgsSchema = {
   [AITool.AddMessage]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    ...validationMessageErrorSchema(),
+    message_title: z.string().optional(),
+    message_text: z.string().optional(),
   }),
   [AITool.RemoveValidations]: z.object({
     sheet_name: z.string().optional(),
@@ -2008,9 +2009,16 @@ This tool adds a message to a sheet using validations.\n`,
           description:
             'The selection of cells to add the message to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
         },
-        ...validationMessageErrorPrompt(),
+        message_title: {
+          type: 'string',
+          description: 'The title of the message to add',
+        },
+        message_text: {
+          type: 'string',
+          description: 'The text of the message to add',
+        },
       },
-      required: ['sheet_name', 'selection'],
+      required: ['sheet_name', 'selection', 'message_title', 'message_text'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddMessage],

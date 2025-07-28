@@ -35,15 +35,18 @@ impl GridController {
         &mut self,
         validation: String, // Validation
         cursor: Option<String>,
-    ) {
-        let validation = match serde_json::from_str::<Validation>(&validation) {
-            Ok(validation) => validation,
-            Err(e) => {
-                dbgjs!(format!("Error parsing validation: {}", e.to_string()));
-                return;
-            }
-        };
-        self.update_validation(validation, cursor);
+    ) -> JsValue {
+        capture_core_error(|| {
+            let validation = match serde_json::from_str::<Validation>(&validation) {
+                Ok(validation) => validation,
+                Err(e) => {
+                    dbgjs!(format!("Error parsing validation: {}", e.to_string()));
+                    return Err("Error parsing validation".to_string());
+                }
+            };
+            self.update_validation(validation, cursor);
+            Ok(None)
+        })
     }
 
     /// Removes a validation

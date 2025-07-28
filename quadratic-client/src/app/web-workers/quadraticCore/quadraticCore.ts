@@ -1237,7 +1237,7 @@ class QuadraticCore {
     });
   }
 
-  updateValidation(validation: Validation) {
+  updateValidation(validation: Validation): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientUpdateValidation) => {

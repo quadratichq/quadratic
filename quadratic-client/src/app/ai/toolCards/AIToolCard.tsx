@@ -2,6 +2,7 @@ import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
 import { AddDateTimeValidation } from '@/app/ai/toolCards/AddDateTimeValidation';
 import { AddListValidation } from '@/app/ai/toolCards/AddListValidation';
 import { AddLogicalValidation } from '@/app/ai/toolCards/AddLogicalValidations';
+import { AddMessage } from '@/app/ai/toolCards/AddMessage';
 import { AddNumberValidation } from '@/app/ai/toolCards/AddNumberValidation';
 import { AddTextValidation } from '@/app/ai/toolCards/AddTextValidation';
 import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
@@ -131,6 +132,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RemoveValidations:
       return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddMessage:
+      return <AddMessage toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

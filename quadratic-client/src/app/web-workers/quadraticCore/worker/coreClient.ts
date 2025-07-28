@@ -503,7 +503,11 @@ class CoreClient {
         return;
 
       case 'clientCoreUpdateValidation':
-        core.updateValidation(e.data.validation, e.data.cursor);
+        this.send({
+          type: 'coreClientUpdateValidation',
+          id: e.data.id,
+          response: core.updateValidation(e.data.validation, e.data.cursor),
+        });
         return;
 
       case 'clientCoreGetValidations':

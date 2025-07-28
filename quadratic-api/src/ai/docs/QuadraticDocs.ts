@@ -21,4 +21,6 @@ Quadratic uses tables commonly to structure data. IMPORTANT: tables do not suppo
 Code generated in Quadratic is not global to other code cells. The data the code cell outputs to the sheet can be referenced by other cells, but variables in one code cell cannot be read in another. Imports in one code cell do not automatically apply to other code cells.
 
 Code, data tables, and charts may take up more than one cell on the sheet. When they expand, they may overlap existing content, either directly on the sheet or in other code, table, or chart cells. If this happens, it is called a spill. To fix a spill, use the move_cells tool to move the anchor cell of the table to a different position. Ensure that the position has sufficient space to accommodate the entire range without creating another spill. Ideally, leave a space between the new position and any surrounding content.
+
+Validations are used to both verify that cells have allowable data, and to provide messages to the user when they enter a cell. Validations are set per sheet so you cannot add a selection from another sheet to a validation in a different sheet.
 `;

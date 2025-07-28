@@ -502,6 +502,11 @@ impl A1Selection {
             },
         });
     }
+
+    /// Adds a cell ref range to the selection.
+    pub fn add(&mut self, cell_ref_range: CellRefRange) {
+        self.ranges.push(cell_ref_range);
+    }
 }
 
 #[cfg(test)]

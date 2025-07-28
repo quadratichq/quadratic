@@ -960,10 +960,10 @@ class Core {
     }
   }
 
-  updateValidation(validation: Validation, cursor: string) {
+  updateValidation(validation: Validation, cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
+      return this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);
     } catch (e) {
       this.handleCoreError('updateValidation', e);
     }

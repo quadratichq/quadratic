@@ -1,5 +1,5 @@
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
-import { getValidationsToolCall } from '@/app/ai/tools/validations';
+import { addMessageToolCall, getValidationsToolCall } from '@/app/ai/tools/validations';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
@@ -1014,7 +1014,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     const { sheet_name, selection, message_title, message_text } = args;
     let text: string;
     try {
-      text = addMessageToolCall(sheet_name, selection, message_title, message_text);
+      text = await addMessageToolCall(sheet_name, selection, message_title, message_text);
     } catch (e) {
       return [createTextContent(`Error executing add message tool: ${e}`)];
     }
