@@ -24,6 +24,7 @@ function getClient(): ReturnType<typeof createClient> {
   if (!clientPromise) {
     clientPromise = createClient(WORKOS_CLIENT_ID, {
       redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
+      devMode: true,
     });
   }
   return clientPromise;

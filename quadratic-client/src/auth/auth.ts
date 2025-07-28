@@ -4,7 +4,7 @@ import { workosClient } from '@/auth/workos';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
 
-export const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
+const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE;
 
 export interface User {
   name?: string;

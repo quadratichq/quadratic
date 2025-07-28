@@ -5,24 +5,24 @@ import { useCallback, useMemo, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { useSearchParams } from 'react-router';
 
+const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE;
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get('redirectTo') || '/';
-  // const isSignupFlow = url.searchParams.get('signup') !== null;
+  const isSignupFlow = url.searchParams.get('signup') !== null;
 
   const isAuthenticated = await authClient.isAuthenticated();
   if (isAuthenticated) {
     window.location.assign(redirectTo);
+  } else if (AUTH_TYPE !== 'workos') {
+    await authClient.login(redirectTo, isSignupFlow);
   }
-
-  // else if (AUTH_TYPE !== 'workos') {
-  //   await authClient.login(redirectTo, isSignupFlow);
-  // }
 };
 
 export const Component = () => {
   const [searchParams] = useSearchParams();
-  const isSignupFlow = searchParams.get('signup') !== null;
+  const isSignupFlow = useMemo(() => searchParams.get('signup') !== null, [searchParams]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -48,16 +48,16 @@ export const Component = () => {
 
   const handleOAuth = useCallback(
     (provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth') => {
-      window.location.assign(ROUTES.WORKOS_OAUTH({ redirectTo, provider }));
+      window.location.assign(ROUTES.WORKOS_OAUTH({ provider, redirectTo }));
     },
     [redirectTo]
   );
 
   useRemoveInitialLoadingUI(true);
 
-  // if (AUTH_TYPE !== 'workos') {
-  //   return null;
-  // }
+  if (AUTH_TYPE !== 'workos') {
+    return null;
+  }
 
   return (
     <main className="flex h-screen flex-col items-center justify-center gap-4">

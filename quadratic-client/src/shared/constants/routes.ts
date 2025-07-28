@@ -81,11 +81,11 @@ export const ROUTES = {
   },
 
   WORKOS_OAUTH: ({
-    redirectTo,
     provider,
+    redirectTo,
   }: {
-    redirectTo: string;
     provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
+    redirectTo: string;
   }) => {
     const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
     const redirectUri = encodeURIComponent(window.location.origin + '/login-callback');

@@ -5,7 +5,6 @@ import { TopBarMenus } from '@/app/ui/menus/TopBar/TopBarMenus/TopBarMenus';
 import { TopBarShareButton } from '@/app/ui/menus/TopBar/TopBarShareButton';
 import { TopBarUsers } from '@/app/ui/menus/TopBar/TopBarUsers';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
-import { VERSION } from '@/shared/constants/appConstants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,6 +12,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+
+const VERSION = import.meta.env.VITE_VERSION;
 
 export const TopBar = () => {
   // TODO: what about embeddable view? should we show the file menu?
