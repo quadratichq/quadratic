@@ -8,14 +8,16 @@ import { useSearchParams } from 'react-router';
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get('redirectTo') || '/';
-  const isSignupFlow = url.searchParams.get('signup') !== null;
+  // const isSignupFlow = url.searchParams.get('signup') !== null;
 
   const isAuthenticated = await authClient.isAuthenticated();
   if (isAuthenticated) {
     window.location.assign(redirectTo);
-  } else if (AUTH_TYPE !== 'workos') {
-    await authClient.login(redirectTo, isSignupFlow);
   }
+
+  // else if (AUTH_TYPE !== 'workos') {
+  //   await authClient.login(redirectTo, isSignupFlow);
+  // }
 };
 
 export const Component = () => {
