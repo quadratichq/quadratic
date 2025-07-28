@@ -1,6 +1,9 @@
 import { authClient } from '@/auth/auth';
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
+import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
+import { Label } from '@/shared/shadcn/ui/label';
 import { useCallback, useMemo, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { useLoaderData, useSearchParams } from 'react-router';
@@ -39,6 +42,10 @@ export const Component = () => {
     return redirectTo;
   }, []);
 
+  const isInIframe = useMemo(() => {
+    return window.parent !== window;
+  }, []);
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -49,8 +56,13 @@ export const Component = () => {
   );
 
   const handleOAuth = useCallback(
-    (provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth') => {
-      window.location.assign(ROUTES.WORKOS_OAUTH({ provider, redirectTo }));
+    (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (['GoogleOAuth', 'MicrosoftOAuth', 'GitHubOAuth', 'AppleOAuth'].includes(e.currentTarget.value)) {
+        const provider = e.currentTarget.value as 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
+        window.location.assign(ROUTES.WORKOS_OAUTH({ provider, redirectTo }));
+      }
     },
     [redirectTo]
   );
@@ -63,14 +75,12 @@ export const Component = () => {
 
   return (
     <main className="flex h-screen flex-col items-center justify-center gap-4">
-      <h1>{isSignupFlow ? 'Sign-up' : 'Sign-in'}</h1>
+      <h1>{isSignupFlow ? 'Sign up' : 'Sign in'} to Quadratic</h1>
 
-      <h2>Email + Password</h2>
-
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-2">
         <div>
-          <label htmlFor="email">Email</label>
-          <input
+          <Label htmlFor="email">Email</Label>
+          <Input
             type="email"
             name="email"
             id="email"
@@ -84,8 +94,8 @@ export const Component = () => {
         </div>
 
         <div>
-          <label htmlFor="password">Password</label>
-          <input
+          <Label htmlFor="password">Password</Label>
+          <Input
             type="password"
             name="password"
             id="password"
@@ -97,28 +107,30 @@ export const Component = () => {
           />
         </div>
 
-        <div>
-          <button type="submit">Sign-in</button>
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <button type="button" onClick={() => handleOAuth('GoogleOAuth')}>
-            Sign-in with Google
-          </button>
-
-          <button type="button" onClick={() => handleOAuth('MicrosoftOAuth')}>
-            Sign-in with Microsoft
-          </button>
-
-          <button type="button" onClick={() => handleOAuth('GitHubOAuth')}>
-            Sign-in with GitHub
-          </button>
-
-          <button type="button" onClick={() => handleOAuth('AppleOAuth')}>
-            Sign-in with Apple
-          </button>
-        </div>
+        <Button type="submit" className="w-full">
+          Sign-in
+        </Button>
       </form>
+
+      {!isInIframe && (
+        <div className="flex flex-row gap-2">
+          <Button type="button" value="GoogleOAuth" onClick={handleOAuth}>
+            Google
+          </Button>
+
+          <Button type="button" value="MicrosoftOAuth" onClick={handleOAuth}>
+            Microsoft
+          </Button>
+
+          <Button type="button" value="GitHubOAuth" onClick={handleOAuth}>
+            GitHub
+          </Button>
+
+          <Button type="button" value="AppleOAuth" onClick={handleOAuth}>
+            Apple
+          </Button>
+        </div>
+      )}
     </main>
   );
 };
