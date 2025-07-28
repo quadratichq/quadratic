@@ -1,8 +1,8 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { apiClient } from '@/shared/api/apiClient';
-import { ROUTES } from '@/shared/constants/routes';
-import * as Sentry from '@sentry/react';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { captureEvent } from '@sentry/react';
 import { createClient } from '@workos-inc/authkit-js';
 
 const WORKOS_CLIENT_ID = import.meta.env.VITE_WORKOS_CLIENT_ID;
@@ -10,7 +10,7 @@ const WORKOS_CLIENT_ID = import.meta.env.VITE_WORKOS_CLIENT_ID;
 // verify all Workos env variables are set
 if (!WORKOS_CLIENT_ID) {
   const message = 'Workos variables are not configured correctly.';
-  Sentry.captureEvent({
+  captureEvent({
     message,
     level: 'fatal',
   });
@@ -75,9 +75,9 @@ export const workosClient: AuthClient = {
     const url = new URL(window.location.origin + ROUTES.LOGIN);
 
     if (isSignupFlow) {
-      url.searchParams.set('signup', 'true');
+      url.searchParams.set(SEARCH_PARAMS.SIGNUP.KEY, 'true');
     } else {
-      url.searchParams.delete('signup');
+      url.searchParams.delete(SEARCH_PARAMS.SIGNUP.KEY);
     }
 
     if (redirectTo && redirectTo !== '/') {

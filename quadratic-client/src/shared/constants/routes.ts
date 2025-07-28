@@ -1,4 +1,5 @@
 import type { UrlParamsDevState } from '@/app/gridGL/pixiApp/urlParams/UrlParamsDev';
+import type { OAuthProvider } from '@/auth/auth';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 
 // Any routes referenced outside of the root router are stored here
@@ -80,13 +81,7 @@ export const ROUTES = {
     },
   },
 
-  WORKOS_OAUTH: ({
-    provider,
-    redirectTo,
-  }: {
-    provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
-    redirectTo: string;
-  }) => {
+  WORKOS_OAUTH: ({ provider, redirectTo }: { provider: OAuthProvider; redirectTo: string }) => {
     const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
     const redirectUri = encodeURIComponent(window.location.origin + '/login-callback');
     const state = encodeURIComponent(JSON.stringify(redirectTo && redirectTo !== '/' ? { redirectTo } : {}));

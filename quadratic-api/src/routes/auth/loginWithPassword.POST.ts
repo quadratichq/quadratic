@@ -24,7 +24,7 @@ loginWithPasswordRouter.post(
       res.cookie('refresh-token', refreshToken, {
         httpOnly: true,
         secure: true,
-        sameSite: 'lax',
+        sameSite: 'none',
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
       });
       return res.status(200).json({ message: 'Login successful' });

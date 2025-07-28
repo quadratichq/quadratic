@@ -13,6 +13,8 @@ export interface User {
   sub?: string;
 }
 
+export type OAuthProvider = 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
+
 export interface AuthClient {
   isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
@@ -21,10 +23,7 @@ export interface AuthClient {
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
   loginWithPassword(args: { email: string; password: string; redirectTo: string }): Promise<void>;
-  loginWithOAuth(args: {
-    provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
-    redirectTo: string;
-  }): Promise<void>;
+  loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }): Promise<void>;
   signupWithPassword(args: {
     email: string;
     password: string;
@@ -85,10 +84,7 @@ export const authClient: AuthClient = {
     const client = await getAuthClient();
     return client.loginWithPassword(args);
   },
-  async loginWithOAuth(args: {
-    provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
-    redirectTo: string;
-  }) {
+  async loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }) {
     const client = await getAuthClient();
     return client.loginWithOAuth(args);
   },

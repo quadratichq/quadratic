@@ -1,6 +1,6 @@
 import type { Rgba } from '@/app/quadratic-core-types';
 import { colors } from '@/app/theme/colors';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import Color from 'color';
 import type { ColorResult } from 'react-color';
 
@@ -17,7 +17,7 @@ export function convertColorStringToTint(color: string): number {
     return Color(color).rgbNumber();
   } catch (e: any) {
     console.error('Error converting color string to tint', e);
-    Sentry.captureException(e, { data: color });
+    captureException(e, { data: color });
     return Color('gray').rgbNumber();
   }
 }
@@ -27,7 +27,7 @@ export function convertTintToString(color: number): string {
     return Color(color).rgb().toString();
   } catch (e: any) {
     console.error('Error converting color tint to string', e);
-    Sentry.captureException(e, { data: color });
+    captureException(e, { data: color });
     return 'gray';
   }
 }
@@ -37,7 +37,7 @@ export function convertTintToHex(color: number): string {
     return Color(color).hex();
   } catch (e: any) {
     console.error('Error converting color tint to hex', e);
-    Sentry.captureException(e, { data: color });
+    captureException(e, { data: color });
     return Color('gray').hex();
   }
 }
@@ -63,7 +63,7 @@ export function convertColorStringToHex(color: string): string {
     return Color(color).hex();
   } catch (e: any) {
     console.error('Error converting color string to hex', e);
-    Sentry.captureException(e, { data: color });
+    captureException(e, { data: color });
     return Color('gray').hex();
   }
 }

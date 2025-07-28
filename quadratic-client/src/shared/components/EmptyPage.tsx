@@ -4,7 +4,7 @@ import { EmptyState, type EmptyStateProps } from '@/shared/components/EmptyState
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
@@ -50,7 +50,7 @@ export function EmptyPage(props: EmptyPageProps) {
         description,
         error: errorString,
       });
-      Sentry.captureException(new Error('error-page'), {
+      captureException(new Error('error-page'), {
         extra: {
           title: sourceTitle,
           description,

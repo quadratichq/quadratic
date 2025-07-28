@@ -24,7 +24,7 @@ import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
 import { VERSION } from '@/shared/constants/appConstants';
 import { displayName } from '@/shared/utils/userUtil';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 
 // time to recheck the version of the client after receiving a different version
@@ -82,7 +82,7 @@ export class Multiplayer {
     this.worker.onmessage = this.handleMessage;
     this.worker.onerror = (e) => {
       console.warn(`[multiplayer.worker] error: ${e.message}`);
-      Sentry.captureException({
+      captureException({
         message: 'Error for multiplayer.worker',
         level: 'error',
         extra: {

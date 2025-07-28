@@ -28,7 +28,7 @@ import {
 import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
 import type { User } from '@/auth/auth';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 
 const UPDATE_TIME_MS = 1000 / 60;
 const HEARTBEAT_TIME = 1000 * 10;
@@ -311,7 +311,7 @@ export class MultiplayerServer {
             break;
           }
 
-          Sentry.captureException({
+          captureException({
             message: `Error response from the multiplayer server: ${data.error}`,
             level: 'error',
           });

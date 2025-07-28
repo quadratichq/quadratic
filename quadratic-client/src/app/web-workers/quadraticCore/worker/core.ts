@@ -57,7 +57,7 @@ import {
   posToPos,
   toSheetPos,
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 
@@ -70,7 +70,7 @@ class Core {
     mixpanel.track(`[core] ${from} error`, {
       error,
     });
-    Sentry.captureException(error);
+    captureException(error);
   };
 
   private handleCoreError = (from: string, error: Error | unknown) => {

@@ -3,7 +3,7 @@ import { parseDomain, waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { ROUTES } from '@/shared/constants/routes';
 import type { Auth0Client } from '@auth0/auth0-spa-js';
 import { createAuth0Client } from '@auth0/auth0-spa-js';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 
 const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN || '';
 const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID || '';
@@ -13,7 +13,7 @@ const AUTH0_ISSUER = import.meta.env.VITE_AUTH0_ISSUER;
 // verify all AUTH0 env variables are set
 if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
   const message = 'Auth0 variables are not configured correctly.';
-  Sentry.captureEvent({
+  captureEvent({
     message,
     level: 'fatal',
   });
