@@ -137,6 +137,9 @@ export const oryClient: AuthClient = {
   async loginWithPassword(_) {
     throw new Error('loginWithPassword called in Ory');
   },
+  async loginWithOAuth(_) {
+    throw new Error('loginWithOAuth called in Ory');
+  },
   async signupWithPassword(_) {
     throw new Error('signupWithPassword called in Ory');
   },

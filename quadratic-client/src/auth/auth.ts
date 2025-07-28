@@ -21,6 +21,10 @@ export interface AuthClient {
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
   loginWithPassword(args: { email: string; password: string; redirectTo: string }): Promise<void>;
+  loginWithOAuth(args: {
+    provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
+    redirectTo: string;
+  }): Promise<void>;
   signupWithPassword(args: {
     email: string;
     password: string;
@@ -80,6 +84,13 @@ export const authClient: AuthClient = {
   async loginWithPassword(args: { email: string; password: string; redirectTo: string }) {
     const client = await getAuthClient();
     return client.loginWithPassword(args);
+  },
+  async loginWithOAuth(args: {
+    provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
+    redirectTo: string;
+  }) {
+    const client = await getAuthClient();
+    return client.loginWithOAuth(args);
   },
   async signupWithPassword(args: {
     email: string;

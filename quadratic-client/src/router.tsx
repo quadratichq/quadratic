@@ -127,7 +127,12 @@ export const router = createBrowserRouter(
         <Route path="onboarding" lazy={() => import('./routes/onboarding')} />
         <Route path="*" Component={Page404.Component} />
       </Route>
-      <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} HydrateFallback={EmptyComponent} />
+      <Route
+        path={ROUTES.LOGIN}
+        lazy={() => import('./routes/login')}
+        HydrateFallback={EmptyComponent}
+        shouldRevalidate={doRevalidateSignupSearchParams}
+      />
       <Route
         path={ROUTES.LOGIN_CALLBACK}
         lazy={() => import('./routes/login-callback')}
@@ -161,6 +166,16 @@ function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunction
   const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
 
   if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
+    return false;
+  }
+  return true;
+}
+
+function doRevalidateSignupSearchParams({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
+  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
+
+  if (nextUrlSearchParams.get(SEARCH_PARAMS.SIGNUP.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.SIGNUP.KEY)) {
     return false;
   }
   return true;

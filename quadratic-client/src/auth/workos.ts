@@ -171,6 +171,15 @@ export const workosClient: AuthClient = {
     }
   },
 
+  async loginWithOAuth(args) {
+    try {
+      window.location.assign(ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo }));
+      await waitForAuthClientToRedirect();
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
   async signupWithPassword(args) {
     try {
       await apiClient.auth.signupWithPassword({

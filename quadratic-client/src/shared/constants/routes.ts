@@ -109,4 +109,5 @@ export const SEARCH_PARAMS = {
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
   // Used to load a specific checkpoint (version history), e.g. /file/123?checkpoint=456
   CHECKPOINT: { KEY: 'checkpoint' },
+  SIGNUP: { KEY: 'signup' },
 };
