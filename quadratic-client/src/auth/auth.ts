@@ -1,6 +1,3 @@
-import { auth0Client } from '@/auth/auth0';
-import { oryClient } from '@/auth/ory';
-import { workosClient } from '@/auth/workos';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
 
@@ -33,20 +30,68 @@ export interface AuthClient {
   }): Promise<void>;
 }
 
-const getAuthClient = () => {
+let cachedAuthClient: Promise<AuthClient> | AuthClient | null = null;
+const getAuthClient = async (): Promise<AuthClient> => {
+  if (cachedAuthClient) {
+    return await cachedAuthClient;
+  }
+
   switch (AUTH_TYPE) {
     case 'auth0':
-      return auth0Client;
+      cachedAuthClient = (await import('@/auth/auth0')).auth0Client;
+      return cachedAuthClient;
     case 'ory':
-      return oryClient;
+      cachedAuthClient = (await import('@/auth/ory')).oryClient;
+      return cachedAuthClient;
     case 'workos':
-      return workosClient;
+      cachedAuthClient = (await import('@/auth/workos')).workosClient;
+      return cachedAuthClient;
     default:
       throw new Error(`Unsupported auth type in getAuthClient(): ${AUTH_TYPE}`);
   }
 };
 
-export const authClient: AuthClient = getAuthClient();
+// Create a proxy client that lazily loads the actual client
+export const authClient: AuthClient = {
+  async isAuthenticated() {
+    const client = await getAuthClient();
+    return client.isAuthenticated();
+  },
+  async user() {
+    const client = await getAuthClient();
+    return client.user();
+  },
+  async login(redirectTo: string, isSignupFlow?: boolean) {
+    const client = await getAuthClient();
+    return client.login(redirectTo, isSignupFlow);
+  },
+  async handleSigninRedirect() {
+    const client = await getAuthClient();
+    return client.handleSigninRedirect();
+  },
+  async logout() {
+    const client = await getAuthClient();
+    return client.logout();
+  },
+  async getTokenOrRedirect(skipRedirect?: boolean) {
+    const client = await getAuthClient();
+    return client.getTokenOrRedirect(skipRedirect);
+  },
+  async loginWithPassword(args: { email: string; password: string; redirectTo: string }) {
+    const client = await getAuthClient();
+    return client.loginWithPassword(args);
+  },
+  async signupWithPassword(args: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    redirectTo: string;
+  }) {
+    const client = await getAuthClient();
+    return client.signupWithPassword(args);
+  },
+};
 
 /**
  * Utility function for use in route loaders.
