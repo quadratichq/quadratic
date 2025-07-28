@@ -79,6 +79,12 @@ export const authenticateWithRefreshTokenWorkos = async (args: {
   });
 };
 
+export const logoutSessionWorkos = async ({ sessionId }: { sessionId: string }) => {
+  return await getWorkos().userManagement.revokeSession({
+    sessionId,
+  });
+};
+
 export const loginWithPasswordWorkos = async ({
   email,
   password,

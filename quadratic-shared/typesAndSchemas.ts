@@ -501,7 +501,9 @@ export const ApiSchemas = {
     email: z.string(),
     password: z.string(),
   }),
-  '/auth/loginWithPassword.POST.response': z.null(),
+  '/auth/loginWithPassword.POST.response': z.object({
+    message: z.string(),
+  }),
 
   '/auth/signupWithPassword.POST.request': z.object({
     email: z.string(),
@@ -509,12 +511,16 @@ export const ApiSchemas = {
     firstName: z.string(),
     lastName: z.string(),
   }),
-  '/auth/signupWithPassword.POST.response': z.null(),
+  '/auth/signupWithPassword.POST.response': z.object({
+    message: z.string(),
+  }),
 
   '/auth/authenticateWithCode.POST.request': z.object({
     code: z.string(),
   }),
-  '/auth/authenticateWithCode.POST.response': z.null(),
+  '/auth/authenticateWithCode.POST.response': z.object({
+    message: z.string(),
+  }),
 };
 
 /**

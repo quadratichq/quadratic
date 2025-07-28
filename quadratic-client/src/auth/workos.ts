@@ -130,7 +130,8 @@ export const workosClient: AuthClient = {
    */
   async logout() {
     const client = await getClient();
-    client.signOut({ returnTo: window.location.origin });
+    await client.signOut({ navigate: false });
+    window.location.assign(window.location.origin);
     await waitForAuthClientToRedirect();
   },
 

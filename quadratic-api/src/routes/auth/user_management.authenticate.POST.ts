@@ -5,7 +5,7 @@ import type { Request } from '../../types/Request';
 
 const authenticateRouter = express.Router();
 
-authenticateRouter.post('/user_management/authenticate', async (req: Request, res: Response) => {
+authenticateRouter.post('/authenticate', async (req: Request, res: Response) => {
   try {
     const refreshToken = req.cookies?.['refresh-token'];
     if (!refreshToken) {

@@ -8,6 +8,7 @@ import {
   getUsersFromWorkosByEmail,
   jwtConfigWorkos,
   loginWithPasswordWorkos,
+  logoutSessionWorkos,
   signupWithPasswordWorkos,
 } from './workos';
 
@@ -73,6 +74,15 @@ export const authenticateWithRefreshToken = async ({ refreshToken }: { refreshTo
       return await authenticateWithRefreshTokenWorkos({ refreshToken });
     default:
       throw new Error(`Unsupported auth type in authenticateWithRefreshToken(): ${AUTH_TYPE}`);
+  }
+};
+
+export const logoutSession = async ({ sessionId }: { sessionId: string }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await logoutSessionWorkos({ sessionId });
+    default:
+      throw new Error(`Unsupported auth type in logout(): ${AUTH_TYPE}`);
   }
 };
 

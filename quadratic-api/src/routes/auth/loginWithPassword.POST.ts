@@ -27,9 +27,9 @@ loginWithPasswordRouter.post(
         sameSite: 'lax',
         maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
       });
-      return res.sendStatus(200);
+      return res.status(200).json({ message: 'Login successful' });
     } catch {
-      return res.sendStatus(401);
+      return res.status(401).json({ message: 'Login failed' });
     }
   }
 );
