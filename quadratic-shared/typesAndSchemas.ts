@@ -496,6 +496,31 @@ export const ApiSchemas = {
     billingLimit: z.number().optional(),
     currentPeriodUsage: z.number().optional(),
   }),
+
+  '/v0/auth/loginWithPassword.POST.request': z.object({
+    email: z.string(),
+    password: z.string(),
+  }),
+  '/v0/auth/loginWithPassword.POST.response': z.object({
+    refreshToken: z.string().optional(),
+  }),
+
+  '/v0/auth/signupWithPassword.POST.request': z.object({
+    email: z.string(),
+    password: z.string(),
+    firstName: z.string(),
+    lastName: z.string(),
+  }),
+  '/v0/auth/signupWithPassword.POST.response': z.object({
+    refreshToken: z.string().optional(),
+  }),
+
+  '/v0/auth/authenticateWithCode.POST.request': z.object({
+    code: z.string(),
+  }),
+  '/v0/auth/authenticateWithCode.POST.response': z.object({
+    refreshToken: z.string().optional(),
+  }),
 };
 
 /**

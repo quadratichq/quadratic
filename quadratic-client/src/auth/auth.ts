@@ -4,7 +4,7 @@ import { workosClient } from '@/auth/workos';
 import { getOrInitializeActiveTeam } from '@/shared/utils/activeTeam';
 import { useEffect } from 'react';
 
-const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
+export const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE || '';
 
 export interface User {
   name?: string;
@@ -23,6 +23,14 @@ export interface AuthClient {
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
+  loginWithPassword(args: { email: string; password: string; redirectTo: string }): Promise<void>;
+  signupWithPassword(args: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+    redirectTo: string;
+  }): Promise<void>;
 }
 
 const getAuthClient = () => {

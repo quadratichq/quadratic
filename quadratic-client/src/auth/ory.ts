@@ -131,4 +131,11 @@ export const oryClient: AuthClient = {
     }
     return '';
   },
+
+  async loginWithPassword(_) {
+    throw new Error('loginWithPassword called in Ory');
+  },
+  async signupWithPassword(_) {
+    throw new Error('signupWithPassword called in Ory');
+  },
 };

@@ -1,5 +1,6 @@
 import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES } from '@/shared/constants/routes';
 import * as Sentry from '@sentry/react';
 import { createClient } from '@workos-inc/authkit-js';
@@ -22,17 +23,6 @@ function getClient(): ReturnType<typeof createClient> {
   if (!clientPromise) {
     clientPromise = createClient(WORKOS_CLIENT_ID, {
       redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-      onRedirectCallback: (redirectParams) => {
-        const state = redirectParams.state;
-        if (!!state && typeof state === 'object' && 'redirectTo' in state) {
-          const redirectTo = state.redirectTo;
-          if (typeof redirectTo === 'string' && !!redirectTo) {
-            window.location.assign(redirectTo);
-            return;
-          }
-        }
-      },
-      devMode: true,
     });
   }
   return clientPromise;
@@ -73,22 +63,21 @@ export const workosClient: AuthClient = {
    * If `isSignupFlow` is true, the user will be redirected to the registration flow.
    */
   async login(redirectTo: string, isSignupFlow: boolean = false) {
-    const client = await getClient();
-    const state = redirectTo
-      ? {
-          redirectTo:
-            window.location.origin +
-            ROUTES.LOGIN_RESULT +
-            '?' +
-            new URLSearchParams([['redirectTo', redirectTo]]).toString(),
-        }
-      : undefined;
+    const url = new URL(window.location.origin + ROUTES.LOGIN);
+
     if (isSignupFlow) {
-      await client.signUp({ state });
+      url.searchParams.set('signup', 'true');
     } else {
-      await client.signIn({ state });
+      url.searchParams.delete('signup');
     }
-    await waitForAuthClientToRedirect();
+
+    if (redirectTo && redirectTo !== '/') {
+      url.searchParams.set('redirectTo', redirectTo);
+    } else {
+      url.searchParams.delete('redirectTo');
+    }
+
+    window.location.assign(url.toString());
   },
 
   /**
@@ -96,11 +85,39 @@ export const workosClient: AuthClient = {
    * code and state are present in the query params.
    */
   async handleSigninRedirect() {
-    const query = window.location.search;
-    if (query.includes('code=') && query.includes('state=')) {
-      await getClient();
+    try {
+      const search = window.location.search;
+      if (!search.includes('code=') || !search.includes('state=')) {
+        return;
+      }
+
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code') || '';
+      url.searchParams.delete('code');
+      const response = await apiClient.auth.authenticateWithCode({ code });
+      if (!response.refreshToken) {
+        return;
+      }
+      localStorage.setItem('workos:refresh-token', response.refreshToken);
+
+      let redirectTo = window.location.origin;
+      const state = url.searchParams.get('state');
+      if (state) {
+        const stateObj = JSON.parse(decodeURIComponent(state));
+        if (
+          !!stateObj &&
+          typeof stateObj === 'object' &&
+          'redirectTo' in stateObj &&
+          !!stateObj.redirectTo &&
+          typeof stateObj.redirectTo === 'string'
+        ) {
+          redirectTo = stateObj.redirectTo;
+        }
+      }
+
+      window.location.assign(redirectTo);
       await waitForAuthClientToRedirect();
-    }
+    } catch {}
   },
 
   /**
@@ -129,5 +146,38 @@ export const workosClient: AuthClient = {
       }
     }
     return '';
+  },
+
+  async loginWithPassword(args) {
+    try {
+      const response = await apiClient.auth.loginWithPassword({ email: args.email, password: args.password });
+      if (!response.refreshToken) {
+        return;
+      }
+      localStorage.setItem('workos:refresh-token', response.refreshToken);
+      window.location.assign(args.redirectTo);
+      await waitForAuthClientToRedirect();
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  async signupWithPassword(args) {
+    try {
+      const response = await apiClient.auth.signupWithPassword({
+        email: args.email,
+        password: args.password,
+        firstName: args.firstName,
+        lastName: args.lastName,
+      });
+      if (!response.refreshToken) {
+        return;
+      }
+      localStorage.setItem('workos:refresh-token', response.refreshToken);
+      window.location.assign(args.redirectTo);
+      await waitForAuthClientToRedirect();
+    } catch (e) {
+      console.error(e);
+    }
   },
 };

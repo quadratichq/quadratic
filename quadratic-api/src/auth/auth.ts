@@ -1,7 +1,14 @@
 import { AUTH_TYPE } from '../env-vars';
 import { getUsersFromAuth0, getUsersFromAuth0ByEmail, jwtConfigAuth0 } from './auth0';
 import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
-import { getUsersFromWorkos, getUsersFromWorkosByEmail, jwtConfigWorkos } from './workos';
+import {
+  authenticateWithCodeWorkos,
+  getUsersFromWorkos,
+  getUsersFromWorkosByEmail,
+  jwtConfigWorkos,
+  loginWithPasswordWorkos,
+  signupWithPasswordWorkos,
+} from './workos';
 
 export type UsersRequest = {
   id: number;
@@ -56,5 +63,48 @@ export const jwtConfig = () => {
       return jwtConfigWorkos;
     default:
       throw new Error(`Unsupported auth type in jwtConfig(): ${AUTH_TYPE}`);
+  }
+};
+
+export const loginWithPassword = async ({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}): Promise<{ refreshToken: string }> => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await loginWithPasswordWorkos({ email, password });
+    default:
+      throw new Error(`Unsupported auth type in loginWithPassword(): ${AUTH_TYPE}`);
+  }
+};
+
+export const signupWithPassword = async ({
+  email,
+  password,
+  firstName,
+  lastName,
+}: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}): Promise<{ refreshToken: string }> => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await signupWithPasswordWorkos({ email, password, firstName, lastName });
+    default:
+      throw new Error(`Unsupported auth type in signupWithPassword(): ${AUTH_TYPE}`);
+  }
+};
+
+export const authenticateWithCode = async (code: string): Promise<{ refreshToken: string }> => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await authenticateWithCodeWorkos(code);
+    default:
+      throw new Error(`Unsupported auth type in authenticateWithCode(): ${AUTH_TYPE}`);
   }
 };

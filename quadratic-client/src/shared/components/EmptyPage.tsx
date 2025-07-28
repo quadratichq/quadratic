@@ -24,10 +24,6 @@ export function EmptyPage(props: EmptyPageProps) {
   const [loggedInUser, setLoggedInUser] = useState<User | undefined>(undefined);
   const submit = useSubmit();
 
-  // Remove the initial loading UI, as these empty pages are alternative rendering
-  // paths to the primary routes
-  useRemoveInitialLoadingUI();
-
   // Get the logged in user from the auth client for display
   useEffect(() => {
     if (!loggedInUser) {
@@ -63,6 +59,10 @@ export function EmptyPage(props: EmptyPageProps) {
       });
     }
   }, [error, title, description, source]);
+
+  // Remove the initial loading UI, as these empty pages are alternative rendering
+  // paths to the primary routes
+  useRemoveInitialLoadingUI();
 
   // Content is centered on the page (should always be rendered in the root layout)
   return (

@@ -449,5 +449,29 @@ export const apiClient = {
     return url;
   },
 
+  auth: {
+    loginWithPassword(args: ApiTypes['/v0/auth/loginWithPassword.POST.request']) {
+      return fetchFromApi(
+        `/v0/auth/loginWithPassword`,
+        { method: 'POST', body: JSON.stringify(args) },
+        ApiSchemas['/v0/auth/loginWithPassword.POST.response']
+      );
+    },
+    signupWithPassword(args: ApiTypes['/v0/auth/signupWithPassword.POST.request']) {
+      return fetchFromApi(
+        `/v0/auth/signupWithPassword`,
+        { method: 'POST', body: JSON.stringify(args) },
+        ApiSchemas['/v0/auth/signupWithPassword.POST.response']
+      );
+    },
+    authenticateWithCode(args: ApiTypes['/v0/auth/authenticateWithCode.POST.request']) {
+      return fetchFromApi(
+        `/v0/auth/authenticateWithCode`,
+        { method: 'POST', body: JSON.stringify(args) },
+        ApiSchemas['/v0/auth/authenticateWithCode.POST.response']
+      );
+    },
+  },
+
   // Someday: figure out how to fit in the calls for the AI chat
 };

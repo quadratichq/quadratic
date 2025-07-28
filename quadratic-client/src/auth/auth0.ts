@@ -97,4 +97,11 @@ export const auth0Client: AuthClient = {
       return '';
     }
   },
+
+  async loginWithPassword(_) {
+    throw new Error('loginWithPassword called in Auth0');
+  },
+  async signupWithPassword(_) {
+    throw new Error('signupWithPassword called in Auth0');
+  },
 };

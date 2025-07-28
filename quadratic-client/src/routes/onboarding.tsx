@@ -55,11 +55,11 @@ export const useOnboardingLoaderData = () => {
 };
 
 export const Component = () => {
-  useRemoveInitialLoadingUI();
-
   useEffect(() => {
     mixpanel.track('[Onboarding].loaded');
   }, []);
+
+  useRemoveInitialLoadingUI();
 
   return (
     <RecoilRoot>

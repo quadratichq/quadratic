@@ -25,6 +25,7 @@ export const getUsersFromWorkos = async (users: { id: number; auth0Id: string }[
   const promises = users.map(async ({ id, auth0Id }) => {
     try {
       const workosUser = await getWorkos().userManagement.getUser(auth0Id);
+
       usersById[id] = {
         id,
         auth0Id,
@@ -65,6 +66,67 @@ export const getUsersFromWorkosByEmail = async (email: string): Promise<ByEmailU
   }
 
   return identities.map(({ id }) => ({ user_id: id }));
+};
+
+export const loginWithPasswordWorkos = async ({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}): Promise<{ refreshToken: string }> => {
+  const { refreshToken, user } = await getWorkos().userManagement.authenticateWithPassword({
+    clientId: WORKOS_CLIENT_ID,
+    email,
+    password,
+  });
+
+  if (!user.emailVerified) {
+    await getWorkos().userManagement.updateUser({
+      userId: user.id,
+      emailVerified: true,
+    });
+  }
+
+  return { refreshToken };
+};
+
+export const signupWithPasswordWorkos = async ({
+  email,
+  password,
+  firstName,
+  lastName,
+}: {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}): Promise<{ refreshToken: string }> => {
+  await getWorkos().userManagement.createUser({
+    email,
+    password,
+    firstName,
+    lastName,
+    emailVerified: true,
+  });
+
+  return loginWithPasswordWorkos({ email, password });
+};
+
+export const authenticateWithCodeWorkos = async (code: string): Promise<{ refreshToken: string }> => {
+  const { refreshToken, user } = await getWorkos().userManagement.authenticateWithCode({
+    clientId: WORKOS_CLIENT_ID,
+    code,
+  });
+
+  if (!user.emailVerified) {
+    await getWorkos().userManagement.updateUser({
+      userId: user.id,
+      emailVerified: true,
+    });
+  }
+
+  return { refreshToken };
 };
 
 export const jwtConfigWorkos = {

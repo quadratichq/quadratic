@@ -1,9 +1,6 @@
 import * as Page404 from '@/routes/404';
 import * as RootRoute from '@/routes/_root';
 import * as File from '@/routes/file';
-import * as Login from '@/routes/login';
-import * as LoginResult from '@/routes/login-result';
-import * as Logout from '@/routes/logout';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
@@ -130,17 +127,22 @@ export const router = createBrowserRouter(
         <Route path="onboarding" lazy={() => import('./routes/onboarding')} />
         <Route path="*" Component={Page404.Component} />
       </Route>
-      <Route path={ROUTES.LOGIN} loader={Login.loader} Component={EmptyComponent} HydrateFallback={EmptyComponent} />
+      <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} HydrateFallback={EmptyComponent} />
+      <Route
+        path={ROUTES.LOGIN_CALLBACK}
+        lazy={() => import('./routes/login-callback')}
+        Component={EmptyComponent}
+        HydrateFallback={EmptyComponent}
+      />
       <Route
         path={ROUTES.LOGIN_RESULT}
-        loader={LoginResult.loader}
+        lazy={() => import('./routes/login-result')}
         Component={EmptyComponent}
         HydrateFallback={EmptyComponent}
       />
       <Route
         path={ROUTES.LOGOUT}
-        loader={Logout.loader}
-        action={Logout.action}
+        lazy={() => import('./routes/logout')}
         Component={EmptyComponent}
         HydrateFallback={EmptyComponent}
       />

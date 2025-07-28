@@ -5,8 +5,9 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
-  LOGIN_WITH_REDIRECT: () => '/login?from=' + encodeURIComponent(window.location.pathname),
-  SIGNUP_WITH_REDIRECT: () => '/login?signup&from=' + encodeURIComponent(window.location.pathname),
+  LOGIN_WITH_REDIRECT: () => '/login?redirectTo=' + encodeURIComponent(window.location.pathname),
+  SIGNUP_WITH_REDIRECT: () => '/login?signup&redirectTo=' + encodeURIComponent(window.location.pathname),
+  LOGIN_CALLBACK: '/login-callback',
   LOGIN_RESULT: '/login-result',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
@@ -77,6 +78,19 @@ export const ROUTES = {
       GET: ({ teamUuid, connectionUuid }: { teamUuid: string; connectionUuid: string }) =>
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
     },
+  },
+
+  WORKOS_OAUTH: ({
+    redirectTo,
+    provider,
+  }: {
+    redirectTo: string;
+    provider: 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | 'AppleOAuth';
+  }) => {
+    const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
+    const redirectUri = encodeURIComponent(window.location.origin + '/login-callback');
+    const state = encodeURIComponent(JSON.stringify(redirectTo && redirectTo !== '/' ? { redirectTo } : {}));
+    return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
   },
 
   IFRAME_INDEXEDDB: '/iframe-indexeddb',
