@@ -6,7 +6,8 @@ use itertools::PeekingNext;
 use lazy_static::lazy_static;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use rust_xlsxwriter::{
-    Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError, worksheet::Worksheet,
+    Format, FormatAlign, FormatBorder, FormatPattern, FormatUnderline, Workbook, XlsxError,
+    worksheet::Worksheet,
 };
 
 use super::GridController;
@@ -17,7 +18,7 @@ use crate::{
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, GridBounds, NumericFormatKind,
-        Sheet,
+        Sheet, sheet::borders::CellBorderLine,
     },
 };
 
@@ -343,9 +344,52 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
         }
     }
 
+    // borders
+    let border_style = sheet.borders.get_style_cell(pos);
+
+    if !border_style.is_empty() {
+        // top border
+        if let Some(top_border) = border_style.top {
+            let style = border_line_to_excel_style(top_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_top(style);
+                format = format.set_border_top_color(top_border.color.as_rgb_hex().as_str());
+            }
+        }
+
+        // bottom border
+        if let Some(bottom_border) = border_style.bottom {
+            let style = border_line_to_excel_style(bottom_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_bottom(style);
+                format = format.set_border_bottom_color(bottom_border.color.as_rgb_hex().as_str());
+            }
+        }
+
+        // left border
+        if let Some(left_border) = border_style.left {
+            let style = border_line_to_excel_style(left_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_left(style);
+                format = format.set_border_left_color(left_border.color.as_rgb_hex().as_str());
+            }
+        }
+
+        // right border
+        if let Some(right_border) = border_style.right {
+            let style = border_line_to_excel_style(right_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_right(style);
+                format = format.set_border_right_color(right_border.color.as_rgb_hex().as_str());
+            }
+        }
+    }
+
     format
 }
 
+/// Adjusts a cell value for excel.
+/// Currently only needs to handle percentages.
 fn adjust_cell_value_for_excel(mut v: CellValue, pos: Pos, sheet: &Sheet) {
     let cell_format = sheet.cell_format(pos);
 
@@ -389,6 +433,19 @@ fn chrono_to_excel_format(chrono_format: &str) -> String {
     }
 
     result
+}
+
+/// Converts a CellBorderLine to an Excel border style integer.
+fn border_line_to_excel_style(line: CellBorderLine) -> FormatBorder {
+    match line {
+        CellBorderLine::Line1 => FormatBorder::Thin,
+        CellBorderLine::Line2 => FormatBorder::Medium,
+        CellBorderLine::Line3 => FormatBorder::Thick,
+        CellBorderLine::Dotted => FormatBorder::Dotted,
+        CellBorderLine::Dashed => FormatBorder::Dashed,
+        CellBorderLine::Double => FormatBorder::Double,
+        CellBorderLine::Clear => FormatBorder::None,
+    }
 }
 
 #[cfg(test)]
@@ -493,5 +550,42 @@ mod tests {
 
         let result = chrono_to_excel_format("%Y-%m-%d %H:%M:%S");
         assert_eq!(result, "yyyy-mm-dd hh:mm:ss");
+    }
+
+    #[test]
+    fn test_exports_excel_with_borders() {
+        use crate::color::Rgba;
+        use crate::grid::sheet::borders::{BorderStyleTimestamp, CellBorderLine};
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // Add some data
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "Border Test");
+
+        // Add borders to the cell
+        let border_style = BorderStyleTimestamp::new(
+            Rgba::new(255, 0, 0, 255), // Red color
+            CellBorderLine::Line2,     // Medium line
+        );
+
+        let mut border_cell = crate::grid::sheet::borders::BorderStyleCell::default();
+        border_cell.top = Some(border_style);
+        border_cell.bottom = Some(border_style);
+        border_cell.left = Some(border_style);
+        border_cell.right = Some(border_style);
+
+        sheet
+            .borders
+            .set_style_cell(Pos { x: 1, y: 1 }, border_cell);
+
+        // Test that export succeeds
+        let excel = gc.export_excel();
+        assert!(excel.is_ok());
+
+        // Test that the exported file has some content (should be larger than a minimal file)
+        let excel_data = excel.unwrap();
+        assert!(excel_data.len() > 1000); // A file with borders should be reasonably sized
     }
 }
