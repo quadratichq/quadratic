@@ -3,7 +3,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { useCallback, useMemo, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
-import { useSearchParams } from 'react-router';
+import { useLoaderData, useSearchParams } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -14,11 +14,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   if (isAuthenticated) {
     window.location.assign(redirectTo);
   } else if (import.meta.env.VITE_AUTH_TYPE !== 'workos') {
-    await authClient.login(redirectTo, isSignupFlow);
+    const isRedirecting = await authClient.login(redirectTo, isSignupFlow);
+    return { isRedirecting };
   }
+
+  return { isRedirecting: false };
 };
 
 export const Component = () => {
+  const { isRedirecting } = useLoaderData<typeof loader>();
   const [searchParams] = useSearchParams();
   const isSignupFlow = useMemo(() => searchParams.get('signup') !== null, [searchParams]);
 
@@ -53,7 +57,7 @@ export const Component = () => {
 
   useRemoveInitialLoadingUI(true);
 
-  if (import.meta.env.VITE_AUTH_TYPE !== 'workos') {
+  if (isRedirecting) {
     return null;
   }
 

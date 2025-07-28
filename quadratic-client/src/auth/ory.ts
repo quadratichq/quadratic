@@ -87,6 +87,8 @@ export const oryClient: AuthClient = {
     window.location.assign(url);
 
     await waitForAuthClientToRedirect();
+
+    return false;
   },
 
   /**

@@ -65,6 +65,7 @@ export const auth0Client: AuthClient = {
       },
     });
     await waitForAuthClientToRedirect();
+    return false;
   },
   async handleSigninRedirect() {
     const query = window.location.search;

@@ -19,7 +19,7 @@ export interface User {
 export interface AuthClient {
   isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
-  login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
+  login(redirectTo: string, isSignupFlow?: boolean): Promise<boolean>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;

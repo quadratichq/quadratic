@@ -79,7 +79,11 @@ export const workosClient: AuthClient = {
       url.searchParams.delete('redirectTo');
     }
 
-    window.location.assign(url.toString());
+    if (window.location.href !== url.toString()) {
+      window.location.assign(url.toString());
+    }
+
+    return false;
   },
 
   /**
