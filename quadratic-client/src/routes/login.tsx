@@ -1,4 +1,4 @@
-import { AUTH_TYPE, authClient } from '@/auth/auth';
+import { authClient } from '@/auth/auth';
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { useCallback, useMemo, useState } from 'react';
@@ -55,9 +55,9 @@ export const Component = () => {
 
   useRemoveInitialLoadingUI(true);
 
-  if (AUTH_TYPE !== 'workos') {
-    return null;
-  }
+  // if (AUTH_TYPE !== 'workos') {
+  //   return null;
+  // }
 
   return (
     <main className="flex h-screen flex-col items-center justify-center gap-4">
