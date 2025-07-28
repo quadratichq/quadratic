@@ -22,6 +22,7 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
+import { VERSION } from '@/shared/constants/appConstants';
 import { displayName } from '@/shared/utils/userUtil';
 import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
@@ -380,8 +381,6 @@ export class Multiplayer {
   }
 
   private async checkVersion(serverVersion: string) {
-    const VERSION = import.meta.env.VITE_VERSION;
-
     if (serverVersion === VERSION) {
       return;
     }

@@ -5,8 +5,7 @@ import { ROUTES } from '@/shared/constants/routes';
 import * as Sentry from '@sentry/react';
 import { createClient } from '@workos-inc/authkit-js';
 
-const WORKOS_CLIENT_ID = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
-const WORKOS_LOCAL_STORAGE_KEY = 'workos:refresh-token';
+const WORKOS_CLIENT_ID = import.meta.env.VITE_WORKOS_CLIENT_ID;
 
 // verify all Workos env variables are set
 if (!WORKOS_CLIENT_ID) {
@@ -22,9 +21,12 @@ if (!WORKOS_CLIENT_ID) {
 let clientPromise: ReturnType<typeof createClient>;
 function getClient(): ReturnType<typeof createClient> {
   if (!clientPromise) {
+    const apiHostname = apiClient.auth.getApiHostname();
     clientPromise = createClient(WORKOS_CLIENT_ID, {
       redirectUri: window.location.origin + ROUTES.LOGIN_RESULT,
-      devMode: true,
+      apiHostname,
+      https: !apiHostname.includes('localhost'),
+      devMode: false,
     });
   }
   return clientPromise;
@@ -100,11 +102,7 @@ export const workosClient: AuthClient = {
       const url = new URL(window.location.href);
       const code = url.searchParams.get('code') || '';
       url.searchParams.delete('code');
-      const response = await apiClient.auth.authenticateWithCode({ code });
-      if (!response.refreshToken) {
-        return;
-      }
-      localStorage.setItem(WORKOS_LOCAL_STORAGE_KEY, response.refreshToken);
+      await apiClient.auth.authenticateWithCode({ code });
 
       let redirectTo = window.location.origin;
       const state = url.searchParams.get('state');
@@ -156,11 +154,7 @@ export const workosClient: AuthClient = {
 
   async loginWithPassword(args) {
     try {
-      const response = await apiClient.auth.loginWithPassword({ email: args.email, password: args.password });
-      if (!response.refreshToken) {
-        return;
-      }
-      localStorage.setItem(WORKOS_LOCAL_STORAGE_KEY, response.refreshToken);
+      await apiClient.auth.loginWithPassword({ email: args.email, password: args.password });
       window.location.assign(args.redirectTo);
       await waitForAuthClientToRedirect();
     } catch (e) {
@@ -170,16 +164,12 @@ export const workosClient: AuthClient = {
 
   async signupWithPassword(args) {
     try {
-      const response = await apiClient.auth.signupWithPassword({
+      await apiClient.auth.signupWithPassword({
         email: args.email,
         password: args.password,
         firstName: args.firstName,
         lastName: args.lastName,
       });
-      if (!response.refreshToken) {
-        return;
-      }
-      localStorage.setItem(WORKOS_LOCAL_STORAGE_KEY, response.refreshToken);
       window.location.assign(args.redirectTo);
       await waitForAuthClientToRedirect();
     } catch (e) {

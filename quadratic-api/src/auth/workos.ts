@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import { WorkOS } from '@workos-inc/node';
+import { WorkOS, type AuthenticationResponse } from '@workos-inc/node';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
 import { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../env-vars';
@@ -68,6 +68,17 @@ export const getUsersFromWorkosByEmail = async (email: string): Promise<ByEmailU
   return identities.map(({ id }) => ({ user_id: id }));
 };
 
+export const authenticateWithRefreshTokenWorkos = async (args: {
+  refreshToken: string;
+  organizationId?: string;
+}): Promise<AuthenticationResponse> => {
+  return await getWorkos().userManagement.authenticateWithRefreshToken({
+    clientId: WORKOS_CLIENT_ID,
+    refreshToken: args.refreshToken,
+    organizationId: args.organizationId,
+  });
+};
+
 export const loginWithPasswordWorkos = async ({
   email,
   password,
@@ -75,7 +86,7 @@ export const loginWithPasswordWorkos = async ({
   email: string;
   password: string;
 }): Promise<{ refreshToken: string }> => {
-  const { refreshToken, user } = await getWorkos().userManagement.authenticateWithPassword({
+  const { user, refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
     clientId: WORKOS_CLIENT_ID,
     email,
     password,

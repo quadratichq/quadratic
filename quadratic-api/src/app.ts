@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/node';
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
@@ -6,8 +7,9 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
-import { CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
+import { AUTH_CORS, CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import { logRequestInfo } from './middleware/logRequestInfo';
+import authRouter from './routes/auth/authRouter';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 
@@ -24,6 +26,12 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 });
 
 app.use(helmet());
+
+// cookie parser for auth routes
+app.use(cookieParser());
+
+// workos auth
+app.use('/', cors({ origin: AUTH_CORS, credentials: true }), authRouter);
 
 // set CORS origin from env variable
 app.use(cors({ origin: CORS }));

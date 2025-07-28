@@ -7,6 +7,7 @@ export const RATE_LIMIT_AI_WINDOW_MS = process.env.RATE_LIMIT_AI_WINDOW_MS;
 export const RATE_LIMIT_AI_REQUESTS_MAX = process.env.RATE_LIMIT_AI_REQUESTS_MAX;
 export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 export const CORS = process.env.CORS || '*';
+export const AUTH_CORS = process.env.AUTH_CORS || 'http://localhost:3000';
 export const SENTRY_DSN = process.env.SENTRY_DSN;
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const LOG_REQUEST_INFO = process.env.LOG_REQUEST_INFO;

@@ -13,7 +13,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const isAuthenticated = await authClient.isAuthenticated();
   if (isAuthenticated) {
     window.location.assign(redirectTo);
-  } else if (import.meta.env.VITE_AUTH_TYPE !== 'workos') {
+  } else {
     const isRedirecting = await authClient.login(redirectTo, isSignupFlow);
     return { isRedirecting };
   }

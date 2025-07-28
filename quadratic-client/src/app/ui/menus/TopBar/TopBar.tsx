@@ -5,6 +5,7 @@ import { TopBarMenus } from '@/app/ui/menus/TopBar/TopBarMenus/TopBarMenus';
 import { TopBarShareButton } from '@/app/ui/menus/TopBar/TopBarShareButton';
 import { TopBarUsers } from '@/app/ui/menus/TopBar/TopBarUsers';
 import { QuadraticLogo } from '@/shared/components/QuadraticLogo';
+import { VERSION } from '@/shared/constants/appConstants';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,7 +56,7 @@ export const TopBar = () => {
                   Back to dashboard
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>Quadratic {import.meta.env.VITE_VERSION}</DropdownMenuItem>
+                <DropdownMenuItem disabled>Quadratic {VERSION}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>

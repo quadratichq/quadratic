@@ -5,6 +5,7 @@ import { Coordinates } from '@/app/ui/menus/BottomBar/Coordinates';
 import { SelectionSummary } from '@/app/ui/menus/BottomBar/SelectionSummary';
 import SyncState from '@/app/ui/menus/BottomBar/SyncState';
 import { TopLeftPosition } from '@/app/ui/menus/BottomBar/TopLeftPosition';
+import { VERSION } from '@/shared/constants/appConstants';
 import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -65,7 +66,7 @@ export const BottomBar = memo(() => {
         <SelectionSummary />
         <SyncState />
         <div className="hidden lg:block">
-          <BottomBarItem>{import.meta.env.VITE_VERSION}</BottomBarItem>
+          <BottomBarItem>{VERSION}</BottomBarItem>
         </div>
       </div>
     </div>

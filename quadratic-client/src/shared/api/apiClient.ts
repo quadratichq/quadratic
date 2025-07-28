@@ -450,25 +450,37 @@ export const apiClient = {
   },
 
   auth: {
-    loginWithPassword(args: ApiTypes['/v0/auth/loginWithPassword.POST.request']) {
+    getApiHostname() {
+      const quadraticApiUrl = import.meta.env.VITE_QUADRATIC_API_URL;
+      if (!quadraticApiUrl) {
+        const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
+        Sentry.captureEvent({
+          message,
+          level: 'fatal',
+        });
+        throw new Error(message);
+      }
+      return quadraticApiUrl.replace('https://', '').replace('http://', '');
+    },
+    loginWithPassword(args: ApiTypes['/auth/loginWithPassword.POST.request']) {
       return fetchFromApi(
-        `/v0/auth/loginWithPassword`,
-        { method: 'POST', body: JSON.stringify(args) },
-        ApiSchemas['/v0/auth/loginWithPassword.POST.response']
+        `/auth/loginWithPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/loginWithPassword.POST.response']
       );
     },
-    signupWithPassword(args: ApiTypes['/v0/auth/signupWithPassword.POST.request']) {
+    signupWithPassword(args: ApiTypes['/auth/signupWithPassword.POST.request']) {
       return fetchFromApi(
-        `/v0/auth/signupWithPassword`,
-        { method: 'POST', body: JSON.stringify(args) },
-        ApiSchemas['/v0/auth/signupWithPassword.POST.response']
+        `/auth/signupWithPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/signupWithPassword.POST.response']
       );
     },
-    authenticateWithCode(args: ApiTypes['/v0/auth/authenticateWithCode.POST.request']) {
+    authenticateWithCode(args: ApiTypes['/auth/authenticateWithCode.POST.request']) {
       return fetchFromApi(
-        `/v0/auth/authenticateWithCode`,
-        { method: 'POST', body: JSON.stringify(args) },
-        ApiSchemas['/v0/auth/authenticateWithCode.POST.response']
+        `/auth/authenticateWithCode`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/authenticateWithCode.POST.response']
       );
     },
   },

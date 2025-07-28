@@ -3,6 +3,7 @@ import { getUsersFromAuth0, getUsersFromAuth0ByEmail, jwtConfigAuth0 } from './a
 import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
 import {
   authenticateWithCodeWorkos,
+  authenticateWithRefreshTokenWorkos,
   getUsersFromWorkos,
   getUsersFromWorkosByEmail,
   jwtConfigWorkos,
@@ -63,6 +64,15 @@ export const jwtConfig = () => {
       return jwtConfigWorkos;
     default:
       throw new Error(`Unsupported auth type in jwtConfig(): ${AUTH_TYPE}`);
+  }
+};
+
+export const authenticateWithRefreshToken = async ({ refreshToken }: { refreshToken: string }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await authenticateWithRefreshTokenWorkos({ refreshToken });
+    default:
+      throw new Error(`Unsupported auth type in authenticateWithRefreshToken(): ${AUTH_TYPE}`);
   }
 };
 

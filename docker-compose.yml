@@ -127,6 +127,7 @@ services:
     container_name: api
     environment:
       CORS: ${QUADRATIC_API_CORS}
+      AUTH_CORS: ${QUADRATIC_API_AUTH_CORS}
       DATABASE_URL: ${DATABASE_DSN}
       ENVIRONMENT: ${ENVIRONMENT}
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}

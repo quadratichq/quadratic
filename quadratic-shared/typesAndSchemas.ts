@@ -497,30 +497,24 @@ export const ApiSchemas = {
     currentPeriodUsage: z.number().optional(),
   }),
 
-  '/v0/auth/loginWithPassword.POST.request': z.object({
+  '/auth/loginWithPassword.POST.request': z.object({
     email: z.string(),
     password: z.string(),
   }),
-  '/v0/auth/loginWithPassword.POST.response': z.object({
-    refreshToken: z.string().optional(),
-  }),
+  '/auth/loginWithPassword.POST.response': z.null(),
 
-  '/v0/auth/signupWithPassword.POST.request': z.object({
+  '/auth/signupWithPassword.POST.request': z.object({
     email: z.string(),
     password: z.string(),
     firstName: z.string(),
     lastName: z.string(),
   }),
-  '/v0/auth/signupWithPassword.POST.response': z.object({
-    refreshToken: z.string().optional(),
-  }),
+  '/auth/signupWithPassword.POST.response': z.null(),
 
-  '/v0/auth/authenticateWithCode.POST.request': z.object({
+  '/auth/authenticateWithCode.POST.request': z.object({
     code: z.string(),
   }),
-  '/v0/auth/authenticateWithCode.POST.response': z.object({
-    refreshToken: z.string().optional(),
-  }),
+  '/auth/authenticateWithCode.POST.response': z.null(),
 };
 
 /**
