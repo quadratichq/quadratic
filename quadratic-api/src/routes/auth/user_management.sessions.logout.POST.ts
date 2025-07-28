@@ -18,9 +18,9 @@ logoutRouter.get('/sessions/logout', async (req: Request, res: Response) => {
     const { query } = parseRequest(req, schema);
     const { session_id } = query;
     await logoutSession({ sessionId: session_id });
-    return res.sendStatus(200);
+    return res.status(200).json({ message: 'Logout successful' });
   } catch {
-    return res.sendStatus(401);
+    return res.status(401).json({ message: 'Logout failed' });
   }
 });
 

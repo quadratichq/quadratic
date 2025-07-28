@@ -14,7 +14,7 @@ authenticateRouter.post('/authenticate', async (req: Request, res: Response) => 
     const response = await authenticateWithRefreshToken({ refreshToken });
     return res.status(200).json(response);
   } catch {
-    return res.sendStatus(401);
+    return res.status(401).json({ message: 'Authentication failed' });
   }
 });
 
