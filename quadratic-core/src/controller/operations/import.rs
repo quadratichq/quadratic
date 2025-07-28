@@ -1096,10 +1096,11 @@ fn convert_excel_border_style(excel_style: calamine::BorderStyle) -> CellBorderL
     match excel_style {
         BorderStyle::None => CellBorderLine::Clear,
         BorderStyle::Thin | BorderStyle::Hair => CellBorderLine::Line1,
-        BorderStyle::Medium | BorderStyle::MediumDashed | BorderStyle::DashDot 
-        | BorderStyle::DashDotDot | BorderStyle::SlantDashDot => CellBorderLine::Line2,
+        BorderStyle::Medium  => CellBorderLine::Line2,
         BorderStyle::Thick => CellBorderLine::Line3,
         BorderStyle::Double => CellBorderLine::Double,
+       BorderStyle::MediumDashed | BorderStyle::SlantDashDot => CellBorderLine::Dashed,
+       BorderStyle::DashDotDot | BorderStyle::DashDot => CellBorderLine::Dotted,
     }
 }
 
