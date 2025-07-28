@@ -105,6 +105,7 @@ import type {
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
+  CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -1237,10 +1238,17 @@ class QuadraticCore {
   }
 
   updateValidation(validation: Validation) {
-    this.send({
-      type: 'clientCoreUpdateValidation',
-      validation,
-      cursor: sheets.getCursorPosition(),
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientUpdateValidation) => {
+        resolve(message.response);
+      };
+      this.send({
+        id,
+        type: 'clientCoreUpdateValidation',
+        validation,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 

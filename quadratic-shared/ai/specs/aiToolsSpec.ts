@@ -46,6 +46,7 @@ export enum AITool {
   TableColumnSettings = 'table_column_settings',
 
   GetValidations = 'get_validations',
+  AddMessage = 'add_message',
   AddLogicalValidation = 'add_logical_validation',
   AddListValidation = 'add_list_validation',
   AddTextValidation = 'add_text_validation',
@@ -92,6 +93,7 @@ export const AIToolSchema = z.enum([
   AITool.TableMeta,
   AITool.TableColumnSettings,
   AITool.GetValidations,
+  AITool.AddMessage,
   AITool.AddLogicalValidation,
   AITool.AddListValidation,
   AITool.AddTextValidation,
@@ -397,28 +399,49 @@ export const AIToolsArgsSchema = {
     selection: z.string(),
     ignore_blank: booleanSchema,
     drop_down: booleanSchema,
-    list_source: z.array(z.string()),
+    list_source_list: z.string().nullable().optional(),
+    list_source_selection: z.string().nullable().optional(),
     ...validationMessageErrorSchema(),
   }),
   [AITool.AddTextValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
     ignore_blank: booleanSchema,
-    text_match: z.array(z.string()),
+    max_length: numberSchema.nullable().optional(),
+    min_length: numberSchema.nullable().optional(),
+    contains: z.string().nullable().optional(),
+    not_contains: z.string().nullable().optional(),
+    exactly: z.string().nullable().optional(),
     ...validationMessageErrorSchema(),
   }),
   [AITool.AddNumberValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
     ignore_blank: booleanSchema,
-    number_match: z.array(z.string()),
+    range: z.string().nullable().optional(),
+    equal: z.string().nullable().optional(),
+    not_equal: z.string().nullable().optional(),
     ...validationMessageErrorSchema(),
   }),
   [AITool.AddDateTimeValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
     ignore_blank: booleanSchema,
-    date_time_match: z.array(z.string()),
+    date_range: z.string().nullable().optional(),
+    date_equal: z.string().nullable().optional(),
+    date_not_equal: z.string().nullable().optional(),
+    time_range: z.string().nullable().optional(),
+    time_equal: z.string().nullable().optional(),
+    time_not_equal: z.string().nullable().optional(),
+    require_date: booleanSchema.nullable().optional(),
+    require_time: booleanSchema.nullable().optional(),
+    prohibit_date: booleanSchema.nullable().optional(),
+    prohibit_time: booleanSchema.nullable().optional(),
+    ...validationMessageErrorSchema(),
+  }),
+  [AITool.AddMessage]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
     ...validationMessageErrorSchema(),
   }),
   [AITool.RemoveValidations]: z.object({
@@ -442,15 +465,17 @@ const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => 
   show_message: {
     type: ['boolean', 'null'],
     description:
-      'Whether the message is shown whenever the cursor is on the cell with this validation. The defaults to false.',
+      'Whether the message is shown whenever the cursor is on the cell with this validation. This defaults to false.',
   },
   message_title: {
     type: ['string', 'null'],
-    description: 'The title of the message to show when the cursor is on the cell with this validation',
+    description:
+      'The title of the message to show when the cursor is on the cell with this validation. This defaults to null.',
   },
   message_text: {
     type: ['string', 'null'],
-    description: 'The text of the message to show when the cursor is on the cell with this validation',
+    description:
+      'The text of the message to show when the cursor is on the cell with this validation. This defaults to null.',
   },
 
   show_error: {
@@ -463,13 +488,23 @@ const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => 
   },
   error_message: {
     type: ['string', 'null'],
-    description: 'The text of the error message to show when the validation fails.',
+    description: 'The text of the error message to show when the validation fails. This defaults to null.',
   },
   error_title: {
     type: ['string', 'null'],
     description: 'The title of the error message to show when the validation fails.',
   },
 });
+
+const validationMessageRequired = (): string[] => [
+  'show_message',
+  'message_title',
+  'message_text',
+  'show_error',
+  'error_style',
+  'error_message',
+  'error_title',
+];
 
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
@@ -1956,6 +1991,32 @@ This tool gets the validations in a sheet.\n
 It requires the sheet name.\n
 `,
   },
+  [AITool.AddMessage]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a message to a sheet using validations.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the message to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the message to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ...validationMessageErrorPrompt(),
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddMessage],
+    prompt: `
+This tool adds a message to a sheet using validations.\n`,
+  },
   [AITool.AddLogicalValidation]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
@@ -1974,17 +2035,17 @@ This tool adds a logical validation to a sheet. This also can display a checkbox
             'The selection of cells to add the logical validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
         },
         show_checkbox: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description:
-            'Whether to show a checkbox in the cell to allow the user to toggle the cell between true and false',
+            'Whether to show a checkbox in the cell to allow the user to toggle the cell between true and false. This defaults to false.',
         },
         ignore_blank: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to ignore blank cells when validating. This defaults to false.',
         },
         ...validationMessageErrorPrompt(),
       },
-      required: ['sheet_name', 'selection', 'show_checkbox', 'ignore_blank'],
+      required: ['sheet_name', 'selection', 'show_checkbox', 'ignore_blank', ...validationMessageRequired()],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddLogicalValidation],
@@ -2010,7 +2071,7 @@ The list should have either a list_source_list or a list_source_selection, but n
             'The selection of cells to add the list validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
         },
         ignore_blank: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to ignore blank cells when validating. This defaults to false.',
         },
         drop_down: {
@@ -2020,28 +2081,35 @@ The list should have either a list_source_list or a list_source_selection, but n
         list_source_list: {
           type: ['string', 'null'],
           description:
-            'The value to add to the list validation. The items should be in a list format, for example: "Item 1, Item 2, Item 3"',
+            'The value to add to the list validation. The items should be in a list format separated by commas, for example: "Item 1, Item 2, Item 3". This defaults to null.',
         },
         list_source_selection: {
           type: ['string', 'null'],
           description:
-            'The selection of cells to add to the list validation. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+            'The selection of cells to add to the list validation. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]. This defaults to null.',
         },
         ...validationMessageErrorPrompt(),
       },
-      required: ['sheet_name', 'selection', 'ignore_blank', 'drop_down'],
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'drop_down',
+        'list_source_list',
+        'list_source_selection',
+        ...validationMessageRequired(),
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddListValidation],
     prompt: `
-This tool adds a list validation to a sheet. This can be used to limit the values that can be entered into a cell to a list of values.\n
-The list should have either a list_source_list or a list_source_selection, but not both.\n`,
+This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to text rules.\n`,
   },
   [AITool.AddTextValidation]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
-This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to a text value.\n`,
+This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
     parameters: {
       type: 'object',
       properties: {
@@ -2055,7 +2123,7 @@ This tool adds a text validation to a sheet. This can be used to limit the value
             'The selection of cells to add the text validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
         },
         ignore_blank: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to ignore blank cells when validating. This defaults to false.',
         },
         max_length: {
@@ -2068,23 +2136,205 @@ This tool adds a text validation to a sheet. This can be used to limit the value
         },
         contains: {
           type: ['string', 'null'],
-          description: 'The text to check if the cell contains it. This should be This defaults to null.',
+          description:
+            'The text to check if the cell contains it. This can be text or items separated by commas. This defaults to null.',
         },
         not_contains: {
           type: ['string', 'null'],
-          description: 'The text to check if the cell does not contain it. This defaults to null.',
+          description:
+            'The text to check if the cell does not contain it. This can be text or items separated by commas. This defaults to null.',
         },
         exactly: {
           type: ['string', 'null'],
-          description: 'The text to check if the cell exactly matches it. This defaults to null.',
+          description:
+            'The text to check if the cell exactly matches it. This can be text or items separated by commas. This defaults to null.',
         },
         ...validationMessageErrorPrompt(),
       },
-      required: ['sheet_name', 'selection', 'ignore_blank'],
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'max_length',
+        'min_length',
+        'contains',
+        'not_contains',
+        'exactly',
+        ...validationMessageRequired(),
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddTextValidation],
     prompt: `
-This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to a text value.\n`,
+This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
+  },
+  [AITool.AddNumberValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the number validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the number validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: ['boolean', 'null'],
+          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+        },
+        range: {
+          type: ['string', 'null'],
+          description:
+            'A list of ranges of numbers. For example: "5..10,2..20,30..,..2". Use ".." to create a range. You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
+        },
+        equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of numbers that the cell must be equal to. This must be a list of numbers separated by commas. This defaults to null.',
+        },
+        not_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of numbers that the cell must not be equal to. This must be a list of numbers separated by commas. This defaults to null.',
+        },
+        ...validationMessageErrorPrompt(),
+      },
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'range',
+        'equal',
+        'not_equal',
+        ...validationMessageRequired(),
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddNumberValidation],
+    prompt: `
+This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
+  },
+  [AITool.AddDateTimeValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the date time validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the date time validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: ['boolean', 'null'],
+          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+        },
+        require_date: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must be a date. This defaults to false.',
+        },
+        require_time: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must be a time. This defaults to false.',
+        },
+        prohibit_date: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must not be a date. This defaults to false.',
+        },
+        prohibit_time: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must not be a time. This defaults to false.',
+        },
+        date_range: {
+          type: ['string', 'null'],
+          description:
+            'A list of ranges of dates. Use YYYY/MM/DD or YYYY-MM-DD HH:MM:SS. For example: "2025/01/01..2025/01/31,2025/02/01 11:10:10..2025/02/28 05:00:00,2025/12/31 13:12:11..,..2025/02/01". Use ".." to create a range. You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
+        },
+        time_range: {
+          type: ['string', 'null'],
+          description:
+            'A list of ranges of times. For example: "10:00..12:00,14:00..16:00,18:00..,..10:00". Use ".." to create a range. You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
+        },
+        date_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of dates that the cell must be equal to. Use YYYY/MM/DD or YYYY-MM-DD HH:MM:SS. This must be a list of dates separated by commas. This defaults to null.',
+        },
+        date_not_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of dates that the cell must not be equal to. Use YYYY/MM/DD or YYYY-MM-DD HH:MM:SS. This must be a list of dates separated by commas. This defaults to null.',
+        },
+        time_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of times that the cell must be equal to. Use HH:MM:SS. This must be a list of times separated by commas. This defaults to null.',
+        },
+        time_not_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of times that the cell must not be equal to. Use HH:MM:SS. This must be a list of times separated by commas. This defaults to null.',
+        },
+        ...validationMessageErrorPrompt(),
+      },
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'require_date',
+        'require_time',
+        'prohibit_date',
+        'prohibit_time',
+        'date_range',
+        'time_range',
+        'date_equal',
+        'date_not_equal',
+        'time_equal',
+        'time_not_equal',
+        ...validationMessageRequired(),
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddDateTimeValidation],
+    prompt: `
+This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
+  },
+  [AITool.RemoveValidations]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool removes all validations in a sheet from a range.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to remove the validations from',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to remove the validations from. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]. All validations in this range will be removed.',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
+    prompt: `
+This tool removes all validations in a sheet from a range.\n`,
   },
 } as const;

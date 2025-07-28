@@ -517,8 +517,15 @@ export interface ClientCoreAutocomplete {
 
 export interface ClientCoreUpdateValidation {
   type: 'clientCoreUpdateValidation';
+  id: number;
   validation: Validation;
   cursor: string;
+}
+
+export interface CoreClientUpdateValidation {
+  type: 'coreClientUpdateValidation';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreRemoveValidation {
@@ -1546,4 +1553,5 @@ export type CoreClientMessage =
   | CoreClientInsertColumns
   | CoreClientInsertRows
   | CoreClientDataTableFirstRowAsHeader
-  | CoreClientDataTableMeta;
+  | CoreClientDataTableMeta
+  | CoreClientUpdateValidation;

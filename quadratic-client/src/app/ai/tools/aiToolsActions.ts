@@ -1,4 +1,5 @@
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
+import { getValidationsToolCall } from '@/app/ai/tools/validations';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
@@ -998,5 +999,82 @@ export const aiToolsActions: AIToolActionsRecord = {
     } catch (e) {
       return [createTextContent(`Error executing table column settings tool: ${e}`)];
     }
+  },
+  [AITool.GetValidations]: async (args) => {
+    const { sheet_name } = args;
+    let text: string;
+    try {
+      text = getValidationsToolCall(sheet_name);
+    } catch (e) {
+      return [createTextContent(`Error executing get validations tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddMessage]: async (args) => {
+    const { sheet_name, selection, message_title, message_text } = args;
+    let text: string;
+    try {
+      text = addMessageToolCall(sheet_name, selection, message_title, message_text);
+    } catch (e) {
+      return [createTextContent(`Error executing add message tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddLogicalValidation]: async (args) => {
+    console.log(args);
+    // try {
+    //   const { sheet_name, selection, logical_operator, validation_1, validation_2 } = args;
+    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    //   const response = await quadraticCore.addLogicalValidation(sheetId, selection, logical_operator, validation_1, validation_2);
+    // } catch (e) {
+    //   return [createTextContent(`Error executing add logical validation tool: ${e}`)];
+    // }
+    return [createTextContent('Add logical validation tool executed successfully.')];
+  },
+  [AITool.AddListValidation]: async (args) => {
+    console.log(args);
+    // try {
+    //   const { sheet_name, selection, ignore_blank, drop_down, list_source_list, list_source_selection } = args;
+    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    //   const response = await quadraticCore.addListValidation(sheetId, selection, ignore_blank, drop_down, list_source_list, list_source_selection);
+    // }
+    return [createTextContent('Add list validation tool executed successfully.')];
+  },
+  [AITool.AddTextValidation]: async (args) => {
+    console.log(args);
+    // try {
+    //   const { sheet_name, selection, ignore_blank, max_length, min_length, contains, not_contains, exactly } = args;
+    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    //   const response = await quadraticCore.addTextValidation(sheetId, selection, ignore_blank, max_length, min_length, contains, not_contains, exactly);
+    // }
+    return [createTextContent('Add text validation tool executed successfully.')];
+  },
+  [AITool.AddNumberValidation]: async (args) => {
+    debugger;
+    console.log(args);
+    // try {
+    //   const { sheet_name, selection, ignore_blank, range, equal, not_equal } = args;
+    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    //   const response = await quadraticCore.addNumberValidation(sheetId, selection, ignore_blank, range, equal, not_equal);
+    // }
+    return [createTextContent('Add number validation tool executed successfully.')];
+  },
+  [AITool.AddDateTimeValidation]: async (args) => {
+    console.log(args);
+    // try {
+    //   const { sheet_name, selection, ignore_blank, date_range, date_equal, date_not_equal, time_range, time_equal, time_not_equal, require_date, require_time, prohibit_date, prohibit_time } = args;
+    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    //   const response = await quadraticCore.addDateTimeValidation(sheetId, selection, ignore_blank, date_range, date_equal, date_not_equal, time_range, time_equal, time_not_equal, require_date, require_time, prohibit_date, prohibit_time);
+    // }
+    return [createTextContent('Add date time validation tool executed successfully.')];
+  },
+  [AITool.RemoveValidations]: async (args) => {
+    console.log(args);
+    // try {
+    //   const { sheet_name, selection } = args;
+    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+    //   const response = await quadraticCore.removeValidations(sheetId, selection);
+    // }
+    return [createTextContent('Remove validations tool executed successfully.')];
   },
 } as const;
