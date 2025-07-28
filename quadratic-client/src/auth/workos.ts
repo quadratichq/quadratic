@@ -20,7 +20,11 @@ if (!WORKOS_CLIENT_ID) {
 // for this one single instance of client to resolve
 let clientPromise: ReturnType<typeof createClient>;
 function getClient(): ReturnType<typeof createClient> {
-  document.cookie = 'workos-has-session=true';
+  const paths = ['/', '/teams', '/file'];
+  paths.forEach((path) => {
+    document.cookie = `workos-has-session=true; SameSite=None; Secure; Path=${path}`;
+  });
+
   if (!clientPromise) {
     const apiHostname = apiClient.auth.getApiHostname();
     clientPromise = createClient(WORKOS_CLIENT_ID, {
