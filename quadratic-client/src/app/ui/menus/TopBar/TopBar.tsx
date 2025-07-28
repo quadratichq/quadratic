@@ -13,8 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
 
-const VERSION = import.meta.env.VITE_VERSION;
-
 export const TopBar = () => {
   // TODO: what about embeddable view? should we show the file menu?
 
@@ -57,7 +55,7 @@ export const TopBar = () => {
                   Back to dashboard
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem disabled>Quadratic {VERSION}</DropdownMenuItem>
+                <DropdownMenuItem disabled>Quadratic {import.meta.env.VITE_VERSION}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </>

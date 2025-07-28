@@ -5,8 +5,6 @@ import { useCallback, useMemo, useState } from 'react';
 import type { LoaderFunctionArgs } from 'react-router';
 import { useSearchParams } from 'react-router';
 
-const AUTH_TYPE = import.meta.env.VITE_AUTH_TYPE;
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
   const redirectTo = url.searchParams.get('redirectTo') || '/';
@@ -15,7 +13,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const isAuthenticated = await authClient.isAuthenticated();
   if (isAuthenticated) {
     window.location.assign(redirectTo);
-  } else if (AUTH_TYPE !== 'workos') {
+  } else if (import.meta.env.VITE_AUTH_TYPE !== 'workos') {
     await authClient.login(redirectTo, isSignupFlow);
   }
 };
@@ -55,7 +53,7 @@ export const Component = () => {
 
   useRemoveInitialLoadingUI(true);
 
-  if (AUTH_TYPE !== 'workos') {
+  if (import.meta.env.VITE_AUTH_TYPE !== 'workos') {
     return null;
   }
 

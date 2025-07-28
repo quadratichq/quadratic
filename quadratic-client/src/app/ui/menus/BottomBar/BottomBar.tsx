@@ -8,8 +8,6 @@ import { TopLeftPosition } from '@/app/ui/menus/BottomBar/TopLeftPosition';
 import { memo } from 'react';
 import { useRecoilValue } from 'recoil';
 
-const VERSION = import.meta.env.VITE_VERSION;
-
 export const BottomBar = memo(() => {
   const { debugFlags } = useDebugFlags();
 
@@ -67,7 +65,7 @@ export const BottomBar = memo(() => {
         <SelectionSummary />
         <SyncState />
         <div className="hidden lg:block">
-          <BottomBarItem>{VERSION}</BottomBarItem>
+          <BottomBarItem>{import.meta.env.VITE_VERSION}</BottomBarItem>
         </div>
       </div>
     </div>

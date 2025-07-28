@@ -29,7 +29,6 @@ import { v4 as uuid } from 'uuid';
 // time to recheck the version of the client after receiving a different version
 // from the server
 const RECHECK_VERSION_INTERVAL = 5000;
-const VERSION = import.meta.env.VITE_VERSION;
 
 export class Multiplayer {
   private worker?: Worker;
@@ -381,6 +380,8 @@ export class Multiplayer {
   }
 
   private async checkVersion(serverVersion: string) {
+    const VERSION = import.meta.env.VITE_VERSION;
+
     if (serverVersion === VERSION) {
       return;
     }
