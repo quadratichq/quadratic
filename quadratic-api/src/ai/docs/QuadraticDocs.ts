@@ -23,4 +23,10 @@ Code generated in Quadratic is not global to other code cells. The data the code
 Code, data tables, and charts may take up more than one cell on the sheet. When they expand, they may overlap existing content, either directly on the sheet or in other code, table, or chart cells. If this happens, it is called a spill. To fix a spill, use the move_cells tool to move the anchor cell of the table to a different position. Ensure that the position has sufficient space to accommodate the entire range without creating another spill. Ideally, leave a space between the new position and any surrounding content.
 
 Validations are used to both verify that cells have allowable data, and to provide messages to the user when they enter a cell. Validations are set per sheet so you cannot add a selection from another sheet to a validation in a different sheet.
+
+Cell references in Quadratic are in A1 notation. **PREFERRED**: Always use table names (e.g., Table_Name) when working with entire tables. Use A1 notation only for non-table data or partial table selections. Columns within tables may be referenced by their name in A1 notation, eg, Table1[Column Name]. To reference multiple columns within a table, you use Table1[[Name]:[Address]]. In tables, you can also reference parts of the table. If you only want the table names, you can reference it with Table1[#HEADERS]. If you want the data and the headers, you would use Table1[[#DATA],[#HEADERS]]. By default, tables are referenced as Table1[#DATA].
+
+In A1 notation, when referencing an entire column or row, use the column or row name(s). For example, if the user wants to do something on Column B, use "B", and not "B1:B100". Similarly, if the user wants to do something on Row 10, use "10", and not "A10:Z10".
+
+If you need individual cells within a table, you need to use normal A1 reference. For example, if you want the first row of a table, you would reference it using its corresponding A1 reference. Remember that tables usually include a name row as the first row, and a column header row as the second row. (Although these may sometimes be hidden.)
 `;
