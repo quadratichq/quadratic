@@ -276,6 +276,8 @@ impl GridController {
             self.remove_validation_warnings(transaction, sheet_id, updated_validation.id);
             self.apply_validation_warnings(transaction, sheet_id, &updated_validation);
 
+            let selection = updated_validation.selection.clone();
+
             transaction
                 .forward_operations
                 .push(Operation::SetValidation {
@@ -283,6 +285,19 @@ impl GridController {
                 });
 
             transaction.validations.insert(sheet_id);
+
+            if transaction.is_server() {
+                return;
+            }
+
+            self.send_updated_bounds(transaction, sheet_id);
+            if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![selection],
+                );
+            }
         }
     }
 
