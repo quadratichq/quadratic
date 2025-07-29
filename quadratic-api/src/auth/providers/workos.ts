@@ -72,59 +72,14 @@ export const getUsersFromWorkosByEmail = async (email: string): Promise<ByEmailU
   return identities.map(({ id }) => ({ user_id: id }));
 };
 
-export const authenticateWithRefreshTokenWorkos = async ({
-  req,
-  res,
-  organizationId,
-}: {
-  req: Request;
-  res: Response;
-  organizationId?: string;
-}) => {
-  const refreshToken = req.cookies?.[WORKOS_REFRESH_TOKEN_COOKIE_NAME];
-  if (!refreshToken) {
-    throw new Error('No refresh token found');
-  }
-
-  const {
-    user,
-    accessToken,
-    refreshToken: newRefreshToken,
-  } = await getWorkos().userManagement.authenticateWithRefreshToken({
-    clientId: WORKOS_CLIENT_ID,
-    refreshToken: refreshToken,
-    organizationId: organizationId,
-  });
-
-  setCookiesWorkos({ res, refreshToken: newRefreshToken });
-
-  const userResponse: UserResponse = {
-    object: user.object,
-    id: user.id,
-    email: user.email,
-    email_verified: user.emailVerified,
-    profile_picture_url: user.profilePictureUrl,
-    first_name: user.firstName,
-    last_name: user.lastName,
-    last_sign_in_at: user.lastSignInAt,
-    created_at: user.createdAt,
-    updated_at: user.updatedAt,
-    external_id: user.externalId ?? undefined,
-    metadata: user.metadata ?? undefined,
-  };
-  return {
-    user: userResponse,
-    access_token: accessToken,
-    refresh_token: refreshToken,
-  };
-};
-
-export const logoutSessionWorkos = async ({ sessionId, res }: { sessionId: string; res: Response }) => {
-  clearCookiesWorkos({ res });
-
-  return await getWorkos().userManagement.revokeSession({
-    sessionId,
-  });
+export const jwtConfigWorkos = {
+  secret: JwksRsa.expressJwtSecret({
+    cache: true,
+    rateLimit: true,
+    jwksRequestsPerMinute: 5,
+    jwksUri: WORKOS_JWKS_URI,
+  }) as GetVerificationKey,
+  algorithms: ['RS256'] as Algorithm[],
 };
 
 export const loginWithPasswordWorkos = async ({
@@ -200,14 +155,106 @@ export const authenticateWithCodeWorkos = async (args: { code: string; res: Resp
   }
 };
 
-export const jwtConfigWorkos = {
-  secret: JwksRsa.expressJwtSecret({
-    cache: true,
-    rateLimit: true,
-    jwksRequestsPerMinute: 5,
-    jwksUri: WORKOS_JWKS_URI,
-  }) as GetVerificationKey,
-  algorithms: ['RS256'] as Algorithm[],
+export const authenticateWithRefreshTokenWorkos = async ({
+  req,
+  res,
+  organizationId,
+}: {
+  req: Request;
+  res: Response;
+  organizationId?: string;
+}) => {
+  const refreshToken = req.cookies?.[WORKOS_REFRESH_TOKEN_COOKIE_NAME];
+  if (!refreshToken) {
+    throw new Error('No refresh token found');
+  }
+
+  const {
+    user,
+    accessToken,
+    refreshToken: newRefreshToken,
+  } = await getWorkos().userManagement.authenticateWithRefreshToken({
+    clientId: WORKOS_CLIENT_ID,
+    refreshToken: refreshToken,
+    organizationId: organizationId,
+  });
+
+  setCookiesWorkos({ res, refreshToken: newRefreshToken });
+
+  const userResponse: UserResponse = {
+    object: user.object,
+    id: user.id,
+    email: user.email,
+    email_verified: user.emailVerified,
+    profile_picture_url: user.profilePictureUrl,
+    first_name: user.firstName,
+    last_name: user.lastName,
+    last_sign_in_at: user.lastSignInAt,
+    created_at: user.createdAt,
+    updated_at: user.updatedAt,
+    external_id: user.externalId ?? undefined,
+    metadata: user.metadata ?? undefined,
+  };
+
+  return {
+    user: userResponse,
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
+};
+
+export const logoutSessionWorkos = async ({ sessionId, res }: { sessionId: string; res: Response }) => {
+  clearCookiesWorkos({ res });
+
+  return await getWorkos().userManagement.revokeSession({
+    sessionId,
+  });
+};
+
+export const sendResetPasswordWorkos = async ({ email, res }: { email: string; res: Response }) => {
+  clearCookiesWorkos({ res });
+
+  await getWorkos().userManagement.createPasswordReset({
+    email,
+  });
+};
+
+export const resetPasswordWorkos = async ({
+  token,
+  password,
+  res,
+}: {
+  token: string;
+  password: string;
+  res: Response;
+}) => {
+  const { user } = await getWorkos().userManagement.resetPassword({
+    token,
+    newPassword: password,
+  });
+
+  if (!user.emailVerified) {
+    await getWorkos().userManagement.updateUser({
+      userId: user.id,
+      emailVerified: true,
+    });
+  }
+
+  const { refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
+    clientId: WORKOS_CLIENT_ID,
+    email: user.email,
+    password,
+  });
+
+  setCookiesWorkos({ res, refreshToken });
+};
+
+export const sendMagicAuthCodeWorkos = async ({ email, res }: { email: string; res: Response }) => {
+  clearCookiesWorkos({ res });
+
+  await getWorkos().userManagement.createMagicAuth({
+    email,
+  });
 };
 
 export const clearCookiesWorkos = ({ res }: { res: Response }) => {

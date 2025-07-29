@@ -1,5 +1,5 @@
 import { authClient } from '@/auth/auth';
-import { type LoaderFunctionArgs } from 'react-router';
+import { redirect, type LoaderFunctionArgs } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
@@ -23,5 +23,5 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   await authClient.handleSigninRedirect();
 
-  window.location.assign(redirectTo);
+  return redirect(redirectTo);
 };

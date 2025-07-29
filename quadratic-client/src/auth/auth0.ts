@@ -108,4 +108,13 @@ export const auth0Client: AuthClient = {
   async signupWithPassword(_) {
     throw new Error('signupWithPassword called in Auth0');
   },
+  async sendResetPassword(_) {
+    throw new Error('sendResetPassword called in Auth0');
+  },
+  async resetPassword(_) {
+    throw new Error('resetPassword called in Auth0');
+  },
+  async sendMagicAuthCode(_) {
+    throw new Error('sendMagicAuthCode called in Auth0');
+  },
 };

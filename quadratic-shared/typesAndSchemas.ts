@@ -115,6 +115,15 @@ export const LicenseSchema = z.object({
   status: z.enum(['active', 'exceeded', 'revoked']),
 });
 
+const passwordSchema = z
+  .string()
+  .min(8, { message: 'Must be at least 8 characters.' })
+  .refine((password) => /[A-Z]/.test(password), { message: 'Must contain at least one uppercase letter.' })
+  .refine((password) => /[a-z]/.test(password), { message: 'Must contain at least one lowercase letter.' })
+  .refine((password) => /[\\!"#$%&'()+,\-./:;<=>?@[\]^_`{|}~]/.test(password), {
+    message: 'Must contain at least one special character.',
+  });
+
 // Zod schemas for API endpoints
 export const ApiSchemas = {
   /**
@@ -509,14 +518,7 @@ export const ApiSchemas = {
 
   '/auth/signupWithPassword.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
-    password: z
-      .string()
-      .min(8, { message: 'Must be at least 8 characters.' })
-      .refine((password) => /[A-Z]/.test(password), { message: 'Must contain at least one uppercase letter.' })
-      .refine((password) => /[a-z]/.test(password), { message: 'Must contain at least one lowercase letter.' })
-      .refine((password) => /[\\!"#$%&'()+,\-./:;<=>?@[\]^_`{|}~]/.test(password), {
-        message: 'Must contain at least one special character.',
-      }),
+    password: passwordSchema,
     firstName: z.string().min(1, { message: 'Must be at least 1 character.' }),
     lastName: z.string().min(1, { message: 'Must be at least 1 character.' }),
   }),
@@ -528,6 +530,28 @@ export const ApiSchemas = {
     code: z.string(),
   }),
   '/auth/authenticateWithCode.POST.response': z.object({
+    message: z.string(),
+  }),
+
+  '/auth/sendResetPassword.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+  }),
+  '/auth/sendResetPassword.POST.response': z.object({
+    message: z.string(),
+  }),
+
+  '/auth/resetPassword.POST.request': z.object({
+    token: z.string(),
+    password: passwordSchema,
+  }),
+  '/auth/resetPassword.POST.response': z.object({
+    message: z.string(),
+  }),
+
+  '/auth/sendMagicAuthCode.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+  }),
+  '/auth/sendMagicAuthCode.POST.response': z.object({
     message: z.string(),
   }),
 };

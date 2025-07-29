@@ -72,9 +72,9 @@ export const workosClient: AuthClient = {
     const url = new URL(window.location.origin + ROUTES.LOGIN);
 
     if (isSignupFlow) {
-      url.searchParams.set(SEARCH_PARAMS.SIGNUP.KEY, 'true');
+      url.searchParams.set(SEARCH_PARAMS.LOGIN_TYPE.KEY, SEARCH_PARAMS.LOGIN_TYPE.VALUES.SIGNUP);
     } else {
-      url.searchParams.delete(SEARCH_PARAMS.SIGNUP.KEY);
+      url.searchParams.delete(SEARCH_PARAMS.LOGIN_TYPE.KEY);
     }
 
     if (redirectTo && redirectTo !== '/') {
@@ -175,5 +175,19 @@ export const workosClient: AuthClient = {
     });
     window.location.assign(args.redirectTo);
     await waitForAuthClientToRedirect();
+  },
+
+  async sendResetPassword(args) {
+    await apiClient.auth.sendResetPassword({ email: args.email });
+  },
+
+  async resetPassword(args) {
+    await apiClient.auth.resetPassword({ token: args.token, password: args.password });
+    window.location.assign(args.redirectTo);
+    await waitForAuthClientToRedirect();
+  },
+
+  async sendMagicAuthCode(args) {
+    await apiClient.auth.sendMagicAuthCode({ email: args.email });
   },
 };

@@ -483,6 +483,27 @@ export const apiClient = {
         ApiSchemas['/auth/authenticateWithCode.POST.response']
       );
     },
+    sendResetPassword(args: ApiTypes['/auth/sendResetPassword.POST.request']) {
+      return fetchFromApi(
+        `/auth/sendResetPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/sendResetPassword.POST.response']
+      );
+    },
+    resetPassword(args: ApiTypes['/auth/resetPassword.POST.request']) {
+      return fetchFromApi(
+        `/auth/resetPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/resetPassword.POST.response']
+      );
+    },
+    sendMagicAuthCode(args: ApiTypes['/auth/sendMagicAuthCode.POST.request']) {
+      return fetchFromApi(
+        `/auth/sendMagicAuthCode`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/sendMagicAuthCode.POST.response']
+      );
+    },
   },
 
   // Someday: figure out how to fit in the calls for the AI chat

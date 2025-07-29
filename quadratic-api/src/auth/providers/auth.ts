@@ -11,6 +11,9 @@ import {
   jwtConfigWorkos,
   loginWithPasswordWorkos,
   logoutSessionWorkos,
+  resetPasswordWorkos,
+  sendMagicAuthCodeWorkos,
+  sendResetPasswordWorkos,
   signupWithPasswordWorkos,
 } from './workos';
 
@@ -70,24 +73,6 @@ export const jwtConfig = () => {
   }
 };
 
-export const authenticateWithRefreshToken = async (args: { req: Request; res: Response }) => {
-  switch (AUTH_TYPE) {
-    case 'workos':
-      return await authenticateWithRefreshTokenWorkos(args);
-    default:
-      throw new Error(`Unsupported auth type in authenticateWithRefreshToken(): ${AUTH_TYPE}`);
-  }
-};
-
-export const logoutSession = async (args: { sessionId: string; res: Response }) => {
-  switch (AUTH_TYPE) {
-    case 'workos':
-      return await logoutSessionWorkos(args);
-    default:
-      throw new Error(`Unsupported auth type in logout(): ${AUTH_TYPE}`);
-  }
-};
-
 export const loginWithPassword = async (args: { email: string; password: string; res: Response }) => {
   switch (AUTH_TYPE) {
     case 'workos':
@@ -118,6 +103,51 @@ export const authenticateWithCode = async (args: { code: string; res: Response }
       return await authenticateWithCodeWorkos(args);
     default:
       throw new Error(`Unsupported auth type in authenticateWithCode(): ${AUTH_TYPE}`);
+  }
+};
+
+export const authenticateWithRefreshToken = async (args: { req: Request; res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await authenticateWithRefreshTokenWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in authenticateWithRefreshToken(): ${AUTH_TYPE}`);
+  }
+};
+
+export const logoutSession = async (args: { sessionId: string; res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await logoutSessionWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in logout(): ${AUTH_TYPE}`);
+  }
+};
+
+export const sendResetPassword = async (args: { email: string; res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await sendResetPasswordWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in sendResetPassword(): ${AUTH_TYPE}`);
+  }
+};
+
+export const resetPassword = async (args: { token: string; password: string; res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await resetPasswordWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in resetPassword(): ${AUTH_TYPE}`);
+  }
+};
+
+export const sendMagicAuthCode = async (args: { email: string; res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await sendMagicAuthCodeWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in sendMagicAuthCode(): ${AUTH_TYPE}`);
   }
 };
 

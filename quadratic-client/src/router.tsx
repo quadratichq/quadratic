@@ -1,6 +1,3 @@
-import * as Page404 from '@/routes/404';
-import * as RootRoute from '@/routes/_root';
-import * as File from '@/routes/file';
 import { ROUTES, ROUTE_LOADER_IDS, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { ShouldRevalidateFunctionArgs } from 'react-router';
 import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from 'react-router';
@@ -34,13 +31,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from '
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      <Route
-        id={ROUTE_LOADER_IDS.ROOT}
-        loader={RootRoute.loader}
-        Component={RootRoute.Component}
-        ErrorBoundary={RootRoute.ErrorBoundary}
-        HydrateFallback={EmptyComponent}
-      >
+      <Route id={ROUTE_LOADER_IDS.ROOT} lazy={() => import('./routes/_root')} HydrateFallback={EmptyComponent}>
         {/**
          * ----------------------------------------------------------------
          * Public routes (auth optional)
@@ -52,7 +43,7 @@ export const router = createBrowserRouter(
          * Note: `/file` checks that the browser is supported _before_
          * anything else matches (and we try to load data from the API)
          */}
-        <Route path="file" Component={File.Component}>
+        <Route path="file" lazy={() => import('./routes/file')}>
           <Route index element={<Navigate to="/" replace />} />
           <Route path=":uuid" lazy={() => import('./routes/file.$uuid')} id={ROUTE_LOADER_IDS.FILE} />
         </Route>
@@ -125,13 +116,14 @@ export const router = createBrowserRouter(
         </Route>
 
         <Route path="onboarding" lazy={() => import('./routes/onboarding')} />
-        <Route path="*" Component={Page404.Component} />
+        <Route path="*" lazy={() => import('./routes/404')} />
       </Route>
+
       <Route
         path={ROUTES.LOGIN}
         lazy={() => import('./routes/login')}
+        shouldRevalidate={dontRevalidateSignupSearchParams}
         HydrateFallback={EmptyComponent}
-        shouldRevalidate={doRevalidateSignupSearchParams}
       />
       <Route
         path={ROUTES.LOGIN_CALLBACK}
@@ -152,6 +144,12 @@ export const router = createBrowserRouter(
         HydrateFallback={EmptyComponent}
       />
       <Route
+        path={ROUTES.RESET_PASSWORD}
+        lazy={() => import('./routes/reset-password')}
+        HydrateFallback={EmptyComponent}
+      />
+
+      <Route
         path={ROUTES.IFRAME_INDEXEDDB}
         lazy={() => import('./routes/iframe-indexeddb')}
         HydrateFallback={EmptyComponent}
@@ -171,11 +169,14 @@ function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunction
   return true;
 }
 
-function doRevalidateSignupSearchParams({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
+function dontRevalidateSignupSearchParams({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
   const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
   const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
 
-  if (nextUrlSearchParams.get(SEARCH_PARAMS.SIGNUP.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.SIGNUP.KEY)) {
+  if (
+    nextUrlSearchParams.get(SEARCH_PARAMS.LOGIN_TYPE.KEY) ||
+    currentUrlSearchParams.get(SEARCH_PARAMS.LOGIN_TYPE.KEY)
+  ) {
     return false;
   }
   return true;

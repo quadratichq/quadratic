@@ -31,6 +31,9 @@ export interface AuthClient {
     lastName: string;
     redirectTo: string;
   }): Promise<void>;
+  sendResetPassword(args: { email: string }): Promise<void>;
+  resetPassword(args: { token: string; password: string; redirectTo: string }): Promise<void>;
+  sendMagicAuthCode(args: { email: string }): Promise<void>;
 }
 
 let cachedAuthClient: Promise<AuthClient> | AuthClient | null = null;
@@ -97,6 +100,18 @@ export const authClient: AuthClient = {
   }) {
     const client = await getAuthClient();
     return client.signupWithPassword(args);
+  },
+  async sendResetPassword(args: { email: string }) {
+    const client = await getAuthClient();
+    return client.sendResetPassword(args);
+  },
+  async resetPassword(args: { token: string; password: string; redirectTo: string }) {
+    const client = await getAuthClient();
+    return client.resetPassword(args);
+  },
+  async sendMagicAuthCode(args: { email: string }) {
+    const client = await getAuthClient();
+    return client.sendMagicAuthCode(args);
   },
 };
 

@@ -7,9 +7,10 @@ export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
   LOGIN_WITH_REDIRECT: () => '/login?redirectTo=' + encodeURIComponent(window.location.pathname),
-  SIGNUP_WITH_REDIRECT: () => '/login?signup&redirectTo=' + encodeURIComponent(window.location.pathname),
   LOGIN_CALLBACK: '/login-callback',
   LOGIN_RESULT: '/login-result',
+  SIGNUP_WITH_REDIRECT: () => '/login?type=signup&redirectTo=' + encodeURIComponent(window.location.pathname),
+  RESET_PASSWORD: '/reset-password',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
     `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
@@ -89,13 +90,13 @@ export const ROUTES = {
   },
 
   IFRAME_INDEXEDDB: '/iframe-indexeddb',
-};
+} as const;
 
 export const ROUTE_LOADER_IDS = {
   ROOT: 'root',
   FILE: 'file',
   DASHBOARD: 'dashboard',
-};
+} as const;
 
 export const SEARCH_PARAMS = {
   SHEET: { KEY: 'sheet' },
@@ -104,5 +105,13 @@ export const SEARCH_PARAMS = {
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
   // Used to load a specific checkpoint (version history), e.g. /file/123?checkpoint=456
   CHECKPOINT: { KEY: 'checkpoint' },
-  SIGNUP: { KEY: 'signup' },
-};
+  LOGIN_TYPE: {
+    KEY: 'type',
+    VALUES: {
+      SIGNUP: 'signup',
+      RESET_PASSWORD: 'reset-password',
+      MAGIC_AUTH_CODE: 'magic-auth-code',
+      VERIFY_EMAIL: 'verify-email',
+    },
+  },
+} as const;
