@@ -237,6 +237,57 @@ impl GridController {
         }
     }
 
+    pub(crate) fn execute_create_or_update_validation(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::CreateOrUpdateValidation { validation } = op {
+            let sheet_id = validation.selection.sheet_id;
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+                return;
+            };
+
+            let updated_validation: Validation;
+            if let Some(existing_validation) = sheet.validations.similar_validation(&validation) {
+                let new_selection = existing_validation
+                    .selection
+                    .append_selection(&validation.selection);
+                updated_validation = Validation {
+                    selection: new_selection,
+                    ..existing_validation.clone()
+                };
+            } else {
+                updated_validation = validation;
+            }
+            transaction
+                .reverse_operations
+                .push(Operation::SetValidation {
+                    validation: existing_validation.clone(),
+                });
+            } else {
+                sheet.validations.set(validation);
+                transaction
+                    .reverse_operations
+                    .push(Operation::RemoveValidation {
+                        sheet_id,
+                        validation_id: validation.id,
+                    });
+            }
+            transaction
+                .forward_operations
+                .push(Operation::CreateOrUpdateValidation { validation });
+
+            transaction.validations.insert(sheet_id);
+
+            if transaction.is_server() {
+                return;
+            }
+
+            self.apply_validation_warnings(transaction, sheet_id, validation.clone());
+        }
+    }
+
     pub(crate) fn execute_remove_validation(
         &mut self,
         transaction: &mut PendingTransaction,

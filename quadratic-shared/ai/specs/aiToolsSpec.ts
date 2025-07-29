@@ -415,9 +415,12 @@ export const AIToolsArgsSchema = {
     ignore_blank: booleanSchema.nullable().optional(),
     max_length: numberSchema.nullable().optional(),
     min_length: numberSchema.nullable().optional(),
-    contains: z.string().nullable().optional(),
-    not_contains: z.string().nullable().optional(),
-    exactly: z.string().nullable().optional(),
+    contains_case_sensitive: z.string().nullable().optional(),
+    contains_case_insensitive: z.string().nullable().optional(),
+    not_contains_case_sensitive: z.string().nullable().optional(),
+    not_contains_case_insensitive: z.string().nullable().optional(),
+    exactly_case_sensitive: z.string().nullable().optional(),
+    exactly_case_insensitive: z.string().nullable().optional(),
     ...validationMessageErrorSchema(),
   }),
   [AITool.AddNumberValidation]: z.object({
@@ -2152,20 +2155,35 @@ This tool adds a text validation to a sheet. This validates a text string to ens
           type: ['number', 'null'],
           description: 'The minimum length of the text. This defaults to null.',
         },
-        contains: {
+        contains_case_sensitive: {
           type: ['string', 'null'],
           description:
-            'The text to check if the cell contains it. This can be text or items separated by commas. This defaults to null.',
+            'The text to check if the cell contains it. This can be text or items separated by commas. The list is case sensitive. This defaults to null.',
         },
-        not_contains: {
+        contains_case_insensitive: {
           type: ['string', 'null'],
           description:
-            'The text to check if the cell does not contain it. This can be text or items separated by commas. This defaults to null.',
+            'The text to check if the cell contains it. This can be text or items separated by commas. The list is case insensitive. This defaults to null.',
         },
-        exactly: {
+        not_contains_case_sensitive: {
           type: ['string', 'null'],
           description:
-            'The text to check if the cell exactly matches it. This can be text or items separated by commas. This defaults to null.',
+            'The text to check if the cell does not contain it. This can be text or items separated by commas. The list is case sensitive. This defaults to null.',
+        },
+        not_contains_case_insensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell does not contain it. This can be text or items separated by commas. The list is case insensitive. This defaults to null.',
+        },
+        exactly_case_sensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell exactly matches it. This can be text or items separated by commas. The list is case sensitive. This defaults to null.',
+        },
+        exactly_case_insensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell exactly matches it. This can be text or items separated by commas. The list is case insensitive. This defaults to null.',
         },
         ...validationMessageErrorPrompt(),
       },

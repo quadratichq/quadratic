@@ -332,7 +332,13 @@ pub enum Operation {
     },
 
     /// Creates or updates a data validation rule.
+    /// **Deprecated** in favor of `CreateOrUpdateValidation`.
     SetValidation {
+        validation: Validation,
+    },
+    /// Either finds an existing validation that matches this validation
+    /// (ignoring the id) and adds the selection to it, or creates a new one.
+    CreateOrUpdateValidation {
         validation: Validation,
     },
     /// Deletes a data validation rule.

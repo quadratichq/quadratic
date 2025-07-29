@@ -1,6 +1,8 @@
 import {
+  addListValidationToolCall,
   addLogicalValidationToolCall,
   addMessageToolCall,
+  addTextValidationToolCall,
   getValidationsToolCall,
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
@@ -1025,33 +1027,31 @@ export const aiToolsActions: AIToolActionsRecord = {
     return [createTextContent(text)];
   },
   [AITool.AddLogicalValidation]: async (args) => {
-    addLogicalValidationToolCall(args);
-    // try {
-    //   const { sheet_name, selection, logical_operator, validation_1, validation_2 } = args;
-    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    //   const response = await quadraticCore.addLogicalValidation(sheetId, selection, logical_operator, validation_1, validation_2);
-    // } catch (e) {
-    //   return [createTextContent(`Error executing add logical validation tool: ${e}`)];
-    // }
-    return [createTextContent('Add logical validation tool executed successfully.')];
+    let text = '';
+    try {
+      text = await addLogicalValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add logical validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
   },
   [AITool.AddListValidation]: async (args) => {
-    console.log(args);
-    // try {
-    //   const { sheet_name, selection, ignore_blank, drop_down, list_source_list, list_source_selection } = args;
-    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    //   const response = await quadraticCore.addListValidation(sheetId, selection, ignore_blank, drop_down, list_source_list, list_source_selection);
-    // }
-    return [createTextContent('Add list validation tool executed successfully.')];
+    let text = '';
+    try {
+      text = await addListValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add list validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
   },
   [AITool.AddTextValidation]: async (args) => {
-    console.log(args);
-    // try {
-    //   const { sheet_name, selection, ignore_blank, max_length, min_length, contains, not_contains, exactly } = args;
-    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    //   const response = await quadraticCore.addTextValidation(sheetId, selection, ignore_blank, max_length, min_length, contains, not_contains, exactly);
-    // }
-    return [createTextContent('Add text validation tool executed successfully.')];
+    let text = '';
+    try {
+      text = await addTextValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add text validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
   },
   [AITool.AddNumberValidation]: async (args) => {
     debugger;

@@ -220,6 +220,15 @@ impl Validations {
             Some(reverse)
         }
     }
+
+    /// Finds a validation that matches the rule, message, and error.
+    pub fn similar_validation(&self, validation: &Validation) -> Option<&Validation> {
+        self.validations.iter().find(|v| {
+            v.rule == validation.rule
+                && v.message == validation.message
+                && v.error == validation.error
+        })
+    }
 }
 
 #[cfg(test)]
