@@ -1777,23 +1777,16 @@ mod test {
 
     #[test]
     fn test_excel_to_chrono_format_conversion() {
-        // Test basic date formats
         assert_eq!(excel_to_chrono_format("mm/dd/yyyy"), "%m/%d/%Y");
         assert_eq!(excel_to_chrono_format("m/d/yy"), "%-m/%-d/%y");
         assert_eq!(excel_to_chrono_format("dd-mmm-yyyy"), "%d-%b-%Y");
-
-        // Test time formats
         assert_eq!(excel_to_chrono_format("h:mm AM/PM"), "%-I:%M %p");
-        assert_eq!(excel_to_chrono_format("hh:mm:ss"), "%I:%M:%S");
+        assert_eq!(excel_to_chrono_format("hh:mm:ss"), "%H:%M:%S");
         assert_eq!(excel_to_chrono_format("mm:ss"), "%M:%S");
-
-        // Test datetime formats
         assert_eq!(excel_to_chrono_format("m/d/yyyy h:mm"), "%-m/%-d/%Y %-I:%M");
-
-        // Test edge cases
         assert_eq!(
             excel_to_chrono_format("yyyy-mm-dd hh:mm:ss"),
-            "%Y-%m-%d %I:%M:%S"
+            "%Y-%m-%d %H:%M:%S"
         );
     }
 

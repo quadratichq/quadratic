@@ -603,7 +603,10 @@ mod tests {
             CellBorderLine::Line1,     // Thin line
         );
 
-        let border_cell = BorderStyleCell { right: Some(border_style), ..Default::default() }
+        let border_cell = BorderStyleCell {
+            right: Some(border_style),
+            ..Default::default()
+        };
 
         // Add borders at positions far from the data
         for x in 5..=10 {
