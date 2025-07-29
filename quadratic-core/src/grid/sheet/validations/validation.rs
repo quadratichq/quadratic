@@ -43,12 +43,45 @@ pub struct JsValidation {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+pub struct ValidationUpdate {
+    pub id: Option<Uuid>,
+    pub selection: A1Selection,
+    pub rule: ValidationRule,
+    pub message: ValidationMessage,
+    pub error: ValidationError,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub struct Validation {
     pub id: Uuid,
     pub selection: A1Selection,
     pub rule: ValidationRule,
     pub message: ValidationMessage,
     pub error: ValidationError,
+}
+
+impl From<ValidationUpdate> for Validation {
+    fn from(update: ValidationUpdate) -> Self {
+        Validation {
+            id: update.id.unwrap_or_else(Uuid::new_v4),
+            selection: update.selection,
+            rule: update.rule,
+            message: update.message,
+            error: update.error,
+        }
+    }
+}
+
+impl From<Validation> for ValidationUpdate {
+    fn from(validation: Validation) -> Self {
+        ValidationUpdate {
+            id: Some(validation.id),
+            selection: validation.selection,
+            rule: validation.rule,
+            message: validation.message,
+            error: validation.error,
+        }
+    }
 }
 
 impl Validation {

@@ -332,7 +332,6 @@ pub enum Operation {
     },
 
     /// Creates or updates a data validation rule.
-    /// **Deprecated** in favor of `CreateOrUpdateValidation`.
     SetValidation {
         validation: Validation,
     },

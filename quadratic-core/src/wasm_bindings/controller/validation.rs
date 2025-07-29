@@ -1,9 +1,8 @@
 //! WASM functions for Validations
 
-use sheet::validations::validation::Validation;
 use uuid::Uuid;
 
-use crate::a1::A1Selection;
+use crate::{a1::A1Selection, grid::sheet::validations::validation::ValidationUpdate};
 
 use super::*;
 
@@ -39,7 +38,7 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let validation = match serde_json::from_str::<Validation>(&validation) {
+            let validation = match serde_json::from_str::<ValidationUpdate>(&validation) {
                 Ok(validation) => validation,
                 Err(e) => {
                     dbgjs!(format!("Error parsing validation: {}", e.to_string()));

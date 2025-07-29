@@ -86,7 +86,7 @@ impl GridController {
         };
 
         for validation in validations {
-            self.apply_validation_warnings(transaction, sheet_rect.sheet_id, validation);
+            self.apply_validation_warnings(transaction, sheet_rect.sheet_id, &validation);
         }
     }
 
@@ -126,7 +126,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
-        validation: Validation,
+        validation: &Validation,
     ) {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return;
@@ -220,7 +220,7 @@ impl GridController {
 
             transaction.validations.insert(sheet_id);
 
-            self.apply_validation_warnings(transaction, sheet_id, validation.clone());
+            self.apply_validation_warnings(transaction, sheet_id, &validation);
 
             if transaction.is_server() {
                 return;
@@ -257,34 +257,32 @@ impl GridController {
                     selection: new_selection,
                     ..existing_validation.clone()
                 };
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetValidation {
+                        validation: existing_validation.clone(),
+                    });
             } else {
-                updated_validation = validation;
-            }
-            transaction
-                .reverse_operations
-                .push(Operation::SetValidation {
-                    validation: existing_validation.clone(),
-                });
-            } else {
-                sheet.validations.set(validation);
                 transaction
                     .reverse_operations
                     .push(Operation::RemoveValidation {
                         sheet_id,
                         validation_id: validation.id,
                     });
+                updated_validation = validation;
             }
+            sheet.validations.set(updated_validation.clone());
+
+            self.remove_validation_warnings(transaction, sheet_id, updated_validation.id);
+            self.apply_validation_warnings(transaction, sheet_id, &updated_validation);
+
             transaction
                 .forward_operations
-                .push(Operation::CreateOrUpdateValidation { validation });
+                .push(Operation::SetValidation {
+                    validation: updated_validation,
+                });
 
             transaction.validations.insert(sheet_id);
-
-            if transaction.is_server() {
-                return;
-            }
-
-            self.apply_validation_warnings(transaction, sheet_id, validation.clone());
         }
     }
 

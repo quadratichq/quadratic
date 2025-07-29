@@ -11,7 +11,7 @@ use crate::{
         SheetId,
         sheet::validations::{
             rules::ValidationRule,
-            validation::{Validation, ValidationStyle},
+            validation::{Validation, ValidationStyle, ValidationUpdate},
         },
     },
 };
@@ -36,7 +36,7 @@ impl GridController {
     }
 
     /// Creates or updates a validation.
-    pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
+    pub fn update_validation(&mut self, validation: ValidationUpdate, cursor: Option<String>) {
         // Update the selection to take advantage of any table-based selections.
         // DF: This helps validations work better with tables--there are still
         // edge cases where it doesn't work, like setting individual cells
@@ -49,12 +49,18 @@ impl GridController {
         let mut selection = validation.selection.clone();
         selection.change_to_table_refs(validation.selection.sheet_id, &self.a1_context);
 
-        let ops = vec![Operation::SetValidation {
-            validation: Validation {
-                selection,
-                ..validation
-            },
-        }];
+        let ops = if validation.id.is_some() {
+            vec![Operation::SetValidation {
+                validation: Validation {
+                    selection,
+                    ..validation.into()
+                },
+            }]
+        } else {
+            vec![Operation::CreateOrUpdateValidation {
+                validation: validation.into(),
+            }]
+        };
         self.start_user_transaction(ops, cursor, TransactionName::Validation);
     }
 
@@ -176,8 +182,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
-        let validation = Validation {
-            id: Uuid::new_v4(),
+        let validation = ValidationUpdate {
+            id: Some(Uuid::new_v4()),
             selection: selection.clone(),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
@@ -189,14 +195,17 @@ mod tests {
         gc.update_validation(validation.clone(), None);
 
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 1);
-        assert_eq!(gc.validation_selection(selection), Some(&validation));
+        assert_eq!(
+            gc.validation_selection(selection),
+            Some(&Validation::from(validation.clone()))
+        );
 
         expect_js_call(
             "jsSheetValidations",
             format!(
                 "{},{:?}",
                 sheet_id,
-                serde_json::to_vec(&vec![validation]).unwrap()
+                serde_json::to_vec(&vec![Validation::from(validation)]).unwrap()
             ),
             true,
         );
@@ -208,8 +217,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
-        let validation1 = Validation {
-            id: Uuid::new_v4(),
+        let validation1 = ValidationUpdate {
+            id: Some(Uuid::new_v4()),
             selection: selection.clone(),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
@@ -220,8 +229,8 @@ mod tests {
         };
         gc.update_validation(validation1.clone(), None);
 
-        let validation2 = Validation {
-            id: Uuid::new_v4(),
+        let validation2 = ValidationUpdate {
+            id: Some(Uuid::new_v4()),
             selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
@@ -238,7 +247,11 @@ mod tests {
             format!(
                 "{},{:?}",
                 sheet_id,
-                serde_json::to_vec(&vec![validation1, validation2]).unwrap()
+                serde_json::to_vec(&vec![
+                    Validation::from(validation1),
+                    Validation::from(validation2)
+                ])
+                .unwrap()
             ),
             true,
         );
@@ -262,8 +275,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let validation = Validation {
-            id: Uuid::new_v4(),
+        let validation = ValidationUpdate {
+            id: Some(Uuid::new_v4()),
             selection: A1Selection::test_a1("A1"),
             rule: ValidationRule::Logical(ValidationLogical {
                 show_checkbox: true,
@@ -272,11 +285,11 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation.clone(), None);
+        gc.update_validation(validation.clone().into(), None);
 
         assert_eq!(
             gc.get_validation_from_pos(sheet_id, (1, 1).into()),
-            Some(&validation)
+            Some(&Validation::from(validation))
         );
 
         // missing sheet_id should return None

@@ -178,6 +178,9 @@ impl GridController {
                 Operation::SetCursorA1 { .. } => self.execute_set_cursor_a1(transaction, op),
 
                 Operation::SetValidation { .. } => self.execute_set_validation(transaction, op),
+                Operation::CreateOrUpdateValidation { .. } => {
+                    self.execute_create_or_update_validation(transaction, op);
+                }
                 Operation::RemoveValidation { .. } => {
                     self.execute_remove_validation(transaction, op);
                 }

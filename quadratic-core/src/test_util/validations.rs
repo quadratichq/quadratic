@@ -9,7 +9,7 @@ use crate::{
     grid::SheetId,
     grid::sheet::validations::{
         rules::{ValidationRule, validation_logical::ValidationLogical},
-        validation::Validation,
+        validation::{Validation, ValidationUpdate},
     },
 };
 
@@ -17,8 +17,8 @@ use crate::{
 /// and ignore_blank = true. Returns a clone of the validation.
 #[cfg(test)]
 pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> Validation {
-    let validation = Validation {
-        id: Uuid::new_v4(),
+    let validation = ValidationUpdate {
+        id: Some(Uuid::new_v4()),
         selection,
         rule: ValidationRule::Logical(ValidationLogical {
             show_checkbox: true,
@@ -28,7 +28,7 @@ pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> 
         error: Default::default(),
     };
     gc.update_validation(validation.clone(), None);
-    validation
+    validation.into()
 }
 
 #[track_caller]
