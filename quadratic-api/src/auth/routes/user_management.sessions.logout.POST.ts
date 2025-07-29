@@ -1,9 +1,9 @@
 import type { Response } from 'express';
 import express from 'express';
 import z from 'zod';
-import { clearCookies, logoutSession } from '../../auth/auth';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { Request } from '../../types/Request';
+import { clearCookies, logoutSession } from '../providers/auth';
 
 const schema = z.object({
   query: z.object({

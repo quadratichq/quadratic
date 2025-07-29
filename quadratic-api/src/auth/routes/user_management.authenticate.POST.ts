@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import express from 'express';
-import { authenticateWithRefreshToken, clearCookies } from '../../auth/auth';
 import type { Request } from '../../types/Request';
+import { authenticateWithRefreshToken, clearCookies } from '../providers/auth';
 
 const authenticateRouter = express.Router();
 

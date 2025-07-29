@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { AUTH_TYPE } from '../env-vars';
+import { AUTH_TYPE } from '../../env-vars';
 import { getUsersFromAuth0, getUsersFromAuth0ByEmail, jwtConfigAuth0 } from './auth0';
 import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
 import {

@@ -7,9 +7,9 @@ import 'express-async-errors';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
+import authRouter from './auth/router/authRouter';
 import { AUTH_CORS, CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import { logRequestInfo } from './middleware/logRequestInfo';
-import authRouter from './routes/auth/authRouter';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
 

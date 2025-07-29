@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { getUsers } from '../auth/auth';
+import { getUsers } from '../auth/providers/auth';
 import dbClient from '../dbClient';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import type { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';

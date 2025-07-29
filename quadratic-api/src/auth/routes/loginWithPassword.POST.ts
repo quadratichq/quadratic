@@ -2,9 +2,9 @@ import type { Response } from 'express';
 import express from 'express';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { clearCookies, loginWithPassword } from '../../auth/auth';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { Request } from '../../types/Request';
+import { clearCookies, loginWithPassword } from '../providers/auth';
 
 const schema = z.object({
   body: ApiSchemas['/auth/loginWithPassword.POST.request'],

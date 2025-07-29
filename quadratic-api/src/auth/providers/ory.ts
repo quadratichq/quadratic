@@ -3,7 +3,7 @@ import * as Sentry from '@sentry/node';
 import type { Algorithm } from 'jsonwebtoken';
 import type { GetVerificationKey } from 'jwks-rsa';
 import jwksRsa from 'jwks-rsa';
-import { ORY_ADMIN_HOST, ORY_JWKS_URI } from '../env-vars';
+import { ORY_ADMIN_HOST, ORY_JWKS_URI } from '../../env-vars';
 import type { ByEmailUser, User } from './auth';
 
 const config = new Configuration({

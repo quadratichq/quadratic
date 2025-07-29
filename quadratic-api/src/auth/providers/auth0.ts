@@ -10,7 +10,7 @@ import {
   AUTH0_DOMAIN,
   AUTH0_ISSUER,
   AUTH0_JWKS_URI,
-} from '../env-vars';
+} from '../../env-vars';
 import type { ByEmailUser, User } from './auth';
 
 // Guide to Setting up on Auth0

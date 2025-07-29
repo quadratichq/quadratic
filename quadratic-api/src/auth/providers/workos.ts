@@ -3,7 +3,7 @@ import { WorkOS, type UserResponse } from '@workos-inc/node';
 import type { Request, Response } from 'express';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
-import { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../env-vars';
+import { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../../env-vars';
 import type { ByEmailUser, User } from './auth';
 
 const WORKOS_REFRESH_TOKEN_COOKIE_NAME = 'refresh-token';

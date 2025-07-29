@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { getUsers } from '../../auth/auth';
+import { getUsers } from '../../auth/providers/auth';
 import dbClient from '../../dbClient';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
