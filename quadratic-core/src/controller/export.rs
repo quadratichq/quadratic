@@ -135,7 +135,7 @@ impl GridController {
             }
 
             // add grid values to the worksheet
-            match sheet.bounds(false) {
+            match sheet.all_bounds() {
                 GridBounds::Empty => continue,
                 GridBounds::NonEmpty(rect) => {
                     for pos in rect.iter() {
@@ -587,5 +587,42 @@ mod tests {
         // Test that the exported file has some content (should be larger than a minimal file)
         let excel_data = excel.unwrap();
         assert!(excel_data.len() > 1000); // A file with borders should be reasonably sized
+    }
+
+    #[test]
+    fn test_exports_excel_with_borders_beyond_data() {
+        use crate::color::Rgba;
+        use crate::grid::sheet::borders::{BorderStyleTimestamp, CellBorderLine};
+
+        let mut gc = GridController::test();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet_mut(sheet_id);
+
+        // Add some data in a small area
+        sheet.set_cell_value(Pos { x: 1, y: 1 }, "Data");
+
+        // Add borders that extend well beyond the data bounds
+        let border_style = BorderStyleTimestamp::new(
+            Rgba::new(0, 255, 0, 255), // Green color
+            CellBorderLine::Line1,     // Thin line
+        );
+
+        let mut border_cell = crate::grid::sheet::borders::BorderStyleCell::default();
+        border_cell.right = Some(border_style);
+
+        // Add borders at positions far from the data
+        for x in 5..=10 {
+            for y in 5..=10 {
+                sheet.borders.set_style_cell(Pos { x, y }, border_cell);
+            }
+        }
+
+        // Test that export succeeds and includes the border areas
+        let excel = gc.export_excel();
+        assert!(excel.is_ok());
+
+        // The exported file should be larger due to the additional border formatting
+        let excel_data = excel.unwrap();
+        assert!(excel_data.len() > 1000);
     }
 }
