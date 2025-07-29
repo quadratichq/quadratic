@@ -4,7 +4,7 @@ import { RATE_LIMIT_AUTH_REQUESTS_MAX, RATE_LIMIT_AUTH_WINDOW_MS } from '../../e
 // Rate limit username + password sign-ups to 100 per day per ip address
 export const auth_signup_rate_limiter = rateLimit({
   windowMs: Number(RATE_LIMIT_AUTH_WINDOW_MS) || 1000 * 60 * 60 * 24, // 24 hours
-  max: Number(RATE_LIMIT_AUTH_REQUESTS_MAX) || 1, // Limit number of requests per windowMs
+  max: Number(RATE_LIMIT_AUTH_REQUESTS_MAX) || 100, // Limit number of requests per windowMs
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
 });
