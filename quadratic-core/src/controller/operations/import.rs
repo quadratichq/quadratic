@@ -386,7 +386,6 @@ impl GridController {
             let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
-                    dbgjs!(format!("calamine style: {:?}", style));
                     let pos = Pos {
                         x: insert_at.x + x as i64 + 1,
                         y: insert_at.y + y as i64 + 1,
@@ -417,7 +416,7 @@ impl GridController {
                             });
 
                         // alignment
-                        style.get_alignment().map(|alignment| {
+                        if let Some(alignment) = style.get_alignment() {
                             // horizontal alignment
                             sheet.formats.align.set(
                                 pos,
@@ -449,20 +448,18 @@ impl GridController {
                             if alignment.shrink_to_fit {
                                 sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
                             }
-                        });
+                        }
 
                         // number formats
-                        style.get_number_format().map(|number_format: &NumberFormat| { 
-                            import_excel_number_format(sheet, pos, number_format);
-                        });
+                        if let Some(number_format) = style.get_number_format() { import_excel_number_format(sheet, pos, number_format); }
 
                         // borders
-                        style.get_borders().map(|border| {
+                        if let Some(border) = style.get_borders() {
                             let border_style_cell = convert_excel_borders_to_quadratic(border);
                             if !border_style_cell.is_empty() {
                                 sheet.borders.set_style_cell(pos, border_style_cell);
                             }
-                        });
+                        }
                     }
                 }
             }
@@ -523,6 +520,9 @@ impl GridController {
 }
 
 /// Converts Excel number format to our quadratic format.
+/// 
+/// Note: Complex accounting formats like `_(* #,##0_);_(* \(#,##0\);_(* "-"??_);_(@_)`
+/// are not yet fully supported but the values import correctly
 fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &NumberFormat) {    
         let format_id = number_format.format_id;
         let format_string = &number_format.format_code;
@@ -729,9 +729,9 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                 _ => {
                     if !format_string.is_empty() {
                         // handle custom date/time formats
-                        if is_datetime_format(&format_string) {
+                        if is_datetime_format(format_string) {
                             let chrono_format =
-                                excel_to_chrono_format(&format_string);
+                                excel_to_chrono_format(format_string);
                             sheet
                                 .formats
                                 .date_time
@@ -753,9 +753,9 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                                     }
                                 }
                             }
-                        } else if is_date_format(&format_string) {
+                        } else if is_date_format(format_string) {
                             let chrono_format =
-                                excel_to_chrono_format(&format_string);
+                                excel_to_chrono_format(format_string);
                             sheet
                                 .formats
                                 .date_time
@@ -777,9 +777,9 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                                     }
                                 }
                             }
-                        } else if is_time_format(&format_string) {
+                        } else if is_time_format(format_string) {
                             let chrono_format =
-                                excel_to_chrono_format(&format_string);
+                                excel_to_chrono_format(format_string);
                             sheet
                                 .formats
                                 .date_time
@@ -834,7 +834,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             }
 
                             // set decimal places
-                            let decimals = count_decimal_places(&format_string);
+                            let decimals = count_decimal_places(format_string);
                             if decimals > 0 {
                                 sheet
                                     .formats
@@ -843,7 +843,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                             }
 
                             // set thousands separator
-                            if has_thousands_separator(&format_string) {
+                            if has_thousands_separator(format_string) {
                                 sheet
                                     .formats
                                     .numeric_commas
@@ -1136,7 +1136,6 @@ fn convert_excel_border_color(color: Option<&calamine::Color>) -> Rgba {
 fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyleCell {    
     let convert_border = |border: &calamine::Border| -> Option<BorderStyleTimestamp> {
         let line = convert_excel_border_style(border.style);
-        dbgjs!(format!("calamine border color: {:?}", border.color));
         
         if line == CellBorderLine::Clear {
             return None;
@@ -1148,14 +1147,6 @@ fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyl
             timestamp: SmallTimestamp::now(),
         })
     };
-
-    dbgjs!(format!("calamine borders: {:?}", borders));
-    dbgjs!(format!("quadratic borders: {:?}", BorderStyleCell {
-        top: convert_border(&borders.top),
-        bottom: convert_border(&borders.bottom),
-        left: convert_border(&borders.left),
-        right: convert_border(&borders.right),
-    }));
 
     BorderStyleCell {
         top: convert_border(&borders.top),
@@ -1170,6 +1161,7 @@ fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyl
 mod test {
     use super::*;
     use crate::{CellValue, controller::user_actions::import::tests::simple_csv_at, test_util::*};
+    use calamine::{BorderStyle, Color};
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     #[test]
@@ -1681,6 +1673,108 @@ mod test {
         .unwrap();
     }
 
+
+    #[test]
+    fn import_xlsx_styles() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/styles.xlsx");
+        gc.import_excel(file.as_ref(), "styles.xlsx", None).unwrap();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+        
+        assert_eq!(sheet.formats.bold.get((1, 1).into()), Some(true));
+        assert_eq!(sheet.formats.italic.get((1, 2).into()), Some(true));
+        assert_eq!(sheet.formats.underline.get((1, 3).into()), Some(true));
+        assert_eq!(sheet.formats.strike_through.get((1, 4).into()), Some(true));
+        assert_eq!(
+            sheet.formats.text_color.get((1, 5).into()),
+            Some("#FF0000".to_string())
+        );
+        assert_eq!(
+            sheet.formats.fill_color.get((1, 6).into()),
+            Some("#FFFF00".to_string())
+        );
+        assert_eq!(sheet.formats.align.get((1, 7).into()), Some(CellAlign::Center));
+        assert_eq!(sheet.formats.vertical_align.get((1, 8).into()), Some(CellVerticalAlign::Middle));
+        assert_eq!(sheet.formats.wrap.get((1, 9).into()), Some(CellWrap::Wrap));
+        assert_eq!(sheet.formats.bold.get((1, 10).into()), None);
+        assert_eq!(sheet.formats.italic.get((1, 10).into()), None);
+        assert_eq!(sheet.formats.text_color.get((1, 10).into()), None);
+        assert_eq!(sheet.formats.fill_color.get((1, 10).into()), None);
+    }
+
+    #[test]
+    fn import_xlsx_number_format_edge_cases() {
+        let mut gc = GridController::new_blank();
+        let file = include_bytes!("../../../test-files/income_statement.xlsx");
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None).unwrap();
+        let sheet_id = gc.sheet_ids()[0];
+        let sheet = gc.sheet(sheet_id);
+        let to_number = |x, y| {
+            if let Some(CellValue::Number(n)) = sheet.cell_value((x, y).into()) {
+                n.to_f64().unwrap_or(0.0)
+            } else {
+                panic!("Cell {x},{y} should contain a number");
+            }
+        };
+
+        let value = to_number(4, 5);
+        assert!((value - 5216000.0).abs() < 0.1);
+
+        let value = to_number(6, 8);
+        assert!((value - 269414.125).abs() < 0.001);
+
+        assert_eq!(
+            sheet.cell_value((2, 3).into()),
+            Some(CellValue::Text("Category".to_string()))
+        );
+
+        assert_eq!(
+            sheet.cell_value((2, 7).into()),
+            Some(CellValue::Text("Hosting & Platform Fees".to_string()))
+        );
+
+        assert_eq!(
+            sheet.cell_value((4, 12).into()),
+            Some(CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Formula,
+                code: "D5-D10".to_string()
+            }))
+        );
+
+        let value = to_number(4, 14);
+        assert!(value > 1_000_000.0);
+        assert!(value < 10_000_000.0);
+
+        let value = to_number(6, 16);
+        assert!((value - 1363708.75).abs() < 0.01);
+
+        let mut found_numbers = Vec::new();
+        for row in 5..20 {
+            for col in 4..10 {
+                if let Some(CellValue::Number(n)) = sheet.cell_value((col, row).into()) {
+                    found_numbers.push(n.to_f64().unwrap_or(0.0));
+                }
+            }
+        }
+        
+        assert!(found_numbers.len() > 10);
+        
+        let max_value = found_numbers.iter().fold(0.0f64, |a, &b| a.max(b));
+        let min_value = found_numbers.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        
+        assert!(max_value > 1_000_000.0, "Should have large numbers");
+        assert!(min_value < 1_000_000.0, "Should have smaller numbers");
+        
+        let formula_count = (5..20).flat_map(|row| (4..10).map(move |col| (col, row)))
+            .filter(|(col, row)| {
+                matches!(sheet.cell_value((*col, *row).into()), Some(CellValue::Code(_)))
+            })
+            .count();
+            
+        assert!(formula_count > 0, "Should have found some formulas in the income statement");        
+    }
+
     #[test]
     fn test_excel_to_chrono_format_conversion() {
         // Test basic date formats
@@ -1706,41 +1800,57 @@ mod test {
     #[test]
     fn import_excel_borders() {
         let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
+        let file = include_bytes!("../../../test-files/borders.xlsx");
+        gc.import_excel(file.as_ref(), "borders.xlsx", None).unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
 
-        // Check if borders are imported (this is a basic test that the function runs without errors)
-        // In a real Excel file with borders, we would check specific border styles
-        // For now, we just verify the import process doesn't crash and borders object exists
-        assert!(sheet.borders.get_style_cell(pos![A1]).is_empty());
+        let border_cell_a1 = sheet.borders.get_style_cell(pos![A1]);        
+        let top = border_cell_a1.top.unwrap();
+        let left = border_cell_a1.left.unwrap();
+        let bottom = border_cell_a1.bottom.unwrap();
+        let right = border_cell_a1.right.unwrap();
+        let red = Rgba::new(255, 0, 0, 255);
+        
+        assert_eq!(top.line, CellBorderLine::Line1);
+        assert_eq!(top.color, red);
+        assert_eq!(left.line, CellBorderLine::Line1);
+        assert_eq!(left.color, red);
+        assert_eq!(bottom.line, CellBorderLine::Line1);
+        assert_eq!(bottom.color, red);
+        assert_eq!(right.line, CellBorderLine::Line1);
+        assert_eq!(right.color, red);
+        
+        let border_cell_d1= sheet.borders.get_style_cell(pos![D1]);
+        let top = border_cell_d1.top.unwrap();
+        let left = border_cell_d1.left.unwrap();
+        let red = Rgba::new(255, 0, 0, 255);
+        
+        assert_eq!(top.line, CellBorderLine::Dashed);
+        assert_eq!(top.color, red);
+        assert_eq!(left.line, CellBorderLine::Dashed);
+        assert_eq!(left.color, red);
+        assert!(border_cell_d1.bottom.is_none());
+        assert!(border_cell_d1.right.is_none());
     }
 
     #[test]
     fn test_convert_excel_border_style() {
-        use calamine::BorderStyle;
-        
-        // Test border style conversions
         assert_eq!(convert_excel_border_style(BorderStyle::None), CellBorderLine::Clear);
         assert_eq!(convert_excel_border_style(BorderStyle::Thin), CellBorderLine::Line1);
         assert_eq!(convert_excel_border_style(BorderStyle::Hair), CellBorderLine::Line1);
         assert_eq!(convert_excel_border_style(BorderStyle::Medium), CellBorderLine::Line2);
         assert_eq!(convert_excel_border_style(BorderStyle::Thick), CellBorderLine::Line3);
         assert_eq!(convert_excel_border_style(BorderStyle::Double), CellBorderLine::Double);
-        assert_eq!(convert_excel_border_style(BorderStyle::DashDot), CellBorderLine::Line2);
+        assert_eq!(convert_excel_border_style(BorderStyle::DashDot), CellBorderLine::Dotted);
     }
 
     #[test]
     fn test_convert_excel_border_color() {
-        use calamine::Color;
-        
-        // Test color conversion with no color (should default to black)
         let default_color = convert_excel_border_color(None);
         assert_eq!(default_color, Rgba::default());
         
-        // Test color conversion with specific color
         let red_color = Color::new(255, 255, 0, 0); // ARGB: fully opaque red
         let converted_color = convert_excel_border_color(Some(&red_color));
         assert_eq!(converted_color, Rgba::new(255, 0, 0, 255)); // RGBA: red with full alpha

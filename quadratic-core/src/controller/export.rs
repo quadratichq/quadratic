@@ -456,6 +456,7 @@ mod tests {
     use crate::{
         Array,
         controller::user_actions::import::tests::{assert_flattened_simple_csv, simple_csv},
+        grid::sheet::borders::BorderStyleCell,
     };
 
     #[test]
@@ -570,11 +571,12 @@ mod tests {
             CellBorderLine::Line2,     // Medium line
         );
 
-        let mut border_cell = crate::grid::sheet::borders::BorderStyleCell::default();
-        border_cell.top = Some(border_style);
-        border_cell.bottom = Some(border_style);
-        border_cell.left = Some(border_style);
-        border_cell.right = Some(border_style);
+        let border_cell = BorderStyleCell {
+            top: Some(border_style),
+            bottom: Some(border_style),
+            left: Some(border_style),
+            right: Some(border_style),
+        };
 
         sheet
             .borders
