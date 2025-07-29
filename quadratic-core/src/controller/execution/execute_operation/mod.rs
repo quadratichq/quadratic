@@ -181,6 +181,9 @@ impl GridController {
                 Operation::RemoveValidation { .. } => {
                     self.execute_remove_validation(transaction, op);
                 }
+                Operation::RemoveValidationSelection { .. } => {
+                    self.execute_remove_validation_selection(transaction, op);
+                }
                 Operation::SetValidationWarning { .. } => {
                     self.execute_set_validation_warning(transaction, op);
                 }

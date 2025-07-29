@@ -4,6 +4,7 @@ import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { A1Selection, Validation } from '@/app/quadratic-core-types';
 import { addToSelection } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 
 import { v4 } from 'uuid';
 
@@ -23,7 +24,7 @@ const getMessageLogical = (validation: Validation) => {
     return (
       ` - logical (true or false) validation\n` +
       ` - ${validation.rule.Logical.show_checkbox ? 'displays' : 'does not display'} a checkbox\n` +
-      ` - ${validation.rule.Logical.ignore_blank} ?'allows' : 'does not allow'} blank messages.\n`
+      ` - ${validation.rule.Logical.ignore_blank ? 'allows' : 'does not allow'} blank messages.\n`
     );
   }
   return '';
@@ -220,37 +221,33 @@ const appendSelection = (selection: A1Selection, a1: string): A1Selection => {
   return newSelection;
 };
 
-export const addMessageToolCall = async (
-  sheetName: string | undefined,
-  selection: string,
-  messageTitle: string | undefined,
-  messageText: string | undefined
-): Promise<string> => {
-  const sheet = getSheetFromSheetName(sheetName);
+export const addMessageToolCall = async (o: AIToolsArgs[AITool.AddMessage]): Promise<string> => {
+  const sheet = getSheetFromSheetName(o.sheet_name);
   const validations = sheet.validations;
   const existingValidation = validations.find((validation) => {
     return (
       validation.rule === 'None' &&
-      validation.message.title === 'messageTitle' &&
-      validation.message.message === messageText &&
+      validation.message.title === o.message_title &&
+      validation.message.message === o.message_text &&
       validation.message.show === true
     );
   });
   if (existingValidation) {
     await quadraticCore.updateValidation({
       ...existingValidation,
-      selection: appendSelection(existingValidation.selection, selection),
+      selection: appendSelection(existingValidation.selection, o.selection),
     });
   } else {
     const validation: Validation = {
       id: v4(),
-      selection: getSelectionFromString(selection, sheet.id),
+      selection: getSelectionFromString(o.selection, sheet.id),
       rule: 'None',
       message: {
         show: true,
-        title: messageTitle ?? '',
-        message: messageText ?? '',
+        title: o.message_title ?? '',
+        message: o.message_text ?? '',
       },
+      // we shouldn't have errors in a validation that is only a message
       error: {
         show: false,
         style: 'Stop',
@@ -260,5 +257,53 @@ export const addMessageToolCall = async (
     };
     await quadraticCore.updateValidation(validation);
   }
-  return `Message successfully added to ${selection}`;
+  return `Message successfully added to ${o.selection}`;
+};
+
+export const addLogicalValidationToolCall = async (o: AIToolsArgs[AITool.AddLogicalValidation]) => {
+  const sheet = getSheetFromSheetName(o.sheet_name);
+  const validations = sheet.validations;
+  const existingValidation = validations.find((validation) => {
+    return (
+      validation.rule !== 'None' &&
+      'Logical' in validation.rule &&
+      validation.rule.Logical.show_checkbox === o.show_checkbox &&
+      validation.rule.Logical.ignore_blank === o.ignore_blank
+    );
+  });
+  if (existingValidation) {
+    await quadraticCore.updateValidation({
+      ...existingValidation,
+      selection: appendSelection(existingValidation.selection, o.selection),
+    });
+  } else {
+    const validation: Validation = {
+      id: v4(),
+      selection: getSelectionFromString(o.selection, sheet.id),
+      rule: {
+        Logical: {
+          show_checkbox: o.show_checkbox ?? true,
+          ignore_blank: o.ignore_blank ?? false,
+        },
+      },
+      message: {
+        show: true,
+        title: o.message_title ?? '',
+        message: o.message_text ?? '',
+      },
+      error: {
+        show: o.show_error ?? true,
+        style: o.error_style ?? 'Stop',
+        title: o.error_title ?? '',
+        message: o.error_message ?? '',
+      },
+    };
+    await quadraticCore.updateValidation(validation);
+  }
+};
+
+export const removeValidationsToolCall = async (o: AIToolsArgs[AITool.RemoveValidations]) => {
+  const sheet = getSheetFromSheetName(o.sheet_name);
+  await quadraticCore.removeValidationSelection(sheet.id, o.selection);
+  return `Validation successfully removed from ${o.selection}`;
 };

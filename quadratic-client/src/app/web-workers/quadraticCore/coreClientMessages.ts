@@ -1364,6 +1364,20 @@ export interface CoreClientGetFormatSelection {
   format: CellFormatSummary | JsResponse | undefined;
 }
 
+export interface ClientCoreRemoveValidationSelection {
+  type: 'clientCoreRemoveValidationSelection';
+  id: number;
+  sheetId: string;
+  selection: string;
+  cursor: string;
+}
+
+export interface CoreClientRemoveValidationSelection {
+  type: 'coreClientRemoveValidationSelection';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1461,7 +1475,8 @@ export type ClientCoreMessage =
   | ClientCoreResizeAllColumns
   | ClientCoreResizeAllRows
   | ClientCoreGetFormatSelection
-  | ClientCoreHasCellData;
+  | ClientCoreHasCellData
+  | ClientCoreRemoveValidationSelection;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1554,4 +1569,5 @@ export type CoreClientMessage =
   | CoreClientInsertRows
   | CoreClientDataTableFirstRowAsHeader
   | CoreClientDataTableMeta
-  | CoreClientUpdateValidation;
+  | CoreClientUpdateValidation
+  | CoreClientRemoveValidationSelection;

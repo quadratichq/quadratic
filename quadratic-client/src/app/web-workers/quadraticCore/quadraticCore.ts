@@ -94,6 +94,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientRemoveValidationSelection,
   CoreClientRerunCodeCells,
   CoreClientResizeColumns,
   CoreClientSearch,
@@ -1258,6 +1259,22 @@ class QuadraticCore {
       sheetId,
       validationId,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  removeValidationSelection(sheetId: string, selection: string) {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientRemoveValidationSelection) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreRemoveValidationSelection',
+        id,
+        sheetId,
+        selection,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 

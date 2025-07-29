@@ -288,6 +288,52 @@ impl GridController {
         }
     }
 
+    pub(crate) fn execute_remove_validation_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::RemoveValidationSelection {
+            sheet_id,
+            selection,
+        } = op
+        {
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+                return;
+            };
+
+            if let Some(reverse) = sheet
+                .validations
+                .remove_selection(&selection, &self.a1_context)
+            {
+                transaction.reverse_operations.extend(reverse);
+            } else {
+                return;
+            }
+
+            transaction
+                .forward_operations
+                .push(Operation::RemoveValidationSelection {
+                    sheet_id,
+                    selection: selection.clone(),
+                });
+
+            if transaction.is_server() {
+                return;
+            }
+            transaction.validations.insert(sheet_id);
+
+            self.send_updated_bounds(transaction, sheet_id);
+            if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![selection],
+                );
+            }
+        }
+    }
+
     pub(crate) fn execute_set_validation_warning(
         &mut self,
         transaction: &mut PendingTransaction,

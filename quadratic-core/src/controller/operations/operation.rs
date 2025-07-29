@@ -340,6 +340,10 @@ pub enum Operation {
         sheet_id: SheetId,
         validation_id: Uuid,
     },
+    RemoveValidationSelection {
+        sheet_id: SheetId,
+        selection: A1Selection,
+    },
     /// Creates, updates, or deletes a data validation warning.
     SetValidationWarning {
         sheet_pos: SheetPos,

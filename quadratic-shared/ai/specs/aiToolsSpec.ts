@@ -166,6 +166,12 @@ const cellLanguageSchema = z
   .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
   .pipe(z.enum(['Python', 'Javascript']));
 
+const enumToFirstLetterCapitalSchema = <T extends string>(enumValues: readonly T[]) =>
+  z
+    .string()
+    .transform((val) => val.charAt(0).toUpperCase() + val.slice(1).toLowerCase())
+    .pipe(z.enum(enumValues as readonly string[] as [T, ...T[]]));
+
 const modelRouterModels = z
   .string()
   .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
@@ -178,7 +184,7 @@ const validationMessageErrorSchema = () => ({
   message_text: z.string().optional(),
 
   show_error: booleanSchema.optional(),
-  error_style: z.enum(['stop', 'warning', 'information']).optional(),
+  error_style: enumToFirstLetterCapitalSchema(['Stop', 'Warning', 'Information']).optional(),
   error_message: z.string().optional(),
   error_title: z.string().optional(),
 });
@@ -451,6 +457,10 @@ export const AIToolsArgsSchema = {
   }),
 } as const;
 
+export type AIToolsArgs = {
+  [K in keyof typeof AIToolsArgsSchema]: z.infer<(typeof AIToolsArgsSchema)[K]>;
+};
+
 export type AIToolSpecRecord = {
   [K in AITool]: AIToolSpec<K>;
 };
@@ -466,7 +476,7 @@ const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => 
   show_message: {
     type: ['boolean', 'null'],
     description:
-      'Whether the message is shown whenever the cursor is on the cell with this validation. This defaults to false.',
+      'Whether the message is shown whenever the cursor is on the cell with this validation. This is usually set to false unless specifically requested, for example, include instructions.',
   },
   message_title: {
     type: ['string', 'null'],
@@ -485,7 +495,7 @@ const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => 
   },
   error_style: {
     type: ['string', 'null'],
-    description: `The style of the error. It can be "stop" - which stops the user from saving the cell; "warning" - which shows a warning message but allows the user to enter the value; or "information" -- which shows an information message if the validation fails. The default is "stop".`,
+    description: `Selected from Stop, Warning, and Information. This is the style of the error. Stop will stop the user from saving the cell; Warning will show a warning message but allows the user to enter the value. Information will show an information message if the validation fails. The default is Stop.`,
   },
   error_message: {
     type: ['string', 'null'],

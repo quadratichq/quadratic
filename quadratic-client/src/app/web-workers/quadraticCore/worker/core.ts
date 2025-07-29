@@ -1374,6 +1374,15 @@ class Core {
       return false;
     }
   }
+
+  removeValidationSelection(sheetId: string, selection: string, cursor: string) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.removeValidationSelection(sheetId, selection, cursor);
+    } catch (e) {
+      this.handleCoreError('removeValidationSelection', e);
+    }
+  }
 }
 
 export const core = new Core();

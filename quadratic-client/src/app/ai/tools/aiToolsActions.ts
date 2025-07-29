@@ -1,5 +1,10 @@
+import {
+  addLogicalValidationToolCall,
+  addMessageToolCall,
+  getValidationsToolCall,
+  removeValidationsToolCall,
+} from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
-import { addMessageToolCall, getValidationsToolCall } from '@/app/ai/tools/validations';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
@@ -1011,17 +1016,16 @@ export const aiToolsActions: AIToolActionsRecord = {
     return [createTextContent(text)];
   },
   [AITool.AddMessage]: async (args) => {
-    const { sheet_name, selection, message_title, message_text } = args;
     let text: string;
     try {
-      text = await addMessageToolCall(sheet_name, selection, message_title, message_text);
+      text = await addMessageToolCall(args);
     } catch (e) {
       return [createTextContent(`Error executing add message tool: ${e}`)];
     }
     return [createTextContent(text)];
   },
   [AITool.AddLogicalValidation]: async (args) => {
-    console.log(args);
+    addLogicalValidationToolCall(args);
     // try {
     //   const { sheet_name, selection, logical_operator, validation_1, validation_2 } = args;
     //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
@@ -1069,12 +1073,12 @@ export const aiToolsActions: AIToolActionsRecord = {
     return [createTextContent('Add date time validation tool executed successfully.')];
   },
   [AITool.RemoveValidations]: async (args) => {
-    console.log(args);
-    // try {
-    //   const { sheet_name, selection } = args;
-    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    //   const response = await quadraticCore.removeValidations(sheetId, selection);
-    // }
-    return [createTextContent('Remove validations tool executed successfully.')];
+    let text: string;
+    try {
+      text = await removeValidationsToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+    return [createTextContent(text)];
   },
 } as const;

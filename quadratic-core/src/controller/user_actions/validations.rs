@@ -86,6 +86,19 @@ impl GridController {
         }
     }
 
+    pub fn remove_validation_selection(
+        &mut self,
+        sheet_id: SheetId,
+        selection: A1Selection,
+        cursor: Option<String>,
+    ) {
+        let ops = vec![Operation::RemoveValidationSelection {
+            sheet_id,
+            selection,
+        }];
+        self.start_user_transaction(ops, cursor, TransactionName::Validation);
+    }
+
     pub fn get_validation_from_pos(&self, sheet_id: SheetId, pos: Pos) -> Option<&Validation> {
         self.try_sheet(sheet_id).and_then(|sheet| {
             sheet

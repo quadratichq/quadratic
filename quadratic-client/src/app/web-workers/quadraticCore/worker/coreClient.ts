@@ -510,6 +510,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreRemoveValidationSelection':
+        this.send({
+          type: 'coreClientRemoveValidationSelection',
+          id: e.data.id,
+          response: core.removeValidationSelection(e.data.sheetId, e.data.selection, e.data.cursor),
+        });
+        return;
+
       case 'clientCoreGetValidations':
         this.send({
           type: 'coreClientGetValidations',
