@@ -179,14 +179,14 @@ const modelRouterModels = z
 
 // Common schema for validation message and error
 const validationMessageErrorSchema = () => ({
-  show_message: booleanSchema.optional(),
-  message_title: z.string().optional(),
-  message_text: z.string().optional(),
+  show_message: booleanSchema.nullable().optional(),
+  message_title: z.string().nullable().optional(),
+  message_text: z.string().nullable().optional(),
 
-  show_error: booleanSchema.optional(),
-  error_style: enumToFirstLetterCapitalSchema(['Stop', 'Warning', 'Information']).optional(),
-  error_message: z.string().optional(),
-  error_title: z.string().optional(),
+  show_error: booleanSchema.nullable().optional(),
+  error_style: enumToFirstLetterCapitalSchema(['Stop', 'Warning', 'Information']).nullable().optional(),
+  error_message: z.string().nullable().optional(),
+  error_title: z.string().nullable().optional(),
 });
 
 export const AIToolsArgsSchema = {
@@ -396,15 +396,15 @@ export const AIToolsArgsSchema = {
   [AITool.AddLogicalValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    show_checkbox: booleanSchema.optional(),
-    ignore_blank: booleanSchema.optional(),
+    show_checkbox: booleanSchema.nullable().optional(),
+    ignore_blank: booleanSchema.nullable().optional(),
     ...validationMessageErrorSchema(),
   }),
   [AITool.AddListValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    ignore_blank: booleanSchema,
-    drop_down: booleanSchema,
+    ignore_blank: booleanSchema.nullable().optional(),
+    drop_down: booleanSchema.nullable().optional(),
     list_source_list: z.string().nullable().optional(),
     list_source_selection: z.string().nullable().optional(),
     ...validationMessageErrorSchema(),
@@ -412,7 +412,7 @@ export const AIToolsArgsSchema = {
   [AITool.AddTextValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    ignore_blank: booleanSchema,
+    ignore_blank: booleanSchema.nullable().optional(),
     max_length: numberSchema.nullable().optional(),
     min_length: numberSchema.nullable().optional(),
     contains: z.string().nullable().optional(),
@@ -423,7 +423,7 @@ export const AIToolsArgsSchema = {
   [AITool.AddNumberValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    ignore_blank: booleanSchema,
+    ignore_blank: booleanSchema.nullable().optional(),
     range: z.string().nullable().optional(),
     equal: z.string().nullable().optional(),
     not_equal: z.string().nullable().optional(),
@@ -432,7 +432,7 @@ export const AIToolsArgsSchema = {
   [AITool.AddDateTimeValidation]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    ignore_blank: booleanSchema,
+    ignore_blank: booleanSchema.nullable().optional(),
     date_range: z.string().nullable().optional(),
     date_equal: z.string().nullable().optional(),
     date_not_equal: z.string().nullable().optional(),
@@ -448,8 +448,8 @@ export const AIToolsArgsSchema = {
   [AITool.AddMessage]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
-    message_title: z.string().optional(),
-    message_text: z.string().optional(),
+    message_title: z.string().nullable().optional(),
+    message_text: z.string().nullable().optional(),
   }),
   [AITool.RemoveValidations]: z.object({
     sheet_name: z.string().optional(),
