@@ -64,9 +64,13 @@ export const Component = () => {
     async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       e.stopPropagation();
-      await authClient.loginWithPassword({ email, password, redirectTo });
+      if (isSignupFlow) {
+        await authClient.signupWithPassword({ email, password, firstName, lastName, redirectTo });
+      } else {
+        await authClient.loginWithPassword({ email, password, redirectTo });
+      }
     },
-    [email, password, redirectTo]
+    [email, firstName, isSignupFlow, lastName, password, redirectTo]
   );
 
   const handleOAuth = useCallback(
@@ -97,6 +101,7 @@ export const Component = () => {
 
           <form onSubmit={handleSubmit} className="flex w-full flex-col gap-6">
             <Input
+              data-testid="login-email"
               type="email"
               name="email"
               id="email"
@@ -111,6 +116,7 @@ export const Component = () => {
             />
 
             <Input
+              data-testid="login-password"
               type="password"
               name="password"
               id="password"
@@ -126,6 +132,7 @@ export const Component = () => {
             {isSignupFlow && (
               <div className="flex flex-row gap-2">
                 <Input
+                  data-testid="login-first-name"
                   hidden={!isSignupFlow}
                   type="text"
                   name="firstName"
@@ -140,6 +147,7 @@ export const Component = () => {
                 />
 
                 <Input
+                  data-testid="login-last-name"
                   hidden={!isSignupFlow}
                   type="text"
                   name="lastName"
@@ -156,6 +164,7 @@ export const Component = () => {
             )}
 
             <Button
+              data-testid="login-submit"
               type="submit"
               className="h-12 w-full rounded-md bg-blue-600 text-base font-medium hover:bg-blue-700"
             >
@@ -166,14 +175,22 @@ export const Component = () => {
           {isSignupFlow ? (
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <button onClick={toggleSignupFlow} className="font-medium text-blue-600 hover:text-blue-700">
+              <button
+                data-testid="switch-to-login"
+                onClick={toggleSignupFlow}
+                className="font-medium text-blue-600 hover:text-blue-700"
+              >
                 Log in
               </button>
             </p>
           ) : (
             <p className="text-sm text-gray-600">
               Don't have an account?{' '}
-              <button onClick={toggleSignupFlow} className="font-medium text-blue-600 hover:text-blue-700">
+              <button
+                data-testid="switch-to-signup"
+                onClick={toggleSignupFlow}
+                className="font-medium text-blue-600 hover:text-blue-700"
+              >
                 Sign up
               </button>
             </p>

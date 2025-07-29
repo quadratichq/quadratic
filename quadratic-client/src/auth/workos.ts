@@ -37,6 +37,7 @@ export const workosClient: AuthClient = {
    * Return whether the user is authenticated and the session is valid.
    */
   async isAuthenticated(): Promise<boolean> {
+    document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
     const client = await getClient();
     await client.initialize();
     const user = client.getUser();
@@ -68,9 +69,6 @@ export const workosClient: AuthClient = {
    * If `isSignupFlow` is true, the user will be redirected to the registration flow.
    */
   async login(redirectTo: string, isSignupFlow: boolean = false) {
-    const client = await getClient();
-    await client.initialize();
-
     const url = new URL(window.location.origin + ROUTES.LOGIN);
 
     if (isSignupFlow) {
@@ -98,9 +96,6 @@ export const workosClient: AuthClient = {
    */
   async handleSigninRedirect() {
     try {
-      const client = await getClient();
-      await client.initialize();
-
       const search = window.location.search;
       if (!search.includes('code=') || !search.includes('state=')) {
         return;
