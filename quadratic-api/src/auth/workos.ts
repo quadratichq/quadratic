@@ -1,9 +1,13 @@
 import * as Sentry from '@sentry/node';
-import { WorkOS, type AuthenticationResponse } from '@workos-inc/node';
+import { WorkOS, type UserResponse } from '@workos-inc/node';
+import type { Request, Response } from 'express';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
 import { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../env-vars';
 import type { ByEmailUser, User } from './auth';
+
+const WORKOS_REFRESH_TOKEN_COOKIE_NAME = 'refresh-token';
+const WORKOS_HAS_SESSION_COOKIE_NAME = 'workos-has-session';
 
 let workos: WorkOS | undefined;
 const getWorkos = (): WorkOS => {
@@ -68,18 +72,56 @@ export const getUsersFromWorkosByEmail = async (email: string): Promise<ByEmailU
   return identities.map(({ id }) => ({ user_id: id }));
 };
 
-export const authenticateWithRefreshTokenWorkos = async (args: {
-  refreshToken: string;
+export const authenticateWithRefreshTokenWorkos = async ({
+  req,
+  res,
+  organizationId,
+}: {
+  req: Request;
+  res: Response;
   organizationId?: string;
-}): Promise<AuthenticationResponse> => {
-  return await getWorkos().userManagement.authenticateWithRefreshToken({
+}) => {
+  const refreshToken = req.cookies?.[WORKOS_REFRESH_TOKEN_COOKIE_NAME];
+  if (!refreshToken) {
+    throw new Error('No refresh token found');
+  }
+
+  const {
+    user,
+    accessToken,
+    refreshToken: newRefreshToken,
+  } = await getWorkos().userManagement.authenticateWithRefreshToken({
     clientId: WORKOS_CLIENT_ID,
-    refreshToken: args.refreshToken,
-    organizationId: args.organizationId,
+    refreshToken: refreshToken,
+    organizationId: organizationId,
   });
+
+  setCookiesWorkos({ res, refreshToken: newRefreshToken });
+
+  const userResponse: UserResponse = {
+    object: user.object,
+    id: user.id,
+    email: user.email,
+    email_verified: user.emailVerified,
+    profile_picture_url: user.profilePictureUrl,
+    first_name: user.firstName,
+    last_name: user.lastName,
+    last_sign_in_at: user.lastSignInAt,
+    created_at: user.createdAt,
+    updated_at: user.updatedAt,
+    external_id: user.externalId ?? undefined,
+    metadata: user.metadata ?? undefined,
+  };
+  return {
+    user: userResponse,
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
 };
 
-export const logoutSessionWorkos = async ({ sessionId }: { sessionId: string }) => {
+export const logoutSessionWorkos = async ({ sessionId, res }: { sessionId: string; res: Response }) => {
+  clearCookiesWorkos({ res });
+
   return await getWorkos().userManagement.revokeSession({
     sessionId,
   });
@@ -88,15 +130,19 @@ export const logoutSessionWorkos = async ({ sessionId }: { sessionId: string }) 
 export const loginWithPasswordWorkos = async ({
   email,
   password,
+  res,
 }: {
   email: string;
   password: string;
-}): Promise<{ refreshToken: string }> => {
+  res: Response;
+}) => {
   const { user, refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
     clientId: WORKOS_CLIENT_ID,
     email,
     password,
   });
+
+  setCookiesWorkos({ res, refreshToken });
 
   if (!user.emailVerified) {
     await getWorkos().userManagement.updateUser({
@@ -104,8 +150,6 @@ export const loginWithPasswordWorkos = async ({
       emailVerified: true,
     });
   }
-
-  return { refreshToken };
 };
 
 export const signupWithPasswordWorkos = async ({
@@ -113,12 +157,14 @@ export const signupWithPasswordWorkos = async ({
   password,
   firstName,
   lastName,
+  res,
 }: {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-}): Promise<{ refreshToken: string }> => {
+  res: Response;
+}) => {
   await getWorkos().userManagement.createUser({
     email,
     password,
@@ -127,14 +173,24 @@ export const signupWithPasswordWorkos = async ({
     emailVerified: true,
   });
 
-  return loginWithPasswordWorkos({ email, password });
+  const { refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
+    clientId: WORKOS_CLIENT_ID,
+    email,
+    password,
+  });
+
+  setCookiesWorkos({ res, refreshToken });
 };
 
-export const authenticateWithCodeWorkos = async (code: string): Promise<{ refreshToken: string }> => {
+export const authenticateWithCodeWorkos = async (args: { code: string; res: Response }) => {
+  const { res, code } = args;
+
   const { refreshToken, user } = await getWorkos().userManagement.authenticateWithCode({
     clientId: WORKOS_CLIENT_ID,
     code,
   });
+
+  setCookiesWorkos({ res, refreshToken });
 
   if (!user.emailVerified) {
     await getWorkos().userManagement.updateUser({
@@ -142,8 +198,6 @@ export const authenticateWithCodeWorkos = async (code: string): Promise<{ refres
       emailVerified: true,
     });
   }
-
-  return { refreshToken };
 };
 
 export const jwtConfigWorkos = {
@@ -154,4 +208,30 @@ export const jwtConfigWorkos = {
     jwksUri: WORKOS_JWKS_URI,
   }) as GetVerificationKey,
   algorithms: ['RS256'] as Algorithm[],
+};
+
+export const clearCookiesWorkos = ({ res }: { res: Response }) => {
+  res.clearCookie(WORKOS_REFRESH_TOKEN_COOKIE_NAME, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+  });
+  res.clearCookie(WORKOS_HAS_SESSION_COOKIE_NAME, {
+    secure: true,
+    sameSite: 'none',
+  });
+};
+
+const setCookiesWorkos = ({ res, refreshToken }: { res: Response; refreshToken: string }) => {
+  res.cookie(WORKOS_REFRESH_TOKEN_COOKIE_NAME, refreshToken, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+  });
+  res.cookie(WORKOS_HAS_SESSION_COOKIE_NAME, 'true', {
+    secure: true,
+    sameSite: 'none',
+    maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
+  });
 };

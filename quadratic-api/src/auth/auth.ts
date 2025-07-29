@@ -1,9 +1,11 @@
+import type { Request, Response } from 'express';
 import { AUTH_TYPE } from '../env-vars';
 import { getUsersFromAuth0, getUsersFromAuth0ByEmail, jwtConfigAuth0 } from './auth0';
 import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
 import {
   authenticateWithCodeWorkos,
   authenticateWithRefreshTokenWorkos,
+  clearCookiesWorkos,
   getUsersFromWorkos,
   getUsersFromWorkosByEmail,
   jwtConfigWorkos,
@@ -68,63 +70,62 @@ export const jwtConfig = () => {
   }
 };
 
-export const authenticateWithRefreshToken = async ({ refreshToken }: { refreshToken: string }) => {
+export const authenticateWithRefreshToken = async (args: { req: Request; res: Response }) => {
   switch (AUTH_TYPE) {
     case 'workos':
-      return await authenticateWithRefreshTokenWorkos({ refreshToken });
+      return await authenticateWithRefreshTokenWorkos(args);
     default:
       throw new Error(`Unsupported auth type in authenticateWithRefreshToken(): ${AUTH_TYPE}`);
   }
 };
 
-export const logoutSession = async ({ sessionId }: { sessionId: string }) => {
+export const logoutSession = async (args: { sessionId: string; res: Response }) => {
   switch (AUTH_TYPE) {
     case 'workos':
-      return await logoutSessionWorkos({ sessionId });
+      return await logoutSessionWorkos(args);
     default:
       throw new Error(`Unsupported auth type in logout(): ${AUTH_TYPE}`);
   }
 };
 
-export const loginWithPassword = async ({
-  email,
-  password,
-}: {
-  email: string;
-  password: string;
-}): Promise<{ refreshToken: string }> => {
+export const loginWithPassword = async (args: { email: string; password: string; res: Response }) => {
   switch (AUTH_TYPE) {
     case 'workos':
-      return await loginWithPasswordWorkos({ email, password });
+      return await loginWithPasswordWorkos(args);
     default:
       throw new Error(`Unsupported auth type in loginWithPassword(): ${AUTH_TYPE}`);
   }
 };
 
-export const signupWithPassword = async ({
-  email,
-  password,
-  firstName,
-  lastName,
-}: {
+export const signupWithPassword = async (args: {
   email: string;
   password: string;
   firstName: string;
   lastName: string;
-}): Promise<{ refreshToken: string }> => {
+  res: Response;
+}) => {
   switch (AUTH_TYPE) {
     case 'workos':
-      return await signupWithPasswordWorkos({ email, password, firstName, lastName });
+      return await signupWithPasswordWorkos(args);
     default:
       throw new Error(`Unsupported auth type in signupWithPassword(): ${AUTH_TYPE}`);
   }
 };
 
-export const authenticateWithCode = async (code: string): Promise<{ refreshToken: string }> => {
+export const authenticateWithCode = async (args: { code: string; res: Response }) => {
   switch (AUTH_TYPE) {
     case 'workos':
-      return await authenticateWithCodeWorkos(code);
+      return await authenticateWithCodeWorkos(args);
     default:
       throw new Error(`Unsupported auth type in authenticateWithCode(): ${AUTH_TYPE}`);
+  }
+};
+
+export const clearCookies = (args: { res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return clearCookiesWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in clearCookies(): ${AUTH_TYPE}`);
   }
 };

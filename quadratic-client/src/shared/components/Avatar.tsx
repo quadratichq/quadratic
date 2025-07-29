@@ -22,7 +22,7 @@ export const Avatar = memo(
         {error || !src ? (
           <span
             ref={ref}
-            className={cn(className, 'bg-muted-foreground text-background')}
+            className={cn(className, 'shrink-0 bg-muted-foreground text-background')}
             style={{ ...stylePreset, ...style }}
             {...rest}
           >

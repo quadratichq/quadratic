@@ -20,11 +20,6 @@ if (!WORKOS_CLIENT_ID) {
 // for this one single instance of client to resolve
 let clientPromise: ReturnType<typeof createClient>;
 function getClient(): ReturnType<typeof createClient> {
-  const paths = ['/', '/teams', '/file'];
-  paths.forEach((path) => {
-    document.cookie = `workos-has-session=true; SameSite=None; Secure; Path=${path}`;
-  });
-
   if (!clientPromise) {
     const apiHostname = apiClient.auth.getApiHostname();
     clientPromise = createClient(WORKOS_CLIENT_ID, {
@@ -58,7 +53,7 @@ export const workosClient: AuthClient = {
       return undefined;
     }
     const user: User = {
-      name: `${workosUser.firstName} ${workosUser.lastName}`.trim(),
+      name: `${workosUser.firstName ?? ''} ${workosUser.lastName ?? ''}`.trim(),
       given_name: workosUser.firstName ?? undefined,
       family_name: workosUser.lastName ?? undefined,
       picture: workosUser.profilePictureUrl ?? undefined,

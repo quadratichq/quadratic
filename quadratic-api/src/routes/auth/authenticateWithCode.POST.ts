@@ -2,7 +2,7 @@ import type { Response } from 'express';
 import express from 'express';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
-import { authenticateWithCode } from '../../auth/auth';
+import { authenticateWithCode, clearCookies } from '../../auth/auth';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { Request } from '../../types/Request';
 
@@ -20,15 +20,12 @@ authenticateWithCodeRouter.post(
         body: { code },
       } = parseRequest(req, schema);
 
-      const { refreshToken } = await authenticateWithCode(code);
-      res.cookie('refresh-token', refreshToken, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'lax',
-        maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
-      });
+      await authenticateWithCode({ code, res });
+
       return res.status(200).json({ message: 'Authentication successful' });
     } catch {
+      clearCookies({ res });
+
       return res.status(401).json({ message: 'Authentication failed' });
     }
   }
