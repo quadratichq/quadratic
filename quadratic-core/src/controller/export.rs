@@ -456,7 +456,7 @@ mod tests {
     use crate::{
         Array,
         controller::user_actions::import::tests::{assert_flattened_simple_csv, simple_csv},
-        grid::sheet::borders::BorderStyleCell,
+        grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp},
     };
 
     #[test]
@@ -555,9 +555,6 @@ mod tests {
 
     #[test]
     fn test_exports_excel_with_borders() {
-        use crate::color::Rgba;
-        use crate::grid::sheet::borders::{BorderStyleTimestamp, CellBorderLine};
-
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
@@ -593,9 +590,6 @@ mod tests {
 
     #[test]
     fn test_exports_excel_with_borders_beyond_data() {
-        use crate::color::Rgba;
-        use crate::grid::sheet::borders::{BorderStyleTimestamp, CellBorderLine};
-
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let sheet = gc.sheet_mut(sheet_id);
@@ -609,8 +603,7 @@ mod tests {
             CellBorderLine::Line1,     // Thin line
         );
 
-        let mut border_cell = crate::grid::sheet::borders::BorderStyleCell::default();
-        border_cell.right = Some(border_style);
+        let border_cell = BorderStyleCell { right: Some(border_style), ..Default::default() }
 
         // Add borders at positions far from the data
         for x in 5..=10 {
