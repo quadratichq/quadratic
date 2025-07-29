@@ -161,7 +161,7 @@ export class Multiplayer {
 
       if (this.jwt) {
         let domain = parseDomain(window.location.host);
-        document.cookie = `jwt=${this.jwt}; path=/; domain=${domain}; SameSite=Lax; Secure`;
+        document.cookie = `jwt=${this.jwt}; SameSite=None; Secure; path=/; domain=${domain}`;
       }
     }
   }
