@@ -386,6 +386,7 @@ impl GridController {
             let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
+                    dbgjs!(format!("calamine style: {:?}", style));
                     let pos = Pos {
                         x: insert_at.x + x as i64 + 1,
                         y: insert_at.y + y as i64 + 1,
@@ -464,6 +465,21 @@ impl GridController {
                         });
                     }
                 }
+            }
+        
+            
+            // layout
+            let layout = workbook.worksheet_layout(&sheet_name).map_err(error)?;
+            let sheet = gc.try_sheet_mut_result(sheet_id)?;
+
+            for column_width in layout.column_widths.iter() {
+                let column = column_width.column as i64 + 1;
+                sheet.offsets.set_column_width(column, column_width.width * 7.0);
+            }
+
+            for row_height in layout.row_heights.iter() {
+                let row = row_height.row as i64 + 1;
+                sheet.offsets.set_row_height(row, row_height.height * 1.5);
             }
         }
 
@@ -1099,8 +1115,8 @@ fn convert_excel_border_style(excel_style: calamine::BorderStyle) -> CellBorderL
         BorderStyle::Medium  => CellBorderLine::Line2,
         BorderStyle::Thick => CellBorderLine::Line3,
         BorderStyle::Double => CellBorderLine::Double,
-       BorderStyle::MediumDashed | BorderStyle::SlantDashDot => CellBorderLine::Dashed,
-       BorderStyle::DashDotDot | BorderStyle::DashDot => CellBorderLine::Dotted,
+        BorderStyle::Dashed | BorderStyle::MediumDashed | BorderStyle::SlantDashDot => CellBorderLine::Dashed,
+        BorderStyle::Dotted | BorderStyle::DashDotDot | BorderStyle::DashDot => CellBorderLine::Dotted,
     }
 }
 
@@ -1120,6 +1136,7 @@ fn convert_excel_border_color(color: Option<&calamine::Color>) -> Rgba {
 fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyleCell {    
     let convert_border = |border: &calamine::Border| -> Option<BorderStyleTimestamp> {
         let line = convert_excel_border_style(border.style);
+        dbgjs!(format!("calamine border color: {:?}", border.color));
         
         if line == CellBorderLine::Clear {
             return None;
@@ -1131,6 +1148,14 @@ fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyl
             timestamp: SmallTimestamp::now(),
         })
     };
+
+    dbgjs!(format!("calamine borders: {:?}", borders));
+    dbgjs!(format!("quadratic borders: {:?}", BorderStyleCell {
+        top: convert_border(&borders.top),
+        bottom: convert_border(&borders.bottom),
+        left: convert_border(&borders.left),
+        right: convert_border(&borders.right),
+    }));
 
     BorderStyleCell {
         top: convert_border(&borders.top),
