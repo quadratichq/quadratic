@@ -156,36 +156,24 @@ export const workosClient: AuthClient = {
   },
 
   async loginWithPassword(args) {
-    try {
-      await apiClient.auth.loginWithPassword({ email: args.email, password: args.password });
-      window.location.assign(args.redirectTo);
-      await waitForAuthClientToRedirect();
-    } catch (e) {
-      console.error(e);
-    }
+    await apiClient.auth.loginWithPassword({ email: args.email, password: args.password });
+    window.location.assign(args.redirectTo);
+    await waitForAuthClientToRedirect();
   },
 
   async loginWithOAuth(args) {
-    try {
-      window.location.assign(ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo }));
-      await waitForAuthClientToRedirect();
-    } catch (e) {
-      console.error(e);
-    }
+    window.location.assign(ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo }));
+    await waitForAuthClientToRedirect();
   },
 
   async signupWithPassword(args) {
-    try {
-      await apiClient.auth.signupWithPassword({
-        email: args.email,
-        password: args.password,
-        firstName: args.firstName,
-        lastName: args.lastName,
-      });
-      window.location.assign(args.redirectTo);
-      await waitForAuthClientToRedirect();
-    } catch (e) {
-      console.error(e);
-    }
+    await apiClient.auth.signupWithPassword({
+      email: args.email,
+      password: args.password,
+      firstName: args.firstName,
+      lastName: args.lastName,
+    });
+    window.location.assign(args.redirectTo);
+    await waitForAuthClientToRedirect();
   },
 };

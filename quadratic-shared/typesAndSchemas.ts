@@ -498,18 +498,27 @@ export const ApiSchemas = {
   }),
 
   '/auth/loginWithPassword.POST.request': z.object({
-    email: z.string(),
+    email: z.string().email('Must be a valid email address.'),
     password: z.string(),
+    firstName: z.string().optional(),
+    lastName: z.string().optional(),
   }),
   '/auth/loginWithPassword.POST.response': z.object({
     message: z.string(),
   }),
 
   '/auth/signupWithPassword.POST.request': z.object({
-    email: z.string(),
-    password: z.string(),
-    firstName: z.string(),
-    lastName: z.string(),
+    email: z.string().email('Must be a valid email address.'),
+    password: z
+      .string()
+      .min(8, { message: 'Must be at least 8 characters.' })
+      .refine((password) => /[A-Z]/.test(password), { message: 'Must contain at least one uppercase letter.' })
+      .refine((password) => /[a-z]/.test(password), { message: 'Must contain at least one lowercase letter.' })
+      .refine((password) => /[\\!"#$%&'()+,\-./:;<=>?@[\]^_`{|}~]/.test(password), {
+        message: 'Must contain at least one special character.',
+      }),
+    firstName: z.string().min(1, { message: 'Must be at least 1 character.' }),
+    lastName: z.string().min(1, { message: 'Must be at least 1 character.' }),
   }),
   '/auth/signupWithPassword.POST.response': z.object({
     message: z.string(),
