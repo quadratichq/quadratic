@@ -34,6 +34,7 @@ import type {
   SearchOptions,
   SheetPos,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
@@ -960,7 +961,7 @@ class Core {
     }
   }
 
-  updateValidation(validation: Validation, cursor: string): JsResponse | undefined {
+  updateValidation(validation: ValidationUpdate, cursor: string): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       return this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor);

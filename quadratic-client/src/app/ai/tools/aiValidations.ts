@@ -1,12 +1,15 @@
 import { bigIntReplacer } from '@/app/bigint';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
-import type { A1Selection, TextMatch, Validation, ValidationListSource } from '@/app/quadratic-core-types';
-import { addToSelection } from '@/app/quadratic-core/quadratic_core';
+import type {
+  A1Selection,
+  TextMatch,
+  Validation,
+  ValidationListSource,
+  ValidationUpdate,
+} from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
-
-import { v4 } from 'uuid';
 
 const getMessageError = (validation: Validation) => {
   if (validation.message.show && (validation.message.title || validation.message.message)) {
@@ -208,75 +211,33 @@ const getSheetFromSheetName = (sheetName: string | undefined): Sheet => {
   return sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
 };
 
-const appendSelection = (selection: A1Selection, a1: string): A1Selection => {
-  let newSelection: A1Selection;
-  try {
-    newSelection = JSON.parse(
-      addToSelection(JSON.stringify(selection), a1, sheets.jsA1Context),
-      bigIntReplacer
-    ) as A1Selection;
-  } catch (e) {
-    throw new Error(`Invalid selection: ${selection}`);
-  }
-  return newSelection;
-};
-
-const messageErrorIsSame = (search: Validation, validation: Validation): boolean => {
-  return (
-    search.message.title === validation.message.title &&
-    search.message.message === validation.message.message &&
-    search.message.show === validation.message.show &&
-    search.error.title === validation.error.title &&
-    search.error.message === validation.error.message &&
-    search.error.show === validation.error.show &&
-    search.error.style === validation.error.style
-  );
-};
-
 export const addMessageToolCall = async (o: AIToolsArgs[AITool.AddMessage]): Promise<string> => {
   const sheet = getSheetFromSheetName(o.sheet_name);
-  const validations = sheet.validations;
-  const existingValidation = validations.find((validation) => {
-    return (
-      validation.rule === 'None' &&
-      validation.message.title === o.message_title &&
-      validation.message.message === o.message_text &&
-      validation.message.show === true
-    );
-  });
-  if (existingValidation) {
-    await quadraticCore.updateValidation({
-      ...existingValidation,
-      selection: appendSelection(existingValidation.selection, o.selection),
-    });
-  } else {
-    const validation: Validation = {
-      id: v4(),
-      selection: getSelectionFromString(o.selection, sheet.id),
-      rule: 'None',
-      message: {
-        show: true,
-        title: o.message_title ?? '',
-        message: o.message_text ?? '',
-      },
-      // we shouldn't have errors in a validation that is only a message
-      error: {
-        show: false,
-        style: 'Stop',
-        title: '',
-        message: '',
-      },
-    };
-    await quadraticCore.updateValidation(validation);
-  }
+  const validation: ValidationUpdate = {
+    id: null,
+    selection: getSelectionFromString(o.selection, sheet.id),
+    rule: 'None',
+    message: {
+      show: true,
+      title: o.message_title ?? '',
+      message: o.message_text ?? '',
+    },
+    // we shouldn't have errors in a validation that is only a message
+    error: {
+      show: false,
+      style: 'Stop',
+      title: '',
+      message: '',
+    },
+  };
+  await quadraticCore.updateValidation(validation);
   return `Message successfully added to ${o.selection}`;
 };
 
 export const addLogicalValidationToolCall = async (o: AIToolsArgs[AITool.AddLogicalValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(o.sheet_name);
-  const validations = sheet.validations;
-  const validation: Validation = {
-    id: v4(),
+  const validation: ValidationUpdate = {
+    id: null,
     selection: getSelectionFromString(o.selection, sheet.id),
     rule: {
       Logical: {
@@ -296,31 +257,12 @@ export const addLogicalValidationToolCall = async (o: AIToolsArgs[AITool.AddLogi
       message: o.error_message ?? '',
     },
   };
-  const existingValidation = validations.find((search) => {
-    return (
-      messageErrorIsSame(search, validation) &&
-      search.rule !== 'None' &&
-      validation.rule !== 'None' &&
-      'Logical' in search.rule &&
-      'Logical' in validation.rule &&
-      search.rule.Logical.show_checkbox === validation.rule.Logical.show_checkbox &&
-      search.rule.Logical.ignore_blank === validation.rule.Logical.ignore_blank
-    );
-  });
-  if (existingValidation) {
-    await quadraticCore.updateValidation({
-      ...existingValidation,
-      selection: appendSelection(existingValidation.selection, o.selection),
-    });
-  } else {
-    await quadraticCore.updateValidation(validation);
-  }
+  await quadraticCore.updateValidation(validation);
   return `Logical validation successfully added to ${o.selection}`;
 };
 
 export const addListValidationToolCall = async (o: AIToolsArgs[AITool.AddListValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(o.sheet_name);
-  const validations = sheet.validations;
   const source: ValidationListSource = o.list_source_selection
     ? {
         Selection: getSelectionFromString(o.list_source_selection, sheet.id),
@@ -328,8 +270,8 @@ export const addListValidationToolCall = async (o: AIToolsArgs[AITool.AddListVal
     : {
         List: o.list_source_list ? o.list_source_list.split(',').map((s) => s.trim()) : ([] as Array<string>),
       };
-  const validation: Validation = {
-    id: v4(),
+  const validation: ValidationUpdate = {
+    id: null,
     selection: getSelectionFromString(o.selection, sheet.id),
     rule: {
       List: {
@@ -350,31 +292,8 @@ export const addListValidationToolCall = async (o: AIToolsArgs[AITool.AddListVal
       message: o.error_message ?? '',
     },
   };
-  const existingValidation = validations.find((search) => {
-    return (
-      messageErrorIsSame(search, validation) &&
-      search.rule !== 'None' &&
-      validation.rule !== 'None' &&
-      'List' in validation.rule &&
-      'List' in search.rule &&
-      search.rule.List.drop_down === validation.rule.List.drop_down &&
-      search.rule.List.ignore_blank === validation.rule.List.ignore_blank &&
-      (('List' in search.rule.List.source &&
-        'List' in validation.rule.List.source &&
-        search.rule.List.source.List.join(', ') === validation.rule.List.source.List.join(', ')) ||
-        ('Selection' in search.rule.List.source &&
-          'Selection' in validation.rule.List.source &&
-          search.rule.List.source.Selection === validation.rule.List.source.Selection))
-    );
-  });
-  if (existingValidation) {
-    await quadraticCore.updateValidation({
-      ...existingValidation,
-      selection: appendSelection(existingValidation.selection, o.selection),
-    });
-  } else {
-    await quadraticCore.updateValidation(validation);
-  }
+
+  await quadraticCore.updateValidation(validation);
   return `List validation successfully added to ${o.selection}`;
 };
 
@@ -384,7 +303,6 @@ const isNotUndefinedOrNull = (value: any | null | undefined) => {
 
 export const addTextValidationToolCall = async (o: AIToolsArgs[AITool.AddTextValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(o.sheet_name);
-  const validations = sheet.validations;
   const textMatch: Array<TextMatch> = [];
   if (isNotUndefinedOrNull(o.min_length) || isNotUndefinedOrNull(o.max_length)) {
     textMatch.push({
@@ -439,8 +357,8 @@ export const addTextValidationToolCall = async (o: AIToolsArgs[AITool.AddTextVal
   if (textMatch.length === 0) {
     throw new Error('Need to provide matching rules for text validation.');
   }
-  const validation: Validation = {
-    id: v4(),
+  const validation: ValidationUpdate = {
+    id: null,
     selection: getSelectionFromString(o.selection, sheet.id),
     rule: {
       Text: {
@@ -460,45 +378,10 @@ export const addTextValidationToolCall = async (o: AIToolsArgs[AITool.AddTextVal
       message: o.error_message ?? '',
     },
   };
-  const existingValidation = validations.find((search) => {
-    return (
-      messageErrorIsSame(search, validation) &&
-      search.rule !== 'None' &&
-      validation.rule !== 'None' &&
-      'Text' in validation.rule &&
-      'Text' in search.rule &&
-      search.rule.Text.ignore_blank === validation.rule.Text.ignore_blank &&
-      search.rule.Text.text_match.length === validation.rule.Text.text_match.length &&
-      search.rule.Text.text_match.every((searchTextMatch, index) => {
-        if (validation.rule === 'None' || !('Text' in validation.rule)) return false;
-        const validationTextMatch = validation.rule.Text.text_match[index];
-
-        // Check if both have same type of rule (Contains, NotContains, etc)
-        const searchKeys = Object.keys(searchTextMatch);
-        const validationKeys = Object.keys(validationTextMatch);
-        if (searchKeys[0] !== validationKeys[0]) {
-          return false;
-        }
-
-        // Get the case sensitivity type (CaseSensitive or CaseInsensitive)
-        const searchCase = Object.keys(searchTextMatch[searchKeys[0]])[0];
-        const validationCase = Object.keys(validationTextMatch[validationKeys[0]])[0];
-        if (searchCase !== validationCase) {
-          return false;
-        }
-
-        // Compare the actual string arrays
-        const searchValues = searchMatch[searchKeys[0]][searchCase];
-        const validationValues = validationMatch[validationKeys[0]][validationCase];
-        return (
-          searchValues.length === validationValues.length && searchValues.every((val, i) => val === validationValues[i])
-        );
-      })
-    );
-  });
-
+  await quadraticCore.updateValidation(validation);
   return `Text validation successfully added to ${o.selection}`;
 };
+
 export const removeValidationsToolCall = async (o: AIToolsArgs[AITool.RemoveValidations]) => {
   const sheet = getSheetFromSheetName(o.sheet_name);
   await quadraticCore.removeValidationSelection(sheet.id, o.selection);

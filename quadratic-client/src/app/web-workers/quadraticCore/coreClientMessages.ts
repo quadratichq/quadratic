@@ -27,6 +27,7 @@ import type {
   SheetRect,
   TransactionName,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -518,7 +519,7 @@ export interface ClientCoreAutocomplete {
 export interface ClientCoreUpdateValidation {
   type: 'clientCoreUpdateValidation';
   id: number;
-  validation: Validation;
+  validation: ValidationUpdate;
   cursor: string;
 }
 

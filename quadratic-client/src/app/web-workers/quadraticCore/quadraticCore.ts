@@ -43,6 +43,7 @@ import type {
   SheetInfo,
   SheetRect,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
@@ -1238,7 +1239,7 @@ class QuadraticCore {
     });
   }
 
-  updateValidation(validation: Validation): Promise<JsResponse | undefined> {
+  updateValidation(validation: ValidationUpdate): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientUpdateValidation) => {
