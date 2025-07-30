@@ -1218,6 +1218,7 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
     prompt: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
+This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
 `,
   },
   [AITool.DuplicateSheet]: {
@@ -1246,6 +1247,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
     prompt: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
+This tool should be used primarily when users explicitly ask to create a new sheet from the existing content or ask directly to copy or duplicate a sheet.\n
 `,
   },
   [AITool.RenameSheet]: {
