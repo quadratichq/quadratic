@@ -81,8 +81,25 @@ class Core {
   };
 
   private fetchGridFile = async (file: string): Promise<Uint8Array> => {
+    if (debugFlag('debugStartupTime')) {
+      console.time('[core] Loading grid file from API');
+    }
     const res = await fetch(file);
-    return new Uint8Array(await res.arrayBuffer());
+    const array = new Uint8Array(await res.arrayBuffer());
+    if (debugFlag('debugStartupTime')) {
+      console.timeEnd('[core] Loading grid file from API');
+    }
+    return array;
+  };
+
+  private loadCore = async () => {
+    if (debugFlag('debugStartupTime')) {
+      console.time('[core] Loading core');
+    }
+    await initCore();
+    if (debugFlag('debugStartupTime')) {
+      console.timeEnd('[core] Loading core');
+    }
   };
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
@@ -95,7 +112,7 @@ class Core {
     coreRender.init(renderPort);
 
     try {
-      const results = await Promise.all([this.fetchGridFile(message.url), initCore()]);
+      const results = await Promise.all([this.fetchGridFile(message.url), this.loadCore()]);
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
       this.sendAnalyticsError('loadFile', e);

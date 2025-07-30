@@ -1,4 +1,5 @@
 import {
+  addDateTimeValidationToolCall,
   addListValidationToolCall,
   addLogicalValidationToolCall,
   addMessageToolCall,
@@ -1064,13 +1065,13 @@ export const aiToolsActions: AIToolActionsRecord = {
     return [createTextContent(text)];
   },
   [AITool.AddDateTimeValidation]: async (args) => {
-    console.log(args);
-    // try {
-    //   const { sheet_name, selection, ignore_blank, date_range, date_equal, date_not_equal, time_range, time_equal, time_not_equal, require_date, require_time, prohibit_date, prohibit_time } = args;
-    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    //   const response = await quadraticCore.addDateTimeValidation(sheetId, selection, ignore_blank, date_range, date_equal, date_not_equal, time_range, time_equal, time_not_equal, require_date, require_time, prohibit_date, prohibit_time);
-    // }
-    return [createTextContent('Add date time validation tool executed successfully.')];
+    let text = '';
+    try {
+      text = await addDateTimeValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add date time validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
   },
   [AITool.RemoveValidations]: async (args) => {
     let text: string;

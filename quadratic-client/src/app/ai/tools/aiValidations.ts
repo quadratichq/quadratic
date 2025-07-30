@@ -3,12 +3,14 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type {
   A1Selection,
+  DateTimeRange,
   NumberRange,
   TextMatch,
   Validation,
   ValidationListSource,
   ValidationUpdate,
 } from '@/app/quadratic-core-types';
+import { userDateToNumber, userTimeToNumber } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 
@@ -439,6 +441,111 @@ export const addNumberValidationToolCall = async (o: AIToolsArgs[AITool.AddNumbe
   };
   await quadraticCore.updateValidation(validation);
   return `Number validation successfully added to ${o.selection}`;
+};
+
+export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDateTimeValidation]): Promise<string> => {
+  const sheet = getSheetFromSheetName(o.sheet_name);
+  const ranges: Array<DateTimeRange> = [];
+
+  if (o.date_range) {
+    o.date_range.split(',').forEach((s) => {
+      if (s.includes('..')) {
+        const [minString, maxString] = s.split('..');
+        const min = minString === '' ? null : (userDateToNumber(minString) ?? null);
+        const max = maxString === '' ? null : (userDateToNumber(maxString) ?? null);
+        if (min !== undefined && isNaN(Number(min))) {
+          throw new Error(`Expected date range to be defined in YYYY/MM/DD format, received: ${minString}`);
+        }
+        if (max !== undefined && max === undefined) {
+          throw new Error(`Expected date range to be defined in YYYY/MM/DD format, received: ${maxString}`);
+        }
+        ranges.push({ DateRange: [min, max] });
+      } else {
+        throw new Error(`Expected date range to be defined in YYYY/MM/DD..YYYY/MM/DD format, received: ${s}`);
+      }
+    });
+  }
+  if (o.date_equal) {
+    o.date_equal.split(',').forEach((s) => {
+      const date = userDateToNumber(s);
+      if (date === undefined) {
+        throw new Error(`Expected date to be defined in YYYY/MM/DD format, received: ${s}`);
+      }
+      ranges.push({ DateEqual: [date] });
+    });
+  }
+  if (o.date_not_equal) {
+    o.date_not_equal.split(',').forEach((s) => {
+      const date = userDateToNumber(s);
+      if (date === undefined) {
+        throw new Error(`Expected date to be defined in YYYY/MM/DD format, received: ${s}`);
+      }
+      ranges.push({ DateNotEqual: [date] });
+    });
+  }
+  if (o.time_range) {
+    o.time_range.split(',').forEach((s) => {
+      if (s.includes('..')) {
+        const [minString, maxString] = s.split('..');
+        const min = minString === '' ? null : (userTimeToNumber(minString) ?? null);
+        const max = maxString === '' ? null : (userTimeToNumber(maxString) ?? null);
+        if (min !== undefined && isNaN(Number(min))) {
+          throw new Error(`Expected time range to be defined in HH:MM:SS format, received: ${minString}`);
+        }
+        if (max !== undefined && max === undefined) {
+          throw new Error(`Expected time range to be defined in HH:MM:SS format, received: ${maxString}`);
+        }
+        ranges.push({ TimeRange: [min, max] });
+      } else {
+        throw new Error(`Expected time range to be defined in HH:MM:SS..HH:MM:SS format, received: ${s}`);
+      }
+    });
+  }
+  if (o.time_equal) {
+    o.time_equal.split(',').forEach((s) => {
+      const time = userTimeToNumber(s);
+      if (time === undefined) {
+        throw new Error(`Expected time to be defined in HH:MM:SS format, received: ${s}`);
+      }
+      ranges.push({ TimeEqual: [time] });
+    });
+  }
+  if (o.time_not_equal) {
+    o.time_not_equal.split(',').forEach((s) => {
+      const time = userTimeToNumber(s);
+      if (time === undefined) {
+        throw new Error(`Expected time to be defined in HH:MM:SS format, received: ${s}`);
+      }
+      ranges.push({ TimeNotEqual: [time] });
+    });
+  }
+  const validation: ValidationUpdate = {
+    id: null,
+    selection: getSelectionFromString(o.selection, sheet.id),
+    rule: {
+      DateTime: {
+        ignore_blank: o.ignore_blank ?? false,
+        require_date: o.require_date ?? false,
+        require_time: o.require_time ?? false,
+        prohibit_date: o.prohibit_date ?? false,
+        prohibit_time: o.prohibit_time ?? false,
+        ranges,
+      },
+    },
+    message: {
+      show: o.show_message ?? true,
+      title: o.message_title ?? '',
+      message: o.message_text ?? '',
+    },
+    error: {
+      show: o.show_error ?? true,
+      style: o.error_style ?? 'Stop',
+      title: o.error_title ?? '',
+      message: o.error_message ?? '',
+    },
+  };
+  await quadraticCore.updateValidation(validation);
+  return `Date/time validation successfully added to ${o.selection}`;
 };
 
 export const removeValidationsToolCall = async (o: AIToolsArgs[AITool.RemoveValidations]) => {
