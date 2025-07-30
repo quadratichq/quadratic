@@ -283,6 +283,10 @@ export const DownloadExcelIcon: IconComponent = (props) => {
   return <Icon {...props}>file_export</Icon>;
 };
 
+export const DownloadCsvIcon: IconComponent = (props) => {
+  return <Icon {...props}>file_export</Icon>;
+};
+
 export const DraftIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
 };

@@ -18,6 +18,7 @@ import { useRecoilValue } from 'recoil';
 const renameFileActionSpec = defaultActionSpec[Action.FileRename];
 const downloadFileActionSpec = defaultActionSpec[Action.FileDownload];
 const downloadExcelFileActionSpec = defaultActionSpec[Action.FileDownloadExcel];
+const downloadCsvFileActionSpec = defaultActionSpec[Action.FileDownloadCsv];
 const openFileVersionHistoryActionSpec = defaultActionSpec[Action.FileVersionHistory];
 
 const commands: CommandGroup = {
@@ -84,6 +85,21 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => downloadExcelFileActionSpec.run({ name, uuid })}
+            icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
+          />
+        );
+      },
+    },
+    {
+      label: downloadCsvFileActionSpec.label(),
+      isAvailable: downloadCsvFileActionSpec.isAvailable,
+      Component: (props) => {
+        const { name } = useFileContext();
+        const uuid = useRecoilValue(editorInteractionStateFileUuidAtom);
+        return (
+          <CommandPaletteListItem
+            {...props}
+            action={() => downloadCsvFileActionSpec.run({ name, uuid })}
             icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
           />
         );

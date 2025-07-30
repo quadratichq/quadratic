@@ -101,6 +101,7 @@ export const FileMenubarMenu = () => {
         <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileDownload} actionArgs={{ name, uuid: fileUuid }} />
         <MenubarItemAction action={Action.FileDownloadExcel} actionArgs={{ name, uuid: fileUuid }} />
+        <MenubarItemAction action={Action.FileDownloadCsv} actionArgs={{ name, uuid: fileUuid }} />
 
         <MenubarSeparator />
 
