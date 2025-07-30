@@ -1381,7 +1381,7 @@ impl GridController {
                     reverse_operations.extend(self.check_deleted_validations(
                         transaction,
                         sheet_id,
-                        deleted_selection,
+                        &deleted_selection,
                     ));
                 }
             }

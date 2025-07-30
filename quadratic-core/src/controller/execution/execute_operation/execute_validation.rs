@@ -17,7 +17,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
-        remove_selection: A1Selection,
+        remove_selection: &A1Selection,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
 
@@ -243,6 +243,13 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::CreateOrUpdateValidation { validation } = op {
+            // first, remove any validations that overlap new validation's selection
+            self.check_deleted_validations(
+                transaction,
+                validation.selection.sheet_id,
+                &validation.selection,
+            );
+
             let sheet_id = validation.selection.sheet_id;
             let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
                 return;
@@ -722,7 +729,7 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
         let reverse =
-            gc.check_deleted_validations(&mut transaction, sheet_id, A1Selection::test_a1("A1"));
+            gc.check_deleted_validations(&mut transaction, sheet_id, &A1Selection::test_a1("A1"));
 
         // check reverse operations
         assert!(transaction.validations.contains(&sheet_id));
@@ -753,7 +760,7 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let reverse = gc.check_deleted_validations(&mut transaction, sheet_id, selection);
+        let reverse = gc.check_deleted_validations(&mut transaction, sheet_id, &selection);
 
         assert!(transaction.validations.contains(&sheet_id));
         assert_eq!(reverse.len(), 1);
