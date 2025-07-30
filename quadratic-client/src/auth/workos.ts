@@ -8,6 +8,9 @@ import { createClient } from '@workos-inc/authkit-js';
 
 const WORKOS_CLIENT_ID = import.meta.env.VITE_WORKOS_CLIENT_ID;
 
+const OAUTH_POPUP_WIDTH = 500;
+const OAUTH_POPUP_HEIGHT = 600;
+
 // verify all Workos env variables are set
 if (!WORKOS_CLIENT_ID) {
   const message = 'Workos variables are not configured correctly.';
@@ -124,6 +127,7 @@ export const workosClient: AuthClient = {
         await waitForAuthClientToRedirect();
       }
     } catch {}
+    await disposeClient();
   },
 
   /**
@@ -165,9 +169,85 @@ export const workosClient: AuthClient = {
     await disposeClient();
   },
 
-  async loginWithOAuth(args) {
-    window.location.assign(ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo }));
-    await waitForAuthClientToRedirect();
+  loginWithOAuth(args) {
+    return new Promise(async (resolve, reject) => {
+      let isResolved = false;
+
+      const oauthUrl = ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo });
+      const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
+      const top = window.screenY + (window.outerHeight - OAUTH_POPUP_HEIGHT) / 2;
+      const popup = window.open(
+        oauthUrl,
+        '_blank',
+        `width=${OAUTH_POPUP_WIDTH},height=${OAUTH_POPUP_HEIGHT},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes,popup=yes`
+      );
+
+      if (!popup) {
+        isResolved = true;
+        reject(new Error('Failed to open popup window.'));
+        return;
+      }
+
+      const checkIfPopupIsClosed = () => {
+        if (isResolved) {
+          return;
+        }
+        if (popup.closed) {
+          isResolved = true;
+          resolve();
+        } else {
+          setTimeout(checkIfPopupIsClosed, 500);
+        }
+      };
+      checkIfPopupIsClosed();
+
+      const handleMessageFromPopup = async (event: MessageEvent) => {
+        if (window.location.origin !== event.origin) {
+          return;
+        }
+
+        switch (event.data.type) {
+          case 'OAUTH_SUCCESS':
+            if (!isResolved) {
+              isResolved = true;
+              window.removeEventListener('message', handleMessageFromPopup);
+              popup.close();
+              if (
+                'code' in event.data &&
+                typeof event.data.code === 'string' &&
+                'state' in event.data &&
+                typeof event.data.state === 'string'
+              ) {
+                window.location.assign(
+                  window.location.origin + ROUTES.LOGIN_RESULT + `?code=${event.data.code}&state=${event.data.state}`
+                );
+                await waitForAuthClientToRedirect();
+                resolve();
+              }
+            }
+            break;
+          case 'OAUTH_ERROR':
+            if (!isResolved) {
+              isResolved = true;
+              window.removeEventListener('message', handleMessageFromPopup);
+              popup.close();
+              resolve();
+            }
+            break;
+        }
+      };
+
+      window.addEventListener('message', handleMessageFromPopup);
+
+      popup.addEventListener('close', () => {
+        if (!isResolved) {
+          isResolved = true;
+          resolve();
+        }
+      });
+
+      popup.focus();
+    });
   },
 
   async signupWithPassword(args) {

@@ -22,11 +22,18 @@ export default defineConfig(({ mode }) => {
     {
       name: 'configure-server',
       configureServer(server) {
-        server.middlewares.use((_req, res, next) => {
-          res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
-          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
-          res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-          res.setHeader('Access-Control-Allow-Origin', '*');
+        server.middlewares.use((req, res, next) => {
+          if (
+            !req.url.startsWith('/login') &&
+            !req.url.startsWith('/login-oauth-callback') &&
+            !req.url.startsWith('/signup')
+          ) {
+            res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
+            res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+            res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+            res.setHeader('Access-Control-Allow-Origin', '*');
+          }
+
           next();
         });
       },

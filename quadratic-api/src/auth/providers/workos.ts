@@ -37,15 +37,15 @@ export const getUsersFromWorkos = async (users: { id: number; auth0Id: string }[
         name: `${workosUser.firstName ?? ''} ${workosUser.lastName ?? ''}`.trim(),
         picture: workosUser.profilePictureUrl ?? undefined,
       };
-    } catch (e) {
+    } catch (error) {
       // if user is not found, log the error
-      console.error(e);
+      console.error(JSON.stringify({ message: 'Error in getUsersFromWorkos', error }));
       Sentry.captureException({
         message: 'Failed to retrieve users from Workos',
         level: 'error',
         extra: {
           auth0IdInOurDb: auth0Id,
-          workosError: e,
+          workosError: error,
         },
       });
 
@@ -64,8 +64,8 @@ export const getUsersFromWorkosByEmail = async (email: string): Promise<ByEmailU
 
   try {
     identities = (await getWorkos().userManagement.listUsers({ email })).data;
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error(JSON.stringify({ message: 'Error in getUsersFromWorkosByEmail', error }));
     return [];
   }
 
