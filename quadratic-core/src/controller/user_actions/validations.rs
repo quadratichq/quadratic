@@ -432,7 +432,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         test_create_data_table_with_values(&mut gc, sheet_id, pos![b2], 2, 2, &["", "", "", ""]);
-        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("c4"));
+        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("c4"));
 
         let sheet = gc.sheet(sheet_id);
 

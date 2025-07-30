@@ -9,11 +9,11 @@ import type {
   SheetBounds,
   SheetInfo,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import { SheetContentCache, type SheetOffsets, SheetOffsetsWasm } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Rectangle } from 'pixi.js';
-import { v4 } from 'uuid';
 
 export class Sheet {
   sheets: Sheets;
@@ -233,8 +233,8 @@ export class Sheet {
   }
 
   addCheckbox() {
-    const validation: Validation = {
-      id: v4(),
+    const validation: ValidationUpdate = {
+      id: null,
       selection: this.cursor.selection(),
       rule: { Logical: { show_checkbox: true, ignore_blank: true } },
       message: {

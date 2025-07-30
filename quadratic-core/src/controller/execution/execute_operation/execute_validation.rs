@@ -243,7 +243,8 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::CreateOrUpdateValidation { validation } = op {
-            // first, remove any validations that overlap new validation's selection
+            // first, remove any validations that overlap new validation's
+            // selection since you can only have one validation per cell
             self.check_deleted_validations(
                 transaction,
                 validation.selection.sheet_id,
@@ -691,7 +692,7 @@ mod tests {
 
         gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None);
 
-        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
+        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
 
         // hack changing the sheet without updating the validations
         let sheet = gc.sheet_mut(sheet_id);
@@ -725,7 +726,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
+        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1:B2"));
 
         let mut transaction = PendingTransaction::default();
         let reverse =
@@ -755,7 +756,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
         let mut transaction = PendingTransaction::default();
@@ -772,5 +773,17 @@ mod tests {
         );
 
         assert_validation_id(&gc, pos![sheet_id!B4], None);
+    }
+
+    #[test]
+    fn test_create_or_update_validation() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
+        test_create_checkbox(&mut gc, A1Selection::test_a1("D1"));
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
     }
 }

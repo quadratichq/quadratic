@@ -556,7 +556,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
@@ -578,7 +578,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
         let selection = A1Selection::test_a1_context("B4:C5", gc.a1_context());
@@ -679,5 +679,24 @@ mod tests {
         // (depending on exact implementation of delete_selection)
         let remaining_count = validations.validations.len();
         assert!(remaining_count <= 3); // Some may be partially removed, some completely removed
+    }
+
+    #[test]
+    fn test_similar_validation() {
+        let mut validations = Validations::default();
+        let v = create_validation_rect(0, 0, 1, 1);
+        validations.set(v.clone());
+        assert_eq!(validations.similar_validation(&v), Some(&v));
+        let v2 = Validation {
+            id: Default::default(),
+            selection: A1Selection::test_a1("A1:B2"),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: false,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        assert_eq!(validations.similar_validation(&v2), None);
     }
 }
