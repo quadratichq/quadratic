@@ -15,6 +15,7 @@ import {
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
+import logger from '../../utils/logger';
 import { handleAIRequest } from '../handler/ai.handler';
 
 export const getModelKey = async (
@@ -252,7 +253,7 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in getModelKey', error }));
+    logger.error('Error in getModelKey', { error });
   }
 
   return DEFAULT_BACKUP_MODEL;

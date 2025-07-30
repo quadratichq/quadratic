@@ -19,6 +19,7 @@ import { getBucketName, S3Bucket } from '../../storage/s3';
 import { uploadFile } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
 import { getIsOnPaidPlan } from '../../utils/billing';
+import logger from '../../utils/logger';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
 
@@ -177,6 +178,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
       });
     }
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in ai.chat.POST handler', error }));
+    logger.error('Error in ai.chat.POST handler', { error });
   }
 }
