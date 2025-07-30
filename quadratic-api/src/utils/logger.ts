@@ -2,7 +2,7 @@ import winston from 'winston';
 import { NODE_ENV } from '../env-vars';
 
 const env = NODE_ENV || 'development';
-const isDevelopment = true; // env === 'development';
+const isDevelopment = env === 'development';
 
 // Define log levels
 const levels = {
@@ -31,6 +31,7 @@ const devFormat = winston.format.combine(
   winston.format((info) => ({
     ...info,
     level: `[${info.level.toUpperCase()}]`,
+    message: typeof info.message === 'string' ? info.message.replace(/\n/g, '\r') : info.message,
   }))(),
   winston.format.colorize({ level: true }),
   winston.format.errors({ stack: true })
