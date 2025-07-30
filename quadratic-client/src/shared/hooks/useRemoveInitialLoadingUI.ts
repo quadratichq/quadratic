@@ -2,7 +2,7 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import mixpanel from 'mixpanel-browser';
 import { useLayoutEffect } from 'react';
 
-export function useRemoveInitialLoadingUI(skipMixpanel: boolean = false) {
+export function useRemoveInitialLoadingUI() {
   const { debug } = useDebugFlags();
 
   useLayoutEffect(() => {
@@ -22,12 +22,10 @@ export function useRemoveInitialLoadingUI(skipMixpanel: boolean = false) {
       console.log(`Loading time: ${loadTimeMs}ms`);
     }
     const route = window.location.pathname + window.location.search;
-    if (!skipMixpanel) {
-      mixpanel.track('[Loading].complete', {
-        route,
-        loadTimeMs,
-      });
-    }
-  }, [debug, skipMixpanel]);
+    mixpanel.track('[Loading].complete', {
+      route,
+      loadTimeMs,
+    });
+  }, [debug]);
   return null;
 }

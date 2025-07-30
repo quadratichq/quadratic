@@ -81,8 +81,6 @@ export const workosClient: AuthClient = {
     if (window.location.href !== url.toString()) {
       window.location.assign(url.toString());
     }
-
-    return false;
   },
 
   /**

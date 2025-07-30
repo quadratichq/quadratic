@@ -1,7 +1,5 @@
 import { authClient } from '@/auth/auth';
-import { AuthFormWrapper } from '@/shared/components/auth/AuthFormWrapper';
 import { ROUTES } from '@/shared/constants/routes';
-import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -56,10 +54,8 @@ export const Component = () => {
     [navigate]
   );
 
-  useRemoveInitialLoadingUI(true);
-
   return (
-    <AuthFormWrapper>
+    <>
       <h1 className="text-2xl font-medium">Magic Code</h1>
 
       <Form {...form}>
@@ -98,6 +94,6 @@ export const Component = () => {
 
         {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
       </Form>
-    </AuthFormWrapper>
+    </>
   );
 };

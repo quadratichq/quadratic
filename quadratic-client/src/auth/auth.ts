@@ -18,7 +18,7 @@ export type OAuthProvider = 'GoogleOAuth' | 'MicrosoftOAuth' | 'GitHubOAuth' | '
 export interface AuthClient {
   isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
-  login(redirectTo: string, isSignupFlow?: boolean): Promise<boolean>;
+  login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;

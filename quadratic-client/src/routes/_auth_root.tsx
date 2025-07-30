@@ -1,5 +1,7 @@
 import { authClient } from '@/auth/auth';
+import { AuthFormWrapper } from '@/shared/components/auth/AuthFormWrapper';
 import { EmptyPage } from '@/shared/components/EmptyPage';
+import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { useMemo } from 'react';
@@ -19,10 +21,12 @@ export const Component = () => {
     [revalidator, navigation]
   );
 
+  useRemoveInitialLoadingUI();
+
   return (
-    <div className={`${isLoading ? 'pointer-events-none overflow-hidden opacity-75' : 'overflow-auto'}`}>
+    <AuthFormWrapper className={`${isLoading ? 'pointer-events-none overflow-hidden opacity-75' : 'overflow-auto'}`}>
       <Outlet />
-    </div>
+    </AuthFormWrapper>
   );
 };
 
