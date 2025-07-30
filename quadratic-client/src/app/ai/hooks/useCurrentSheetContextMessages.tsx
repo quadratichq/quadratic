@@ -123,7 +123,7 @@ ${JSON.stringify(currentSheetContext[0].data_rects)}
 
 Use the get_cell_data function to get additional data about the tables.
 
-To work with more of the sheet's data, use the get_cell_data function in the following ways:\n
+Otherwise, if confident about what you want to reference, use the following reference methods:\n
 1. In formulas, use A1 notation directly: \`=SUM(A1:B2)\`\n
 2. In Python and JavaScript, use \`q.cells("A1:B2")\`\n
 3. For different sheets, include the sheet name: \`=SUM('Sheet 1'!A1:B2)\` or \`q.cells("'Sheet 1'!A1:B2")\`\n

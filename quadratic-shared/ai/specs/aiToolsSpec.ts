@@ -642,7 +642,7 @@ This tool is for Python and Javascript code only. For formulas, use set_formula_
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
-You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value instead of responding with code.\n
+Use set_code_cell_value instead of responding with code.\n
 Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
