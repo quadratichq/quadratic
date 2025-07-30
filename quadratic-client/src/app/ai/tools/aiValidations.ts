@@ -3,6 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type {
   A1Selection,
+  NumberRange,
   TextMatch,
   Validation,
   ValidationListSource,
@@ -380,6 +381,64 @@ export const addTextValidationToolCall = async (o: AIToolsArgs[AITool.AddTextVal
   };
   await quadraticCore.updateValidation(validation);
   return `Text validation successfully added to ${o.selection}`;
+};
+
+export const addNumberValidationToolCall = async (o: AIToolsArgs[AITool.AddNumberValidation]): Promise<string> => {
+  const sheet = getSheetFromSheetName(o.sheet_name);
+  const ranges: Array<NumberRange> = [];
+  if (o.range) {
+    o.range.split(',').forEach((s) => {
+      if (s.includes('..')) {
+        const [minString, maxString] = s.split('..');
+        const min = minString === '' ? null : Number(minString);
+        const max = maxString === '' ? null : Number(maxString);
+        ranges.push({ Range: [min, max] });
+      } else {
+        throw new Error(`Invalid range: ${s}`);
+      }
+    });
+  }
+  if (o.equal) {
+    ranges.push({
+      Equal: o.equal.split(',').map((s) => {
+        const n = Number(s.trim());
+        if (isNaN(n)) throw new Error(`Invalid number: ${s}`);
+        return n;
+      }),
+    });
+  }
+  if (o.not_equal) {
+    ranges.push({
+      NotEqual: o.not_equal.split(',').map((s) => {
+        const n = Number(s.trim());
+        if (isNaN(n)) throw new Error(`Invalid number: ${s}`);
+        return n;
+      }),
+    });
+  }
+  const validation: ValidationUpdate = {
+    id: null,
+    selection: getSelectionFromString(o.selection, sheet.id),
+    rule: {
+      Number: {
+        ignore_blank: o.ignore_blank ?? false,
+        ranges,
+      },
+    },
+    message: {
+      show: o.show_message ?? true,
+      title: o.message_title ?? '',
+      message: o.message_text ?? '',
+    },
+    error: {
+      show: o.show_error ?? true,
+      style: o.error_style ?? 'Stop',
+      title: o.error_title ?? '',
+      message: o.error_message ?? '',
+    },
+  };
+  await quadraticCore.updateValidation(validation);
+  return `Number validation successfully added to ${o.selection}`;
 };
 
 export const removeValidationsToolCall = async (o: AIToolsArgs[AITool.RemoveValidations]) => {

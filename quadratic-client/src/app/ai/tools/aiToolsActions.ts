@@ -2,6 +2,7 @@ import {
   addListValidationToolCall,
   addLogicalValidationToolCall,
   addMessageToolCall,
+  addNumberValidationToolCall,
   addTextValidationToolCall,
   getValidationsToolCall,
   removeValidationsToolCall,
@@ -1054,14 +1055,13 @@ export const aiToolsActions: AIToolActionsRecord = {
     return [createTextContent(text)];
   },
   [AITool.AddNumberValidation]: async (args) => {
-    debugger;
-    console.log(args);
-    // try {
-    //   const { sheet_name, selection, ignore_blank, range, equal, not_equal } = args;
-    //   const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
-    //   const response = await quadraticCore.addNumberValidation(sheetId, selection, ignore_blank, range, equal, not_equal);
-    // }
-    return [createTextContent('Add number validation tool executed successfully.')];
+    let text = '';
+    try {
+      text = await addNumberValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add number validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
   },
   [AITool.AddDateTimeValidation]: async (args) => {
     console.log(args);

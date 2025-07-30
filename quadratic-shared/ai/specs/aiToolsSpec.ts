@@ -2228,7 +2228,7 @@ This tool adds a number validation to a sheet. This validates a number to ensure
         range: {
           type: ['string', 'null'],
           description:
-            'A list of ranges of numbers. For example: "5..10,2..20,30..,..2". Use ".." to create a range. You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
+            'A list of ranges of numbers. For example: "5..10,2..20,30..,..2". Each range is separated by a comma and must contain "..". You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
         },
         equal: {
           type: ['string', 'null'],
