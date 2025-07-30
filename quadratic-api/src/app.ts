@@ -3,14 +3,15 @@ import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
 import 'express-async-errors';
+import expressWinston from 'express-winston';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
+import winston from 'winston';
 import { CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
-import { logRequestInfo } from './middleware/logRequestInfo';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
-import logger from './utils/logger';
+import logger, { format } from './utils/logger';
 
 export const app = express();
 
@@ -31,7 +32,12 @@ app.use(cors({ origin: CORS }));
 
 // Request logging middleware for Datadog
 if (LOG_REQUEST_INFO) {
-  app.use(logRequestInfo);
+  app.use(
+    expressWinston.logger({
+      transports: [new winston.transports.Console()],
+      format,
+    })
+  );
 }
 
 // Health-check

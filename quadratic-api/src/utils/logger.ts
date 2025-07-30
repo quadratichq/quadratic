@@ -41,7 +41,7 @@ const devFormat = winston.format.combine(
 const prodFormat = winston.format.combine(winston.format.errors({ stack: true }), winston.format.json());
 
 // Use the appropriate format based on the environment
-const format = isDevelopment ? devFormat : prodFormat;
+export const format = isDevelopment ? devFormat : prodFormat;
 
 // Define which log levels to use based on environment
 const level = () => {
