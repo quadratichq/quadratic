@@ -7,6 +7,7 @@ export enum AITool {
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
   SetCodeCellValue = 'set_code_cell_value',
+  SetSQLCodeCellValue = 'set_sql_code_cell_value',
   SetFormulaCellValue = 'set_formula_cell_value',
   MoveCells = 'move_cells',
   DeleteCells = 'delete_cells',
@@ -47,6 +48,7 @@ export const AIToolSchema = z.enum([
   AITool.AddDataTable,
   AITool.SetCellValues,
   AITool.SetCodeCellValue,
+  AITool.SetSQLCodeCellValue,
   AITool.SetFormulaCellValue,
   AITool.MoveCells,
   AITool.DeleteCells,
@@ -138,53 +140,12 @@ const array2DSchema = z
     return array.map((row) => (row.length === maxColumns ? row : row.concat(Array(maxColumns - row.length).fill(''))));
   });
 
-const cellLanguageSchema = z
-  .string()
-  .transform((val) => val.toLowerCase())
-  .pipe(
-    z.enum([
-      'python',
-      'javascript',
-      'postgres',
-      'mysql',
-      'mssql',
-      'snowflake',
-      'bigquery',
-      'cockroachdb',
-      'mariadb',
-      'supabase',
-      'neon',
-    ])
-  )
-  .transform((val) =>
-    val === 'python' || val === 'javascript' ? val.charAt(0).toUpperCase() + val.slice(1) : val.toUpperCase()
-  )
-  .pipe(
-    z.enum([
-      'Python',
-      'Javascript',
-      'POSTGRES',
-      'MYSQL',
-      'MSSQL',
-      'SNOWFLAKE',
-      'BIGQUERY',
-      'COCKROACHDB',
-      'MARIADB',
-      'SUPABASE',
-      'NEON',
-    ])
-  );
-
-const connectionIdSchema = z.preprocess((val) => (val ? val : null), z.string().uuid().nullable().optional());
-
-const modelRouterModels = z
-  .string()
-  .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
-  .pipe(z.enum(['claude', '4.1']));
-
 export const AIToolsArgsSchema = {
   [AITool.SetAIModel]: z.object({
-    ai_model: modelRouterModels,
+    ai_model: z
+      .string()
+      .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
+      .pipe(z.enum(['claude', '4.1'])),
   }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
@@ -198,10 +159,27 @@ export const AIToolsArgsSchema = {
   [AITool.SetCodeCellValue]: z.object({
     sheet_name: z.string().nullable().optional(),
     code_cell_name: z.string(),
-    code_cell_language: cellLanguageSchema,
+    code_cell_language: z
+      .string()
+      .transform((val) => val.toLowerCase())
+      .pipe(z.enum(['python', 'javascript']))
+      .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
+      .pipe(z.enum(['Python', 'Javascript'])),
     code_cell_position: z.string(),
     code_string: z.string(),
-    connection_id: connectionIdSchema,
+  }),
+  [AITool.SetSQLCodeCellValue]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    code_cell_name: z.string(),
+    connection_kind: z
+      .string()
+      .transform((val) => val.toUpperCase())
+      .pipe(
+        z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE', 'BIGQUERY', 'COCKROACHDB', 'MARIADB', 'SUPABASE', 'NEON'])
+      ),
+    code_cell_position: z.string(),
+    sql_code_string: z.string(),
+    connection_id: z.string().uuid(),
   }),
   [AITool.SetFormulaCellValue]: z.object({
     sheet_name: z.string().nullable().optional(),
@@ -386,7 +364,7 @@ export const AIToolsArgsSchema = {
   }),
   [AITool.GetDatabaseSchemas]: z.object({
     connection_ids: z
-      .preprocess((val) => (val ? val : []), z.array(connectionIdSchema))
+      .preprocess((val) => (val ? val : []), z.array(z.string().uuid()))
       .transform((val) => val.filter((id) => !!id)),
   }),
 } as const;
@@ -640,7 +618,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
-Sets the value of a code cell and runs it in the current open sheet, requires the language (Python, Javascript, or SQL Connection), cell position (in a1 notation), and code string.\n
+Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
 You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
@@ -648,7 +626,7 @@ Provide a name for the output of the code cell. The name cannot contain spaces o
 Note: only name the code cell if it is new.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
-This tool is for Python, Javascript, and SQL Connection code. For formulas, use set_formula_cell_value.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n
 `,
     parameters: {
       type: 'object',
@@ -664,8 +642,7 @@ This tool is for Python, Javascript, and SQL Connection code. For formulas, use 
         },
         code_cell_language: {
           type: 'string',
-          description:
-            'The language of the code cell, this can be one of Python, Javascript or SQL Connection. SQL Connection should be POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON. When using SQL Connection, connection_id is required and should be the exact uuid of the SQL Connection.',
+          description: 'The language of the code cell, this can be one of Python or Javascript.',
         },
         code_cell_position: {
           type: 'string',
@@ -676,30 +653,94 @@ This tool is for Python, Javascript, and SQL Connection code. For formulas, use 
           type: 'string',
           description: 'The code which will run in the cell',
         },
-        connection_id: {
-          type: ['string', 'null'],
+      },
+      required: ['sheet_name', 'code_cell_name', 'code_cell_language', 'code_cell_position', 'code_string'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
+    prompt: `
+set_code_cell_value tool is used to add Python or Javascript code cell to the sheet.\n
+You should use the set_cell_values or add_data_table tool call to add values on the sheet. Use set_cell_values or add_data_table instead of responding with code for adding data to the sheet.\n
+Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
+Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
+set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
+Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
+
+Code cell (Python and Javascript) placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
+- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
+- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
+- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21.\n
+- In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
+- If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
+- Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
+`,
+  },
+  [AITool.SetSQLCodeCellValue]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Note: only name the code cell if it is new.\n
+SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
+Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_name: {
+          type: 'string',
           description:
-            'Required for SQL Connection code cells. This is uuid string corresponding to the connection ID of the SQL Connection code cell. SQL language should be provided in code_cell_language and should be one of POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON',
+            'What to name the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed). First letter capitalized is preferred.',
+        },
+        connection_kind: {
+          type: 'string',
+          description:
+            'The kind of the sql code cell, this can be one of POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.',
+        },
+        code_cell_position: {
+          type: 'string',
+          description:
+            'The position of the code cell in the current open sheet, in a1 notation. This should be a single cell, not a range.',
+        },
+        sql_code_string: {
+          type: 'string',
+          description: 'The code which will run in the cell',
+        },
+        connection_id: {
+          type: 'string',
+          description:
+            'This is uuid string corresponding to the connection ID of the SQL Connection code cell. There can be multiple connections in the team, so this is required to identify the connection along with the language.',
         },
       },
       required: [
         'sheet_name',
         'code_cell_name',
-        'code_cell_language',
+        'connection_kind',
         'code_cell_position',
-        'code_string',
+        'sql_code_string',
         'connection_id',
       ],
       additionalProperties: false,
     },
-    responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
+    responseSchema: AIToolsArgsSchema[AITool.SetSQLCodeCellValue],
     prompt: `
-You should use the set_code_cell_value function to set this code cell value. Use set_code_cell_value instead of responding with code.\n
-Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
-Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
-set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
-Always refer to the cells on sheet by its position in a1 notation, using q.cells function for Python/Javascript. Don't add values manually in code cells.\n
-This tool is for Python, Javascript, and SQL Connection code. For formulas, use set_formula_cell_value.\n
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Note: only name the code cell if it is new.\n
+SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
+Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON\n
 - The Connection ID must be from an available database connection in the team\n
@@ -713,18 +754,6 @@ For SQL Connection code cells:\n
 - BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
 - COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES\n
 - MARIADB has the same syntax as MySQL\n
-
-
-Code cell (Python and Javascript) placement instructions:\n
-- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
-- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
-- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
-- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21.\n
-- In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
-- If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
-- Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
-- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
 `,
   },
   [AITool.SetFormulaCellValue]: {

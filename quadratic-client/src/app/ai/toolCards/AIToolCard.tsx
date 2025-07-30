@@ -24,6 +24,7 @@ import { SetBorders } from '@/app/ai/toolCards/SetBorders';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
+import { SetSQLCodeCellValue } from '@/app/ai/toolCards/SetSQLCodeCellValue';
 import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
 import { TableColumnSettings } from '@/app/ai/toolCards/TableColumnSettings';
 import { TableMeta } from '@/app/ai/toolCards/TableMeta';
@@ -53,6 +54,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <SetCellValues toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCodeCellValue:
       return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.SetSQLCodeCellValue:
+      return <SetSQLCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetFormulaCellValue:
       return <SetFormulaCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.MoveCells:

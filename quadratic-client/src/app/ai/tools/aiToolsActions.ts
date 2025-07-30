@@ -11,7 +11,6 @@ import type {
   CellAlign,
   CellVerticalAlign,
   CellWrap,
-  CodeCellLanguage,
   FormatUpdate,
   JsDataTableColumnHeader,
   JsSheetPosText,
@@ -26,21 +25,10 @@ import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '
 import Color from 'color';
 import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
-import type { AIToolsArgsSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import type { z } from 'zod';
-
-export function convertArgsToCodeCellLanguage(
-  code_cell_language: z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>['code_cell_language'],
-  connection_id: z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>['connection_id']
-): CodeCellLanguage {
-  if (code_cell_language === 'Python' || code_cell_language === 'Javascript') {
-    return code_cell_language;
-  }
-
-  return { Connection: { kind: code_cell_language, id: connection_id ?? '' } };
-}
 
 const waitForSetCodeCellValue = (transactionId: string) => {
   return new Promise((resolve) => {
@@ -244,16 +232,11 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
     try {
-      let { sheet_name, code_cell_name, code_cell_language, code_string, code_cell_position, connection_id } = args;
+      let { sheet_name, code_cell_name, code_cell_language, code_string, code_cell_position } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
       if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [createTextContent('Invalid code cell position, this should be a single cell, not a range')];
-      }
-
-      const language = convertArgsToCodeCellLanguage(code_cell_language, connection_id);
-      if (typeof language === 'object' && !connection_id) {
-        return [{ type: 'text', text: 'No connection id provided, this is required for SQL connections' }];
       }
 
       const { x, y } = selection.getCursor();
@@ -263,7 +246,7 @@ export const aiToolsActions: AIToolActionsRecord = {
         x,
         y,
         codeString: code_string,
-        language,
+        language: code_cell_language,
         codeCellName: code_cell_name,
       });
 
@@ -285,6 +268,51 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     } catch (e) {
       return [createTextContent(`Error executing set code cell value tool: ${e}`)];
+    }
+  },
+  [AITool.SetSQLCodeCellValue]: async (args, messageMetaData) => {
+    try {
+      let { sheet_name, code_cell_name, connection_kind, sql_code_string, code_cell_position, connection_id } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const selection = sheets.stringToSelection(code_cell_position, sheetId);
+      if (!selection.isSingleSelection(sheets.jsA1Context)) {
+        return [createTextContent('Invalid code cell position, this should be a single cell, not a range')];
+      }
+
+      const { x, y } = selection.getCursor();
+
+      const transactionId = await quadraticCore.setCodeCellValue({
+        sheetId,
+        x,
+        y,
+        codeString: sql_code_string,
+        language: {
+          Connection: {
+            kind: connection_kind,
+            id: connection_id,
+          },
+        },
+        codeCellName: code_cell_name,
+      });
+
+      if (transactionId) {
+        await waitForSetCodeCellValue(transactionId);
+
+        // After execution, adjust viewport to show full output if it exists
+        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+        if (tableCodeCell) {
+          const width = tableCodeCell.w;
+          const height = tableCodeCell.h;
+          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+        }
+
+        const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
+        return result;
+      } else {
+        return [createTextContent('Error executing set sql code cell value tool')];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing set sql code cell value tool: ${e}`)];
     }
   },
   [AITool.SetFormulaCellValue]: async (args, messageMetaData) => {
