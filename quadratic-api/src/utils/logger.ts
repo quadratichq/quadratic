@@ -1,6 +1,9 @@
 import winston from 'winston';
 import { NODE_ENV } from '../env-vars';
 
+const env = NODE_ENV || 'development';
+const isDevelopment = true; // env === 'development';
+
 // Define log levels
 const levels = {
   error: 0,
@@ -22,17 +25,25 @@ const colors = {
 // Tell winston that you want to link the colors
 winston.addColors(colors);
 
-// Create the logger format
-const format = winston.format.combine(
-  winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss:ms' }),
-  winston.format.errors({ stack: true }),
-  winston.format.json()
+// Create the logger format for development
+const devFormat = winston.format.combine(
+  winston.format.simple(),
+  winston.format((info) => ({
+    ...info,
+    level: `[${info.level.toUpperCase()}]`,
+  }))(),
+  winston.format.colorize({ level: true }),
+  winston.format.errors({ stack: true })
 );
+
+// Create the logger format for production
+const prodFormat = winston.format.combine(winston.format.errors({ stack: true }), winston.format.json());
+
+// Use the appropriate format based on the environment
+const format = isDevelopment ? devFormat : prodFormat;
 
 // Define which log levels to use based on environment
 const level = () => {
-  const env = NODE_ENV || 'development';
-  const isDevelopment = env === 'development';
   return isDevelopment ? 'debug' : 'info';
 };
 
@@ -40,7 +51,7 @@ const level = () => {
 const transports: winston.transport[] = [
   new winston.transports.Console({
     level: level(),
-    format: winston.format.combine(winston.format.colorize({ all: true }), winston.format.simple()),
+    format,
   }),
 ];
 

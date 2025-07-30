@@ -26,5 +26,5 @@ try {
     isDemo: true,
   });
 } catch (error) {
-  logger.warn('CONNECTION_DEMO env var is missing or malformed. No demo connection will be available.', { error });
+  logger.warn('CONNECTION_DEMO env var is missing or malformed. No demo connection will be available.', error);
 }

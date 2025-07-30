@@ -53,9 +53,9 @@ registerRoutes().then(() => {
     if (NODE_ENV !== 'test') {
       if (error.status >= 500) {
         if (NODE_ENV === 'production') {
-          logger.error('Server error (production)', { error });
+          logger.error('Server error (production)', error);
         } else {
-          logger.error('Server error (development)', { error });
+          logger.error('Server error (development)', error);
         }
       }
     }
@@ -73,7 +73,7 @@ registerRoutes().then(() => {
     if (error instanceof ApiError) {
       res.status(error.status).json({ error: { message: error.message, ...(error.meta ? { meta: error.meta } : {}) } });
     } else {
-      logger.error('Unhandled application error', { error });
+      logger.error('Unhandled application error', error);
 
       // Generic error handling
       res.status(error.status || 500).json({

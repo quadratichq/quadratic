@@ -253,7 +253,7 @@ ${userTextPrompt}
       return MODELS_ROUTER_CONFIGURATION[ai_model];
     }
   } catch (error) {
-    logger.error('Error in getModelKey', { error });
+    logger.error('Error in getModelKey', error);
   }
 
   return DEFAULT_BACKUP_MODEL;

@@ -26,7 +26,7 @@ const dbClient = new PrismaClient({
 // Wire up Prisma logging to winston
 dbClient.$on('query', (e) => {
   if (NODE_ENV === 'development') {
-    prismaLogger.debug('Query executed', {
+    prismaLogger.info('Query executed', {
       query: e.query,
       params: e.params,
       duration: `${e.duration}ms`,

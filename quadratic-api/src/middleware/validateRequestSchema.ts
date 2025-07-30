@@ -74,7 +74,7 @@ export const parseRequest = <S extends RequestSchema>(req: Request, schema: S): 
     return data;
   } catch (error) {
     if (NODE_ENV === 'development') {
-      logger.error('Error in parseRequest', { error });
+      logger.error('Error in parseRequest', error);
     }
     throw new ApiError(400, 'Bad request. Schema validation failed', error);
   }
