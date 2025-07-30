@@ -4,6 +4,7 @@ import { getUsersFromAuth0, getUsersFromAuth0ByEmail, jwtConfigAuth0 } from './a
 import { getUsersFromOry, getUsersFromOryByEmail, jwtConfigOry } from './ory';
 import {
   authenticateWithCodeWorkos,
+  authenticateWithMagicCodeWorkos,
   authenticateWithRefreshTokenWorkos,
   clearCookiesWorkos,
   getUsersFromWorkos,
@@ -15,6 +16,7 @@ import {
   sendMagicAuthCodeWorkos,
   sendResetPasswordWorkos,
   signupWithPasswordWorkos,
+  verifyEmailWorkos,
 } from './workos';
 
 export type UsersRequest = {
@@ -115,6 +117,15 @@ export const authenticateWithRefreshToken = async (args: { req: Request; res: Re
   }
 };
 
+export const verifyEmail = async (args: { pendingAuthenticationToken: string; code: string; res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await verifyEmailWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in verifyEmail(): ${AUTH_TYPE}`);
+  }
+};
+
 export const logoutSession = async (args: { sessionId: string; res: Response }) => {
   switch (AUTH_TYPE) {
     case 'workos':
@@ -148,6 +159,15 @@ export const sendMagicAuthCode = async (args: { email: string; res: Response }) 
       return await sendMagicAuthCodeWorkos(args);
     default:
       throw new Error(`Unsupported auth type in sendMagicAuthCode(): ${AUTH_TYPE}`);
+  }
+};
+
+export const authenticateWithMagicCode = async (args: { email: string; code: string; res: Response }) => {
+  switch (AUTH_TYPE) {
+    case 'workos':
+      return await authenticateWithMagicCodeWorkos(args);
+    default:
+      throw new Error(`Unsupported auth type in authenticateWithMagicCode(): ${AUTH_TYPE}`);
   }
 };
 

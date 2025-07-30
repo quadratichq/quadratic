@@ -509,11 +509,10 @@ export const ApiSchemas = {
   '/auth/loginWithPassword.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
     password: z.string(),
-    firstName: z.string().optional(),
-    lastName: z.string().optional(),
   }),
   '/auth/loginWithPassword.POST.response': z.object({
     message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
   }),
 
   '/auth/signupWithPassword.POST.request': z.object({
@@ -524,6 +523,7 @@ export const ApiSchemas = {
   }),
   '/auth/signupWithPassword.POST.response': z.object({
     message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
   }),
 
   '/auth/authenticateWithCode.POST.request': z.object({
@@ -531,12 +531,21 @@ export const ApiSchemas = {
   }),
   '/auth/authenticateWithCode.POST.response': z.object({
     message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
   }),
 
   '/auth/sendResetPassword.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
   }),
   '/auth/sendResetPassword.POST.response': z.object({
+    message: z.string(),
+  }),
+
+  '/auth/verifyEmail.POST.request': z.object({
+    pendingAuthenticationToken: z.string(),
+    code: z.string(),
+  }),
+  '/auth/verifyEmail.POST.response': z.object({
     message: z.string(),
   }),
 
@@ -553,6 +562,17 @@ export const ApiSchemas = {
   }),
   '/auth/sendMagicAuthCode.POST.response': z.object({
     message: z.string(),
+    email: z.string().email('Must be a valid email address.').optional(),
+    pendingAuthenticationToken: z.string().optional(),
+  }),
+
+  '/auth/authenticateWithMagicCode.POST.request': z.object({
+    email: z.string().email('Must be a valid email address.'),
+    code: z.string(),
+  }),
+  '/auth/authenticateWithMagicCode.POST.response': z.object({
+    message: z.string(),
+    pendingAuthenticationToken: z.string().optional(),
   }),
 };
 

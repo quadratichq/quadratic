@@ -25,8 +25,9 @@ import { useEffect, useRef } from 'react';
 import { Link, useFetcher, useNavigate, useSearchParams } from 'react-router';
 import { atom, useRecoilState, useSetRecoilState } from 'recoil';
 import { z } from 'zod';
+
 const FETCHER_KEY = 'onboarding-form-submission';
-const NUM_FREE_PROMPTS = 12;
+const NUM_FREE_PROMPTS = 20;
 
 const otherCheckboxAtom = atom<boolean>({
   key: 'onboardingOtherCheckboxAtom',

@@ -1,37 +1,23 @@
 import { authClient } from '@/auth/auth';
-import { AuthFormWrapper } from '@/shared/components/auth/AuthFormWrapper';
 import { ROUTES } from '@/shared/constants/routes';
-import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/shadcn/ui/form';
 import { Input } from '@/shared/shadcn/ui/input';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import { useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { redirect, useLoaderData, useNavigate, type LoaderFunctionArgs } from 'react-router';
+import { useNavigate } from 'react-router';
 import type z from 'zod';
 
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  if (!token) {
-    return redirect(ROUTES.LOGIN);
-  }
-
-  return { token };
-};
-
-export const Component = () => {
-  const { token } = useLoaderData<typeof loader>();
+export const SendMagicAuthCode = memo(() => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const formSchema = useMemo(() => ApiSchemas['/auth/resetPassword.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/auth/sendMagicAuthCode.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      token,
-      password: '',
+      email: '',
     },
   });
 
@@ -40,44 +26,39 @@ export const Component = () => {
       try {
         setErrorMessage(null);
 
-        await authClient.resetPassword({
-          token: data.token,
-          password: data.password,
-        });
+        await authClient.sendMagicAuthCode({ email: data.email });
 
         const { search } = new URL(window.location.href);
-        navigate(`${ROUTES.LOGIN_RESULT}${search}`);
+        navigate(`${ROUTES.MAGIC_AUTH_CODE}${search}?email=${encodeURIComponent(data.email)}`);
       } catch (error) {
         console.error(error);
-
-        setErrorMessage('Invalid token or password');
+        setErrorMessage('Invalid email');
       }
     },
     [navigate]
   );
 
-  useRemoveInitialLoadingUI(true);
-
   return (
-    <AuthFormWrapper>
-      <h1 className="text-2xl font-medium">Reset Password</h1>
+    <>
+      <h1 className="text-2xl font-medium">Send Magic Code</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">
           <FormField
             control={form.control}
-            name="password"
+            name="email"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>New Password</FormLabel>
+                <FormLabel>Email</FormLabel>
                 <FormControl>
                   <Input
-                    data-testid="reset-password-password"
+                    data-testid="login-email"
                     className="h-12 rounded-md border border-gray-300 px-3 text-base"
                     autoCapitalize="off"
-                    type="password"
+                    type="text"
+                    autoComplete="username"
                     autoFocus
-                    placeholder="New Password*"
+                    placeholder="Work email*"
                     {...field}
                   />
                 </FormControl>
@@ -87,7 +68,7 @@ export const Component = () => {
           />
 
           <Button
-            data-testid="reset-password-submit"
+            data-testid="login-submit"
             type="submit"
             disabled={form.formState.isSubmitting}
             className="h-12 w-full rounded-md text-base font-medium"
@@ -98,6 +79,6 @@ export const Component = () => {
 
         {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
       </Form>
-    </AuthFormWrapper>
+    </>
   );
-};
+});

@@ -4,6 +4,7 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { Request } from '../../types/Request';
+import { auth_signup_rate_limiter } from '../middleware/authRateLimiter';
 import { clearCookies, sendResetPassword } from '../providers/auth';
 
 const schema = z.object({
@@ -14,6 +15,7 @@ const sendResetPasswordRouter = express.Router();
 
 sendResetPasswordRouter.post(
   '/sendResetPassword',
+  auth_signup_rate_limiter,
   async (req: Request, res: Response<ApiTypes['/auth/sendResetPassword.POST.response']>) => {
     try {
       const {

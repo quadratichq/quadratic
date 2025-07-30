@@ -1,6 +1,6 @@
 import type { AuthClient } from '@/auth/auth';
 import { parseDomain, waitForAuthClientToRedirect } from '@/auth/auth.helper';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { Auth0Client } from '@auth0/auth0-spa-js';
 import { createAuth0Client } from '@auth0/auth0-spa-js';
 import { captureEvent } from '@sentry/react';
@@ -61,7 +61,7 @@ export const auth0Client: AuthClient = {
           window.location.origin +
           ROUTES.LOGIN_RESULT +
           '?' +
-          new URLSearchParams([['redirectTo', redirectTo]]).toString(),
+          new URLSearchParams([[SEARCH_PARAMS.REDIRECT_TO.KEY, redirectTo]]).toString(),
       },
     });
     await waitForAuthClientToRedirect();
@@ -108,6 +108,9 @@ export const auth0Client: AuthClient = {
   async signupWithPassword(_) {
     throw new Error('signupWithPassword called in Auth0');
   },
+  async verifyEmail(_) {
+    throw new Error('verifyEmail called in Auth0');
+  },
   async sendResetPassword(_) {
     throw new Error('sendResetPassword called in Auth0');
   },
@@ -116,5 +119,8 @@ export const auth0Client: AuthClient = {
   },
   async sendMagicAuthCode(_) {
     throw new Error('sendMagicAuthCode called in Auth0');
+  },
+  async authenticateWithMagicCode(_) {
+    throw new Error('authenticateWithMagicCode called in Auth0');
   },
 };

@@ -22,18 +22,14 @@ export interface AuthClient {
   handleSigninRedirect(): Promise<void>;
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
-  loginWithPassword(args: { email: string; password: string; redirectTo: string }): Promise<void>;
+  loginWithPassword(args: { email: string; password: string }): Promise<void>;
   loginWithOAuth(args: { provider: OAuthProvider; redirectTo: string }): Promise<void>;
-  signupWithPassword(args: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    redirectTo: string;
-  }): Promise<void>;
+  signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }): Promise<void>;
+  verifyEmail(args: { pendingAuthenticationToken: string; code: string }): Promise<void>;
   sendResetPassword(args: { email: string }): Promise<void>;
-  resetPassword(args: { token: string; password: string; redirectTo: string }): Promise<void>;
+  resetPassword(args: { token: string; password: string }): Promise<void>;
   sendMagicAuthCode(args: { email: string }): Promise<void>;
+  authenticateWithMagicCode(args: { email: string; code: string }): Promise<void>;
 }
 
 let cachedAuthClient: Promise<AuthClient> | AuthClient | null = null;
@@ -83,7 +79,7 @@ export const authClient: AuthClient = {
     const client = await getAuthClient();
     return client.getTokenOrRedirect(skipRedirect);
   },
-  async loginWithPassword(args: { email: string; password: string; redirectTo: string }) {
+  async loginWithPassword(args: { email: string; password: string }) {
     const client = await getAuthClient();
     return client.loginWithPassword(args);
   },
@@ -91,27 +87,29 @@ export const authClient: AuthClient = {
     const client = await getAuthClient();
     return client.loginWithOAuth(args);
   },
-  async signupWithPassword(args: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-    redirectTo: string;
-  }) {
+  async signupWithPassword(args: { email: string; password: string; firstName: string; lastName: string }) {
     const client = await getAuthClient();
     return client.signupWithPassword(args);
+  },
+  async verifyEmail(args: { pendingAuthenticationToken: string; code: string }) {
+    const client = await getAuthClient();
+    return client.verifyEmail(args);
   },
   async sendResetPassword(args: { email: string }) {
     const client = await getAuthClient();
     return client.sendResetPassword(args);
   },
-  async resetPassword(args: { token: string; password: string; redirectTo: string }) {
+  async resetPassword(args: { token: string; password: string }) {
     const client = await getAuthClient();
     return client.resetPassword(args);
   },
   async sendMagicAuthCode(args: { email: string }) {
     const client = await getAuthClient();
     return client.sendMagicAuthCode(args);
+  },
+  async authenticateWithMagicCode(args: { email: string; code: string }) {
+    const client = await getAuthClient();
+    return client.authenticateWithMagicCode(args);
   },
 };
 

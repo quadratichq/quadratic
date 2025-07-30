@@ -2,6 +2,7 @@ import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import { apiClient } from '@/shared/api/apiClient';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
+import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { captureEvent } from '@sentry/react';
 import { createClient } from '@workos-inc/authkit-js';
 
@@ -18,7 +19,7 @@ if (!WORKOS_CLIENT_ID) {
 
 // Create the client as a module-scoped promise so all loaders will wait
 // for this one single instance of client to resolve
-let clientPromise: ReturnType<typeof createClient>;
+let clientPromise: ReturnType<typeof createClient> | null = null;
 function getClient(): ReturnType<typeof createClient> {
   if (!clientPromise) {
     const apiHostname = apiClient.auth.getApiHostname();
@@ -69,18 +70,12 @@ export const workosClient: AuthClient = {
    * If `isSignupFlow` is true, the user will be redirected to the registration flow.
    */
   async login(redirectTo: string, isSignupFlow: boolean = false) {
-    const url = new URL(window.location.origin + ROUTES.LOGIN);
-
-    if (isSignupFlow) {
-      url.searchParams.set(SEARCH_PARAMS.LOGIN_TYPE.KEY, SEARCH_PARAMS.LOGIN_TYPE.VALUES.SIGNUP);
-    } else {
-      url.searchParams.delete(SEARCH_PARAMS.LOGIN_TYPE.KEY);
-    }
+    const url = new URL(window.location.origin + (isSignupFlow ? ROUTES.SIGNUP : ROUTES.LOGIN));
 
     if (redirectTo && redirectTo !== '/') {
-      url.searchParams.set('redirectTo', redirectTo);
+      url.searchParams.set(SEARCH_PARAMS.REDIRECT_TO.KEY, redirectTo);
     } else {
-      url.searchParams.delete('redirectTo');
+      url.searchParams.delete(SEARCH_PARAMS.REDIRECT_TO.KEY);
     }
 
     if (window.location.href !== url.toString()) {
@@ -104,25 +99,32 @@ export const workosClient: AuthClient = {
       const url = new URL(window.location.href);
       const code = url.searchParams.get('code') || '';
       url.searchParams.delete('code');
-      await apiClient.auth.authenticateWithCode({ code });
+      const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithCode({ code });
+      if (pendingAuthenticationToken) {
+        url.pathname = ROUTES.VERIFY_EMAIL;
+        url.searchParams.set('pendingAuthenticationToken', pendingAuthenticationToken);
+        window.location.assign(url.toString());
+        await waitForAuthClientToRedirect();
+      } else {
+        let redirectTo = window.location.origin;
 
-      let redirectTo = window.location.origin;
-      const state = url.searchParams.get('state');
-      if (state) {
-        const stateObj = JSON.parse(decodeURIComponent(state));
-        if (
-          !!stateObj &&
-          typeof stateObj === 'object' &&
-          'redirectTo' in stateObj &&
-          !!stateObj.redirectTo &&
-          typeof stateObj.redirectTo === 'string'
-        ) {
-          redirectTo = stateObj.redirectTo;
+        const state = url.searchParams.get('state');
+        if (state) {
+          const stateObj = JSON.parse(decodeURIComponent(state));
+          if (
+            !!stateObj &&
+            typeof stateObj === 'object' &&
+            'redirectTo' in stateObj &&
+            !!stateObj.redirectTo &&
+            typeof stateObj.redirectTo === 'string'
+          ) {
+            redirectTo = stateObj.redirectTo;
+          }
         }
-      }
 
-      window.location.assign(redirectTo);
-      await waitForAuthClientToRedirect();
+        window.location.assign(redirectTo);
+        await waitForAuthClientToRedirect();
+      }
     } catch {}
   },
 
@@ -133,7 +135,7 @@ export const workosClient: AuthClient = {
   async logout() {
     const client = await getClient();
     await client.signOut({ navigate: false });
-    window.location.assign(window.location.origin);
+    window.location.assign(window.location.origin + ROUTES.LOGIN);
     await waitForAuthClientToRedirect();
   },
 
@@ -156,9 +158,13 @@ export const workosClient: AuthClient = {
   },
 
   async loginWithPassword(args) {
-    await apiClient.auth.loginWithPassword({ email: args.email, password: args.password });
-    window.location.assign(args.redirectTo);
-    await waitForAuthClientToRedirect();
+    const { pendingAuthenticationToken } = await apiClient.auth.loginWithPassword({
+      email: args.email,
+      password: args.password,
+    });
+    await handlePendingAuthenticationToken(pendingAuthenticationToken);
+    await handleRedirectTo();
+    await disposeClient();
   },
 
   async loginWithOAuth(args) {
@@ -167,14 +173,24 @@ export const workosClient: AuthClient = {
   },
 
   async signupWithPassword(args) {
-    await apiClient.auth.signupWithPassword({
+    const { pendingAuthenticationToken } = await apiClient.auth.signupWithPassword({
       email: args.email,
       password: args.password,
       firstName: args.firstName,
       lastName: args.lastName,
     });
-    window.location.assign(args.redirectTo);
-    await waitForAuthClientToRedirect();
+    await handlePendingAuthenticationToken(pendingAuthenticationToken);
+    await handleRedirectTo();
+    await disposeClient();
+  },
+
+  async verifyEmail(args) {
+    await apiClient.auth.verifyEmail({
+      pendingAuthenticationToken: args.pendingAuthenticationToken,
+      code: args.code,
+    });
+    await handleRedirectTo();
+    await disposeClient();
   },
 
   async sendResetPassword(args) {
@@ -183,11 +199,49 @@ export const workosClient: AuthClient = {
 
   async resetPassword(args) {
     await apiClient.auth.resetPassword({ token: args.token, password: args.password });
-    window.location.assign(args.redirectTo);
-    await waitForAuthClientToRedirect();
+    await handleRedirectTo();
+    await disposeClient();
   },
 
   async sendMagicAuthCode(args) {
-    await apiClient.auth.sendMagicAuthCode({ email: args.email });
+    const { pendingAuthenticationToken } = await apiClient.auth.sendMagicAuthCode({ email: args.email });
+    await handlePendingAuthenticationToken(pendingAuthenticationToken);
+    await disposeClient();
   },
+
+  async authenticateWithMagicCode(args) {
+    const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithMagicCode({
+      email: args.email,
+      code: args.code,
+    });
+    await handlePendingAuthenticationToken(pendingAuthenticationToken);
+    await handleRedirectTo();
+    await disposeClient();
+  },
+};
+
+const disposeClient = async () => {
+  const client = await getClient();
+  client.dispose();
+  clientPromise = null;
+};
+
+const handlePendingAuthenticationToken = async (pendingAuthenticationToken?: string) => {
+  if (!pendingAuthenticationToken) {
+    return;
+  }
+
+  const url = new URL(window.location.href);
+  url.pathname = ROUTES.VERIFY_EMAIL;
+  url.searchParams.set('pendingAuthenticationToken', pendingAuthenticationToken);
+  window.location.assign(url.toString());
+  await waitForAuthClientToRedirect();
+};
+
+const handleRedirectTo = async () => {
+  let redirectTo = getRedirectTo();
+  if (redirectTo) {
+    window.location.assign(redirectTo);
+    await waitForAuthClientToRedirect();
+  }
 };

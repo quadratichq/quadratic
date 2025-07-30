@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/node';
-import { WorkOS, type UserResponse } from '@workos-inc/node';
+import { GenericServerException, WorkOS, type UserResponse } from '@workos-inc/node';
 import type { Request, Response } from 'express';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
@@ -90,21 +90,23 @@ export const loginWithPasswordWorkos = async ({
   email: string;
   password: string;
   res: Response;
-}) => {
-  const { user, refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
-    clientId: WORKOS_CLIENT_ID,
-    email,
-    password,
-  });
-
-  setCookiesWorkos({ res, refreshToken });
-
-  if (!user.emailVerified) {
-    await getWorkos().userManagement.updateUser({
-      userId: user.id,
-      emailVerified: true,
+}): Promise<{ pendingAuthenticationToken: string | undefined }> => {
+  return handleEmailVerificationRequiredError(async () => {
+    const { user, refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
+      clientId: WORKOS_CLIENT_ID,
+      email,
+      password,
     });
-  }
+
+    setCookiesWorkos({ res, refreshToken });
+
+    if (!user.emailVerified) {
+      await getWorkos().userManagement.updateUser({
+        userId: user.id,
+        emailVerified: true,
+      });
+    }
+  });
 };
 
 export const signupWithPasswordWorkos = async ({
@@ -119,40 +121,48 @@ export const signupWithPasswordWorkos = async ({
   firstName: string;
   lastName: string;
   res: Response;
-}) => {
-  await getWorkos().userManagement.createUser({
-    email,
-    password,
-    firstName,
-    lastName,
-    emailVerified: true,
-  });
-
-  const { refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
-    clientId: WORKOS_CLIENT_ID,
-    email,
-    password,
-  });
-
-  setCookiesWorkos({ res, refreshToken });
-};
-
-export const authenticateWithCodeWorkos = async (args: { code: string; res: Response }) => {
-  const { res, code } = args;
-
-  const { refreshToken, user } = await getWorkos().userManagement.authenticateWithCode({
-    clientId: WORKOS_CLIENT_ID,
-    code,
-  });
-
-  setCookiesWorkos({ res, refreshToken });
-
-  if (!user.emailVerified) {
-    await getWorkos().userManagement.updateUser({
-      userId: user.id,
+}): Promise<{ pendingAuthenticationToken: string | undefined }> => {
+  return handleEmailVerificationRequiredError(async () => {
+    await getWorkos().userManagement.createUser({
+      email,
+      password,
+      firstName,
+      lastName,
       emailVerified: true,
     });
-  }
+
+    const { refreshToken } = await getWorkos().userManagement.authenticateWithPassword({
+      clientId: WORKOS_CLIENT_ID,
+      email,
+      password,
+    });
+
+    setCookiesWorkos({ res, refreshToken });
+  });
+};
+
+export const authenticateWithCodeWorkos = async ({
+  res,
+  code,
+}: {
+  code: string;
+  res: Response;
+}): Promise<{ pendingAuthenticationToken: string | undefined }> => {
+  return handleEmailVerificationRequiredError(async () => {
+    const { refreshToken, user } = await getWorkos().userManagement.authenticateWithCode({
+      clientId: WORKOS_CLIENT_ID,
+      code,
+    });
+
+    setCookiesWorkos({ res, refreshToken });
+
+    if (!user.emailVerified) {
+      await getWorkos().userManagement.updateUser({
+        userId: user.id,
+        emailVerified: true,
+      });
+    }
+  });
 };
 
 export const authenticateWithRefreshTokenWorkos = async ({
@@ -203,6 +213,24 @@ export const authenticateWithRefreshTokenWorkos = async ({
   };
 };
 
+export const verifyEmailWorkos = async ({
+  pendingAuthenticationToken,
+  code,
+  res,
+}: {
+  pendingAuthenticationToken: string;
+  code: string;
+  res: Response;
+}) => {
+  const { refreshToken } = await getWorkos().userManagement.authenticateWithEmailVerification({
+    clientId: WORKOS_CLIENT_ID,
+    pendingAuthenticationToken,
+    code,
+  });
+
+  setCookiesWorkos({ res, refreshToken });
+};
+
 export const logoutSessionWorkos = async ({ sessionId, res }: { sessionId: string; res: Response }) => {
   clearCookiesWorkos({ res });
 
@@ -249,11 +277,39 @@ export const resetPasswordWorkos = async ({
   setCookiesWorkos({ res, refreshToken });
 };
 
-export const sendMagicAuthCodeWorkos = async ({ email, res }: { email: string; res: Response }) => {
-  clearCookiesWorkos({ res });
+export const sendMagicAuthCodeWorkos = async ({
+  email,
+  res,
+}: {
+  email: string;
+  res: Response;
+}): Promise<{ pendingAuthenticationToken: string | undefined }> => {
+  return handleEmailVerificationRequiredError(async () => {
+    clearCookiesWorkos({ res });
 
-  await getWorkos().userManagement.createMagicAuth({
-    email,
+    await getWorkos().userManagement.createMagicAuth({
+      email,
+    });
+  });
+};
+
+export const authenticateWithMagicCodeWorkos = async ({
+  email,
+  code,
+  res,
+}: {
+  email: string;
+  code: string;
+  res: Response;
+}): Promise<{ pendingAuthenticationToken: string | undefined }> => {
+  return handleEmailVerificationRequiredError(async () => {
+    const { refreshToken } = await getWorkos().userManagement.authenticateWithMagicAuth({
+      clientId: WORKOS_CLIENT_ID,
+      email,
+      code,
+    });
+
+    setCookiesWorkos({ res, refreshToken });
   });
 };
 
@@ -281,4 +337,30 @@ const setCookiesWorkos = ({ res, refreshToken }: { res: Response; refreshToken: 
     sameSite: 'none',
     maxAge: 1000 * 60 * 60 * 24 * 30, // 30 days
   });
+};
+
+const handleEmailVerificationRequiredError = async (
+  fn: () => Promise<void>
+): Promise<{ pendingAuthenticationToken: string | undefined }> => {
+  try {
+    await fn();
+
+    return { pendingAuthenticationToken: undefined };
+  } catch (error) {
+    if (error instanceof GenericServerException && 'rawData' in error) {
+      const rawData = error.rawData as {
+        code: string;
+      };
+
+      if (
+        rawData.code === 'email_verification_required' &&
+        'pending_authentication_token' in rawData &&
+        typeof rawData.pending_authentication_token === 'string'
+      ) {
+        return { pendingAuthenticationToken: rawData.pending_authentication_token };
+      }
+    }
+
+    throw error;
+  }
 };

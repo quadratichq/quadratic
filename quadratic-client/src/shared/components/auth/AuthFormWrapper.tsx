@@ -1,7 +1,7 @@
 import { forwardRef, memo } from 'react';
 
-export const LoginFormWrapper = memo(
-  forwardRef<HTMLDivElement, React.PropsWithChildren<{}>>((props) => {
+export const AuthFormWrapper = memo(
+  forwardRef<HTMLDivElement, React.PropsWithChildren<{}>>((props, _ref) => {
     return (
       <main className="flex h-screen select-none flex-col items-center justify-center bg-background">
         <div className="relative flex w-[400px] flex-col overflow-hidden rounded-md bg-white font-sans text-base font-normal leading-4 text-gray-900 antialiased shadow-[0_12px_40px_0_rgba(0,0,0,0.12)]">

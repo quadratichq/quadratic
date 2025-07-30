@@ -483,6 +483,13 @@ export const apiClient = {
         ApiSchemas['/auth/authenticateWithCode.POST.response']
       );
     },
+    verifyEmail(args: ApiTypes['/auth/verifyEmail.POST.request']) {
+      return fetchFromApi(
+        `/auth/verifyEmail`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/verifyEmail.POST.response']
+      );
+    },
     sendResetPassword(args: ApiTypes['/auth/sendResetPassword.POST.request']) {
       return fetchFromApi(
         `/auth/sendResetPassword`,
@@ -502,6 +509,13 @@ export const apiClient = {
         `/auth/sendMagicAuthCode`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
         ApiSchemas['/auth/sendMagicAuthCode.POST.response']
+      );
+    },
+    authenticateWithMagicCode(args: ApiTypes['/auth/authenticateWithMagicCode.POST.request']) {
+      return fetchFromApi(
+        `/auth/authenticateWithMagicCode`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/authenticateWithMagicCode.POST.response']
       );
     },
   },

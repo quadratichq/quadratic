@@ -143,6 +143,9 @@ export const oryClient: AuthClient = {
   async signupWithPassword(_) {
     throw new Error('signupWithPassword called in Ory');
   },
+  async verifyEmail(_) {
+    throw new Error('verifyEmail called in Ory');
+  },
   async sendResetPassword(_) {
     throw new Error('sendResetPassword called in Ory');
   },
@@ -151,5 +154,8 @@ export const oryClient: AuthClient = {
   },
   async sendMagicAuthCode(_) {
     throw new Error('sendMagicAuthCode called in Ory');
+  },
+  async authenticateWithMagicCode(_) {
+    throw new Error('authenticateWithMagicCode called in Ory');
   },
 };

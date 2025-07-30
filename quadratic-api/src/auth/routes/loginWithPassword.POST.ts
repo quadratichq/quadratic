@@ -20,13 +20,13 @@ loginWithPasswordRouter.post(
         body: { email, password },
       } = parseRequest(req, schema);
 
-      await loginWithPassword({ email, password, res });
+      const { pendingAuthenticationToken } = await loginWithPassword({ email, password, res });
 
-      return res.status(200).json({ message: 'Login successful' });
+      return res.status(200).json({ message: 'Login successful', pendingAuthenticationToken });
     } catch {
       clearCookies({ res });
 
-      return res.status(401).json({ message: 'Login failed' });
+      return res.status(401).json({ message: 'Login failed', pendingAuthenticationToken: undefined });
     }
   }
 );

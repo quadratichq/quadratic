@@ -6,10 +6,16 @@ import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections
 export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
-  LOGIN_WITH_REDIRECT: () => '/login?redirectTo=' + encodeURIComponent(window.location.pathname),
+  LOGIN_WITH_REDIRECT: () => `/login?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(window.location.pathname)}`,
   LOGIN_CALLBACK: '/login-callback',
   LOGIN_RESULT: '/login-result',
-  SIGNUP_WITH_REDIRECT: () => '/login?type=signup&redirectTo=' + encodeURIComponent(window.location.pathname),
+  SIGNUP: '/signup',
+  SIGNUP_WITH_REDIRECT: () =>
+    `/login?type=signup&${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(window.location.pathname)}`,
+  VERIFY_EMAIL: '/verify-email',
+  SEND_MAGIC_AUTH_CODE: '/send-magic-auth-code',
+  MAGIC_AUTH_CODE: '/magic-auth-code',
+  SEND_RESET_PASSWORD: '/send-reset-password',
   RESET_PASSWORD: '/reset-password',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
   FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
@@ -105,13 +111,6 @@ export const SEARCH_PARAMS = {
   SNACKBAR_SEVERITY: { KEY: 'snackbar-severity', VALUE: { ERROR: 'error' } },
   // Used to load a specific checkpoint (version history), e.g. /file/123?checkpoint=456
   CHECKPOINT: { KEY: 'checkpoint' },
-  LOGIN_TYPE: {
-    KEY: 'type',
-    VALUES: {
-      SIGNUP: 'signup',
-      RESET_PASSWORD: 'reset-password',
-      MAGIC_AUTH_CODE: 'magic-auth-code',
-      VERIFY_EMAIL: 'verify-email',
-    },
-  },
+  LOGIN_TYPE: { KEY: 'type', VALUES: { SIGNUP: 'signup' } },
+  REDIRECT_TO: { KEY: 'redirectTo' },
 } as const;

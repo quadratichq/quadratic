@@ -11,17 +11,19 @@ import { useForm } from 'react-hook-form';
 import { useNavigate } from 'react-router';
 import type z from 'zod';
 
-export const LoginForm = memo(() => {
+export const SignupForm = memo(() => {
   const navigate = useNavigate();
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const formSchema = useMemo(() => ApiSchemas['/auth/loginWithPassword.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/auth/signupWithPassword.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       email: '',
       password: '',
+      firstName: '',
+      lastName: '',
     },
   });
 
@@ -30,9 +32,11 @@ export const LoginForm = memo(() => {
       try {
         setErrorMessage(null);
 
-        await authClient.loginWithPassword({
+        await authClient.signupWithPassword({
           email: data.email,
           password: data.password,
+          firstName: data.firstName,
+          lastName: data.lastName,
         });
 
         const { search } = new URL(window.location.href);
@@ -47,7 +51,7 @@ export const LoginForm = memo(() => {
 
   return (
     <>
-      <h1 className="text-2xl font-medium">{'Log in to Quadratic'}</h1>
+      <h1 className="text-2xl font-medium">{'Sign up for Quadratic'}</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">
@@ -96,6 +100,52 @@ export const LoginForm = memo(() => {
             )}
           />
 
+          <div className="flex flex-row gap-2">
+            <FormField
+              control={form.control}
+              name="firstName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{'First name'}</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="login-first-name"
+                      className="h-12 rounded-md border border-gray-300 px-3 text-base"
+                      autoCapitalize="off"
+                      type="text"
+                      autoComplete="given-name"
+                      placeholder="First name*"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="lastName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{'Last name'}</FormLabel>
+                  <FormControl>
+                    <Input
+                      data-testid="login-last-name"
+                      className="h-12 rounded-md border border-gray-300 px-3 text-base"
+                      autoCapitalize="off"
+                      type="text"
+                      autoComplete="family-name"
+                      placeholder="Last name*"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
           <Button
             data-testid="login-submit"
             type="submit"
@@ -109,86 +159,34 @@ export const LoginForm = memo(() => {
         {errorMessage && <p className="text-sm text-destructive">{errorMessage}</p>}
       </Form>
 
-      <div className="flex flex-row gap-8">
-        <SwitchToMagicAuthCode />
-
-        <SwitchToResetPassword />
-      </div>
-
-      <SwitchToSignup />
+      <SwitchToLogin />
 
       <OAuthButtons />
     </>
   );
 });
 
-const SwitchToMagicAuthCode = memo(() => {
+const SwitchToLogin = memo(() => {
   const navigate = useNavigate();
-  const switchToMagicAuthCode = useCallback(
+  const switchToLogin = useCallback(
     async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
       e.preventDefault();
       e.stopPropagation();
       const { search } = new URL(window.location.href);
-      navigate(`${ROUTES.SEND_MAGIC_AUTH_CODE}${search}`);
-    },
-    [navigate]
-  );
-
-  return (
-    <button
-      data-testid="send-magic-auth-code"
-      onClick={switchToMagicAuthCode}
-      className="text-sm font-medium text-primary hover:text-primary/80"
-    >
-      {'Magic Code'}
-    </button>
-  );
-});
-
-const SwitchToResetPassword = memo(() => {
-  const navigate = useNavigate();
-  const switchToResetPassword = useCallback(
-    async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const { search } = new URL(window.location.href);
-      navigate(`${ROUTES.SEND_RESET_PASSWORD}${search}`);
-    },
-    [navigate]
-  );
-
-  return (
-    <button
-      data-testid="reset-password"
-      onClick={switchToResetPassword}
-      className="text-sm font-medium text-primary hover:text-primary/80"
-    >
-      {'Reset Password'}
-    </button>
-  );
-});
-
-const SwitchToSignup = memo(() => {
-  const navigate = useNavigate();
-  const switchToSignup = useCallback(
-    async (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const { search } = new URL(window.location.href);
-      navigate(`${ROUTES.SIGNUP}${search}`);
+      navigate(`${ROUTES.LOGIN}${search}`);
     },
     [navigate]
   );
 
   return (
     <p className="flex flex-row gap-1 text-sm text-gray-600">
-      {"Don't have an account?"}
+      {'Already have an account?'}
       <button
-        data-testid="switch-to-signup"
-        onClick={switchToSignup}
+        data-testid="switch-to-login"
+        onClick={switchToLogin}
         className="font-medium text-primary hover:text-primary/80"
       >
-        {'Sign up'}
+        {'Log in'}
       </button>
     </p>
   );

@@ -119,35 +119,18 @@ export const router = createBrowserRouter(
         <Route path="*" lazy={() => import('./routes/404')} />
       </Route>
 
-      <Route
-        path={ROUTES.LOGIN}
-        lazy={() => import('./routes/login')}
-        shouldRevalidate={dontRevalidateSignupSearchParams}
-        HydrateFallback={EmptyComponent}
-      />
-      <Route
-        path={ROUTES.LOGIN_CALLBACK}
-        lazy={() => import('./routes/login-callback')}
-        Component={EmptyComponent}
-        HydrateFallback={EmptyComponent}
-      />
-      <Route
-        path={ROUTES.LOGIN_RESULT}
-        lazy={() => import('./routes/login-result')}
-        Component={EmptyComponent}
-        HydrateFallback={EmptyComponent}
-      />
-      <Route
-        path={ROUTES.LOGOUT}
-        lazy={() => import('./routes/logout')}
-        Component={EmptyComponent}
-        HydrateFallback={EmptyComponent}
-      />
-      <Route
-        path={ROUTES.RESET_PASSWORD}
-        lazy={() => import('./routes/reset-password')}
-        HydrateFallback={EmptyComponent}
-      />
+      <Route path="/" lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
+        <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} />
+        <Route path={ROUTES.LOGIN_CALLBACK} lazy={() => import('./routes/login-callback')} Component={EmptyComponent} />
+        <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />
+        <Route path={ROUTES.SIGNUP} lazy={() => import('./routes/signup')} />
+        <Route path={ROUTES.VERIFY_EMAIL} lazy={() => import('./routes/verify-email')} />
+        <Route path={ROUTES.LOGOUT} lazy={() => import('./routes/logout')} Component={EmptyComponent} />
+        <Route path={ROUTES.SEND_MAGIC_AUTH_CODE} lazy={() => import('./routes/send-magic-auth-code')} />
+        <Route path={ROUTES.MAGIC_AUTH_CODE} lazy={() => import('./routes/magic-auth-code')} />
+        <Route path={ROUTES.SEND_RESET_PASSWORD} lazy={() => import('./routes/send-reset-password')} />
+        <Route path={ROUTES.RESET_PASSWORD} lazy={() => import('./routes/reset-password')} />
+      </Route>
 
       <Route
         path={ROUTES.IFRAME_INDEXEDDB}
@@ -164,19 +147,6 @@ function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunction
   const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
 
   if (nextUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY) || currentUrlSearchParams.get(SEARCH_PARAMS.DIALOG.KEY)) {
-    return false;
-  }
-  return true;
-}
-
-function dontRevalidateSignupSearchParams({ currentUrl, nextUrl }: ShouldRevalidateFunctionArgs) {
-  const currentUrlSearchParams = new URLSearchParams(currentUrl.search);
-  const nextUrlSearchParams = new URLSearchParams(nextUrl.search);
-
-  if (
-    nextUrlSearchParams.get(SEARCH_PARAMS.LOGIN_TYPE.KEY) ||
-    currentUrlSearchParams.get(SEARCH_PARAMS.LOGIN_TYPE.KEY)
-  ) {
     return false;
   }
   return true;

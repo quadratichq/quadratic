@@ -14,24 +14,24 @@ import type z from 'zod';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const url = new URL(request.url);
-  const token = url.searchParams.get('token');
-  if (!token) {
+  const pendingAuthenticationToken = url.searchParams.get('pendingAuthenticationToken');
+  if (!pendingAuthenticationToken) {
     return redirect(ROUTES.LOGIN);
   }
 
-  return { token };
+  return { pendingAuthenticationToken };
 };
 
 export const Component = () => {
-  const { token } = useLoaderData<typeof loader>();
+  const { pendingAuthenticationToken } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const formSchema = useMemo(() => ApiSchemas['/auth/resetPassword.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/auth/verifyEmail.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      token,
-      password: '',
+      pendingAuthenticationToken,
+      code: '',
     },
   });
 
@@ -40,9 +40,9 @@ export const Component = () => {
       try {
         setErrorMessage(null);
 
-        await authClient.resetPassword({
-          token: data.token,
-          password: data.password,
+        await authClient.verifyEmail({
+          pendingAuthenticationToken: data.pendingAuthenticationToken,
+          code: data.code,
         });
 
         const { search } = new URL(window.location.href);
@@ -50,7 +50,7 @@ export const Component = () => {
       } catch (error) {
         console.error(error);
 
-        setErrorMessage('Invalid token or password');
+        setErrorMessage('Invalid or expired code');
       }
     },
     [navigate]
@@ -60,24 +60,24 @@ export const Component = () => {
 
   return (
     <AuthFormWrapper>
-      <h1 className="text-2xl font-medium">Reset Password</h1>
+      <h1 className="text-2xl font-medium">Verify Email</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">
           <FormField
             control={form.control}
-            name="password"
+            name="code"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>New Password</FormLabel>
+                <FormLabel>Code</FormLabel>
                 <FormControl>
                   <Input
-                    data-testid="reset-password-password"
+                    data-testid="verify-email-code"
                     className="h-12 rounded-md border border-gray-300 px-3 text-base"
                     autoCapitalize="off"
-                    type="password"
+                    type="text"
                     autoFocus
-                    placeholder="New Password*"
+                    placeholder="Code*"
                     {...field}
                   />
                 </FormControl>
@@ -87,7 +87,7 @@ export const Component = () => {
           />
 
           <Button
-            data-testid="reset-password-submit"
+            data-testid="verify-email-submit"
             type="submit"
             disabled={form.formState.isSubmitting}
             className="h-12 w-full rounded-md text-base font-medium"

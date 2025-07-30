@@ -22,13 +22,13 @@ signupWithPasswordRouter.post(
         body: { email, password, firstName, lastName },
       } = parseRequest(req, schema);
 
-      await signupWithPassword({ email, password, firstName, lastName, res });
+      const { pendingAuthenticationToken } = await signupWithPassword({ email, password, firstName, lastName, res });
 
-      return res.status(200).json({ message: 'Signup successful' });
+      return res.status(200).json({ message: 'Signup successful', pendingAuthenticationToken });
     } catch {
       clearCookies({ res });
 
-      return res.status(401).json({ message: 'Signup failed' });
+      return res.status(401).json({ message: 'Signup failed', pendingAuthenticationToken: undefined });
     }
   }
 );
