@@ -31,23 +31,6 @@ function getClient(): ReturnType<typeof createClient> {
       apiHostname,
       https: !apiHostname.includes('localhost'),
       devMode: false,
-      onRedirectCallback: async ({ state }) => {
-        console.log('onRedirectCallback', state);
-        if (state) {
-          if ('oauthKey' in state) {
-            const oauthKey = state.oauthKey;
-            if (oauthKey && typeof oauthKey === 'string') {
-              localStorage.setItem(oauthKey, 'complete');
-              window.close();
-            }
-          }
-
-          if ('redirectTo' in state && !!state.redirectTo && typeof state.redirectTo === 'string') {
-            window.location.assign(state.redirectTo);
-            await waitForAuthClientToRedirect();
-          }
-        }
-      },
     });
   }
   return clientPromise;
