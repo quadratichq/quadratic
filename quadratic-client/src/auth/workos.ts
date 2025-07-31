@@ -118,16 +118,17 @@ export const workosClient: AuthClient = {
       } else {
         let redirectTo = window.location.origin;
 
-        const state = url.searchParams.get('state');
-        if (state) {
-          const stateObj = JSON.parse(decodeURIComponent(state));
-          if (
-            !!stateObj &&
-            typeof stateObj === 'object' &&
-            'redirectTo' in stateObj &&
-            !!stateObj.redirectTo &&
-            typeof stateObj.redirectTo === 'string'
-          ) {
+        const stateObj = JSON.parse(decodeURIComponent(state));
+        if (!!stateObj && typeof stateObj === 'object') {
+          if ('oauthKey' in stateObj) {
+            const oauthKey = stateObj.oauthKey;
+            if (oauthKey && typeof oauthKey === 'string') {
+              localStorage.setItem(oauthKey, 'complete');
+              window.close();
+            }
+          }
+
+          if ('redirectTo' in stateObj && !!stateObj.redirectTo && typeof stateObj.redirectTo === 'string') {
             redirectTo = stateObj.redirectTo;
           }
         }

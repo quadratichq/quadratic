@@ -7,7 +7,6 @@ export const ROUTES = {
   LOGOUT: '/logout',
   LOGIN: '/login',
   LOGIN_WITH_REDIRECT: () => `/login?${SEARCH_PARAMS.REDIRECT_TO.KEY}=${encodeURIComponent(window.location.pathname)}`,
-  LOGIN_OAUTH_IFRAME_CALLBACK: '/login-oauth-iframe-callback',
   LOGIN_RESULT: '/login-result',
   SIGNUP: '/signup',
   SIGNUP_WITH_REDIRECT: () =>
@@ -97,8 +96,7 @@ export const ROUTES = {
   WORKOS_IFRAME_OAUTH: ({ provider, oauthKey }: { provider: OAuthProvider; oauthKey: string }) => {
     const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
     const redirectUri = encodeURIComponent(window.location.origin + '/login-result');
-    const redirectTo = window.location.origin + `/login-oauth-iframe-callback?oauthKey=${oauthKey}`;
-    const state = encodeURIComponent(JSON.stringify({ redirectTo }));
+    const state = encodeURIComponent(JSON.stringify({ oauthKey }));
     return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
   },
 
