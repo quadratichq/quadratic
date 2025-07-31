@@ -756,17 +756,18 @@ For SQL Connection code cells:\n
 - Write SQL queries that reference the database tables and schemas provided in context\n
 
 SQL code cell placement instructions:\n
-- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- SQL cells should always be placed fully clear of any existing data unless the user specifices a location. Always place to the right of the last column of data in the sheet.\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifices a location. Place to the right of the last column of existing data in the sheet.\n
 
 Placement examples: 
+Example 1: empty sheet. SQL code cell should be placed at A1.
 Example 1: bounds at A1:D19. SQL code cell should be placed at F1.
-Example 2: bounds at A5:F7. Code cell should be placed at H5.
+Example 2: bounds at A5:F7. SQL code cell should be placed at H5.
 Example 3: bounds at D4:H19. SQL code cell should be placed at J4.
 Example 4: bounds at D4:H19 and D21:Z21. SQL code cell should be placed at AB4.
 Example 5: bounds at F45:H50 and A1:D19. SQL code cell should be placed at J1.
 
-Think carefully about the placement rules and examples. For SQL code cells, always ensure the code cell is placed all the way right of the last column of data in the sheet where it does not create a spill error.
+Think carefully about the placement rules and examples. For SQL code cells, ensure the code cell is placed all the way right of the last column of existing data in the sheet to avoid creating spill errors.
 `,
   },
   [AITool.SetFormulaCellValue]: {
