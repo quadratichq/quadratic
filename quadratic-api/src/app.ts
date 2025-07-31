@@ -36,6 +36,8 @@ if (LOG_REQUEST_INFO) {
     expressWinston.logger({
       transports: [new winston.transports.Console()],
       format,
+      headerBlacklist: ['authorization'],
+      meta: true,
     })
   );
 }

@@ -38,7 +38,11 @@ const devFormat = winston.format.combine(
 );
 
 // Create the logger format for production
-const prodFormat = winston.format.combine(winston.format.errors({ stack: true }), winston.format.json());
+const prodFormat = winston.format.combine(
+  winston.format.errors({ stack: true }),
+  winston.format.timestamp(),
+  winston.format.json()
+);
 
 // Use the appropriate format based on the environment
 export const format = isDevelopment ? devFormat : prodFormat;
