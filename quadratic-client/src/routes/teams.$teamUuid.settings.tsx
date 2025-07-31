@@ -12,12 +12,11 @@ import { ROUTES } from '@/shared/constants/routes';
 import { DOCUMENTATION_ANALYTICS_AI, DOCUMENTATION_PRICING_URL, PRICING_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
-import { cn } from '@/shared/shadcn/utils';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Navigate, useFetcher, useSubmit } from 'react-router';
+import { useFetcher, useSubmit } from 'react-router';
 
 export const Component = () => {
   const {
@@ -115,33 +114,25 @@ export const Component = () => {
   // TODO: get from the server
   const [usageBasedPricingEnabled, setUsageBasedPricingEnabled] = useState(isOnPaidPlan ? true : false);
 
-  // TODO: what can you see on this page as VIEWER/EDITOR/OWNER
-
-  // If you don't have permission, you can't see this view
-  if (!teamPermissions.includes('TEAM_EDIT')) {
-    return <Navigate to={ROUTES.TEAM(team.uuid)} />;
-  }
+  const canEdit = teamPermissions.includes('TEAM_EDIT');
+  const canManage = teamPermissions.includes('TEAM_MANAGE');
 
   return (
     <>
       <DashboardHeader title="Team settings" />
       <div className={`mt-6 flex flex-col gap-8`}>
-        <SettingsRow className="sm:max-w-xl">
-          <Type variant="body2" className="font-bold">
-            Name
-          </Type>
-          <form className="flex items-center gap-2" onSubmit={handleSubmit}>
-            <Input value={value} onChange={(e) => setValue(e.target.value)} />
-            <Button type="submit" disabled={disabled} variant="secondary">
-              Save
-            </Button>
-          </form>
-        </SettingsRow>
+        {canEdit && (
+          <Section label="Name">
+            <form className="flex items-center gap-2" onSubmit={handleSubmit}>
+              <Input value={value} onChange={(e) => setValue(e.target.value)} className="max-w-sm" />
+              <Button type="submit" disabled={disabled} variant="secondary">
+                Save
+              </Button>
+            </form>
+          </Section>
+        )}
 
-        <SettingsRow>
-          <Type variant="body2" className="font-bold">
-            Billing plan
-          </Type>
+        <Section label="Billing plan">
           <div className="flex flex-col gap-2">
             <BillingPlans canManageBilling={canManageBilling} isOnPaidPlan={isOnPaidPlan} teamUuid={team.uuid} />
             <p className="text-right text-xs text-muted-foreground">
@@ -152,11 +143,9 @@ export const Component = () => {
               .
             </p>
           </div>
-        </SettingsRow>
-        <SettingsRow>
-          <Type variant="body2" className="font-bold">
-            Your AI usage
-          </Type>
+        </Section>
+
+        <Section label="Your AI usage">
           <div className="flex flex-col gap-2">
             <AIUsageIndividual
               creditsMonthly={usersUsage[0].creditsMonthly}
@@ -175,69 +164,65 @@ export const Component = () => {
               .
             </p>
           </div>
-        </SettingsRow>
-        <SettingsRow>
-          <Type variant="body2" className="font-bold">
-            Team AI Usage
-          </Type>
-          <div className="flex flex-col gap-2">
-            {isOnPaidPlan && (
-              <SettingControl
-                label="Allow additional credit usage"
-                description={
-                  <>
-                    After their monthly credit allotment, allow users to continue using AI by setting a spending limit
-                    for additional credits with usage-based pricing.{' '}
-                    <a
-                      // TODO: usage-based pricing link
-                      href={DOCUMENTATION_PRICING_URL}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="underline hover:text-primary"
-                    >
-                      Learn more
-                    </a>
-                    .
-                  </>
+        </Section>
+
+        {canManage && (
+          <Section label="Team AI Usage">
+            <div className="flex flex-col gap-2">
+              {isOnPaidPlan && (
+                <SettingControl
+                  label="Allow additional credit usage"
+                  description={
+                    <>
+                      After their monthly credit allotment, allow users to continue using AI by setting a spending limit
+                      for additional credits with usage-based pricing.{' '}
+                      <a
+                        // TODO: usage-based pricing link
+                        href={DOCUMENTATION_PRICING_URL}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="underline hover:text-primary"
+                      >
+                        Learn more
+                      </a>
+                      .
+                    </>
+                  }
+                  onCheckedChange={(checked) => {
+                    // handleUpdatePreference('aiUsageBasedPricingEnabled', checked);
+                    setUsageBasedPricingEnabled(checked);
+                  }}
+                  checked={usageBasedPricingEnabled /*optimisticSettings.aiUsageBasedPricingEnabled*/}
+                  className="rounded-lg border border-border p-4 shadow-sm"
+                  disabled={!teamPermissions.includes('TEAM_MANAGE')}
+                />
+              )}
+              <AIUsageTeam
+                onChangeUserAdditionalLimit={
+                  isOnPaidPlan && usageBasedPricingEnabled
+                    ? ({ userId, limit }) => {
+                        console.log('TODO: implement this so it sends to db', { userId, limit });
+                        setUsersUsage((prev) =>
+                          prev.map((user) =>
+                            user.id === userId
+                              ? { ...user, creditsAdditional: { ...user.creditsAdditional, limit } }
+                              : user
+                          )
+                        );
+                      }
+                    : undefined
                 }
-                onCheckedChange={(checked) => {
-                  setUsageBasedPricingEnabled(checked);
-                }}
-                checked={usageBasedPricingEnabled}
-                className="rounded-lg border border-border p-4 shadow-sm"
-                disabled={!teamPermissions.includes('TEAM_MANAGE')}
+                teamUuid={team.uuid}
+                users={usersUsage.map((user) => ({
+                  ...user,
+                  creditsAdditional: isOnPaidPlan ? user.creditsAdditional : undefined,
+                }))}
               />
-            )}
+            </div>
+          </Section>
+        )}
 
-            <AIUsageTeam
-              onChangeUserAdditionalLimit={
-                isOnPaidPlan && usageBasedPricingEnabled
-                  ? ({ userId, limit }) => {
-                      console.log('TODO: implement this so it sends to db', { userId, limit });
-                      setUsersUsage((prev) =>
-                        prev.map((user) =>
-                          user.id === userId
-                            ? { ...user, creditsAdditional: { ...user.creditsAdditional, limit } }
-                            : user
-                        )
-                      );
-                    }
-                  : undefined
-              }
-              teamUuid={team.uuid}
-              users={usersUsage.map((user) => ({
-                ...user,
-                creditsAdditional: isOnPaidPlan ? user.creditsAdditional : undefined,
-              }))}
-            />
-          </div>
-        </SettingsRow>
-
-        <SettingsRow>
-          <Type variant="body2" className="font-bold">
-            Privacy
-          </Type>
-
+        <Section label="Privacy">
           <div>
             <SettingControl
               label="Improve AI results"
@@ -260,7 +245,7 @@ export const Component = () => {
               }}
               checked={optimisticSettings.analyticsAi}
               className="rounded-lg border border-border p-4 shadow-sm"
-              disabled={!teamPermissions.includes('TEAM_MANAGE')}
+              disabled={!canManage}
             />
             <div className="mt-4">
               <p className="text-sm text-muted-foreground">
@@ -276,21 +261,21 @@ export const Component = () => {
               </ul>
             </div>
           </div>
-        </SettingsRow>
+        </Section>
       </div>
     </>
   );
 };
 
-function SettingsRow(props: { children: ReactNode[]; className?: string }) {
-  if (props.children.length !== 2) {
-    throw new Error('Row must have exactly two children');
-  }
-
+function Section(props: { label: string; children: ReactNode }) {
   return (
-    <div className={cn(`flex grid-cols-[200px_1fr] flex-col gap-2 sm:grid sm:max-w-4xl`, props.className)}>
-      <div className="pt-2">{props.children[0]}</div>
-      <div className="">{props.children[1]}</div>
+    <div className={`flex grid-cols-[200px_1fr] flex-col gap-2 sm:grid sm:max-w-4xl`}>
+      <div className="pt-2">
+        <Type variant="body2" className="font-bold">
+          {props.label}
+        </Type>
+      </div>
+      {props.children}
     </div>
   );
 }

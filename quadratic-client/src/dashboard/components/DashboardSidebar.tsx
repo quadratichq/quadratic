@@ -119,12 +119,10 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
             <GroupIcon className={classNameIcons} />
             Members
           </SidebarNavLink>
-          {canEditTeam && (
-            <SidebarNavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
-              <SettingsIcon className={classNameIcons} />
-              Settings
-            </SidebarNavLink>
-          )}
+          <SidebarNavLink to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}>
+            <SettingsIcon className={classNameIcons} />
+            Settings
+          </SidebarNavLink>
         </div>
 
         <Type
