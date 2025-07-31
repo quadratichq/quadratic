@@ -12,6 +12,7 @@ import type {
 } from '@/app/quadratic-core-types';
 import { userDateToNumber, userTimeToNumber } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import type { AITool, AIToolsArgs } from 'quadratic-shared/ai/specs/aiToolsSpec';
 
 const getMessageError = (validation: Validation) => {
@@ -300,10 +301,6 @@ export const addListValidationToolCall = async (o: AIToolsArgs[AITool.AddListVal
   return `List validation successfully added to ${o.selection}`;
 };
 
-const isNotUndefinedOrNull = (value: any | null | undefined) => {
-  return value === undefined || value === null;
-};
-
 export const addTextValidationToolCall = async (o: AIToolsArgs[AITool.AddTextValidation]): Promise<string> => {
   const sheet = getSheetFromSheetName(o.sheet_name);
   const textMatch: Array<TextMatch> = [];
@@ -533,7 +530,7 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
       },
     },
     message: {
-      show: o.show_message ?? true,
+      show: o.show_message ?? (isNotUndefinedOrNull(o.message_title) || isNotUndefinedOrNull(o.message_text)),
       title: o.message_title ?? '',
       message: o.message_text ?? '',
     },

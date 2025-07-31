@@ -2,11 +2,8 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime } from '@/app/quadratic-core/quadratic_core';
 import { joinWithOr } from '@/shared/utils/text';
+import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import type { JSX } from 'react';
-
-const isNotUndefinedOrNull = (value: any | null | undefined) => {
-  return value !== undefined && value !== null;
-};
 
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
   if (validation.rule === 'None') {

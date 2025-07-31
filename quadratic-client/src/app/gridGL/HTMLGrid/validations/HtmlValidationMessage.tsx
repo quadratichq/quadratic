@@ -168,7 +168,7 @@ export const HtmlValidationMessage = (props: Props) => {
   return (
     <div
       ref={ref}
-      className="pointer-events-none absolute w-64 max-w-xs rounded-md border border-gray-300 bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
+      className="pointer-events-auto absolute w-64 max-w-xs rounded-md border border-gray-300 bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
       style={{ top, left, transformOrigin: `0 0`, transform: `scale(${1 / pixiApp.viewport.scale.x})` }}
     >
       <div className="leading-2 whitespace-normal" style={wrapStyle}>
@@ -177,7 +177,6 @@ export const HtmlValidationMessage = (props: Props) => {
           {
             <IconButton
               sx={{ padding: 0.5 }}
-              className="pointer-events-auto"
               onClick={() => {
                 setHide(true);
                 focusGrid();
