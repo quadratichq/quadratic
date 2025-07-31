@@ -31,7 +31,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from '
 export const router = createBrowserRouter(
   createRoutesFromElements(
     <>
-      <Route path="/" lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
+      <Route lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
         <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} />
         <Route path={ROUTES.SIGNUP} lazy={() => import('./routes/signup')} />
         <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />

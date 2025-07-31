@@ -31,6 +31,14 @@ function getClient(): ReturnType<typeof createClient> {
       apiHostname,
       https: !apiHostname.includes('localhost'),
       devMode: false,
+      onRedirectCallback: async ({ state }) => {
+        if (state) {
+          if ('redirectTo' in state) {
+            window.location.assign(state.redirectTo);
+            await waitForAuthClientToRedirect();
+          }
+        }
+      },
     });
   }
   return clientPromise;
@@ -92,15 +100,14 @@ export const workosClient: AuthClient = {
    * code and state are present in the query params.
    */
   async handleSigninRedirect() {
-    await disposeClient();
     try {
-      const search = window.location.search;
-      if (!search.includes('code=') || !search.includes('state=')) {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      const state = url.searchParams.get('state');
+      if (!code || !state) {
         return;
       }
 
-      const url = new URL(window.location.href);
-      const code = url.searchParams.get('code') || '';
       url.searchParams.delete('code');
       const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithCode({ code });
       if (pendingAuthenticationToken) {
