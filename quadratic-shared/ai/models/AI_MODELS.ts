@@ -564,6 +564,23 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
+  'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct': {
+    model: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    displayName: 'Qwen3 Coder 480B',
+    temperature: 0,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 1.0,
+    rate_per_million_output_tokens: 4.0,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'open-router:deepseek/deepseek-r1-0528': {
     model: 'deepseek/deepseek-r1-0528',
     displayName: 'deepseek r1 0528',
