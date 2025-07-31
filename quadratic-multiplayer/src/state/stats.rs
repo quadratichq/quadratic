@@ -23,3 +23,18 @@ impl State {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::test_util::setup;
+
+    #[tokio::test]
+    async fn test_stats() {
+        let (_, state, _, _, _, _) = setup().await;
+        let stats = state.stats().await;
+
+        assert_eq!(stats.num_rooms, 1);
+        assert_eq!(stats.num_users, 2);
+        assert_eq!(stats.largest_room_size, 2);
+    }
+}
