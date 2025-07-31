@@ -110,8 +110,12 @@ export const workosClient: AuthClient = {
    */
   async handleSigninRedirect() {
     try {
+      console.log('handleSigninRedirect - window.location.href:', window.location.href);
       const url = new URL(window.location.href);
       console.log('handleSigninRedirect', url);
+      console.log('handleSigninRedirect - full href:', window.location.href);
+      console.log('handleSigninRedirect - search params:', url.search);
+      console.log('handleSigninRedirect - all search params:', [...url.searchParams.entries()]);
 
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
@@ -137,6 +141,7 @@ export const workosClient: AuthClient = {
             if (oauthKey && typeof oauthKey === 'string') {
               localStorage.setItem(oauthKey, 'complete');
               window.close();
+              return;
             }
           }
 
