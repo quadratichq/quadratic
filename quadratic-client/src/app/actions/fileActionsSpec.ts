@@ -7,14 +7,7 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadCsvFile, downloadExcelFile, downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import {
-  DownloadCsvIcon,
-  DownloadExcelIcon,
-  DownloadIcon,
-  FileRenameIcon,
-  HistoryIcon,
-  PersonAddIcon,
-} from '@/shared/components/Icons';
+import { FileRenameIcon, HistoryIcon, PersonAddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import mixpanel from 'mixpanel-browser';
 
@@ -55,8 +48,9 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileDownload]: {
-    label: () => 'Download',
-    Icon: DownloadIcon,
+    label: () => 'Quadratic (.grid)',
+    labelVerbose: 'Download as Quadratic (.grid)',
+
     isAvailable: isAvailableBecauseLoggedIn,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownload]) => {
       if (!pixiAppSettings.setEditorInteractionState) return;
@@ -68,8 +62,9 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileDownloadExcel]: {
-    label: () => 'Export Excel',
-    Icon: DownloadExcelIcon,
+    label: () => 'Excel (.xlsx)',
+    labelVerbose: 'Download as Excel (.xlsx)',
+
     isAvailable: isAvailableBecauseCanEditFile,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownloadExcel]) => {
       try {
@@ -89,8 +84,9 @@ export const fileActionsSpec: FileActionSpec = {
     },
   },
   [Action.FileDownloadCsv]: {
-    label: () => 'Export Current Sheet as CSV',
-    Icon: DownloadCsvIcon,
+    label: () => 'CSV (current sheet only)',
+    labelVerbose: 'Download as CSV (current sheet only)',
+
     isAvailable: isAvailableBecauseCanEditFile,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownloadCsv]) => {
       try {

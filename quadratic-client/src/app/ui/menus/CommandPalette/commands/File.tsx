@@ -10,7 +10,7 @@ import { useFileContext } from '@/app/ui/components/FileProvider';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
-import { DeleteIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
+import { DeleteIcon, DownloadIcon, DraftIcon, FileCopyIcon } from '@/shared/components/Icons';
 import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
@@ -61,7 +61,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: downloadFileActionSpec.label(),
+      label: downloadFileActionSpec.labelVerbose || '',
       isAvailable: downloadFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
@@ -70,13 +70,13 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => downloadFileActionSpec.run({ name, uuid })}
-            icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
+            icon={<DownloadIcon />}
           />
         );
       },
     },
     {
-      label: downloadExcelFileActionSpec.label(),
+      label: downloadExcelFileActionSpec.labelVerbose || '',
       isAvailable: downloadExcelFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
@@ -85,13 +85,13 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => downloadExcelFileActionSpec.run({ name, uuid })}
-            icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
+            icon={<DownloadIcon />}
           />
         );
       },
     },
     {
-      label: downloadCsvFileActionSpec.label(),
+      label: downloadCsvFileActionSpec.labelVerbose || '',
       isAvailable: downloadCsvFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
@@ -100,7 +100,7 @@ const commands: CommandGroup = {
           <CommandPaletteListItem
             {...props}
             action={() => downloadCsvFileActionSpec.run({ name, uuid })}
-            icon={downloadFileActionSpec?.Icon && <downloadFileActionSpec.Icon />}
+            icon={<DownloadIcon />}
           />
         );
       },
