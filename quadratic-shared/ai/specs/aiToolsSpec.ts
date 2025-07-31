@@ -479,7 +479,7 @@ IMPORTANT: If the results include page information:\n
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: [],
     description: `
 This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n
 `,
