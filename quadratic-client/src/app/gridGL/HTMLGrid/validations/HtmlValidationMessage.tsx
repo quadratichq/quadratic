@@ -110,7 +110,7 @@ export const HtmlValidationMessage = (props: Props) => {
         </div>
       </>
     );
-  } else if (validation?.message) {
+  } else if (validation?.message && validation.message.show) {
     if (validation?.message.title) {
       title = <span>{validation.message.title}</span>;
       message = (

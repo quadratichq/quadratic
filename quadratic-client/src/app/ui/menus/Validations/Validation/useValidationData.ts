@@ -320,7 +320,7 @@ export const useValidationData = (): ValidationData => {
           selection: sheets.sheet.cursor.selection(),
           rule: 'None',
           message: {
-            show: true,
+            show: false,
             title: '',
             message: '',
           },
