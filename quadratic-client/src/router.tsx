@@ -121,8 +121,12 @@ export const router = createBrowserRouter(
 
       <Route path="/" lazy={() => import('./routes/_auth_root')} HydrateFallback={EmptyComponent}>
         <Route path={ROUTES.LOGIN} lazy={() => import('./routes/login')} />
-        <Route path={ROUTES.LOGIN_OAUTH_CALLBACK} lazy={() => import('./routes/login-oauth-callback')} />
-        <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} Component={EmptyComponent} />
+        <Route
+          path={ROUTES.LOGIN_OAUTH_IFRAME_CALLBACK}
+          lazy={() => import('./routes/login-oauth-iframe-callback')}
+          Component={EmptyComponent}
+        />
+        <Route path={ROUTES.LOGIN_RESULT} lazy={() => import('./routes/login-result')} />
         <Route path={ROUTES.SIGNUP} lazy={() => import('./routes/signup')} />
         <Route path={ROUTES.VERIFY_EMAIL} lazy={() => import('./routes/verify-email')} />
         <Route path={ROUTES.LOGOUT} lazy={() => import('./routes/logout')} Component={EmptyComponent} />

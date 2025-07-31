@@ -169,85 +169,37 @@ export const workosClient: AuthClient = {
     await disposeClient();
   },
 
-  loginWithOAuth(args) {
-    return new Promise(async (resolve, reject) => {
-      let isResolved = false;
+  async loginWithOAuth(args) {
+    const isInIframe = window.self !== window.top;
+    if (isInIframe) {
+      const oauthKey = `${args.provider}-${crypto.randomUUID()}`;
 
-      const oauthUrl = ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo });
+      const channel = new BroadcastChannel('oauth-callback-channel');
+      const messageHandler = (event: MessageEvent) => {
+        if (event.data.type === 'login-oauth-iframe-callback' && event.data.oauthKey === oauthKey) {
+          window.location.assign(args.redirectTo);
+          channel.close();
+        }
+      };
+      channel.addEventListener('message', messageHandler);
+      setTimeout(() => {
+        channel.removeEventListener('message', messageHandler);
+        channel.close();
+      }, 600000);
+
+      const oauthUrl = ROUTES.WORKOS_IFRAME_OAUTH({ provider: args.provider, oauthKey });
       const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
       const top = window.screenY + (window.outerHeight - OAUTH_POPUP_HEIGHT) / 2;
-      const popup = window.open(
+      window.open(
         oauthUrl,
         '_blank',
-        `width=${OAUTH_POPUP_WIDTH},height=${OAUTH_POPUP_HEIGHT},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes,popup=yes`
+        `width=${OAUTH_POPUP_WIDTH},height=${OAUTH_POPUP_HEIGHT},left=${left},top=${top},popup=true`
       );
-
-      if (!popup) {
-        isResolved = true;
-        reject(new Error('Failed to open popup window.'));
-        return;
-      }
-
-      const checkIfPopupIsClosed = () => {
-        if (isResolved) {
-          return;
-        }
-        if (popup.closed) {
-          isResolved = true;
-          resolve();
-        } else {
-          setTimeout(checkIfPopupIsClosed, 500);
-        }
-      };
-      checkIfPopupIsClosed();
-
-      const handleMessageFromPopup = async (event: MessageEvent) => {
-        if (window.location.origin !== event.origin) {
-          return;
-        }
-
-        switch (event.data.type) {
-          case 'OAUTH_SUCCESS':
-            if (!isResolved) {
-              isResolved = true;
-              window.removeEventListener('message', handleMessageFromPopup);
-              popup.close();
-              if (
-                'code' in event.data &&
-                typeof event.data.code === 'string' &&
-                'state' in event.data &&
-                typeof event.data.state === 'string'
-              ) {
-                window.location.assign(
-                  window.location.origin + ROUTES.LOGIN_RESULT + `?code=${event.data.code}&state=${event.data.state}`
-                );
-                await waitForAuthClientToRedirect();
-                resolve();
-              }
-            }
-            break;
-          case 'OAUTH_ERROR':
-            if (!isResolved) {
-              isResolved = true;
-              window.removeEventListener('message', handleMessageFromPopup);
-              popup.close();
-              resolve();
-            }
-            break;
-        }
-      };
-
-      window.addEventListener('message', handleMessageFromPopup);
-
-      popup.addEventListener('close', () => {
-        if (!isResolved) {
-          isResolved = true;
-          resolve();
-        }
-      });
-
-      popup.focus();
-    });
+    } else {
+      const oauthUrl = ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo });
+      window.location.assign(oauthUrl);
+      await waitForAuthClientToRedirect();
+    }
   },
 
   async signupWithPassword(args) {
