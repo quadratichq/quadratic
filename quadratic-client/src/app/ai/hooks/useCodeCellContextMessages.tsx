@@ -5,10 +5,8 @@ import type { CodeCell } from '@/app/shared/types/codeCell';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
-import { useCallback } from 'react';
-import { useRecoilValue } from 'recoil';
-import { toXml } from '../utils/xmlFormatter';
 import { useRecoilCallback } from 'recoil';
+import { toXml } from '../utils/xmlFormatter';
 
 export function useCodeCellContextMessages() {
   const getCodeCellContext = useRecoilCallback(
@@ -32,18 +30,7 @@ export function useCodeCellContextMessages() {
             teamUuid
           );
         }
-        const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
-
-      let schemaData: Awaited<ReturnType<typeof connectionClient.schemas.get>> = null;
-      const connection = getConnectionInfo(cellLanguage);
-      if (connection) {
-        schemaData = await connectionClient.schemas.get(
-          connection.kind.toLowerCase() as 'postgres' | 'mysql' | 'mssql',
-          connection.id,
-          teamUuid
-        );
-      }
-      const schemaJsonForAi = schemaData ? toXml(schemaData, 'database_schema') : undefined;
+        const schemaJsonForAi = schemaData ? toXml(schemaData, 'database_schema') : undefined;
         const a1Pos = xyToA1(pos.x, pos.y);
         const language = getConnectionKind(cellLanguage);
         const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
