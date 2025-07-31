@@ -93,10 +93,14 @@ export const workosClient: AuthClient = {
    */
   async handleSigninRedirect(href: string) {
     try {
+      console.log('handleSigninRedirect', href);
       const url = new URL(href);
+      console.log('url', url);
 
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
+      console.log('code', code);
+      console.log('state', state);
       if (!code || !state) {
         return;
       }
@@ -110,19 +114,24 @@ export const workosClient: AuthClient = {
         await waitForAuthClientToRedirect();
       } else {
         let redirectTo = window.location.origin;
+        console.log('redirectTo', redirectTo);
 
         const stateObj = JSON.parse(decodeURIComponent(state));
+        console.log('stateObj', stateObj);
         if (!!stateObj && typeof stateObj === 'object') {
           if ('oauthKey' in stateObj) {
             const oauthKey = stateObj.oauthKey;
+            console.log('oauthKey', oauthKey);
             if (oauthKey && typeof oauthKey === 'string') {
               localStorage.setItem(oauthKey, 'complete');
+              await waitForAuthClientToRedirect();
               window.close();
               return;
             }
           }
 
           if ('redirectTo' in stateObj && !!stateObj.redirectTo && typeof stateObj.redirectTo === 'string') {
+            console.log('redirectTo', stateObj.redirectTo);
             redirectTo = stateObj.redirectTo;
           }
         }
