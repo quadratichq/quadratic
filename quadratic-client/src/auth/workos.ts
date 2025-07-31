@@ -123,6 +123,10 @@ export const workosClient: AuthClient = {
             const oauthKey = stateObj.oauthKey;
             console.log('oauthKey', oauthKey);
             if (oauthKey && typeof oauthKey === 'string') {
+              const channel = new BroadcastChannel(oauthKey);
+              console.log('channel', channel);
+              channel.postMessage({ type: 'complete' });
+              console.log('channel message sent');
               localStorage.setItem(oauthKey, 'complete');
               await waitForAuthClientToRedirect();
               window.close();
@@ -197,6 +201,14 @@ export const workosClient: AuthClient = {
         }
       };
       checkForCompletion();
+
+      const channel = new BroadcastChannel(oauthKey);
+      channel.addEventListener('message', (event) => {
+        console.log('message', event);
+        // if (event.data.type === 'complete') {
+        //   window.location.assign(args.redirectTo);
+        // }
+      });
 
       const oauthUrl = ROUTES.WORKOS_IFRAME_OAUTH({ provider: args.provider, oauthKey });
       const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
