@@ -18,11 +18,11 @@ use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
 use serde::{Deserialize, Serialize};
-use std::ops::ControlFlow;
 use std::{net::SocketAddr, sync::Arc};
-use tokio::sync::Mutex;
+use std::{ops::ControlFlow, time::Duration};
+use tokio::{sync::Mutex, time};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::{
     background_worker,
@@ -38,6 +38,8 @@ use crate::{
     },
     state::{State, connection::PreConnection, user::UserSocket},
 };
+
+const STATS_INTERVAL_S: u64 = 10;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -72,12 +74,18 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 /// Start the websocket server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
+    let tracing_layer = if config()?.environment.is_production() {
+        tracing_subscriber::fmt::layer().json().boxed()
+    } else {
+        tracing_subscriber::fmt::layer().boxed()
+    };
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "quadratic_multiplayer=debug,tower_http=debug".into()),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_layer)
         .init();
 
     let config = config()?;
@@ -111,6 +119,24 @@ pub(crate) async fn serve() -> Result<()> {
         config.heartbeat_check_s,
         config.heartbeat_timeout_s,
     );
+
+    // in a separate thread, log stats
+    tokio::spawn({
+        let state = Arc::clone(&state);
+
+        async move {
+            let mut interval = time::interval(Duration::from_secs(STATS_INTERVAL_S));
+
+            loop {
+                interval.tick().await;
+                let stats = state.stats().await;
+
+                if let Ok(json) = serde_json::to_string(&stats) {
+                    tracing::info!("{json}");
+                }
+            }
+        }
+    });
 
     axum::serve(
         listener,
