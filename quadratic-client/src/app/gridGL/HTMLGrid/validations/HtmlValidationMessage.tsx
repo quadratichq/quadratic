@@ -132,6 +132,17 @@ export const HtmlValidationMessage = (props: Props) => {
           </Tooltip>
         </>
       );
+    } else {
+      message = (
+        <>
+          <div>{translateValidationError(validation)}</div>
+          <Tooltip title="Show validation">
+            <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+              Rule: {validationText(validation)}
+            </Button>
+          </Tooltip>
+        </>
+      );
     }
   }
 

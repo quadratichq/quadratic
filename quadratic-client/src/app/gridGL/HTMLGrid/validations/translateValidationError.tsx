@@ -24,15 +24,14 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             if ('CaseSensitive' in r.Exactly) {
               return (
                 <div key={i}>
-                  Text {verb} be one of these values:{' '}
-                  <span className={listClassName}>{joinWithOr(r.Exactly.CaseSensitive)}</span> (case sensitive).
+                  Text {verb} be one of these values: {joinWithOr(r.Exactly.CaseSensitive, listClassName)} (case
+                  sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
-                  Text {verb} be one of these values:{' '}
-                  <span className={listClassName}>{joinWithOr(r.Exactly.CaseInsensitive)}</span>.
+                  Text {verb} be one of these values: {joinWithOr(r.Exactly.CaseInsensitive, listClassName)}.
                 </div>
               );
             }
@@ -42,15 +41,14 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             if ('CaseSensitive' in r.Contains) {
               return (
                 <div key={i}>
-                  Text {verb} contain one of these values:{' '}
-                  <span className={listClassName}>{joinWithOr(r.Contains.CaseSensitive)}</span> (case sensitive).
+                  Text {verb} contain one of these values: {joinWithOr(r.Contains.CaseSensitive, listClassName)} (case
+                  sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
-                  Text {verb} contain one of these values:{' '}
-                  <span className={listClassName}>{joinWithOr(r.Contains.CaseInsensitive)}</span>.
+                  Text {verb} contain one of these values: {joinWithOr(r.Contains.CaseInsensitive, listClassName)}.
                 </div>
               );
             }
@@ -60,15 +58,15 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             if ('CaseSensitive' in r.NotContains) {
               return (
                 <div key={i}>
-                  Text {verb} not contain any of these values:{' '}
-                  <span className={listClassName}>{joinWithOr(r.NotContains.CaseSensitive)}</span> (case sensitive).
+                  Text {verb} not contain any of these values: {joinWithOr(r.NotContains.CaseSensitive, listClassName)}{' '}
+                  (case sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
                   Text {verb} <span className="underline">not</span> contain any of these values:{' '}
-                  <span className={listClassName}>{joinWithOr(r.NotContains.CaseInsensitive)}</span>.
+                  {joinWithOr(r.NotContains.CaseInsensitive, listClassName)}.
                 </div>
               );
             }
@@ -136,7 +134,7 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('Equal' in r) {
             return (
               <div key={i}>
-                Number {verb} be equal to <span className={listClassName}>{joinWithOr(r.Equal)}</span>.
+                Number {verb} be equal to {joinWithOr(r.Equal, listClassName)}.
               </div>
             );
           }
@@ -144,8 +142,8 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('NotEqual' in r) {
             return (
               <div key={i}>
-                Number {verb} <span className="underline">not</span> be equal to{' '}
-                <span className={listClassName}>{joinWithOr(r.NotEqual)}</span>.
+                Number {verb} <span className="underline">not</span> be equal to {joinWithOr(r.NotEqual, listClassName)}
+                .
               </div>
             );
           }
@@ -168,8 +166,7 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
     if ('List' in validation.rule.List.source) {
       return (
         <div className="whitespace-normal">
-          Value {verb} be one of these values:{' '}
-          <span className={listClassName}>{joinWithOr(validation.rule.List.source.List)}</span>.
+          Value {verb} be one of these values: {joinWithOr(validation.rule.List.source.List, listClassName)}.
         </div>
       );
     } else if ('Selection' in validation.rule.List.source) {
@@ -218,7 +215,11 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             return (
               <div key={i}>
                 Date {verb} be{' '}
-                <span className={listClassName}>{joinWithOr(r.DateEqual.map((n) => numberToDate(BigInt(n))))}</span>.
+                {joinWithOr(
+                  r.DateEqual.map((n) => numberToDate(BigInt(n))),
+                  listClassName
+                )}
+                .
               </div>
             );
           }
@@ -227,7 +228,11 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             return (
               <div key={i}>
                 Date {verb} <span className="underline">not</span> be{' '}
-                <span className={listClassName}>{joinWithOr(r.DateNotEqual.map((n) => numberToDate(BigInt(n))))}</span>.
+                {joinWithOr(
+                  r.DateNotEqual.map((n) => numberToDate(BigInt(n))),
+                  listClassName
+                )}
+                .
               </div>
             );
           }
@@ -262,7 +267,11 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             return (
               <div key={i}>
                 Time {verb} be{' '}
-                <span className={listClassName}>{joinWithOr(r.TimeEqual.map((n) => numberToTime(n)))}</span>.
+                {joinWithOr(
+                  r.TimeEqual.map((n) => numberToTime(n)),
+                  listClassName
+                )}
+                .
               </div>
             );
           }
@@ -271,7 +280,11 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
             return (
               <div key={i}>
                 Time {verb} <span className="underline">not</span> be{' '}
-                <span className={listClassName}>{joinWithOr(r.TimeNotEqual.map((n) => numberToTime(n)))}</span>.
+                {joinWithOr(
+                  r.TimeNotEqual.map((n) => numberToTime(n)),
+                  listClassName
+                )}
+                .
               </div>
             );
           }
