@@ -111,6 +111,8 @@ export const workosClient: AuthClient = {
   async handleSigninRedirect() {
     try {
       console.log('handleSigninRedirect - window.location.href:', window.location.href);
+      console.log('handleSigninRedirect - window.location.origin:', window.location.origin);
+      console.log('handleSigninRedirect - window.location.search:', window.location.search);
       const url = new URL(window.location.href);
       console.log('handleSigninRedirect', url);
       console.log('handleSigninRedirect - full href:', window.location.href);
