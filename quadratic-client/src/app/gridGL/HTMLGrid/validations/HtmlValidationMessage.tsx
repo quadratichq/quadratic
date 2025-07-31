@@ -124,7 +124,7 @@ export const HtmlValidationMessage = (props: Props) => {
     if (validation?.message.message) {
       message = (
         <>
-          <span>{validation.message.message}</span>
+          <div>{validation.message.message}</div>
           <Tooltip title="Show validation">
             <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
               Rule: {validationText(validation)}

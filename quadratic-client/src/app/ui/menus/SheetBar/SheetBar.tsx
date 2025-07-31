@@ -428,6 +428,7 @@ export const SheetBar = memo((): JSX.Element => {
       >
         {sheets.map((sheet) => (
           <SheetBarTab
+            data-testid={`sheet-${sheet.name}`}
             key={sheet.id}
             id={sheet.id}
             color={sheet.color}
