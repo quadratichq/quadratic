@@ -6,8 +6,8 @@ import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages'
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
-import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
 import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
+import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -210,10 +210,7 @@ export function useSubmitAIAnalystPrompt() {
               role: 'user' as const,
               content,
               contextType: 'userPrompt' as const,
-              context: {
-                ...context,
-                selection: context.selection ?? sheets.sheet.cursor.save(),
-              },
+              context,
             },
           ];
           return chatMessages;
