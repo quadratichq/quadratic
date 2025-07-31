@@ -61,7 +61,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: downloadFileActionSpec.labelVerbose || '',
+      label: downloadFileActionSpec.labelVerbose ?? downloadFileActionSpec.label(),
       isAvailable: downloadFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
@@ -76,7 +76,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: downloadExcelFileActionSpec.labelVerbose || '',
+      label: downloadExcelFileActionSpec.labelVerbose ?? downloadExcelFileActionSpec.label(),
       isAvailable: downloadExcelFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
@@ -91,7 +91,7 @@ const commands: CommandGroup = {
       },
     },
     {
-      label: downloadCsvFileActionSpec.labelVerbose || '',
+      label: downloadCsvFileActionSpec.labelVerbose ?? downloadCsvFileActionSpec.label(),
       isAvailable: downloadCsvFileActionSpec.isAvailable,
       Component: (props) => {
         const { name } = useFileContext();
