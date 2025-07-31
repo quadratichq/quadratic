@@ -9,8 +9,8 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL_PRO: AIModelKey = 'vertexai-anthropic:claude-sonnet-4:thinking';
-export const DEFAULT_MODEL_FREE: AIModelKey = 'openai:gpt-4.1-2025-04-14';
-export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'openai:gpt-4.1-2025-04-14';
+export const DEFAULT_MODEL_FREE: AIModelKey = 'azure-openai:gpt-4.1';
+export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
@@ -401,7 +401,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16384,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'basic',
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -503,7 +503,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'basic',
     provider: 'azure-openai',
     promptCaching: true,
     strictParams: true,
