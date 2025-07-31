@@ -73,7 +73,7 @@ first_row_visible_values is an array of objects with following properties:\n
 
 There are following data tables in the currently open file:\n
 
-\`\`\`xml
+\`\`\`text
 ${toXml(dataTables, 'data_tables')}
 \`\`\`
 
@@ -103,11 +103,10 @@ Each code table has following properties:\n
 - intended_bounds: This is the desired bounds for the table (which may be different from the bounds if the table has a spill).\n
 - show_name: This is a boolean value representing if the table name is visible.\n
 - show_columns: This is a boolean value representing if the column headers are visible.\n
-- language: This is the language of the code code which outputs the table.\n
-- code_string: This is the code in the code cell which outputs the table.\n
-- std_err: This is the standard error of the after running the code, this is an optional property only if the code has an error.\n
 - error: This is a boolean value representing if the code table has an error.\n
 - spill: This is a boolean value representing if the code table has a spill.\n\n
+
+Note: Code table details (language, code content, error details) are provided separately in code cell context when working with specific code cells.\n\n
 
 first_row_visible_values is an array of objects with following properties:\n
 - value: This is the value of the cell.\n
@@ -116,7 +115,7 @@ first_row_visible_values is an array of objects with following properties:\n
 
 There are following code tables in the currently open file:\n
 
-\`\`\`xml
+\`\`\`text
 ${toXml(codeTables, 'code_tables')}
 \`\`\`
 
@@ -140,7 +139,7 @@ Each chart has following properties:\n
 - spill: This is a boolean value representing if the chart has a spill.\n\n
 
 There are following charts in the currently open file:\n
-\`\`\`xml
+\`\`\`text
 ${toXml(charts, 'charts')}
 \`\`\`
 

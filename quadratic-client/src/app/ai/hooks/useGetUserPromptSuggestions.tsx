@@ -30,7 +30,7 @@ export const useGetUserPromptSuggestions = () => {
                 text: `
 Use user_prompt_suggestions tool to provide follow up prompts for the user based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
-\`\`\`xml
+\`\`\`text
 ${toXml(chatPromptMessages, 'chat_messages')}
 \`\`\`
 `,

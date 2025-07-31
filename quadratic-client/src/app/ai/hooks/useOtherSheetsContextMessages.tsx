@@ -44,7 +44,7 @@ export function useOtherSheetsContextMessages() {
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 
 I have the following sheets in the currently open file:\n
-\`\`\`xml
+\`\`\`text
 ${toXml(sheetNames, 'sheet_names')}
 \`\`\`
 
@@ -63,7 +63,7 @@ ${otherSheetsContext.map((otherSheetContext) => {
   return `
 Tables in sheet '${otherSheetContext.sheet_name}':
 
-\`\`\`xml
+\`\`\`text
 ${toXml(otherSheetContext.tables_summary, 'tables_summary')}
 \`\`\`
 `;
@@ -92,7 +92,7 @@ ${otherSheetsContext.map((otherSheetContext) => {
   return `
 Data in sheet '${otherSheetContext.sheet_name}':
 
-\`\`\`xml
+\`\`\`text
 ${toXml(otherSheetContext.data_rects, 'data_rects')}
 \`\`\`
 `;

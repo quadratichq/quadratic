@@ -1,21 +1,13 @@
 /**
- * Utility function to convert JavaScript objects to XML format for AI context messages
+ * Utility function to convert JavaScript objects to a hybrid XML/text format for AI context messages
+ * Uses XML tags for structure but plain text for content to minimize bloat
  */
-
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
 
 function isObject(value: any): value is Record<string, any> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function convertToXml(data: any, rootElement: string = 'data', indentLevel: number = 0): string {
+function convertToHybridFormat(data: any, rootElement: string = 'data', indentLevel: number = 0): string {
   const indent = '  '.repeat(indentLevel);
 
   if (data === null || data === undefined) {
@@ -27,55 +19,79 @@ function convertToXml(data: any, rootElement: string = 'data', indentLevel: numb
       return `${indent}<${rootElement} />\n`;
     }
 
-    let xml = `${indent}<${rootElement}>\n`;
+    let result = `${indent}<${rootElement}>\n`;
     data.forEach((item, index) => {
-      const itemElement = getSingularName(rootElement);
-      xml += convertToXml(item, itemElement, indentLevel + 1);
+      if (isObject(item)) {
+        // For objects in arrays, use plain text format with separators
+        const itemText = formatObjectAsText(item, indentLevel + 1);
+        result += itemText;
+        if (index < data.length - 1) {
+          result += '\n'; // Add separator between items
+        }
+      } else {
+        result += `${indent}  ${String(item)}\n`;
+      }
     });
-    xml += `${indent}</${rootElement}>\n`;
-    return xml;
+    result += `${indent}</${rootElement}>\n`;
+    return result;
   }
 
   if (isObject(data)) {
-    let xml = `${indent}<${rootElement}>\n`;
-    for (const [key, value] of Object.entries(data)) {
-      xml += convertToXml(value, key, indentLevel + 1);
-    }
-    xml += `${indent}</${rootElement}>\n`;
-    return xml;
+    let result = `${indent}<${rootElement}>\n`;
+    result += formatObjectAsText(data, indentLevel + 1);
+    result += `${indent}</${rootElement}>\n`;
+    return result;
   }
 
-  // Primitive values
-  const stringValue = String(data);
-  if (stringValue.includes('\n') || stringValue.length > 100) {
-    // Multi-line or long content - use CDATA
-    return `${indent}<${rootElement}><![CDATA[${stringValue}]]></${rootElement}>\n`;
-  } else {
-    // Short content - escape and inline
-    return `${indent}<${rootElement}>${escapeXml(stringValue)}</${rootElement}>\n`;
-  }
+  // Primitive values - just return as text
+  return `${indent}<${rootElement}>${String(data)}</${rootElement}>\n`;
 }
 
-function getSingularName(pluralName: string): string {
-  // Simple pluralization rules
-  if (pluralName.endsWith('ies')) {
-    return pluralName.slice(0, -3) + 'y';
+function formatObjectAsText(obj: Record<string, any>, indentLevel: number): string {
+  const indent = '  '.repeat(indentLevel);
+  let result = '';
+
+  for (const [key, value] of Object.entries(obj)) {
+    const label = key.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        result += `${indent}${label}: (none)\n`;
+      } else if (value.every((item) => typeof item === 'string' || typeof item === 'number')) {
+        // Simple array - format as comma-separated
+        result += `${indent}${label}: ${value.join(', ')}\n`;
+      } else {
+        // Complex array - format as nested items
+        result += `${indent}${label}:\n`;
+        for (let i = 0; i < value.length; i++) {
+          const item = value[i];
+          if (isObject(item)) {
+            result += formatObjectAsText(item, indentLevel + 1);
+            if (i < value.length - 1) {
+              result += `${indent}  ---\n`; // Separator between complex items
+            }
+          } else {
+            result += `${indent}  - ${String(item)}\n`;
+          }
+        }
+      }
+    } else if (isObject(value)) {
+      result += `${indent}${label}:\n`;
+      result += formatObjectAsText(value, indentLevel + 1);
+    } else {
+      result += `${indent}${label}: ${String(value)}\n`;
+    }
   }
-  if (pluralName.endsWith('es')) {
-    return pluralName.slice(0, -2);
-  }
-  if (pluralName.endsWith('s') && !pluralName.endsWith('ss')) {
-    return pluralName.slice(0, -1);
-  }
-  return pluralName + '_item';
+
+  return result;
 }
 
 /**
- * Convert data to XML format for AI context
+ * Convert data to hybrid XML/text format for AI context
  * @param data - The data to convert
  * @param rootElement - The root element name (default: 'data')
- * @returns XML formatted string
+ * @returns Hybrid formatted string with XML structure but text content
  */
 export function toXml(data: any, rootElement: string = 'data'): string {
-  return convertToXml(data, rootElement, 0).trim();
+  return convertToHybridFormat(data, rootElement, 0).trim();
 }

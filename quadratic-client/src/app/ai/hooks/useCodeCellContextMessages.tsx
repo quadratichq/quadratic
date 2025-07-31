@@ -49,7 +49,7 @@ The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
   schemaJsonForAi
     ? `The schema for the database is:
-\`\`\`xml
+\`\`\`text
 ${schemaJsonForAi}
 \`\`\`
 ${
@@ -87,7 +87,7 @@ The code in the code cell is:\n
 ${
   consoleHasOutput
     ? `Code was run recently and the console output is:\n
-\`\`\`xml
+\`\`\`text
 ${toXml(consoleOutput, 'console_output')}
 \`\`\`
 `

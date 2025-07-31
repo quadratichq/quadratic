@@ -13,7 +13,7 @@ export function useSheetInfoMessages() {
           {
             type: 'text',
             text: `
-I have the following sheets (the sheet list) in the currently open file:\n
+I have the following list of sheets in the currently open file:\n
 ${sheets.map((sheet) => sheet.name).join(', ')}\n
 
 The sheet names have the following colors (if they are colored):\n
