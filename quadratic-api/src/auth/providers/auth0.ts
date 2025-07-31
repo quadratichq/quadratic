@@ -11,6 +11,7 @@ import {
   AUTH0_ISSUER,
   AUTH0_JWKS_URI,
 } from '../../env-vars';
+import logger from '../../utils/logger';
 import type { ByEmailUser, User } from './auth';
 
 // Guide to Setting up on Auth0
@@ -77,7 +78,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
 
     // If missing or incomplete, fallback to direct lookup
     if (!auth0User || !auth0User.email) {
-      console.log(JSON.stringify({ message: 'Fallback to direct lookup for', auth0Id }));
+      logger.info('Fallback to direct lookup for', { auth0Id });
       try {
         auth0User = await getAuth0().getUser({ id: auth0Id });
       } catch (err) {
@@ -93,7 +94,7 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
 
     // If we're missing data we expect, log it to Sentry and throw
     if (!auth0User || !auth0User.email) {
-      console.log(JSON.stringify({ message: 'Failed to retrieve all user info from Auth0', auth0Id }));
+      logger.warn('Failed to retrieve all user info from Auth0', { auth0Id });
       Sentry.captureException({
         message: 'Auth0 user returned without `email`',
         level: 'error',
