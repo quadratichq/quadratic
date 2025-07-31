@@ -672,11 +672,21 @@ Code cell (Python and Javascript) placement instructions:\n
 - The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
 - If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
 - If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
-- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21.\n
+- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21. Use the bounds of the referenced data to determine this placement.\n
 - In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
 - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
 - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
+
+Placement examples: 
+Example 1: bounds at A1:D19. Code cell should be placed at F1.
+Example 2: bounds at A5:F7. Code cell should be placed at A9.
+Example 3: bounds at A5:C9 and A11:C13 and the code references the A5:C9 content. Code cell should be placed at E5.
+Example 4: bounds at A5:C9 and A11:C13 and the code references the A11:C13 content. Code cell should be placed at E11.
+Example 5: bounds at B5:D19. Code cell should be placed at F5. 
+Example 6: bounds at H3:Z9. Code cell should be placed at H11.
+
+Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
 `,
   },
   [AITool.SetSQLCodeCellValue]: {
