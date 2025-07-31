@@ -203,12 +203,10 @@ export const workosClient: AuthClient = {
       checkForCompletion();
 
       const channel = new BroadcastChannel(oauthKey);
-      channel.addEventListener('message', (event) => {
+      console.log('channel', channel);
+      channel.onmessage = (event) => {
         console.log('message', event);
-        // if (event.data.type === 'complete') {
-        //   window.location.assign(args.redirectTo);
-        // }
-      });
+      };
 
       const oauthUrl = ROUTES.WORKOS_IFRAME_OAUTH({ provider: args.provider, oauthKey });
       const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
