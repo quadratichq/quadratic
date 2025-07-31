@@ -267,7 +267,7 @@ impl GridController {
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
-            let insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
+            let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     let cell_value = match cell {
@@ -313,8 +313,8 @@ impl GridController {
                     };
 
                     let pos = Pos {
-                        x: insert_at.x + x as i64,
-                        y: insert_at.y + y as i64,
+                        x: values_insert_at.x + x as i64,
+                        y: values_insert_at.y + y as i64,
                     };
                     let sheet = gc
                         .try_sheet_mut(sheet_id)
@@ -337,13 +337,13 @@ impl GridController {
 
             // formulas
             let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
-            let insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
+            let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
             for (y, row) in formula.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     if !cell.is_empty() {
                         let pos = Pos {
-                            x: insert_at.x + x as i64,
-                            y: insert_at.y + y as i64,
+                            x: formulas_insert_at.x + x as i64,
+                            y: formulas_insert_at.y + y as i64,
                         };
                         let sheet_pos = pos.to_sheet_pos(sheet_id);
                         let sheet = gc.try_sheet_mut_result(sheet_id)?;
@@ -384,11 +384,12 @@ impl GridController {
 
             // styles
             let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
+            let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
                     let pos = Pos {
-                        x: insert_at.x + x as i64 + 1,
-                        y: insert_at.y + y as i64 + 1,
+                        x: style_insert_at.x + x as i64,
+                        y: style_insert_at.y + y as i64,
                     };
 
                     if let Some(font) = style.get_font() {
@@ -574,8 +575,33 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
 
         if let Some(format_id) = format_id {
             match format_id {
-                // general format, noop
-                0 => {}
+                // general format - preserve number precision like Excel
+                0 => {
+                    // For General format, Excel displays significant decimal places.
+                    // Excel shows full precision up to about 15 significant digits.
+                    if let Some(CellValue::Number(ref n)) = current_value {
+                        if let Some(f64_val) = n.to_f64() {
+                            // Check if this is not a whole number
+                            if f64_val.fract() != 0.0 {
+                                // Use high precision formatting to capture all significant digits
+                                let num_str = format!("{:.15}", f64_val);
+                                if let Some(decimal_pos) = num_str.find('.') {
+                                    let after_decimal = &num_str[decimal_pos + 1..];
+                                    
+                                    // For General format, Excel typically preserves trailing zeros when they
+                                    // represent the actual precision of the stored number. We'll use the full
+                                    // precision available in the f64 representation.
+                                    let decimal_places = after_decimal.len();
+                                    
+                                    // Excel's General format shows meaningful precision up to 15 digits
+                                    if decimal_places > 0 {
+                                        sheet.formats.numeric_decimals.set(pos, Some(decimal_places as i16));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
                 
                 // nmber formats (1-4, 37-40)
 
@@ -601,8 +627,8 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                 // formats with thousands separators
                 37..=40 => {
                     sheet.formats.numeric_commas.set(pos, Some(true));
-                    let has_thousands_separator = format_id == 37 || format_id == 38;
-                    let decimals = if has_thousands_separator { 0 } else { 2 };
+                    let has_decimals = format_id == 39 || format_id == 40;
+                    let decimals = if has_decimals { 2 } else { 0 };
                     sheet.formats.numeric_decimals.set(pos, Some(decimals));
                 }
 
@@ -615,8 +641,8 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                     sheet.formats.numeric_format.set(pos, Some(numeric_format));
 
                     // set decimal places based on format
-                    let has_decimals = !(format_id == 5 || format_id == 6 || format_id == 41 || format_id == 42);
-                    let decimals = if has_decimals { 0 } else { 2 };
+                    let has_decimals = format_id == 7 || format_id == 8 || format_id == 43 || format_id == 44;
+                    let decimals = if has_decimals { 2 } else { 0 };
                     sheet.formats.numeric_decimals.set(pos, Some(decimals));
                     sheet.formats.numeric_commas.set(pos, Some(true));
                 }
@@ -653,10 +679,17 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
                     sheet.formats.numeric_decimals.set(pos, Some(decimals));
                 }
 
+                // fraction formats
+                12 | 13 => {
+                    // These are fraction formats: "# ?/?" and "# ??/??"
+                    // For now, we'll treat them as general numeric without special formatting
+                    // TODO: Add proper fraction formatting support
+                }
+
                 // date formats
                 14..=17 | 22 => {
                     let chrono_format = match format_id {
-                        14 => excel_to_chrono_format("m/d/yy"),         // "%-m/%-d/%y"
+                        14 => excel_to_chrono_format("m/d/yyyy"),       // "%-m/%-d/%Y"
                         15 => excel_to_chrono_format("d-mmm-yy"),       // "%-d-%b-%y"
                         16 => excel_to_chrono_format("d-mmm"),          // "%-d-%b"
                         17 => excel_to_chrono_format("mmm-yy"),         // "%b-%y"
