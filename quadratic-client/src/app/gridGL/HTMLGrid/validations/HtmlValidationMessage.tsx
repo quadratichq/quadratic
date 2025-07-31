@@ -135,7 +135,7 @@ export const HtmlValidationMessage = (props: Props) => {
     }
   }
 
-  if (hide || !offsets || (!title && !message)) return null;
+  if (hide || !offsets || (!title && !message) || !validation) return null;
 
   const wrapStyle = {
     overflowWrap: 'break-word',
