@@ -51,7 +51,7 @@ impl Sheet {
                 rect_origin: tabular_data_rect.min.a1_string(),
                 rect_width: tabular_data_rect.width(),
                 rect_height: tabular_data_rect.height(),
-                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, Some(3)),
+                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, Some(30)),
             };
             data_rects.push(cell_value_pos);
         }

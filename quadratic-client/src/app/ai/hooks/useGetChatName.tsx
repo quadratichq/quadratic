@@ -27,7 +27,7 @@ export const useGetChatName = () => {
                 type: 'text',
                 text: `Use set_chat_name tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
-\`\`\`text
+\`\`\`
 ${toXml(chatPromptMessages, 'chat_messages')}
 \`\`\`
 `,

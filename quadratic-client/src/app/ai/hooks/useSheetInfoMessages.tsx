@@ -13,11 +13,8 @@ export function useSheetInfoMessages() {
           {
             type: 'text',
             text: `
-I have the following list of sheets in the currently open file:\n
-${sheets.map((sheet) => sheet.name).join(', ')}\n
-
-The sheet names have the following colors (if they are colored):\n
-${sheets.map((sheet) => `${sheet.name} is ${sheet.color ?? 'not colored'}`).join('; ')}`,
+I have the following list of ${sheets.length} sheets that are in the currently open file:\n
+${sheets.map((sheet) => sheet.name).join(', ')}`,
           },
         ],
         contextType: 'sheetNames',
@@ -27,7 +24,7 @@ ${sheets.map((sheet) => `${sheet.name} is ${sheet.color ?? 'not colored'}`).join
         content: [
           {
             type: 'text',
-            text: `I understand the sheet names and colors, I will reference it to answer following messages. How can I help you?`,
+            text: `I understand the sheet names, I will reference them to answer following messages. How can I help you?`,
           },
         ],
         contextType: 'sheetNames',

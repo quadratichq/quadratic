@@ -44,7 +44,7 @@ export function useOtherSheetsContextMessages() {
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 
 I have the following sheets in the currently open file:\n
-\`\`\`text
+\`\`\`
 ${toXml(sheetNames, 'sheet_names')}
 \`\`\`
 
@@ -63,7 +63,7 @@ ${otherSheetsContext.map((otherSheetContext) => {
   return `
 Tables in sheet '${otherSheetContext.sheet_name}':
 
-\`\`\`text
+\`\`\`
 ${toXml(otherSheetContext.tables_summary, 'tables_summary')}
 \`\`\`
 `;
@@ -92,20 +92,20 @@ ${otherSheetsContext.map((otherSheetContext) => {
   return `
 Data in sheet '${otherSheetContext.sheet_name}':
 
-\`\`\`text
+\`\`\`
 ${toXml(otherSheetContext.data_rects, 'data_rects')}
 \`\`\`
 `;
 })}
 
-Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code, always reference data from the sheet. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code.
+Note: All this data is only for you to reference data on the sheet. This data cannot be used directly in code; always use references to access data from the sheet. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code.
 - In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
 - In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
 - **PREFERRED**: Always use table names (Table_Name) when working with entire tables. Use A1 notation only for non-table data or partial table selections.\n
 - In Formulas and JavaScript use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header. This does not work in Python.\n
 - In all languages use \`q.cells("Table_Name[#HEADERS]")\` to reference the headers of the table.\n
 - In Formulas and JavaScript use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table. This does not work in Python.\n
-- Sheet name is optional, if not provided, it is assumed to be the currently open sheet.\n
+- Sheet name should not be used when referencing data or tables from same sheet as code or formula cell. If not provided, it is assumed to be a reference to values in the same sheet as the code cell.\n
 - Sheet name is case sensitive, and is required to be enclosed in single quotes.\n
 - To reference data from different tabular data rectangles, use multiple \`q.cells\` functions.\n
 

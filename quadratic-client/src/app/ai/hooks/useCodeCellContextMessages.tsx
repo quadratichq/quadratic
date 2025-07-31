@@ -48,15 +48,11 @@ Currently, you are in a code cell that is being edited.\n
 The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
   schemaJsonForAi
-    ? `The schema for the database is:
-\`\`\`text
-${schemaJsonForAi}
-\`\`\`
-${
-  language === 'POSTGRES'
-    ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".'
-    : ''
-}
+    ? `The schema for the database is:\n\`\`\`\n${schemaJsonForAi}\`\`\`\n${
+        language === 'POSTGRES'
+          ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".'
+          : ''
+      }
 ${
   language === 'MYSQL'
     ? 'When generating mysql queries, put schema and table names in backticks, e.g. `schema`.`TableName`.'
@@ -87,9 +83,7 @@ The code in the code cell is:\n
 ${
   consoleHasOutput
     ? `Code was run recently and the console output is:\n
-\`\`\`text
-${toXml(consoleOutput, 'console_output')}
-\`\`\`
+\`\`\`\n${toXml(consoleOutput, 'console_output')}\`\`\`
 `
     : ``
 }`,
