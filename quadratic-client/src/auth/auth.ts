@@ -19,7 +19,7 @@ export interface AuthClient {
   isAuthenticated(): Promise<boolean>;
   user(): Promise<undefined | User>;
   login(redirectTo: string, isSignupFlow?: boolean): Promise<void>;
-  handleSigninRedirect(): Promise<void>;
+  handleSigninRedirect(href: string): Promise<void>;
   logout(): Promise<void>;
   getTokenOrRedirect(skipRedirect?: boolean): Promise<string>;
   loginWithPassword(args: { email: string; password: string }): Promise<void>;
@@ -67,9 +67,9 @@ export const authClient: AuthClient = {
     const client = await getAuthClient();
     return client.login(redirectTo, isSignupFlow);
   },
-  async handleSigninRedirect() {
+  async handleSigninRedirect(href: string) {
     const client = await getAuthClient();
-    return client.handleSigninRedirect();
+    return client.handleSigninRedirect(href);
   },
   async logout() {
     const client = await getAuthClient();

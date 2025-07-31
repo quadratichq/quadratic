@@ -91,20 +91,12 @@ export const workosClient: AuthClient = {
    * Handle the redirect from Workos after the user has logged in if
    * code and state are present in the query params.
    */
-  async handleSigninRedirect() {
+  async handleSigninRedirect(href: string) {
     try {
-      console.log('handleSigninRedirect - window.location.href:', window.location.href);
-      console.log('handleSigninRedirect - window.location.origin:', window.location.origin);
-      console.log('handleSigninRedirect - window.location.search:', window.location.search);
-      const url = new URL(window.location.href);
-      console.log('handleSigninRedirect', url);
-      console.log('handleSigninRedirect - full href:', window.location.href);
-      console.log('handleSigninRedirect - search params:', url.search);
-      console.log('handleSigninRedirect - all search params:', [...url.searchParams.entries()]);
+      const url = new URL(href);
 
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
-      console.log('handleSigninRedirect', code, state);
       if (!code || !state) {
         return;
       }
@@ -187,7 +179,6 @@ export const workosClient: AuthClient = {
       const oauthKey = `${args.provider}-${crypto.randomUUID()}`;
 
       const checkForCompletion = async () => {
-        console.log('checkForCompletion', oauthKey);
         if (localStorage.getItem(oauthKey) === 'complete') {
           localStorage.removeItem(oauthKey);
           window.location.assign(args.redirectTo);

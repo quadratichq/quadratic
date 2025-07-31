@@ -5,20 +5,13 @@ import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
 export const loader = async ({ request }: { request: Request }) => {
-  console.log('login-result - request:', request.url);
-  const url = new URL(request.url);
-  const code = url.searchParams.get('code');
-  const state = url.searchParams.get('state');
-  console.log('login-result - code:', code);
-  console.log('login-result - state:', state);
-
   // Show onboarding for ~25% of new users
   const SHOW_ONBOARDING = Math.random() < 0.25;
 
   // try/catch here handles case where this _could_ error out and we
   // have no errorElement so we just redirect back to home
   try {
-    await authClient.handleSigninRedirect();
+    await authClient.handleSigninRedirect(request.url);
     let isAuthenticated = await authClient.isAuthenticated();
     if (isAuthenticated) {
       // Acknowledge the user has just logged in. The backend may need

@@ -66,9 +66,9 @@ export const auth0Client: AuthClient = {
     });
     await waitForAuthClientToRedirect();
   },
-  async handleSigninRedirect() {
-    const query = window.location.search;
-    if (query.includes('code=') && query.includes('state=')) {
+  async handleSigninRedirect(href: string) {
+    const { searchParams } = new URL(href);
+    if (searchParams.get('code') && searchParams.get('state')) {
       const client = await getClient();
       await client.handleRedirectCallback();
     }
