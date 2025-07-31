@@ -76,13 +76,14 @@ export const workosClient: AuthClient = {
     const url = new URL(window.location.origin + (isSignupFlow ? ROUTES.SIGNUP : ROUTES.LOGIN));
 
     if (redirectTo && redirectTo !== '/') {
-      url.searchParams.set(SEARCH_PARAMS.REDIRECT_TO.KEY, redirectTo);
+      url.searchParams.set(SEARCH_PARAMS.REDIRECT_TO.KEY, encodeURIComponent(redirectTo));
     } else {
       url.searchParams.delete(SEARCH_PARAMS.REDIRECT_TO.KEY);
     }
 
     if (window.location.href !== url.toString()) {
       window.location.assign(url.toString());
+      await waitForAuthClientToRedirect();
     }
   },
 
@@ -91,6 +92,7 @@ export const workosClient: AuthClient = {
    * code and state are present in the query params.
    */
   async handleSigninRedirect() {
+    await disposeClient();
     try {
       const search = window.location.search;
       if (!search.includes('code=') || !search.includes('state=')) {
@@ -174,18 +176,16 @@ export const workosClient: AuthClient = {
     if (isInIframe) {
       const oauthKey = `${args.provider}-${crypto.randomUUID()}`;
 
-      const channel = new BroadcastChannel('oauth-callback-channel');
-      const messageHandler = (event: MessageEvent) => {
-        if (event.data.type === 'login-oauth-iframe-callback' && event.data.oauthKey === oauthKey) {
+      const checkForCompletion = async () => {
+        if (localStorage.getItem(oauthKey) === 'complete') {
+          localStorage.removeItem(oauthKey);
           window.location.assign(args.redirectTo);
-          channel.close();
+          await waitForAuthClientToRedirect();
+        } else {
+          setTimeout(checkForCompletion, 500);
         }
       };
-      channel.addEventListener('message', messageHandler);
-      setTimeout(() => {
-        channel.removeEventListener('message', messageHandler);
-        channel.close();
-      }, 600000);
+      checkForCompletion();
 
       const oauthUrl = ROUTES.WORKOS_IFRAME_OAUTH({ provider: args.provider, oauthKey });
       const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;

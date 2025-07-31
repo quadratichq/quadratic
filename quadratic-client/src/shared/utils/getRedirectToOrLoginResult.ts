@@ -2,7 +2,8 @@ import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 
 export const getRedirectTo = () => {
   const url = new URL(window.location.href);
-  return url.searchParams.get(SEARCH_PARAMS.REDIRECT_TO.KEY);
+  const redirectTo = url.searchParams.get(SEARCH_PARAMS.REDIRECT_TO.KEY);
+  return redirectTo ? decodeURIComponent(redirectTo) : null;
 };
 
 export const getRedirectToOrLoginResult = () => {
@@ -12,5 +13,5 @@ export const getRedirectToOrLoginResult = () => {
     url.pathname = ROUTES.LOGIN_RESULT;
     redirectTo = url.toString();
   }
-  return redirectTo;
+  return decodeURIComponent(redirectTo);
 };

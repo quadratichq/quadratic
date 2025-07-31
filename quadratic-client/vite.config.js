@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
       name: 'configure-server',
       configureServer(server) {
         server.middlewares.use((_req, res, next) => {
-          res.setHeader('Cross-Origin-Opener-Policy', 'same-site');
+          res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
           res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
           res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
           res.setHeader('Access-Control-Allow-Origin', '*');
