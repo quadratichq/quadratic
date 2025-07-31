@@ -29,6 +29,7 @@ interface SheetBarTabProps {
   id: string;
   color?: string;
   order: string;
+  calculatedOrder: string;
   active: boolean;
   name: string;
   onPointerDown: (options: { event: PointerEvent<HTMLDivElement>; sheet: Sheet }) => void;
@@ -37,7 +38,7 @@ interface SheetBarTabProps {
 }
 
 export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
-  const { sheet, id, order, active, onPointerDown, forceRename, clearRename } = props;
+  const { sheet, id, calculatedOrder, order, active, onPointerDown, forceRename, clearRename } = props;
 
   const [isOpenDropdown, setIsOpenDropdown] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
@@ -66,11 +67,11 @@ export const SheetBarTab = memo((props: SheetBarTabProps): JSX.Element => {
           'sticky left-0 right-0 z-[1] -mt-[1px] !bg-background shadow-[inset_1px_0_0_hsl(var(--border)),inset_-1px_0_0_hsl(var(--border))]'
       )}
       style={{
-        order,
+        order: calculatedOrder,
       }}
       data-id={id}
       data-order={order}
-      data-actual-order={order}
+      data-actual-order={calculatedOrder}
       onPointerDown={(event) => {
         if (isRenaming) return;
         onPointerDown({ event, sheet });
