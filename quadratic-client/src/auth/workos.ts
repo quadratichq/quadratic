@@ -32,8 +32,17 @@ function getClient(): ReturnType<typeof createClient> {
       https: !apiHostname.includes('localhost'),
       devMode: false,
       onRedirectCallback: async ({ state }) => {
+        console.log('onRedirectCallback', state);
         if (state) {
-          if ('redirectTo' in state) {
+          if ('oauthKey' in state) {
+            const oauthKey = state.oauthKey;
+            if (oauthKey && typeof oauthKey === 'string') {
+              localStorage.setItem(oauthKey, 'complete');
+              window.close();
+            }
+          }
+
+          if ('redirectTo' in state && !!state.redirectTo && typeof state.redirectTo === 'string') {
             window.location.assign(state.redirectTo);
             await waitForAuthClientToRedirect();
           }
@@ -102,8 +111,11 @@ export const workosClient: AuthClient = {
   async handleSigninRedirect() {
     try {
       const url = new URL(window.location.href);
+      console.log('handleSigninRedirect', url);
+
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
+      console.log('handleSigninRedirect', code, state);
       if (!code || !state) {
         return;
       }
@@ -185,6 +197,7 @@ export const workosClient: AuthClient = {
       const oauthKey = `${args.provider}-${crypto.randomUUID()}`;
 
       const checkForCompletion = async () => {
+        console.log('checkForCompletion', oauthKey);
         if (localStorage.getItem(oauthKey) === 'complete') {
           localStorage.removeItem(oauthKey);
           window.location.assign(args.redirectTo);
