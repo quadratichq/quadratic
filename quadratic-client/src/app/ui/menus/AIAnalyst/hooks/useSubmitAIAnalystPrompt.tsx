@@ -7,6 +7,7 @@ import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSugg
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
 import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
+import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -89,6 +90,7 @@ export function useSubmitAIAnalystPrompt() {
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
   const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
+  const { getSqlContext } = useSqlContextMessages();
 
   const updateInternalContext = useRecoilCallback(
     () =>
@@ -97,6 +99,7 @@ export function useSubmitAIAnalystPrompt() {
           filesContext,
           sheetInfoContext,
           summaryContext,
+          sqlContext,
           otherSheetsContext,
           tablesContext,
           currentSheetContext,
@@ -105,6 +108,7 @@ export function useSubmitAIAnalystPrompt() {
           getFilesContext({ chatMessages }),
           getSheetInfoContext({ sheets: sheets.sheets }),
           getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
+          getSqlContext(),
           getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
           getTablesContext(),
           getCurrentSheetContext({ currentSheetName: context.currentSheet }),
@@ -112,6 +116,7 @@ export function useSubmitAIAnalystPrompt() {
         ]);
 
         const messagesWithContext: ChatMessage[] = [
+          ...sqlContext,
           ...filesContext,
           ...sheetInfoContext,
           ...otherSheetsContext,
@@ -134,6 +139,7 @@ export function useSubmitAIAnalystPrompt() {
       getVisibleContext,
       getFilesContext,
       getSheetInfoContext,
+      getSqlContext,
     ]
   );
 
