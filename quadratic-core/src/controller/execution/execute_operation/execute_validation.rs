@@ -205,6 +205,8 @@ impl GridController {
         if let Operation::SetValidation { validation } = op {
             let sheet_id = validation.selection.sheet_id;
             self.remove_validation_warnings(transaction, sheet_id, validation.id);
+            self.check_deleted_validations(transaction, sheet_id, &validation.selection);
+
             let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
                 return;
             };
