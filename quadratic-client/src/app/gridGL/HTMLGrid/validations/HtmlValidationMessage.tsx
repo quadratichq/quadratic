@@ -97,7 +97,6 @@ export const HtmlValidationMessage = (props: Props) => {
 
     message = (
       <>
-        <div>{validation?.error?.message}</div>
         {validation && translateValidationError(validation)}
         <div>
           {validation && <div className="mt-2">{}</div>}
@@ -114,9 +113,25 @@ export const HtmlValidationMessage = (props: Props) => {
   } else if (validation?.message) {
     if (validation?.message.title) {
       title = <span>{validation.message.title}</span>;
+      message = (
+        <Tooltip title="Show validation">
+          <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+            Rule: {validationText(validation)}
+          </Button>
+        </Tooltip>
+      );
     }
     if (validation?.message.message) {
-      message = <span>{validation.message.message}</span>;
+      message = (
+        <>
+          <span>{validation.message.message}</span>
+          <Tooltip title="Show validation">
+            <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+              Rule: {validationText(validation)}
+            </Button>
+          </Tooltip>
+        </>
+      );
     }
   }
 

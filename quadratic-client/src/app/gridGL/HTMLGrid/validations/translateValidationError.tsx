@@ -4,6 +4,10 @@ import { numberToDate, numberToTime } from '@/app/quadratic-core/quadratic_core'
 import { joinWithOr } from '@/shared/utils/text';
 import type { JSX } from 'react';
 
+const isNotUndefinedOrNull = (value: any | null | undefined) => {
+  return value !== undefined && value !== null;
+};
+
 export const translateValidationError = (validation: Validation): JSX.Element | null => {
   if (validation.rule === 'None') {
     return null;
@@ -73,18 +77,18 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('TextLength' in r) {
             return (
               <div key={i}>
-                {r.TextLength.min !== null && r.TextLength.max !== null && (
+                {isNotUndefinedOrNull(r.TextLength.min) && isNotUndefinedOrNull(r.TextLength.max) && (
                   <>
                     Text {verb} be between <span className={listClassName}>{r.TextLength.min}</span> and{' '}
                     <span className={listClassName}>{r.TextLength.max}</span> characters long.
                   </>
                 )}
-                {r.TextLength.min !== null && r.TextLength.max === null && (
+                {isNotUndefinedOrNull(r.TextLength.min) && !isNotUndefinedOrNull(r.TextLength.max) && (
                   <>
                     Text {verb} be at least <span className={listClassName}>{r.TextLength.min}</span> characters long.
                   </>
                 )}
-                {r.TextLength.min === null && r.TextLength.max !== null && (
+                {!isNotUndefinedOrNull(r.TextLength.min) && isNotUndefinedOrNull(r.TextLength.max) && (
                   <>
                     Text {verb} be at most <span className={listClassName}>{r.TextLength.max}</span> characters long.
                   </>
@@ -106,7 +110,7 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('Range' in r) {
             return (
               <div key={i}>
-                {r.Range[0] !== null && r.Range[1] !== null && (
+                {isNotUndefinedOrNull(r.Range[0]) && isNotUndefinedOrNull(r.Range[1]) && (
                   <>
                     Number {verb} be between{' '}
                     <span className={listClassName}>
@@ -115,12 +119,12 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
                     .
                   </>
                 )}
-                {r.Range[0] !== null && r.Range[1] === null && (
+                {isNotUndefinedOrNull(r.Range[0]) && !isNotUndefinedOrNull(r.Range[1]) && (
                   <>
                     Number {verb} be greater than or equal to <span className={listClassName}>{r.Range[0]}</span>.
                   </>
                 )}
-                {r.Range[0] === null && r.Range[1] !== null && (
+                {!isNotUndefinedOrNull(r.Range[0]) && isNotUndefinedOrNull(r.Range[1]) && (
                   <>
                     Number {verb} be less than or equal to <span className={listClassName}>{r.Range[1]}</span>.
                   </>
@@ -231,23 +235,23 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
           if ('TimeRange' in r) {
             return (
               <div key={i}>
-                {r.TimeRange[0] !== null && r.TimeRange[1] !== null && (
+                {isNotUndefinedOrNull(r.TimeRange[0]) && isNotUndefinedOrNull(r.TimeRange[1]) && (
                   <>
                     Time {verb} be between{' '}
                     <span className={listClassName}>
-                      {numberToTime(r.TimeRange[0])} and {numberToTime(r.TimeRange[1])}
+                      {numberToTime(r.TimeRange[0]!)} and {numberToTime(r.TimeRange[1]!)}
                     </span>
                     .
                   </>
                 )}
-                {r.TimeRange[0] !== null && r.TimeRange[1] === null && (
+                {isNotUndefinedOrNull(r.TimeRange[0]) && !isNotUndefinedOrNull(r.TimeRange[1]) && (
                   <>
-                    Time {verb} be on or before <span className={listClassName}>{numberToTime(r.TimeRange[0])}</span>.
+                    Time {verb} be on or before <span className={listClassName}>{numberToTime(r.TimeRange[0]!)}</span>.
                   </>
                 )}
-                {r.TimeRange[0] === null && r.TimeRange[1] !== null && (
+                {!isNotUndefinedOrNull(r.TimeRange[0]) && isNotUndefinedOrNull(r.TimeRange[1]) && (
                   <>
-                    Time {verb} be on or after <span className={listClassName}>{numberToTime(r.TimeRange[1])}</span>.
+                    Time {verb} be on or after <span className={listClassName}>{numberToTime(r.TimeRange[1]!)}</span>.
                   </>
                 )}
               </div>
