@@ -677,14 +677,7 @@ Code cell (Python and Javascript) placement instructions:\n
 - If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
 - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
-
-Placement examples: 
-Example 1: bounds at A1:D19. Code cell should be placed at F1.
-Example 2: bounds at A5:F7. Code cell should be placed at A9.
-Example 3: bounds at A5:C9 and A11:C13 and the code references the A5:C9 content. Code cell should be placed at E5.
-Example 4: bounds at A5:C9 and A11:C13 and the code references the A11:C13 content. Code cell should be placed at E11.
-Example 5: bounds at B5:D19. Code cell should be placed at F5. 
-Example 6: bounds at H3:Z9. Code cell should be placed at H11.
+- If the sheet is empty, place the code cell at A1.\n
 
 Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
 `,
@@ -758,14 +751,9 @@ For SQL Connection code cells:\n
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - SQL cells should always be placed fully clear of any existing data unless the user specifices a location. Place to the right of the last column of existing data in the sheet.\n
-
-Placement examples: 
-Example 1: empty sheet. SQL code cell should be placed at A1.
-Example 1: bounds at A1:D19. SQL code cell should be placed at F1.
-Example 2: bounds at A5:F7. SQL code cell should be placed at H5.
-Example 3: bounds at D4:H19. SQL code cell should be placed at J4.
-Example 4: bounds at D4:H19 and D21:Z21. SQL code cell should be placed at AB4.
-Example 5: bounds at F45:H50 and A1:D19. SQL code cell should be placed at J1.
+- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the code cell should be placed at column E.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
 
 Think carefully about the placement rules and examples. For SQL code cells, ensure the code cell is placed all the way right of the last column of existing data in the sheet to avoid creating spill errors.
 `,
