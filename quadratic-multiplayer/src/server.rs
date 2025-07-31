@@ -39,7 +39,7 @@ use crate::{
     state::{State, connection::PreConnection, user::UserSocket},
 };
 
-const STATS_INTERVAL_S: u64 = 10;
+const STATS_INTERVAL_S: u64 = 60;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
