@@ -750,10 +750,10 @@ Do not attempt to add code to data tables, it will result in an error. Use set_c
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
 For SQL Connection code cells:\n
-- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON\n
-- The Connection ID must be from an available database connection in the team\n
-- Use the GetDatabaseSchemas tool to get the database schemas for the connection\n
-- Write SQL queries that reference the database tables and schemas provided in context\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- The Connection ID must be from an available database connection in the team.\n
+- Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
+- Write SQL queries that reference the database tables and schemas provided in context.\n
 
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
@@ -1939,8 +1939,7 @@ In the parameters, include only columns that you want to change. The remaining c
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
 Retrieves detailed database table schemas including column names, data types, and constraints.\n
-Use this tool when you need detailed column information beyond the table names already available in context.\n
-Essential for writing accurate SQL queries that reference specific columns and their data types.\n
+Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
 If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
 `,
     parameters: {
@@ -1960,17 +1959,10 @@ If connection_ids is an empty array, it will return detailed schemas for all ava
     },
     responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
     prompt: `
-Use this tool to retrieve detailed database table schemas when you need column-level information for SQL queries.\n
-You already have table names in context - use this tool when you need:\n
-- Column names and their data types\n
-- Constraints and nullable information\n
-- Detailed schema structure for writing accurate SQL queries\n
-Call this tool when:\n
-- User asks for specific column information or data types\n
-- You need to write SQL queries that reference specific columns\n
-- User wants detailed database schema information\n
-- You need to understand column relationships and constraints\n
-The tool returns comprehensive schema information including column names, data types, constraints, and nullable flags.\n
+Retrieves detailed database table schemas including column names, data types, and constraints.\n
+Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
+If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
+This tool should always be called before writing SQL. If you don't have the table schema, you cannot write accurate SQL queries.\n
 `,
   },
 } as const;
