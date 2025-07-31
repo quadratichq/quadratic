@@ -4,6 +4,7 @@ import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { toXml } from '../utils/xmlFormatter';
 
 export function useOtherSheetsContextMessages() {
   const getOtherSheetsContext = useCallback(
@@ -43,8 +44,8 @@ export function useOtherSheetsContextMessages() {
 Note: This is an internal message for context. Do not quote it in your response.\n\n
 
 I have the following sheets in the currently open file:\n
-\`\`\`json
-${JSON.stringify(sheetNames)}
+\`\`\`xml
+${toXml(sheetNames, 'sheet_names')}
 \`\`\`
 
 You can reference data from these sheets in the context of following messages. Refer to cells if required in code.\n\n
@@ -62,8 +63,8 @@ ${otherSheetsContext.map((otherSheetContext) => {
   return `
 Tables in sheet '${otherSheetContext.sheet_name}':
 
-\`\`\`json
-${JSON.stringify(otherSheetContext.tables_summary)}
+\`\`\`xml
+${toXml(otherSheetContext.tables_summary, 'tables_summary')}
 \`\`\`
 `;
 })}
@@ -91,8 +92,8 @@ ${otherSheetsContext.map((otherSheetContext) => {
   return `
 Data in sheet '${otherSheetContext.sheet_name}':
 
-\`\`\`json
-${JSON.stringify(otherSheetContext.data_rects)}
+\`\`\`xml
+${toXml(otherSheetContext.data_rects, 'data_rects')}
 \`\`\`
 `;
 })}

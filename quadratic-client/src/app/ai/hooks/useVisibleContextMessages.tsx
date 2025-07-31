@@ -6,6 +6,7 @@ import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { toXml } from '../utils/xmlFormatter';
 
 export function useVisibleContextMessages() {
   const getVisibleContext = useCallback(async (): Promise<ChatMessage[]> => {
@@ -52,8 +53,8 @@ I am sharing visible tables summary in the viewport as an array of table summary
 - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
 
 There are following visible tables in the viewport:\n
-\`\`\`json
-${JSON.stringify(visibleContext[0].tables_summary)}
+\`\`\`xml
+${toXml(visibleContext[0].tables_summary, 'tables_summary')}
 \`\`\`
 `
     : ''
@@ -71,8 +72,8 @@ I am sharing visible charts summary in the viewport as an array of chart summary
 Take into account chart bounds when adding values, code or charts to the sheet. Always avoid overplay with chart bounds.\n
 
 There are following visible charts in the viewport:\n
-\`\`\`json
-${JSON.stringify(visibleContext[0].charts_summary)}
+\`\`\`xml
+${toXml(visibleContext[0].charts_summary, 'charts_summary')}
 \`\`\`
 `
     : ''
@@ -97,8 +98,8 @@ Each cell value is a JSON object having the following properties:\n
 This is being shared so that you can understand the data format, size and value types inside the data rectangle.\n
 
 There are following visible data in the viewport:\n
-\`\`\`json
-${JSON.stringify(visibleContext[0].data_rects)}
+\`\`\`xml
+${toXml(visibleContext[0].data_rects, 'data_rects')}
 \`\`\`
 `
     : ''
@@ -143,7 +144,9 @@ The code in the code cell is:\n
 \`\`\`${language}\n${code_string}\n\`\`\`
 
 Code was run recently and the console output is:\n
-\`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\`
+\`\`\`xml
+${toXml(consoleOutput, 'console_output')}
+\`\`\`
 `;
 })}`
     : ''

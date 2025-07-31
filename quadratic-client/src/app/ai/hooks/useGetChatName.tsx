@@ -6,6 +6,7 @@ import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
+import { toXml } from '../utils/xmlFormatter';
 
 export const useGetChatName = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
@@ -26,8 +27,8 @@ export const useGetChatName = () => {
                 type: 'text',
                 text: `Use set_chat_name tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
-\`\`\`json
-${JSON.stringify(chatPromptMessages)}
+\`\`\`xml
+${toXml(chatPromptMessages, 'chat_messages')}
 \`\`\`
 `,
               },

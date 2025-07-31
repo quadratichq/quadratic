@@ -3,6 +3,7 @@ import { DEFAULT_HTML_CELL_HEIGHT, DEFAULT_HTML_CELL_WIDTH } from '@/app/gridGL/
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { toXml } from '../utils/xmlFormatter';
 
 export function useTablesContextMessages() {
   const getTablesContext = useCallback(async (): Promise<ChatMessage[]> => {
@@ -72,8 +73,8 @@ first_row_visible_values is an array of objects with following properties:\n
 
 There are following data tables in the currently open file:\n
 
-\`\`\`json
-${JSON.stringify(dataTables)}
+\`\`\`xml
+${toXml(dataTables, 'data_tables')}
 \`\`\`
 
 Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
@@ -115,8 +116,8 @@ first_row_visible_values is an array of objects with following properties:\n
 
 There are following code tables in the currently open file:\n
 
-\`\`\`json
-${JSON.stringify(codeTables)}
+\`\`\`xml
+${toXml(codeTables, 'code_tables')}
 \`\`\`
 
 Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
@@ -139,8 +140,8 @@ Each chart has following properties:\n
 - spill: This is a boolean value representing if the chart has a spill.\n\n
 
 There are following charts in the currently open file:\n
-\`\`\`json
-${JSON.stringify(charts)}
+\`\`\`xml
+${toXml(charts, 'charts')}
 \`\`\`
 
 Always avoid chart bounds when adding values, code or charts to the sheet. Reference chart values where ever required.

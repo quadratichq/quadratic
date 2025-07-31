@@ -7,6 +7,7 @@ import { connectionClient } from '@/shared/api/connectionClient';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 import { useRecoilValue } from 'recoil';
+import { toXml } from '../utils/xmlFormatter';
 
 export function useCodeCellContextMessages() {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
@@ -30,7 +31,7 @@ export function useCodeCellContextMessages() {
           teamUuid
         );
       }
-      const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
+      const schemaJsonForAi = schemaData ? toXml(schemaData, 'database_schema') : undefined;
 
       const a1Pos = xyToA1(pos.x, pos.y);
       const language = getConnectionKind(cellLanguage);
@@ -48,7 +49,7 @@ The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
   schemaJsonForAi
     ? `The schema for the database is:
-\`\`\`json
+\`\`\`xml
 ${schemaJsonForAi}
 \`\`\`
 ${
@@ -86,7 +87,10 @@ The code in the code cell is:\n
 ${
   consoleHasOutput
     ? `Code was run recently and the console output is:\n
-\`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\``
+\`\`\`xml
+${toXml(consoleOutput, 'console_output')}
+\`\`\`
+`
     : ``
 }`,
             },

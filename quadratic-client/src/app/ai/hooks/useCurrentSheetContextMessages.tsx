@@ -5,6 +5,7 @@ import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
+import { toXml } from '../utils/xmlFormatter';
 
 export function useCurrentSheetContextMessages() {
   const getCurrentSheetContext = useCallback(
@@ -69,8 +70,8 @@ I am sharing tables summary in the currently open sheet as an array of table sum
 - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
 
 There are following tables in the currently open sheet:\n
-\`\`\`json
-${JSON.stringify(currentSheetContext[0].tables_summary)}
+\`\`\`xml
+${toXml(currentSheetContext[0].tables_summary, 'tables_summary')}
 \`\`\`
 `
     : ''
@@ -89,8 +90,8 @@ I am sharing charts summary in the currently open sheet as an array of chart sum
 Take into account chart bounds when adding values, code or charts to the sheet. Always avoid overplay with chart bounds.\n
 
 There are following charts in the currently open sheet:\n
-\`\`\`json
-${JSON.stringify(currentSheetContext[0].charts_summary)}
+\`\`\`xml
+${toXml(currentSheetContext[0].charts_summary, 'charts_summary')}
 \`\`\`
 `
     : ''
@@ -114,8 +115,8 @@ Each cell value is a JSON object having the following properties:\n
 WARNING: This is ONLY a subset of the data. Use the get_cell_data function to get additional data as defined by the bounds.\n\n
 
 There are following data in the currently open sheet:\n
-\`\`\`json
-${JSON.stringify(currentSheetContext[0].data_rects)}
+\`\`\`xml
+${toXml(currentSheetContext[0].data_rects, 'data_rects')}
 \`\`\`
 `
     : ''
