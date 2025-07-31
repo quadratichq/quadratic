@@ -472,7 +472,7 @@ impl GridController {
 
             for column_width in layout.column_widths.iter() {
                 let column = column_width.column as i64 + 1;
-                sheet.offsets.set_column_width(column, column_width.width * 7.0);
+                sheet.offsets.set_column_width(column, column_width.width * 8.0);
             }
 
             for row_height in layout.row_heights.iter() {
