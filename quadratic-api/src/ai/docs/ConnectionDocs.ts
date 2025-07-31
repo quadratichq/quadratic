@@ -14,6 +14,9 @@ There are some slight differences between SQL syntax across databases to keep in
 * In Postgres it is best practice use quotes around table names and column names.
 * In MySQL it is best practice to use backticks around table names and column names.
 * In MS SQL Server it is best practice to use double quotes around table names and column names.
+* BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
+* COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES
+* MARIADB has the same syntax as MySQL
 
 ## SQL references 
 

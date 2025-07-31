@@ -693,12 +693,11 @@ Think carefully about the placement rules and examples. Always ensure the code c
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
-Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
-Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
-SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 `,
     parameters: {
       type: 'object',
@@ -744,26 +743,30 @@ This tool is for SQL Connection code only. For Python and Javascript use set_cod
     },
     responseSchema: AIToolsArgsSchema[AITool.SetSQLCodeCellValue],
     prompt: `
-Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
-Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
-SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON\n
 - The Connection ID must be from an available database connection in the team\n
 - Use the GetDatabaseSchemas tool to get the database schemas for the connection\n
 - Write SQL queries that reference the database tables and schemas provided in context\n
-- Follow database-specific syntax rules (quotes for POSTGRES, backticks for MYSQL, Schema scoping in BIGQUERY, etc.)\n
-- POSTGRES uses advanced features like arrays, JSON operations, and custom data types with the most SQL standard compliance\n
-- MYSQL employs backticks for identifier quoting and has unique storage engine syntax (MyISAM, InnoDB) with more relaxed SQL standards\n
-- MSSQL uses square brackets for identifiers and T-SQL extensions like TOP clause, OUTPUT clause, and proprietary functions\n
-- SNOWFLAKE features cloud-native syntax with VARIANT data type for semi-structured data and unique clustering/warehouse scaling commands\n
-- BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
-- COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES\n
-- MARIADB has the same syntax as MySQL\n
+
+SQL code cell placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifices a location. Always place to the right of the last column of data in the sheet.\n
+
+Placement examples: 
+Example 1: bounds at A1:D19. SQL code cell should be placed at F1.
+Example 2: bounds at A5:F7. Code cell should be placed at H5.
+Example 3: bounds at D4:H19. SQL code cell should be placed at J4.
+Example 4: bounds at D4:H19 and D21:Z21. SQL code cell should be placed at AB4.
+Example 5: bounds at F45:H50 and A1:D19. SQL code cell should be placed at J1.
+
+Think carefully about the placement rules and examples. For SQL code cells, always ensure the code cell is placed all the way right of the last column of data in the sheet where it does not create a spill error.
 `,
   },
   [AITool.SetFormulaCellValue]: {
