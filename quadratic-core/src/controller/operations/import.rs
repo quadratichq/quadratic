@@ -6,9 +6,9 @@ use rust_decimal::prelude::ToPrimitive;
 
 use crate::{
     cellvalue::Import, controller::{
-        active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource, GridController
+    active_transactions::pending_transaction::PendingTransaction, execution::TransactionSource, GridController
     }, date_time::{DEFAULT_DATE_FORMAT, DEFAULT_TIME_FORMAT}, grid::{
-        fix_names::sanitize_table_name, formats::SheetFormatUpdates, unique_data_table_name, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeCellValue, DataTable, NumericFormat, NumericFormatKind, Sheet, SheetId
+    fix_names::sanitize_table_name, formats::SheetFormatUpdates, unique_data_table_name, CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, CodeCellValue, DataTable, NumericFormat, NumericFormatKind, Sheet, SheetId
     }, parquet::parquet_to_array, small_timestamp::SmallTimestamp, Array, ArraySize, CellValue, Pos, SheetPos
 };
 use crate::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp, CellBorderLine};
@@ -30,493 +30,493 @@ impl GridController {
     /// Guesses if the first row of a CSV file is a header based on the types of the
     /// first three rows.
     fn guess_csv_first_row_is_header(cell_values: &Array) -> bool {
-        if cell_values.height() < 3 {
-            return false;
-        }
+    if cell_values.height() < 3 {
+        return false;
+    }
 
-        let text_type_id = CellValue::Text("".to_string()).type_id();
-        let number_type_id = CellValue::Number(0.into()).type_id();
+    let text_type_id = CellValue::Text("".to_string()).type_id();
+    let number_type_id = CellValue::Number(0.into()).type_id();
 
-        let types = |row: usize| {
-            cell_values
-                .get_row(row)
-                .unwrap_or_default()
-                .iter()
-                .map(|c| c.type_id())
-                .collect::<Vec<_>>()
+    let types = |row: usize| {
+        cell_values
+            .get_row(row)
+            .unwrap_or_default()
+            .iter()
+            .map(|c| c.type_id())
+            .collect::<Vec<_>>()
+    };
+
+    let row_0 = types(0);
+    let row_1 = types(1);
+    let row_2 = types(2);
+
+    // If we have column names that are blank, then probably not a header
+    if row_0.iter().any(|t| *t == CellValue::Blank.type_id()) {
+        return false;
+    }
+
+    // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
+    let type_row_match =
+        |a: &[u8], b: &[u8], ignore_empty: bool, match_text_number: bool| -> bool {
+            if a.len() != b.len() {
+                return false;
+            }
+
+            for (t1, t2) in a.iter().zip(b.iter()) {
+                //
+                if ignore_empty
+                    && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
+                {
+                    continue;
+                }
+                if t1 != t2 {
+                    if !match_text_number {
+                        return false;
+                    }
+                    if !((*t1 == number_type_id && *t2 == text_type_id)
+                        || (*t1 == text_type_id && *t2 == number_type_id))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            true
         };
 
-        let row_0 = types(0);
-        let row_1 = types(1);
-        let row_2 = types(2);
+    let row_0_is_different_from_row_1 =
+        !type_row_match(row_0.as_slice(), row_1.as_slice(), false, false)
+            || row_0.iter().all(|t| *t == text_type_id);
+    let row_1_is_same_as_row_2 = type_row_match(row_1.as_slice(), row_2.as_slice(), true, true);
 
-        // If we have column names that are blank, then probably not a header
-        if row_0.iter().any(|t| *t == CellValue::Blank.type_id()) {
-            return false;
-        }
-
-        // compares the two entries, ignoring Blank (type == 8) in b if ignore_empty
-        let type_row_match =
-            |a: &[u8], b: &[u8], ignore_empty: bool, match_text_number: bool| -> bool {
-                if a.len() != b.len() {
-                    return false;
-                }
-
-                for (t1, t2) in a.iter().zip(b.iter()) {
-                    //
-                    if ignore_empty
-                        && (*t1 == CellValue::Blank.type_id() || *t2 == CellValue::Blank.type_id())
-                    {
-                        continue;
-                    }
-                    if t1 != t2 {
-                        if !match_text_number {
-                            return false;
-                        }
-                        if !((*t1 == number_type_id && *t2 == text_type_id)
-                            || (*t1 == text_type_id && *t2 == number_type_id))
-                        {
-                            return false;
-                        }
-                    }
-                }
-
-                true
-            };
-
-        let row_0_is_different_from_row_1 =
-            !type_row_match(row_0.as_slice(), row_1.as_slice(), false, false)
-                || row_0.iter().all(|t| *t == text_type_id);
-        let row_1_is_same_as_row_2 = type_row_match(row_1.as_slice(), row_2.as_slice(), true, true);
-
-        row_0_is_different_from_row_1 && row_1_is_same_as_row_2
+    row_0_is_different_from_row_1 && row_1_is_same_as_row_2
     }
 
     /// Imports a CSV file into the grid.
     pub fn import_csv_operations(
-        &mut self,
-        sheet_id: SheetId,
-        file: &[u8],
-        file_name: &str,
-        insert_at: Pos,
-        delimiter: Option<u8>,
-        create_table: Option<bool>,
+    &mut self,
+    sheet_id: SheetId,
+    file: &[u8],
+    file_name: &str,
+    insert_at: Pos,
+    delimiter: Option<u8>,
+    create_table: Option<bool>,
     ) -> Result<Vec<Operation>> {
-        let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
-        let sheet_pos = SheetPos::from((insert_at, sheet_id));
+    let error = |message: String| anyhow!("Error parsing CSV file {}: {}", file_name, message);
+    let sheet_pos = SheetPos::from((insert_at, sheet_id));
 
-        let converted_file = clean_csv_file(file)?;
+    let converted_file = clean_csv_file(file)?;
 
-        let (d, width, height, is_table) = find_csv_info(&converted_file);
-        let delimiter = delimiter.unwrap_or(d);
+    let (d, width, height, is_table) = find_csv_info(&converted_file);
+    let delimiter = delimiter.unwrap_or(d);
 
-        let reader = |flexible| {
-            csv::ReaderBuilder::new()
-                .delimiter(delimiter)
-                .has_headers(false)
-                .flexible(flexible)
-                .from_reader(converted_file.as_slice())
-        };
-        let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
-        let mut cell_values = Array::new_empty(array_size);
-        let mut sheet_format_updates = SheetFormatUpdates::default();
+    let reader = |flexible| {
+        csv::ReaderBuilder::new()
+            .delimiter(delimiter)
+            .has_headers(false)
+            .flexible(flexible)
+            .from_reader(converted_file.as_slice())
+    };
+    let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
+    let mut cell_values = Array::new_empty(array_size);
+    let mut sheet_format_updates = SheetFormatUpdates::default();
 
-        let mut y: u32 = 0;
+    let mut y: u32 = 0;
 
-        for entry in reader(true).records() {
-            match entry {
-                Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
-                Ok(record) => {
-                    for (x, value) in record.iter().enumerate() {
-                        let (cell_value, format_update) = self.string_to_cell_value(value, false);
-                        cell_values
-                            .set(u32::try_from(x)?, y, cell_value, false)
-                            .map_err(|e| error(e.to_string()))?;
+    for entry in reader(true).records() {
+        match entry {
+            Err(e) => return Err(error(format!("line {}: {}", y + 1, e))),
+            Ok(record) => {
+                for (x, value) in record.iter().enumerate() {
+                    let (cell_value, format_update) = self.string_to_cell_value(value, false);
+                    cell_values
+                        .set(u32::try_from(x)?, y, cell_value, false)
+                        .map_err(|e| error(e.to_string()))?;
 
-                        if !format_update.is_default() {
-                            let pos = Pos {
-                                x: x as i64 + 1,
-                                y: y as i64 + 1,
-                            };
-                            sheet_format_updates.set_format_cell(pos, format_update);
-                        }
+                    if !format_update.is_default() {
+                        let pos = Pos {
+                            x: x as i64 + 1,
+                            y: y as i64 + 1,
+                        };
+                        sheet_format_updates.set_format_cell(pos, format_update);
                     }
                 }
             }
-            y += 1;
+        }
+        y += 1;
 
-            // update the progress bar every time there's a new batch
-            let should_update = y % IMPORT_LINES_PER_OPERATION == 0;
+        // update the progress bar every time there's a new batch
+        let should_update = y % IMPORT_LINES_PER_OPERATION == 0;
 
-            if should_update && (cfg!(target_family = "wasm") || cfg!(test)) {
-                crate::wasm_bindings::js::jsImportProgress(file_name, y, height);
-            }
+        if should_update && (cfg!(target_family = "wasm") || cfg!(test)) {
+            crate::wasm_bindings::js::jsImportProgress(file_name, y, height);
+        }
+    }
+
+    let mut ops = vec![];
+
+    let apply_first_row_as_header = match create_table {
+        Some(true) => true,
+        Some(false) => false,
+        None => GridController::guess_csv_first_row_is_header(&cell_values),
+    };
+
+    if is_table && apply_first_row_as_header {
+        let context = self.a1_context();
+        let import = Import::new(sanitize_table_name(file_name.into()));
+        let mut data_table =
+            DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
+
+        data_table.value = cell_values.into();
+        if !sheet_format_updates.is_default() {
+            data_table
+                .formats
+                .get_or_insert_default()
+                .apply_updates(&sheet_format_updates);
         }
 
-        let mut ops = vec![];
+        data_table.apply_first_row_as_header();
+        ops.push(Operation::AddDataTable {
+            sheet_pos,
+            data_table,
+            cell_value: CellValue::Import(import),
+            index: None,
+        });
+        drop(sheet_format_updates);
+    } else {
+        ops.push(Operation::SetCellValues {
+            sheet_pos,
+            values: cell_values.into(),
+        });
+        sheet_format_updates.translate_in_place(sheet_pos.x, sheet_pos.y);
+        ops.push(Operation::SetCellFormatsA1 {
+            sheet_id,
+            formats: sheet_format_updates,
+        });
+    }
 
-        let apply_first_row_as_header = match create_table {
-            Some(true) => true,
-            Some(false) => false,
-            None => GridController::guess_csv_first_row_is_header(&cell_values),
-        };
-
-        if is_table && apply_first_row_as_header {
-            let context = self.a1_context();
-            let import = Import::new(sanitize_table_name(file_name.into()));
-            let mut data_table =
-                DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
-
-            data_table.value = cell_values.into();
-            if !sheet_format_updates.is_default() {
-                data_table
-                    .formats
-                    .get_or_insert_default()
-                    .apply_updates(&sheet_format_updates);
-            }
-
-            data_table.apply_first_row_as_header();
-            ops.push(Operation::AddDataTable {
-                sheet_pos,
-                data_table,
-                cell_value: CellValue::Import(import),
-                index: None,
-            });
-            drop(sheet_format_updates);
-        } else {
-            ops.push(Operation::SetCellValues {
-                sheet_pos,
-                values: cell_values.into(),
-            });
-            sheet_format_updates.translate_in_place(sheet_pos.x, sheet_pos.y);
-            ops.push(Operation::SetCellFormatsA1 {
-                sheet_id,
-                formats: sheet_format_updates,
-            });
-        }
-
-        Ok(ops)
+    Ok(ops)
     }
 
     /// Imports an Excel file into the grid.
     pub fn import_excel_operations(
-        &mut self,
-        file: &[u8],
-        file_name: &str,
+    &mut self,
+    file: &[u8],
+    file_name: &str,
     ) -> Result<Vec<Operation>> {
-        let mut ops: Vec<Operation> = vec![];
-        let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
+    let mut ops: Vec<Operation> = vec![];
+    let error = |e: CalamineError| anyhow!("Error parsing Excel file {file_name}: {e}");
 
-        // detect file extension
-        let path = Path::new(file_name);
-        let cursor = Cursor::new(file);
-        let mut workbook = match path.extension().and_then(|e| e.to_str()) {
-            Some("xls") | Some("xla") => {
-                Sheets::Xls(open_workbook_from_rs(cursor).map_err(CalamineError::Xls)?)
-            }
-            Some("xlsx") | Some("xlsm") | Some("xlam") => {
-                Sheets::Xlsx(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsx)?)
-            }
-            Some("xlsb") => {
-                Sheets::Xlsb(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsb)?)
-            }
-            Some("ods") => Sheets::Ods(open_workbook_from_rs(cursor).map_err(CalamineError::Ods)?),
-            _ => return Err(anyhow!("Cannot detect file format")),
-        };
-
-        let sheets = workbook.sheet_names().to_owned();
-
-        for new_sheet_name in sheets.iter() {
-            if self.try_sheet_from_name(new_sheet_name).is_some() {
-                bail!("Sheet with name \"{new_sheet_name}\" already exists");
-            }
+    // detect file extension
+    let path = Path::new(file_name);
+    let cursor = Cursor::new(file);
+    let mut workbook = match path.extension().and_then(|e| e.to_str()) {
+        Some("xls") | Some("xla") => {
+            Sheets::Xls(open_workbook_from_rs(cursor).map_err(CalamineError::Xls)?)
         }
-
-        let xlsx_range_to_pos = |(row, col)| Pos {
-            x: col as i64 + 1,
-            y: row as i64 + 1,
-        };
-
-        // total rows for calculating import progress
-        let total_rows = sheets
-            .iter()
-            .try_fold(0, |acc, sheet_name| {
-                let range = workbook.worksheet_range(sheet_name)?;
-                // counted twice because we have to read values and formulas
-                Ok(acc + 2 * range.rows().count())
-            })
-            .map_err(error)?;
-        let mut current_y_values = 0;
-        let mut current_y_formula = 0;
-
-        let mut gc = GridController::new_blank();
-
-        // add all sheets to the grid, this is required for sheet name parsing in cell ref
-        for sheet_name in sheets.iter() {
-            gc.server_add_sheet_with_name(sheet_name.to_owned());
+        Some("xlsx") | Some("xlsm") | Some("xlam") => {
+            Sheets::Xlsx(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsx)?)
         }
+        Some("xlsb") => {
+            Sheets::Xlsb(open_workbook_from_rs(cursor).map_err(CalamineError::Xlsb)?)
+        }
+        Some("ods") => Sheets::Ods(open_workbook_from_rs(cursor).map_err(CalamineError::Ods)?),
+        _ => return Err(anyhow!("Cannot detect file format")),
+    };
 
-        let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
+    let sheets = workbook.sheet_names().to_owned();
 
-        // add data from excel file to grid
-        for sheet_name in sheets {
-            let sheet = gc
-                .try_sheet_from_name(&sheet_name)
-                .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
-            let sheet_id = sheet.id;
+    for new_sheet_name in sheets.iter() {
+        if self.try_sheet_from_name(new_sheet_name).is_some() {
+            bail!("Sheet with name \"{new_sheet_name}\" already exists");
+        }
+    }
 
-            // values
-            let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
-            let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
-            for (y, row) in range.rows().enumerate() {
-                for (x, cell) in row.iter().enumerate() {
-                    let cell_value = match cell {
-                        ExcelData::Empty => continue,
-                        ExcelData::String(value) => CellValue::Text(value.to_string()),
-                        ExcelData::DateTimeIso(value) => CellValue::unpack_date_time(value)
-                            .unwrap_or(CellValue::Text(value.to_string())),
-                        ExcelData::DateTime(value) => {
-                            if value.is_datetime() {
-                                value.as_datetime().map_or_else(
-                                    || CellValue::Blank,
-                                    |v| {
-                                        // there's probably a better way to figure out if it's a Date or a DateTime, but this works for now
-                                        if let (Ok(zero_time), Ok(zero_date)) = (
-                                            NaiveTime::parse_from_str("00:00:00", "%H:%M:%S"),
-                                            NaiveDate::parse_from_str("1899-12-31", "%Y-%m-%d"),
-                                        ) {
-                                            if v.time() == zero_time {
-                                                CellValue::Date(v.date())
-                                            } else if v.date() == zero_date {
-                                                CellValue::Time(v.time())
-                                            } else {
-                                                CellValue::DateTime(v)
-                                            }
+    let xlsx_range_to_pos = |(row, col)| Pos {
+        x: col as i64 + 1,
+        y: row as i64 + 1,
+    };
+
+    // total rows for calculating import progress
+    let total_rows = sheets
+        .iter()
+        .try_fold(0, |acc, sheet_name| {
+            let range = workbook.worksheet_range(sheet_name)?;
+            // counted twice because we have to read values and formulas
+            Ok(acc + 2 * range.rows().count())
+        })
+        .map_err(error)?;
+    let mut current_y_values = 0;
+    let mut current_y_formula = 0;
+
+    let mut gc = GridController::new_blank();
+
+    // add all sheets to the grid, this is required for sheet name parsing in cell ref
+    for sheet_name in sheets.iter() {
+        gc.server_add_sheet_with_name(sheet_name.to_owned());
+    }
+
+    let formula_start_name = unique_data_table_name("Formula1", false, None, self.a1_context());
+
+    // add data from excel file to grid
+    for sheet_name in sheets {
+        let sheet = gc
+            .try_sheet_from_name(&sheet_name)
+            .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+        let sheet_id = sheet.id;
+
+        // values
+        let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
+        let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
+        for (y, row) in range.rows().enumerate() {
+            for (x, cell) in row.iter().enumerate() {
+                let cell_value = match cell {
+                    ExcelData::Empty => continue,
+                    ExcelData::String(value) => CellValue::Text(value.to_string()),
+                    ExcelData::DateTimeIso(value) => CellValue::unpack_date_time(value)
+                        .unwrap_or(CellValue::Text(value.to_string())),
+                    ExcelData::DateTime(value) => {
+                        if value.is_datetime() {
+                            value.as_datetime().map_or_else(
+                                || CellValue::Blank,
+                                |v| {
+                                    // there's probably a better way to figure out if it's a Date or a DateTime, but this works for now
+                                    if let (Ok(zero_time), Ok(zero_date)) = (
+                                        NaiveTime::parse_from_str("00:00:00", "%H:%M:%S"),
+                                        NaiveDate::parse_from_str("1899-12-31", "%Y-%m-%d"),
+                                    ) {
+                                        if v.time() == zero_time {
+                                            CellValue::Date(v.date())
+                                        } else if v.date() == zero_date {
+                                            CellValue::Time(v.time())
                                         } else {
                                             CellValue::DateTime(v)
                                         }
-                                    },
-                                )
-                            } else {
-                                CellValue::Text(value.to_string())
-                            }
+                                    } else {
+                                        CellValue::DateTime(v)
+                                    }
+                                },
+                            )
+                        } else {
+                            CellValue::Text(value.to_string())
                         }
-                        ExcelData::DurationIso(value) => CellValue::Text(value.to_string()),
-                        ExcelData::Float(value) => {
-                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                        }
-                        ExcelData::Int(value) => {
-                            CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
-                        }
-                        ExcelData::Error(_) => continue,
-                        ExcelData::Bool(value) => CellValue::Logical(*value),
-                    };
+                    }
+                    ExcelData::DurationIso(value) => CellValue::Text(value.to_string()),
+                    ExcelData::Float(value) => {
+                        CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
+                    }
+                    ExcelData::Int(value) => {
+                        CellValue::unpack_str_float(&value.to_string(), CellValue::Blank)
+                    }
+                    ExcelData::Error(_) => continue,
+                    ExcelData::Bool(value) => CellValue::Logical(*value),
+                };
 
+                let pos = Pos {
+                    x: values_insert_at.x + x as i64,
+                    y: values_insert_at.y + y as i64,
+                };
+                let sheet = gc
+                    .try_sheet_mut(sheet_id)
+                    .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                sheet.columns.set_value(&pos, cell_value);
+            }
+
+            // send progress to the client, every IMPORT_LINES_PER_OPERATION
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && current_y_values % IMPORT_LINES_PER_OPERATION == 0
+            {
+                crate::wasm_bindings::js::jsImportProgress(
+                    file_name,
+                    current_y_values + current_y_formula,
+                    total_rows as u32,
+                );
+            }
+            current_y_values += 1;
+        }
+
+        // formulas
+        let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
+        let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
+        for (y, row) in formula.rows().enumerate() {
+            for (x, cell) in row.iter().enumerate() {
+                if !cell.is_empty() {
                     let pos = Pos {
-                        x: values_insert_at.x + x as i64,
-                        y: values_insert_at.y + y as i64,
+                        x: formulas_insert_at.x + x as i64,
+                        y: formulas_insert_at.y + y as i64,
                     };
-                    let sheet = gc
-                        .try_sheet_mut(sheet_id)
-                        .ok_or(anyhow!("Error parsing Excel file {file_name}"))?;
+                    let sheet_pos = pos.to_sheet_pos(sheet_id);
+                    let sheet = gc.try_sheet_mut_result(sheet_id)?;
+                    let cell_value = CellValue::Code(CodeCellValue {
+                        language: CodeCellLanguage::Formula,
+                        code: cell.to_string(),
+                    });
+                    
                     sheet.columns.set_value(&pos, cell_value);
-                }
-
-                // send progress to the client, every IMPORT_LINES_PER_OPERATION
-                if (cfg!(target_family = "wasm") || cfg!(test))
-                    && current_y_values % IMPORT_LINES_PER_OPERATION == 0
-                {
-                    crate::wasm_bindings::js::jsImportProgress(
-                        file_name,
-                        current_y_values + current_y_formula,
-                        total_rows as u32,
-                    );
-                }
-                current_y_values += 1;
-            }
-
-            // formulas
-            let formula = workbook.worksheet_formula(&sheet_name).map_err(error)?;
-            let formulas_insert_at = formula.start().map_or_else(Pos::default, xlsx_range_to_pos);
-            for (y, row) in formula.rows().enumerate() {
-                for (x, cell) in row.iter().enumerate() {
-                    if !cell.is_empty() {
-                        let pos = Pos {
-                            x: formulas_insert_at.x + x as i64,
-                            y: formulas_insert_at.y + y as i64,
-                        };
-                        let sheet_pos = pos.to_sheet_pos(sheet_id);
-                        let sheet = gc.try_sheet_mut_result(sheet_id)?;
-                        let cell_value = CellValue::Code(CodeCellValue {
-                            language: CodeCellLanguage::Formula,
-                            code: cell.to_string(),
-                        });
-                        
-                        sheet.columns.set_value(&pos, cell_value);
-                        
-                        let mut transaction = PendingTransaction {
-                            source: TransactionSource::Server,
-                            ..Default::default()
-                        };
-
-                        gc.add_formula_without_eval(
-                            &mut transaction,
-                            sheet_pos,
-                            cell,
-                            formula_start_name.as_str(),
-                        );
-                        gc.update_a1_context_table_map(&mut transaction);
-                    }
-                }
-
-                // send progress to the client, every IMPORT_LINES_PER_OPERATION
-                if (cfg!(target_family = "wasm") || cfg!(test))
-                    && current_y_formula % IMPORT_LINES_PER_OPERATION == 0
-                {
-                    crate::wasm_bindings::js::jsImportProgress(
-                        file_name,
-                        current_y_values + current_y_formula,
-                        total_rows as u32,
-                    );
-                }
-                current_y_formula += 1;
-            }
-
-            // styles
-            let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
-            let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
-            for (y, row) in range.rows().enumerate() {
-                for (x, style) in row.iter().enumerate() {
-                    let pos = Pos {
-                        x: style_insert_at.x + x as i64,
-                        y: style_insert_at.y + y as i64,
+                    
+                    let mut transaction = PendingTransaction {
+                        source: TransactionSource::Server,
+                        ..Default::default()
                     };
 
-                    if let Some(font) = style.get_font() {
-                        let sheet = gc.try_sheet_mut_result(sheet_id)?;
+                    gc.add_formula_without_eval(
+                        &mut transaction,
+                        sheet_pos,
+                        cell,
+                        formula_start_name.as_str(),
+                    );
+                    gc.update_a1_context_table_map(&mut transaction);
+                }
+            }
 
-                        // font formatting
-                        font.is_bold()
-                            .then(|| sheet.formats.bold.set(pos, Some(true)));
-                        font.is_italic()
-                            .then(|| sheet.formats.italic.set(pos, Some(true)));
-                        font.has_underline()
-                            .then(|| sheet.formats.underline.set(pos, Some(true)));
-                        font.has_strikethrough()
-                            .then(|| sheet.formats.strike_through.set(pos, Some(true)));
-                        font.color.and_then(|color| {
-                            sheet.formats.text_color.set(pos, Some(color.to_string()))
+            // send progress to the client, every IMPORT_LINES_PER_OPERATION
+            if (cfg!(target_family = "wasm") || cfg!(test))
+                && current_y_formula % IMPORT_LINES_PER_OPERATION == 0
+            {
+                crate::wasm_bindings::js::jsImportProgress(
+                    file_name,
+                    current_y_values + current_y_formula,
+                    total_rows as u32,
+                );
+            }
+            current_y_formula += 1;
+        }
+
+        // styles
+        let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
+        let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
+        for (y, row) in range.rows().enumerate() {
+            for (x, style) in row.iter().enumerate() {
+                let pos = Pos {
+                    x: style_insert_at.x + x as i64,
+                    y: style_insert_at.y + y as i64,
+                };
+
+                if let Some(font) = style.get_font() {
+                    let sheet = gc.try_sheet_mut_result(sheet_id)?;
+
+                    // font formatting
+                    font.is_bold()
+                        .then(|| sheet.formats.bold.set(pos, Some(true)));
+                    font.is_italic()
+                        .then(|| sheet.formats.italic.set(pos, Some(true)));
+                    font.has_underline()
+                        .then(|| sheet.formats.underline.set(pos, Some(true)));
+                    font.has_strikethrough()
+                        .then(|| sheet.formats.strike_through.set(pos, Some(true)));
+                    font.color.and_then(|color| {
+                        sheet.formats.text_color.set(pos, Some(color.to_string()))
+                    });
+
+                    // fill color
+                    style
+                        .get_fill()
+                        .and_then(|fill| fill.get_color())
+                        .and_then(|color| {
+                            sheet.formats.fill_color.set(pos, Some(color.to_string()))
                         });
 
-                        // fill color
-                        style
-                            .get_fill()
-                            .and_then(|fill| fill.get_color())
-                            .and_then(|color| {
-                                sheet.formats.fill_color.set(pos, Some(color.to_string()))
-                            });
+                    // alignment
+                    if let Some(alignment) = style.get_alignment() {
+                        // horizontal alignment
+                        sheet.formats.align.set(
+                            pos,
+                            match alignment.horizontal {
+                                HorizontalAlignment::Left => Some(CellAlign::Left),
+                                HorizontalAlignment::Center => Some(CellAlign::Center),
+                                HorizontalAlignment::Right => Some(CellAlign::Right),
+                                _ => None,
+                            },
+                        );
 
-                        // alignment
-                        if let Some(alignment) = style.get_alignment() {
-                            // horizontal alignment
-                            sheet.formats.align.set(
-                                pos,
-                                match alignment.horizontal {
-                                    HorizontalAlignment::Left => Some(CellAlign::Left),
-                                    HorizontalAlignment::Center => Some(CellAlign::Center),
-                                    HorizontalAlignment::Right => Some(CellAlign::Right),
-                                    _ => None,
-                                },
-                            );
+                        // vertical alignment
+                        sheet.formats.vertical_align.set(
+                            pos,
+                            match alignment.vertical {
+                                VerticalAlignment::Top => Some(CellVerticalAlign::Top),
+                                VerticalAlignment::Center => Some(CellVerticalAlign::Middle),
+                                VerticalAlignment::Bottom => Some(CellVerticalAlign::Bottom),
+                                _ => None,
+                            },
+                        );
 
-                            // vertical alignment
-                            sheet.formats.vertical_align.set(
-                                pos,
-                                match alignment.vertical {
-                                    VerticalAlignment::Top => Some(CellVerticalAlign::Top),
-                                    VerticalAlignment::Center => Some(CellVerticalAlign::Middle),
-                                    VerticalAlignment::Bottom => Some(CellVerticalAlign::Bottom),
-                                    _ => None,
-                                },
-                            );
-
-                            // wrap text
-                            if alignment.wrap_text {
-                                sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-                            }
-
-                            // shrink to fit
-                            if alignment.shrink_to_fit {
-                                sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
-                            }
+                        // wrap text
+                        if alignment.wrap_text {
+                            sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
                         }
 
-                        // number formats
-                        if let Some(number_format) = style.get_number_format() { import_excel_number_format(sheet, pos, number_format); }
+                        // shrink to fit
+                        if alignment.shrink_to_fit {
+                            sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
+                        }
+                    }
 
-                        // borders
-                        if let Some(border) = style.get_borders() {
-                            let border_style_cell = convert_excel_borders_to_quadratic(border);
-                            if !border_style_cell.is_empty() {
-                                sheet.borders.set_style_cell(pos, border_style_cell);
-                            }
+                    // number formats
+                    if let Some(number_format) = style.get_number_format() { import_excel_number_format(sheet, pos, number_format); }
+
+                    // borders
+                    if let Some(border) = style.get_borders() {
+                        let border_style_cell = convert_excel_borders_to_quadratic(border);
+                        if !border_style_cell.is_empty() {
+                            sheet.borders.set_style_cell(pos, border_style_cell);
                         }
                     }
                 }
             }
+        }
+    
         
-            
-            // layout
-            let layout = workbook.worksheet_layout(&sheet_name).map_err(error)?;
-            let sheet = gc.try_sheet_mut_result(sheet_id)?;
+        // layout
+        let layout = workbook.worksheet_layout(&sheet_name).map_err(error)?;
+        let sheet = gc.try_sheet_mut_result(sheet_id)?;
 
-            for column_width in layout.column_widths.iter() {
-                let column = column_width.column as i64 + 1;
-                sheet.offsets.set_column_width(column, column_width.width * 8.0);
-            }
-
-            for row_height in layout.row_heights.iter() {
-                let row = row_height.row as i64 + 1;
-                sheet.offsets.set_row_height(row, row_height.height * 1.5);
-            }
+        for column_width in layout.column_widths.iter() {
+            let column = column_width.column as i64 + 1;
+            sheet.offsets.set_column_width(column, column_width.width * 8.0);
         }
 
-        // rerun all formulas in-order
-        let compute_ops = gc.rerun_all_code_cells_operations();
-        gc.server_apply_transaction(compute_ops, None);
-
-        for sheet in gc.grid.sheets.into_values() {
-            ops.push(Operation::AddSheet {
-                sheet: Box::new(sheet),
-            });
+        for row_height in layout.row_heights.iter() {
+            let row = row_height.row as i64 + 1;
+            sheet.offsets.set_row_height(row, row_height.height * 1.5);
         }
+    }
 
-        Ok(ops)
+    // rerun all formulas in-order
+    let compute_ops = gc.rerun_all_code_cells_operations();
+    gc.server_apply_transaction(compute_ops, None);
+
+    for sheet in gc.grid.sheets.into_values() {
+        ops.push(Operation::AddSheet {
+            sheet: Box::new(sheet),
+        });
+    }
+
+    Ok(ops)
     }
 
     /// Imports a Parquet file into the grid.
     pub fn import_parquet_operations(
-        &mut self,
-        sheet_id: SheetId,
-        file: Vec<u8>,
-        file_name: &str,
-        insert_at: Pos,
-        updater: Option<impl Fn(&str, u32, u32)>,
+    &mut self,
+    sheet_id: SheetId,
+    file: Vec<u8>,
+    file_name: &str,
+    insert_at: Pos,
+    updater: Option<impl Fn(&str, u32, u32)>,
     ) -> Result<Vec<Operation>> {
-        let cell_values = parquet_to_array(file, file_name, updater)?;
-        let context = self.a1_context();
-        let import = Import::new(sanitize_table_name(file_name.into()));
-        let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
-        data_table.apply_first_row_as_header();
+    let cell_values = parquet_to_array(file, file_name, updater)?;
+    let context = self.a1_context();
+    let import = Import::new(sanitize_table_name(file_name.into()));
+    let mut data_table = DataTable::from((import.to_owned(), cell_values, context));
+    data_table.apply_first_row_as_header();
 
-        let ops = vec![Operation::AddDataTable {
-            sheet_pos: SheetPos::from((insert_at, sheet_id)),
-            data_table,
-            cell_value: CellValue::Import(import),
-            index: None,
-        }];
+    let ops = vec![Operation::AddDataTable {
+        sheet_pos: SheetPos::from((insert_at, sheet_id)),
+        data_table,
+        cell_value: CellValue::Import(import),
+        index: None,
+    }];
 
-        Ok(ops)
+    Ok(ops)
     }
 }
 
@@ -524,370 +524,477 @@ impl GridController {
 /// 
 /// Note: Complex accounting formats like `_(* #,##0_);_(* \(#,##0\);_(* "-"??_);_(@_)`
 /// are not yet fully supported but the values import correctly
-fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &NumberFormat) {    
-        let format_id = number_format.format_id;
-        let format_string = &number_format.format_code;
-        
-        let is_date_format = |format_str: &str| -> bool {
-            let format_lower = format_str.to_lowercase();
-            format_lower.contains("dd")
-                || format_lower.contains("mm")
-                || format_lower.contains("yy")
-                || format_lower.contains("d-")
-                || format_lower.contains("m/")
-                || format_lower.contains("/d")
-                || format_lower.contains("mmm")
-                || format_lower.contains("mmmm")
-        };
-
-        let is_time_format = |format_str: &str| -> bool {
-            let format_lower = format_str.to_lowercase();
-            format_lower.contains("h:")
-                || format_lower.contains("mm:")
-                || format_lower.contains(":ss")
-                || format_lower.contains("am/pm")
-                || format_lower.contains("a/p")
-                || format_lower.contains("[h]")
-                || format_lower.contains("[mm]")
-                || format_lower.contains("[ss]")
-        };
-
-        let is_datetime_format = |format_str: &str|
-            is_date_format(format_str) && is_time_format(format_str);
-
-        let count_decimal_places = |format_str: &str| -> i16 {
-            if let Some(decimal_pos) = format_str.find('.') {
-                let after_decimal = &format_str[decimal_pos + 1..];
-                after_decimal
-                    .chars()
-                    .take_while(|c| *c == '0' || *c == '#')
-                    .count() as i16
+fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &NumberFormat) {
+    let format_id: Option<u32> = number_format.format_id;
+    let format_string = &number_format.format_code;
+    println!("format_id: {:?}, format_string: {:?}", format_id, format_string);
+    
+    // Parse format sections separated by semicolons
+    // Excel format: positive;negative;zero;text
+    // We'll ignore negative section as requested
+    let format_sections: Vec<&str> = format_string.split(';').collect();
+    
+    // Determine which format section to use based on cell value
+    let current_value = sheet.cell_value(pos);
+    let active_format = match current_value {
+        Some(CellValue::Number(ref n)) => {
+            if let Some(f64_val) = n.to_f64() {
+                if f64_val == 0.0 && format_sections.len() >= 3 {
+                    // Use zero format if available
+                    format_sections[2]
+                } else {
+                    // Use positive format for all non-zero numbers (ignoring negative section)
+                    format_sections[0]
+                }
             } else {
-                0
+                format_sections[0]
             }
-        };
+        }
+        Some(CellValue::Text(_)) => {
+            // Use text format if available, otherwise positive format
+            if format_sections.len() >= 4 {
+                format_sections[3]
+            } else {
+                format_sections[0]
+            }
+        }
+        _ => format_sections[0], // Default to positive format
+    };
+    
+    println!("Using format section: {:?}", active_format);
+    
+    let is_date_format = |format_str: &str| -> bool {
+        let format_lower = format_str.to_lowercase();
+        format_lower.contains("dd")
+            || format_lower.contains("mm")
+            || format_lower.contains("yy")
+            || format_lower.contains("d-")
+            || format_lower.contains("m/")
+            || format_lower.contains("/d")
+            || format_lower.contains("mmm")
+            || format_lower.contains("mmmm")
+    };
 
-        let has_thousands_separator = |format_str: &str| -> bool {
-            format_str.contains("#,##") || format_str.contains("0,00")
-        };
+    let is_time_format = |format_str: &str| -> bool {
+        let format_lower = format_str.to_lowercase();
+        format_lower.contains("h:")
+            || format_lower.contains("mm:")
+            || format_lower.contains(":ss")
+            || format_lower.contains("am/pm")
+            || format_lower.contains("a/p")
+            || format_lower.contains("[h]")
+            || format_lower.contains("[mm]")
+            || format_lower.contains("[ss]")
+    };
 
-        let current_value = sheet.cell_value(pos);
+    let is_datetime_format = |format_str: &str|
+        is_date_format(format_str) && is_time_format(format_str);
 
-        if let Some(format_id) = format_id {
-            match format_id {
-                // general format - preserve number precision like Excel
-                0 => {
-                    // For General format, Excel displays significant decimal places.
-                    // Excel shows full precision up to about 15 significant digits.
-                    if let Some(CellValue::Number(ref n)) = current_value {
-                        if let Some(f64_val) = n.to_f64() {
-                            // Check if this is not a whole number
-                            if f64_val.fract() != 0.0 {
-                                // Use high precision formatting to capture all significant digits
-                                let num_str = format!("{:.15}", f64_val);
-                                if let Some(decimal_pos) = num_str.find('.') {
-                                    let after_decimal = &num_str[decimal_pos + 1..];
-                                    
-                                    // For General format, Excel typically preserves trailing zeros when they
-                                    // represent the actual precision of the stored number. We'll use the full
-                                    // precision available in the f64 representation.
-                                    let decimal_places = after_decimal.len();
-                                    
-                                    // Excel's General format shows meaningful precision up to 15 digits
-                                    if decimal_places > 0 {
-                                        sheet.formats.numeric_decimals.set(pos, Some(decimal_places as i16));
-                                    }
+    let count_decimal_places = |format_str: &str| -> i16 {
+        if let Some(decimal_pos) = format_str.find('.') {
+            let after_decimal = &format_str[decimal_pos + 1..];
+            after_decimal
+                .chars()
+                .take_while(|c| *c == '0' || *c == '#')
+                .count() as i16
+        } else {
+            0
+        }
+    };
+
+    let has_thousands_separator = |format_str: &str| -> bool {
+        format_str.contains("#,##") || format_str.contains("0,00")
+    };
+
+    if let Some(format_id) = format_id {
+        match format_id {
+            // general format - preserve number precision like Excel
+            0 => {
+                // For General format, Excel displays significant decimal places.
+                // Excel shows full precision up to about 15 significant digits.
+                if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos) {
+                    if let Some(f64_val) = n.to_f64() {
+                        // Check if this is not a whole number
+                        if f64_val.fract() != 0.0 {
+                            // Use high precision formatting to capture all significant digits
+                            let num_str = format!("{:.15}", f64_val);
+                            if let Some(decimal_pos) = num_str.find('.') {
+                                let after_decimal = &num_str[decimal_pos + 1..];
+                                
+                                // For General format, Excel typically preserves trailing zeros when they
+                                // represent the actual precision of the stored number. We'll use the full
+                                // precision available in the f64 representation.
+                                let decimal_places = after_decimal.len();
+                                
+                                // Excel's General format shows meaningful precision up to 15 digits
+                                if decimal_places > 0 {
+                                    sheet.formats.numeric_decimals.set(pos, Some(decimal_places as i16));
                                 }
                             }
                         }
                     }
                 }
-                
-                // nmber formats (1-4, 37-40)
+            }
+            
+            // nmber formats (1-4, 37-40)
 
-                // "0" - integer
-                1 => {                                        
-                    sheet.formats.numeric_decimals.set(pos, Some(0));
-                }
-                // "0.00" - two decimal places
-                2 => {
-                    sheet.formats.numeric_decimals.set(pos, Some(2));
-                }
-                // "#,##0" - thousands separator
-                3 => {
-                    sheet.formats.numeric_commas.set(pos, Some(true));
-                    sheet.formats.numeric_decimals.set(pos, Some(0));
-                }
-                // "#,##0.00" - thousands separator with decimals
-                4 => {
-                    sheet.formats.numeric_commas.set(pos, Some(true));
-                    sheet.formats.numeric_decimals.set(pos, Some(2));
-                }
-                
-                // formats with thousands separators
-                37..=40 => {
-                    sheet.formats.numeric_commas.set(pos, Some(true));
-                    let has_decimals = format_id == 39 || format_id == 40;
-                    let decimals = if has_decimals { 2 } else { 0 };
-                    sheet.formats.numeric_decimals.set(pos, Some(decimals));
-                }
+            // "0" - integer
+            1 => {                                        
+                sheet.formats.numeric_decimals.set(pos, Some(0));
+            }
+            // "0.00" - two decimal places
+            2 => {
+                sheet.formats.numeric_decimals.set(pos, Some(2));
+            }
+            // "#,##0" - thousands separator
+            3 => {
+                sheet.formats.numeric_commas.set(pos, Some(true));
+                sheet.formats.numeric_decimals.set(pos, Some(0));
+            }
+            // "#,##0.00" - thousands separator with decimals
+            4 => {
+                sheet.formats.numeric_commas.set(pos, Some(true));
+                sheet.formats.numeric_decimals.set(pos, Some(2));
+            }
+            
+            // formats with thousands separators
+            37..=40 => {
+                sheet.formats.numeric_commas.set(pos, Some(true));
+                let has_decimals = format_id == 39 || format_id == 40;
+                let decimals = if has_decimals { 2 } else { 0 };
+                sheet.formats.numeric_decimals.set(pos, Some(decimals));
+            }
 
-                // currency formats
-                5..=8 | 41..=44 => {
-                    let numeric_format = NumericFormat {
-                        kind: NumericFormatKind::Currency,
-                        symbol: Some("$".to_string()),
-                    };
-                    sheet.formats.numeric_format.set(pos, Some(numeric_format));
+            // currency formats
+            5..=8 | 41..=44 => {
+                let numeric_format = NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some("$".to_string()),
+                };
+                sheet.formats.numeric_format.set(pos, Some(numeric_format));
 
-                    // set decimal places based on format
-                    let has_decimals = format_id == 7 || format_id == 8 || format_id == 43 || format_id == 44;
-                    let decimals = if has_decimals { 2 } else { 0 };
-                    sheet.formats.numeric_decimals.set(pos, Some(decimals));
-                    sheet.formats.numeric_commas.set(pos, Some(true));
-                }
+                // set decimal places based on format
+                let has_decimals = format_id == 7 || format_id == 8 || format_id == 43 || format_id == 44;
+                let decimals = if has_decimals { 2 } else { 0 };
+                sheet.formats.numeric_decimals.set(pos, Some(decimals));
+                sheet.formats.numeric_commas.set(pos, Some(true));
+            }
 
-                // percentage formats
+            // percentage formats
 
-                // "0%" - percentage format
-                9 => {
-                    let numeric_format = NumericFormat {
-                        kind: NumericFormatKind::Percentage,
-                        symbol: None,
-                    };
-                    sheet.formats.numeric_format.set(pos, Some(numeric_format));
-                    sheet.formats.numeric_decimals.set(pos, Some(0));
-                }
-                // "0.00%" - percentage format with decimals
-                10 => {
-                    let numeric_format = NumericFormat {
-                        kind: NumericFormatKind::Percentage,
-                        symbol: None,
-                    };
-                    sheet.formats.numeric_format.set(pos, Some(numeric_format));
-                    sheet.formats.numeric_decimals.set(pos, Some(2));
-                }
+            // "0%" - percentage format
+            9 => {
+                let numeric_format = NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                };
+                sheet.formats.numeric_format.set(pos, Some(numeric_format));
+                sheet.formats.numeric_decimals.set(pos, Some(0));
+            }
+            // "0.00%" - percentage format with decimals
+            10 => {
+                let numeric_format = NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                };
+                sheet.formats.numeric_format.set(pos, Some(numeric_format));
+                sheet.formats.numeric_decimals.set(pos, Some(2));
+            }
 
-                // scientific formats
-                11 | 48 => {
-                    let numeric_format = NumericFormat {
-                        kind: NumericFormatKind::Exponential,
-                        symbol: None,
-                    };
-                    sheet.formats.numeric_format.set(pos, Some(numeric_format));
-                    let decimals = if format_id == 11 { 2 } else { 1 };
-                    sheet.formats.numeric_decimals.set(pos, Some(decimals));
-                }
+            // scientific formats
+            11 | 48 => {
+                let numeric_format = NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None,
+                };
+                sheet.formats.numeric_format.set(pos, Some(numeric_format));
+                let decimals = if format_id == 11 { 2 } else { 1 };
+                sheet.formats.numeric_decimals.set(pos, Some(decimals));
+            }
 
-                // fraction formats
-                12 | 13 => {
-                    // These are fraction formats: "# ?/?" and "# ??/??"
-                    // For now, we'll treat them as general numeric without special formatting
-                    // TODO: Add proper fraction formatting support
-                }
+            // fraction formats
+            12 | 13 => {
+                // These are fraction formats: "# ?/?" and "# ??/??"
+                // For now, we'll treat them as general numeric without special formatting
+                // TODO: Add proper fraction formatting support
+            }
 
-                // date formats
-                14..=17 | 22 => {
-                    let chrono_format = match format_id {
-                        14 => excel_to_chrono_format("m/d/yyyy"),       // "%-m/%-d/%Y"
-                        15 => excel_to_chrono_format("d-mmm-yy"),       // "%-d-%b-%y"
-                        16 => excel_to_chrono_format("d-mmm"),          // "%-d-%b"
-                        17 => excel_to_chrono_format("mmm-yy"),         // "%b-%y"
-                        22 => excel_to_chrono_format("m/d/yy h:mm"),    // "%-m/%-d/%y %-I:%M"
-                        _ => DEFAULT_DATE_FORMAT.to_string(),
-                    };
+            // date formats
+            14..=17 | 22 => {
+                let chrono_format = match format_id {
+                    14 => excel_to_chrono_format("m/d/yyyy"),       // "%-m/%-d/%Y"
+                    15 => excel_to_chrono_format("d-mmm-yy"),       // "%-d-%b-%y"
+                    16 => excel_to_chrono_format("d-mmm"),          // "%-d-%b"
+                    17 => excel_to_chrono_format("mmm-yy"),         // "%b-%y"
+                    22 => excel_to_chrono_format("m/d/yy h:mm"),    // "%-m/%-d/%y %-I:%M"
+                    _ => DEFAULT_DATE_FORMAT.to_string(),
+                };
 
-                    // set the format
-                    sheet
-                        .formats
-                        .date_time
-                        .set(pos, Some(chrono_format.to_string()));
+                // set the format
+                sheet
+                    .formats
+                    .date_time
+                    .set(pos, Some(chrono_format.to_string()));
 
-                    // convert numeric value to date/time if needed
-                    if let Some(CellValue::Number(ref n)) = current_value {
-                        if let Some(f64_val) = n.to_f64() {
-                            let is_datetime = format_id == 22; // m/d/yy h:mm
-                            let converted_value = if is_datetime {
-                                excel_serial_to_date_time(
-                                    f64_val, true, true, true,
-                                )
-                            } else {
-                                excel_serial_to_date_time(
-                                    f64_val, true, false, false,
-                                )
-                            };
-                            if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
-                            }
-                        }
-                    }
-                }
-
-                // time formats
-                18..=21 | 45..=47 => {
-                    let chrono_format = match format_id {
-                        18 => excel_to_chrono_format("h:mm AM/PM"),     // "%-I:%M %p"
-                        19 => excel_to_chrono_format("h:mm:ss AM/PM"),  // "%-I:%M:%S %p"
-                        20 => excel_to_chrono_format("h:mm"),           // "%-I:%M"
-                        21 => excel_to_chrono_format("h:mm:ss"),        // "%-I:%M:%S"
-                        45 => excel_to_chrono_format("mm:ss"),          // "%M:%S"
-                        46 => excel_to_chrono_format("[h]:mm:ss"),      // "[h]:%M:%S" (elapsed)
-                        47 => excel_to_chrono_format("mm:ss.0"),        // "%M:%S.0"
-                        _ => DEFAULT_TIME_FORMAT.to_string(),
-                    };
-
-                    // set the format
-                    sheet
-                        .formats
-                        .date_time
-                        .set(pos, Some(chrono_format.to_string()));
-
-                    // convert numeric value to time if needed
-                    if let Some(CellValue::Number(ref n)) = current_value {
-                        if let Some(f64_val) = n.to_f64() {
-                            let converted_value = excel_serial_to_date_time(
-                                f64_val, false, true, false,
-                            );
-                            if let Some(new_value) = converted_value {
-                                sheet.columns.set_value(&pos, new_value);
-                            }
-                        }
-                    }
-                }
-
-                // text format, noop
-                49 => {}
-
-                // custom formats - parse the format string
-                _ => {
-                    if !format_string.is_empty() {
-                        // handle custom date/time formats
-                        if is_datetime_format(format_string) {
-                            let chrono_format =
-                                excel_to_chrono_format(format_string);
-                            sheet
-                                .formats
-                                .date_time
-                                .set(pos, Some(chrono_format));
-
-                            // convert numeric value to datetime if needed
-                            if let Some(CellValue::Number(ref n)) =
-                                current_value
-                            {
-                                if let Some(f64_val) = n.to_f64() {
-                                    let converted_value =
-                                        excel_serial_to_date_time(
-                                            f64_val, true, true, true,
-                                        );
-                                    if let Some(new_value) = converted_value {
-                                        sheet
-                                            .columns
-                                            .set_value(&pos, new_value);
-                                    }
-                                }
-                            }
-                        } else if is_date_format(format_string) {
-                            let chrono_format =
-                                excel_to_chrono_format(format_string);
-                            sheet
-                                .formats
-                                .date_time
-                                .set(pos, Some(chrono_format));
-
-                            // convert numeric value to date if needed
-                            if let Some(CellValue::Number(ref n)) =
-                                current_value
-                            {
-                                if let Some(f64_val) = n.to_f64() {
-                                    let converted_value =
-                                        excel_serial_to_date_time(
-                                            f64_val, true, false, false,
-                                        );
-                                    if let Some(new_value) = converted_value {
-                                        sheet
-                                            .columns
-                                            .set_value(&pos, new_value);
-                                    }
-                                }
-                            }
-                        } else if is_time_format(format_string) {
-                            let chrono_format =
-                                excel_to_chrono_format(format_string);
-                            sheet
-                                .formats
-                                .date_time
-                                .set(pos, Some(chrono_format));
-
-                            // convert numeric value to time if needed
-                            if let Some(CellValue::Number(ref n)) =
-                                current_value
-                            {
-                                if let Some(f64_val) = n.to_f64() {
-                                    let converted_value =
-                                        excel_serial_to_date_time(
-                                            f64_val, false, true, false,
-                                        );
-                                    if let Some(new_value) = converted_value {
-                                        sheet
-                                            .columns
-                                            .set_value(&pos, new_value);
-                                    }
-                                }
-                            }
+                // convert numeric value to date/time if needed
+                if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos) {
+                    if let Some(f64_val) = n.to_f64() {
+                        let is_datetime = format_id == 22; // m/d/yy h:mm
+                        let converted_value = if is_datetime {
+                            excel_serial_to_date_time(
+                                f64_val, true, true, true,
+                            )
                         } else {
-                            // handle numeric formats
-                            if format_string.contains('%') {
-                                let numeric_format = NumericFormat {
-                                    kind: NumericFormatKind::Percentage,
-                                    symbol: None,
-                                };
-                                sheet
-                                    .formats
-                                    .numeric_format
-                                    .set(pos, Some(numeric_format));
-                            } else if format_string.contains('$') {
-                                let numeric_format = NumericFormat {
-                                    kind: NumericFormatKind::Currency,
-                                    symbol: Some("$".to_string()),
-                                };
-                                sheet
-                                    .formats
-                                    .numeric_format
-                                    .set(pos, Some(numeric_format));
-                            } else if format_string.to_uppercase().contains('E')
-                            {
-                                let numeric_format = NumericFormat {
-                                    kind: NumericFormatKind::Exponential,
-                                    symbol: None,
-                                };
-                                sheet
-                                    .formats
-                                    .numeric_format
-                                    .set(pos, Some(numeric_format));
-                            }
-
-                            // set decimal places
-                            let decimals = count_decimal_places(format_string);
-                            if decimals > 0 {
-                                sheet
-                                    .formats
-                                    .numeric_decimals
-                                    .set(pos, Some(decimals));
-                            }
-
-                            // set thousands separator
-                            if has_thousands_separator(format_string) {
-                                sheet
-                                    .formats
-                                    .numeric_commas
-                                    .set(pos, Some(true));
-                            }
+                            excel_serial_to_date_time(
+                                f64_val, true, false, false,
+                            )
+                        };
+                        if let Some(new_value) = converted_value {
+                            sheet.columns.set_value(&pos, new_value);
                         }
                     }
+                }
+            }
+
+            // time formats
+            18..=21 | 45..=47 => {
+                let chrono_format = match format_id {
+                    18 => excel_to_chrono_format("h:mm AM/PM"),     // "%-I:%M %p"
+                    19 => excel_to_chrono_format("h:mm:ss AM/PM"),  // "%-I:%M:%S %p"
+                    20 => excel_to_chrono_format("h:mm"),           // "%-I:%M"
+                    21 => excel_to_chrono_format("h:mm:ss"),        // "%-I:%M:%S"
+                    45 => excel_to_chrono_format("mm:ss"),          // "%M:%S"
+                    46 => excel_to_chrono_format("[h]:mm:ss"),      // "[h]:%M:%S" (elapsed)
+                    47 => excel_to_chrono_format("mm:ss.0"),        // "%M:%S.0"
+                    _ => DEFAULT_TIME_FORMAT.to_string(),
+                };
+
+                // set the format
+                sheet
+                    .formats
+                    .date_time
+                    .set(pos, Some(chrono_format.to_string()));
+
+                // convert numeric value to time if needed
+                if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos) {
+                    if let Some(f64_val) = n.to_f64() {
+                        let converted_value = excel_serial_to_date_time(
+                            f64_val, false, true, false,
+                        );
+                        if let Some(new_value) = converted_value {
+                            sheet.columns.set_value(&pos, new_value);
+                        }
+                    }
+                }
+            }
+
+            // text format, noop
+            49 => {}
+
+            // custom formats - parse the format string
+            _ => {
+                if !active_format.is_empty() {
+                    // handle custom date/time formats
+                    if is_datetime_format(active_format) {
+                        let chrono_format =
+                            excel_to_chrono_format(active_format);
+                        sheet
+                            .formats
+                            .date_time
+                            .set(pos, Some(chrono_format));
+
+                        // convert numeric value to datetime if needed
+                        if let Some(CellValue::Number(ref n)) =
+                            sheet.cell_value(pos)
+                        {
+                            if let Some(f64_val) = n.to_f64() {
+                                let converted_value =
+                                    excel_serial_to_date_time(
+                                        f64_val, true, true, true,
+                                    );
+                                if let Some(new_value) = converted_value {
+                                    sheet
+                                        .columns
+                                        .set_value(&pos, new_value);
+                                }
+                            }
+                        }
+                    } else if is_date_format(active_format) {
+                        let chrono_format =
+                            excel_to_chrono_format(active_format);
+                        sheet
+                            .formats
+                            .date_time
+                            .set(pos, Some(chrono_format));
+
+                        // convert numeric value to date if needed
+                        if let Some(CellValue::Number(ref n)) =
+                            sheet.cell_value(pos)
+                        {
+                            if let Some(f64_val) = n.to_f64() {
+                                let converted_value =
+                                    excel_serial_to_date_time(
+                                        f64_val, true, false, false,
+                                    );
+                                if let Some(new_value) = converted_value {
+                                    sheet
+                                        .columns
+                                        .set_value(&pos, new_value);
+                                }
+                            }
+                        }
+                    } else if is_time_format(active_format) {
+                        let chrono_format =
+                            excel_to_chrono_format(active_format);
+                        sheet
+                            .formats
+                            .date_time
+                            .set(pos, Some(chrono_format));
+
+                        // convert numeric value to time if needed
+                        if let Some(CellValue::Number(ref n)) =
+                            sheet.cell_value(pos)
+                        {
+                            if let Some(f64_val) = n.to_f64() {
+                                let converted_value =
+                                    excel_serial_to_date_time(
+                                        f64_val, false, true, false,
+                                    );
+                                if let Some(new_value) = converted_value {
+                                    sheet
+                                        .columns
+                                        .set_value(&pos, new_value);
+                                }
+                            }
+                        }
+                    } else {
+                        // handle numeric formats
+                        if active_format.contains('%') {
+                            let numeric_format = NumericFormat {
+                                kind: NumericFormatKind::Percentage,
+                                symbol: None,
+                            };
+                            sheet
+                                .formats
+                                .numeric_format
+                                .set(pos, Some(numeric_format));
+                        } else if active_format.contains('$') {
+                            let numeric_format = NumericFormat {
+                                kind: NumericFormatKind::Currency,
+                                symbol: Some("$".to_string()),
+                            };
+                            sheet
+                                .formats
+                                .numeric_format
+                                .set(pos, Some(numeric_format));
+                        } else if active_format.to_uppercase().contains('E')
+                        {
+                            let numeric_format = NumericFormat {
+                                kind: NumericFormatKind::Exponential,
+                                symbol: None,
+                            };
+                            sheet
+                                .formats
+                                .numeric_format
+                                .set(pos, Some(numeric_format));
+                        }
+
+                        // set decimal places
+                        let decimals = count_decimal_places(active_format);
+                        // println!("decimals: {:?}", decimals);
+                        // if decimals > 0 {
+                            sheet
+                                .formats
+                                .numeric_decimals
+                                .set(pos, Some(decimals));
+                        // }
+
+                        // set thousands separator
+                        if has_thousands_separator(active_format) {
+                            sheet
+                                .formats
+                                .numeric_commas
+                                .set(pos, Some(true));
+                        }
+                    }
+                }
+            }
+        }
+    } else if !active_format.is_empty() {
+        // Handle cases where we only have a format string but no format_id
+        if is_datetime_format(active_format) {
+            let chrono_format = excel_to_chrono_format(active_format);
+            sheet.formats.date_time.set(pos, Some(chrono_format));
+
+            // convert numeric value to datetime if needed
+            if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos) {
+                if let Some(f64_val) = n.to_f64() {
+                    let converted_value = excel_serial_to_date_time(f64_val, true, true, true);
+                    if let Some(new_value) = converted_value {
+                        sheet.columns.set_value(&pos, new_value);
+                    }
+                }
+            }
+        } else if is_date_format(active_format) {
+            let chrono_format = excel_to_chrono_format(active_format);
+            sheet.formats.date_time.set(pos, Some(chrono_format));
+
+            // convert numeric value to date if needed
+            if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos) {
+                if let Some(f64_val) = n.to_f64() {
+                    let converted_value = excel_serial_to_date_time(f64_val, true, false, false);
+                    if let Some(new_value) = converted_value {
+                        sheet.columns.set_value(&pos, new_value);
+                    }
+                }
+            }
+        } else if is_time_format(active_format) {
+            let chrono_format = excel_to_chrono_format(active_format);
+            sheet.formats.date_time.set(pos, Some(chrono_format));
+
+            // convert numeric value to time if needed
+            if let Some(CellValue::Number(ref n)) = sheet.cell_value(pos) {
+                if let Some(f64_val) = n.to_f64() {
+                    let converted_value = excel_serial_to_date_time(f64_val, false, true, false);
+                    if let Some(new_value) = converted_value {
+                        sheet.columns.set_value(&pos, new_value);
+                    }
+                }
+            }
+        } else {
+            // handle numeric formats
+            if active_format.contains('%') {
+                let numeric_format = NumericFormat {
+                    kind: NumericFormatKind::Percentage,
+                    symbol: None,
+                };
+                sheet.formats.numeric_format.set(pos, Some(numeric_format));
+            } else if active_format.contains('$') {
+                let numeric_format = NumericFormat {
+                    kind: NumericFormatKind::Currency,
+                    symbol: Some("$".to_string()),
+                };
+                sheet.formats.numeric_format.set(pos, Some(numeric_format));
+            } else if active_format.to_uppercase().contains('E') {
+                let numeric_format = NumericFormat {
+                    kind: NumericFormatKind::Exponential,
+                    symbol: None,
+                };
+                sheet.formats.numeric_format.set(pos, Some(numeric_format));
+            }
+
+            // set decimal places
+            let decimals = count_decimal_places(active_format);
+            // if decimals > 0 {
+                sheet.formats.numeric_decimals.set(pos, Some(decimals));
+            // }
+
+            // set thousands separator
+            if has_thousands_separator(active_format) {
+                sheet.formats.numeric_commas.set(pos, Some(true));
             }
         }
     }
-
 }
 
 /// Converts Excel format strings to Chrono format strings
@@ -896,174 +1003,174 @@ fn excel_to_chrono_format(excel_format: &str) -> String {
     let mut chars = excel_format.chars().peekable();
 
     while let Some(ch) = chars.next() {
-        match ch {
-            // year
-            'y' => {
-                let mut y_count = 1;
-                while chars.peek() == Some(&'y') {
-                    chars.next();
-                    y_count += 1;
-                }
-                if y_count >= 4 {
-                    result.push_str("%Y"); // Full year (e.g., 2025)
+    match ch {
+        // year
+        'y' => {
+            let mut y_count = 1;
+            while chars.peek() == Some(&'y') {
+                chars.next();
+                y_count += 1;
+            }
+            if y_count >= 4 {
+                result.push_str("%Y"); // Full year (e.g., 2025)
+            } else {
+                result.push_str("%y"); // Two-digit year (e.g., 25)
+            }
+        }
+
+        // month
+        'm' => {
+            // Need to check immediate context - is this month or minute?
+            let remaining: String = chars.clone().collect();
+            let prev_chars: String = result.chars().rev().take(5).collect::<String>().chars().rev().collect();
+            
+            // Special case: if the entire format is time-only (no date components), treat all 'm' as minutes
+            let is_time_only_format = !excel_format.contains('y') && 
+                                    !excel_format.contains('d') && 
+                                    !excel_format.contains('/') && 
+                                    !excel_format.contains('-') &&
+                                    (excel_format.contains(':') || excel_format.contains('s') || excel_format.contains('h'));
+            
+            // It's a minute if we have immediate time context:
+            // 1. Preceded by ':' or hour format
+            // 2. Followed by ':' or seconds
+            // 3. Between time components
+            let immediately_after_time = prev_chars.ends_with(':') || 
+                                       prev_chars.ends_with("%I") || 
+                                       prev_chars.ends_with("%H") ||
+                                       prev_chars.ends_with("I ") ||
+                                       prev_chars.ends_with("H ");
+                                       
+            let immediately_before_time = remaining.starts_with(':') ||
+                                        remaining.starts_with('s');
+            
+            // It's likely a month if followed by date separators
+            let likely_month = remaining.starts_with('/') || 
+                             remaining.starts_with('-') ||
+                             remaining.starts_with('.') ||
+                             (prev_chars.is_empty() && !is_time_only_format) || // At the beginning of date format
+                             prev_chars.ends_with('/') ||
+                             prev_chars.ends_with('-') ||
+                             prev_chars.ends_with('.');
+            
+            let mut m_count = 1;
+            while chars.peek() == Some(&'m') {
+                chars.next();
+                m_count += 1;
+            }
+            
+            if is_time_only_format || ((immediately_after_time || immediately_before_time) && !likely_month) {
+                // It's minutes
+                if m_count >= 2 {
+                    result.push_str("%M"); // Minutes with zero padding
                 } else {
-                    result.push_str("%y"); // Two-digit year (e.g., 25)
+                    result.push_str("%-M"); // Minutes without padding
+                }
+            } else {
+                // It's months
+                match m_count {
+                    1 => result.push_str("%-m"), // Month (1-12)
+                    2 => result.push_str("%m"),  // Month (01-12)
+                    3 => result.push_str("%b"),  // Abbreviated month name
+                    4 => result.push_str("%B"),  // Full month name
+                    5 => result.push_str("%b"),  // First letter of month
+                    _ => result.push_str("%m"),
                 }
             }
+        }
 
-            // month
-            'm' => {
-                // Need to check immediate context - is this month or minute?
-                let remaining: String = chars.clone().collect();
-                let prev_chars: String = result.chars().rev().take(5).collect::<String>().chars().rev().collect();
-                
-                // Special case: if the entire format is time-only (no date components), treat all 'm' as minutes
-                let is_time_only_format = !excel_format.contains('y') && 
-                                        !excel_format.contains('d') && 
-                                        !excel_format.contains('/') && 
-                                        !excel_format.contains('-') &&
-                                        (excel_format.contains(':') || excel_format.contains('s') || excel_format.contains('h'));
-                
-                // It's a minute if we have immediate time context:
-                // 1. Preceded by ':' or hour format
-                // 2. Followed by ':' or seconds
-                // 3. Between time components
-                let immediately_after_time = prev_chars.ends_with(':') || 
-                                           prev_chars.ends_with("%I") || 
-                                           prev_chars.ends_with("%H") ||
-                                           prev_chars.ends_with("I ") ||
-                                           prev_chars.ends_with("H ");
-                                           
-                let immediately_before_time = remaining.starts_with(':') ||
-                                            remaining.starts_with('s');
-                
-                // It's likely a month if followed by date separators
-                let likely_month = remaining.starts_with('/') || 
-                                 remaining.starts_with('-') ||
-                                 remaining.starts_with('.') ||
-                                 (prev_chars.is_empty() && !is_time_only_format) || // At the beginning of date format
-                                 prev_chars.ends_with('/') ||
-                                 prev_chars.ends_with('-') ||
-                                 prev_chars.ends_with('.');
-                
-                let mut m_count = 1;
-                while chars.peek() == Some(&'m') {
-                    chars.next();
-                    m_count += 1;
-                }
-                
-                if is_time_only_format || ((immediately_after_time || immediately_before_time) && !likely_month) {
-                    // It's minutes
-                    if m_count >= 2 {
-                        result.push_str("%M"); // Minutes with zero padding
-                    } else {
-                        result.push_str("%-M"); // Minutes without padding
-                    }
-                } else {
-                    // It's months
-                    match m_count {
-                        1 => result.push_str("%-m"), // Month (1-12)
-                        2 => result.push_str("%m"),  // Month (01-12)
-                        3 => result.push_str("%b"),  // Abbreviated month name
-                        4 => result.push_str("%B"),  // Full month name
-                        5 => result.push_str("%b"),  // First letter of month
-                        _ => result.push_str("%m"),
-                    }
-                }
+        // day
+        'd' => {
+            let mut d_count = 1;
+            while chars.peek() == Some(&'d') {
+                chars.next();
+                d_count += 1;
             }
+            match d_count {
+                1 => result.push_str("%-d"), // Day (1-31)
+                2 => result.push_str("%d"),  // Day (01-31)
+                3 => result.push_str("%a"),  // Abbreviated weekday name
+                4 => result.push_str("%A"),  // Full weekday name
+                _ => result.push_str("%d"),
+            }
+        }
 
-            // day
-            'd' => {
-                let mut d_count = 1;
-                while chars.peek() == Some(&'d') {
-                    chars.next();
-                    d_count += 1;
-                }
-                match d_count {
-                    1 => result.push_str("%-d"), // Day (1-31)
-                    2 => result.push_str("%d"),  // Day (01-31)
-                    3 => result.push_str("%a"),  // Abbreviated weekday name
-                    4 => result.push_str("%A"),  // Full weekday name
-                    _ => result.push_str("%d"),
-                }
+        // hour
+        'h' => {
+            let mut h_count = 1;
+            while chars.peek() == Some(&'h') {
+                chars.next();
+                h_count += 1;
             }
+            if h_count >= 2 {
+                result.push_str("%H"); // 24-hour format with zero padding
+            } else {
+                result.push_str("%-I"); // 12-hour format without padding
+            }
+        }
 
-            // hour
-            'h' => {
-                let mut h_count = 1;
-                while chars.peek() == Some(&'h') {
-                    chars.next();
-                    h_count += 1;
-                }
-                if h_count >= 2 {
-                    result.push_str("%H"); // 24-hour format with zero padding
-                } else {
-                    result.push_str("%-I"); // 12-hour format without padding
-                }
+        // second
+        's' => {
+            let mut s_count = 1;
+            while chars.peek() == Some(&'s') {
+                chars.next();
+                s_count += 1;
             }
+            if s_count >= 2 {
+                result.push_str("%S"); // Seconds with zero padding
+            } else {
+                result.push_str("%-S"); // Seconds without padding
+            }
+        }
 
-            // second
-            's' => {
-                let mut s_count = 1;
-                while chars.peek() == Some(&'s') {
-                    chars.next();
-                    s_count += 1;
-                }
-                if s_count >= 2 {
-                    result.push_str("%S"); // Seconds with zero padding
-                } else {
-                    result.push_str("%-S"); // Seconds without padding
-                }
-            }
-
-            // am/pm
-            'A' => {
-                // Look ahead to see if this is "AM/PM" or "A/P"
-                let remaining: String = chars.clone().collect();
-                if remaining.starts_with("M/PM") {
-                    result.push_str("%p");
-                    // Skip "M/PM"
-                    chars.next(); // Skip 'M'
-                    chars.next(); // Skip '/'
-                    chars.next(); // Skip 'P'
-                    chars.next(); // Skip 'M'
-                } else if remaining.starts_with("/P") {
-                    result.push_str("%p");
-                    // Skip "/P"
-                    chars.next(); // Skip '/'
-                    chars.next(); // Skip 'P'
-                } else {
-                    result.push(ch);
-                }
-            }
-
-            // pm
-            'P' => {
-                if result.ends_with("AM/") {
-                    // Replace the "AM/" at the end with "%p"
-                    result.truncate(result.len() - 3);
-                    result.push_str("%p");
-                    if chars.peek() == Some(&'M') {
-                        chars.next(); // Skip 'M'
-                    }
-                } else {
-                    result.push(ch);
-                }
-            }
-
-            // elapsed time
-            '[' => {
-                result.push(ch);
-            }
-            ']' => {
-                result.push(ch);
-            }
-
-            // pass through other characters
-            _ => {
+        // am/pm
+        'A' => {
+            // Look ahead to see if this is "AM/PM" or "A/P"
+            let remaining: String = chars.clone().collect();
+            if remaining.starts_with("M/PM") {
+                result.push_str("%p");
+                // Skip "M/PM"
+                chars.next(); // Skip 'M'
+                chars.next(); // Skip '/'
+                chars.next(); // Skip 'P'
+                chars.next(); // Skip 'M'
+            } else if remaining.starts_with("/P") {
+                result.push_str("%p");
+                // Skip "/P"
+                chars.next(); // Skip '/'
+                chars.next(); // Skip 'P'
+            } else {
                 result.push(ch);
             }
         }
+
+        // pm
+        'P' => {
+            if result.ends_with("AM/") {
+                // Replace the "AM/" at the end with "%p"
+                result.truncate(result.len() - 3);
+                result.push_str("%p");
+                if chars.peek() == Some(&'M') {
+                    chars.next(); // Skip 'M'
+                }
+            } else {
+                result.push(ch);
+            }
+        }
+
+        // elapsed time
+        '[' => {
+            result.push(ch);
+        }
+        ']' => {
+            result.push(ch);
+        }
+
+        // pass through other characters
+        _ => {
+            result.push(ch);
+        }
+    }
     }
 
     result
@@ -1080,60 +1187,60 @@ fn excel_serial_to_date_time(
     // We need to account for this by using the chrono crate's handling of Excel dates
 
     if is_time && !is_date {
-        // pure time format - fractional part represents time
-        let total_seconds = (serial.fract() * 86400.0) as i64;
-        let hours = total_seconds / 3600;
-        let minutes = (total_seconds % 3600) / 60;
-        let seconds = total_seconds % 60;
+    // pure time format - fractional part represents time
+    let total_seconds = (serial.fract() * 86400.0) as i64;
+    let hours = total_seconds / 3600;
+    let minutes = (total_seconds % 3600) / 60;
+    let seconds = total_seconds % 60;
 
-        if let Some(time) = NaiveTime::from_hms_opt(
-            hours as u32,
-            minutes as u32,
-            seconds as u32,
-        ) {
-            return Some(CellValue::Time(time));
-        }
+    if let Some(time) = NaiveTime::from_hms_opt(
+        hours as u32,
+        minutes as u32,
+        seconds as u32,
+    ) {
+        return Some(CellValue::Time(time));
+    }
     } else if is_date && !is_time {
-        // pure date format
-        // excel serial date 1 = January 1, 1900, but Excel incorrectly treats 1900 as leap year
-        // serial 60 = Feb 29, 1900 (invalid), so we adjust
-        let adjusted_serial =
-            if serial >= 60.0 { serial - 1.0 } else { serial };
+    // pure date format
+    // excel serial date 1 = January 1, 1900, but Excel incorrectly treats 1900 as leap year
+    // serial 60 = Feb 29, 1900 (invalid), so we adjust
+    let adjusted_serial =
+        if serial >= 60.0 { serial - 1.0 } else { serial };
 
-        if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30) {
-            if let Some(date) = base_date.checked_add_days(
-                chrono::Days::new(adjusted_serial as u64),
-            ) {
-                return Some(CellValue::Date(date));
-            }
+    if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30) {
+        if let Some(date) = base_date.checked_add_days(
+            chrono::Days::new(adjusted_serial as u64),
+        ) {
+            return Some(CellValue::Date(date));
         }
+    }
     } else if is_datetime {
-        // date and time format
-        let adjusted_serial =
-            if serial >= 60.0 { serial - 1.0 } else { serial };
-        let days = adjusted_serial.floor() as i64;
-        let time_fraction = adjusted_serial.fract();
+    // date and time format
+    let adjusted_serial =
+        if serial >= 60.0 { serial - 1.0 } else { serial };
+    let days = adjusted_serial.floor() as i64;
+    let time_fraction = adjusted_serial.fract();
 
-        if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30) {
-            if let Some(date) = base_date
-                .checked_add_days(chrono::Days::new(days as u64))
-            {
-                let total_seconds = (time_fraction * 86400.0) as i64;
-                let hours = total_seconds / 3600;
-                let minutes = (total_seconds % 3600) / 60;
-                let seconds = total_seconds % 60;
+    if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30) {
+        if let Some(date) = base_date
+            .checked_add_days(chrono::Days::new(days as u64))
+        {
+            let total_seconds = (time_fraction * 86400.0) as i64;
+            let hours = total_seconds / 3600;
+            let minutes = (total_seconds % 3600) / 60;
+            let seconds = total_seconds % 60;
 
-                if let Some(time) = NaiveTime::from_hms_opt(
-                    hours as u32,
-                    minutes as u32,
-                    seconds as u32,
-                ) {
-                    return Some(CellValue::DateTime(
-                        date.and_time(time),
-                    ));
-                }
+            if let Some(time) = NaiveTime::from_hms_opt(
+                hours as u32,
+                minutes as u32,
+                seconds as u32,
+            ) {
+                return Some(CellValue::DateTime(
+                    date.and_time(time),
+                ));
             }
         }
+    }
     }
 
     None
@@ -1143,49 +1250,49 @@ fn excel_serial_to_date_time(
 fn convert_excel_border_style(excel_style: calamine::BorderStyle) -> CellBorderLine {
     use calamine::BorderStyle;
     match excel_style {
-        BorderStyle::None => CellBorderLine::Clear,
-        BorderStyle::Thin | BorderStyle::Hair => CellBorderLine::Line1,
-        BorderStyle::Medium  => CellBorderLine::Line2,
-        BorderStyle::Thick => CellBorderLine::Line3,
-        BorderStyle::Double => CellBorderLine::Double,
-        BorderStyle::Dashed | BorderStyle::MediumDashed | BorderStyle::SlantDashDot => CellBorderLine::Dashed,
-        BorderStyle::Dotted | BorderStyle::DashDotDot | BorderStyle::DashDot => CellBorderLine::Dotted,
+    BorderStyle::None => CellBorderLine::Clear,
+    BorderStyle::Thin | BorderStyle::Hair => CellBorderLine::Line1,
+    BorderStyle::Medium  => CellBorderLine::Line2,
+    BorderStyle::Thick => CellBorderLine::Line3,
+    BorderStyle::Double => CellBorderLine::Double,
+    BorderStyle::Dashed | BorderStyle::MediumDashed | BorderStyle::SlantDashDot => CellBorderLine::Dashed,
+    BorderStyle::Dotted | BorderStyle::DashDotDot | BorderStyle::DashDot => CellBorderLine::Dotted,
     }
 }
 
 /// Converts calamine border color to Quadratic color string
 fn convert_excel_border_color(color: Option<&calamine::Color>) -> Rgba {
     match color {
-        Some(color) => {
-            // Convert calamine Color to Quadratic Rgba
-            // calamine Color has alpha, red, green, blue fields
-            Rgba::new(color.red, color.green, color.blue, color.alpha)
-        }
-        None => Rgba::default(), // Default black color
+    Some(color) => {
+        // Convert calamine Color to Quadratic Rgba
+        // calamine Color has alpha, red, green, blue fields
+        Rgba::new(color.red, color.green, color.blue, color.alpha)
+    }
+    None => Rgba::default(), // Default black color
     }
 }
 
 /// Converts calamine Borders to Quadratic BorderStyleCell
 fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyleCell {    
     let convert_border = |border: &calamine::Border| -> Option<BorderStyleTimestamp> {
-        let line = convert_excel_border_style(border.style);
-        
-        if line == CellBorderLine::Clear {
-            return None;
-        }
-        
-        Some(BorderStyleTimestamp {
-            color: convert_excel_border_color(border.color.as_ref()),
-            line,
-            timestamp: SmallTimestamp::now(),
-        })
+    let line = convert_excel_border_style(border.style);
+    
+    if line == CellBorderLine::Clear {
+        return None;
+    }
+    
+    Some(BorderStyleTimestamp {
+        color: convert_excel_border_color(border.color.as_ref()),
+        line,
+        timestamp: SmallTimestamp::now(),
+    })
     };
 
     BorderStyleCell {
-        top: convert_border(&borders.top),
-        bottom: convert_border(&borders.bottom),
-        left: convert_border(&borders.left),
-        right: convert_border(&borders.right),
+    top: convert_border(&borders.top),
+    bottom: convert_border(&borders.bottom),
+    left: convert_border(&borders.left),
+    right: convert_border(&borders.right),
     }
 }
 
@@ -1199,717 +1306,730 @@ mod test {
 
     #[test]
     fn test_guesses_the_csv_header() {
-        let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
-        let sheet = gc.sheet(sheet_id);
-        let values = sheet.data_table_at(&pos).unwrap().value_as_array().unwrap();
-        assert!(GridController::guess_csv_first_row_is_header(values));
+    let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
+    let sheet = gc.sheet(sheet_id);
+    let values = sheet.data_table_at(&pos).unwrap().value_as_array().unwrap();
+    assert!(GridController::guess_csv_first_row_is_header(values));
     }
 
     #[test]
     fn imports_a_simple_csv() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let pos = pos![A1];
-        let file_name = "simple.csv";
+    let mut gc = GridController::test();
+    let sheet_id = gc.grid.sheets()[0].id;
+    let pos = pos![A1];
+    let file_name = "simple.csv";
 
-        const SIMPLE_CSV: &str =
-            "city,region,country,population\nSouthborough,MA,United States,a lot of people";
+    const SIMPLE_CSV: &str =
+        "city,region,country,population\nSouthborough,MA,United States,a lot of people";
 
-        let ops = gc
-            .import_csv_operations(
-                sheet_id,
-                SIMPLE_CSV.as_bytes(),
-                file_name,
-                pos,
-                Some(b','),
-                Some(true),
-            )
-            .unwrap();
+    let ops = gc
+        .import_csv_operations(
+            sheet_id,
+            SIMPLE_CSV.as_bytes(),
+            file_name,
+            pos,
+            Some(b','),
+            Some(true),
+        )
+        .unwrap();
 
-        let values = vec![
-            vec!["city", "region", "country", "population"],
-            vec!["Southborough", "MA", "United States", "a lot of people"],
-        ];
-        let context = gc.a1_context();
-        let import = Import::new(sanitize_table_name(file_name.into()));
-        let cell_value = CellValue::Import(import.clone());
-        let mut expected_data_table = DataTable::from((import, values.into(), context));
-        expected_data_table.apply_first_row_as_header();
+    let values = vec![
+        vec!["city", "region", "country", "population"],
+        vec!["Southborough", "MA", "United States", "a lot of people"],
+    ];
+    let context = gc.a1_context();
+    let import = Import::new(sanitize_table_name(file_name.into()));
+    let cell_value = CellValue::Import(import.clone());
+    let mut expected_data_table = DataTable::from((import, values.into(), context));
+    expected_data_table.apply_first_row_as_header();
 
-        let data_table = match ops[0].clone() {
-            Operation::AddDataTable { data_table, .. } => data_table,
-            _ => panic!("Expected AddDataTable operation"),
-        };
-        expected_data_table.last_modified = data_table.last_modified;
-        expected_data_table.name = CellValue::Text(file_name.to_string());
+    let data_table = match ops[0].clone() {
+        Operation::AddDataTable { data_table, .. } => data_table,
+        _ => panic!("Expected AddDataTable operation"),
+    };
+    expected_data_table.last_modified = data_table.last_modified;
+    expected_data_table.name = CellValue::Text(file_name.to_string());
 
-        let expected = Operation::AddDataTable {
-            sheet_pos: SheetPos::new(sheet_id, 1, 1),
-            data_table: expected_data_table,
-            cell_value,
-            index: None,
-        };
+    let expected = Operation::AddDataTable {
+        sheet_pos: SheetPos::new(sheet_id, 1, 1),
+        data_table: expected_data_table,
+        cell_value,
+        index: None,
+    };
 
-        assert_eq!(ops.len(), 1);
-        assert_eq!(ops[0], expected);
+    assert_eq!(ops.len(), 1);
+    assert_eq!(ops[0], expected);
     }
 
     #[test]
     fn imports_a_long_csv() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let pos: Pos = Pos { x: 1, y: 2 };
-        let file_name = "long.csv";
+    let mut gc = GridController::test();
+    let sheet_id = gc.grid.sheets()[0].id;
+    let pos: Pos = Pos { x: 1, y: 2 };
+    let file_name = "long.csv";
 
-        let mut csv = String::new();
-        for i in 0..IMPORT_LINES_PER_OPERATION * 2 + 150 {
-            csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
-        }
+    let mut csv = String::new();
+    for i in 0..IMPORT_LINES_PER_OPERATION * 2 + 150 {
+        csv.push_str(&format!("city{},MA,United States,{}\n", i, i * 1000));
+    }
 
-        let ops = gc
-            .import_csv_operations(
-                sheet_id,
-                csv.as_bytes(),
-                file_name,
-                pos,
-                Some(b','),
-                Some(true),
-            )
-            .unwrap();
+    let ops = gc
+        .import_csv_operations(
+            sheet_id,
+            csv.as_bytes(),
+            file_name,
+            pos,
+            Some(b','),
+            Some(true),
+        )
+        .unwrap();
 
-        assert_eq!(ops.len(), 1);
-        let (sheet_pos, data_table) = match &ops[0] {
-            Operation::AddDataTable {
-                sheet_pos,
-                data_table,
-                ..
-            } => (*sheet_pos, data_table.clone()),
-            _ => panic!("Expected AddDataTable operation"),
-        };
-        assert_eq!(sheet_pos.x, 1);
-        assert_eq!(
-            data_table.cell_value_ref_at(0, 1),
-            Some(&CellValue::Text("city0".into()))
-        );
+    assert_eq!(ops.len(), 1);
+    let (sheet_pos, data_table) = match &ops[0] {
+        Operation::AddDataTable {
+            sheet_pos,
+            data_table,
+            ..
+        } => (*sheet_pos, data_table.clone()),
+        _ => panic!("Expected AddDataTable operation"),
+    };
+    assert_eq!(sheet_pos.x, 1);
+    assert_eq!(
+        data_table.cell_value_ref_at(0, 1),
+        Some(&CellValue::Text("city0".into()))
+    );
     }
 
     #[test]
     fn import_csv_date_time() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
+    let mut gc = GridController::test();
+    let sheet_id = gc.grid.sheets()[0].id;
 
-        let pos = pos![A1];
-        let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
-        gc.import_csv(
-            sheet_id,
-            csv.as_bytes(),
-            "csv",
-            pos,
-            None,
-            Some(b','),
-            Some(false),
-        )
-        .unwrap();
+    let pos = pos![A1];
+    let csv = "2024-12-21,13:23:00,2024-12-21 13:23:00\n".to_string();
+    gc.import_csv(
+        sheet_id,
+        csv.as_bytes(),
+        "csv",
+        pos,
+        None,
+        Some(b','),
+        Some(false),
+    )
+    .unwrap();
 
-        print_first_sheet(&gc);
+    print_first_sheet(&gc);
 
-        let value = CellValue::Date(NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap());
-        assert_display_cell_value(&gc, sheet_id, 1, 1, &value.to_string());
+    let value = CellValue::Date(NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap());
+    assert_display_cell_value(&gc, sheet_id, 1, 1, &value.to_string());
 
-        let value = CellValue::Time(NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap());
-        assert_display_cell_value(&gc, sheet_id, 2, 1, &value.to_string());
+    let value = CellValue::Time(NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap());
+    assert_display_cell_value(&gc, sheet_id, 2, 1, &value.to_string());
 
-        let value = CellValue::DateTime(
-            NaiveDate::from_ymd_opt(2024, 12, 21)
-                .unwrap()
-                .and_hms_opt(13, 23, 0)
-                .unwrap(),
-        );
-        assert_display_cell_value(&gc, sheet_id, 3, 1, &value.to_string());
+    let value = CellValue::DateTime(
+        NaiveDate::from_ymd_opt(2024, 12, 21)
+            .unwrap()
+            .and_hms_opt(13, 23, 0)
+            .unwrap(),
+    );
+    assert_display_cell_value(&gc, sheet_id, 3, 1, &value.to_string());
     }
 
     #[test]
     fn import_xlsx() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/simple.xlsx");
+    gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
 
-        let sheet_id = gc.grid.sheets()[0].id;
-        let sheet = gc.sheet(sheet_id);
+    let sheet_id = gc.grid.sheets()[0].id;
+    let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.cell_value((1, 1).into()),
-            Some(CellValue::Number(1.into()))
-        );
-        assert_eq!(
-            sheet.cell_value((3, 10).into()),
-            Some(CellValue::Number(12.into()))
-        );
-        assert_eq!(sheet.cell_value((1, 6).into()), None);
-        assert_eq!(
-            sheet.cell_value((4, 2).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "C1:C5".into()
-            }))
-        );
-        assert_eq!(sheet.cell_value((4, 1).into()), None);
+    assert_eq!(
+        sheet.cell_value((1, 1).into()),
+        Some(CellValue::Number(1.into()))
+    );
+    assert_eq!(
+        sheet.cell_value((3, 10).into()),
+        Some(CellValue::Number(12.into()))
+    );
+    assert_eq!(sheet.cell_value((1, 6).into()), None);
+    assert_eq!(
+        sheet.cell_value((4, 2).into()),
+        Some(CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "C1:C5".into()
+        }))
+    );
+    assert_eq!(sheet.cell_value((4, 1).into()), None);
     }
 
     #[test]
     fn import_xls() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/simple.xls");
-        gc.import_excel(file.as_ref(), "simple.xls", None).unwrap();
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/simple.xls");
+    gc.import_excel(file.as_ref(), "simple.xls", None).unwrap();
 
-        let sheet_id = gc.grid.sheets()[0].id;
-        let sheet = gc.sheet(sheet_id);
+    let sheet_id = gc.grid.sheets()[0].id;
+    let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.cell_value((1, 1).into()),
-            Some(CellValue::Number(0.into()))
-        );
+    assert_eq!(
+        sheet.cell_value((1, 1).into()),
+        Some(CellValue::Number(0.into()))
+    );
     }
 
     #[test]
     fn import_excel_invalid() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/invalid.xlsx");
-        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None);
-        assert!(result.is_err());
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/invalid.xlsx");
+    let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None);
+    assert!(result.is_err());
     }
 
     #[test]
     fn import_parquet_date_time() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.grid.sheets()[0].id;
-        let file = include_bytes!("../../../test-files/date_time_formats_arrow.parquet");
-        let pos = pos![A1];
-        gc.import_parquet(
-            sheet_id,
-            file.to_vec(),
-            "parquet",
-            pos,
-            None,
-            None::<fn(&str, u32, u32)>,
-        )
-        .unwrap();
+    let mut gc = GridController::test();
+    let sheet_id = gc.grid.sheets()[0].id;
+    let file = include_bytes!("../../../test-files/date_time_formats_arrow.parquet");
+    let pos = pos![A1];
+    gc.import_parquet(
+        sheet_id,
+        file.to_vec(),
+        "parquet",
+        pos,
+        None,
+        None::<fn(&str, u32, u32)>,
+    )
+    .unwrap();
 
-        let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table_at(&pos).unwrap();
+    let sheet = gc.sheet(sheet_id);
+    let data_table = sheet.data_table_at(&pos).unwrap();
 
-        // date
-        assert_eq!(
-            data_table.cell_value_at(0, 2),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
-            ))
-        );
-        assert_eq!(
-            data_table.cell_value_at(0, 3),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
-            ))
-        );
-        assert_eq!(
-            data_table.cell_value_at(0, 4),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
-            ))
-        );
+    // date
+    assert_eq!(
+        data_table.cell_value_at(0, 2),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("2024-12-21", "%Y-%m-%d").unwrap()
+        ))
+    );
+    assert_eq!(
+        data_table.cell_value_at(0, 3),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("2024-12-22", "%Y-%m-%d").unwrap()
+        ))
+    );
+    assert_eq!(
+        data_table.cell_value_at(0, 4),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("2024-12-23", "%Y-%m-%d").unwrap()
+        ))
+    );
 
-        // time
-        assert_eq!(
-            data_table.cell_value_at(1, 2),
-            Some(CellValue::Time(
-                NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
-            ))
-        );
-        assert_eq!(
-            data_table.cell_value_at(1, 3),
-            Some(CellValue::Time(
-                NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
-            ))
-        );
-        assert_eq!(
-            data_table.cell_value_at(1, 4),
-            Some(CellValue::Time(
-                NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
-            ))
-        );
+    // time
+    assert_eq!(
+        data_table.cell_value_at(1, 2),
+        Some(CellValue::Time(
+            NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
+        ))
+    );
+    assert_eq!(
+        data_table.cell_value_at(1, 3),
+        Some(CellValue::Time(
+            NaiveTime::parse_from_str("14:45:00", "%H:%M:%S").unwrap()
+        ))
+    );
+    assert_eq!(
+        data_table.cell_value_at(1, 4),
+        Some(CellValue::Time(
+            NaiveTime::parse_from_str("16:30:00", "%H:%M:%S").unwrap()
+        ))
+    );
 
-        // date time
-        assert_eq!(
-            data_table.cell_value_at(2, 2),
-            Some(CellValue::DateTime(
-                NaiveDate::from_ymd_opt(2024, 12, 21)
-                    .unwrap()
-                    .and_hms_opt(13, 23, 0)
-                    .unwrap()
-            ))
-        );
-        assert_eq!(
-            data_table.cell_value_at(2, 3),
-            Some(CellValue::DateTime(
-                NaiveDate::from_ymd_opt(2024, 12, 22)
-                    .unwrap()
-                    .and_hms_opt(14, 30, 0)
-                    .unwrap()
-            ))
-        );
-        assert_eq!(
-            data_table.cell_value_at(2, 4),
-            Some(CellValue::DateTime(
-                NaiveDate::from_ymd_opt(2024, 12, 23)
-                    .unwrap()
-                    .and_hms_opt(16, 45, 0)
-                    .unwrap()
-            ))
-        );
+    // date time
+    assert_eq!(
+        data_table.cell_value_at(2, 2),
+        Some(CellValue::DateTime(
+            NaiveDate::from_ymd_opt(2024, 12, 21)
+                .unwrap()
+                .and_hms_opt(13, 23, 0)
+                .unwrap()
+        ))
+    );
+    assert_eq!(
+        data_table.cell_value_at(2, 3),
+        Some(CellValue::DateTime(
+            NaiveDate::from_ymd_opt(2024, 12, 22)
+                .unwrap()
+                .and_hms_opt(14, 30, 0)
+                .unwrap()
+        ))
+    );
+    assert_eq!(
+        data_table.cell_value_at(2, 4),
+        Some(CellValue::DateTime(
+            NaiveDate::from_ymd_opt(2024, 12, 23)
+                .unwrap()
+                .and_hms_opt(16, 45, 0)
+                .unwrap()
+        ))
+    );
     }
 
     #[test]
     fn import_excel_date_time() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/date_time.xlsx");
-        gc.import_excel(file.as_ref(), "date_time.xlsx", None)
-            .unwrap();
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/date_time.xlsx");
+    gc.import_excel(file.as_ref(), "date_time.xlsx", None)
+        .unwrap();
 
-        let sheet_id = gc.grid.sheets()[0].id;
-        let sheet = gc.sheet(sheet_id);
+    let sheet_id = gc.grid.sheets()[0].id;
+    let sheet = gc.sheet(sheet_id);
 
-        // date
-        assert_eq!(
-            sheet.cell_value((1, 2).into()),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("1990-12-21", "%Y-%m-%d").unwrap()
-            ))
-        );
-        assert_eq!(
-            sheet.cell_value((1, 3).into()),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("1990-12-22", "%Y-%m-%d").unwrap()
-            ))
-        );
-        assert_eq!(
-            sheet.cell_value((1, 4).into()),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("1990-12-23", "%Y-%m-%d").unwrap()
-            ))
-        );
+    // date
+    assert_eq!(
+        sheet.cell_value((1, 2).into()),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("1990-12-21", "%Y-%m-%d").unwrap()
+        ))
+    );
+    assert_eq!(
+        sheet.cell_value((1, 3).into()),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("1990-12-22", "%Y-%m-%d").unwrap()
+        ))
+    );
+    assert_eq!(
+        sheet.cell_value((1, 4).into()),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("1990-12-23", "%Y-%m-%d").unwrap()
+        ))
+    );
 
-        // date time
-        assert_eq!(
-            sheet.cell_value((2, 2).into()),
-            Some(CellValue::DateTime(
-                NaiveDateTime::parse_from_str("2021-1-5 15:45", "%Y-%m-%d %H:%M").unwrap()
-            ))
-        );
-        assert_eq!(
-            sheet.cell_value((2, 3).into()),
-            Some(CellValue::DateTime(
-                NaiveDateTime::parse_from_str("2021-1-6 15:45", "%Y-%m-%d %H:%M").unwrap()
-            ))
-        );
-        assert_eq!(
-            sheet.cell_value((2, 4).into()),
-            Some(CellValue::DateTime(
-                NaiveDateTime::parse_from_str("2021-1-7 15:45", "%Y-%m-%d %H:%M").unwrap()
-            ))
-        );
+    // date time
+    assert_eq!(
+        sheet.cell_value((2, 2).into()),
+        Some(CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2021-1-5 15:45", "%Y-%m-%d %H:%M").unwrap()
+        ))
+    );
+    assert_eq!(
+        sheet.cell_value((2, 3).into()),
+        Some(CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2021-1-6 15:45", "%Y-%m-%d %H:%M").unwrap()
+        ))
+    );
+    assert_eq!(
+        sheet.cell_value((2, 4).into()),
+        Some(CellValue::DateTime(
+            NaiveDateTime::parse_from_str("2021-1-7 15:45", "%Y-%m-%d %H:%M").unwrap()
+        ))
+    );
 
-        // time
-        assert_eq!(
-            sheet.cell_value((3, 2).into()),
-            Some(CellValue::Time(
-                NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
-            ))
-        );
-        assert_eq!(
-            sheet.cell_value((3, 3).into()),
-            Some(CellValue::Time(
-                NaiveTime::parse_from_str("14:23:00", "%H:%M:%S").unwrap()
-            ))
-        );
-        assert_eq!(
-            sheet.cell_value((3, 4).into()),
-            Some(CellValue::Time(
-                NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
-            ))
-        );
+    // time
+    assert_eq!(
+        sheet.cell_value((3, 2).into()),
+        Some(CellValue::Time(
+            NaiveTime::parse_from_str("13:23:00", "%H:%M:%S").unwrap()
+        ))
+    );
+    assert_eq!(
+        sheet.cell_value((3, 3).into()),
+        Some(CellValue::Time(
+            NaiveTime::parse_from_str("14:23:00", "%H:%M:%S").unwrap()
+        ))
+    );
+    assert_eq!(
+        sheet.cell_value((3, 4).into()),
+        Some(CellValue::Time(
+            NaiveTime::parse_from_str("15:23:00", "%H:%M:%S").unwrap()
+        ))
+    );
     }
 
     #[test]
     fn test_import_utf16() {
-        let utf16_data: Vec<u8> = vec![
-            0xFF, 0xFE, // BOM
-            0x68, 0x00, // h
-            0x65, 0x00, // e
-            0x61, 0x00, // a
-            0x64, 0x00, // d
-            0x65, 0x00, // e
-            0x72, 0x00, // r
-            0x31, 0x00, // 1
-            0x2C, 0x00, // ,
-            0x68, 0x00, // h
-            0x65, 0x00, // e
-            0x61, 0x00, // a
-            0x64, 0x00, // d
-            0x65, 0x00, // e
-            0x72, 0x00, // r
-            0x32, 0x00, // 2
-            0x0A, 0x00, // \n
-            0x76, 0x00, // v
-            0x61, 0x00, // a
-            0x6C, 0x00, // l
-            0x75, 0x00, // u
-            0x65, 0x00, // e
-            0x31, 0x00, // 1
-            0x2C, 0x00, // ,
-            0x76, 0x00, // v
-            0x61, 0x00, // a
-            0x6C, 0x00, // l
-            0x75, 0x00, // u
-            0x65, 0x00, // e
-            0x32, 0x00, // 2
-        ];
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
-        gc.import_csv(
-            sheet_id,
-            &utf16_data,
-            "utf16.csv",
-            pos![A1],
-            None,
-            Some(b','),
-            Some(true),
-        )
-        .unwrap();
+    let utf16_data: Vec<u8> = vec![
+        0xFF, 0xFE, // BOM
+        0x68, 0x00, // h
+        0x65, 0x00, // e
+        0x61, 0x00, // a
+        0x64, 0x00, // d
+        0x65, 0x00, // e
+        0x72, 0x00, // r
+        0x31, 0x00, // 1
+        0x2C, 0x00, // ,
+        0x68, 0x00, // h
+        0x65, 0x00, // e
+        0x61, 0x00, // a
+        0x64, 0x00, // d
+        0x65, 0x00, // e
+        0x72, 0x00, // r
+        0x32, 0x00, // 2
+        0x0A, 0x00, // \n
+        0x76, 0x00, // v
+        0x61, 0x00, // a
+        0x6C, 0x00, // l
+        0x75, 0x00, // u
+        0x65, 0x00, // e
+        0x31, 0x00, // 1
+        0x2C, 0x00, // ,
+        0x76, 0x00, // v
+        0x61, 0x00, // a
+        0x6C, 0x00, // l
+        0x75, 0x00, // u
+        0x65, 0x00, // e
+        0x32, 0x00, // 2
+    ];
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+    gc.import_csv(
+        sheet_id,
+        &utf16_data,
+        "utf16.csv",
+        pos![A1],
+        None,
+        Some(b','),
+        Some(true),
+    )
+    .unwrap();
 
-        print_first_sheet(&gc);
+    print_first_sheet(&gc);
 
-        let sheet = gc.sheet(sheet_id);
-        assert_eq!(
-            sheet.display_value((1, 2).into()),
-            Some(CellValue::Text("header1".to_string()))
-        );
-        assert_eq!(
-            sheet.display_value((2, 2).into()),
-            Some(CellValue::Text("header2".to_string()))
-        );
-        assert_eq!(
-            sheet.display_value((1, 3).into()),
-            Some(CellValue::Text("value1".to_string()))
-        );
-        assert_eq!(
-            sheet.display_value((2, 3).into()),
-            Some(CellValue::Text("value2".to_string()))
-        );
+    let sheet = gc.sheet(sheet_id);
+    assert_eq!(
+        sheet.display_value((1, 2).into()),
+        Some(CellValue::Text("header1".to_string()))
+    );
+    assert_eq!(
+        sheet.display_value((2, 2).into()),
+        Some(CellValue::Text("header2".to_string()))
+    );
+    assert_eq!(
+        sheet.display_value((1, 3).into()),
+        Some(CellValue::Text("value1".to_string()))
+    );
+    assert_eq!(
+        sheet.display_value((2, 3).into()),
+        Some(CellValue::Text("value2".to_string()))
+    );
     }
 
     #[test]
     fn import_excel_dependent_formulas() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
-            .unwrap();
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/income_statement.xlsx");
+    gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+        .unwrap();
 
-        let sheet_id = gc.grid.sheets()[0].id;
-        let sheet = gc.sheet(sheet_id);
+    let sheet_id = gc.grid.sheets()[0].id;
+    let sheet = gc.sheet(sheet_id);
 
-        assert_eq!(
-            sheet.cell_value((4, 3).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E3,-1)".into()
-            }))
-        );
-        assert_eq!(
-            sheet.display_value((4, 3).into()),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
-            ))
-        );
+    assert_eq!(
+        sheet.cell_value((4, 3).into()),
+        Some(CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "EOMONTH(E3,-1)".into()
+        }))
+    );
+    assert_eq!(
+        sheet.display_value((4, 3).into()),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+        ))
+    );
 
-        assert_eq!(
-            sheet.cell_value((4, 12).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "D5-D10".into()
-            }))
-        );
-        assert_eq!(
-            sheet.display_value((4, 12).into()),
-            Some(CellValue::Number(3831163.into()))
-        );
+    assert_eq!(
+        sheet.cell_value((4, 12).into()),
+        Some(CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "D5-D10".into()
+        }))
+    );
+    assert_eq!(
+        sheet.display_value((4, 12).into()),
+        Some(CellValue::Number(3831163.into()))
+    );
 
-        assert_eq!(
-            sheet.cell_value((4, 29).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E29,-1)".into()
-            }))
-        );
-        assert_eq!(
-            sheet.display_value((4, 29).into()),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
-            ))
-        );
+    assert_eq!(
+        sheet.cell_value((4, 29).into()),
+        Some(CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "EOMONTH(E29,-1)".into()
+        }))
+    );
+    assert_eq!(
+        sheet.display_value((4, 29).into()),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+        ))
+    );
 
-        assert_eq!(
-            sheet.cell_value((4, 67).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "EOMONTH(E67,-1)".into()
-            }))
-        );
-        assert_eq!(
-            sheet.display_value((4, 67).into()),
-            Some(CellValue::Date(
-                NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
-            ))
-        );
+    assert_eq!(
+        sheet.cell_value((4, 67).into()),
+        Some(CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "EOMONTH(E67,-1)".into()
+        }))
+    );
+    assert_eq!(
+        sheet.display_value((4, 67).into()),
+        Some(CellValue::Date(
+            NaiveDate::parse_from_str("2024-01-31", "%Y-%m-%d").unwrap()
+        ))
+    );
     }
 
     #[test]
     fn test_csv_error_1() {
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
-        let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-1.csv");
-        gc.import_csv(
-            sheet_id,
-            file,
-            "csv-error-1.csv",
-            pos![A1],
-            None,
-            None,
-            Some(true),
-        )
-        .unwrap();
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+    let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-1.csv");
+    gc.import_csv(
+        sheet_id,
+        file,
+        "csv-error-1.csv",
+        pos![A1],
+        None,
+        None,
+        Some(true),
+    )
+    .unwrap();
     }
 
     #[test]
     fn test_csv_error_2() {
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
-        let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-2.csv");
-        gc.import_csv(
-            sheet_id,
-            file,
-            "csv-error-2.csv",
-            pos![A1],
-            None,
-            None,
-            Some(true),
-        )
-        .unwrap();
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+    let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/csv-error-2.csv");
+    gc.import_csv(
+        sheet_id,
+        file,
+        "csv-error-2.csv",
+        pos![A1],
+        None,
+        None,
+        Some(true),
+    )
+    .unwrap();
     }
 
 
     #[test]
     fn import_xlsx_styles() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/styles.xlsx");
-        gc.import_excel(file.as_ref(), "styles.xlsx", None).unwrap();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet(sheet_id);
-        
-        assert_eq!(sheet.formats.bold.get((1, 1).into()), Some(true));
-        assert_eq!(sheet.formats.italic.get((1, 2).into()), Some(true));
-        assert_eq!(sheet.formats.underline.get((1, 3).into()), Some(true));
-        assert_eq!(sheet.formats.strike_through.get((1, 4).into()), Some(true));
-        assert_eq!(
-            sheet.formats.text_color.get((1, 5).into()),
-            Some("#FF0000".to_string())
-        );
-        assert_eq!(
-            sheet.formats.fill_color.get((1, 6).into()),
-            Some("#FFFF00".to_string())
-        );
-        assert_eq!(sheet.formats.align.get((1, 7).into()), Some(CellAlign::Center));
-        assert_eq!(sheet.formats.vertical_align.get((1, 8).into()), Some(CellVerticalAlign::Middle));
-        assert_eq!(sheet.formats.wrap.get((1, 9).into()), Some(CellWrap::Wrap));
-        assert_eq!(sheet.formats.bold.get((1, 10).into()), None);
-        assert_eq!(sheet.formats.italic.get((1, 10).into()), None);
-        assert_eq!(sheet.formats.text_color.get((1, 10).into()), None);
-        assert_eq!(sheet.formats.fill_color.get((1, 10).into()), None);
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/styles.xlsx");
+    gc.import_excel(file.as_ref(), "styles.xlsx", None).unwrap();
+    let sheet_id = gc.sheet_ids()[0];
+    let sheet = gc.sheet(sheet_id);
+    
+    assert_eq!(sheet.formats.bold.get((1, 1).into()), Some(true));
+    assert_eq!(sheet.formats.italic.get((1, 2).into()), Some(true));
+    assert_eq!(sheet.formats.underline.get((1, 3).into()), Some(true));
+    assert_eq!(sheet.formats.strike_through.get((1, 4).into()), Some(true));
+    assert_eq!(
+        sheet.formats.text_color.get((1, 5).into()),
+        Some("#FF0000".to_string())
+    );
+    assert_eq!(
+        sheet.formats.fill_color.get((1, 6).into()),
+        Some("#FFFF00".to_string())
+    );
+    assert_eq!(sheet.formats.align.get((1, 7).into()), Some(CellAlign::Center));
+    assert_eq!(sheet.formats.vertical_align.get((1, 8).into()), Some(CellVerticalAlign::Middle));
+    assert_eq!(sheet.formats.wrap.get((1, 9).into()), Some(CellWrap::Wrap));
+    assert_eq!(sheet.formats.bold.get((1, 10).into()), None);
+    assert_eq!(sheet.formats.italic.get((1, 10).into()), None);
+    assert_eq!(sheet.formats.text_color.get((1, 10).into()), None);
+    assert_eq!(sheet.formats.fill_color.get((1, 10).into()), None);
     }
 
     #[test]
     fn import_xlsx_number_format_edge_cases() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "income_statement.xlsx", None).unwrap();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet(sheet_id);
-        let to_number = |x, y| {
-            if let Some(CellValue::Number(n)) = sheet.cell_value((x, y).into()) {
-                n.to_f64().unwrap_or(0.0)
-            } else {
-                panic!("Cell {x},{y} should contain a number");
-            }
-        };
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/income_statement.xlsx");
+    gc.import_excel(file.as_ref(), "income_statement.xlsx", None).unwrap();
+    let sheet_id = gc.sheet_ids()[0];
+    let sheet = gc.sheet(sheet_id);
+    let to_number = |x, y| {
+        if let Some(CellValue::Number(n)) = sheet.cell_value((x, y).into()) {
+            n.to_f64().unwrap_or(0.0)
+        } else {
+            panic!("Cell {x},{y} should contain a number");
+        }
+    };
 
-        let value = to_number(4, 5);
-        assert!((value - 5216000.0).abs() < 0.1);
+    let value = to_number(4, 5);
+    assert!((value - 5216000.0).abs() < 0.1);
 
-        let value = to_number(6, 8);
-        assert!((value - 269414.125).abs() < 0.001);
+    let value = to_number(6, 8);
+    assert!((value - 269414.125).abs() < 0.001);
 
-        assert_eq!(
-            sheet.cell_value((2, 3).into()),
-            Some(CellValue::Text("Category".to_string()))
-        );
+    assert_eq!(
+        sheet.cell_value((2, 3).into()),
+        Some(CellValue::Text("Category".to_string()))
+    );
 
-        assert_eq!(
-            sheet.cell_value((2, 7).into()),
-            Some(CellValue::Text("Hosting & Platform Fees".to_string()))
-        );
+    assert_eq!(
+        sheet.cell_value((2, 7).into()),
+        Some(CellValue::Text("Hosting & Platform Fees".to_string()))
+    );
 
-        assert_eq!(
-            sheet.cell_value((4, 12).into()),
-            Some(CellValue::Code(CodeCellValue {
-                language: CodeCellLanguage::Formula,
-                code: "D5-D10".to_string()
-            }))
-        );
+    assert_eq!(
+        sheet.cell_value((4, 12).into()),
+        Some(CellValue::Code(CodeCellValue {
+            language: CodeCellLanguage::Formula,
+            code: "D5-D10".to_string()
+        }))
+    );
 
-        let value = to_number(4, 14);
-        assert!(value > 1_000_000.0);
-        assert!(value < 10_000_000.0);
+    let value = to_number(4, 14);
+    assert!(value > 1_000_000.0);
+    assert!(value < 10_000_000.0);
 
-        let value = to_number(6, 16);
-        assert!((value - 1363708.75).abs() < 0.01);
+    let value = to_number(6, 16);
+    assert!((value - 1363708.75).abs() < 0.01);
 
-        let mut found_numbers = Vec::new();
-        for row in 5..20 {
-            for col in 4..10 {
-                if let Some(CellValue::Number(n)) = sheet.cell_value((col, row).into()) {
-                    found_numbers.push(n.to_f64().unwrap_or(0.0));
-                }
+    let mut found_numbers = Vec::new();
+    for row in 5..20 {
+        for col in 4..10 {
+            if let Some(CellValue::Number(n)) = sheet.cell_value((col, row).into()) {
+                found_numbers.push(n.to_f64().unwrap_or(0.0));
             }
         }
+    }
+    
+    assert!(found_numbers.len() > 10);
+    
+    let max_value = found_numbers.iter().fold(0.0f64, |a, &b| a.max(b));
+    let min_value = found_numbers.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+    
+    assert!(max_value > 1_000_000.0, "Should have large numbers");
+    assert!(min_value < 1_000_000.0, "Should have smaller numbers");
+    
+    let formula_count = (5..20).flat_map(|row| (4..10).map(move |col| (col, row)))
+        .filter(|(col, row)| {
+            matches!(sheet.cell_value((*col, *row).into()), Some(CellValue::Code(_)))
+        })
+        .count();
         
-        assert!(found_numbers.len() > 10);
-        
-        let max_value = found_numbers.iter().fold(0.0f64, |a, &b| a.max(b));
-        let min_value = found_numbers.iter().fold(f64::INFINITY, |a, &b| a.min(b));
-        
-        assert!(max_value > 1_000_000.0, "Should have large numbers");
-        assert!(min_value < 1_000_000.0, "Should have smaller numbers");
-        
-        let formula_count = (5..20).flat_map(|row| (4..10).map(move |col| (col, row)))
-            .filter(|(col, row)| {
-                matches!(sheet.cell_value((*col, *row).into()), Some(CellValue::Code(_)))
-            })
-            .count();
-            
-        assert!(formula_count > 0, "Should have found some formulas in the income statement");        
+    assert!(formula_count > 0, "Should have found some formulas in the income statement");        
     }
 
     #[test]
     fn test_excel_to_chrono_format_conversion() {
-        assert_eq!(excel_to_chrono_format("mm/dd/yyyy"), "%m/%d/%Y");
-        assert_eq!(excel_to_chrono_format("m/d/yy"), "%-m/%-d/%y");
-        assert_eq!(excel_to_chrono_format("dd-mmm-yyyy"), "%d-%b-%Y");
-        assert_eq!(excel_to_chrono_format("h:mm AM/PM"), "%-I:%M %p");
-        assert_eq!(excel_to_chrono_format("hh:mm:ss"), "%H:%M:%S");
-        assert_eq!(excel_to_chrono_format("mm:ss"), "%M:%S");
-        assert_eq!(excel_to_chrono_format("m/d/yyyy h:mm"), "%-m/%-d/%Y %-I:%M");
-        assert_eq!(
-            excel_to_chrono_format("yyyy-mm-dd hh:mm:ss"),
-            "%Y-%m-%d %H:%M:%S"
-        );
+    assert_eq!(excel_to_chrono_format("mm/dd/yyyy"), "%m/%d/%Y");
+    assert_eq!(excel_to_chrono_format("m/d/yy"), "%-m/%-d/%y");
+    assert_eq!(excel_to_chrono_format("dd-mmm-yyyy"), "%d-%b-%Y");
+    assert_eq!(excel_to_chrono_format("h:mm AM/PM"), "%-I:%M %p");
+    assert_eq!(excel_to_chrono_format("hh:mm:ss"), "%H:%M:%S");
+    assert_eq!(excel_to_chrono_format("mm:ss"), "%M:%S");
+    assert_eq!(excel_to_chrono_format("m/d/yyyy h:mm"), "%-m/%-d/%Y %-I:%M");
+    assert_eq!(
+        excel_to_chrono_format("yyyy-mm-dd hh:mm:ss"),
+        "%Y-%m-%d %H:%M:%S"
+    );
     }
 
     #[test]
     fn import_excel_borders() {
-        let mut gc = GridController::new_blank();
-        let file = include_bytes!("../../../test-files/borders.xlsx");
-        gc.import_excel(file.as_ref(), "borders.xlsx", None).unwrap();
+    let mut gc = GridController::new_blank();
+    let file = include_bytes!("../../../test-files/borders.xlsx");
+    gc.import_excel(file.as_ref(), "borders.xlsx", None).unwrap();
 
-        let sheet_id = gc.grid.sheets()[0].id;
-        let sheet = gc.sheet(sheet_id);
+    let sheet_id = gc.grid.sheets()[0].id;
+    let sheet = gc.sheet(sheet_id);
 
-        let border_cell_a1 = sheet.borders.get_style_cell(pos![A1]);        
-        let top = border_cell_a1.top.unwrap();
-        let left = border_cell_a1.left.unwrap();
-        let bottom = border_cell_a1.bottom.unwrap();
-        let right = border_cell_a1.right.unwrap();
-        let red = Rgba::new(255, 0, 0, 255);
-        
-        assert_eq!(top.line, CellBorderLine::Line1);
-        assert_eq!(top.color, red);
-        assert_eq!(left.line, CellBorderLine::Line1);
-        assert_eq!(left.color, red);
-        assert_eq!(bottom.line, CellBorderLine::Line1);
-        assert_eq!(bottom.color, red);
-        assert_eq!(right.line, CellBorderLine::Line1);
-        assert_eq!(right.color, red);
-        
-        let border_cell_d1= sheet.borders.get_style_cell(pos![D1]);
-        let top = border_cell_d1.top.unwrap();
-        let left = border_cell_d1.left.unwrap();
-        let red = Rgba::new(255, 0, 0, 255);
-        
-        assert_eq!(top.line, CellBorderLine::Dashed);
-        assert_eq!(top.color, red);
-        assert_eq!(left.line, CellBorderLine::Dashed);
-        assert_eq!(left.color, red);
-        assert!(border_cell_d1.bottom.is_none());
-        assert!(border_cell_d1.right.is_none());
+    let border_cell_a1 = sheet.borders.get_style_cell(pos![A1]);        
+    let top = border_cell_a1.top.unwrap();
+    let left = border_cell_a1.left.unwrap();
+    let bottom = border_cell_a1.bottom.unwrap();
+    let right = border_cell_a1.right.unwrap();
+    let red = Rgba::new(255, 0, 0, 255);
+    
+    assert_eq!(top.line, CellBorderLine::Line1);
+    assert_eq!(top.color, red);
+    assert_eq!(left.line, CellBorderLine::Line1);
+    assert_eq!(left.color, red);
+    assert_eq!(bottom.line, CellBorderLine::Line1);
+    assert_eq!(bottom.color, red);
+    assert_eq!(right.line, CellBorderLine::Line1);
+    assert_eq!(right.color, red);
+    
+    let border_cell_d1= sheet.borders.get_style_cell(pos![D1]);
+    let top = border_cell_d1.top.unwrap();
+    let left = border_cell_d1.left.unwrap();
+    let red = Rgba::new(255, 0, 0, 255);
+    
+    assert_eq!(top.line, CellBorderLine::Dashed);
+    assert_eq!(top.color, red);
+    assert_eq!(left.line, CellBorderLine::Dashed);
+    assert_eq!(left.color, red);
+    assert!(border_cell_d1.bottom.is_none());
+    assert!(border_cell_d1.right.is_none());
     }
 
     #[test]
     fn test_convert_excel_border_style() {
-        assert_eq!(convert_excel_border_style(BorderStyle::None), CellBorderLine::Clear);
-        assert_eq!(convert_excel_border_style(BorderStyle::Thin), CellBorderLine::Line1);
-        assert_eq!(convert_excel_border_style(BorderStyle::Hair), CellBorderLine::Line1);
-        assert_eq!(convert_excel_border_style(BorderStyle::Medium), CellBorderLine::Line2);
-        assert_eq!(convert_excel_border_style(BorderStyle::Thick), CellBorderLine::Line3);
-        assert_eq!(convert_excel_border_style(BorderStyle::Double), CellBorderLine::Double);
-        assert_eq!(convert_excel_border_style(BorderStyle::DashDot), CellBorderLine::Dotted);
+    assert_eq!(convert_excel_border_style(BorderStyle::None), CellBorderLine::Clear);
+    assert_eq!(convert_excel_border_style(BorderStyle::Thin), CellBorderLine::Line1);
+    assert_eq!(convert_excel_border_style(BorderStyle::Hair), CellBorderLine::Line1);
+    assert_eq!(convert_excel_border_style(BorderStyle::Medium), CellBorderLine::Line2);
+    assert_eq!(convert_excel_border_style(BorderStyle::Thick), CellBorderLine::Line3);
+    assert_eq!(convert_excel_border_style(BorderStyle::Double), CellBorderLine::Double);
+    assert_eq!(convert_excel_border_style(BorderStyle::DashDot), CellBorderLine::Dotted);
     }
 
     #[test]
     fn test_convert_excel_border_color() {
-        let default_color = convert_excel_border_color(None);
-        assert_eq!(default_color, Rgba::default());
-        
-        let red_color = Color::new(255, 255, 0, 0); // ARGB: fully opaque red
-        let converted_color = convert_excel_border_color(Some(&red_color));
-        assert_eq!(converted_color, Rgba::new(255, 0, 0, 255)); // RGBA: red with full alpha
+    let default_color = convert_excel_border_color(None);
+    assert_eq!(default_color, Rgba::default());
+    
+    let red_color = Color::new(255, 255, 0, 0); // ARGB: fully opaque red
+    let converted_color = convert_excel_border_color(Some(&red_color));
+    assert_eq!(converted_color, Rgba::new(255, 0, 0, 255)); // RGBA: red with full alpha
     }
 
     #[test]
     fn test_convert_excel_borders_to_quadratic() {
-        use calamine::{Border, Borders, BorderStyle, Color};
-        
-        // Create test borders
-        let mut borders = Borders::new();
-        borders.top = Border::with_color(BorderStyle::Thin, Color::rgb(255, 0, 0)); // Red thin border on top
-        borders.left = Border::new(BorderStyle::Thick); // Thick border on left (no color)
-        borders.bottom = Border::new(BorderStyle::Double); // Double border on bottom
-        borders.right = Border::new(BorderStyle::None); // No border on right
-        
-        let quadratic_borders = convert_excel_borders_to_quadratic(&borders);
-        
-        // Verify conversions
-        assert!(quadratic_borders.top.is_some());
-        assert!(quadratic_borders.left.is_some());
-        assert!(quadratic_borders.bottom.is_some());
-        assert!(quadratic_borders.right.is_none()); // None border should be None
-        
-        let top_border = quadratic_borders.top.unwrap();
-        assert_eq!(top_border.line, CellBorderLine::Line1);
-        assert_eq!(top_border.color, Rgba::new(255, 0, 0, 255));
-        
-        let left_border = quadratic_borders.left.unwrap();
-        assert_eq!(left_border.line, CellBorderLine::Line3);
-        assert_eq!(left_border.color, Rgba::default());
-        
-        let bottom_border = quadratic_borders.bottom.unwrap();
-        assert_eq!(bottom_border.line, CellBorderLine::Double);
+    use calamine::{Border, Borders, BorderStyle, Color};
+    
+    // Create test borders
+    let mut borders = Borders::new();
+    borders.top = Border::with_color(BorderStyle::Thin, Color::rgb(255, 0, 0)); // Red thin border on top
+    borders.left = Border::new(BorderStyle::Thick); // Thick border on left (no color)
+    borders.bottom = Border::new(BorderStyle::Double); // Double border on bottom
+    borders.right = Border::new(BorderStyle::None); // No border on right
+    
+    let quadratic_borders = convert_excel_borders_to_quadratic(&borders);
+    
+    // Verify conversions
+    assert!(quadratic_borders.top.is_some());
+    assert!(quadratic_borders.left.is_some());
+    assert!(quadratic_borders.bottom.is_some());
+    assert!(quadratic_borders.right.is_none()); // None border should be None
+    
+    let top_border = quadratic_borders.top.unwrap();
+    assert_eq!(top_border.line, CellBorderLine::Line1);
+    assert_eq!(top_border.color, Rgba::new(255, 0, 0, 255));
+    
+    let left_border = quadratic_borders.left.unwrap();
+    assert_eq!(left_border.line, CellBorderLine::Line3);
+    assert_eq!(left_border.color, Rgba::default());
+    
+    let bottom_border = quadratic_borders.bottom.unwrap();
+    assert_eq!(bottom_border.line, CellBorderLine::Double);
+    }
+
+    #[test]
+    fn test_import_excel_number_format() {
+    let mut gc = GridController::new();
+    let sheet_id = gc.grid.sheets()[0].id;
+    let mut sheet = gc.sheet_mut(sheet_id);
+    let pos = pos![A1];
+    let format_string = "\"$\"#,##0_);[Red](\"$\"#,##0)";
+    let number_format = NumberFormat::new(format_string.to_string());
+    import_excel_number_format(&mut sheet, pos, &number_format);
+    assert_eq!(sheet.formats.numeric_decimals.get(pos), Some(0));
+    assert_eq!(sheet.formats.numeric_commas.get(pos), Some(true));
     }
 }
