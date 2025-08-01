@@ -1,12 +1,12 @@
 import axios from 'axios';
 import type express from 'express';
-import { convertError } from 'quadratic-shared/utils/error';
 import { z } from 'zod';
 import dbClient from '../../dbClient';
 import { NODE_ENV, SLACK_FEEDBACK_URL } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import type { RequestWithUser } from '../../types/Request';
+import logger from '../../utils/logger';
 
 const RequestBodySchema = z.object({
   feedback: z.string(),
@@ -60,7 +60,7 @@ async function handler(req: RequestWithUser, res: express.Response) {
       ].join('\n\n'),
     };
     axios.post(SLACK_FEEDBACK_URL, payload).catch((error: Error) => {
-      console.log(JSON.stringify({ message: 'Failed to post feedback to Slack', error: convertError(error) }));
+      logger.warn('Failed to post feedback to Slack', error);
     });
   }
 

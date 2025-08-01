@@ -6,7 +6,6 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import { Button } from '@/shared/shadcn/ui/button';
 import * as Sentry from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
-import { convertError } from 'quadratic-shared/utils/error';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
 
@@ -44,7 +43,14 @@ export function EmptyPage(props: EmptyPageProps) {
       mixpanel.track('[Empty].error', {
         title: sourceTitle,
         description,
-        error: JSON.stringify(convertError(error)),
+        error:
+          error instanceof Error
+            ? {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+              }
+            : error,
       });
       Sentry.captureException(new Error('error-page'), {
         extra: {
