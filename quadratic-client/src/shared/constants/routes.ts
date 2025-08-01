@@ -93,10 +93,10 @@ export const ROUTES = {
     const state = encodeURIComponent(JSON.stringify(redirectTo && redirectTo !== '/' ? { redirectTo } : {}));
     return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
   },
-  WORKOS_IFRAME_OAUTH: ({ provider, oauthKey }: { provider: OAuthProvider; oauthKey: string }) => {
+  WORKOS_IFRAME_OAUTH: ({ provider }: { provider: OAuthProvider }) => {
     const clientId = import.meta.env.VITE_WORKOS_CLIENT_ID || '';
     const redirectUri = encodeURIComponent(window.location.origin + '/login-result');
-    const state = encodeURIComponent(JSON.stringify({ oauthKey }));
+    const state = encodeURIComponent(JSON.stringify({ closeOnComplete: true }));
     return `https://api.workos.com/user_management/authorize?client_id=${clientId}&provider=${provider}&redirect_uri=${redirectUri}&response_type=code&state=${state}`;
   },
 

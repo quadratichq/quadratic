@@ -93,14 +93,9 @@ export const workosClient: AuthClient = {
    */
   async handleSigninRedirect(href: string) {
     try {
-      console.log('handleSigninRedirect', href);
       const url = new URL(href);
-      console.log('url', url);
-
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
-      console.log('code', code);
-      console.log('state', state);
       if (!code || !state) {
         return;
       }
@@ -114,28 +109,15 @@ export const workosClient: AuthClient = {
         await waitForAuthClientToRedirect();
       } else {
         let redirectTo = window.location.origin;
-        console.log('redirectTo', redirectTo);
 
         const stateObj = JSON.parse(decodeURIComponent(state));
-        console.log('stateObj', stateObj);
         if (!!stateObj && typeof stateObj === 'object') {
-          if ('oauthKey' in stateObj) {
-            const oauthKey = stateObj.oauthKey;
-            console.log('oauthKey', oauthKey);
-            if (oauthKey && typeof oauthKey === 'string') {
-              const channel = new BroadcastChannel(oauthKey);
-              console.log('channel', channel);
-              channel.postMessage({ type: 'complete' });
-              console.log('channel message sent');
-              localStorage.setItem(oauthKey, 'complete');
-              await waitForAuthClientToRedirect();
-              window.close();
-              return;
-            }
+          if ('closeOnComplete' in stateObj && stateObj.closeOnComplete) {
+            window.close();
+            return;
           }
 
           if ('redirectTo' in stateObj && !!stateObj.redirectTo && typeof stateObj.redirectTo === 'string') {
-            console.log('redirectTo', stateObj.redirectTo);
             redirectTo = stateObj.redirectTo;
           }
         }
@@ -187,28 +169,27 @@ export const workosClient: AuthClient = {
   },
 
   async loginWithOAuth(args) {
-    const isInIframe = window.self !== window.top;
-    if (isInIframe) {
-      const oauthKey = `${args.provider}-${crypto.randomUUID()}`;
-
-      const checkForCompletion = async () => {
-        if (localStorage.getItem(oauthKey) === 'complete') {
-          localStorage.removeItem(oauthKey);
+    // Handle OAuth in iframe
+    if (window.top && window.self !== window.top) {
+      let attempts = 0;
+      // Poll for authentication status
+      const checkIsAuthenticated = async () => {
+        attempts++;
+        if (attempts > 40) {
+          return;
+        }
+        await disposeClient();
+        const isAuthenticated = await this.isAuthenticated();
+        if (isAuthenticated) {
           window.location.assign(args.redirectTo);
           await waitForAuthClientToRedirect();
         } else {
-          setTimeout(checkForCompletion, 500);
+          setTimeout(checkIsAuthenticated, 3000);
         }
       };
-      checkForCompletion();
+      checkIsAuthenticated();
 
-      const channel = new BroadcastChannel(oauthKey);
-      console.log('channel', channel);
-      channel.onmessage = (event) => {
-        console.log('message', event);
-      };
-
-      const oauthUrl = ROUTES.WORKOS_IFRAME_OAUTH({ provider: args.provider, oauthKey });
+      const oauthUrl = ROUTES.WORKOS_IFRAME_OAUTH({ provider: args.provider });
       const left = window.screenX + (window.outerWidth - OAUTH_POPUP_WIDTH) / 2;
       const top = window.screenY + (window.outerHeight - OAUTH_POPUP_HEIGHT) / 2;
       window.open(
