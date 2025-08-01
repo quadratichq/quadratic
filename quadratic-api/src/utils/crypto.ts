@@ -3,9 +3,9 @@ import crypto from 'crypto';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { convertError } from 'quadratic-shared/utils/error';
 import { promisify } from 'util';
 import { ENCRYPTION_KEY } from '../env-vars';
+import logger from './logger';
 
 // Use the same algorithm and IV for all encryption and decryption.
 const algorithm = 'aes-256-cbc';
@@ -116,7 +116,7 @@ export const generateSshKeys = async (
 
     return { privateKey, publicKey };
   } catch (error: unknown) {
-    console.error(JSON.stringify({ message: 'Error generating SSH keys', error: convertError(error) }));
+    logger.error('Error generating SSH keys', { error });
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate SSH keys: ${errorMessage}`);
   }

@@ -432,7 +432,8 @@ export const SheetBar = memo((): JSX.Element => {
             id={sheet.id}
             color={sheet.color}
             name={sheet.name}
-            order={getOrderIndex(sheet.order).toString()}
+            order={sheet.order}
+            calculatedOrder={getOrderIndex(sheet.order).toString()}
             onPointerDown={handlePointerDown}
             active={activeSheet === sheet.id}
             sheet={sheet}
