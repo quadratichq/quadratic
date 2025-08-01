@@ -3,8 +3,8 @@ import * as Sentry from '@sentry/node';
 import type { Algorithm } from 'jsonwebtoken';
 import type { GetVerificationKey } from 'jwks-rsa';
 import jwksRsa from 'jwks-rsa';
-import { ORY_ADMIN_HOST, ORY_JWKS_URI } from '../env-vars';
-import logger from '../utils/logger';
+import { ORY_ADMIN_HOST, ORY_JWKS_URI } from '../../env-vars';
+import logger from '../../utils/logger';
 import type { ByEmailUser, User } from './auth';
 
 const config = new Configuration({
@@ -64,7 +64,7 @@ export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]):
         id,
         auth0Id,
         email,
-        name: `${name.first} ${name.last}`,
+        name: `${name.first} ${name.last}`.trim(),
         picture: undefined,
       },
     };

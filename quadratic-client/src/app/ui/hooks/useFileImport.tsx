@@ -8,7 +8,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import { Buffer } from 'buffer';
 import mixpanel from 'mixpanel-browser';
 import { useCallback } from 'react';
@@ -228,7 +228,7 @@ export function useFileImport() {
           }
         } catch (e) {
           if (e instanceof Error) {
-            Sentry.captureException(e);
+            captureException(e);
             updateCurrentFileState({ step: 'error', progress: 0, abortController: undefined });
             addGlobalSnackbar(e.message, { severity: 'warning' });
           }
@@ -240,7 +240,7 @@ export function useFileImport() {
         try {
           await uploadFilePromise;
         } catch (e) {
-          Sentry.captureException(e);
+          captureException(e);
           console.error(e);
         }
       }

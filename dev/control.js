@@ -129,8 +129,8 @@ export class Control {
             "--workspace=quadratic-api",
         ], { signal: this.signals.api.signal });
         this.ui.printOutput("api", (data) => this.handleResponse("api", data, {
-            success: "Server running on port",
-            error: "npm ERR!",
+            success: "Server running",
+            error: "error",
             start: "> quadratic-api",
         }, () => {
             if (firstRun && !restart) {
@@ -209,6 +209,7 @@ export class Control {
     }
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
+        this.cli.options.functionTimer = false;
         this.restartCore();
     }
     toggleFunctionTimer() {
@@ -544,10 +545,6 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const dockerDev = this.cli.options.dockerDev;
-            if (dockerDev) {
-                resolve(true);
-            }
             const servicesLocal = this.cli.options.servicesLocal;
             const redis = servicesLocal
                 ? spawn("redis-cli", ["ping"])
@@ -566,10 +563,6 @@ export class Control {
         return new Promise((resolve) => {
             if (this.quitting)
                 resolve(false);
-            const dockerDev = this.cli.options.dockerDev;
-            if (dockerDev) {
-                resolve(true);
-            }
             const servicesLocal = this.cli.options.servicesLocal;
             const postgres = servicesLocal
                 ? spawn("pg_isready")

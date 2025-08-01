@@ -1,6 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import type z from 'zod';
 
 export class ApiError extends Error {
@@ -43,7 +43,7 @@ export async function fetchFromApi<T>(
 
   // Handle if the response is not JSON
   const json = await response.json().catch((error) => {
-    Sentry.captureException(error);
+    captureException(error);
     throw new ApiError('An unknown error occurred: response is not JSON.', response.status, init.method);
   });
 
@@ -51,9 +51,9 @@ export async function fetchFromApi<T>(
   if (!response.ok) {
     // TODO: ensure API only ever returns uniform error response, e.g. `json.errors` or `json.error.message`
     let details = 'No detailed error message provided';
-    if (json.error.message) {
+    if (json?.error?.message) {
       details = json.error.message;
-    } else if (json.errors) {
+    } else if (json?.errors) {
       details = JSON.stringify(json.errors);
     }
     throw new ApiError(`Failed to fetch ${url}`, response.status, init.method, details);

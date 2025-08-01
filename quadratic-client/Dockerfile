@@ -128,6 +128,7 @@ RUN if [ ! -z "$ENV_HASH" ]; then \
   echo "VITE_AUTH0_CLIENT_ID=VITE_AUTH0_CLIENT_ID_VAL" >> ./quadratic-client/.env && \
   echo "VITE_AUTH0_AUDIENCE=VITE_AUTH0_AUDIENCE_VAL" >> ./quadratic-client/.env && \
   echo "VITE_ORY_HOST=VITE_ORY_HOST_VAL" >> ./quadratic-client/.env && \
+  echo "VITE_WORKOS_CLIENT_ID=VITE_WORKOS_CLIENT_ID_VAL" >> ./quadratic-client/.env && \
   echo "VITE_SENTRY_AUTH_TOKEN=VITE_SENTRY_AUTH_TOKEN_VAL" >> ./quadratic-client/.env; \
   fi
 

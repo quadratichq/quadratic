@@ -1,26 +1,27 @@
 import { authClient } from '@/auth/auth';
+import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
+import { LoginForm } from '@/shared/components/auth/LoginForm';
+import { SEARCH_PARAMS } from '@/shared/constants/routes';
+import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import type { LoaderFunctionArgs } from 'react-router';
-import { redirect } from 'react-router';
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const redirectTo = getRedirectTo() || '/';
+
   const isAuthenticated = await authClient.isAuthenticated();
-
-  // If they’re logged in, redirect home
   if (isAuthenticated) {
-    return redirect('/');
+    window.location.assign(redirectTo);
+    await waitForAuthClientToRedirect();
+  } else {
+    const url = new URL(request.url);
+    const loginType = url.searchParams.get(SEARCH_PARAMS.LOGIN_TYPE.KEY)?.toLowerCase() ?? '';
+    const isSignupFlow = loginType === SEARCH_PARAMS.LOGIN_TYPE.VALUES.SIGNUP;
+    if (isSignupFlow) {
+      await authClient.login({ redirectTo, isSignupFlow: true, href: request.url });
+    }
   }
+};
 
-  // If not, send them to Auth0
-  // Watch for a `from` query param, as unprotected routes will redirect
-  // to here for them to auth first
-  // Also watch for the presence of a `signup` query param, which means
-  // send the user to sign up flow, not login
-  const url = new URL(request.url);
-  const redirectTo = url.searchParams.get('from') || '/';
-  const isSignupFlow = url.searchParams.get('signup') !== null;
-  await authClient.login(redirectTo, isSignupFlow);
-
-  // auth0 will re-route us (above) but telling react-router where we
-  // are re-routing to makes sure that this doesn't end up in the history stack
-  return redirect(redirectTo);
+export const Component = () => {
+  return <LoginForm />;
 };

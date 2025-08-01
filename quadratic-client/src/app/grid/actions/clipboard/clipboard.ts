@@ -8,7 +8,7 @@ import type { JsClipboard, PasteSpecial } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
 import { isSafari } from 'react-device-detect';
@@ -38,7 +38,7 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   } catch (error) {
     console.error(error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
+    captureException(error);
   }
 };
 
@@ -53,7 +53,7 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
   } catch (error) {
     console.error(error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
+    captureException(error);
   }
 };
 
@@ -185,7 +185,7 @@ export const cutToClipboard = async () => {
   } catch (error) {
     console.error(error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
+    captureException(error);
   }
 };
 
@@ -198,7 +198,7 @@ export const copyToClipboard = async () => {
   } catch (error) {
     console.error(error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
+    captureException(error);
   }
 };
 
@@ -229,7 +229,7 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
   } catch (error) {
     console.error(error);
     addGlobalSnackbar('Failed to copy selection as PNG.', { severity: 'error' });
-    Sentry.captureException(error);
+    captureException(error);
   }
 };
 
@@ -296,7 +296,7 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
   } catch (error) {
     console.error(error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to paste from clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
+    captureException(error);
   }
 };
 

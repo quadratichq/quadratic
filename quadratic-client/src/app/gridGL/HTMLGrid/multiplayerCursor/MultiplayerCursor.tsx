@@ -1,4 +1,5 @@
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { memo } from 'react';
 
 interface Props {
   x: number;
@@ -8,7 +9,7 @@ interface Props {
   offscreen: boolean;
 }
 
-export const MultiplayerCursor = (props: Props) => {
+export const MultiplayerCursor = memo((props: Props) => {
   const { x, y, name, color, offscreen } = props;
 
   if (offscreen) {
@@ -60,4 +61,4 @@ export const MultiplayerCursor = (props: Props) => {
       </div>
     </div>
   );
-};
+});

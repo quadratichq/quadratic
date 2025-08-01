@@ -1,16 +1,17 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
-export const loader = async () => {
+export const loader = async ({ request }: { request: Request }) => {
   // Show onboarding for ~25% of new users
   const SHOW_ONBOARDING = Math.random() < 0.25;
 
   // try/catch here handles case where this _could_ error out and we
   // have no errorElement so we just redirect back to home
   try {
-    await authClient.handleSigninRedirect();
+    await authClient.handleSigninRedirect(request.url);
     let isAuthenticated = await authClient.isAuthenticated();
     if (isAuthenticated) {
       // Acknowledge the user has just logged in. The backend may need
@@ -45,7 +46,7 @@ export const loader = async () => {
         }
       }
 
-      let redirectTo = new URLSearchParams(window.location.search).get('redirectTo') || '/';
+      const redirectTo = getRedirectTo() || '/';
       // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {

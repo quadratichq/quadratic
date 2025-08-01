@@ -19,7 +19,7 @@ import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 import { FilePermissionSchema, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useEffect } from 'react';
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from 'react-router';
@@ -96,7 +96,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   if (result.error) {
     if (!isVersionHistoryPreview) {
-      Sentry.captureEvent({
+      captureEvent({
         message: `Failed to deserialize file ${uuid} from server.`,
         extra: {
           error: result.error,
@@ -109,7 +109,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
     // this should eventually be moved to Rust (too lazy now to find a Rust library that does the version string compare)
     if (compareVersions(result.version, data.file.lastCheckpointVersion) === VersionComparisonResult.LessThan) {
       if (!isVersionHistoryPreview) {
-        Sentry.captureEvent({
+        captureEvent({
           message: `User opened a file at version ${result.version} but the app is at version ${data.file.lastCheckpointVersion}. The app will automatically reload.`,
           level: 'log',
         });

@@ -1,7 +1,7 @@
 import type { Response } from 'express';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { getUsers } from '../../auth/auth';
+import { getUsers } from '../../auth/providers/auth';
 import universityDomains from '../../data/universityDomains';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';

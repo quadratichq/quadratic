@@ -36,7 +36,7 @@ class JavascriptWebWorker {
         break;
 
       case 'javascriptClientGetJwt':
-        authClient.getTokenOrRedirect().then((jwt) => {
+        authClient.getTokenOrRedirect(true).then((jwt) => {
           const data = message.data as JavascriptClientGetJwt;
           this.send({ type: 'clientJavascriptGetJwt', id: data.id, jwt });
         });

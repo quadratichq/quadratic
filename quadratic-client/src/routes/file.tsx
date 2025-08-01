@@ -5,7 +5,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { engineName, isDesktop } from 'react-device-detect';
@@ -24,7 +24,7 @@ export function Component() {
         isWebGLSupported,
       });
 
-      Sentry.captureEvent({
+      captureEvent({
         message: 'Browser does not support WebGL or WASM',
         level: 'info',
       });

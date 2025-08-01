@@ -162,8 +162,8 @@ export class Control {
         "api",
         data,
         {
-          success: "Server running on port",
-          error: "npm ERR!",
+          success: "Server running",
+          error: "error",
           start: "> quadratic-api",
         },
         () => {
@@ -644,10 +644,6 @@ export class Control {
   isRedisRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
       if (this.quitting) resolve(false);
-      const dockerDev = this.cli.options.dockerDev;
-      if (dockerDev) {
-        resolve(true);
-      }
       const servicesLocal = this.cli.options.servicesLocal;
       const redis = servicesLocal
         ? spawn("redis-cli", ["ping"])
@@ -666,10 +662,6 @@ export class Control {
   isPostgresRunning(): Promise<boolean | "not found"> {
     return new Promise((resolve) => {
       if (this.quitting) resolve(false);
-      const dockerDev = this.cli.options.dockerDev;
-      if (dockerDev) {
-        resolve(true);
-      }
       const servicesLocal = this.cli.options.servicesLocal;
       const postgres = servicesLocal
         ? spawn("pg_isready")
