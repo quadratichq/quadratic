@@ -113,6 +113,7 @@ export const workosClient: AuthClient = {
         const stateObj = JSON.parse(decodeURIComponent(state));
         if (!!stateObj && typeof stateObj === 'object') {
           if ('closeOnComplete' in stateObj && stateObj.closeOnComplete) {
+            document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
             window.close();
             return;
           }
@@ -178,14 +179,16 @@ export const workosClient: AuthClient = {
         if (attempts > 40) {
           return;
         }
+
         await disposeClient();
         const isAuthenticated = await this.isAuthenticated();
         if (isAuthenticated) {
           window.location.assign(args.redirectTo);
           await waitForAuthClientToRedirect();
-        } else {
-          setTimeout(checkIsAuthenticated, 3000);
+          return;
         }
+
+        setTimeout(checkIsAuthenticated, 3000);
       };
       checkIsAuthenticated();
 
