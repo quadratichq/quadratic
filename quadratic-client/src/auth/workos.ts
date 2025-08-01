@@ -42,6 +42,7 @@ export const workosClient: AuthClient = {
    */
   async isAuthenticated(): Promise<boolean> {
     document.cookie = 'workos-has-session=true; SameSite=None; Secure; Path=/';
+    await disposeClient();
     const client = await getClient();
     await client.initialize();
     const user = client.getUser();
@@ -52,6 +53,7 @@ export const workosClient: AuthClient = {
    * Get the current authenticated user from Workos.
    */
   async user(): Promise<User | undefined> {
+    await disposeClient();
     const client = await getClient();
     const workosUser = client.getUser();
     if (!workosUser) {
@@ -127,7 +129,6 @@ export const workosClient: AuthClient = {
         await waitForAuthClientToRedirect();
       }
     } catch {}
-    await disposeClient();
   },
 
   /**
@@ -166,12 +167,16 @@ export const workosClient: AuthClient = {
     });
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
     await handleRedirectTo();
-    await disposeClient();
   },
 
   async loginWithOAuth(args) {
+    if (await this.isAuthenticated()) {
+      window.location.assign(args.redirectTo);
+      await waitForAuthClientToRedirect();
+    }
+
     // Handle OAuth in iframe
-    if (window.top && window.self !== window.top) {
+    else if (window.top && window.self !== window.top) {
       let attempts = 0;
       // Poll for authentication status
       const checkIsAuthenticated = async () => {
@@ -180,7 +185,6 @@ export const workosClient: AuthClient = {
           return;
         }
 
-        await disposeClient();
         const isAuthenticated = await this.isAuthenticated();
         if (isAuthenticated) {
           window.location.assign(args.redirectTo);
@@ -200,7 +204,9 @@ export const workosClient: AuthClient = {
         '_blank',
         `width=${OAUTH_POPUP_WIDTH},height=${OAUTH_POPUP_HEIGHT},left=${left},top=${top},popup=true`
       );
-    } else {
+    }
+    // Handle OAuth in main window
+    else {
       const oauthUrl = ROUTES.WORKOS_OAUTH({ provider: args.provider, redirectTo: args.redirectTo });
       window.location.assign(oauthUrl);
       await waitForAuthClientToRedirect();
@@ -216,7 +222,6 @@ export const workosClient: AuthClient = {
     });
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
     await handleRedirectTo();
-    await disposeClient();
   },
 
   async verifyEmail(args) {
@@ -225,7 +230,6 @@ export const workosClient: AuthClient = {
       code: args.code,
     });
     await handleRedirectTo();
-    await disposeClient();
   },
 
   async sendResetPassword(args) {
@@ -235,13 +239,11 @@ export const workosClient: AuthClient = {
   async resetPassword(args) {
     await apiClient.auth.resetPassword({ token: args.token, password: args.password });
     await handleRedirectTo();
-    await disposeClient();
   },
 
   async sendMagicAuthCode(args) {
     const { pendingAuthenticationToken } = await apiClient.auth.sendMagicAuthCode({ email: args.email });
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
-    await disposeClient();
   },
 
   async authenticateWithMagicCode(args) {
@@ -251,7 +253,6 @@ export const workosClient: AuthClient = {
     });
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
     await handleRedirectTo();
-    await disposeClient();
   },
 };
 
