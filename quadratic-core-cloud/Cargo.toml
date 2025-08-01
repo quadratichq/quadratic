@@ -1,0 +1,56 @@
+[package]
+name = "quadratic-core-cloud"
+version = "0.15.2"
+edition = "2024"
+authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
+
+[dependencies]
+axum = { version = "0.8.1", features = ["macros"] }
+axum-extra = { version = "0.10.0", features = ["typed-header"] }
+bytes = "1.6.1"
+chrono = { version = "=0.4.39", features = ["serde"] }
+dotenv = "0.15.0"
+envy = "0.4.2"
+futures = "0.3.29"
+futures-util = { version = "0.3.29", default-features = false, features = [
+    "sink",
+    "std",
+] }
+headers = "0.4.0"
+jsonwebtoken = "9.2.0"
+openssl = { version = "0.10.72", features = ["vendored"] }
+prost = "0.13.5"
+prost-reflect = "0.15.2"
+prost-types = "0.13.5"
+quadratic-core = { path = "../quadratic-core", default-features = false, features = [
+    "console_error_panic_hook",
+    "js",
+] }
+quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
+    "auth",
+    "environment",
+    "protobuf",
+    "pubsub",
+    "quadratic-api",
+    "storage" 
+] }
+rayon = "1.8.0"
+reqwest = { version = "0.11.22", features = ["json", "serde_json"] }
+serde = { version = "1.0.193", features = ["derive"] }
+serde_json = "1.0.108"
+strum = "0.27.1"
+strum_macros = "0.27.1"
+thiserror = "2.0.12"
+tokio = { version = "1.44.2", features = ["full"] }
+tokio-util = "0.7.11"
+tower = { version = "0.5.2", features = ["util"] }
+tower-http = { version = "0.6.2", features = [
+    "cors",
+    "fs",
+    "trace",
+    "validate-request",
+] }
+tracing = "0.1.40"
+tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+uuid = { version = "1.6.1", features = ["serde", "v4"] }
+

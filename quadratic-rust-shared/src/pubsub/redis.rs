@@ -83,6 +83,18 @@ impl super::PubSub for RedisConnection {
         unimplemented!()
     }
 
+    async fn scheduled_tasks(&mut self, _set_key: &str) -> Result<Vec<String>> {
+        unimplemented!()
+    }
+
+    async fn upsert_scheduled_task(&mut self, _set_key: &str, _task: &str) -> Result<()> {
+        unimplemented!()
+    }
+
+    async fn remove_scheduled_task(&mut self, _set_key: &str, _task: &str) -> Result<()> {
+        unimplemented!()
+    }
+
     /// Subscribe to a channel.
     async fn subscribe(&mut self, channel: &str, _group: &str) -> Result<()> {
         self.pubsub.subscribe(channel).await?;

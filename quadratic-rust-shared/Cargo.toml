@@ -40,6 +40,7 @@ parquet = { version = "=54.2.1", default-features = false, features = [
 ], optional = true }
 prost = { version = "0.13.5", optional = true, default-features = false }
 prost-reflect = { version = "0.15.1", optional = true, features = ["derive"] }
+prost-types = { version = "0.14.1", optional = true, features = ["chrono"] }
 redis = { version = "0.29.1", features = ["tokio-comp"], optional = true }
 reqwest = { version = "0.11.22", features = [
   "json",
@@ -126,3 +127,4 @@ tracing-test = "0.2.4"
 prost-build = "0.13.5"
 prost-reflect = "0.15.1"
 prost-reflect-build = "0.15.1"
+prost-types = "0.14.1"

@@ -12,29 +12,28 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     fs::write("src/auto_gen_path.rs", output).expect("Failed to write src/auto_gen_path.rs");
 
-    // Create a prost_build Config
-    let mut config = prost_build::Config::new();
+    // Configure prost_reflect_build
+    let mut builder = prost_reflect_build::Builder::new();
+    builder.file_descriptor_set_bytes("crate::protobuf::FILE_DESCRIPTOR_SET_BYTES");
 
-    // Set the file descriptor set output path
-    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
-    let file_descriptor_set_path = out_dir.join("file_descriptor_set.bin");
-    config.file_descriptor_set_path(&file_descriptor_set_path);
-
-    // Generate the file descriptor set and compile the protos
-    config.compile_protos(
+    builder.compile_protos(
         &["src/protobuf/proto/transaction.proto"],
         &["src/protobuf/proto/"],
     )?;
 
-    // Configure prost_reflect_build with the file descriptor set path
-    // let file_descriptor_set_bytes = fs::read(&file_descriptor_set_path).unwrap();
-    prost_reflect_build::Builder::new()
-        .file_descriptor_set_bytes("crate::protobuf::FILE_DESCRIPTOR_SET_BYTES")
-        // .file_descriptor_set_path(&file_descriptor_set_path)
-        .compile_protos(
-            &["src/protobuf/proto/transaction.proto"],
-            &["src/protobuf/proto/"],
-        )?;
+    // Post-process the generated file to add the desired import and fix references
+    let out_dir = PathBuf::from(env::var("OUT_DIR").unwrap());
+    let generated_file = out_dir.join("quadratic.rs");
+
+    if generated_file.exists() {
+        let content = fs::read_to_string(&generated_file)?;
+        // Add the import and replace ::prost_types:: with prost_types::
+        let modified_content = format!(
+            "use prost_reflect::prost_types;\n{}",
+            content.replace("::prost_types::", "prost_types::")
+        );
+        fs::write(&generated_file, modified_content)?;
+    }
 
     println!("cargo:rerun-if-changed=src/protobuf/proto/transaction.proto");
 
