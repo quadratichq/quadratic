@@ -1,7 +1,7 @@
 import { test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, uploadFile } from './helpers/file.helpers';
-import { assertCellValue, assertValidationMessage } from './helpers/sheet.helper';
+import { assertCellValue, assertValidationMessage, gotoCells } from './helpers/sheet.helper';
 
 test('Validations', async ({ page }) => {
   // Constants
@@ -125,6 +125,8 @@ test('Validations', async ({ page }) => {
   // DT Range
   await assertValidationMessage(page, 'B30', 'DT Range', '01/01/2001 and 01/03/2001');
   await assertValidationMessage(page, 'C30', 'Validation Warning', '01/01/2001 and 01/03/2001');
+
+  await gotoCells(page, { a1: 'A1' });
 
   // Dropdown list
   await page.mouse.click(363, 472);
