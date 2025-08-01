@@ -626,7 +626,17 @@ Provide a name for the output of the code cell. The name cannot contain spaces o
 Note: only name the code cell if it is new.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
-This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n\n
+
+Code cell (Python and Javascript) placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- Leave one extra column gap between the code cell being placed and the nearest content if placing horizontally. If placing vertically, leave one extra row gap between the code cell and the nearest content.
+- Pick a location that makes sense relative to the existing contents of the sheet. Line up placements with existing content. E.g. if placing next to a table at A1:C19, place the code cell at E1 (keeping in mind the extra column gap since placing horizontally).
+- In case there is not enough empty space near the existing contents of the sheet, choose a distant empty cell.\n
+- Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is supposed to be placed. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
 `,
     parameters: {
       type: 'object',
@@ -669,14 +679,12 @@ This tool is for Python and Javascript code only. For formulas, use set_formula_
 
 Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
-- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
-- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
-- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21. Use the bounds of the referenced data to determine this placement.\n
-- In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
-- If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
+- Leave one extra column gap between the code cell being placed and the nearest content if placing horizontally. If placing vertically, leave one extra row gap between the code cell and the nearest content.
+- Pick a location that makes sense relative to the existing contents of the sheet. Line up placements with existing content. E.g. if placing next to a table at A1:C19, place the code cell at E1 (keeping in mind the extra column gap since placing horizontally).
+- In case there is not enough empty space near the existing contents of the sheet, choose a distant empty cell.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
-- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is supposed to be placed. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- Cursor location should not impact placement decisions.\n
 - If the sheet is empty, place the code cell at A1.\n
 
 Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
@@ -690,7 +698,20 @@ Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet
 Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
+
+For SQL Connection code cells:\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- The Connection ID must be from an available database connection in the team.\n
+- Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
+- Write SQL queries that reference the database tables and schemas provided in context.\n
+
+SQL code cell placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
+- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
 `,
     parameters: {
       type: 'object',
@@ -751,7 +772,7 @@ For SQL Connection code cells:\n
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
-- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the code cell should be placed at column E.\n
+- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
 - Cursor location should not impact placement decisions.\n
 - If the sheet is empty, place the code cell at A1.\n
 

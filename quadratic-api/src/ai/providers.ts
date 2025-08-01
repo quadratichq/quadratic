@@ -13,6 +13,7 @@ import {
   AZURE_OPENAI_API_KEY,
   AZURE_OPENAI_ENDPOINT,
   BASETEN_API_KEY,
+  FIREWORKS_API_KEY,
   GCP_CLIENT_EMAIL,
   GCP_GEMINI_API_KEY,
   GCP_PRIVATE_KEY,
@@ -88,6 +89,11 @@ export const xai = new OpenAI({
 export const baseten = new OpenAI({
   apiKey: BASETEN_API_KEY,
   baseURL: 'https://inference.baseten.co/v1',
+});
+
+export const fireworks = new OpenAI({
+  apiKey: FIREWORKS_API_KEY,
+  baseURL: 'https://api.fireworks.ai/inference/v1',
 });
 
 export const open_router = new OpenAI({
