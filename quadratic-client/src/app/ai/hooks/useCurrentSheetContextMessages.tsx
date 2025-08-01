@@ -18,7 +18,7 @@ export function useCurrentSheetContextMessages() {
       const selection: string | undefined = sheetBounds.type === 'empty' ? undefined : getAllSelection(sheet.id);
 
       // Get current user selection and cursor position
-      const userSelection = sheets.getA1String(sheets.current);
+      const userSelection = sheets.getA1String();
       const cursorPosition = sheets.sheet.cursor.a1String();
 
       // Get the actual value at the cursor position
