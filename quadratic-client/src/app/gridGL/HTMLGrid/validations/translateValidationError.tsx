@@ -1,11 +1,16 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime } from '@/app/quadratic-core/quadratic_core';
+import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { joinWithOr } from '@/shared/utils/text';
 import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import type { JSX } from 'react';
 
-export const translateValidationError = (validation: Validation): JSX.Element | null => {
+export const translateValidationError = async (
+  validation: Validation,
+  column: number,
+  row: number
+): Promise<JSX.Element | null> => {
   if (validation.rule === 'None') {
     return null;
   }
@@ -91,7 +96,6 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
               </div>
             );
           }
-
           return <div key={i}></div>;
         })}
       </div>
@@ -167,10 +171,21 @@ export const translateValidationError = (validation: Validation): JSX.Element | 
         </div>
       );
     } else if ('Selection' in validation.rule.List.source) {
+      const cells = await quadraticCore.getValidationList(sheets.current, column, row);
       return (
         <div className="whitespace-normal">
-          Value {verb} be one of the values in the selected range{' '}
-          <span className={listClassName}>{sheets.sheet.cursor.toA1String()}</span>.
+          {cells ? (
+            <>
+              Value {verb} be one of these values: {joinWithOr(cells, listClassName)}.
+            </>
+          ) : (
+            <>
+              Value {verb} be one of the values in the selected range{' '}
+              <span className={listClassName}>
+                {sheets.A1SelectionToA1String(validation.rule.List.source.Selection, sheets.current)}.
+              </span>
+            </>
+          )}
         </div>
       );
     }

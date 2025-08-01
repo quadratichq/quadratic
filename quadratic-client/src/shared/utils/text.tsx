@@ -8,7 +8,7 @@ export const joinWithOr = (arr: any[], className?: string): JSX.Element => {
 
     return (
       <>
-        <span className={className}>{arr.slice(0, -1).join(', ')}</span> or{' '}
+        <span className={className}>{arr.slice(0, -1).join(', ')}</span>, or{' '}
         <span className={className}>{arr[arr.length - 1]}</span>
       </>
     );
@@ -19,7 +19,7 @@ export const joinWithOr = (arr: any[], className?: string): JSX.Element => {
 
   return (
     <span>
-      {arr.slice(0, -1).join(', ')} or ${arr[arr.length - 1]}
+      {arr.slice(0, -1).join(', ')} or {arr[arr.length - 1]}
     </span>
   );
 };

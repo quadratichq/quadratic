@@ -8,7 +8,11 @@ type GotoCellsOptions = {
   a1: string;
 };
 export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
-  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
+  // Only click if QuadraticCanvas or its descendants don't have focus
+  const canvasHasFocus = (await page.locator('#QuadraticCanvasID:focus-within').count()) > 0;
+  if (!canvasHasFocus) {
+    await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
+  }
   await page.waitForTimeout(2 * 1000);
   await page.keyboard.press('Control+G');
   await page.waitForSelector('[data-testid="goto-menu"]', { timeout: 2 * 1000 });
@@ -58,5 +62,19 @@ export const sheetRefreshPage = async (page: Page) => {
     await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
   } catch (e) {
     console.error(e);
+  }
+};
+
+// If message is an array, it can contain either of the messages
+export const assertValidationMessage = async (page: Page, a1: string, title?: string, message?: string) => {
+  await gotoCells(page, { a1 });
+  const validationPanel = page.locator('[data-testid="validation-message"]');
+  await validationPanel.waitFor({ state: 'visible' });
+  console.log(validationPanel.innerHTML());
+  if (title) {
+    await expect(validationPanel.locator('[data-testid="validation-message-title"]')).toContainText(title);
+  }
+  if (message) {
+    await expect(validationPanel.locator('[data-testid="validation-message-message"]')).toContainText(message);
   }
 };

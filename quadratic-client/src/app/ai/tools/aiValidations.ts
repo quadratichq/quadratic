@@ -43,7 +43,7 @@ const getMessageList = (validation: Validation, sheetId: string) => {
     return (
       ` - list validation\n` +
       ` - ${validation.rule.List.drop_down ? 'displays' : 'does not display'} a dropdown list\n` +
-      ` - ${validation.rule.List.ignore_blank} ?'allows' : 'does not allow'} blank messages\n` +
+      ` - ${validation.rule.List.ignore_blank ? 'allows' : 'does not allow'} blank messages\n` +
       ('Selection' in validation.rule.List.source
         ? ` - uses values in the selection "${sheets.A1SelectionToA1String(validation.rule.List.source.Selection, sheetId)}"`
         : 'List' in validation.rule.List.source
@@ -453,7 +453,7 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
         if (min !== undefined && isNaN(Number(min))) {
           throw new Error(`Expected date range to be defined in YYYY/MM/DD format, received: ${minString}`);
         }
-        if (max !== undefined && max === undefined) {
+        if (max !== undefined && isNaN(Number(max))) {
           throw new Error(`Expected date range to be defined in YYYY/MM/DD format, received: ${maxString}`);
         }
         ranges.push({ DateRange: [min, max] });

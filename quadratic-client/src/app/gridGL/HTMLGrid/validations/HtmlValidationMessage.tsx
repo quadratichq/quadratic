@@ -62,6 +62,17 @@ export const HtmlValidationMessage = (props: Props) => {
   let title: JSX.Element | null = null;
   let message: JSX.Element | null = null;
 
+  const [translateValidation, setTranslateValidation] = useState<JSX.Element | null>(null);
+  useEffect(() => {
+    if (validation && column !== undefined && row !== undefined) {
+      translateValidationError(validation, column, row).then((translation) => {
+        setTranslateValidation(translation);
+      });
+    } else {
+      setTranslateValidation(null);
+    }
+  }, [validation, column, row]);
+
   if (showError) {
     let icon: JSX.Element | null = null;
     switch (validation?.error?.style) {
@@ -97,12 +108,11 @@ export const HtmlValidationMessage = (props: Props) => {
 
     message = (
       <>
-        {validation && translateValidationError(validation)}
         <div>
-          {validation && <div className="mt-2">{}</div>}
+          {validation && <div className="mt-2">{translateValidation}</div>}
           {validation && (
             <Tooltip title="Show validation">
-              <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+              <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
                 Rule: {validationText(validation)}
               </Button>
             </Tooltip>
@@ -115,7 +125,7 @@ export const HtmlValidationMessage = (props: Props) => {
       title = <span>{validation.message.title}</span>;
       message = (
         <Tooltip title="Show validation">
-          <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+          <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
             Rule: {validationText(validation)}
           </Button>
         </Tooltip>
@@ -126,7 +136,7 @@ export const HtmlValidationMessage = (props: Props) => {
         <>
           <div>{validation.message.message}</div>
           <Tooltip title="Show validation">
-            <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+            <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
               Rule: {validationText(validation)}
             </Button>
           </Tooltip>
@@ -135,9 +145,9 @@ export const HtmlValidationMessage = (props: Props) => {
     } else {
       message = (
         <>
-          <div>{translateValidationError(validation)}</div>
+          <div>{translateValidation}</div>
           <Tooltip title="Show validation">
-            <Button className="pointer-events-auto mt-1 text-xs" variant="link" size="none" onClick={showValidation}>
+            <Button className="pointer-events-auto mt-4 text-xs" variant="link" size="none" onClick={showValidation}>
               Rule: {validationText(validation)}
             </Button>
           </Tooltip>
@@ -170,10 +180,15 @@ export const HtmlValidationMessage = (props: Props) => {
       ref={ref}
       className="pointer-events-auto absolute w-64 max-w-xs rounded-md border border-gray-300 bg-popover bg-white p-4 text-popover-foreground shadow-md outline-none"
       style={{ top, left, transformOrigin: `0 0`, transform: `scale(${1 / pixiApp.viewport.scale.x})` }}
+      data-testid="validation-message"
     >
       <div className="leading-2 whitespace-normal" style={wrapStyle}>
         <div className="flex items-start justify-between gap-2">
-          {<div className="mb-2">{title}</div>}
+          {
+            <div className="mb-2" data-testid="validation-message-title">
+              {title}
+            </div>
+          }
           {
             <IconButton
               sx={{ padding: 0.5 }}
@@ -186,7 +201,11 @@ export const HtmlValidationMessage = (props: Props) => {
             </IconButton>
           }
         </div>
-        {message && <div className="pb-1 pt-2 text-xs">{message}</div>}
+        {message && (
+          <div className="pb-1 pt-2 text-xs" data-testid="validation-message-message">
+            {message}
+          </div>
+        )}
       </div>
     </div>
   );
