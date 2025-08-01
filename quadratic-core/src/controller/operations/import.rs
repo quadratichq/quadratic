@@ -415,9 +415,7 @@ impl GridController {
                         font.color.and_then(|color| {
                             // Only set text color if it's not the default black color
                             // Default black (0,0,0) is likely returned by calamine even when no explicit color is set
-                            let is_default_black =
-                                color.red == 0 && color.green == 0 && color.blue == 0;
-                            if !is_default_black {
+                            if !color.is_black() {
                                 sheet.formats.text_color.set(pos, Some(color.to_string()))
                             } else {
                                 None

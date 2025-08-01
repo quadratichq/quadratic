@@ -346,7 +346,6 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
 
     // borders
     let border_style = sheet.borders.get_style_cell(pos);
-
     if !border_style.is_empty() {
         // top border
         if let Some(top_border) = border_style.top {

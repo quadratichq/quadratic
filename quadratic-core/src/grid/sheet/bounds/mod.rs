@@ -55,7 +55,7 @@ impl Sheet {
 
     /// Returns the bounds of the sheet, including borders.
     pub fn all_bounds(&self) -> GridBounds {
-        GridBounds::merge(self.bounds(true), self.border_bounds())
+        GridBounds::merge(self.bounds(false), self.border_bounds())
     }
 
     /// Returns the bounds of the sheet.
