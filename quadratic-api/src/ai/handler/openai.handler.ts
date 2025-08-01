@@ -2,7 +2,6 @@ import type { Response } from 'express';
 import type OpenAI from 'openai';
 import type { ChatCompletionCreateParamsNonStreaming, ChatCompletionCreateParamsStreaming } from 'openai/resources';
 import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type {
   AIRequestHelperArgs,
   AzureOpenAIModelKey,
@@ -31,14 +30,12 @@ export const handleOpenAIRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-  const provider = MODELS_CONFIGURATION[modelKey].provider;
 
   const { messages, tools, tool_choice } = getOpenAIApiArgs(
     args,
     options.aiModelMode,
     options.strictParams,
-    options.imageSupport,
-    provider
+    options.imageSupport
   );
 
   let apiArgs: ChatCompletionCreateParamsStreaming | ChatCompletionCreateParamsNonStreaming = {
@@ -49,10 +46,10 @@ export const handleOpenAIRequest = async (
     stream: options.stream,
     tools,
     tool_choice,
-    ...(options.top_p !== undefined && { top_p: options.top_p }),
-    ...(options.top_k !== undefined && { top_k: options.top_k }),
-    ...(options.min_p !== undefined && { min_p: options.min_p }),
-    ...(options.repetition_penalty !== undefined && { repetition_penalty: options.repetition_penalty }),
+    ...(options.top_p !== undefined ? { top_p: options.top_p } : {}),
+    ...(options.top_k !== undefined ? { top_k: options.top_k } : {}),
+    ...(options.min_p !== undefined ? { min_p: options.min_p } : {}),
+    ...(options.repetition_penalty !== undefined ? { repetition_penalty: options.repetition_penalty } : {}),
   };
 
   if (options.stream) {

@@ -72,8 +72,7 @@ export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
   aiModelMode: ModelMode,
   strictParams: boolean,
-  imageSupport: boolean,
-  provider?: string
+  imageSupport: boolean
 ): {
   messages: ChatCompletionMessageParam[];
   tools: ChatCompletionTool[] | undefined;
@@ -134,7 +133,7 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams, provider);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -144,8 +143,7 @@ function getOpenAITools(
   source: AISource,
   aiModelMode: ModelMode,
   toolName: AITool | undefined,
-  strictParams: boolean,
-  provider?: string
+  strictParams: boolean
 ): ChatCompletionTool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (!toolSpec.aiModelModes.includes(aiModelMode)) {
@@ -161,20 +159,13 @@ function getOpenAITools(
     return undefined;
   }
 
-  // Only include strict parameter for providers that support it (OpenAI, Azure OpenAI)
-  const supportsStrictParams = provider === 'openai' || provider === 'azure-openai';
-
   const openaiTools: ChatCompletionTool[] = tools.map(([name, { description, parameters }]): ChatCompletionTool => {
     const functionDef: any = {
       name,
       description,
       parameters,
+      strict: strictParams,
     };
-
-    // Only add strict parameter for supported providers
-    if (supportsStrictParams && strictParams) {
-      functionDef.strict = strictParams;
-    }
 
     return {
       type: 'function' as const,
