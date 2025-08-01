@@ -49,6 +49,10 @@ export const handleOpenAIRequest = async (
     stream: options.stream,
     tools,
     tool_choice,
+    ...(options.top_p !== undefined && { top_p: options.top_p }),
+    ...(options.top_k !== undefined && { top_k: options.top_k }),
+    ...(options.min_p !== undefined && { min_p: options.min_p }),
+    ...(options.repetition_penalty !== undefined && { repetition_penalty: options.repetition_penalty }),
   };
 
   if (options.stream) {

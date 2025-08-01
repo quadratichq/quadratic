@@ -43,7 +43,11 @@ const OpenAIModelSchema = z.enum([
 ]);
 const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
-const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct', 'Qwen/Qwen3-Coder-480B-A35B-Instruct']);
+const BasetenModelSchema = z.enum([
+  'moonshotai/Kimi-K2-Instruct',
+  'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+  'Qwen/Qwen3-235B-A22B-Instruct-2507',
+]);
 const FireworksModelSchema = z.enum(['accounts/fireworks/models/qwen3-coder-480b-a35b-instruct']);
 const OpenRouterModelSchema = z.enum([
   'deepseek/deepseek-r1-0528',
@@ -134,6 +138,7 @@ export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 const BasetenModelKeySchema = z.enum([
   'baseten:moonshotai/Kimi-K2-Instruct',
   'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
+  'baseten:Qwen/Qwen3-235B-A22B-Instruct-2507',
 ]);
 export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
@@ -189,6 +194,11 @@ export const AIModelConfigSchema = z
     thinkingToggle: z.boolean().optional(),
     thinkingBudget: z.number().optional(),
     imageSupport: z.boolean(),
+    // Sampling parameters
+    top_p: z.number().optional(),
+    top_k: z.number().optional(),
+    min_p: z.number().optional(),
+    repetition_penalty: z.number().optional(),
   })
   .extend(AIRatesSchema.shape);
 export type AIModelConfig = z.infer<typeof AIModelConfigSchema>;
