@@ -768,7 +768,11 @@ impl DataTable {
             return false;
         }
 
-        matches!(self.value, Value::Single(_))
+        match &self.value {
+            Value::Single(_) => true,
+            Value::Array(a) => a.width() * a.height() < 2,
+            Value::Tuple(_) => false,
+        }
     }
 
     /// Returns true if the data table is a single column (ie, not an array), or
