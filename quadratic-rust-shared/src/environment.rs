@@ -41,10 +41,10 @@ mod tests {
 
     #[test]
     fn test_environment_is_production() {
-        assert_eq!(Environment::Production.is_production(), true);
-        assert_eq!(Environment::Development.is_development(), true);
-        assert_eq!(Environment::Local.is_local(), true);
-        assert_eq!(Environment::Docker.is_docker(), true);
-        assert_eq!(Environment::Test.is_test(), true);
+        assert!(Environment::Production.is_production());
+        assert!(Environment::Development.is_development());
+        assert!(Environment::Local.is_local());
+        assert!(Environment::Docker.is_docker());
+        assert!(Environment::Test.is_test());
     }
 }
