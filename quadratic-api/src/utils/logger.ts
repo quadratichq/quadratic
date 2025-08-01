@@ -2,7 +2,7 @@ import winston from 'winston';
 import { NODE_ENV } from '../env-vars';
 
 const env = NODE_ENV || 'development';
-const isDevelopment = env === 'development';
+const isProduction = env === 'production';
 
 // Define log levels
 const levels = {
@@ -45,11 +45,11 @@ const prodFormat = winston.format.combine(
 );
 
 // Use the appropriate format based on the environment
-export const format = isDevelopment ? devFormat : prodFormat;
+export const format = isProduction ? prodFormat : devFormat;
 
 // Define which log levels to use based on environment
 const level = () => {
-  return isDevelopment ? 'debug' : 'info';
+  return isProduction ? 'info' : 'debug';
 };
 
 // Console transport

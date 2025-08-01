@@ -129,8 +129,8 @@ async function registerRoutes() {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
-      } catch (err) {
-        logger.error('Failed to register route', { expressRoute, error: err });
+      } catch (error) {
+        logger.error('Failed to register route', { expressRoute, error });
       }
     }
   }
