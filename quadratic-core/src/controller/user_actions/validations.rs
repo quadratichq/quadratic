@@ -285,7 +285,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation.clone().into(), None);
+        gc.update_validation(validation.clone(), None);
 
         assert_eq!(
             gc.get_validation_from_pos(sheet_id, (1, 1).into()),
