@@ -10,7 +10,7 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/shadcn/ui/tabs';
 import { cn } from '@/shared/shadcn/utils';
 import { ChevronRightIcon } from '@radix-ui/react-icons';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
 
 export type PanelTab = 'console' | 'ai-assistant' | 'data-browser';
@@ -29,6 +29,14 @@ export function CodeEditorPanelBottom({ schemaBrowser, showAIAssistant }: CodeEd
     () => Boolean(consoleOutput?.stdErr?.length || consoleOutput?.stdOut?.length || spillError),
     [consoleOutput?.stdErr?.length, consoleOutput?.stdOut?.length, spillError]
   );
+
+  // If the AI assistant is being hidden (e.g. user is looking at a file that's
+  // in a team they don't belong to) change the active tab to the console.
+  useEffect(() => {
+    if (!showAIAssistant && panelBottomActiveTab === 'ai-assistant') {
+      setPanelBottomActiveTab('console');
+    }
+  }, [showAIAssistant, panelBottomActiveTab, setPanelBottomActiveTab]);
 
   return (
     <Tabs

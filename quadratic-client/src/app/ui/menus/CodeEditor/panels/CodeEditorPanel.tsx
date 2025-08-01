@@ -1,5 +1,8 @@
+import { Action } from '@/app/actions/actions';
+import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
 import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { getConnectionInfo } from '@/app/helpers/codeCellLanguage';
+import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { CodeEditorPanelBottom } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import { CodeEditorPanelSide } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelSide';
 import { useCodeEditorPanelData } from '@/app/ui/menus/CodeEditor/panels/useCodeEditorPanelData';
@@ -37,7 +40,15 @@ export const CodeEditorPanel = memo(({ editorInst, codeEditorRef }: CodeEditorPa
       />
     ) : undefined;
 
-  const showAIAssistant = Boolean(isAuthenticated);
+  const isAvailableArgs = useIsAvailableArgs();
+  const showAIAssistant = useMemo(
+    () =>
+      Boolean(
+        viewActionsSpec[Action.ToggleAIAnalyst].isAvailable &&
+          viewActionsSpec[Action.ToggleAIAnalyst].isAvailable(isAvailableArgs)
+      ),
+    [isAvailableArgs]
+  );
 
   return (
     <>
