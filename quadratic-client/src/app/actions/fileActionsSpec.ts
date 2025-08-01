@@ -50,7 +50,6 @@ export const fileActionsSpec: FileActionSpec = {
   [Action.FileDownload]: {
     label: () => 'Quadratic (.grid)',
     labelVerbose: 'Download as Quadratic (.grid)',
-
     isAvailable: isAvailableBecauseLoggedIn,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownload]) => {
       if (!pixiAppSettings.setEditorInteractionState) return;
@@ -86,14 +85,13 @@ export const fileActionsSpec: FileActionSpec = {
   [Action.FileDownloadCsv]: {
     label: () => 'CSV (current sheet only)',
     labelVerbose: 'Download as CSV (current sheet only)',
-
     isAvailable: isAvailableBecauseCanEditFile,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownloadCsv]) => {
       try {
         if (!pixiAppSettings.setEditorInteractionState) return;
         mixpanel.track('[Files].exportCsv', { id: uuid });
         pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: true }));
-        const sheetBounds = sheets.sheet.bounds;
+        const sheetBounds = sheets.sheet.boundsWithoutFormatting;
 
         if (sheetBounds.type !== 'empty') {
           let filename = `${name} - ${sheets.sheet.name}`;
