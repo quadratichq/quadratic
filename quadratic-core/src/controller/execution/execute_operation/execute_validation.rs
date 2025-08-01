@@ -28,7 +28,7 @@ impl GridController {
             // Collect validations that need to be processed first
             let validations_to_process: Vec<_> = sheet
                 .validations
-                .validation_overlaps_selection(&remove_selection, &self.a1_context)
+                .validation_overlaps_selection(remove_selection, &self.a1_context)
                 .iter()
                 .map(|v| (v.id, (*v).clone()))
                 .collect();
@@ -36,7 +36,7 @@ impl GridController {
             for (validation_id, validation) in validations_to_process {
                 if let Some(new_selection) = validation
                     .selection
-                    .delete_selection(&remove_selection, &self.a1_context)
+                    .delete_selection(&remove_selection, self.a1_context)
                 {
                     // if the selection is different, then update the validation
                     if validation.selection != new_selection {

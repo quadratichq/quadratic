@@ -150,5 +150,5 @@ pub fn add_to_selection(
     let (cell_ref_range, _) =
         CellRefRange::parse(a1, context.get_context(), None).map_err(|e| e.to_string())?;
     selection.add(cell_ref_range);
-    Ok(serde_json::to_string(&selection).map_err(|e| e.to_string())?)
+    serde_json::to_string(&selection).map_err(|e| e.to_string())
 }
