@@ -1,5 +1,6 @@
 import { formatToFractionalDollars, parseInputForNumber } from '@/dashboard/components/billing/utils';
 import { ArrowForwardIcon, SpinnerIcon } from '@/shared/components/Icons';
+import { CONTACT_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
   Dialog,
@@ -14,33 +15,42 @@ import {
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router';
 
 const OPTION_CUSTOM = 'Custom amount';
 const OPTIONS = ['20', '50', '100', '200', OPTION_CUSTOM];
 const OPTION_DEFAULT = OPTIONS[0];
+const MAX_CUSTOM_LIMIT = 500;
 
 export function UsageBasedPricingDialog({
   currentLimitNumber,
   handleChange,
+  children,
 }: {
   currentLimitNumber: number;
   // TODO: figure out how we want to handle this, as it's probably a fetcher
   // since we're using it from multiple places both in the dashboard and in the app
+  // Or: maybe we do the fetcher here and keep track of it all internally, since it should
+  // know how to update itself.
   handleChange: (value: number) => Promise<boolean>;
+  children: React.ReactNode; // Trigger
 }) {
   const [loadState, setLoadState] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [isOpen, setIsOpen] = useState(false);
   const [newLimit, setNewLimit] = useState(OPTION_DEFAULT);
   const [customLimit, setCustomLimit] = useState('');
 
-  const label = 'Set';
   const newLimitNumber =
     newLimit === OPTION_CUSTOM ? Number(customLimit === '' ? 0 : customLimit) : currentLimitNumber + Number(newLimit);
   const change = newLimitNumber - currentLimitNumber;
   const changeSign = Math.sign(change);
   const changeType = changeSign === -1 ? 'less' : changeSign === 0 ? 'same' : 'more';
 
-  const disabled = currentLimitNumber === newLimitNumber || (newLimit === OPTION_CUSTOM && customLimit === '');
+  const hasCustomLimitThatsTooHigh = newLimitNumber > MAX_CUSTOM_LIMIT;
+  const disabled =
+    currentLimitNumber === newLimitNumber ||
+    (newLimit === OPTION_CUSTOM && customLimit === '') ||
+    hasCustomLimitThatsTooHigh;
   const isLoading = loadState === 'loading';
 
   useEffect(() => {
@@ -53,14 +63,10 @@ export function UsageBasedPricingDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button variant="secondary" size="sm" className="ml-auto">
-          {label}
-        </Button>
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>{label} usage-based pricing</DialogTitle>
+          <DialogTitle>Set usage-based credits limit</DialogTitle>
           <DialogDescription>
             Use AI beyond your monthly credit allottment by setting a limit on usage-based pricing.{' '}
             <a href="TODO:" target="_blank" rel="noreferrer" className="underline hover:text-primary">
@@ -70,7 +76,7 @@ export function UsageBasedPricingDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <p className="text-sm font-semibold">Monthly limit</p>
+          <p className="text-sm font-semibold">Your monthly limit</p>
 
           <form className="flex flex-col gap-2">
             <div className={`grid grid-cols-6 gap-2`}>
@@ -160,6 +166,14 @@ export function UsageBasedPricingDialog({
               <span className="font-semibold text-foreground">{formatToFractionalDollars(newLimitNumber)}</span>
             </p>
           </div>
+          {hasCustomLimitThatsTooHigh && (
+            <p className="text-sm text-destructive">
+              <Link to={CONTACT_URL} target="_blank" rel="noreferrer" className="underline hover:text-primary">
+                Contact us
+              </Link>{' '}
+              for limits over {formatToFractionalDollars(MAX_CUSTOM_LIMIT)}.
+            </p>
+          )}
         </div>
         <DialogFooter>
           {isLoading && (
@@ -187,7 +201,7 @@ export function UsageBasedPricingDialog({
                 });
             }}
           >
-            {label}
+            Set
           </Button>
         </DialogFooter>
       </DialogContent>

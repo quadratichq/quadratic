@@ -45,9 +45,9 @@ export function AIUsageTeam({ teamUuid, users, onChangeUserAdditionalLimit }: Pr
                 (Manage)
               </Link>
             </th>
-            <th className="w-[25%] pb-1 text-right font-medium">Monthly credit usage</th>
+            <th className="w-[25%] pb-1 text-right font-medium">Base credits</th>
             <th className={cn('w-[35%] pb-1 text-right font-medium', !isOnPaidPlan && 'text-muted-foreground')}>
-              Additional credit usage
+              Usage-based credits
             </th>
           </tr>
         </thead>

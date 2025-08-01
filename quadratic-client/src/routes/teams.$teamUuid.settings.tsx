@@ -171,11 +171,11 @@ export const Component = () => {
             <div className="flex flex-col gap-2">
               {isOnPaidPlan && (
                 <SettingControl
-                  label="Allow additional credit usage"
+                  label="Allow usage-based credits"
                   description={
                     <>
-                      After their monthly credit allotment, allow users to continue using AI by setting a spending limit
-                      for additional credits with usage-based pricing.{' '}
+                      After base credits are used, let users continue with AI by applying a spending limit for
+                      additional, usage‑based credits.{' '}
                       <a
                         // TODO: usage-based pricing link
                         href={DOCUMENTATION_PRICING_URL}

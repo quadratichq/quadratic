@@ -2,6 +2,7 @@ import { UsageBasedPricingDialog } from '@/dashboard/components/billing/UsageBas
 import { formatToFractionalDollars, formatToWholeDollar } from '@/dashboard/components/billing/utils';
 import { CycleIcon, WarningIcon } from '@/shared/components/Icons';
 import { Badge } from '@/shared/shadcn/ui/badge';
+import { Button } from '@/shared/shadcn/ui/button';
 import { Progress } from '@/shared/shadcn/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
@@ -41,8 +42,8 @@ export function AIUsageIndividual({
           <span className="text-muted-foreground">{creditsMonthlyLimitInteger}</span>
         </div>
         <Progress value={creditsMonthlyUsedPercentage} className="my-2 h-2" />
-        <p className="h-6 text-sm font-semibold">Monthly credits</p>
-        <p className="-mt-1 text-sm text-muted-foreground">Included with your current plan.</p>
+        <p className="h-6 text-sm font-semibold">Base credits</p>
+        <p className="-mt-1 text-sm text-muted-foreground">Included each month under your current plan.</p>
       </div>
       <div className="flex flex-col">
         <div className="flex h-8 items-center gap-2 text-xl">
@@ -94,7 +95,11 @@ export function AIUsageIndividual({
                       return false;
                     });
                   }}
-                />
+                >
+                  <Button variant="secondary" size="sm" className="ml-auto">
+                    Set
+                  </Button>
+                </UsageBasedPricingDialog>
               )}
             </>
           ) : (
@@ -118,12 +123,12 @@ export function AIUsageIndividual({
             !isProPlan && 'text-muted-foreground'
           )}
         >
-          Additional monthly credits
+          Usage-based credits
           {isProPlan && !isProPlanAndUsageBasedPricingEnabled && <Badge variant="secondary">Off</Badge>}
         </div>
         <p className={'-mt-0.5 text-sm text-muted-foreground'}>
           {!isProPlan
-            ? 'Usage-based pricing available on Pro.'
+            ? 'Available with a Pro plan.'
             : isProPlanAndUsageBasedPricingEnabled
               ? 'Set your usage-based pricing limits.'
               : 'Contact the team owner for more credits.'}
@@ -131,7 +136,7 @@ export function AIUsageIndividual({
       </div>
       <p className="-mt-4 flex items-center gap-1 text-xs text-muted-foreground">
         {/* TODO: add date */}
-        <CycleIcon /> Credits replenish: MMM DD
+        <CycleIcon /> Credits reset: MMM DD
       </p>
     </div>
   );
