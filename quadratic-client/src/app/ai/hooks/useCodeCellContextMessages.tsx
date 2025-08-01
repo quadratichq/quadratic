@@ -47,12 +47,12 @@ The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
   schemaJsonForAi
     ? `The schema for the database is:\n\`\`\`\n${schemaJsonForAi}\`\`\`\n${
-        language === 'POSTGRES'
+        language === 'POSTGRES' || language === 'COCKROACHDB' || language === 'SUPABASE' || language === 'NEON'
           ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".'
           : ''
       }
 ${
-  language === 'MYSQL'
+  language === 'MYSQL' || language === 'MARIADB'
     ? 'When generating mysql queries, put schema and table names in backticks, e.g. `schema`.`TableName`.'
     : ''
 }
@@ -64,6 +64,11 @@ ${
 ${
   language === 'SNOWFLAKE'
     ? 'When generating Snowflake queries, put schema and table names in double quotes, e.g. "SCHEMA"."TABLE_NAME".'
+    : ''
+}
+${
+  language === 'BIGQUERY'
+    ? 'When generating BigQuery queries, put schema and table names in backticks, e.g. `schema`.`TableName`.'
     : ''
 }\n`
     : `Add imports to the top of the code cell and do not use any libraries or functions that are not listed in the Quadratic documentation.\n
