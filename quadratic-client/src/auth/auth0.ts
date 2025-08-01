@@ -52,16 +52,16 @@ export const auth0Client: AuthClient = {
     const user = await client.getUser();
     return user;
   },
-  async login(redirectTo: string, isSignupFlow: boolean = false) {
+  async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
     const client = await getClient();
     await client.loginWithRedirect({
       authorizationParams: {
-        screen_hint: isSignupFlow ? 'signup' : 'login',
+        screen_hint: args.isSignupFlow ? 'signup' : 'login',
         redirect_uri:
           window.location.origin +
           ROUTES.LOGIN_RESULT +
           '?' +
-          new URLSearchParams([[SEARCH_PARAMS.REDIRECT_TO.KEY, redirectTo]]).toString(),
+          new URLSearchParams([[SEARCH_PARAMS.REDIRECT_TO.KEY, args.redirectTo]]).toString(),
       },
     });
     await waitForAuthClientToRedirect();
@@ -92,7 +92,7 @@ export const auth0Client: AuthClient = {
     } catch (e) {
       if (!skipRedirect) {
         const { pathname, search } = new URL(window.location.href);
-        await this.login(pathname + search);
+        await this.login({ redirectTo: pathname + search, href: window.location.href });
       }
       return '';
     }

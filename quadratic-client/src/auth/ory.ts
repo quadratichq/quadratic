@@ -78,10 +78,10 @@ export const oryClient: AuthClient = {
    * Login the user in Ory and create a new session.
    * If `isSignupFlow` is true, the user will be redirected to the registration flow.
    */
-  async login(redirectTo: string, isSignupFlow: boolean = false) {
-    const urlSegment = isSignupFlow ? 'registration' : 'login';
+  async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
+    const urlSegment = args.isSignupFlow ? 'registration' : 'login';
     const url = new URL(`${ORY_HOST}/self-service/${urlSegment}/browser`);
-    url.searchParams.set('return_to', redirectTo);
+    url.searchParams.set('return_to', args.redirectTo);
 
     // redirect to the login/signup flow
     window.location.assign(url);
@@ -126,7 +126,7 @@ export const oryClient: AuthClient = {
     } catch (e) {
       if (!skipRedirect) {
         const { pathname, search } = new URL(window.location.href);
-        await this.login(pathname + search);
+        await this.login({ redirectTo: pathname + search, href: window.location.href });
       }
     }
     return '';

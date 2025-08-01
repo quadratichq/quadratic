@@ -72,16 +72,16 @@ export const workosClient: AuthClient = {
    * Login the user in Workos and create a new session.
    * If `isSignupFlow` is true, the user will be redirected to the registration flow.
    */
-  async login(redirectTo: string, isSignupFlow: boolean = false) {
-    const url = new URL(window.location.origin + (isSignupFlow ? ROUTES.SIGNUP : ROUTES.LOGIN));
+  async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
+    const url = new URL(window.location.origin + (args.isSignupFlow ? ROUTES.SIGNUP : ROUTES.LOGIN));
 
-    if (redirectTo && redirectTo !== '/') {
-      url.searchParams.set(SEARCH_PARAMS.REDIRECT_TO.KEY, encodeURIComponent(redirectTo));
+    if (args.redirectTo && args.redirectTo !== '/') {
+      url.searchParams.set(SEARCH_PARAMS.REDIRECT_TO.KEY, encodeURIComponent(args.redirectTo));
     } else {
       url.searchParams.delete(SEARCH_PARAMS.REDIRECT_TO.KEY);
     }
 
-    if (window.location.href !== url.toString()) {
+    if (args.href !== url.toString()) {
       window.location.assign(url.toString());
       await waitForAuthClientToRedirect();
     }
@@ -152,7 +152,7 @@ export const workosClient: AuthClient = {
     } catch (e) {
       if (!skipRedirect) {
         const { pathname, search } = new URL(window.location.href);
-        await this.login(pathname + search);
+        await this.login({ redirectTo: pathname + search, href: window.location.href });
       }
     }
     return '';

@@ -17,7 +17,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const loginType = url.searchParams.get(SEARCH_PARAMS.LOGIN_TYPE.KEY)?.toLowerCase() ?? '';
     const isSignupFlow = loginType === SEARCH_PARAMS.LOGIN_TYPE.VALUES.SIGNUP;
     if (isSignupFlow) {
-      await authClient.login(redirectTo, true);
+      await authClient.login({ redirectTo, isSignupFlow: true, href: request.url });
     }
   }
 };
