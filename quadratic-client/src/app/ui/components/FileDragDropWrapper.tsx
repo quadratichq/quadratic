@@ -1,4 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
+import { shouldAutoSummaryOnImportAtom } from '@/app/atoms/aiAnalystAtom';
 import { userMessageAtom } from '@/app/atoms/userMessageAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -17,6 +18,7 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
   const divRef = useRef<HTMLDivElement>(null);
 
   const setUserMessageState = useSetRecoilState(userMessageAtom);
+  const setShouldAutoSummary = useSetRecoilState(shouldAutoSummaryOnImportAtom);
   const handleFileImport = useFileImport();
 
   const getColumnRowFromScreen = useCallback((e: DragEvent<HTMLDivElement>) => {
@@ -81,6 +83,9 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
 
       const files = e.dataTransfer.files;
       if (files && files[0]) {
+        // Set flag to trigger auto-summary after import
+        setShouldAutoSummary(true);
+
         const sheetId = sheets.current;
         const cursor = sheets.getCursorPosition();
         const { column, row } = getColumnRowFromScreen(e);
@@ -88,7 +93,7 @@ export const FileDragDropWrapper = (props: PropsWithChildren) => {
         handleFileImport({ files: Array.from(files), insertAt, sheetId, cursor });
       }
     },
-    [getColumnRowFromScreen, handleFileImport, setUserMessageState]
+    [getColumnRowFromScreen, handleFileImport, setUserMessageState, setShouldAutoSummary]
   );
 
   return (
