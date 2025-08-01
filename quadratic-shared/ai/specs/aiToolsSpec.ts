@@ -750,7 +750,7 @@ For SQL Connection code cells:\n
 
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- SQL cells should always be placed fully clear of any existing data unless the user specifices a location. Place to the right of the last column of existing data in the sheet.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
 - Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the code cell should be placed at column E.\n
 - Cursor location should not impact placement decisions.\n
 - If the sheet is empty, place the code cell at A1.\n

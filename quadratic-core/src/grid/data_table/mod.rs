@@ -833,6 +833,11 @@ impl DataTable {
 
         rows
     }
+
+    /// Returns true if the data table is a formula table
+    pub fn is_formula_table(&self) -> bool {
+        matches!(self.get_language(), CodeCellLanguage::Formula)
+    }
 }
 
 #[cfg(test)]

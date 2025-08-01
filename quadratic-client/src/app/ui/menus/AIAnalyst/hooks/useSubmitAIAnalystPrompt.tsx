@@ -96,23 +96,23 @@ export function useSubmitAIAnalystPrompt() {
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
         const [
+          sqlContext,
           filesContext,
           sheetInfoContext,
-          summaryContext,
-          sqlContext,
           otherSheetsContext,
           tablesContext,
           currentSheetContext,
           visibleContext,
+          summaryContext,
         ] = await Promise.all([
+          getSqlContext(),
           getFilesContext({ chatMessages }),
           getSheetInfoContext({ sheets: sheets.sheets }),
-          getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
-          getSqlContext(),
           getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
           getTablesContext(),
           getCurrentSheetContext({ currentSheetName: context.currentSheet }),
           getVisibleContext(),
+          getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
         ]);
 
         const messagesWithContext: ChatMessage[] = [

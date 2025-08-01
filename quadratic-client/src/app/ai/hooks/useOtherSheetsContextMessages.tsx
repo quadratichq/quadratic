@@ -1,10 +1,10 @@
+import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
-import { toXml } from '../utils/xmlFormatter';
 
 export function useOtherSheetsContextMessages() {
   const getOtherSheetsContext = useCallback(

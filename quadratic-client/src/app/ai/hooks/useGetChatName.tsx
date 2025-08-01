@@ -1,4 +1,5 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_CHAT_NAME_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
@@ -6,7 +7,6 @@ import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
-import { toXml } from '../utils/xmlFormatter';
 
 export const useGetChatName = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();

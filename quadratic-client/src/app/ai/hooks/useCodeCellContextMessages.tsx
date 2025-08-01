@@ -1,3 +1,4 @@
+import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
@@ -6,7 +7,6 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { connectionClient } from '@/shared/api/connectionClient';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
-import { toXml } from '../utils/xmlFormatter';
 
 export function useCodeCellContextMessages() {
   const getCodeCellContext = useRecoilCallback(

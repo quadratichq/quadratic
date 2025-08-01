@@ -1,9 +1,9 @@
+import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { DEFAULT_HTML_CELL_HEIGHT, DEFAULT_HTML_CELL_WIDTH } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
-import { toXml } from '../utils/xmlFormatter';
 
 export function useTablesContextMessages() {
   const getTablesContext = useCallback(async (): Promise<ChatMessage[]> => {
