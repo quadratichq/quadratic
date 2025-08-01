@@ -212,46 +212,50 @@ mod tests {
     }
 
     #[test]
-    fn remove_validations() {
+    fn test_remove_validations() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let selection = A1Selection::test_a1_sheet_id("*", sheet_id);
-        let validation1 = ValidationUpdate {
-            id: Some(Uuid::new_v4()),
-            selection: selection.clone(),
-            rule: ValidationRule::Logical(ValidationLogical {
-                show_checkbox: true,
-                ignore_blank: true,
-            }),
-            message: Default::default(),
-            error: Default::default(),
-        };
-        gc.update_validation(validation1.clone(), None);
+        gc.update_validation(
+            ValidationUpdate {
+                id: None,
+                selection: A1Selection::test_a1_sheet_id("A1:B", sheet_id),
+                rule: ValidationRule::Logical(ValidationLogical {
+                    show_checkbox: true,
+                    ignore_blank: true,
+                }),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
 
-        let validation2 = ValidationUpdate {
-            id: Some(Uuid::new_v4()),
-            selection: A1Selection::test_a1("A1"),
-            rule: ValidationRule::Logical(ValidationLogical {
-                show_checkbox: true,
-                ignore_blank: true,
-            }),
-            message: Default::default(),
-            error: Default::default(),
-        };
-        gc.update_validation(validation2.clone(), None);
+        gc.update_validation(
+            ValidationUpdate {
+                id: None,
+                selection: A1Selection::test_a1("A1"),
+                rule: ValidationRule::Logical(ValidationLogical {
+                    show_checkbox: true,
+                    ignore_blank: false,
+                }),
+                message: Default::default(),
+                error: Default::default(),
+            },
+            None,
+        );
 
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 2);
+
+        let sheet = gc.sheet(sheet_id);
+        let validation1 = sheet.validations.validations.first().unwrap();
+        let validation2 = sheet.validations.validations.last().unwrap();
+
         expect_js_call(
             "jsSheetValidations",
             format!(
                 "{},{:?}",
                 sheet_id,
-                serde_json::to_vec(&vec![
-                    Validation::from(validation1),
-                    Validation::from(validation2)
-                ])
-                .unwrap()
+                serde_json::to_vec(&vec![validation1.clone(), validation2.clone()]).unwrap()
             ),
             true,
         );

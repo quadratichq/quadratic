@@ -9,7 +9,9 @@ Validations are used to both verify that cells have allowable data, and to provi
 
 Validations are set per sheet so you cannot add a selection from another sheet to a validation in a different sheet.
 
-Each cell can only have one validation. If you add a validation to a range, any overlapping validations (looking at the A1 selection) will be removed.
+## One validation per cell
+
+Each cell can only have one validation. If you add a validation to a range then any validations that overlap with the new validation will be removed. The algorithm either changes the selection to remove the overlap, or, if the selection becomes empty, removes the validation.
 
 ## Messages and errors
 

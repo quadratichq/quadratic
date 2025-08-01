@@ -17,6 +17,17 @@ pub struct ValidationMessage {
     pub message: Option<String>,
 }
 
+#[cfg(test)]
+impl ValidationMessage {
+    pub fn test(title: &str) -> Self {
+        Self {
+            show: true,
+            title: Some(title.to_string()),
+            message: None,
+        }
+    }
+}
+
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
 pub enum ValidationStyle {
     #[default]
