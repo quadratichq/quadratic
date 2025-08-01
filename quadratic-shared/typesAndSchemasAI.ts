@@ -12,6 +12,7 @@ const AIProvidersSchema = z.enum([
   'openai',
   'xai',
   'baseten',
+  'fireworks',
   'open-router',
   'azure-openai',
 ]);
@@ -43,6 +44,7 @@ const OpenAIModelSchema = z.enum([
 const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
 const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct', 'Qwen/Qwen3-Coder-480B-A35B-Instruct']);
+const FireworksModelSchema = z.enum(['accounts/fireworks/models/qwen3-coder-480b-a35b-instruct']);
 const OpenRouterModelSchema = z.enum([
   'deepseek/deepseek-r1-0528',
   'deepseek/deepseek-chat-v3-0324',
@@ -60,6 +62,7 @@ const AIModelSchema = z.union([
   AzureOpenAIModelSchema,
   XAIModelSchema,
   BasetenModelSchema,
+  FireworksModelSchema,
   OpenRouterModelSchema,
 ]);
 export type AIModel = z.infer<typeof AIModelSchema>;
@@ -134,6 +137,9 @@ const BasetenModelKeySchema = z.enum([
 ]);
 export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
+const FireworksModelKeySchema = z.enum(['fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct']);
+export type FireworksModelKey = z.infer<typeof FireworksModelKeySchema>;
+
 const OpenRouterModelKeySchema = z.enum([
   'open-router:deepseek/deepseek-r1-0528',
   'open-router:deepseek/deepseek-chat-v3-0324',
@@ -153,6 +159,7 @@ const AIModelKeySchema = z.union([
   AzureOpenAIModelKeySchema,
   XAIModelKeySchema,
   BasetenModelKeySchema,
+  FireworksModelKeySchema,
   OpenRouterModelKeySchema,
 ]);
 export type AIModelKey = z.infer<typeof AIModelKeySchema>;

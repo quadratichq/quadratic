@@ -8,6 +8,7 @@ import type {
   BasetenModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
+  FireworksModelKey,
   GeminiAIModelKey,
   ModelMode,
   OpenAIModelKey,
@@ -49,6 +50,10 @@ export function isAzureOpenAIModel(modelKey: AIModelKey): modelKey is AzureOpenA
 
 export function isBasetenModel(modelKey: AIModelKey): modelKey is BasetenModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'baseten';
+}
+
+export function isFireworksModel(modelKey: AIModelKey): modelKey is FireworksModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'fireworks';
 }
 
 export function isOpenRouterModel(modelKey: AIModelKey): modelKey is OpenRouterModelKey {

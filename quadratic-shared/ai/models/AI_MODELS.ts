@@ -9,8 +9,8 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL_PRO: AIModelKey = 'vertexai-anthropic:claude-sonnet-4:thinking';
-export const DEFAULT_MODEL_FREE: AIModelKey = 'azure-openai:gpt-4.1';
-export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
+export const DEFAULT_MODEL_FREE: AIModelKey = 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct';
+export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
@@ -578,6 +578,23 @@ export const MODELS_CONFIGURATION: {
     imageSupport: false,
     rate_per_million_input_tokens: 1.7,
     rate_per_million_output_tokens: 1.7,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct': {
+    model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
+    displayName: 'Qwen3 Coder 480B',
+    temperature: 0.1,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'basic',
+    provider: 'fireworks',
+    promptCaching: true,
+    strictParams: false, // Fireworks doesn't support strict parameter
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.45,
+    rate_per_million_output_tokens: 1.8,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },

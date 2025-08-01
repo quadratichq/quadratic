@@ -26,6 +26,7 @@ import type {
   AzureOpenAIModelKey,
   BasetenModelKey,
   Content,
+  FireworksModelKey,
   ImageContent,
   ModelMode,
   OpenAIModelKey,
@@ -71,7 +72,8 @@ export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
   aiModelMode: ModelMode,
   strictParams: boolean,
-  imageSupport: boolean
+  imageSupport: boolean,
+  provider?: string
 ): {
   messages: ChatCompletionMessageParam[];
   tools: ChatCompletionTool[] | undefined;
@@ -132,7 +134,7 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams, provider);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -142,7 +144,8 @@ function getOpenAITools(
   source: AISource,
   aiModelMode: ModelMode,
   toolName: AITool | undefined,
-  strictParams: boolean
+  strictParams: boolean,
+  provider?: string
 ): ChatCompletionTool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
     if (!toolSpec.aiModelModes.includes(aiModelMode)) {
@@ -158,17 +161,26 @@ function getOpenAITools(
     return undefined;
   }
 
-  const openaiTools: ChatCompletionTool[] = tools.map(
-    ([name, { description, parameters }]): ChatCompletionTool => ({
+  // Only include strict parameter for providers that support it (OpenAI, Azure OpenAI)
+  const supportsStrictParams = provider === 'openai' || provider === 'azure-openai';
+
+  const openaiTools: ChatCompletionTool[] = tools.map(([name, { description, parameters }]): ChatCompletionTool => {
+    const functionDef: any = {
+      name,
+      description,
+      parameters,
+    };
+
+    // Only add strict parameter for supported providers
+    if (supportsStrictParams && strictParams) {
+      functionDef.strict = strictParams;
+    }
+
+    return {
       type: 'function' as const,
-      function: {
-        name,
-        description,
-        parameters,
-        strict: strictParams,
-      },
-    })
-  );
+      function: functionDef,
+    };
+  });
 
   return openaiTools;
 }
@@ -179,7 +191,13 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -303,7 +321,13 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
