@@ -162,8 +162,8 @@ export class Control {
         "api",
         data,
         {
-          success: "Server running on port",
-          error: "npm ERR!",
+          success: "Server running",
+          error: `"level":"error"`,
           start: "> quadratic-api",
         },
         () => {

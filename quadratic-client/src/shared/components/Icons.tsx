@@ -327,6 +327,10 @@ export const ExternalLinkIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_outward</Icon>;
 };
 
+export const FastForwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>fast_forward</Icon>;
+};
+
 export const FormatAlignCenterIcon: IconComponent = (props) => {
   return <Icon {...props}>format_align_center</Icon>;
 };

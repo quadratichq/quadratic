@@ -1,6 +1,7 @@
 import sgMail from '@sendgrid/mail';
 import * as Sentry from '@sentry/node';
 import { NODE_ENV, SENDGRID_API_KEY } from '../env-vars';
+import logger from '../utils/logger';
 
 let dontSendEmails = true;
 if (SENDGRID_API_KEY) {
@@ -29,10 +30,11 @@ export const sendEmail = async (to: string, template: { subject: string; html: s
 
   // Don't try to send an email if we don't have the API key
   if (dontSendEmails) {
-    console.log('[Development] console logging email:');
-    console.log('  to: %s', to);
-    console.log('  subject: %s', subject);
-    console.log('  html: %s', html.slice(0, 10) + '...');
+    logger.info('Development email logging', {
+      to,
+      subject,
+      htmlPreview: html.slice(0, 10) + '...',
+    });
     return;
   }
 

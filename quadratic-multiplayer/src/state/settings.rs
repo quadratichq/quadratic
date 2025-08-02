@@ -30,11 +30,20 @@ impl Settings {
 
 #[cfg(test)]
 mod tests {
+    use crate::config::config;
+
     use super::*;
 
     #[test]
     fn gets_version() {
         let version = version();
         assert!(!version.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_settings() {
+        let config = config().unwrap();
+        let settings = Settings::new(&config, None).await;
+        assert_eq!(settings.version, version());
     }
 }

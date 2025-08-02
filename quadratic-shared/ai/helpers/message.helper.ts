@@ -131,6 +131,10 @@ export const getSystemPromptMessages = (
   return { systemMessages, promptMessages };
 };
 
+export const isUserPromptMessage = (message: ChatMessage): message is UserMessagePrompt => {
+  return message.role === 'user' && message.contextType === 'userPrompt';
+};
+
 export const isToolResultMessage = (message: ChatMessage): message is ToolResultMessage => {
   return message.role === 'user' && message.contextType === 'toolResult';
 };

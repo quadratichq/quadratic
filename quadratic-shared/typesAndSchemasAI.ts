@@ -251,13 +251,13 @@ export type Context = z.infer<typeof ContextSchema>;
 const TextContentSchema = z.preprocess(
   (val: any) => {
     if (typeof val === 'string') {
-      return { type: 'text', text: val };
+      return { type: 'text', text: val.trim() };
     }
     return val;
   },
   z.object({
     type: z.literal('text'),
-    text: z.string(),
+    text: z.string().transform((val) => val.trim()),
   })
 );
 export type TextContent = z.infer<typeof TextContentSchema>;
@@ -291,7 +291,7 @@ export type FileContent = z.infer<typeof FileContentSchema>;
 
 const GoogleSearchGroundingMetadataSchema = z.object({
   type: z.literal('google_search_grounding_metadata'),
-  text: z.string(),
+  text: z.string().transform((val) => val.trim()),
 });
 export type GoogleSearchGroundingMetadata = z.infer<typeof GoogleSearchGroundingMetadataSchema>;
 
@@ -302,7 +302,7 @@ const SystemMessageSchema = z.object({
   role: z.literal('user'),
   content: z.preprocess((val) => {
     if (typeof val === 'string') {
-      return [{ type: 'text', text: val }];
+      return [{ type: 'text', text: val.trim() }];
     }
     return val;
   }, z.array(TextContentSchema)),
@@ -356,25 +356,33 @@ const AIResponseContentSchema = z.array(
   TextContentSchema.or(
     z.object({
       type: z.literal('anthropic_thinking'),
-      text: z.string(),
+      text: z.string().transform((val) => val.trim()),
       signature: z.string(),
     })
   )
     .or(
       z.object({
         type: z.literal('anthropic_redacted_thinking'),
-        text: z.string(),
+        text: z.string().transform((val) => val.trim()),
       })
     )
     .or(GoogleSearchGroundingMetadataSchema)
     .or(
       z.object({
         type: z.literal('google_thinking'),
-        text: z.string(),
+        text: z.string().transform((val) => val.trim()),
       })
     )
 );
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
+
+const AIToolCallSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  arguments: z.string(),
+  loading: z.boolean(),
+});
+export type AIToolCall = z.infer<typeof AIToolCallSchema>;
 
 export const AIMessagePromptSchema = z.preprocess(
   (val: any) => {
@@ -390,14 +398,7 @@ export const AIMessagePromptSchema = z.preprocess(
     role: z.literal('assistant'),
     content: z.preprocess(convertStringToContent, AIResponseContentSchema),
     contextType: UserPromptContextTypeSchema,
-    toolCalls: z.array(
-      z.object({
-        id: z.string(),
-        name: z.string(),
-        arguments: z.string(),
-        loading: z.boolean(),
-      })
-    ),
+    toolCalls: z.array(AIToolCallSchema),
     modelKey: z.string(),
   })
 );
@@ -436,33 +437,38 @@ export const ChatSchema = z.object({
 });
 export type Chat = z.infer<typeof ChatSchema>;
 
-const AIToolArgsSchema: z.ZodType = z.lazy(() =>
-  z
-    .object({
-      type: z.string(),
-      description: z.string(),
-    })
-    .or(
-      z.object({
-        type: z.literal('array'),
-        items: z
-          .object({
-            type: z.string(),
-            description: z.string(),
-          })
-          .or(AIToolArgsSchema)
-          .or(
-            z.object({
-              type: z.literal('object'),
-              properties: z.record(AIToolArgsSchema),
-              required: z.array(z.string()),
-              additionalProperties: z.boolean(),
-            })
-          ),
-      })
-    )
+const AIToolPrimitiveTypeSchema = z.enum(['string', 'number', 'boolean', 'null']);
+const AIToolArgsPrimitiveSchema = z.object({
+  type: AIToolPrimitiveTypeSchema.or(z.array(AIToolPrimitiveTypeSchema)),
+  description: z.string(),
+});
+export type AIToolArgsPrimitive = z.infer<typeof AIToolArgsPrimitiveSchema>;
+
+export type AIToolArgsArray = {
+  type: 'array';
+  items: AIToolArgsPrimitive | AIToolArgsArray | AIToolArgs;
+};
+const AIToolArgsArraySchema: z.ZodType<AIToolArgsArray> = z.lazy(() =>
+  z.object({
+    type: z.literal('array'),
+    items: AIToolArgsSchema,
+  })
 );
-export type AIToolArgs = z.infer<typeof AIToolArgsSchema>;
+
+export type AIToolArgs = {
+  type: 'object';
+  properties: Record<string, AIToolArgsPrimitive | AIToolArgsArray | AIToolArgs>;
+  required: string[];
+  additionalProperties: boolean;
+};
+const AIToolArgsSchema: z.ZodType<AIToolArgs> = z.lazy(() =>
+  z.object({
+    type: z.literal('object'),
+    properties: z.record(AIToolArgsPrimitiveSchema.or(AIToolArgsArraySchema).or(AIToolArgsSchema)),
+    required: z.array(z.string()),
+    additionalProperties: z.boolean(),
+  })
+);
 
 const CodeCellTypeSchema = z.enum(['Python', 'Javascript', 'Formula', 'Connection', 'Import']);
 export type CodeCellType = z.infer<typeof CodeCellTypeSchema>;

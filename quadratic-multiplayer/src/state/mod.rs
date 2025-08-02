@@ -7,6 +7,7 @@ pub mod connection;
 pub mod pubsub;
 pub mod room;
 pub mod settings;
+pub mod stats;
 pub mod user;
 
 use dashmap::DashMap;

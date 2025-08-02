@@ -227,18 +227,21 @@ function getInitialConnectionState(searchParams: URLSearchParams): ConnectionSta
   const type = searchParams.get('initial-connection-type');
   const uuid = searchParams.get('initial-connection-uuid');
   if (
-    uuid &&
-    (type === 'MYSQL' ||
-      type === 'POSTGRES' ||
-      type === 'MSSQL' ||
-      type === 'SNOWFLAKE' ||
-      type === 'COCKROACHDB' ||
-      type === 'BIGQUERY' ||
-      type === 'MARIADB' ||
-      type === 'SUPABASE' ||
-      type === 'NEON')
+    type === 'MYSQL' ||
+    type === 'POSTGRES' ||
+    type === 'MSSQL' ||
+    type === 'SNOWFLAKE' ||
+    type === 'COCKROACHDB' ||
+    type === 'BIGQUERY' ||
+    type === 'MARIADB' ||
+    type === 'SUPABASE' ||
+    type === 'NEON'
   ) {
-    return { view: 'edit', uuid, type };
+    if (uuid) {
+      return { view: 'edit', uuid, type };
+    }
+    return { view: 'create', type };
   }
+
   return { view: 'list' };
 }

@@ -10,7 +10,14 @@ import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
-import { DeleteIcon, DraftIcon, ExternalLinkIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
+import {
+  DeleteIcon,
+  DownloadIcon,
+  DraftIcon,
+  ExternalLinkIcon,
+  FileCopyIcon,
+  FileOpenIcon,
+} from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
@@ -99,8 +106,17 @@ export const FileMenubarMenu = () => {
 
         <MenubarItemAction action={Action.FileShare} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
-        <MenubarItemAction action={Action.FileDownload} actionArgs={{ name, uuid: fileUuid }} />
-        <MenubarItemAction action={Action.FileDownloadExcel} actionArgs={{ name, uuid: fileUuid }} />
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <DownloadIcon /> Download
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItemAction action={Action.FileDownload} actionArgs={{ name, uuid: fileUuid }} />
+            <MenubarItemAction action={Action.FileDownloadExcel} actionArgs={{ name, uuid: fileUuid }} />
+            <MenubarSeparator />
+            <MenubarItemAction action={Action.FileDownloadCsv} actionArgs={{ name, uuid: fileUuid }} />
+          </MenubarSubContent>
+        </MenubarSub>
 
         <MenubarSeparator />
 

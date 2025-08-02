@@ -1,6 +1,7 @@
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import type { Connection } from 'quadratic-shared/typesAndSchemasConnections';
 import { CONNECTION_DEMO } from '../env-vars';
+import logger from '../utils/logger';
 
 /**
  * At a high level, the way this works is:
@@ -25,10 +26,5 @@ try {
     isDemo: true,
   });
 } catch (error) {
-  console.log(
-    JSON.stringify({
-      message: '`CONNECTION_DEMO` env var is missing or malformed. No demo connection will be available.',
-      error,
-    })
-  );
+  logger.warn('CONNECTION_DEMO env var is missing or malformed. No demo connection will be available.', error);
 }

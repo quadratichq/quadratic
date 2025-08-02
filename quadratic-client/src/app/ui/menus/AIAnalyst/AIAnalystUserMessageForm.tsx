@@ -19,11 +19,8 @@ import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
 
-type AIAnalystUserMessageFormProps = AIUserMessageFormWrapperProps & {
-  initialContext?: Context;
-};
 export const AIAnalystUserMessageForm = memo(
-  forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>((props: AIAnalystUserMessageFormProps, ref) => {
+  forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
     const { initialContext, ...rest } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
