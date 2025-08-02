@@ -94,7 +94,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(args.source);
+    const toolUseContext = getToolUseContext(args.source, modelKey);
     args.messages = [...toolUseContext, ...args.messages];
   }
 

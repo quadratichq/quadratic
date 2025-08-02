@@ -9,6 +9,7 @@ import type {
   BedrockAnthropicModelKey,
   BedrockModelKey,
   GeminiAIModelKey,
+  ModelMode,
   OpenAIModelKey,
   OpenRouterModelKey,
   QuadraticModelKey,
@@ -82,9 +83,10 @@ export const getModelOptions = (
   promptCaching: boolean;
   strictParams: boolean;
   imageSupport: boolean;
+  aiModelMode: ModelMode;
 } => {
   const config = MODELS_CONFIGURATION[modelKey];
-  const { canStream, canStreamWithToolCalls, max_tokens } = config;
+  const { canStream, canStreamWithToolCalls } = config;
 
   const { useStream } = args;
   const useTools = Object.values(aiToolsSpec).some((tool) => tool.sources.includes(args.source));
@@ -94,17 +96,15 @@ export const getModelOptions = (
       : (useStream ?? canStream)
     : false;
 
-  const thinking = config.thinking;
-
-  const thinkingBudget = config.thinkingBudget;
-
-  const temperature = config.temperature;
-
-  const promptCaching = config.promptCaching;
-
-  const strictParams = !!config.strictParams;
-
-  const imageSupport = config.imageSupport;
-
-  return { stream, temperature, max_tokens, thinking, thinkingBudget, promptCaching, strictParams, imageSupport };
+  return {
+    stream,
+    temperature: config.temperature,
+    max_tokens: config.max_tokens,
+    thinking: config.thinking,
+    thinkingBudget: config.thinkingBudget,
+    promptCaching: config.promptCaching,
+    strictParams: !!config.strictParams,
+    imageSupport: config.imageSupport,
+    aiModelMode: config.mode,
+  };
 };

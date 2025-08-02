@@ -27,6 +27,7 @@ import type {
   BasetenModelKey,
   Content,
   ImageContent,
+  ModelMode,
   OpenAIModelKey,
   OpenRouterModelKey,
   ParsedAIResponse,
@@ -68,6 +69,7 @@ function convertToolResultContent(content: ToolResultContent): Array<ChatComplet
 
 export function getOpenAIApiArgs(
   args: AIRequestHelperArgs,
+  aiModelMode: ModelMode,
   strictParams: boolean,
   imageSupport: boolean
 ): {
@@ -130,7 +132,7 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -138,10 +140,14 @@ export function getOpenAIApiArgs(
 
 function getOpenAITools(
   source: AISource,
+  aiModelMode: ModelMode,
   toolName: AITool | undefined,
   strictParams: boolean
 ): ChatCompletionTool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }

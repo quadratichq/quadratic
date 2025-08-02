@@ -76,7 +76,7 @@ mod test {
         let sheet_id = sheet_ids[0];
         assert_eq!(gc.sheet(sheet_id).name, SHEET_NAME.to_owned() + "1");
 
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         let sheet_ids = gc.sheet_ids();
         assert_eq!(sheet_ids.len(), 2);
         let sheet_id = sheet_ids[1];
@@ -92,7 +92,7 @@ mod test {
             SHEET_NAME.to_owned() + "1"
         );
 
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         let sheet_id = gc.sheet_ids()[1];
         assert_eq!(
             gc.try_sheet(sheet_id).unwrap().name,
@@ -109,7 +109,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
         gc.try_sheet_mut(sheet_id).unwrap().name = "Sheet1 modified".to_string();
 
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         let sheet_id_2 = gc.sheet_ids()[1];
         gc.try_sheet_mut(sheet_id_2).unwrap().name = "Sheet 2 modified".to_string();
 
@@ -130,7 +130,7 @@ mod test {
             SHEET_NAME.to_owned() + "1"
         );
 
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         assert_eq!(
             gc.try_sheet_from_name(&format!("{SHEET_NAME}2"))
                 .unwrap()
@@ -144,7 +144,7 @@ mod test {
     #[test]
     fn test_try_sheet_mut_from_name() {
         let mut gc = GridController::test();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
 
         gc.try_sheet_mut_from_name(&format!("{SHEET_NAME}1"))
             .unwrap()

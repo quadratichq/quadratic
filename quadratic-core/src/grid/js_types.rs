@@ -126,8 +126,10 @@ pub struct JsDataTableContext {
     pub first_row_visible_values: Vec<JsCellValuePos>,
     pub last_row_visible_values: Vec<JsCellValuePos>,
     pub bounds: String,
+    pub intended_bounds: String,
     pub show_name: bool,
     pub show_columns: bool,
+    pub spill: bool,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
@@ -139,6 +141,7 @@ pub struct JsCodeTableContext {
     pub first_row_visible_values: Vec<JsCellValuePos>,
     pub last_row_visible_values: Vec<JsCellValuePos>,
     pub bounds: String,
+    pub intended_bounds: String,
     pub show_name: bool,
     pub show_columns: bool,
     pub language: CodeCellLanguage,
@@ -153,6 +156,7 @@ pub struct JsChartContext {
     pub sheet_name: String,
     pub chart_name: String,
     pub bounds: String,
+    pub intended_bounds: String,
     pub language: CodeCellLanguage,
     pub code_string: String,
     pub spill: bool,
@@ -539,4 +543,18 @@ pub enum Direction {
     Down,
     Left,
     Right,
+}
+
+#[derive(Debug, Serialize, Deserialize, TS)]
+pub struct JsSheetNameToColor {
+    pub sheet_name: String,
+    pub color: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
+pub struct JsSheetPosText {
+    pub sheet_id: String,
+    pub x: i64,
+    pub y: i64,
+    pub text: Option<String>,
 }
