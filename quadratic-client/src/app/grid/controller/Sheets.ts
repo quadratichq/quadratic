@@ -433,6 +433,12 @@ export class Sheets {
     return A1SelectionStringToSelection(a1);
   };
 
+  /// Warning: this can throw an error. It must be handled.
+  A1SelectionToA1String = (a1Selection: A1Selection, sheetId: string): string => {
+    const selection = A1SelectionStringToSelection(JSON.stringify(a1Selection, bigIntReplacer));
+    return selection.toA1String(sheetId, this.jsA1Context);
+  };
+
   A1SelectionToJsSelection = (a1: A1Selection): JsSelection => {
     return A1SelectionToJsSelection(a1);
   };

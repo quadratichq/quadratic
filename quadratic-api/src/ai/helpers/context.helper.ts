@@ -1,13 +1,15 @@
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import { A1Docs } from '../docs/A1Docs';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
 import { FormulaDocs } from '../docs/FormulaDocs';
 import { JavascriptDocs } from '../docs/JavascriptDocs';
 import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
+import { ValidationDocs } from '../docs/ValidationDocs';
 
-export const getQuadraticContext = (language?: CodeCellType): ChatMessage[] => [
+export const getQuadraticContext = (language?: CodeCellType, context?: AISource): ChatMessage[] => [
   {
     role: 'user',
     content: [
@@ -34,6 +36,8 @@ ${
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
 Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks. Think step by step before responding.
+${context === 'AIAnalyst' || context === 'AIAssistant' ? A1Docs : ''}
+${context === 'AIAnalyst' ? ValidationDocs : ''}
 `,
       },
     ],

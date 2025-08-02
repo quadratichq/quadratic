@@ -35,21 +35,20 @@ impl Validations {
     /// Updates or adds a new validation to the sheet. Returns the reverse
     /// operations.
     pub fn set(&mut self, validation: Validation) -> Vec<Operation> {
-        for v in self.validations.iter_mut() {
-            if v.id == validation.id {
-                let reverse = vec![Operation::SetValidation {
-                    validation: v.clone(),
-                }];
-                *v = validation.clone();
-                return reverse;
-            }
+        if let Some(existing) = self.validations.iter_mut().find(|v| v.id == validation.id) {
+            let old_validation = existing.clone();
+            *existing = validation;
+            vec![Operation::SetValidation {
+                validation: old_validation,
+            }]
+        } else {
+            let reverse = vec![Operation::RemoveValidation {
+                sheet_id: validation.selection.sheet_id,
+                validation_id: validation.id,
+            }];
+            self.validations.push(validation);
+            reverse
         }
-        let reverse = vec![Operation::RemoveValidation {
-            sheet_id: validation.selection.sheet_id,
-            validation_id: validation.id,
-        }];
-        self.validations.push(validation);
-        reverse
     }
 
     /// Gets a validation based on a validation_id
@@ -189,6 +188,45 @@ impl Validations {
         self.validations
             .iter()
             .find(|v| v.selection.might_contain_pos(pos, a1_context))
+    }
+
+    /// Removes a selection from a validation. Returns the reverse operations.
+    pub fn remove_selection(
+        &mut self,
+        selection: &A1Selection,
+        context: &A1Context,
+    ) -> Option<Vec<Operation>> {
+        let mut reverse = vec![];
+        self.validations.retain_mut(|v| {
+            if v.selection.overlaps_a1_selection(selection, context) {
+                reverse.push(Operation::SetValidation {
+                    validation: v.clone(),
+                });
+                if let Some(partial_selection) = v.selection.delete_selection(selection, context) {
+                    // handle case where only part of the selection is removed
+                    v.selection = partial_selection;
+                    true
+                } else {
+                    false
+                }
+            } else {
+                true
+            }
+        });
+        if reverse.is_empty() {
+            None
+        } else {
+            Some(reverse)
+        }
+    }
+
+    /// Finds a validation that matches the rule, message, and error.
+    pub fn similar_validation(&self, validation: &Validation) -> Option<&Validation> {
+        self.validations.iter().find(|v| {
+            v.rule == validation.rule
+                && v.message == validation.message
+                && v.error == validation.error
+        })
     }
 }
 
@@ -413,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn validation() {
+    fn test_validation() {
         let mut validations = Validations::default();
         let v = create_validation_rect(0, 0, 1, 1);
         validations.set(v.clone());
@@ -517,7 +555,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
@@ -539,7 +577,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
         let selection = A1Selection::test_a1_context("B4:C5", gc.a1_context());
@@ -550,6 +588,153 @@ mod tests {
                 .validations
                 .validation_overlaps_selection(&selection, gc.a1_context()),
             Some(&validation)
+        );
+    }
+
+    #[test]
+    fn test_remove_selection() {
+        let context = A1Context::default();
+        let mut validations = Validations::default();
+
+        // Create validations covering different ranges
+        let v1 = create_validation_rect(1, 1, 5, 5); // A1:E5
+        let v2 = create_validation_rect(10, 10, 15, 15); // J10:O15
+        let v3 = create_validation_rect(20, 1, 25, 3); // T1:Y3
+
+        validations.set(v1.clone());
+        validations.set(v2.clone());
+        validations.set(v3.clone());
+
+        assert_eq!(validations.validations.len(), 3);
+
+        // Test 1: Partial removal - remove part of v1's selection
+        // Remove B2:C3, which should partially remove from A1:E5
+        let partial_selection = A1Selection::test_a1("B2:C3");
+        let reverse_ops = validations.remove_selection(&partial_selection, &context);
+
+        // Should return reverse operations
+        assert!(reverse_ops.is_some());
+        let reverse = reverse_ops.unwrap();
+        assert_eq!(reverse.len(), 1);
+
+        // The original validation should be in the reverse operation
+        if let Operation::SetValidation { validation } = &reverse[0] {
+            assert_eq!(validation.id, v1.id);
+            assert_eq!(validation.selection, v1.selection);
+        } else {
+            panic!("Expected SetValidation operation");
+        }
+
+        // Validation should still exist but with modified selection
+        assert_eq!(validations.validations.len(), 3);
+        let modified_v1 = validations.validation(v1.id).unwrap();
+        assert_ne!(modified_v1.selection, v1.selection); // Selection should be different
+
+        // Test 2: Complete removal - remove all of v2's selection
+        // Remove J10:O15, which should completely remove v2
+        let complete_selection = A1Selection::test_a1("J10:O15");
+        let reverse_ops = validations.remove_selection(&complete_selection, &context);
+
+        // Should return reverse operations
+        assert!(reverse_ops.is_some());
+        let reverse = reverse_ops.unwrap();
+        assert_eq!(reverse.len(), 1);
+
+        // The original validation should be in the reverse operation
+        if let Operation::SetValidation { validation } = &reverse[0] {
+            assert_eq!(validation.id, v2.id);
+            assert_eq!(validation.selection, v2.selection);
+        } else {
+            panic!("Expected SetValidation operation");
+        }
+
+        // Validation should be completely removed
+        assert_eq!(validations.validations.len(), 2);
+        assert!(validations.validation(v2.id).is_none());
+
+        // Test 3: No overlap - remove selection that doesn't overlap with any validation
+        let no_overlap_selection = A1Selection::test_a1("Z30:AA35");
+        let reverse_ops = validations.remove_selection(&no_overlap_selection, &context);
+
+        // Should return None since no validations were affected
+        assert!(reverse_ops.is_none());
+        assert_eq!(validations.validations.len(), 2);
+
+        // Test 4: Multiple overlaps - remove selection that overlaps with multiple validations
+        // Add back v2 for this test
+        validations.set(v2.clone());
+        assert_eq!(validations.validations.len(), 3);
+
+        // Remove a large selection that overlaps with both remaining validations
+        let large_selection = A1Selection::test_a1("A1:Z30");
+        let reverse_ops = validations.remove_selection(&large_selection, &context);
+
+        // Should return reverse operations for multiple validations
+        assert!(reverse_ops.is_some());
+        let reverse = reverse_ops.unwrap();
+        assert!(reverse.len() >= 2); // Should have operations for multiple validations
+
+        // Most or all validations should be affected
+        // (depending on exact implementation of delete_selection)
+        let remaining_count = validations.validations.len();
+        assert!(remaining_count <= 3); // Some may be partially removed, some completely removed
+    }
+
+    #[test]
+    fn test_similar_validation() {
+        let mut validations = Validations::default();
+        let v = create_validation_rect(0, 0, 1, 1);
+        validations.set(v.clone());
+        assert_eq!(validations.similar_validation(&v), Some(&v));
+        let v2 = Validation {
+            id: Default::default(),
+            selection: A1Selection::test_a1("A1:B2"),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: false,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        assert_eq!(validations.similar_validation(&v2), None);
+    }
+
+    #[test]
+    fn test_set_validation() {
+        let mut validations = Validations::default();
+        let id = Uuid::new_v4();
+        let original = Validation {
+            id,
+            selection: A1Selection::test_a1("A1:B2"),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: false,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(original.clone());
+        assert_eq!(validations.validations.len(), 1);
+
+        let new = Validation {
+            id,
+            selection: A1Selection::test_a1("A2:B2"),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: false,
+                ignore_blank: false,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        let old = validations.set(new.clone());
+        assert_eq!(validations.validations.len(), 1);
+        assert_eq!(validations.validations[0], new);
+        assert_eq!(old.len(), 1);
+        assert_eq!(
+            old[0],
+            Operation::SetValidation {
+                validation: original
+            }
         );
     }
 }

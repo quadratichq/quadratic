@@ -1,3 +1,13 @@
+import {
+  addDateTimeValidationToolCall,
+  addListValidationToolCall,
+  addLogicalValidationToolCall,
+  addMessageToolCall,
+  addNumberValidationToolCall,
+  addTextValidationToolCall,
+  getValidationsToolCall,
+  removeValidationsToolCall,
+} from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
@@ -998,5 +1008,78 @@ export const aiToolsActions: AIToolActionsRecord = {
     } catch (e) {
       return [createTextContent(`Error executing table column settings tool: ${e}`)];
     }
+  },
+  [AITool.GetValidations]: async (args) => {
+    const { sheet_name } = args;
+    let text: string;
+    try {
+      text = getValidationsToolCall(sheet_name);
+    } catch (e) {
+      return [createTextContent(`Error executing get validations tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddMessage]: async (args) => {
+    let text: string;
+    try {
+      text = await addMessageToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add message tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddLogicalValidation]: async (args) => {
+    let text = '';
+    try {
+      text = await addLogicalValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add logical validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddListValidation]: async (args) => {
+    let text = '';
+    try {
+      text = await addListValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add list validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddTextValidation]: async (args) => {
+    let text = '';
+    try {
+      text = await addTextValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add text validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddNumberValidation]: async (args) => {
+    let text = '';
+    try {
+      text = await addNumberValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add number validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.AddDateTimeValidation]: async (args) => {
+    let text = '';
+    try {
+      text = await addDateTimeValidationToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing add date time validation tool: ${e}`)];
+    }
+    return [createTextContent(text)];
+  },
+  [AITool.RemoveValidations]: async (args) => {
+    let text: string;
+    try {
+      text = await removeValidationsToolCall(args);
+    } catch (e) {
+      return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+    return [createTextContent(text)];
   },
 } as const;

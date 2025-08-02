@@ -191,3 +191,4 @@ export type ValidationNumber = { ignore_blank: boolean, ranges: Array<NumberRang
 export type ValidationRule = "None" | { "List": ValidationList } | { "Logical": ValidationLogical } | { "Text": ValidationText } | { "Number": ValidationNumber } | { "DateTime": ValidationDateTime };
 export type ValidationStyle = "Stop" | "Warning" | "Information";
 export type ValidationText = { ignore_blank: boolean, text_match: Array<TextMatch>, };
+export type ValidationUpdate = { id: string | null, selection: A1Selection, rule: ValidationRule, message: ValidationMessage, error: ValidationError, };

@@ -67,10 +67,17 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
   initWorkers();
   if (debugFlag('debugStartupTime')) console.timeEnd('[file.$uuid.tsx] initializing workers');
 
-  if (debugFlag('debugStartupTime'))
+  if (debugFlag('debugStartupTime')) {
     console.time('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
-  // initialize: Rust metadata
+  }
+
+  if (debugFlag('debugStartupTime')) {
+    console.time('[file.$uuid.tsx] initialize core in the client');
+  }
   await initCoreClient();
+  if (debugFlag('debugStartupTime')) {
+    console.timeEnd('[file.$uuid.tsx] initialize core in the client');
+  }
 
   // Load the latest checkpoint by default, but a specific one if we're in version history preview
   let checkpoint = {

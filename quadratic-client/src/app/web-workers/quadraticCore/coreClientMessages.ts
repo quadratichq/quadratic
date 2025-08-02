@@ -27,6 +27,7 @@ import type {
   SheetRect,
   TransactionName,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -517,8 +518,15 @@ export interface ClientCoreAutocomplete {
 
 export interface ClientCoreUpdateValidation {
   type: 'clientCoreUpdateValidation';
-  validation: Validation;
+  id: number;
+  validation: ValidationUpdate;
   cursor: string;
+}
+
+export interface CoreClientUpdateValidation {
+  type: 'coreClientUpdateValidation';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreRemoveValidation {
@@ -1357,6 +1365,20 @@ export interface CoreClientGetFormatSelection {
   format: CellFormatSummary | JsResponse | undefined;
 }
 
+export interface ClientCoreRemoveValidationSelection {
+  type: 'clientCoreRemoveValidationSelection';
+  id: number;
+  sheetId: string;
+  selection: string;
+  cursor: string;
+}
+
+export interface CoreClientRemoveValidationSelection {
+  type: 'coreClientRemoveValidationSelection';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1454,7 +1476,8 @@ export type ClientCoreMessage =
   | ClientCoreResizeAllColumns
   | ClientCoreResizeAllRows
   | ClientCoreGetFormatSelection
-  | ClientCoreHasCellData;
+  | ClientCoreHasCellData
+  | ClientCoreRemoveValidationSelection;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1546,4 +1569,6 @@ export type CoreClientMessage =
   | CoreClientInsertColumns
   | CoreClientInsertRows
   | CoreClientDataTableFirstRowAsHeader
-  | CoreClientDataTableMeta;
+  | CoreClientDataTableMeta
+  | CoreClientUpdateValidation
+  | CoreClientRemoveValidationSelection;
