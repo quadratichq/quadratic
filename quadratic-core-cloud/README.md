@@ -1,8 +1,6 @@
-# Quadratic File Service
+# Quadratic Cor Cloud
 
-An Axum HTTP Server for processing the file queue.
-
-The queue is a RedisStream, where each file is a stream/key.
+Process Quadratic Core transactions in the cloud.
 
 ## Running
 
@@ -67,7 +65,7 @@ npm run lint
 #### Request
 
 ```shell
-curl http://127.0.0.1:3002/health -i
+curl http://127.0.0.1:3004/health -i
 ```
 
 #### Response
