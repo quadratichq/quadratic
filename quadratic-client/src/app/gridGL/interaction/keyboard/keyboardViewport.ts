@@ -14,11 +14,15 @@ import {
   setStrikeThrough,
   setUnderline,
 } from '@/app/ui/helpers/formatCells';
+import type { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker.js';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore.js';
 
-export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boolean {
+export function keyboardViewport(
+  event: React.KeyboardEvent<HTMLElement>,
+  isAvailableArgs: ReturnType<typeof useIsAvailableArgs>
+): boolean {
   const { pointer } = pixiApp;
   const {
     editorInteractionState,
@@ -56,8 +60,14 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
 
   // Toggle global AI chat
   if (matchShortcut(Action.ToggleAIAnalyst, event)) {
-    viewActionsSpec[Action.ToggleAIAnalyst].run();
-    return true;
+    if (
+      viewActionsSpec[Action.ToggleAIAnalyst].isAvailable &&
+      viewActionsSpec[Action.ToggleAIAnalyst].isAvailable(isAvailableArgs)
+    ) {
+      viewActionsSpec[Action.ToggleAIAnalyst].run();
+      return true;
+    }
+    return false;
   }
 
   // Toggle presentation mode

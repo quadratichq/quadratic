@@ -17,6 +17,7 @@ import { keyboardViewport } from '@/app/gridGL/interaction/keyboard/keyboardView
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
 import type { Size } from '@/app/shared/types/size';
+import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 
 export interface IProps {
@@ -30,12 +31,13 @@ export const useKeyboard = (): {
   onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
   onKeyUp: (event: React.KeyboardEvent<HTMLElement>) => void;
 } => {
+  const isAvailableArgs = useIsAvailableArgs();
   const onKeyDown = (event: React.KeyboardEvent<HTMLElement>) => {
     if ((pixiAppSettings.input.show && inlineEditorHandler.isOpen()) || pixiAppSettings.isRenamingTable()) return;
     if (
       keyboardPanMode(event) ||
       keyboardLink(event) ||
-      keyboardViewport(event) ||
+      keyboardViewport(event, isAvailableArgs) ||
       keyboardSearch(event) ||
       keyboardClipboard(event) ||
       keyboardDropdown(event.nativeEvent) ||
