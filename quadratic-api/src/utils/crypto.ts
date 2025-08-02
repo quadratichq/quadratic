@@ -116,7 +116,7 @@ export const generateSshKeys = async (
 
     return { privateKey, publicKey };
   } catch (error: unknown) {
-    logger.error('Error generating SSH keys', { error });
+    logger.error('Error generating SSH keys', error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to generate SSH keys: ${errorMessage}`);
   }
