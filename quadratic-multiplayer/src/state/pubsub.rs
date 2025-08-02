@@ -1,3 +1,4 @@
+use chrono::Utc;
 use quadratic_core::controller::transaction::{Transaction, TransactionServer};
 use quadratic_rust_shared::pubsub::{
     Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection,
@@ -40,6 +41,7 @@ impl PubSub {
         file_id: Uuid,
         operations: Vec<u8>,
         sequence_num: u64,
+        active_channels: &str,
     ) -> Result<u64> {
         let transaction = MessageResponse::BinaryTransaction {
             id,
@@ -54,12 +56,6 @@ impl PubSub {
         // add header to the message
         let transaction_compressed =
             Transaction::add_header(encoded).map_err(|e| MpError::Serialization(e.to_string()))?;
-
-        // get the active channels name
-        let active_channels = match self.config {
-            PubSubConfig::RedisStreams(ref config) => config.active_channels.as_str(),
-            _ => "active_channels",
-        };
 
         // publish the message to the PubSub server
         self.connection
@@ -118,7 +114,7 @@ impl State {
         self.pubsub
             .lock()
             .await
-            .push_protobuf(id, file_id, operations, sequence_num)
+            .push_protobuf(id, file_id, operations, sequence_num, &self.active_channels)
             .await
     }
 

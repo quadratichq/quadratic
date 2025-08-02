@@ -20,6 +20,8 @@ syntax = "proto3";
 
 package quadratic;
 
+import "google/protobuf/timestamp.proto";
+
 message SendTransaction {
   string type = 1;
   string id = 2;
@@ -61,4 +63,14 @@ message ReceiveTransaction {
 message ReceiveTransactions {
   string type = 1;
   repeated ReceiveTransaction transactions = 2;
+}
+
+message ScheduledTask {
+  string type = 1;
+  string id = 2;
+  string file_id = 3;
+  bytes operations = 4;
+  google.protobuf.Timestamp start_datetime = 5;
+  optional google.protobuf.Timestamp end_datetime = 6;
+  uint64 frequency_minutes = 7;
 }
