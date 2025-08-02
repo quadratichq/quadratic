@@ -633,14 +633,8 @@ test('File Actions', async ({ page }) => {
   //--------------------------------
   // Download File
   //--------------------------------
-  // locators
-  const downloadButton = page.getByRole(`menuitem`, { name: `download Download` });
-
-  // Navigate to Renamed Copy Spreedsheet
+  // Navigate to Renamed Copy Spreadsheet
   await page.locator(`:text("${renamedFileName} (Copy)")`).click({ timeout: 60 * 1000 });
-
-  // click Main Menu drop down
-  // await mainMenu.click({ timeout: 60 * 1000 });
 
   // click File
   await fileMenu.click({ timeout: 60 * 1000 });
@@ -649,7 +643,11 @@ test('File Actions', async ({ page }) => {
   const downloadPromise = page.waitForEvent('download');
 
   // click Download
-  await downloadButton.click({ timeout: 60 * 1000 });
+  await page.getByRole(`menuitem`, { name: `download Download` }).click({ timeout: 60 * 1000 });
+
+  // click Quadratic (.grid)
+  await page.getByRole('menuitem', { name: 'Quadratic (.grid)' }).click({ timeout: 60 * 1000 });
+
   const download = await downloadPromise;
 
   // assert that download was successful
