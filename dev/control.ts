@@ -258,7 +258,6 @@ export class Control {
 
   togglePerf() {
     this.cli.options.perf = !this.cli.options.perf;
-    this.cli.options.functionTimer = false;
     this.restartCore();
   }
 
