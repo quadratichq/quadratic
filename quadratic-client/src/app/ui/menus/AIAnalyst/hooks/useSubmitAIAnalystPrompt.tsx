@@ -7,6 +7,7 @@ import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSugg
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
 import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
+import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -81,6 +82,7 @@ export function useSubmitAIAnalystPrompt() {
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getSheetInfoContext } = useSheetInfoMessages();
+  const { getSummaryContext } = useSummaryContextMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
@@ -101,6 +103,7 @@ export function useSubmitAIAnalystPrompt() {
           tablesContext,
           currentSheetContext,
           visibleContext,
+          summaryContext,
         ] = await Promise.all([
           getSqlContext(),
           getFilesContext({ chatMessages }),
@@ -109,6 +112,7 @@ export function useSubmitAIAnalystPrompt() {
           getTablesContext(),
           getCurrentSheetContext({ currentSheetName: context.currentSheet }),
           getVisibleContext(),
+          getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
         ]);
 
         const messagesWithContext: ChatMessage[] = [
@@ -120,6 +124,7 @@ export function useSubmitAIAnalystPrompt() {
           ...getCurrentDateTimeContext(),
           ...currentSheetContext,
           ...visibleContext,
+          ...summaryContext,
           ...getPromptAndInternalMessages(chatMessages),
         ];
 
@@ -128,6 +133,7 @@ export function useSubmitAIAnalystPrompt() {
     [
       getCurrentDateTimeContext,
       getOtherSheetsContext,
+      getSummaryContext,
       getTablesContext,
       getCurrentSheetContext,
       getVisibleContext,
@@ -204,10 +210,7 @@ export function useSubmitAIAnalystPrompt() {
               role: 'user' as const,
               content,
               contextType: 'userPrompt' as const,
-              context: {
-                ...context,
-                selection: context.selection ?? sheets.sheet.cursor.save(),
-              },
+              context,
             },
           ];
           return chatMessages;

@@ -1,4 +1,5 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
+import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_CHAT_NAME_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
@@ -26,8 +27,8 @@ export const useGetChatName = () => {
                 type: 'text',
                 text: `Use set_chat_name tool to set the name for this chat based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
-\`\`\`json
-${JSON.stringify(chatPromptMessages)}
+\`\`\`
+${toXml(chatPromptMessages, 'chat_messages')}
 \`\`\`
 `,
               },

@@ -7,6 +7,7 @@ import {
   isBasetenModel,
   isBedrockAnthropicModel,
   isBedrockModel,
+  isFireworksModel,
   isGenAIModel,
   isOpenAIModel,
   isOpenRouterModel,
@@ -26,6 +27,7 @@ import {
   baseten,
   bedrock,
   bedrock_anthropic,
+  fireworks,
   geminiai,
   open_router,
   openai,
@@ -91,6 +93,15 @@ export const handleAIRequest = async (
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
     } else if (isBasetenModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, baseten, response);
+    } else if (isFireworksModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        fireworks,
+        response
+      );
     } else if (isOpenRouterModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(
         modelKey,

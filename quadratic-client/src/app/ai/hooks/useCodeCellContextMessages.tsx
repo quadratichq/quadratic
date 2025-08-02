@@ -1,3 +1,4 @@
+import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
@@ -29,8 +30,7 @@ export function useCodeCellContextMessages() {
             teamUuid
           );
         }
-        const schemaJsonForAi = schemaData ? JSON.stringify(schemaData) : undefined;
-
+        const schemaJsonForAi = schemaData ? toXml(schemaData, 'database_schema') : undefined;
         const a1Pos = xyToA1(pos.x, pos.y);
         const language = getConnectionKind(cellLanguage);
         const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
@@ -46,17 +46,13 @@ Currently, you are in a code cell that is being edited.\n
 The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
   schemaJsonForAi
-    ? `The schema for the database is:
-\`\`\`json
-${schemaJsonForAi}
-\`\`\`
+    ? `The schema for the database is:\n\`\`\`\n${schemaJsonForAi}\`\`\`\n${
+        language === 'POSTGRES' || language === 'COCKROACHDB' || language === 'SUPABASE' || language === 'NEON'
+          ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".'
+          : ''
+      }
 ${
-  language === 'POSTGRES'
-    ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".'
-    : ''
-}
-${
-  language === 'MYSQL'
+  language === 'MYSQL' || language === 'MARIADB'
     ? 'When generating mysql queries, put schema and table names in backticks, e.g. `schema`.`TableName`.'
     : ''
 }
@@ -68,6 +64,11 @@ ${
 ${
   language === 'SNOWFLAKE'
     ? 'When generating Snowflake queries, put schema and table names in double quotes, e.g. "SCHEMA"."TABLE_NAME".'
+    : ''
+}
+${
+  language === 'BIGQUERY'
+    ? 'When generating BigQuery queries, put schema and table names in backticks, e.g. `schema`.`TableName`.'
     : ''
 }\n`
     : `Add imports to the top of the code cell and do not use any libraries or functions that are not listed in the Quadratic documentation.\n
@@ -85,7 +86,8 @@ The code in the code cell is:\n
 ${
   consoleHasOutput
     ? `Code was run recently and the console output is:\n
-\`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\``
+\`\`\`\n${toXml(consoleOutput, 'console_output')}\`\`\`
+`
     : ``
 }`,
               },

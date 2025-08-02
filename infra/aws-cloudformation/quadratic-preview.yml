@@ -154,6 +154,7 @@ Resources:
           AZURE_OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/AZURE_OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           XAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/XAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           BASETEN_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/BASETEN_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          FIREWORKS_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/FIREWORKS_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           OPEN_ROUTER_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPEN_ROUTER_API_KEY" --with-decryption --query "Parameter.Value" --output text)
 
           # stripe

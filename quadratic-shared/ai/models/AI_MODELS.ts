@@ -9,8 +9,8 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL_PRO: AIModelKey = 'vertexai-anthropic:claude-sonnet-4:thinking';
-export const DEFAULT_MODEL_FREE: AIModelKey = 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz';
-export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW';
+export const DEFAULT_MODEL_FREE: AIModelKey = 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct';
+export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
@@ -401,7 +401,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 16384,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'basic',
+    mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -563,6 +563,77 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_output_tokens: 2.5,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct': {
+    model: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    displayName: 'Qwen3 Coder 480B',
+    temperature: 0.7,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 1.7,
+    rate_per_million_output_tokens: 1.7,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'baseten:Qwen/Qwen3-235B-A22B-Instruct-2507': {
+    model: 'Qwen/Qwen3-235B-A22B-Instruct-2507',
+    displayName: 'Qwen3 235B A22B Instruct',
+    temperature: 0.7,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.2,
+    rate_per_million_output_tokens: 0.8,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct': {
+    model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
+    displayName: 'Qwen3 Coder 480B',
+    temperature: 0.1,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'basic',
+    provider: 'fireworks',
+    promptCaching: true,
+    strictParams: false, // Fireworks doesn't support strict parameter
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.45,
+    rate_per_million_output_tokens: 1.8,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
   },
   'open-router:deepseek/deepseek-r1-0528': {
     model: 'deepseek/deepseek-r1-0528',

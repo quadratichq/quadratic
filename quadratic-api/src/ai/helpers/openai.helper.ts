@@ -26,6 +26,7 @@ import type {
   AzureOpenAIModelKey,
   BasetenModelKey,
   Content,
+  FireworksModelKey,
   ImageContent,
   ModelMode,
   OpenAIModelKey,
@@ -158,17 +159,19 @@ function getOpenAITools(
     return undefined;
   }
 
-  const openaiTools: ChatCompletionTool[] = tools.map(
-    ([name, { description, parameters }]): ChatCompletionTool => ({
+  const openaiTools: ChatCompletionTool[] = tools.map(([name, { description, parameters }]): ChatCompletionTool => {
+    const functionDef: any = {
+      name,
+      description,
+      parameters,
+      strict: strictParams,
+    };
+
+    return {
       type: 'function' as const,
-      function: {
-        name,
-        description,
-        parameters,
-        strict: strictParams,
-      },
-    })
-  );
+      function: functionDef,
+    };
+  });
 
   return openaiTools;
 }
@@ -179,7 +182,13 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -303,7 +312,13 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response

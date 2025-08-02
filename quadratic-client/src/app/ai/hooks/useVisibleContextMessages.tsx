@@ -1,3 +1,4 @@
+import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
@@ -52,8 +53,8 @@ I am sharing visible tables summary in the viewport as an array of table summary
 - bounds: This is the bounds (top left cell and bottom right cell, both inclusive) of the data table in A1 notation, this includes the table name and column headers if they are visible.\n
 
 There are following visible tables in the viewport:\n
-\`\`\`json
-${JSON.stringify(visibleContext[0].tables_summary)}
+\`\`\`markdown
+${toXml(visibleContext[0].tables_summary, 'tables_summary')}
 \`\`\`
 `
     : ''
@@ -71,8 +72,8 @@ I am sharing visible charts summary in the viewport as an array of chart summary
 Take into account chart bounds when adding values, code or charts to the sheet. Always avoid overplay with chart bounds.\n
 
 There are following visible charts in the viewport:\n
-\`\`\`json
-${JSON.stringify(visibleContext[0].charts_summary)}
+\`\`\`markdown
+${toXml(visibleContext[0].charts_summary, 'charts_summary')}
 \`\`\`
 `
     : ''
@@ -97,17 +98,17 @@ Each cell value is a JSON object having the following properties:\n
 This is being shared so that you can understand the data format, size and value types inside the data rectangle.\n
 
 There are following visible data in the viewport:\n
-\`\`\`json
-${JSON.stringify(visibleContext[0].data_rects)}
+\`\`\`markdown
+${toXml(visibleContext[0].data_rects, 'data_rects')}
 \`\`\`
 `
     : ''
 }
 
 Note: All this data is only for your reference to data on the sheet. This data cannot be used directly in code, always reference data from the sheet. Use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells in code.
-- In formula, cell reference are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
+- In formulas, cell references are done using A1 notation directly, without quotes. Example: \`=SUM(A1:B2)\`. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. Example: \`=SUM('Sheet 1'!A1:B2)\`.\n
 - In Python and Javascript use the cell reference function \`q.cells\`, i.e. \`q.cells(a1_notation_selection_string)\`, to reference data cells. Always use sheet name in a1 notation to reference cells from different sheets. Sheet name is always enclosed in single quotes. In Python and Javascript, the complete a1 notation selection string is enclosed in double quotes. Example: \`q.cells("'Sheet 1'!A1:B2")\`.\n
-- **PREFERRED**: Always use table names (Table_Name) when working with entire tables. Use A1 notation only for non-table data or partial table selections.\n
+- Use table names (Table_Name) when working with entire tables. Use A1 notation only for non-table data or partial table selections.\n
 - In Formulas and JavaScript use \`q.cells("Table_Name[#ALL]")\` to reference the entire table including the header. This does not work in Python.\n
 - In all languages use \`q.cells("Table_Name[#HEADERS]")\` to reference the headers of the table.\n
 - In Formulas and JavaScript use \`q.cells("Table_Name[#DATA]")\` to reference the data of the table. This does not work in Python.\n
@@ -143,7 +144,9 @@ The code in the code cell is:\n
 \`\`\`${language}\n${code_string}\n\`\`\`
 
 Code was run recently and the console output is:\n
-\`\`\`json\n${JSON.stringify(consoleOutput)}\n\`\`\`
+\`\`\`markdown
+${toXml(consoleOutput, 'console_output')}
+\`\`\`
 `;
 })}`
     : ''

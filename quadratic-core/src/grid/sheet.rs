@@ -230,9 +230,11 @@ impl Sheet {
     pub fn js_cell_value_pos(&self, pos: Pos) -> Option<JsCellValuePos> {
         self.display_value(pos).map(|cell_value| match cell_value {
             CellValue::Image(_) => {
-                CellValue::Image("Javascript chart".into()).to_cell_value_pos(pos)
+                CellValue::Image("Javascript chart anchor code cell".into()).to_cell_value_pos(pos)
             }
-            CellValue::Html(_) => CellValue::Html("Python chart".into()).to_cell_value_pos(pos),
+            CellValue::Html(_) => {
+                CellValue::Html("Python chart anchor code cell".into()).to_cell_value_pos(pos)
+            }
             _ => cell_value.to_cell_value_pos(pos),
         })
     }
