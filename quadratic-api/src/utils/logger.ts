@@ -1,8 +1,7 @@
 import winston from 'winston';
-import { ENVIRONMENT, NODE_ENV } from '../env-vars';
+import { ENVIRONMENT } from '../env-vars';
 
-const env = NODE_ENV || ENVIRONMENT || 'development';
-const isProduction = env === 'production';
+const isProduction = ENVIRONMENT === 'production';
 
 // Define log levels
 const levels = {
@@ -49,10 +48,6 @@ export const format = isProduction ? prodFormat : devFormat;
 
 // Define which log levels to use based on environment
 const level = () => {
-  console.log('env', env);
-  console.log('NODE_ENV', NODE_ENV);
-  console.log('ENVIRONMENT', ENVIRONMENT);
-  console.log('isProduction', isProduction);
   return isProduction ? 'info' : 'debug';
 };
 
