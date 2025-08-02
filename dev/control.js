@@ -129,7 +129,7 @@ export class Control {
             "--workspace=quadratic-api",
         ], { signal: this.signals.api.signal });
         this.ui.printOutput("api", (data) => this.handleResponse("api", data, {
-            success: "Server running on port",
+            success: "Server running",
             error: "npm ERR!",
             start: "> quadratic-api",
         }, () => {
@@ -209,6 +209,7 @@ export class Control {
     }
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
+        this.cli.options.functionTimer = false;
         this.restartCore();
     }
     toggleFunctionTimer() {
