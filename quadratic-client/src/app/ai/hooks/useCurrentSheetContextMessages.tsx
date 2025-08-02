@@ -1,8 +1,8 @@
+import { maxRects, maxRows } from '@/app/ai/constants/context';
 import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { rectToA1 } from '@/app/quadratic-core/quadratic_core';
-import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -34,6 +34,7 @@ export function useCurrentSheetContextMessages() {
         ? await quadraticCore.getAISelectionContexts({
             selections: [selection],
             maxRects,
+            maxRows,
             includeErroredCodeCells: false,
             includeTablesSummary: true,
             includeChartsSummary: true,

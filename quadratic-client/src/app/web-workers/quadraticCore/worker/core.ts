@@ -1058,6 +1058,7 @@ class Core {
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
+    maxRows?: number;
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
@@ -1067,6 +1068,7 @@ class Core {
       return this.gridController.getAISelectionContexts(
         args.selections,
         args.maxRects,
+        args.maxRows,
         args.includeErroredCodeCells,
         args.includeTablesSummary,
         args.includeChartsSummary

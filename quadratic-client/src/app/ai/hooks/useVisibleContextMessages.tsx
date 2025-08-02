@@ -1,9 +1,9 @@
+import { maxRects, maxRows } from '@/app/ai/constants/context';
 import { toXml } from '@/app/ai/utils/xmlFormatter';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
-import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -23,6 +23,7 @@ export function useVisibleContextMessages() {
       : await quadraticCore.getAISelectionContexts({
           selections: [visibleRectSelection],
           maxRects,
+          maxRows,
           includeErroredCodeCells: true,
           includeTablesSummary: true,
           includeChartsSummary: true,

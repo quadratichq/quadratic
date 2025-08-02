@@ -159,19 +159,17 @@ function getOpenAITools(
     return undefined;
   }
 
-  const openaiTools: ChatCompletionTool[] = tools.map(([name, { description, parameters }]): ChatCompletionTool => {
-    const functionDef: any = {
-      name,
-      description,
-      parameters,
-      strict: strictParams,
-    };
-
-    return {
+  const openaiTools: ChatCompletionTool[] = tools.map(
+    ([name, { description, parameters }]): ChatCompletionTool => ({
       type: 'function' as const,
-      function: functionDef,
-    };
-  });
+      function: {
+        name,
+        description,
+        parameters,
+        strict: strictParams,
+      },
+    })
+  );
 
   return openaiTools;
 }

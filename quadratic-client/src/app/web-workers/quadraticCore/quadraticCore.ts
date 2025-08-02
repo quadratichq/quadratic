@@ -423,6 +423,7 @@ class QuadraticCore {
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
+    maxRows?: number;
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
@@ -437,6 +438,7 @@ class QuadraticCore {
         id,
         selections: args.selections,
         maxRects: args.maxRects,
+        maxRows: args.maxRows,
         includeErroredCodeCells: args.includeErroredCodeCells,
         includeTablesSummary: args.includeTablesSummary,
         includeChartsSummary: args.includeChartsSummary,

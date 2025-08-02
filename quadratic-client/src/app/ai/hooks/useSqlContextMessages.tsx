@@ -87,6 +87,16 @@ Note: This shows only table names. Use the get_database_schemas tool to retrieve
               ],
               contextType: 'sqlSchemas',
             },
+            {
+              role: 'assistant',
+              content: [
+                {
+                  type: 'text',
+                  text: `I understand the available database connections and tables. I will use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing. How can I help you?`,
+                },
+              ],
+              contextType: 'sqlSchemas',
+            },
           ];
         } catch (error) {
           console.error('[SQL Context] Error fetching SQL context:', error);

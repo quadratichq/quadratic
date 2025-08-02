@@ -13,10 +13,12 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
+    #[allow(clippy::too_many_arguments)]
     pub fn get_ai_selection_context(
         &self,
         selection: A1Selection,
         max_rects: Option<usize>,
+        max_rows: Option<usize>,
         include_errored_code_cells: bool,
         include_tables_summary: bool,
         include_charts_summary: bool,
@@ -24,7 +26,8 @@ impl Sheet {
     ) -> JsSelectionContext {
         JsSelectionContext {
             sheet_name: self.name.clone(),
-            data_rects: self.get_data_rects_in_selection(&selection, max_rects, a1_context),
+            data_rects: self
+                .get_data_rects_in_selection(&selection, max_rects, max_rows, a1_context),
             errored_code_cells: include_errored_code_cells
                 .then(|| self.get_errored_code_cells_in_selection(&selection, a1_context)),
             tables_summary: include_tables_summary
@@ -39,6 +42,7 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         max_rects: Option<usize>,
+        max_rows: Option<usize>,
         a1_context: &A1Context,
     ) -> Vec<JsCellValuePosContext> {
         let mut data_rects = Vec::new();
@@ -51,7 +55,7 @@ impl Sheet {
                 rect_origin: tabular_data_rect.min.a1_string(),
                 rect_width: tabular_data_rect.width(),
                 rect_height: tabular_data_rect.height(),
-                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, Some(30)),
+                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, max_rows),
             };
             data_rects.push(cell_value_pos);
         }
@@ -317,7 +321,7 @@ mod tests {
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 300, sheet.id));
         let a1_context = sheet.expensive_make_a1_context();
         let data_rects_in_selection =
-            sheet.get_data_rects_in_selection(&selection, None, &a1_context);
+            sheet.get_data_rects_in_selection(&selection, None, Some(3), &a1_context);
 
         let max_rows = 3;
 

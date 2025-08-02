@@ -1,8 +1,8 @@
+import { maxRects, maxRows } from '@/app/ai/constants/context';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
-import { maxRects } from '@/app/ui/menus/AIAnalyst/const/maxRects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -50,6 +50,7 @@ export function useSummaryContextMessages() {
           const sheetContext = await quadraticCore.getAISelectionContexts({
             selections: [selection],
             maxRects,
+            maxRows,
             includeErroredCodeCells: false,
             includeTablesSummary: false,
             includeChartsSummary: false,

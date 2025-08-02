@@ -230,10 +230,10 @@ impl Sheet {
     pub fn js_cell_value_pos(&self, pos: Pos) -> Option<JsCellValuePos> {
         self.display_value(pos).map(|cell_value| match cell_value {
             CellValue::Image(_) => {
-                CellValue::Image("Javascript chart anchor code cell".into()).to_cell_value_pos(pos)
+                CellValue::Image("Javascript chart code cell anchor".into()).to_cell_value_pos(pos)
             }
             CellValue::Html(_) => {
-                CellValue::Html("Python chart anchor code cell".into()).to_cell_value_pos(pos)
+                CellValue::Html("Python chart code cell anchor".into()).to_cell_value_pos(pos)
             }
             _ => cell_value.to_cell_value_pos(pos),
         })
@@ -243,12 +243,12 @@ impl Sheet {
     pub fn js_cell_value_pos_in_rect(
         &self,
         rect: Rect,
-        max_rows: Option<u32>,
+        max_rows: Option<usize>,
     ) -> Vec<Vec<JsCellValuePos>> {
         let mut rect_values = Vec::new();
         for y in rect
             .y_range()
-            .take(max_rows.unwrap_or(rect.height()) as usize)
+            .take(max_rows.unwrap_or(rect.height() as usize))
         {
             let mut row_values = Vec::new();
             for x in rect.x_range() {
@@ -957,7 +957,7 @@ mod test {
         assert_eq!(
             js_cell_value_pos,
             Some(JsCellValuePos {
-                value: "Javascript chart".to_string(),
+                value: "Javascript chart code cell anchor".to_string(),
                 kind: "image".to_string(),
                 pos: pos.a1_string(),
             })
@@ -969,7 +969,7 @@ mod test {
         assert_eq!(
             js_cell_value_pos,
             Some(JsCellValuePos {
-                value: "Python chart".to_string(),
+                value: "Python chart code cell anchor".to_string(),
                 kind: "html".to_string(),
                 pos: pos.a1_string(),
             })
@@ -1011,7 +1011,7 @@ mod test {
             Some(max_rows),
         );
 
-        assert_eq!(js_cell_value_pos_in_rect.len(), max_rows as usize);
+        assert_eq!(js_cell_value_pos_in_rect.len(), max_rows);
 
         let expected_js_cell_value_pos_in_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
             .map(|row| {

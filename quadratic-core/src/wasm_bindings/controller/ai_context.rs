@@ -13,6 +13,7 @@ impl GridController {
         &self,
         selections: Vec<String>,
         max_rects: Option<usize>,
+        max_rows: Option<usize>,
         include_errored_code_cells: bool,
         include_tables_summary: bool,
         include_charts_summary: bool,
@@ -32,6 +33,7 @@ impl GridController {
             let selection_context = sheet.get_ai_selection_context(
                 selection,
                 max_rects,
+                max_rows,
                 include_errored_code_cells,
                 include_tables_summary,
                 include_charts_summary,

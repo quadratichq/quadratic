@@ -88,8 +88,8 @@ impl Sheet {
                 let numeric_commas = self.formats.numeric_commas.get(pos);
                 Some(value.to_number_display(numeric_format, numeric_decimals, numeric_commas))
             }
-            CellValue::Image(_) => Some("Javascript chart anchor code cell".into()),
-            CellValue::Html(_) => Some("Python chart anchor code cell".into()),
+            CellValue::Image(_) => Some("Javascript chart code cell anchor".into()),
+            CellValue::Html(_) => Some("Python chart code cell anchor".into()),
             _ => Some(value.to_display()),
         }
     }
