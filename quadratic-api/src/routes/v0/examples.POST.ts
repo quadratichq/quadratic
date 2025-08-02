@@ -2,7 +2,6 @@ import axios from 'axios';
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
-import { convertError } from 'quadratic-shared/utils/error';
 import z from 'zod';
 import { getTeam } from '../../middleware/getTeam';
 import { userMiddleware } from '../../middleware/user';
@@ -11,6 +10,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { createFile } from '../../utils/createFile';
+import logger from '../../utils/logger';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -71,7 +71,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
     });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in examples.POST handler', error: convertError(error) }));
+    logger.error('Error in examples.POST handler', error);
     throw new ApiError(500, 'Failed to fetch example file. Ensure the file exists and is publicly accessible.');
   }
 }

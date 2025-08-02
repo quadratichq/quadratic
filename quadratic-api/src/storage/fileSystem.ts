@@ -3,10 +3,10 @@ import type { Request } from 'express';
 import multer from 'multer';
 import type { Readable } from 'node:stream';
 import stream from 'node:stream';
-import { convertError } from 'quadratic-shared/utils/error';
 import { QUADRATIC_FILE_URI, QUADRATIC_FILE_URI_PUBLIC } from '../env-vars';
 import type { UploadFile } from '../types/Request';
 import { encryptFromEnv } from '../utils/crypto';
+import logger from '../utils/logger';
 import type { UploadFileResponse } from './storage';
 
 const generateUrl = (key: string, isPublic: boolean): string => {
@@ -47,7 +47,7 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
 
     return response;
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in upload to file service', error: convertError(error) }));
+    logger.error('Error in upload to file service', error);
     throw new Error(`Failed to upload file to ${url}`);
   }
 };

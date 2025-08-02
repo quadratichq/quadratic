@@ -4,12 +4,12 @@
 
 import axios from 'axios';
 import { LicenseSchema } from 'quadratic-shared/typesAndSchemas';
-import { convertError } from 'quadratic-shared/utils/error';
 import type z from 'zod';
 import dbClient from './dbClient';
 import { LICENSE_API_URI, LICENSE_KEY } from './env-vars';
 import { ApiError } from './utils/ApiError';
 import { hash } from './utils/crypto';
+import logger from './utils/logger';
 
 type LicenseResponse = z.infer<typeof LicenseSchema>;
 
@@ -27,12 +27,7 @@ export const licenseClient = {
       return LicenseSchema.parse(response.data) as LicenseResponse;
     } catch (error) {
       if (error instanceof Error) {
-        console.error(
-          JSON.stringify({
-            message: 'Failed to get the license info from the license service',
-            error: convertError(error),
-          })
-        );
+        logger.error('Failed to get the license info from the license service', error);
         throw new ApiError(402, 'Failed to get the license info from the license service');
       }
 
