@@ -13,4 +13,7 @@ pub enum Net {
 
     #[error("SSH tunnel error: {0}")]
     SshTunnel(String),
+
+    #[error("Websocket error: {0}")]
+    Websocket(String),
 }

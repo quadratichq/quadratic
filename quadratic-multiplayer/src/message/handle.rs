@@ -6,7 +6,7 @@
 //! to all users in a room.
 
 use base64::{Engine, engine::general_purpose::STANDARD};
-use quadratic_rust_shared::quadratic_api::{FilePermRole, get_file_perms};
+use quadratic_rust_shared::quadratic_api::{ADMIN_PERMS, get_file_perms};
 use std::sync::Arc;
 use uuid::Uuid;
 
@@ -62,11 +62,12 @@ pub(crate) async fn handle_message(
 
             // default to all roles for tests
             let (permissions, sequence_num) = if cfg!(test) {
-                (vec![FilePermRole::FileView, FilePermRole::FileEdit], 0)
+                (ADMIN_PERMS.to_vec(), 0)
             } else {
                 // get permission and sequence_num from the quadratic api
                 let (permissions, mut sequence_num) =
-                    get_file_perms(base_url, jwt, file_id).await?;
+                    get_file_perms(base_url, jwt, file_id, pre_connection.m2m_token.as_deref())
+                        .await?;
 
                 tracing::trace!("permissions: {:?}", permissions);
 
@@ -440,9 +441,14 @@ pub(crate) mod tests {
             .socket
             .unwrap();
 
-        let handled = handle_message(request, state.clone(), stream, PreConnection::new(None))
-            .await
-            .unwrap();
+        let handled = handle_message(
+            request,
+            state.clone(),
+            stream,
+            PreConnection::new(None, None),
+        )
+        .await
+        .unwrap();
         assert_eq!(handled, response);
 
         if let Some(broadcast_response) = broadcast_response {

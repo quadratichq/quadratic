@@ -179,7 +179,7 @@ pub(crate) async fn add_new_user_to_room(file_id: Uuid, state: Arc<State>) -> Us
 /// Add an existing user to a room via global state directly.
 /// Returns the user.
 pub(crate) async fn add_user_to_room(file_id: Uuid, user: User, state: Arc<State>) -> User {
-    let connection = PreConnection::new(None);
+    let connection = PreConnection::new(None, None);
     let mut user = user.clone();
     state
         .enter_room(file_id, &mut user, connection, 0)

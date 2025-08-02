@@ -23,6 +23,7 @@ cbc = { version = "0.1.2", features = ["alloc"] }
 chrono = "=0.4.39"
 criterion = { version = "0.5", optional = true }
 dotenv = { version = "0.15.0", optional = true }
+futures-channel = { version = "0.3.28", optional = true }
 futures-util = "0.3.30"
 google-cloud-bigquery = { version = "0.5.0", optional = true }
 hex = "0.4.3"
@@ -75,7 +76,9 @@ tiberius = { version = "0.12.3", default-features = false, features = [
 ], optional = true }
 tokio = { version = "1.44.2", features = ["full"], optional = true }
 tokio-util = { version = "0.7.11", features = ["compat"], optional = true }
+tokio-tungstenite = { version = "0.26", optional = true }
 tracing = { version = "0.1.40", optional = true }
+url = { version = "2", optional = true }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [features]
@@ -85,7 +88,7 @@ auth = ["jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
 crypto = ["aes"]
 environment = []
-net = ["russh", "russh-config", "tokio", "tokio-util"]
+net = ["dotenv", "futures-channel","russh", "russh-config", "tokio", "tokio-tungstenite", "tokio-util", "url"]
 protobuf = ["prost", "prost/derive", "prost-reflect"]
 pubsub = ["reqwest", "redis"]
 quadratic-api = ["reqwest"]

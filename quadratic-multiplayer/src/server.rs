@@ -9,7 +9,7 @@ use axum::{
         connect_info::ConnectInfo,
         ws::{Message, WebSocket, WebSocketUpgrade},
     },
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::IntoResponse,
     routing::get,
 };
@@ -134,6 +134,7 @@ async fn ws_handler(
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
     Extension(state): Extension<Arc<State>>,
     cookie: Option<TypedHeader<headers::Cookie>>,
+    headers: HeaderMap,
 ) -> impl IntoResponse {
     let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
         user_agent.to_string()
@@ -179,11 +180,21 @@ async fn ws_handler(
         }
     }
 
-    let pre_connection = PreConnection::new(jwt);
+    // check if the connection is m2m service connection
+    // strip "Bearer " from the token
+    let m2m_token = headers.get("authorization").map_or(None, |authorization| {
+        authorization
+            .to_str()
+            .ok()
+            .map(|s| s.to_string().replace("Bearer ", ""))
+    });
+
+    let pre_connection = PreConnection::new(jwt, m2m_token);
 
     tracing::info!(
-        "New connection {}, `{user_agent}` at {addr}",
-        pre_connection.id
+        "New connection {}, `{user_agent}` at {addr}, is_m2m={}",
+        pre_connection.id,
+        pre_connection.m2m_token.is_some()
     );
 
     // upgrade the connection
