@@ -232,12 +232,13 @@ export const aiToolsActions: AIToolActionsRecord = {
   },
   [AITool.SetCodeCellValue]: async (args, messageMetaData) => {
     try {
-      let { sheet_name, code_cell_language, code_string, code_cell_position, code_cell_name } = args;
+      let { sheet_name, code_cell_name, code_cell_language, code_string, code_cell_position } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const selection = sheets.stringToSelection(code_cell_position, sheetId);
       if (!selection.isSingleSelection(sheets.jsA1Context)) {
         return [createTextContent('Invalid code cell position, this should be a single cell, not a range')];
       }
+
       const { x, y } = selection.getCursor();
 
       const transactionId = await quadraticCore.setCodeCellValue({
@@ -267,6 +268,51 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     } catch (e) {
       return [createTextContent(`Error executing set code cell value tool: ${e}`)];
+    }
+  },
+  [AITool.SetSQLCodeCellValue]: async (args, messageMetaData) => {
+    try {
+      let { sheet_name, code_cell_name, connection_kind, sql_code_string, code_cell_position, connection_id } = args;
+      const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
+      const selection = sheets.stringToSelection(code_cell_position, sheetId);
+      if (!selection.isSingleSelection(sheets.jsA1Context)) {
+        return [createTextContent('Invalid code cell position, this should be a single cell, not a range')];
+      }
+
+      const { x, y } = selection.getCursor();
+
+      const transactionId = await quadraticCore.setCodeCellValue({
+        sheetId,
+        x,
+        y,
+        codeString: sql_code_string,
+        language: {
+          Connection: {
+            kind: connection_kind,
+            id: connection_id,
+          },
+        },
+        codeCellName: code_cell_name,
+      });
+
+      if (transactionId) {
+        await waitForSetCodeCellValue(transactionId);
+
+        // After execution, adjust viewport to show full output if it exists
+        const tableCodeCell = pixiApp.cellsSheets.getById(sheetId)?.tables.getCodeCellIntersects({ x, y });
+        if (tableCodeCell) {
+          const width = tableCodeCell.w;
+          const height = tableCodeCell.h;
+          ensureRectVisible(sheetId, { x, y }, { x: x + width - 1, y: y + height - 1 });
+        }
+
+        const result = await setCodeCellResult(sheetId, x, y, messageMetaData);
+        return result;
+      } else {
+        return [createTextContent('Error executing set sql code cell value tool')];
+      }
+    } catch (e) {
+      return [createTextContent(`Error executing set sql code cell value tool: ${e}`)];
     }
   },
   [AITool.SetFormulaCellValue]: async (args, messageMetaData) => {
@@ -997,6 +1043,156 @@ export const aiToolsActions: AIToolActionsRecord = {
       }
     } catch (e) {
       return [createTextContent(`Error executing table column settings tool: ${e}`)];
+    }
+  },
+  [AITool.GetDatabaseSchemas]: async (args) => {
+    const { connection_ids } = args;
+    const connectionIds = connection_ids.filter((id) => !!id);
+
+    // Get team UUID from the current context
+    const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
+    if (!teamUuid) {
+      return [
+        {
+          type: 'text',
+          text: 'Unable to retrieve database schemas. Access to team is required.',
+        },
+      ];
+    }
+
+    // Import the connection client
+    let connectionClient;
+    try {
+      connectionClient = (await import('@/shared/api/connectionClient')).connectionClient;
+    } catch (error) {
+      return [
+        {
+          type: 'text',
+          text: 'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.',
+        },
+      ];
+    }
+
+    // Get all team connections or specific ones
+    let connections;
+    try {
+      const teamConnections = await apiClient.connections.list(teamUuid);
+      connections =
+        connectionIds.length > 0
+          ? teamConnections.filter((connection) => connectionIds.includes(connection.uuid))
+          : teamConnections;
+
+      if (connections.length === 0) {
+        return [
+          {
+            type: 'text',
+            text: `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`,
+          },
+        ];
+      }
+    } catch (connectionError) {
+      console.warn('[GetDatabaseSchemas] Failed to fetch team connections:', connectionError);
+      return [
+        {
+          type: 'text',
+          text: `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`,
+        },
+      ];
+    }
+
+    try {
+      // Get schemas for each connection
+      const schemas = await Promise.all(
+        connections.map(async (connection) => {
+          try {
+            const schema = await connectionClient.schemas.get(connection.type, connection.uuid, teamUuid);
+
+            if (!schema) {
+              return {
+                connectionId: connection.uuid,
+                connectionName: connection.name,
+                connectionType: connection.type,
+                error: 'No schema data returned from connection service',
+              };
+            }
+
+            return {
+              connectionId: connection.uuid,
+              connectionName: connection.name,
+              connectionType: connection.type,
+              schema: schema,
+            };
+          } catch (error) {
+            console.warn(`[GetDatabaseSchemas] Failed to get schema for connection ${connection.uuid}:`, error);
+            return {
+              connectionId: connection.uuid,
+              connectionName: connection.name,
+              connectionType: connection.type,
+              error: `Failed to retrieve schema: ${error instanceof Error ? error.message : String(error)}`,
+            };
+          }
+        })
+      );
+
+      // Filter out null results
+      if (schemas.length === 0) {
+        return [
+          {
+            type: 'text',
+            text: 'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.',
+          },
+        ];
+      }
+
+      // Format the response
+      const schemaText = schemas
+        .map((item) => {
+          if ('error' in item) {
+            return `Connection: ${item.connectionName} (${item.connectionType})\nID: ${item.connectionId}\nError: ${item.error}\n`;
+          }
+
+          const tablesInfo =
+            item.schema?.tables
+              ?.map((table: any) => {
+                const columnsInfo =
+                  table.columns
+                    ?.map((col: any) => `  - ${col.name}: ${col.type}${col.is_nullable ? ' (nullable)' : ''}`)
+                    .join('\n') || '  No columns found';
+                return `Table: ${table.name} (Schema: ${table.schema || 'public'})\n${columnsInfo}`;
+              })
+              .join('\n\n') || 'No tables found';
+
+          return `Connection: ${item.connectionName} (${item.connectionType})\nID: ${item.connectionId}\nDatabase: ${item.schema?.database || 'Unknown'}\n\n${tablesInfo}\n`;
+        })
+        .filter(Boolean)
+        .join('\n---\n\n');
+
+      // Add connection summary for future reference
+      const connectionSummary = schemas
+        .filter((item) => item && !('error' in item))
+        .map((item) => `- ${item!.connectionName} (${item!.connectionType}): ${item!.connectionId}`)
+        .join('\n');
+
+      const summaryText = connectionSummary
+        ? `\n\nAvailable connection IDs for future reference:\n${connectionSummary}`
+        : '';
+
+      return [
+        {
+          type: 'text',
+          text: schemaText
+            ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
+            : `No database schema information available.${summaryText}`,
+        },
+      ];
+    } catch (error) {
+      console.error('[GetDatabaseSchemas] Unexpected error:', error);
+      return [
+        {
+          type: 'text',
+          text: `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ];
     }
   },
 } as const;

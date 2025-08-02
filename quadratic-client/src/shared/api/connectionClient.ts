@@ -40,17 +40,26 @@ type StaticIpsResponse = z.infer<typeof StaticIpsSchema>;
 
 export const connectionClient = {
   schemas: {
+    // ignore case of connection type
     get: async (
       connectionType:
         | 'postgres'
+        | 'POSTGRES'
         | 'mysql'
+        | 'MYSQL'
         | 'mssql'
+        | 'MSSQL'
         | 'snowflake'
+        | 'SNOWFLAKE'
         | 'cockroachdb'
-        | 'bigquery'
+        | 'COCKROACHDB'
+        | 'BIGQUERY'
         | 'mariadb'
+        | 'MARIADB'
         | 'supabase'
-        | 'neon',
+        | 'SUPABASE'
+        | 'neon'
+        | 'NEON',
       connectionId: string,
       teamUuid: string
     ): Promise<SqlSchemaResponse | null> => {
@@ -66,7 +75,7 @@ export const connectionClient = {
       const headers = new Headers(await jwtHeader());
       headers.set('X-Team-Id', teamUuid);
 
-      const res = await fetch(`${API_URL}/${connectionType}/schema/${connectionId}`, {
+      const res = await fetch(`${API_URL}/${connectionType.toLowerCase()}/schema/${connectionId}`, {
         method: 'GET',
         headers,
       });

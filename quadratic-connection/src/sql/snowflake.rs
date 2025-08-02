@@ -1,8 +1,7 @@
 use axum::{Extension, Json, extract::Path, response::IntoResponse};
 use http::HeaderMap;
 use quadratic_rust_shared::{
-    quadratic_api::Connection as ApiConnection,
-    sql::{Connection, snowflake_connection::SnowflakeConnection},
+    quadratic_api::Connection as ApiConnection, sql::snowflake_connection::SnowflakeConnection,
 };
 
 use uuid::Uuid;
@@ -16,7 +15,7 @@ use crate::{
     state::State,
 };
 
-use super::{Schema, query_generic};
+use super::{Schema, query_generic, schema_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(
@@ -81,18 +80,8 @@ pub(crate) async fn schema(
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
     let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
-    let connection = api_connection.type_details;
-    let mut pool = connection.connect().await?;
-    let database_schema = connection.schema(&mut pool).await?;
-    let schema = Schema {
-        id: api_connection.uuid,
-        name: api_connection.name,
-        r#type: api_connection.r#type,
-        database: connection.database,
-        tables: database_schema.tables.into_values().collect(),
-    };
 
-    Ok(Json(schema))
+    schema_generic(api_connection, state).await
 }
 
 use std::sync::{LazyLock, Mutex};
