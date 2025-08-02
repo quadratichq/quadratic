@@ -1382,6 +1382,7 @@ impl GridController {
                         transaction,
                         sheet_id,
                         &deleted_selection,
+                        None,
                     ));
                 }
             }

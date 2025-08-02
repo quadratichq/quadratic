@@ -18,6 +18,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
         remove_selection: &A1Selection,
+        ignore_validation_id: Option<Uuid>,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
 
@@ -30,6 +31,7 @@ impl GridController {
                 .validations
                 .validation_overlaps_selection(remove_selection, &self.a1_context)
                 .iter()
+                .filter(|v| ignore_validation_id.is_none_or(|ignore| ignore != v.id))
                 .map(|v| (v.id, (*v).clone()))
                 .collect();
 
@@ -205,7 +207,12 @@ impl GridController {
         if let Operation::SetValidation { validation } = op {
             let sheet_id = validation.selection.sheet_id;
             self.remove_validation_warnings(transaction, sheet_id, validation.id);
-            self.check_deleted_validations(transaction, sheet_id, &validation.selection);
+            self.check_deleted_validations(
+                transaction,
+                sheet_id,
+                &validation.selection,
+                Some(validation.id),
+            );
 
             let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
                 return;
@@ -251,6 +258,7 @@ impl GridController {
                 transaction,
                 validation.selection.sheet_id,
                 &validation.selection,
+                Some(validation.id),
             );
 
             let sheet_id = validation.selection.sheet_id;
@@ -731,8 +739,12 @@ mod tests {
         let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1:B2"));
 
         let mut transaction = PendingTransaction::default();
-        let reverse =
-            gc.check_deleted_validations(&mut transaction, sheet_id, &A1Selection::test_a1("A1"));
+        let reverse = gc.check_deleted_validations(
+            &mut transaction,
+            sheet_id,
+            &A1Selection::test_a1("A1"),
+            None,
+        );
 
         // check reverse operations
         assert!(transaction.validations.contains(&sheet_id));
@@ -751,6 +763,42 @@ mod tests {
     }
 
     #[test]
+    fn test_check_deleted_validations_undo() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.validations.validations.first().unwrap().selection,
+            A1Selection::test_a1_sheet_id("A1:B2", sheet_id)
+        );
+
+        gc.delete_cells(&A1Selection::test_a1("A1"), None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .validations
+                .validations
+                .first()
+                .unwrap()
+                .selection
+                .ranges,
+            A1Selection::test_a1("A2:B2,B1").ranges
+        );
+
+        dbg!(&gc.undo_stack);
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.validations.validations.first().unwrap().selection,
+            A1Selection::test_a1_sheet_id("A1:B2", sheet_id)
+        );
+    }
+
+    #[test]
     fn test_check_validations_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
@@ -763,7 +811,7 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let reverse = gc.check_deleted_validations(&mut transaction, sheet_id, &selection);
+        let reverse = gc.check_deleted_validations(&mut transaction, sheet_id, &selection, None);
 
         assert!(transaction.validations.contains(&sheet_id));
         assert_eq!(reverse.len(), 1);

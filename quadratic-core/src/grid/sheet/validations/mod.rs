@@ -35,21 +35,20 @@ impl Validations {
     /// Updates or adds a new validation to the sheet. Returns the reverse
     /// operations.
     pub fn set(&mut self, validation: Validation) -> Vec<Operation> {
-        for v in self.validations.iter_mut() {
-            if v.id == validation.id {
-                let reverse = vec![Operation::SetValidation {
-                    validation: v.clone(),
-                }];
-                *v = validation.clone();
-                return reverse;
-            }
+        if let Some(existing) = self.validations.iter_mut().find(|v| v.id == validation.id) {
+            let old_validation = existing.clone();
+            *existing = validation;
+            vec![Operation::SetValidation {
+                validation: old_validation,
+            }]
+        } else {
+            let reverse = vec![Operation::RemoveValidation {
+                sheet_id: validation.selection.sheet_id,
+                validation_id: validation.id,
+            }];
+            self.validations.push(validation);
+            reverse
         }
-        let reverse = vec![Operation::RemoveValidation {
-            sheet_id: validation.selection.sheet_id,
-            validation_id: validation.id,
-        }];
-        self.validations.push(validation);
-        reverse
     }
 
     /// Gets a validation based on a validation_id
@@ -452,7 +451,7 @@ mod tests {
     }
 
     #[test]
-    fn validation() {
+    fn test_validation() {
         let mut validations = Validations::default();
         let v = create_validation_rect(0, 0, 1, 1);
         validations.set(v.clone());
@@ -698,5 +697,44 @@ mod tests {
             error: Default::default(),
         };
         assert_eq!(validations.similar_validation(&v2), None);
+    }
+
+    #[test]
+    fn test_set_validation() {
+        let mut validations = Validations::default();
+        let id = Uuid::new_v4();
+        let original = Validation {
+            id,
+            selection: A1Selection::test_a1("A1:B2"),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: false,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        validations.set(original.clone());
+        assert_eq!(validations.validations.len(), 1);
+
+        let new = Validation {
+            id,
+            selection: A1Selection::test_a1("A2:B2"),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: false,
+                ignore_blank: false,
+            }),
+            message: Default::default(),
+            error: Default::default(),
+        };
+        let old = validations.set(new.clone());
+        assert_eq!(validations.validations.len(), 1);
+        assert_eq!(validations.validations[0], new);
+        assert_eq!(old.len(), 1);
+        assert_eq!(
+            old[0],
+            Operation::SetValidation {
+                validation: original
+            }
+        );
     }
 }
