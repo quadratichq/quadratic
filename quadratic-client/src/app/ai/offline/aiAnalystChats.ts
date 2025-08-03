@@ -1,3 +1,5 @@
+import { sendAnalyticsError } from '@/shared/utils/error';
+import { Dexie, type Table } from 'dexie';
 import { getPromptAndInternalMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { Chat } from 'quadratic-shared/typesAndSchemasAI';
 import { ChatSchema } from 'quadratic-shared/typesAndSchemasAI';
@@ -6,154 +8,143 @@ const DB_NAME = 'Quadratic-AI';
 const DB_VERSION = 1;
 const DB_STORE = 'aiAnalystChats';
 
+interface ChatEntry extends Chat {
+  userEmail: string;
+  fileId: string;
+}
+
+// [userEmail, fileId, chatId]
+type ChatEntryKey = [string, string, string];
+
 class AIAnalystOfflineChats {
-  private db?: IDBDatabase;
+  private db?: Dexie;
+  private chatsTable?: Table<ChatEntry, ChatEntryKey>;
   userEmail?: string;
   fileId?: string;
 
-  init = (userEmail: string, fileId: string): Promise<undefined> => {
-    return new Promise((resolve, reject) => {
+  private sendAnalyticsError = (from: string, error: Error | unknown) => {
+    sendAnalyticsError('aiAnalystOfflineChats', from, error);
+  };
+
+  init = async (userEmail: string, fileId: string): Promise<void> => {
+    try {
       this.userEmail = userEmail;
       this.fileId = fileId;
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
 
-      request.onerror = (event) => {
-        console.error('Error opening indexedDB', event);
-        reject(new Error('Failed to open database'));
-      };
+      this.db = new Dexie(DB_NAME);
+      this.db.version(DB_VERSION).stores({
+        [DB_STORE]: '[userEmail+fileId+id], userEmail, fileId',
+      });
 
-      request.onsuccess = () => {
-        this.db = request.result;
-        resolve(undefined);
-      };
+      this.chatsTable = this.db.table(DB_STORE);
 
-      request.onupgradeneeded = (event) => {
-        try {
-          const db = request.result;
-          const objectStore = db.createObjectStore(DB_STORE, {
-            keyPath: ['userEmail', 'fileId', 'id'],
-          });
-          objectStore.createIndex('userEmail', 'userEmail');
-          objectStore.createIndex('fileId', 'fileId');
-        } catch (error) {
-          console.error('Error during database upgrade:', error);
-          reject(error);
-        }
-      };
-    });
+      await this.db.open();
+    } catch (error) {
+      this.sendAnalyticsError('init', error);
+    }
   };
 
   // Helper method to validate required properties
   private validateState = (methodName: string) => {
-    if (!this.db || !this.userEmail || !this.fileId) {
+    if (!this.db || !this.chatsTable || !this.userEmail || !this.fileId) {
       throw new Error(`Expected db, userEmail and fileId to be set in ${methodName} method.`);
     }
-    return { db: this.db, userEmail: this.userEmail, fileId: this.fileId };
+
+    return {
+      db: this.db,
+      chatsTable: this.chatsTable,
+      userEmail: this.userEmail,
+      fileId: this.fileId,
+    };
   };
 
-  // Helper method to create transactions
-  private createTransaction = (mode: IDBTransactionMode, operation: (store: IDBObjectStore) => void): Promise<void> => {
-    const { db } = this.validateState('transaction');
+  // Load all chats for current user and file
+  loadChats = async (): Promise<Chat[]> => {
+    try {
+      const { chatsTable, userEmail, fileId } = this.validateState('loadChats');
 
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(DB_STORE, mode);
-      const store = tx.objectStore(DB_STORE);
+      const chatEntries = await chatsTable.where({ userEmail, fileId }).toArray();
 
-      tx.oncomplete = () => resolve(undefined);
-      tx.onerror = () => reject(tx.error);
+      const chats = chatEntries.reduce((acc: Chat[], chatEntry) => {
+        const { userEmail, fileId, ...chat } = chatEntry;
+        const parsedChat = ChatSchema.safeParse(chat);
+        if (parsedChat.success) {
+          acc.push(parsedChat.data);
+        } else {
+          // delete chat if it is not valid or schema has changed
+          this.deleteChats([chat.id]).catch((error) => {
+            console.error('[AIAnalystOfflineChats] loadChats: ', error);
+          });
+        }
+        return acc;
+      }, []);
 
-      operation(store);
-    });
-  };
-
-  // Load all chats for current user
-  loadChats = (): Promise<Chat[]> => {
-    const { db, userEmail, fileId } = this.validateState('loadChats');
-
-    return new Promise((resolve, reject) => {
-      try {
-        const tx = db.transaction(DB_STORE, 'readonly');
-        const store = tx.objectStore(DB_STORE).index('userEmail');
-        const keyRange = IDBKeyRange.only(userEmail);
-        const getAll = store.getAll(keyRange);
-
-        getAll.onsuccess = () => {
-          let chats = getAll.result
-            .filter((chat) => chat.fileId === fileId)
-            .map(({ userEmail, fileId, ...chat }) => chat);
-          chats = chats.reduce((acc, chat) => {
-            const parsedChat = ChatSchema.safeParse(chat);
-            if (parsedChat.success) {
-              acc.push(parsedChat.data);
-            } else {
-              // delete chat if it is not valid or schema has changed
-              this.deleteChats([chat.id]).catch((error) => {
-                console.error('[AIAnalystOfflineChats] loadChats: ', error);
-              });
-            }
-            return acc;
-          }, []);
-          resolve(chats);
-        };
-        getAll.onerror = () => {
-          console.error('Error loading chats:', getAll.error);
-          reject(new Error('Failed to load chats'));
-        };
-
-        tx.onerror = () => {
-          console.error('Transaction error:', tx.error);
-          reject(new Error('Transaction failed while loading chats'));
-        };
-      } catch (error) {
-        console.error('Unexpected error in loadChats:', error);
-        reject(error);
-      }
-    });
+      return chats;
+    } catch (error) {
+      this.sendAnalyticsError('loadChats', error);
+      return [];
+    }
   };
 
   // Save or update a chat
   saveChats = async (chats: Chat[]) => {
-    const { userEmail, fileId } = this.validateState('saveChats');
-    await this.createTransaction('readwrite', (store) => {
-      chats.forEach((chat) => {
-        const chatEntry = {
-          userEmail,
-          fileId,
-          ...{
-            ...chat,
-            messages: getPromptAndInternalMessages(chat.messages),
-          },
-        };
-        store.put(chatEntry);
-      });
-    });
+    try {
+      const { chatsTable, userEmail, fileId } = this.validateState('saveChats');
+
+      const chatEntries: ChatEntry[] = chats.map((chat) => ({
+        userEmail,
+        fileId,
+        ...chat,
+        messages: getPromptAndInternalMessages(chat.messages),
+      }));
+
+      await chatsTable.bulkPut(chatEntries);
+    } catch (error) {
+      this.sendAnalyticsError('saveChats', error);
+    }
   };
 
   // Delete a list of chats
   deleteChats = async (chatIds: string[]) => {
-    const { userEmail, fileId } = this.validateState('deleteChats');
-    await this.createTransaction('readwrite', (store) => {
-      chatIds.forEach((chatId) => {
-        store.delete([userEmail, fileId, chatId]);
-      });
-    });
+    try {
+      const { chatsTable, userEmail, fileId } = this.validateState('deleteChats');
+
+      const keys = chatIds.map<ChatEntryKey>((chatId) => [userEmail, fileId, chatId]);
+      await chatsTable.bulkDelete(keys);
+    } catch (error) {
+      this.sendAnalyticsError('deleteChats', error);
+    }
   };
 
   // Delete all chats for a file
   deleteFile = async (userEmail: string, fileId: string) => {
-    if (this.userEmail !== userEmail || this.fileId !== fileId) {
-      await this.init(userEmail, fileId);
+    try {
+      if (this.userEmail !== userEmail || this.fileId !== fileId) {
+        await this.init(userEmail, fileId);
+      }
+
+      const chats = await this.loadChats();
+      if (!chats) {
+        return;
+      }
+
+      const chatIds = chats.map((chat) => chat.id);
+
+      await this.deleteChats(chatIds);
+    } catch (error) {
+      this.sendAnalyticsError('deleteFile', error);
     }
-    const chats = await this.loadChats();
-    const chatIds = chats.map((chat) => chat.id);
-    await this.deleteChats(chatIds);
   };
 
-  // Used by tests to clear all entries from the indexedDb for this fileId
+  // Used by tests to clear all entries from the indexedDb
   testClear = async () => {
-    await this.createTransaction('readwrite', (store) => {
-      store.clear();
-    });
+    try {
+      const { chatsTable } = this.validateState('testClear');
+
+      await chatsTable.clear();
+    } catch (error) {
+      this.sendAnalyticsError('testClear', error);
+    }
   };
 }
 
