@@ -1153,13 +1153,15 @@ test('Download Sheet', async ({ page }) => {
 
   // Click "File" in menu bar
   await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 60 * 1000 });
+  // click Download
+  await page.getByRole(`menuitem`, { name: `download Download` }).click({ timeout: 60 * 1000 });
 
   // Ensures that download is caught in case it finishes before listener can be created
   const [download] = await Promise.all([
     // Create event listener to watch for a "download"
     page.waitForEvent('download'),
     // Click "Download" button
-    page.getByRole(`menuitem`, { name: `download Download` }).click(),
+    page.getByRole('menuitem', { name: 'Quadratic (.grid)' }).click({ timeout: 60 * 1000 }),
   ]);
 
   // Get full path of the file download

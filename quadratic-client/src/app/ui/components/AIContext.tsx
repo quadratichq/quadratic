@@ -27,7 +27,7 @@ type AIContextProps = {
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
-  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
+  setFiles: (files: FileContent[]) => void;
   isFileSupported: (mimeType: string) => boolean;
   editing: boolean;
   disabled: boolean;
@@ -85,9 +85,9 @@ export const AIContext = memo(
 
     const handleOnClickFileContext = useCallback(
       (file: FileContent) => {
-        setFiles?.((prev) => prev.filter((f) => f !== file));
+        setFiles(files.filter((f) => f !== file));
       },
-      [setFiles]
+      [files, setFiles]
     );
 
     // const handleOnClickSelection = useCallback(() => {
@@ -124,7 +124,7 @@ export const AIContext = memo(
           .map((file, index) => (
             <FileContextPill
               key={`${index}-${file.fileName}`}
-              disabled={disabled || !setFiles}
+              disabled={disabled}
               file={file}
               onClick={() => handleOnClickFileContext(file)}
             />

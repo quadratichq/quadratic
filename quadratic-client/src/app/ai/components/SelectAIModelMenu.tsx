@@ -36,7 +36,7 @@ interface SelectAIModelMenuProps {
 }
 export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMenuProps) => {
   const { debugFlags } = useDebugFlags();
-  const debugShowAIModelMenu = debugFlags.getFlag('debugShowAIModelMenu');
+  const debugShowAIModelMenu = useMemo(() => debugFlags.getFlag('debugShowAIModelMenu'), [debugFlags]);
 
   const {
     isOnPaidPlan,

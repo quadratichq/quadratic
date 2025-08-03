@@ -1,21 +1,22 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { TableIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
 import type { z } from 'zod';
 
 type ConvertToTableResponse = z.infer<(typeof aiToolsSpec)[AITool.ConvertToTable]['responseSchema']>;
 
-type ConvertToTableProps = {
-  args: string;
-  loading: boolean;
-};
+export const ConvertToTable = memo(
+  ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+    const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ConvertToTableResponse, ConvertToTableResponse>>();
 
-export const ConvertToTable = memo(({ args, loading }: ConvertToTableProps) => {
-  const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<ConvertToTableResponse, ConvertToTableResponse>>();
+    useEffect(() => {
+      if (loading) {
+        setToolArgs(undefined);
+        return;
+      }
 
-  useEffect(() => {
-    if (!loading) {
       try {
         const json = JSON.parse(args);
         setToolArgs(aiToolsSpec[AITool.ConvertToTable].responseSchema.safeParse(json));
@@ -23,34 +24,33 @@ export const ConvertToTable = memo(({ args, loading }: ConvertToTableProps) => {
         setToolArgs(undefined);
         console.error('[ConvertToTable] Failed to parse args: ', error);
       }
-    } else {
-      setToolArgs(undefined);
+    }, [args, loading]);
+
+    const icon = <TableIcon />;
+    const label = 'Convert to Table';
+
+    if (loading) {
+      return <ToolCard icon={icon} label={label} isLoading className={className} />;
     }
-  }, [args, loading]);
 
-  const icon = <TableIcon />;
-  const label = 'Convert to Table';
+    if (!!toolArgs && !toolArgs.success) {
+      return <ToolCard icon={icon} label={label} hasError className={className} />;
+    } else if (!toolArgs || !toolArgs.data) {
+      return <ToolCard icon={icon} label={label} isLoading className={className} />;
+    }
 
-  if (loading) {
-    return <ToolCard icon={icon} label={label} isLoading />;
+    const { table_name, selection } = toolArgs.data;
+    return (
+      <ToolCard
+        icon={icon}
+        label={
+          <span>
+            {label} <span className="text-muted-foreground">| {table_name}</span>
+          </span>
+        }
+        description={`Converting ${selection} to data table`}
+        className={className}
+      />
+    );
   }
-
-  if (!!toolArgs && !toolArgs.success) {
-    return <ToolCard icon={icon} label={label} hasError />;
-  } else if (!toolArgs || !toolArgs.data) {
-    return <ToolCard icon={icon} label={label} isLoading />;
-  }
-
-  const { table_name, selection } = toolArgs.data;
-  return (
-    <ToolCard
-      icon={icon}
-      label={
-        <span>
-          {label} <span className="text-muted-foreground">| {table_name}</span>
-        </span>
-      }
-      description={`Converting ${selection} to data table`}
-    />
-  );
-});
+);

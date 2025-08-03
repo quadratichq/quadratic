@@ -145,6 +145,10 @@ export const getSystemPromptMessages = (
   return { systemMessages, promptMessages };
 };
 
+export const isUserPromptMessage = (message: ChatMessage): message is UserMessagePrompt => {
+  return message.role === 'user' && message.contextType === 'userPrompt';
+};
+
 export const isToolResultMessage = (message: ChatMessage): message is ToolResultMessage => {
   return message.role === 'user' && message.contextType === 'toolResult';
 };
@@ -263,4 +267,11 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
       return message;
     }
   });
+};
+
+export const createTextContent = (text: string): TextContent => {
+  return {
+    type: 'text' as const,
+    text,
+  };
 };

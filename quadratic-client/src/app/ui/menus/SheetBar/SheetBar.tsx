@@ -47,9 +47,11 @@ export const SheetBar = memo((): JSX.Element => {
 
     events.on('changeSheet', updateSheet);
     events.on('deleteSheet', updateSheet);
+    events.on('sheetInfoUpdate', updateSheet);
     return () => {
       events.off('changeSheet', updateSheet);
       events.off('deleteSheet', updateSheet);
+      events.off('sheetInfoUpdate', updateSheet);
     };
   }, []);
 
@@ -395,13 +397,6 @@ export const SheetBar = memo((): JSX.Element => {
 
   const [forceRename, setForceRename] = useState<string | undefined>();
   const clearRename = useCallback(() => setForceRename(undefined), []);
-  useEffect(() => {
-    const sheetUpdate = () => setTrigger((trigger) => trigger + 1);
-    events.on('sheetInfoUpdate', sheetUpdate);
-    return () => {
-      events.off('sheetInfoUpdate', sheetUpdate);
-    };
-  }, []);
 
   return (
     <div
@@ -436,7 +431,9 @@ export const SheetBar = memo((): JSX.Element => {
             key={sheet.id}
             id={sheet.id}
             color={sheet.color}
-            order={getOrderIndex(sheet.order).toString()}
+            name={sheet.name}
+            order={sheet.order}
+            calculatedOrder={getOrderIndex(sheet.order).toString()}
             onPointerDown={handlePointerDown}
             active={activeSheet === sheet.id}
             sheet={sheet}

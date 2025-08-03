@@ -35,7 +35,7 @@ impl Sheet {
     /// tables. Ignores Blanks except in tables.
     pub fn has_content_in_selection(&self, selection: A1Selection, context: &A1Context) -> bool {
         for range in selection.ranges {
-            if let Some(rect) = range.to_rect(context) {
+            if let Some(rect) = range.to_rect_unbounded(context) {
                 if self.contains_value_within_rect(rect, None) {
                     return true;
                 }

@@ -835,8 +835,11 @@ impl GridController {
                             let column_name = sanitize_column_name(new_column.name.to_string());
 
                             let data_table = self.grid.data_table_at(sheet_id, &data_table_pos)?;
-                            let unique_column_name =
-                                data_table.unique_column_header_name(Some(&column_name), index);
+                            let unique_column_name = data_table.unique_column_header_name(
+                                Some(&column_name),
+                                index,
+                                Some(index),
+                            );
 
                             new_column.name = CellValue::Text(unique_column_name);
 
@@ -2028,6 +2031,9 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
+    use crate::controller::user_actions::import::tests::{
+        assert_flattened_simple_csv, assert_sorted_data_table, flatten_data_table,
+    };
     use crate::test_util::*;
 
     use crate::{
@@ -2049,75 +2055,6 @@ mod tests {
     };
 
     use super::*;
-
-    #[track_caller]
-    pub(crate) fn flatten_data_table<'a>(
-        gc: &'a mut GridController,
-        sheet_id: SheetId,
-        pos: Pos,
-        file_name: &'a str,
-    ) {
-        let sheet_pos = SheetPos::from((pos, sheet_id));
-        let op = Operation::FlattenDataTable { sheet_pos };
-
-        assert_simple_csv(gc, sheet_id, pos, file_name);
-
-        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
-
-        assert!(
-            gc.sheet(sheet_id)
-                .data_table_pos_that_contains_result(pos)
-                .is_err()
-        );
-
-        assert_flattened_simple_csv(gc, sheet_id, pos, file_name);
-
-        print_table_in_rect(gc, sheet_id, Rect::new(1, 1, 4, 12));
-    }
-
-    #[track_caller]
-    pub(crate) fn assert_flattened_simple_csv<'a>(
-        gc: &'a GridController,
-        sheet_id: SheetId,
-        pos: Pos,
-        file_name: &'a str,
-    ) -> (&'a GridController, SheetId, Pos, &'a str) {
-        // there should be no data tables
-        assert!(
-            gc.sheet(sheet_id)
-                .data_table_pos_that_contains_result(pos)
-                .is_err()
-        );
-
-        let first_row = vec!["city", "region", "country", "population"];
-        assert_cell_value_row(gc, sheet_id, 1, 4, pos.y + 1, first_row);
-
-        let last_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_cell_value_row(gc, sheet_id, 1, 4, pos.y + 11, last_row);
-
-        (gc, sheet_id, pos, file_name)
-    }
-
-    #[track_caller]
-    pub(crate) fn assert_sorted_data_table<'a>(
-        gc: &'a GridController,
-        sheet_id: SheetId,
-        pos: Pos,
-        file_name: &'a str,
-    ) -> (&'a GridController, SheetId, Pos, &'a str) {
-        let first_row = vec!["Concord", "NH", "United States", "42605"];
-        assert_cell_value_row(gc, sheet_id, 1, 3, 3, first_row);
-
-        let second_row = vec!["Marlborough", "MA", "United States", "38334"];
-        assert_cell_value_row(gc, sheet_id, 1, 3, 4, second_row);
-
-        let third_row = vec!["Northbridge", "MA", "United States", "14061"];
-        assert_cell_value_row(gc, sheet_id, 1, 3, 5, third_row);
-
-        let last_row = vec!["Westborough", "MA", "United States", "29313"];
-        assert_cell_value_row(gc, sheet_id, 1, 3, 12, last_row);
-        (gc, sheet_id, pos, file_name)
-    }
 
     #[track_caller]
     pub(crate) fn assert_data_table_column_width<'a>(
@@ -2851,5 +2788,23 @@ mod tests {
         assert_validation_id(&gc, checkbox_pos, None);
 
         assert_validation_count(&gc, sheet_id, 0);
+    }
+
+    #[test]
+    fn test_execute_unique_column_header_name_on_insert_column() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let sheet_pos = pos![sheet_id!E5];
+
+        test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 5, 25);
+
+        gc.data_table_insert_columns(sheet_pos, vec![2], false, None, None, None);
+
+        let data_table = gc.sheet(sheet_id).data_table_at(&sheet_pos.into()).unwrap();
+        assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 6);
+        assert_eq!(
+            data_table.column_headers.as_ref().unwrap()[2].name,
+            CellValue::Text("Column 6".to_string())
+        );
     }
 }

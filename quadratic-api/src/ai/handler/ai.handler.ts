@@ -34,6 +34,7 @@ import {
   xai,
 } from '../../ai/providers';
 import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
+import logger from '../../utils/logger';
 import { createFileForFineTuning } from '../helpers/fineTuning.helper';
 import { calculateUsage } from '../helpers/usage.helper';
 import { handleGenAIRequest } from './genai.handler';
@@ -120,7 +121,7 @@ export const handleAIRequest = async (
       parsedResponse.usage.source = args.source;
       parsedResponse.usage.modelKey = modelKey;
       parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
-      console.log(JSON.stringify({ message: 'AI.Usage', usage: parsedResponse.usage }));
+      logger.info('AI.Usage', { usage: parsedResponse.usage });
     }
 
     if (debugAndNotInProduction && FINE_TUNE === 'true' && !!parsedResponse) {
@@ -129,7 +130,7 @@ export const handleAIRequest = async (
 
     return parsedResponse;
   } catch (error) {
-    console.error(JSON.stringify({ message: 'Error in handleAIRequest', modelKey, error }));
+    logger.error(`Error in handleAIRequest ${modelKey}`, error);
 
     Sentry.captureException(error, {
       level: 'error',
