@@ -296,7 +296,6 @@ export class Tables extends Container<Table> {
       const bounds = pixiApp.viewport.getVisibleBounds();
       const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
       const visibleTables = this.getVisibleTables();
-      console.log('update', visibleTables);
       visibleTables?.forEach((table) => table.update(bounds, gridHeading));
     }
   };
