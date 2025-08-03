@@ -186,9 +186,6 @@ const convertValidationToText = (validation: Validation, sheetId: string): strin
 
 export const getValidationsToolCall = (sheetName: string | undefined): string => {
   const sheet = sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
-  if (!sheet) {
-    throw new Error('Sheet not found');
-  }
   const validations = sheet.validations;
 
   if (validations.length === 0) {

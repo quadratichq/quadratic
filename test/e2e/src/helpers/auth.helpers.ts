@@ -7,8 +7,9 @@ type LogInOptions = {
   emailPrefix: string;
   teamName?: string;
   route?: string;
+  createAccount?: boolean;
 };
-export const logIn = async (page: Page, options: LogInOptions, createAccount = false): Promise<string> => {
+export const logIn = async (page: Page, options: LogInOptions): Promise<string> => {
   // grant clipboard permissions
   await page.context().grantPermissions(['clipboard-read', 'clipboard-write']);
 
@@ -19,7 +20,7 @@ export const logIn = async (page: Page, options: LogInOptions, createAccount = f
   const email = `${options.emailPrefix}_${browserName}@quadratichq.com`;
 
   // to create a new account, only needed when adding a dedicated account for new test
-  if (createAccount) {
+  if (options.createAccount) {
     try {
       await signUp(page, { email });
       await page

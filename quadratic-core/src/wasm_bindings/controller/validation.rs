@@ -38,13 +38,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let validation = match serde_json::from_str::<ValidationUpdate>(&validation) {
-                Ok(validation) => validation,
-                Err(e) => {
-                    dbgjs!(format!("Error parsing validation: {}", e.to_string()));
-                    return Err("Error parsing validation".to_string());
-                }
-            };
+            let validation = serde_json::from_str::<ValidationUpdate>(&validation)
+                .map_err(|e| format!("Error parsing validation: {}", e.to_string()))?;
             self.update_validation(validation, cursor);
             Ok(None)
         })
@@ -81,8 +76,10 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context(), None)?;
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context(), None)
+                .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
             self.remove_validation_selection(sheet_id, selection, cursor);
             Ok(None)
         })

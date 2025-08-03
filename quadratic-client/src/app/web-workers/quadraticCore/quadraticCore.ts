@@ -1263,7 +1263,7 @@ class QuadraticCore {
     });
   }
 
-  removeValidationSelection(sheetId: string, selection: string) {
+  removeValidationSelection(sheetId: string, selection: string): Promise<JsResponse | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientRemoveValidationSelection) => {

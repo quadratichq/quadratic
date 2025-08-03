@@ -44,7 +44,6 @@ export enum AITool {
   DeleteRows = 'delete_rows',
   TableMeta = 'table_meta',
   TableColumnSettings = 'table_column_settings',
-
   GetValidations = 'get_validations',
   AddMessage = 'add_message',
   AddLogicalValidation = 'add_logical_validation',
@@ -159,30 +158,19 @@ const array2DSchema = z
     return array.map((row) => (row.length === maxColumns ? row : row.concat(Array(maxColumns - row.length).fill(''))));
   });
 
-const cellLanguageSchema = z
-  .string()
-  .transform((val) => val.toLowerCase())
-  .pipe(z.enum(['python', 'javascript']))
-  .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-  .pipe(z.enum(['Python', 'Javascript']));
-
 const enumToFirstLetterCapitalSchema = <T extends string>(enumValues: readonly T[]) =>
   z
     .string()
     .transform((val) => val.charAt(0).toUpperCase() + val.slice(1).toLowerCase())
     .pipe(z.enum(enumValues as readonly string[] as [T, ...T[]]));
 
-const modelRouterModels = z
-  .string()
-  .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
-  .pipe(z.enum(['claude', '4.1']));
+const cellLanguageSchema = enumToFirstLetterCapitalSchema(['Python', 'Javascript']);
 
 // Common schema for validation message and error
-const validationMessageErrorSchema = () => ({
+const validationMessageErrorSchema = z.object({
   show_message: booleanSchema.nullable().optional(),
   message_title: z.string().nullable().optional(),
   message_text: z.string().nullable().optional(),
-
   show_error: booleanSchema.nullable().optional(),
   error_style: enumToFirstLetterCapitalSchema(['Stop', 'Warning', 'Information']).nullable().optional(),
   error_message: z.string().nullable().optional(),
@@ -191,7 +179,10 @@ const validationMessageErrorSchema = () => ({
 
 export const AIToolsArgsSchema = {
   [AITool.SetAIModel]: z.object({
-    ai_model: modelRouterModels,
+    ai_model: z
+      .string()
+      .transform((val) => val.toLowerCase().replace(/\s+/g, '-'))
+      .pipe(z.enum(['claude', '4.1'])),
   }),
   [AITool.SetChatName]: z.object({
     chat_name: z.string(),
@@ -393,67 +384,72 @@ export const AIToolsArgsSchema = {
   [AITool.GetValidations]: z.object({
     sheet_name: z.string().optional(),
   }),
-  [AITool.AddLogicalValidation]: z.object({
-    sheet_name: z.string().optional(),
-    selection: z.string(),
-    show_checkbox: booleanSchema.nullable().optional(),
-    ignore_blank: booleanSchema.nullable().optional(),
-    ...validationMessageErrorSchema(),
-  }),
-  [AITool.AddListValidation]: z.object({
-    sheet_name: z.string().optional(),
-    selection: z.string(),
-    ignore_blank: booleanSchema.nullable().optional(),
-    drop_down: booleanSchema.nullable().optional(),
-    list_source_list: z.string().nullable().optional(),
-    list_source_selection: z.string().nullable().optional(),
-    ...validationMessageErrorSchema(),
-  }),
-  [AITool.AddTextValidation]: z.object({
-    sheet_name: z.string().optional(),
-    selection: z.string(),
-    ignore_blank: booleanSchema.nullable().optional(),
-    max_length: numberSchema.nullable().optional(),
-    min_length: numberSchema.nullable().optional(),
-    contains_case_sensitive: z.string().nullable().optional(),
-    contains_case_insensitive: z.string().nullable().optional(),
-    not_contains_case_sensitive: z.string().nullable().optional(),
-    not_contains_case_insensitive: z.string().nullable().optional(),
-    exactly_case_sensitive: z.string().nullable().optional(),
-    exactly_case_insensitive: z.string().nullable().optional(),
-    ...validationMessageErrorSchema(),
-  }),
-  [AITool.AddNumberValidation]: z.object({
-    sheet_name: z.string().optional(),
-    selection: z.string(),
-    ignore_blank: booleanSchema.nullable().optional(),
-    range: z.string().nullable().optional(),
-    equal: z.string().nullable().optional(),
-    not_equal: z.string().nullable().optional(),
-    ...validationMessageErrorSchema(),
-  }),
-  [AITool.AddDateTimeValidation]: z.object({
-    sheet_name: z.string().optional(),
-    selection: z.string(),
-    ignore_blank: booleanSchema.nullable().optional(),
-    date_range: z.string().nullable().optional(),
-    date_equal: z.string().nullable().optional(),
-    date_not_equal: z.string().nullable().optional(),
-    time_range: z.string().nullable().optional(),
-    time_equal: z.string().nullable().optional(),
-    time_not_equal: z.string().nullable().optional(),
-    require_date: booleanSchema.nullable().optional(),
-    require_time: booleanSchema.nullable().optional(),
-    prohibit_date: booleanSchema.nullable().optional(),
-    prohibit_time: booleanSchema.nullable().optional(),
-    ...validationMessageErrorSchema(),
-  }),
   [AITool.AddMessage]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
     message_title: z.string().nullable().optional(),
     message_text: z.string().nullable().optional(),
   }),
+  [AITool.AddLogicalValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      show_checkbox: booleanSchema.nullable().optional(),
+      ignore_blank: booleanSchema.nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddListValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      drop_down: booleanSchema.nullable().optional(),
+      list_source_list: z.string().nullable().optional(),
+      list_source_selection: z.string().nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddTextValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      max_length: numberSchema.nullable().optional(),
+      min_length: numberSchema.nullable().optional(),
+      contains_case_sensitive: z.string().nullable().optional(),
+      contains_case_insensitive: z.string().nullable().optional(),
+      not_contains_case_sensitive: z.string().nullable().optional(),
+      not_contains_case_insensitive: z.string().nullable().optional(),
+      exactly_case_sensitive: z.string().nullable().optional(),
+      exactly_case_insensitive: z.string().nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddNumberValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      range: z.string().nullable().optional(),
+      equal: z.string().nullable().optional(),
+      not_equal: z.string().nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddDateTimeValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      date_range: z.string().nullable().optional(),
+      date_equal: z.string().nullable().optional(),
+      date_not_equal: z.string().nullable().optional(),
+      time_range: z.string().nullable().optional(),
+      time_equal: z.string().nullable().optional(),
+      time_not_equal: z.string().nullable().optional(),
+      require_date: booleanSchema.nullable().optional(),
+      require_time: booleanSchema.nullable().optional(),
+      prohibit_date: booleanSchema.nullable().optional(),
+      prohibit_time: booleanSchema.nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
   [AITool.RemoveValidations]: z.object({
     sheet_name: z.string().optional(),
     selection: z.string(),
@@ -475,7 +471,7 @@ export const MODELS_ROUTER_CONFIGURATION: {
   '4.1': 'azure-openai:gpt-4.1',
 };
 
-const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => ({
+const validationMessageErrorPrompt: Record<string, AIToolArgsPrimitive> = {
   show_message: {
     type: ['boolean', 'null'],
     description:
@@ -491,7 +487,6 @@ const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => 
     description:
       'The text of the message to show when the cursor is on the cell with this validation. This defaults to null.',
   },
-
   show_error: {
     type: ['boolean', 'null'],
     description: 'Whether an error message is shown when the validation fails. This defaults to true.',
@@ -508,17 +503,7 @@ const validationMessageErrorPrompt = (): Record<string, AIToolArgsPrimitive> => 
     type: ['string', 'null'],
     description: 'The title of the error message to show when the validation fails.',
   },
-});
-
-const validationMessageRequired = (): string[] => [
-  'show_message',
-  'message_title',
-  'message_text',
-  'show_error',
-  'error_style',
-  'error_message',
-  'error_title',
-];
+} as const;
 
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
@@ -2064,9 +2049,15 @@ This tool adds a logical validation to a sheet. This also can display a checkbox
           type: ['boolean', 'null'],
           description: 'Whether to ignore blank cells when validating. This defaults to false.',
         },
-        ...validationMessageErrorPrompt(),
+        ...validationMessageErrorPrompt,
       },
-      required: ['sheet_name', 'selection', 'show_checkbox', 'ignore_blank', ...validationMessageRequired()],
+      required: [
+        'sheet_name',
+        'selection',
+        'show_checkbox',
+        'ignore_blank',
+        ...Object.keys(validationMessageErrorPrompt),
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.AddLogicalValidation],
@@ -2109,7 +2100,7 @@ The list should have either a list_source_list or a list_source_selection, but n
           description:
             'The selection of cells to add to the list validation. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]. This defaults to null.',
         },
-        ...validationMessageErrorPrompt(),
+        ...validationMessageErrorPrompt,
       },
       required: [
         'sheet_name',
@@ -2118,7 +2109,7 @@ The list should have either a list_source_list or a list_source_selection, but n
         'drop_down',
         'list_source_list',
         'list_source_selection',
-        ...validationMessageRequired(),
+        ...Object.keys(validationMessageErrorPrompt),
       ],
       additionalProperties: false,
     },
@@ -2185,7 +2176,7 @@ This tool adds a text validation to a sheet. This validates a text string to ens
           description:
             'The text to check if the cell exactly matches it. This can be text or items separated by commas. The list is case insensitive. This defaults to null.',
         },
-        ...validationMessageErrorPrompt(),
+        ...validationMessageErrorPrompt,
       },
       required: [
         'sheet_name',
@@ -2199,7 +2190,7 @@ This tool adds a text validation to a sheet. This validates a text string to ens
         'not_contains_case_insensitive',
         'exactly_case_sensitive',
         'exactly_case_insensitive',
-        ...validationMessageRequired(),
+        ...Object.keys(validationMessageErrorPrompt),
       ],
       additionalProperties: false,
     },
@@ -2243,7 +2234,7 @@ This tool adds a number validation to a sheet. This validates a number to ensure
           description:
             'A list of numbers that the cell must not be equal to. This must be a list of numbers separated by commas. This defaults to null.',
         },
-        ...validationMessageErrorPrompt(),
+        ...validationMessageErrorPrompt,
       },
       required: [
         'sheet_name',
@@ -2252,7 +2243,7 @@ This tool adds a number validation to a sheet. This validates a number to ensure
         'range',
         'equal',
         'not_equal',
-        ...validationMessageRequired(),
+        ...Object.keys(validationMessageErrorPrompt),
       ],
       additionalProperties: false,
     },
@@ -2327,7 +2318,7 @@ This tool adds a date time validation to a sheet. This validates a date time to 
           description:
             'A list of times that the cell must not be equal to. Use HH:MM:SS. This must be a list of times separated by commas. This defaults to null.',
         },
-        ...validationMessageErrorPrompt(),
+        ...validationMessageErrorPrompt,
       },
       required: [
         'sheet_name',
@@ -2343,7 +2334,7 @@ This tool adds a date time validation to a sheet. This validates a date time to 
         'date_not_equal',
         'time_equal',
         'time_not_equal',
-        ...validationMessageRequired(),
+        ...Object.keys(validationMessageErrorPrompt),
       ],
       additionalProperties: false,
     },

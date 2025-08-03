@@ -120,6 +120,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <TableColumnSettings toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.GetValidations:
       return <GetValidations toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddMessage:
+      return <AddMessage toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.AddLogicalValidation:
       return <AddLogicalValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.AddListValidation:
@@ -132,8 +134,6 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RemoveValidations:
       return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
-    case AITool.AddMessage:
-      return <AddMessage toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;
