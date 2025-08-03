@@ -212,16 +212,16 @@ const getSheetFromSheetName = (sheetName: string | undefined): Sheet => {
   return sheetName ? (sheets.getSheetByName(sheetName) ?? sheets.sheet) : sheets.sheet;
 };
 
-export const addMessageToolCall = async (o: AIToolsArgs[AITool.AddMessage]): Promise<string> => {
-  const sheet = getSheetFromSheetName(o.sheet_name);
+export const addMessageToolCall = async (args: AIToolsArgs[AITool.AddMessage]): Promise<string> => {
+  const sheet = getSheetFromSheetName(args.sheet_name);
   const validation: ValidationUpdate = {
     id: null,
-    selection: getSelectionFromString(o.selection, sheet.id),
+    selection: getSelectionFromString(args.selection, sheet.id),
     rule: 'None',
     message: {
       show: true,
-      title: o.message_title ?? '',
-      message: o.message_text ?? '',
+      title: args.message_title ?? '',
+      message: args.message_text ?? '',
     },
     // we shouldn't have errors in a validation that is only a message
     error: {
@@ -232,122 +232,122 @@ export const addMessageToolCall = async (o: AIToolsArgs[AITool.AddMessage]): Pro
     },
   };
   await quadraticCore.updateValidation(validation);
-  return `Message successfully added to ${o.selection}`;
+  return `Message successfully added to ${args.selection}`;
 };
 
-export const addLogicalValidationToolCall = async (o: AIToolsArgs[AITool.AddLogicalValidation]): Promise<string> => {
-  const sheet = getSheetFromSheetName(o.sheet_name);
+export const addLogicalValidationToolCall = async (args: AIToolsArgs[AITool.AddLogicalValidation]): Promise<string> => {
+  const sheet = getSheetFromSheetName(args.sheet_name);
   const validation: ValidationUpdate = {
     id: null,
-    selection: getSelectionFromString(o.selection, sheet.id),
+    selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       Logical: {
-        show_checkbox: o.show_checkbox ?? true,
-        ignore_blank: o.ignore_blank ?? false,
+        show_checkbox: args.show_checkbox ?? true,
+        ignore_blank: args.ignore_blank ?? false,
       },
     },
     message: {
       show: true,
-      title: o.message_title ?? '',
-      message: o.message_text ?? '',
+      title: args.message_title ?? '',
+      message: args.message_text ?? '',
     },
     error: {
-      show: o.show_error ?? true,
-      style: o.error_style ?? 'Stop',
-      title: o.error_title ?? '',
-      message: o.error_message ?? '',
+      show: args.show_error ?? true,
+      style: args.error_style ?? 'Stop',
+      title: args.error_title ?? '',
+      message: args.error_message ?? '',
     },
   };
   await quadraticCore.updateValidation(validation);
-  return `Logical validation successfully added to ${o.selection}`;
+  return `Logical validation successfully added to ${args.selection}`;
 };
 
-export const addListValidationToolCall = async (o: AIToolsArgs[AITool.AddListValidation]): Promise<string> => {
-  const sheet = getSheetFromSheetName(o.sheet_name);
-  const source: ValidationListSource = o.list_source_selection
+export const addListValidationToolCall = async (args: AIToolsArgs[AITool.AddListValidation]): Promise<string> => {
+  const sheet = getSheetFromSheetName(args.sheet_name);
+  const source: ValidationListSource = args.list_source_selection
     ? {
-        Selection: getSelectionFromString(o.list_source_selection, sheet.id),
+        Selection: getSelectionFromString(args.list_source_selection, sheet.id),
       }
     : {
-        List: o.list_source_list ? o.list_source_list.split(',').map((s) => s.trim()) : ([] as Array<string>),
+        List: args.list_source_list ? args.list_source_list.split(',').map((s) => s.trim()) : ([] as Array<string>),
       };
   const validation: ValidationUpdate = {
     id: null,
-    selection: getSelectionFromString(o.selection, sheet.id),
+    selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       List: {
-        drop_down: o.drop_down ?? false,
-        ignore_blank: o.ignore_blank ?? false,
+        drop_down: args.drop_down ?? false,
+        ignore_blank: args.ignore_blank ?? false,
         source,
       },
     },
     message: {
-      show: o.show_message ?? true,
-      title: o.message_title ?? '',
-      message: o.message_text ?? '',
+      show: args.show_message ?? true,
+      title: args.message_title ?? '',
+      message: args.message_text ?? '',
     },
     error: {
-      show: o.show_error ?? true,
-      style: o.error_style ?? 'Stop',
-      title: o.error_title ?? '',
-      message: o.error_message ?? '',
+      show: args.show_error ?? true,
+      style: args.error_style ?? 'Stop',
+      title: args.error_title ?? '',
+      message: args.error_message ?? '',
     },
   };
 
   await quadraticCore.updateValidation(validation);
-  return `List validation successfully added to ${o.selection}`;
+  return `List validation successfully added to ${args.selection}`;
 };
 
-export const addTextValidationToolCall = async (o: AIToolsArgs[AITool.AddTextValidation]): Promise<string> => {
-  const sheet = getSheetFromSheetName(o.sheet_name);
+export const addTextValidationToolCall = async (args: AIToolsArgs[AITool.AddTextValidation]): Promise<string> => {
+  const sheet = getSheetFromSheetName(args.sheet_name);
   const textMatch: Array<TextMatch> = [];
-  if (isNotUndefinedOrNull(o.min_length) || isNotUndefinedOrNull(o.max_length)) {
+  if (isNotUndefinedOrNull(args.min_length) || isNotUndefinedOrNull(args.max_length)) {
     textMatch.push({
       TextLength: {
-        min: o.min_length ?? null,
-        max: o.max_length ?? null,
+        min: args.min_length ?? null,
+        max: args.max_length ?? null,
       },
     });
   }
-  if (o.exactly_case_sensitive) {
+  if (args.exactly_case_sensitive) {
     textMatch.push({
       Exactly: {
-        CaseSensitive: o.exactly_case_sensitive.split(',').map((s) => s.trim()),
+        CaseSensitive: args.exactly_case_sensitive.split(',').map((s) => s.trim()),
       },
     });
   }
-  if (o.exactly_case_insensitive) {
+  if (args.exactly_case_insensitive) {
     textMatch.push({
       Exactly: {
-        CaseInsensitive: o.exactly_case_insensitive.split(',').map((s) => s.trim()),
+        CaseInsensitive: args.exactly_case_insensitive.split(',').map((s) => s.trim()),
       },
     });
   }
-  if (o.contains_case_sensitive) {
+  if (args.contains_case_sensitive) {
     textMatch.push({
       Contains: {
-        CaseSensitive: o.contains_case_sensitive.split(',').map((s) => s.trim()),
+        CaseSensitive: args.contains_case_sensitive.split(',').map((s) => s.trim()),
       },
     });
   }
-  if (o.contains_case_insensitive) {
+  if (args.contains_case_insensitive) {
     textMatch.push({
       Contains: {
-        CaseInsensitive: o.contains_case_insensitive.split(',').map((s) => s.trim()),
+        CaseInsensitive: args.contains_case_insensitive.split(',').map((s) => s.trim()),
       },
     });
   }
-  if (o.not_contains_case_sensitive) {
+  if (args.not_contains_case_sensitive) {
     textMatch.push({
       NotContains: {
-        CaseSensitive: o.not_contains_case_sensitive.split(',').map((s) => s.trim()),
+        CaseSensitive: args.not_contains_case_sensitive.split(',').map((s) => s.trim()),
       },
     });
   }
-  if (o.not_contains_case_insensitive) {
+  if (args.not_contains_case_insensitive) {
     textMatch.push({
       NotContains: {
-        CaseInsensitive: o.not_contains_case_insensitive.split(',').map((s) => s.trim()),
+        CaseInsensitive: args.not_contains_case_insensitive.split(',').map((s) => s.trim()),
       },
     });
   }
@@ -356,34 +356,34 @@ export const addTextValidationToolCall = async (o: AIToolsArgs[AITool.AddTextVal
   }
   const validation: ValidationUpdate = {
     id: null,
-    selection: getSelectionFromString(o.selection, sheet.id),
+    selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       Text: {
-        ignore_blank: o.ignore_blank ?? false,
+        ignore_blank: args.ignore_blank ?? false,
         text_match: textMatch,
       },
     },
     message: {
-      show: o.show_message ?? true,
-      title: o.message_title ?? '',
-      message: o.message_text ?? '',
+      show: args.show_message ?? true,
+      title: args.message_title ?? '',
+      message: args.message_text ?? '',
     },
     error: {
-      show: o.show_error ?? true,
-      style: o.error_style ?? 'Stop',
-      title: o.error_title ?? '',
-      message: o.error_message ?? '',
+      show: args.show_error ?? true,
+      style: args.error_style ?? 'Stop',
+      title: args.error_title ?? '',
+      message: args.error_message ?? '',
     },
   };
   await quadraticCore.updateValidation(validation);
-  return `Text validation successfully added to ${o.selection}`;
+  return `Text validation successfully added to ${args.selection}`;
 };
 
-export const addNumberValidationToolCall = async (o: AIToolsArgs[AITool.AddNumberValidation]): Promise<string> => {
-  const sheet = getSheetFromSheetName(o.sheet_name);
+export const addNumberValidationToolCall = async (args: AIToolsArgs[AITool.AddNumberValidation]): Promise<string> => {
+  const sheet = getSheetFromSheetName(args.sheet_name);
   const ranges: Array<NumberRange> = [];
-  if (o.range) {
-    o.range.split(',').forEach((s) => {
+  if (args.range) {
+    args.range.split(',').forEach((s) => {
       if (s.includes('..')) {
         const [minString, maxString] = s.split('..');
         const min = minString === '' ? null : Number(minString);
@@ -394,18 +394,18 @@ export const addNumberValidationToolCall = async (o: AIToolsArgs[AITool.AddNumbe
       }
     });
   }
-  if (o.equal) {
+  if (args.equal) {
     ranges.push({
-      Equal: o.equal.split(',').map((s) => {
+      Equal: args.equal.split(',').map((s) => {
         const n = Number(s.trim());
         if (isNaN(n)) throw new Error(`Invalid number: ${s}`);
         return n;
       }),
     });
   }
-  if (o.not_equal) {
+  if (args.not_equal) {
     ranges.push({
-      NotEqual: o.not_equal.split(',').map((s) => {
+      NotEqual: args.not_equal.split(',').map((s) => {
         const n = Number(s.trim());
         if (isNaN(n)) throw new Error(`Invalid number: ${s}`);
         return n;
@@ -414,35 +414,37 @@ export const addNumberValidationToolCall = async (o: AIToolsArgs[AITool.AddNumbe
   }
   const validation: ValidationUpdate = {
     id: null,
-    selection: getSelectionFromString(o.selection, sheet.id),
+    selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       Number: {
-        ignore_blank: o.ignore_blank ?? false,
+        ignore_blank: args.ignore_blank ?? false,
         ranges,
       },
     },
     message: {
-      show: o.show_message ?? true,
-      title: o.message_title ?? '',
-      message: o.message_text ?? '',
+      show: args.show_message ?? true,
+      title: args.message_title ?? '',
+      message: args.message_text ?? '',
     },
     error: {
-      show: o.show_error ?? true,
-      style: o.error_style ?? 'Stop',
-      title: o.error_title ?? '',
-      message: o.error_message ?? '',
+      show: args.show_error ?? true,
+      style: args.error_style ?? 'Stop',
+      title: args.error_title ?? '',
+      message: args.error_message ?? '',
     },
   };
   await quadraticCore.updateValidation(validation);
-  return `Number validation successfully added to ${o.selection}`;
+  return `Number validation successfully added to ${args.selection}`;
 };
 
-export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDateTimeValidation]): Promise<string> => {
-  const sheet = getSheetFromSheetName(o.sheet_name);
+export const addDateTimeValidationToolCall = async (
+  args: AIToolsArgs[AITool.AddDateTimeValidation]
+): Promise<string> => {
+  const sheet = getSheetFromSheetName(args.sheet_name);
   const ranges: Array<DateTimeRange> = [];
 
-  if (o.date_range) {
-    o.date_range.split(',').forEach((s) => {
+  if (args.date_range) {
+    args.date_range.split(',').forEach((s) => {
       if (s.includes('..')) {
         const [minString, maxString] = s.split('..');
         const min = minString === '' ? null : (userDateToNumber(minString) ?? null);
@@ -459,8 +461,8 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
       }
     });
   }
-  if (o.date_equal) {
-    o.date_equal.split(',').forEach((s) => {
+  if (args.date_equal) {
+    args.date_equal.split(',').forEach((s) => {
       const date = userDateToNumber(s);
       if (date === undefined) {
         throw new Error(`Expected date to be defined in YYYY/MM/DD format, received: ${s}`);
@@ -468,8 +470,8 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
       ranges.push({ DateEqual: [date] });
     });
   }
-  if (o.date_not_equal) {
-    o.date_not_equal.split(',').forEach((s) => {
+  if (args.date_not_equal) {
+    args.date_not_equal.split(',').forEach((s) => {
       const date = userDateToNumber(s);
       if (date === undefined) {
         throw new Error(`Expected date to be defined in YYYY/MM/DD format, received: ${s}`);
@@ -477,8 +479,8 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
       ranges.push({ DateNotEqual: [date] });
     });
   }
-  if (o.time_range) {
-    o.time_range.split(',').forEach((s) => {
+  if (args.time_range) {
+    args.time_range.split(',').forEach((s) => {
       if (s.includes('..')) {
         const [minString, maxString] = s.split('..');
         const min = minString === '' ? null : (userTimeToNumber(minString) ?? null);
@@ -495,8 +497,8 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
       }
     });
   }
-  if (o.time_equal) {
-    o.time_equal.split(',').forEach((s) => {
+  if (args.time_equal) {
+    args.time_equal.split(',').forEach((s) => {
       const time = userTimeToNumber(s);
       if (time === undefined) {
         throw new Error(`Expected time to be defined in HH:MM:SS format, received: ${s}`);
@@ -504,8 +506,8 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
       ranges.push({ TimeEqual: [time] });
     });
   }
-  if (o.time_not_equal) {
-    o.time_not_equal.split(',').forEach((s) => {
+  if (args.time_not_equal) {
+    args.time_not_equal.split(',').forEach((s) => {
       const time = userTimeToNumber(s);
       if (time === undefined) {
         throw new Error(`Expected time to be defined in HH:MM:SS format, received: ${s}`);
@@ -515,35 +517,35 @@ export const addDateTimeValidationToolCall = async (o: AIToolsArgs[AITool.AddDat
   }
   const validation: ValidationUpdate = {
     id: null,
-    selection: getSelectionFromString(o.selection, sheet.id),
+    selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       DateTime: {
-        ignore_blank: o.ignore_blank ?? false,
-        require_date: o.require_date ?? false,
-        require_time: o.require_time ?? false,
-        prohibit_date: o.prohibit_date ?? false,
-        prohibit_time: o.prohibit_time ?? false,
+        ignore_blank: args.ignore_blank ?? false,
+        require_date: args.require_date ?? false,
+        require_time: args.require_time ?? false,
+        prohibit_date: args.prohibit_date ?? false,
+        prohibit_time: args.prohibit_time ?? false,
         ranges,
       },
     },
     message: {
-      show: o.show_message ?? (isNotUndefinedOrNull(o.message_title) || isNotUndefinedOrNull(o.message_text)),
-      title: o.message_title ?? '',
-      message: o.message_text ?? '',
+      show: args.show_message ?? (isNotUndefinedOrNull(args.message_title) || isNotUndefinedOrNull(args.message_text)),
+      title: args.message_title ?? '',
+      message: args.message_text ?? '',
     },
     error: {
-      show: o.show_error ?? true,
-      style: o.error_style ?? 'Stop',
-      title: o.error_title ?? '',
-      message: o.error_message ?? '',
+      show: args.show_error ?? true,
+      style: args.error_style ?? 'Stop',
+      title: args.error_title ?? '',
+      message: args.error_message ?? '',
     },
   };
   await quadraticCore.updateValidation(validation);
-  return `Date/time validation successfully added to ${o.selection}`;
+  return `Date/time validation successfully added to ${args.selection}`;
 };
 
-export const removeValidationsToolCall = async (o: AIToolsArgs[AITool.RemoveValidations]) => {
-  const sheet = getSheetFromSheetName(o.sheet_name);
-  await quadraticCore.removeValidationSelection(sheet.id, o.selection);
-  return `Validation successfully removed from ${o.selection}`;
+export const removeValidationsToolCall = async (args: AIToolsArgs[AITool.RemoveValidations]) => {
+  const sheet = getSheetFromSheetName(args.sheet_name);
+  await quadraticCore.removeValidationSelection(sheet.id, args.selection);
+  return `Validation successfully removed from ${args.selection}`;
 };

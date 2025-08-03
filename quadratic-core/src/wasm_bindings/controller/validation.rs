@@ -39,7 +39,7 @@ impl GridController {
     ) -> JsValue {
         capture_core_error(|| {
             let validation = serde_json::from_str::<ValidationUpdate>(&validation)
-                .map_err(|e| format!("Error parsing validation: {}", e.to_string()))?;
+                .map_err(|e| format!("Error parsing validation: {e}"))?;
             self.update_validation(validation, cursor);
             Ok(None)
         })

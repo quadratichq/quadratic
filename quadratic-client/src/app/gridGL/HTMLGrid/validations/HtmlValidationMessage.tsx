@@ -14,7 +14,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import { IconButton, Tooltip } from '@mui/material';
 import type { Rectangle } from 'pixi.js';
 import type { JSX } from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useSetRecoilState } from 'recoil';
 
 interface Props {
@@ -25,11 +25,10 @@ interface Props {
   hoverError?: boolean;
 }
 
-export const HtmlValidationMessage = (props: Props) => {
-  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
+export const HtmlValidationMessage = memo((props: Props) => {
   const { offsets, validation, column, row, hoverError } = props;
+  const setShowValidation = useSetRecoilState(editorInteractionStateShowValidationAtom);
   const [hide, setHide] = useState(true);
-
   const [showError, setShowError] = useState(false);
 
   useEffect(() => {
@@ -209,4 +208,4 @@ export const HtmlValidationMessage = (props: Props) => {
       </div>
     </div>
   );
-};
+});

@@ -503,11 +503,6 @@ impl A1Selection {
         });
     }
 
-    /// Adds a cell ref range to the selection.
-    pub fn add(&mut self, cell_ref_range: CellRefRange) {
-        self.ranges.push(cell_ref_range);
-    }
-
     /// Appends a selection to an existing selection and returns a new selection.
     #[must_use = "this method returns a new value instead of modifying its input"]
     pub fn append_selection(&self, other: &Self) -> Self {

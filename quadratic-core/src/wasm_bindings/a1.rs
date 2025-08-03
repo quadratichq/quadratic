@@ -138,17 +138,3 @@ pub fn convert_table_to_range(
 pub fn column_name_to_index(column: &str) -> Option<i64> {
     column_from_name(column)
 }
-
-#[wasm_bindgen(js_name = "addToSelection")]
-pub fn add_to_selection(
-    selection: &str,
-    a1: &str,
-    context: &JsA1Context,
-) -> Result<String, String> {
-    let mut selection = serde_json::from_str::<A1Selection>(selection)
-        .map_err(|e| format!("Invalid A1Selection: {e}"))?;
-    let (cell_ref_range, _) =
-        CellRefRange::parse(a1, context.get_context(), None).map_err(|e| e.to_string())?;
-    selection.add(cell_ref_range);
-    serde_json::to_string(&selection).map_err(|e| e.to_string())
-}

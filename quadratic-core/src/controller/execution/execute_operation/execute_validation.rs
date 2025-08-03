@@ -102,19 +102,24 @@ impl GridController {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             sheet.validations.warnings.retain(|pos, id| {
                 if *id == validation_id {
-                    transaction
-                        .forward_operations
-                        .push(Operation::SetValidationWarning {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                            validation_id: None,
-                        });
-                    transaction
-                        .reverse_operations
-                        .push(Operation::SetValidationWarning {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                            validation_id: Some(validation_id),
-                        });
                     transaction.validation_warning_deleted(sheet_id, *pos);
+
+                    if transaction.is_user_undo_redo() {
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetValidationWarning {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                validation_id: Some(validation_id),
+                            });
+
+                        transaction
+                            .forward_operations
+                            .push(Operation::SetValidationWarning {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                validation_id: None,
+                            });
+                    }
+
                     false
                 } else {
                     true
@@ -155,47 +160,57 @@ impl GridController {
                 }
             });
         }
-        let validation_warnings = transaction
-            .validations_warnings
-            .entry(sheet_id)
-            .or_default();
 
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             return;
         };
+
         warnings.iter().for_each(|(pos, validation_id)| {
             let sheet_pos = pos.to_sheet_pos(sheet_id);
             let old = sheet
                 .validations
                 .set_warning(sheet_pos, Some(*validation_id));
+
             transaction
-                .forward_operations
-                .push(Operation::SetValidationWarning {
-                    sheet_pos,
-                    validation_id: Some(*validation_id),
-                });
-            transaction.reverse_operations.push(old);
-            validation_warnings.insert(
-                *pos,
-                JsValidationWarning {
-                    pos: *pos,
-                    style: Some(validation.error.style.clone()),
-                    validation: Some(*validation_id),
-                },
-            );
+                .validations_warnings
+                .entry(sheet_id)
+                .or_default()
+                .insert(
+                    *pos,
+                    JsValidationWarning {
+                        pos: *pos,
+                        style: Some(validation.error.style.clone()),
+                        validation: Some(*validation_id),
+                    },
+                );
+
+            if transaction.is_user_undo_redo() {
+                transaction.reverse_operations.push(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos,
+                        validation_id: Some(*validation_id),
+                    });
+            }
         });
 
         remove_warnings.iter().for_each(|pos| {
             let sheet_pos = pos.to_sheet_pos(sheet_id);
             let old = sheet.validations.set_warning(sheet_pos, None);
-            transaction
-                .forward_operations
-                .push(Operation::SetValidationWarning {
-                    sheet_pos,
-                    validation_id: None,
-                });
-            transaction.reverse_operations.push(old);
             transaction.validation_warning_deleted(sheet_id, *pos);
+
+            if transaction.is_user_undo_redo() {
+                transaction.reverse_operations.push(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos,
+                        validation_id: None,
+                    });
+            }
         });
     }
 
@@ -218,14 +233,17 @@ impl GridController {
                 return;
             };
 
-            transaction
-                .forward_operations
-                .push(Operation::SetValidation {
-                    validation: validation.clone(),
-                });
-            transaction
-                .reverse_operations
-                .extend(sheet.validations.set(validation.clone()));
+            let old = sheet.validations.set(validation.clone());
+
+            if transaction.is_user_undo_redo() {
+                transaction.reverse_operations.extend(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidation {
+                        validation: validation.clone(),
+                    });
+            }
 
             transaction.validations.insert(sheet_id);
 
@@ -266,29 +284,34 @@ impl GridController {
                 return;
             };
 
-            let updated_validation: Validation;
-            if let Some(existing_validation) = sheet.validations.similar_validation(&validation) {
+            let updated_validation: Validation = if let Some(existing_validation) =
+                sheet.validations.similar_validation(&validation)
+            {
+                if transaction.is_user_undo_redo() {
+                    transaction
+                        .reverse_operations
+                        .push(Operation::SetValidation {
+                            validation: existing_validation.clone(),
+                        });
+                }
                 let new_selection = existing_validation
                     .selection
                     .append_selection(&validation.selection);
-                updated_validation = Validation {
+                Validation {
                     selection: new_selection,
                     ..existing_validation.clone()
-                };
-                transaction
-                    .reverse_operations
-                    .push(Operation::SetValidation {
-                        validation: existing_validation.clone(),
-                    });
+                }
             } else {
-                transaction
-                    .reverse_operations
-                    .push(Operation::RemoveValidation {
-                        sheet_id,
-                        validation_id: validation.id,
-                    });
-                updated_validation = validation;
-            }
+                if transaction.is_user_undo_redo() {
+                    transaction
+                        .reverse_operations
+                        .push(Operation::RemoveValidation {
+                            sheet_id,
+                            validation_id: validation.id,
+                        });
+                }
+                validation
+            };
             sheet.validations.set(updated_validation.clone());
 
             self.remove_validation_warnings(transaction, sheet_id, updated_validation.id);
@@ -296,11 +319,13 @@ impl GridController {
 
             let selection = updated_validation.selection.clone();
 
-            transaction
-                .forward_operations
-                .push(Operation::SetValidation {
-                    validation: updated_validation,
-                });
+            if transaction.is_user_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidation {
+                        validation: updated_validation,
+                    });
+            }
 
             transaction.validations.insert(sheet_id);
 
@@ -335,21 +360,23 @@ impl GridController {
                 return;
             };
 
-            transaction
-                .forward_operations
-                .push(Operation::RemoveValidation {
-                    sheet_id,
-                    validation_id,
-                });
-
             let selection = sheet
                 .validations
                 .validation(validation_id)
                 .map(|v| v.selection.clone());
 
-            transaction
-                .reverse_operations
-                .extend(sheet.validations.remove(validation_id));
+            let old = sheet.validations.remove(validation_id);
+
+            if transaction.is_user_undo_redo() {
+                transaction.reverse_operations.extend(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::RemoveValidation {
+                        sheet_id,
+                        validation_id,
+                    });
+            }
 
             transaction.validations.insert(sheet.id);
 
@@ -384,21 +411,23 @@ impl GridController {
                 return;
             };
 
-            if let Some(reverse) = sheet
+            let Some(reverse) = sheet
                 .validations
                 .remove_selection(&selection, &self.a1_context)
-            {
-                transaction.reverse_operations.extend(reverse);
-            } else {
+            else {
                 return;
-            }
+            };
 
-            transaction
-                .forward_operations
-                .push(Operation::RemoveValidationSelection {
-                    sheet_id,
-                    selection: selection.clone(),
-                });
+            if transaction.is_user_undo_redo() {
+                transaction.reverse_operations.extend(reverse);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::RemoveValidationSelection {
+                        sheet_id,
+                        selection: selection.clone(),
+                    });
+            }
 
             if transaction.is_server() {
                 return;
@@ -430,15 +459,18 @@ impl GridController {
                 return;
             };
 
-            transaction
-                .forward_operations
-                .push(Operation::SetValidationWarning {
-                    sheet_pos,
-                    validation_id,
-                });
-
             let old = sheet.validations.set_warning(sheet_pos, validation_id);
-            transaction.reverse_operations.push(old);
+
+            if transaction.is_user_undo_redo() {
+                transaction.reverse_operations.push(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos,
+                        validation_id,
+                    });
+            }
 
             if transaction.is_server() {
                 return;

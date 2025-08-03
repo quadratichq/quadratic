@@ -216,7 +216,10 @@ export const useValidationData = (): ValidationData => {
       if (old && 'rule' in old) {
         if (old.rule === 'None') return old;
         if ('List' in old.rule) {
-          const rule: ValidationUndefined = { ...old, rule: { List: { ...old.rule.List, drop_down: checked } } };
+          const rule: ValidationUndefined = {
+            ...old,
+            rule: { List: { ...old.rule.List, drop_down: checked } },
+          };
           return rule;
         } else if ('Logical' in old.rule) {
           const rule: ValidationUndefined = {

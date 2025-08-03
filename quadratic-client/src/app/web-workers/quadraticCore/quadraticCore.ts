@@ -1246,8 +1246,8 @@ class QuadraticCore {
         resolve(message.response);
       };
       this.send({
-        id,
         type: 'clientCoreUpdateValidation',
+        id,
         validation,
         cursor: sheets.getCursorPosition(),
       });
