@@ -7,11 +7,88 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::Sheet,
+    CopyFormats, Pos, Rect,
+    controller::active_transactions::pending_transaction::PendingTransaction,
+    grid::{DataTable, Sheet},
 };
 
 impl Sheet {
+    /*
+        /// For example:
+        /// - if you're in C and insert to the left, then column = C and CopyFormats::After
+        /// - if you're in C and insert to the right, then column = D and CopyFormats::Before
+        /// - if you're in C and insert to the right with 3 columns selected, then column = F and CopyFormats::Before
+
+    */
+
+    /// Returns true if the column is inside the table.
+    fn is_column_inside_table(
+        column: i64,
+        pos: Pos,
+        dt: &DataTable,
+        copy_formats: CopyFormats,
+    ) -> bool {
+        if copy_formats == CopyFormats::After {
+            column >= pos.x && column < pos.x + dt.output_rect(pos, false).width() as i64
+        } else {
+            // CopyFormats::Before
+            column - 1 >= pos.x && column - 1 < pos.x + dt.output_rect(pos, false).width() as i64
+        }
+    }
+
+    /// Returns true if the column is left of the table.
+    fn is_column_before_table(
+        column: i64,
+        pos: Pos,
+        dt: &DataTable,
+        copy_formats: CopyFormats,
+    ) -> bool {
+        if copy_formats == CopyFormats::After {
+            column < pos.x
+        } else {
+            column - 1 < pos.x
+        }
+    }
+
+    /// Returns true if the column is in the anchor cell.
+    fn is_column_in_anchor_cell(column: i64, pos: Pos, copy_formats: CopyFormats) -> bool {
+        if copy_formats == CopyFormats::After {
+            column == pos.x
+        } else {
+            // CopyFormats::Before
+            column - 1 == pos.x
+        }
+    }
+
+    // fn is_column_in_first_anchor_column(
+    //     column: i64,
+    //     pos: Pos,
+    //     dt: &DataTable,
+    //     copy_formats: CopyFormats,
+    // ) -> bool {
+    //     if copy_formats == CopyFormats::After {
+    //         column == pos.x
+    //     } else {
+    //         // CopyFormats::Before
+    //         column - 1 == pos.x
+    //     }
+    // }
+
+    // // Returns true if the column should be inserted before the table.
+    // fn column_is_before_table(column: i64, pos: Pos) -> bool {
+    //     column - 1 < pos.x
+    // }
+
+    // /// Returns true if the column should be inserted after the table.
+    // fn column_is_after_table(
+    //     column: i64,
+    //     pos: Pos,
+    //     output_rect: Rect,
+    //     copy_formats: CopyFormats,
+    // ) -> bool {
+    //     column > pos.x + output_rect.width() as i64
+    // }
+
     /// Insert columns in data tables that overlap the inserted column.
     pub(crate) fn check_insert_tables_columns(
         &mut self,
@@ -20,11 +97,6 @@ impl Sheet {
         copy_formats: CopyFormats,
     ) {
         let sheet_id = self.id;
-
-        let source_column = match copy_formats {
-            CopyFormats::After => column - 1,
-            _ => column,
-        };
 
         let all_pos_intersecting_columns = self
             .data_tables
@@ -49,11 +121,7 @@ impl Sheet {
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
                     // table. Code is not impacted by this change.
-                    if !dt.is_code()
-                        && source_column >= pos.x
-                        && (column < pos.x + output_rect.width() as i64
-                            || (CopyFormats::Before == copy_formats
-                                && column < pos.x + output_rect.width() as i64 + 1))
+                    if !dt.is_code() && Self::is_column_inside_table(column, pos, dt, copy_formats)
                     {
                         if let Ok(display_column_index) = u32::try_from(column - pos.x) {
                             let column_index =
@@ -104,11 +172,8 @@ impl Sheet {
             .get_pos_after_column_sorted(column, false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
-                    (copy_formats == CopyFormats::Before && pos.x > column)
-                        || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
-                        || (copy_formats != CopyFormats::Before && pos.x >= column)
-                })
+                self.data_table_at(pos)
+                    .is_some_and(|dt| Self::is_column_before_table(column, *pos, dt))
             })
             .collect::<Vec<_>>();
 
@@ -120,9 +185,8 @@ impl Sheet {
             .into_iter()
             .filter(|(_, pos)| {
                 self.data_table_at(pos).is_some_and(|dt| {
-                    (!dt.is_code() || dt.is_html_or_image())
-                        && copy_formats == CopyFormats::Before
-                        && pos.x == column
+                    Self::is_column_inside_table(column, *pos, dt, copy_formats)
+                        && Self::is_column_in_anchor_cell(column, *pos, copy_formats)
                 })
             })
             .collect::<Vec<_>>();
@@ -165,6 +229,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         controller::GridController, test_create_code_table, test_util::*, wasm_bindings::js::*,
     };
@@ -354,5 +419,64 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![C2], 2, 2, false);
         expect_js_call_count("jsUpdateCodeCells", 1, false);
         expect_js_call_count("jsSendImage", 2, true);
+    }
+
+    #[test]
+    fn test_column_is_inside_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let dt = test_create_data_table(&mut gc, sheet_id, pos![C1], 3, 3);
+        let code = test_create_code_table(&mut gc, sheet_id, pos![C7], 3, 3);
+        // For example:
+        // - if you're in C and insert to the left, then column = C and CopyFormats::After
+        // - if you're in C and insert to the right, then column = D and CopyFormats::Before
+        // - if you're in C and insert to the right with 3 columns selected, then column = F and CopyFormats::Before
+
+        let check = |column: i64, copy_formats: CopyFormats, expected: bool| {
+            assert!(Sheet::is_column_inside_table(column, pos![C1], &dt, copy_formats) == expected);
+            assert!(
+                Sheet::is_column_inside_table(column, pos![C7], &code, copy_formats) == expected
+            );
+        };
+
+        // insert to the left
+        check(3, CopyFormats::After, true);
+        check(4, CopyFormats::After, true);
+        check(5, CopyFormats::After, true);
+        check(6, CopyFormats::After, false);
+        check(2, CopyFormats::After, false);
+
+        // insert to the right
+        check(3 + 1, CopyFormats::Before, true);
+        check(4 + 1, CopyFormats::Before, true);
+        check(5 + 1, CopyFormats::Before, true);
+        check(6 + 1, CopyFormats::Before, false);
+        check(2 + 1, CopyFormats::Before, false);
+    }
+
+    #[test]
+    fn test_column_is_in_anchor_cell() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        let check = |column: i64, copy_formats: CopyFormats, expected: bool| {
+            assert!(Sheet::is_column_in_anchor_cell(column, pos![C1], copy_formats) == expected);
+            assert!(Sheet::is_column_in_anchor_cell(column, pos![C7], copy_formats) == expected);
+        };
+
+        // insert to the left
+        check(3, CopyFormats::After, true);
+        check(4, CopyFormats::After, false);
+        check(5, CopyFormats::After, false);
+        check(6, CopyFormats::After, false);
+        check(2, CopyFormats::After, false);
+
+        // insert to the right
+        check(3 + 1, CopyFormats::Before, true);
+        check(4 + 1, CopyFormats::Before, false);
+        check(5 + 1, CopyFormats::Before, false);
+        check(6 + 1, CopyFormats::Before, false);
+        check(2 + 1, CopyFormats::Before, false);
     }
 }

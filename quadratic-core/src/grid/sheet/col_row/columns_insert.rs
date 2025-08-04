@@ -11,11 +11,6 @@ use crate::{
 impl Sheet {
     /// Inserts a column at the given column index.
     ///
-    /// send_client indicates whether this should trigger client changes
-    ///
-    /// todo: this can probably be removed since transaction handles all client
-    /// communications now.
-    ///
     /// Note: the column that insert column receives relates to where the column
     /// is being inserted. So if insert to the left of the column, then the
     /// column is the selected column, and CopyFormats::After. If inserting to
