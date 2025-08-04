@@ -541,6 +541,7 @@ impl GridController {
     }
 }
 
+
 /// Converts Excel number format to our quadratic format.
 fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &NumberFormat) {
     let format_id = number_format.format_id;
@@ -549,6 +550,11 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
     // parse format sections separated by semicolons, ignore negative section
     // Excel format: positive;negative;zero;text
     let format_sections: Vec<&str> = format_string.split(';').collect();
+
+    // Guard against empty format strings
+    if format_sections.is_empty() {
+        return; // Nothing to apply if there are no format sections
+    }
 
     // determine which format section to use based on cell value
     let current_value = sheet.cell_value(pos);
@@ -576,6 +582,7 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
         // default to positive format
         _ => format_sections[0],
     };
+
 
     if let Some(format_id) = format_id {
         match format_id {
