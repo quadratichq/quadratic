@@ -58,6 +58,7 @@ export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || 'AZURE
 export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || 'AZURE_OPENAI_API_KEY';
 export const XAI_API_KEY = process.env.XAI_API_KEY || '';
 export const BASETEN_API_KEY = process.env.BASETEN_API_KEY || '';
+export const FIREWORKS_API_KEY = process.env.FIREWORKS_API_KEY || '';
 export const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY || 'OPEN_ROUTER_API_KEY';
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';

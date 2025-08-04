@@ -48,7 +48,7 @@ export const getModelKey = async (
     }
 
     // if the model is the default free model, check if the user prompt contains an image file
-    if (modelKey === DEFAULT_MODEL_FREE) {
+    if (modelKey !== DEFAULT_MODEL_FREE_WITH_IMAGE && modelKey === DEFAULT_MODEL_FREE) {
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
         message.content.some(isContentImage)
       );
