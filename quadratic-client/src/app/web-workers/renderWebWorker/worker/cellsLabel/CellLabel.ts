@@ -156,6 +156,10 @@ export class CellLabel {
       case 'Chart':
         text = '';
         break;
+      case 'Checkbox':
+      case 'List':
+        text = '';
+        break;
       default:
         if (cell.value !== undefined && cell.number) {
           this.number = cell.number;
