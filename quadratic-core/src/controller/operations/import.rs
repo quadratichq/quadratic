@@ -1190,31 +1190,8 @@ fn excel_serial_to_date_time(
     // Excel epoch is January 1, 1900 (but Excel treats 1900 as a leap year incorrectly)
     // We need to account for this by using the chrono crate's handling of Excel dates
 
-    if is_time && !is_date {
-        // pure time format - fractional part represents time
-        let total_seconds = (serial.fract() * 86400.0) as i64;
-        let hours = total_seconds / 3600;
-        let minutes = (total_seconds % 3600) / 60;
-        let seconds = total_seconds % 60;
-
-        if let Some(time) = NaiveTime::from_hms_opt(hours as u32, minutes as u32, seconds as u32) {
-            return Some(CellValue::Time(time));
-        }
-    } else if is_date && !is_time {
-        // pure date format
-        // excel serial date 1 = January 1, 1900, but Excel incorrectly treats 1900 as leap year
-        // serial 60 = Feb 29, 1900 (invalid), so we adjust
-        let adjusted_serial = if serial >= 60.0 { serial - 1.0 } else { serial };
-
-        if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30) {
-            if let Some(date) =
-                base_date.checked_add_days(chrono::Days::new(adjusted_serial as u64))
-            {
-                return Some(CellValue::Date(date));
-            }
-        }
-    } else if is_datetime {
-        // date and time format
+    if is_datetime {
+        // Combined date and time format - handles both components regardless of is_date/is_time flags
         let adjusted_serial = if serial >= 60.0 { serial - 1.0 } else { serial };
         let days = adjusted_serial.floor() as i64;
         let time_fraction = adjusted_serial.fract();
@@ -1233,7 +1210,31 @@ fn excel_serial_to_date_time(
                 }
             }
         }
+    } else if is_time && !is_date {
+        // Pure time format - fractional part represents time
+        let total_seconds = (serial.fract() * 86400.0) as i64;
+        let hours = total_seconds / 3600;
+        let minutes = (total_seconds % 3600) / 60;
+        let seconds = total_seconds % 60;
+
+        if let Some(time) = NaiveTime::from_hms_opt(hours as u32, minutes as u32, seconds as u32) {
+            return Some(CellValue::Time(time));
+        }
+    } else if is_date && !is_time {
+        // Pure date format
+        // excel serial date 1 = January 1, 1900, but Excel incorrectly treats 1900 as leap year
+        // serial 60 = Feb 29, 1900 (invalid), so we adjust
+        let adjusted_serial = if serial >= 60.0 { serial - 1.0 } else { serial };
+
+        if let Some(base_date) = NaiveDate::from_ymd_opt(1899, 12, 30) {
+            if let Some(date) =
+                base_date.checked_add_days(chrono::Days::new(adjusted_serial as u64))
+            {
+                return Some(CellValue::Date(date));
+            }
+        }
     }
+
 
     None
 }
