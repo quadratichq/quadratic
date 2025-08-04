@@ -215,7 +215,7 @@ export async function parseOpenAIStream(
     if (!response?.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
-        if (chunk.choices[0].delta.content?.trim()) {
+        if (chunk.choices[0].delta.content) {
           const currentContent = {
             ...(responseMessage.content.pop() ?? {
               type: 'text',
