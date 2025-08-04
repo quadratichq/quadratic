@@ -478,7 +478,6 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-
   close = async ({
     deltaX = 0,
     deltaY = 0,
@@ -517,7 +516,7 @@ class InlineEditorHandler {
           tablePos: undefined,
           language: 'Formula',
           codeString: value.slice(1),
-          cursor: sheets.getCursorPosition(),
+          isAi: false,
         });
         mixpanel.track('[CodeEditor].cellRun', {
           type: 'Formula',
@@ -541,13 +540,7 @@ class InlineEditorHandler {
           }
           return false;
         } else {
-          quadraticCore.setCellValue(
-            location.sheetId,
-            location.x,
-            location.y,
-            value.trim(),
-            sheets.getCursorPosition()
-          );
+          quadraticCore.setCellValue(location.sheetId, location.x, location.y, value.trim(), false);
           if (!skipChangeSheet) {
             events.emit('hoverCell');
           }

@@ -333,7 +333,7 @@ export class PointerHeading {
             this.movingColRows.indicies[0],
             this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
             this.movingColRows.place - this.movingColRows.offset,
-            sheets.getCursorPosition()
+            false
           );
         } else {
           quadraticCore.moveRows(
@@ -341,7 +341,7 @@ export class PointerHeading {
             this.movingColRows.indicies[0],
             this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
             this.movingColRows.place - this.movingColRows.offset,
-            sheets.getCursorPosition()
+            false
           );
         }
       }
@@ -377,18 +377,18 @@ export class PointerHeading {
         }
         if (sheets.sheet.cursor.isAllSelected()) {
           if (this.resizing.column && this.resizing.width !== undefined) {
-            quadraticCore.resizeAllColumns(sheets.current, this.resizing.width);
+            quadraticCore.resizeAllColumns(sheets.current, this.resizing.width, false);
           } else if (this.resizing.row && this.resizing.height !== undefined) {
-            quadraticCore.resizeAllRows(sheets.current, this.resizing.height);
+            quadraticCore.resizeAllRows(sheets.current, this.resizing.height, false);
           }
         } else if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
           const size = this.resizing.width;
           const columnSizes = columns.map((column) => ({ index: column, size }));
-          quadraticCore.resizeColumns(sheets.current, columnSizes, sheets.getCursorPosition());
+          quadraticCore.resizeColumns(sheets.current, columnSizes, false);
         } else if (this.resizing.row && rows.length !== 1 && this.resizing.height !== undefined) {
           const size = this.resizing.height;
           const rowSizes = rows.map((row) => ({ index: row, size }));
-          quadraticCore.resizeRows(sheets.current, rowSizes, sheets.getCursorPosition());
+          quadraticCore.resizeRows(sheets.current, rowSizes, false);
         }
 
         // otherwise work with the transient resize (if available)
@@ -399,7 +399,7 @@ export class PointerHeading {
               const { old_size, new_size } = JSON.parse(transientResize) as TransientResize;
               const delta = old_size - new_size;
               if (delta !== 0) {
-                quadraticCore.commitTransientResize(sheets.current, transientResize);
+                quadraticCore.commitTransientResize(sheets.current, transientResize, false);
               }
             } catch (error) {
               console.error('[PointerHeading] pointerUp: error parsing TransientResize: ', error);
@@ -438,7 +438,7 @@ export class PointerHeading {
     }
     if (resizing.length) {
       const sheetId = sheets.current;
-      quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
+      quadraticCore.resizeColumns(sheetId, resizing, false);
     }
   }
 
@@ -458,7 +458,7 @@ export class PointerHeading {
     }
     if (resizing.length) {
       const sheetId = sheets.current;
-      quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
+      quadraticCore.resizeRows(sheetId, resizing, false);
     }
   }
 }

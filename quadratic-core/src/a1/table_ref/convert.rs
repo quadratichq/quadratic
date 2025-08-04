@@ -552,6 +552,7 @@ mod tests {
             Some(Some(true)),
             Some(Some(true)),
             None,
+            false,
         );
 
         let context = gc.a1_context();

@@ -13,6 +13,8 @@ use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat, SheetId};
 use crate::Pos;
+use crate::controller::execution::TransactionSource;
+use crate::controller::operations::ai_operation::AIOperation;
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -136,8 +138,10 @@ pub struct JsDataTableContext {
     pub first_row_visible_values: Vec<JsCellValuePos>,
     pub last_row_visible_values: Vec<JsCellValuePos>,
     pub bounds: String,
+    pub intended_bounds: String,
     pub show_name: bool,
     pub show_columns: bool,
+    pub spill: bool,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -150,6 +154,7 @@ pub struct JsCodeTableContext {
     pub first_row_visible_values: Vec<JsCellValuePos>,
     pub last_row_visible_values: Vec<JsCellValuePos>,
     pub bounds: String,
+    pub intended_bounds: String,
     pub show_name: bool,
     pub show_columns: bool,
     pub language: CodeCellLanguage,
@@ -165,6 +170,7 @@ pub struct JsChartContext {
     pub sheet_name: String,
     pub chart_name: String,
     pub bounds: String,
+    pub intended_bounds: String,
     pub language: CodeCellLanguage,
     pub code_string: String,
     pub spill: bool,
@@ -575,4 +581,27 @@ pub enum Direction {
     Down,
     Left,
     Right,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsSheetNameToColor {
+    pub sheet_name: String,
+    pub color: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsSheetPosText {
+    pub sheet_id: String,
+    pub x: i64,
+    pub y: i64,
+    pub text: Option<String>,
+}
+
+#[derive(Debug, Serialize, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsAITransactions {
+    pub ops: Vec<AIOperation>,
+    pub source: TransactionSource,
 }

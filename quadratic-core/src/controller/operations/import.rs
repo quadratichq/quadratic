@@ -542,6 +542,7 @@ mod test {
             None,
             Some(b','),
             Some(false),
+            false,
         )
         .unwrap();
 
@@ -566,7 +567,8 @@ mod test {
     fn import_xlsx() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xlsx");
-        gc.import_excel(file.as_ref(), "simple.xlsx", None).unwrap();
+        gc.import_excel(file.as_ref(), "simple.xlsx", None, false)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -594,7 +596,8 @@ mod test {
     fn import_xls() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/simple.xls");
-        gc.import_excel(file.as_ref(), "simple.xls", None).unwrap();
+        gc.import_excel(file.as_ref(), "simple.xls", None, false)
+            .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
         let sheet = gc.sheet(sheet_id);
@@ -609,7 +612,7 @@ mod test {
     fn import_excel_invalid() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/invalid.xlsx");
-        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None);
+        let result = gc.import_excel(file.as_ref(), "invalid.xlsx", None, false);
         assert!(result.is_err());
     }
 
@@ -626,6 +629,7 @@ mod test {
             pos,
             None,
             None::<fn(&str, u32, u32)>,
+            false,
         )
         .unwrap();
 
@@ -706,7 +710,7 @@ mod test {
     fn import_excel_date_time() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/date_time.xlsx");
-        gc.import_excel(file.as_ref(), "date_time.xlsx", None)
+        gc.import_excel(file.as_ref(), "date_time.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
@@ -817,6 +821,7 @@ mod test {
             None,
             Some(b','),
             Some(true),
+            false,
         )
         .unwrap();
 
@@ -845,7 +850,7 @@ mod test {
     fn import_excel_dependent_formulas() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/income_statement.xlsx");
-        gc.import_excel(file.as_ref(), "income_statement.xlsx", None)
+        gc.import_excel(file.as_ref(), "income_statement.xlsx", None, false)
             .unwrap();
 
         let sheet_id = gc.grid.sheets()[0].id;
@@ -919,6 +924,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }
@@ -936,6 +942,7 @@ mod test {
             None,
             None,
             Some(true),
+            false,
         )
         .unwrap();
     }

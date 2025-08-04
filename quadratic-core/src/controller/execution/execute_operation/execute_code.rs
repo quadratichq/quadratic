@@ -16,7 +16,7 @@ impl GridController {
         output: &SheetRect,
         skip_compute: Option<MultiPos>,
     ) {
-        if !transaction.is_user() {
+        if !transaction.is_user_ai() {
             return;
         }
 
@@ -122,7 +122,7 @@ impl GridController {
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.forward_operations.push(op);
 
                 transaction
@@ -170,6 +170,13 @@ impl GridController {
         op: Operation,
     ) {
         if let Operation::ComputeCodeMultiPos { multi_pos } = op {
+            if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
+                dbgjs!(
+                    "Only user / ai / undo / redo / server transaction should have a ComputeCode"
+                );
+                return;
+            }
+
             let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) else {
                 return;
             };
@@ -241,6 +248,7 @@ mod tests {
             "A1:A2".to_string(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -269,6 +277,7 @@ mod tests {
             },
             "cause spill".to_string(),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -298,6 +307,7 @@ mod tests {
             "code".to_string(),
             None,
             None,
+            false,
         );
         expect_js_call_count("jsRunJavascript", 1, true);
 
@@ -307,6 +317,7 @@ mod tests {
             "code".to_string(),
             None,
             None,
+            false,
         );
         expect_js_call_count("jsRunPython", 1, true);
 

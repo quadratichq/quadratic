@@ -97,6 +97,7 @@ mod tests {
             "1 + 1".to_string(),
             None,
             None,
+            false,
         );
 
         let table_pos = TablePos::new(pos![sheet_id!A1], Pos::new(0, 0));

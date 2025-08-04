@@ -128,7 +128,7 @@ mod test {
             language: CodeCellLanguage::Formula,
             code: "A1 + 1".to_string(),
         });
-        gc.start_user_transaction(
+        gc.start_user_ai_transaction(
             vec![
                 Operation::SetCellValues {
                     sheet_pos,
@@ -140,6 +140,7 @@ mod test {
             ],
             None,
             TransactionName::Unknown,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -164,6 +165,7 @@ mod test {
             "A1 + 1".to_string(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -178,6 +180,7 @@ mod test {
             "B1 + 1".to_string(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.grid().try_sheet(sheet_id).unwrap();
@@ -198,6 +201,7 @@ mod test {
             },
             "1".into(),
             None,
+            false,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -224,6 +228,7 @@ mod test {
             },
             "10".into(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 2),
@@ -231,6 +236,7 @@ mod test {
             "A1 + 1".into(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -247,6 +253,7 @@ mod test {
             },
             "".into(),
             None,
+            false,
         );
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(sheet.display_value(Pos { x: 1, y: 1 }), None);
@@ -406,6 +413,7 @@ mod test {
             },
             vec![vec!["1".into(), "2".into(), "3".into()]],
             None,
+            false,
         );
 
         // create code that will later have a spill error
@@ -415,6 +423,7 @@ mod test {
             "A1:A4".into(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(Pos { x: 2, y: 1 }),
@@ -430,6 +439,7 @@ mod test {
             },
             "create spill error".into(),
             None,
+            false,
         );
         assert!(
             gc.sheet(sheet_id)
@@ -475,7 +485,14 @@ mod test {
         let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         let pos: Pos = Pos::new(1, 1);
 
-        gc.set_code_cell(sheet_pos, CodeCellLanguage::Formula, "☺".into(), None, None);
+        gc.set_code_cell(
+            sheet_pos,
+            CodeCellLanguage::Formula,
+            "☺".into(),
+            None,
+            None,
+            false,
+        );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.cell_value(pos),
@@ -494,6 +511,7 @@ mod test {
             "{0,1/0;2/0,0}".into(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

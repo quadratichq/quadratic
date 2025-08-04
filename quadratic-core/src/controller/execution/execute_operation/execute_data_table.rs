@@ -1,24 +1,23 @@
 use std::collections::HashSet;
 
 use crate::{
-    ArraySize, CellValue, ClearOption, MultiPos, Pos, Rect, SheetPos, SheetRect, TablePos,
     a1::A1Selection,
     cell_values::CellValues,
     cellvalue::Import,
     controller::{
-        GridController, active_transactions::pending_transaction::PendingTransaction,
-        operations::operation::Operation,
+        active_transactions::pending_transaction::PendingTransaction,
+        operations::operation::Operation, GridController,
     },
     grid::{
-        DataTable, SheetId,
         fix_names::{sanitize_column_name, sanitize_table_name},
         formats::{FormatUpdate, SheetFormatUpdates},
         js_types::JsSnackbarSeverity,
-        unique_data_table_name,
+        unique_data_table_name, DataTable, SheetId,
     },
+    ArraySize, CellValue, ClearOption, MultiPos, Pos, Rect, SheetPos, SheetRect, TablePos,
 };
 
-use anyhow::{Result, anyhow, bail};
+use anyhow::{anyhow, bail, Result};
 
 impl GridController {
     /// Selects the entire data table, including the header
@@ -28,7 +27,7 @@ impl GridController {
         data_table_pos: Pos,
         data_table: &DataTable,
     ) {
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             let sheet_pos = data_table_pos.to_sheet_pos(sheet_id);
             transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
         }
@@ -50,7 +49,7 @@ impl GridController {
             return Ok(());
         }
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             let data_table_rect =
                 data_table.output_sheet_rect(data_table_pos.to_sheet_pos(sheet_id), false);
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(data_table_rect);
@@ -68,7 +67,7 @@ impl GridController {
         reverse_operations: Vec<Operation>,
         sheet_rect_for_compute_and_spills: Option<SheetRect>,
     ) {
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.extend(forward_operations);
             transaction.reverse_operations.extend(reverse_operations);
 
@@ -76,7 +75,7 @@ impl GridController {
                 return;
             };
 
-            if transaction.is_user() {
+            if transaction.is_user_ai() {
                 self.check_validations(transaction, sheet_rect);
                 self.add_compute_operations(transaction, &sheet_rect, None);
             }
@@ -89,7 +88,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         sheet_rect: &SheetRect,
     ) {
-        if !transaction.is_user() {
+        if !transaction.is_user_ai() {
             return;
         }
 
@@ -259,7 +258,7 @@ impl GridController {
                 }
                 MultiPos::TablePos(table_pos) => {
                     if let Some(sheet_pos) = sheet.table_pos_to_sheet_pos(table_pos) {
-                        if transaction.is_user_undo_redo() {
+                        if transaction.is_user_ai_undo_redo() {
                             transaction.add_update_selection(A1Selection::table(
                                 sheet_pos,
                                 data_table.name(),
@@ -1580,7 +1579,8 @@ impl GridController {
                     reverse_operations.extend(self.check_deleted_validations(
                         transaction,
                         sheet_id,
-                        deleted_selection,
+                        &deleted_selection,
+                        None,
                     ));
                 }
             }
@@ -1840,7 +1840,7 @@ impl GridController {
             let ui_rows = data_table.ui_rows((0, 0).into());
             if !ui_rows.is_empty() && rows.iter().any(|row| ui_rows.contains(&(*row as i64))) {
                 let e = "delete_rows_error".to_string();
-                if transaction.is_user_undo_redo() && cfg!(target_family = "wasm") {
+                if transaction.is_user_ai_undo_redo() && cfg!(target_family = "wasm") {
                     let severity = crate::grid::js_types::JsSnackbarSeverity::Warning;
                     crate::wasm_bindings::js::jsClientMessage(e.to_owned(), severity.to_string());
                 }
@@ -2162,7 +2162,7 @@ impl GridController {
                 // mark new table dirty
                 dt.mark_formats_dirty(transaction, data_table_pos.to_sheet_pos(sheet_id), &formats);
 
-                if transaction.is_user_undo_redo() {
+                if transaction.is_user_ai_undo_redo() {
                     forward_operations.push(op);
 
                     reverse_operations.push(Operation::DataTableFormats {
@@ -2174,7 +2174,7 @@ impl GridController {
                 Ok(())
             })?;
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
             }
 
@@ -2205,7 +2205,7 @@ impl GridController {
 
                 transaction.add_borders(sheet_id);
 
-                if transaction.is_user_undo_redo() {
+                if transaction.is_user_ai_undo_redo() {
                     forward_operations.push(op);
 
                     reverse_operations.push(Operation::DataTableBorders {
@@ -2217,7 +2217,7 @@ impl GridController {
                 Ok(())
             })?;
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_borders(sheet_id, &borders);
             }
 
@@ -2238,7 +2238,6 @@ mod tests {
     use crate::test_util::*;
 
     use crate::{
-        Array, SheetPos, Value,
         controller::{
             active_transactions::transaction_name::TransactionName,
             execution::execute_operation::{
@@ -2247,12 +2246,13 @@ mod tests {
             user_actions::import::tests::{assert_simple_csv, simple_csv, simple_csv_at},
         },
         grid::{
-            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
             column_header::DataTableColumnHeader,
             data_table::sort::{DataTableSort, SortDirection},
+            CodeCellLanguage, CodeCellValue, CodeRun, DataTableKind, SheetId,
         },
         test_util::{assert_cell_value_row, assert_display_cell_value, print_table_in_rect},
         wasm_bindings::js::{clear_js_calls, expect_js_call},
+        Array, SheetPos, Value,
     };
 
     use super::*;
@@ -2379,7 +2379,7 @@ mod tests {
         gc.test_data_table_first_row_as_header(sheet_pos, false);
 
         let op = Operation::FlattenDataTable { sheet_pos };
-        gc.start_user_transaction(vec![op], None, TransactionName::FlattenDataTable);
+        gc.start_user_ai_transaction(vec![op], None, TransactionName::FlattenDataTable, false);
 
         gc.undo(None);
 
@@ -2398,10 +2398,10 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let checkbox = test_create_checkbox(&mut gc, selection);
+        let checkbox = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
 
-        gc.flatten_data_table(pos![sheet_id!a1], None);
+        gc.flatten_data_table(pos![sheet_id!a1], None, false);
         assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
     }
 
@@ -2491,7 +2491,7 @@ mod tests {
         let mut transaction = PendingTransaction::default();
         gc.execute_grid_to_data_table(&mut transaction, op.clone())
             .unwrap();
-        gc.data_table_first_row_as_header(sheet_pos, true, None);
+        gc.data_table_first_row_as_header(sheet_pos, true, None, false);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
 
@@ -2502,7 +2502,7 @@ mod tests {
 
         // redo, the value should be a data table again
         execute_forward_operations(&mut gc, &mut transaction);
-        gc.data_table_first_row_as_header(sheet_pos, true, None);
+        gc.data_table_first_row_as_header(sheet_pos, true, None, false);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
         assert_simple_csv(&gc, sheet_id, new_pos, file_name);
 
@@ -2519,6 +2519,7 @@ mod tests {
             "=1+1".into(),
             None,
             None,
+            false,
         );
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 13));
 
@@ -2589,7 +2590,12 @@ mod tests {
             show_name: None,
             show_columns: None,
         };
-        gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
+        gc.start_user_ai_transaction(
+            vec![op.to_owned()],
+            None,
+            TransactionName::DataTableMeta,
+            false,
+        );
 
         let data_table = gc.sheet_mut(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(&data_table.name().to_string(), updated_name);
@@ -2610,7 +2616,12 @@ mod tests {
         }
 
         // ensure names are unique
-        gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
+        gc.start_user_ai_transaction(
+            vec![op.to_owned()],
+            None,
+            TransactionName::DataTableMeta,
+            false,
+        );
         let data_table = gc.sheet_mut(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(&data_table.name().to_string(), "My_Table");
 
@@ -2623,7 +2634,12 @@ mod tests {
             show_name: None,
             show_columns: None,
         };
-        gc.start_user_transaction(vec![op.to_owned()], None, TransactionName::DataTableMeta);
+        gc.start_user_ai_transaction(
+            vec![op.to_owned()],
+            None,
+            TransactionName::DataTableMeta,
+            false,
+        );
         let data_table = gc.sheet_mut(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(&data_table.name().to_string(), "ABC");
     }
@@ -2830,6 +2846,7 @@ mod tests {
             "1+1".to_string(),
             None,
             None,
+            false,
         );
         gc.set_code_cell(
             pos!(sheet_id!I5),
@@ -2837,6 +2854,7 @@ mod tests {
             "2+2".to_string(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -2964,7 +2982,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 2, 2);
         let selection = A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context);
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
 
         let checkbox_pos = pos![sheet_id!a3];
         assert_validation_id(&gc, checkbox_pos, Some(validation.id));
@@ -2980,12 +2998,13 @@ mod tests {
             None,
             None,
             None,
+            false,
         );
 
         assert_validation_id(&gc, checkbox_pos, None);
 
         // ensure the new column does not have a checkbox validation
-        gc.data_table_insert_columns(sheet_pos, vec![0], false, None, None, None);
+        gc.data_table_insert_columns(sheet_pos, vec![0], false, None, None, None, false);
         assert_validation_id(&gc, checkbox_pos, None);
 
         assert_validation_count(&gc, sheet_id, 0);
@@ -2999,7 +3018,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 5, 25);
 
-        gc.data_table_insert_columns(sheet_pos, vec![2], false, None, None, None);
+        gc.data_table_insert_columns(sheet_pos, vec![2], false, None, None, None, false);
 
         let data_table = gc.sheet(sheet_id).data_table_at(&sheet_pos.into()).unwrap();
         assert_eq!(data_table.column_headers.as_ref().unwrap().len(), 6);

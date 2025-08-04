@@ -38,13 +38,7 @@ export const TableSort = () => {
   const handleSave = useCallback(() => {
     if (contextMenu.table) {
       const sortToSend = sort.filter((item) => item.direction !== 'None' && item.column_index !== -1);
-      quadraticCore.sortDataTable(
-        sheets.current,
-        contextMenu.table.x,
-        contextMenu.table.y,
-        sortToSend,
-        sheets.getCursorPosition()
-      );
+      quadraticCore.sortDataTable(sheets.current, contextMenu.table.x, contextMenu.table.y, sortToSend, false);
     }
     handleClose();
   }, [contextMenu.table, sort, handleClose]);

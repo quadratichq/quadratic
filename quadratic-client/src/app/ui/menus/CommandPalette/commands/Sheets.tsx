@@ -23,7 +23,7 @@ const ListItems = () => {
             return (
               <CommandPaletteListItem
                 {...props}
-                action={() => quadraticCore.addSheet(sheets.getCursorPosition())}
+                action={() => quadraticCore.addSheet(undefined, undefined, false)}
                 icon={<SheetIcon />}
               />
             );
@@ -36,7 +36,7 @@ const ListItems = () => {
             return (
               <CommandPaletteListItem
                 {...props}
-                action={() => quadraticCore.duplicateSheet(currentSheet, sheets.getCursorPosition())}
+                action={() => quadraticCore.duplicateSheet(currentSheet, undefined, false)}
                 icon={<SheetIcon />}
               />
             );
@@ -50,7 +50,7 @@ const ListItems = () => {
               <CommandPaletteListItem
                 {...props}
                 action={() => {
-                  quadraticCore.deleteSheet(currentSheet, sheets.getCursorPosition());
+                  quadraticCore.deleteSheet(currentSheet, false);
                   setTimeout(focusGrid);
                 }}
                 icon={<SheetIcon />}

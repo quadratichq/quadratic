@@ -5,7 +5,6 @@ import {
   codeEditorEditorContentAtom,
   codeEditorShowDiffEditorAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -31,7 +30,7 @@ export const CodeEditorDiffButtons = () => {
             tablePos: undefined,
             codeString: diffEditorContent.editorContent ?? '',
             language: codeCell.language,
-            cursor: sheets.getCursorPosition(),
+            isAi: false,
           });
         } else {
           set(codeEditorDiffEditorContentAtom, undefined);
@@ -57,7 +56,7 @@ export const CodeEditorDiffButtons = () => {
             tablePos: undefined,
             codeString: diffEditorContent.editorContent ?? '',
             language: codeCell.language,
-            cursor: sheets.getCursorPosition(),
+            isAi: false,
           });
         } else {
           set(codeEditorDiffEditorContentAtom, undefined);

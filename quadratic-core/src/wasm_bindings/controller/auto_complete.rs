@@ -18,6 +18,7 @@ impl GridController {
         initial_range: String,
         final_range: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         handle_core_result(|| -> Result<(), String> {
             let initial_range: Rect =
@@ -25,7 +26,7 @@ impl GridController {
             let final_range: Rect =
                 serde_json::from_str(&final_range).map_err(|e| e.to_string())?;
             let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-            self.autocomplete(sheet_id, initial_range, final_range, cursor)
+            self.autocomplete(sheet_id, initial_range, final_range, cursor, is_ai)
                 .map_err(|e| e.to_string())
         });
         Ok(())

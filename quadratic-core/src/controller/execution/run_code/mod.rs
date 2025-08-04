@@ -183,7 +183,7 @@ impl GridController {
                 .unwrap_or(usize::MAX),
         );
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
             {
                 sheet.data_table_insert_before(index, multi_pos, new_data_table.to_owned())?
@@ -199,7 +199,7 @@ impl GridController {
             self.send_updated_bounds(transaction, sheet_id);
             transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
 
-            if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
+            if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user_ai() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
                     let rows_to_resize = sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
                     if !rows_to_resize.is_empty() {
@@ -668,6 +668,7 @@ mod test {
             "code".to_string(),
             None,
             None,
+            false,
         );
         let transaction = gc.last_transaction().unwrap();
         let result = JsCodeResult {
@@ -689,7 +690,14 @@ mod test {
         let languages = vec![CodeCellLanguage::Javascript, CodeCellLanguage::Python];
 
         for language in languages {
-            gc.set_code_cell(sheet_pos, language.clone(), "code".to_string(), None, None);
+            gc.set_code_cell(
+                sheet_pos,
+                language.clone(),
+                "code".to_string(),
+                None,
+                None,
+                false,
+            );
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),
@@ -704,7 +712,7 @@ mod test {
             assert_eq!(dt.chart_output, Some((2, 5)));
 
             // change the cell
-            gc.set_code_cell(sheet_pos, language, "code".to_string(), None, None);
+            gc.set_code_cell(sheet_pos, language, "code".to_string(), None, None, false);
             let transaction = gc.last_transaction().unwrap();
             let result = JsCodeResult {
                 transaction_id: transaction.id.to_string(),

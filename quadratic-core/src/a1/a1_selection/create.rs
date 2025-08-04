@@ -215,6 +215,10 @@ impl A1Selection {
         Self::from_single_cell(SheetPos { x, y, sheet_id })
     }
 
+    pub fn from_pos(pos: Pos, sheet_id: SheetId) -> Self {
+        Self::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos))
+    }
+
     /// Constructs a selection all for a sheet.
     pub fn all(sheet: SheetId) -> Self {
         Self::from_ref_range_bounds(sheet, RefRangeBounds::ALL)

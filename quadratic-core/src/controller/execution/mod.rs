@@ -9,9 +9,10 @@ use super::active_transactions::ActiveTransactions;
 use super::active_transactions::pending_transaction::PendingTransaction;
 use crate::controller::GridController;
 use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 /// Where the transaction came from.
-#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq, Copy, TS)]
 pub enum TransactionSource {
     /// Unknown / unspecified.
     #[default]
@@ -29,6 +30,8 @@ pub enum TransactionSource {
     /// Local user performed an action and the transaction has not yet been sent
     /// to the server.
     Unsaved,
+    /// AI performed an action.
+    AI,
 }
 
 impl GridController {

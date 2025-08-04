@@ -85,7 +85,7 @@ impl GridController {
             cell_value,
             index: None,
         };
-        self.start_user_transaction(vec![op], None, TransactionName::Unknown);
+        self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
 
     pub fn test_set_data_table(
@@ -119,7 +119,7 @@ impl GridController {
             cell_value,
             index: None,
         };
-        self.start_user_transaction(vec![op], None, TransactionName::Unknown);
+        self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
 
     pub fn test_data_table_first_row_as_header(
@@ -131,7 +131,7 @@ impl GridController {
             sheet_pos,
             first_row_is_header,
         };
-        self.start_user_transaction(vec![op], None, TransactionName::Unknown);
+        self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
 
     pub fn test_data_table_update_meta(
@@ -149,6 +149,6 @@ impl GridController {
             show_name: show_name.map(|show_name| Some(show_name).into()),
             show_columns: show_columns.map(|show_columns| Some(show_columns).into()),
         };
-        self.start_user_transaction(vec![op], None, TransactionName::Unknown);
+        self.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
     }
 }

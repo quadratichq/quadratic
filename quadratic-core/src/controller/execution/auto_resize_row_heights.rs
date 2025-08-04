@@ -15,7 +15,7 @@ impl GridController {
         rows: Vec<i64>,
     ) {
         if !(cfg!(target_family = "wasm") || cfg!(test))
-            || !transaction.is_user()
+            || !transaction.is_user_ai()
             || rows.is_empty()
         {
             return;
@@ -143,6 +143,7 @@ mod tests {
             &A1Selection::from_single_cell(sheet_pos),
             CellWrap::Wrap,
             None,
+            false,
         )
         .unwrap();
         let ops = gc
@@ -238,8 +239,9 @@ mod tests {
                 vec!["8".into()],
             ],
             None,
+            false,
         );
-        gc.set_cell_wrap(&A1Selection::test_a1("A1:J10"), CellWrap::Wrap, None)
+        gc.set_cell_wrap(&A1Selection::test_a1("A1:J10"), CellWrap::Wrap, None, false)
             .unwrap();
 
         // should trigger auto resize row heights for wrap
@@ -436,6 +438,7 @@ mod tests {
             &A1Selection::from_single_cell(sheet_pos),
             CellWrap::Wrap,
             None,
+            false,
         )
         .unwrap();
         gc.set_code_cell(
@@ -444,6 +447,7 @@ mod tests {
             "1+1".to_string(),
             None,
             None,
+            false,
         );
         clear_js_calls();
 
@@ -485,7 +489,7 @@ mod tests {
             sheet_id,
         };
 
-        gc.set_cell_wrap(&A1Selection::test_a1("A2"), CellWrap::Wrap, None)
+        gc.set_cell_wrap(&A1Selection::test_a1("A2"), CellWrap::Wrap, None, false)
             .unwrap();
 
         // python code cell
@@ -497,6 +501,7 @@ mod tests {
             },
             "9".into(),
             None,
+            false,
         );
         let code = "c(1, 1) + 1".to_string();
         let ops =
@@ -593,8 +598,9 @@ mod tests {
                 vec!["four".into()],
             ],
             None,
+            false,
         );
-        gc.set_cell_wrap(&A1Selection::test_a1("A1:J10"), CellWrap::Wrap, None)
+        gc.set_cell_wrap(&A1Selection::test_a1("A1:J10"), CellWrap::Wrap, None, false)
             .unwrap();
 
         // set row 1 to Manually resized
@@ -607,6 +613,7 @@ mod tests {
                 new_size: 40.0,
             },
             None,
+            false,
         );
 
         clear_js_calls();
@@ -632,7 +639,7 @@ mod tests {
         );
 
         // set row 2 to Auto resized
-        gc.commit_single_resize(sheet_id, None, Some(2), 25f64, None);
+        gc.commit_single_resize(sheet_id, None, Some(2), 25f64, None, false);
 
         // resize column 1 should trigger auto resize row heights for rows 1, 2, 3, 4
         let ops = vec![Operation::ResizeColumn {
@@ -668,6 +675,7 @@ mod tests {
             &A1Selection::from_single_cell(sheet_pos),
             CellWrap::Wrap,
             None,
+            false,
         )
         .unwrap();
         let ops = gc
@@ -737,6 +745,7 @@ mod tests {
             &A1Selection::from_single_cell(sheet_pos),
             CellWrap::Wrap,
             None,
+            false,
         )
         .unwrap();
 
@@ -750,6 +759,7 @@ mod tests {
                 new_size: 40.0,
             },
             None,
+            false,
         );
 
         let prev_transaction_id = gc.last_transaction().unwrap().id;
@@ -760,6 +770,7 @@ mod tests {
             sheet_pos,
             "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
             None,
+            false,
         );
         // confirm no auto resize row heights call
         expect_js_call_count("jsRequestRowHeights", 0, true);
@@ -821,6 +832,7 @@ mod tests {
             &A1Selection::test_a1_sheet_id("M22", sheet_id),
             CellWrap::Wrap,
             None,
+            false,
         )
         .unwrap();
         clear_js_calls();
@@ -854,6 +866,7 @@ mod tests {
             &A1Selection::test_a1_sheet_id("M22", sheet_id),
             CellWrap::Wrap,
             None,
+            false,
         )
         .unwrap();
         clear_js_calls();

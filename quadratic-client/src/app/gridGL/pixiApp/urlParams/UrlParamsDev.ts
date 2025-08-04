@@ -148,6 +148,7 @@ export class UrlParamsDev {
         sheetId,
         language,
         codeString,
+        isAi: false,
       });
 
       // Remove the `state` param when we're done

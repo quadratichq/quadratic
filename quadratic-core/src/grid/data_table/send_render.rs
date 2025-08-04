@@ -36,7 +36,7 @@ impl DataTable {
         transaction.add_dirty_hashes_from_sheet_rect(data_table_rect);
         self.add_dirty_fills_and_borders(transaction, sheet.id);
 
-        if transaction.is_user() {
+        if transaction.is_user_ai() {
             let rows_to_resize = sheet.get_rows_with_wrap_in_rect(data_table_rect.into(), true);
             if !rows_to_resize.is_empty() {
                 transaction
@@ -235,7 +235,7 @@ impl DataTable {
                 dirty_hashes_transaction.extend(dirty_hashes);
             }
 
-            if !rows_to_resize.is_empty() && transaction.is_user() {
+            if !rows_to_resize.is_empty() && transaction.is_user_ai() {
                 transaction
                     .resize_rows
                     .entry(sheet_id)
@@ -372,6 +372,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("M22", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 
@@ -391,6 +392,7 @@ pub mod test {
             &A1Selection::test_a1_sheet_id("P31", sheet_id),
             Some(true),
             None,
+            false,
         )
         .unwrap();
 

@@ -81,7 +81,7 @@ impl GridController {
             }
         }
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction.add_fill_cells(sheet_id);
             transaction.sheet_borders.insert(sheet_id);
             transaction
@@ -105,7 +105,7 @@ impl GridController {
             }
 
             // clone only for user/undo/redo transactions
-            let forward_sheet = if transaction.is_user_undo_redo() {
+            let forward_sheet = if transaction.is_user_ai_undo_redo() {
                 Some(sheet.clone())
             } else {
                 None
@@ -132,7 +132,7 @@ impl GridController {
     ) -> Result<()> {
         if let Operation::AddSheetSchema { schema } = op {
             // clone only for user/undo/redo transactions
-            let forward_schema = if transaction.is_user_undo_redo() {
+            let forward_schema = if transaction.is_user_ai_undo_redo() {
                 Some(schema.clone())
             } else {
                 None
@@ -171,7 +171,7 @@ impl GridController {
                 return;
             };
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction
                     .forward_operations
                     .push(Operation::DeleteSheet { sheet_id });
@@ -187,14 +187,14 @@ impl GridController {
             }
 
             // create a sheet if we deleted the last one (only for user actions)
-            if transaction.is_user() && self.sheet_ids().is_empty() {
+            if transaction.is_user_ai() && self.sheet_ids().is_empty() {
                 let new_first_sheet_id = SheetId::new();
                 let name = SHEET_NAME.to_owned() + "1";
                 let order = self.grid.end_order();
                 let new_first_sheet = Sheet::new(new_first_sheet_id, name, order);
                 self.grid.add_sheet(Some(new_first_sheet.clone()));
 
-                if transaction.is_user_undo_redo() {
+                if transaction.is_user_ai_undo_redo() {
                     transaction.forward_operations.push(Operation::AddSheet {
                         sheet: Box::new(new_first_sheet),
                     });
@@ -226,7 +226,7 @@ impl GridController {
             sheet.order.clone_from(&order);
             self.grid.move_sheet(target, order.clone());
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 if old_first != self.grid.first_sheet_id() {
                     transaction.generate_thumbnail = true;
                 }
@@ -268,7 +268,7 @@ impl GridController {
 
             let old_name = self.grid.update_sheet_name(sheet_id, &name)?;
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction
                     .forward_operations
                     .push(Operation::SetSheetName { sheet_id, name });
@@ -300,7 +300,7 @@ impl GridController {
             let old_color = sheet.color.clone();
             sheet.color.clone_from(&color);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction
                     .forward_operations
                     .push(Operation::SetSheetColor { sheet_id, color });
@@ -348,7 +348,7 @@ impl GridController {
 
             self.send_add_sheet(transaction, new_sheet_id);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction
                     .forward_operations
                     .push(Operation::DuplicateSheet {
@@ -381,7 +381,7 @@ mod tests {
     #[test]
     fn test_add_sheet() {
         let mut gc = GridController::test();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id = gc.sheet_ids()[1];
         let sheet = gc.sheet(sheet_id);
@@ -402,7 +402,7 @@ mod tests {
     fn test_delete_sheet() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.delete_sheet(sheet_id, None);
+        gc.delete_sheet(sheet_id, None, false);
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
         let new_sheet_id = gc.sheet_ids()[0];
@@ -424,8 +424,8 @@ mod tests {
     fn test_undo_delete_sheet_code_rerun() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value(SheetPos::new(sheet_id, 1, 1), "1".to_string(), None);
-        gc.set_cell_value(SheetPos::new(sheet_id, 1, 2), "1".to_string(), None);
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 1), "1".to_string(), None, false);
+        gc.set_cell_value(SheetPos::new(sheet_id, 1, 2), "1".to_string(), None, false);
         let sheet_pos = SheetPos::new(sheet_id, 2, 1);
         gc.set_code_cell(
             sheet_pos,
@@ -433,12 +433,13 @@ mod tests {
             "A1 + A2".to_string(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(2.into()))
         );
-        gc.delete_sheet(sheet_id, None);
+        gc.delete_sheet(sheet_id, None, false);
         assert_eq!(gc.grid.sheets().len(), 1);
         expect_js_call("jsDeleteSheet", format!("{},{}", sheet_id, true), true);
 
@@ -473,7 +474,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let name = "new name".to_string();
-        gc.set_sheet_name(sheet_id, name.clone(), None);
+        gc.set_sheet_name(sheet_id, name.clone(), None, false);
         assert_eq!(gc.grid.sheets()[0].name, name);
 
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
@@ -498,7 +499,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let color = Some("red".to_string());
-        gc.set_sheet_color(sheet_id, color.clone(), None);
+        gc.set_sheet_color(sheet_id, color.clone(), None, false);
         assert_eq!(gc.grid.sheets()[0].color, color);
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id));
         expect_js_call(
@@ -523,14 +524,14 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         // Sheet1, Sheet 2
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         let sheet_id2 = gc.sheet_ids()[1];
         assert_eq!(gc.grid.sheets()[0].id, sheet_id);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id2);
 
         // Sheet 2, Sheet1
-        gc.move_sheet(sheet_id, None, None);
+        gc.move_sheet(sheet_id, None, None, false);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
 
@@ -552,7 +553,7 @@ mod tests {
             true,
         );
 
-        gc.move_sheet(sheet_id2, Some(sheet_id), None);
+        gc.move_sheet(sheet_id2, Some(sheet_id), None, false);
         assert_eq!(gc.grid.sheets()[0].id, sheet_id2);
         assert_eq!(gc.grid.sheets()[1].id, sheet_id);
         let sheet_info = SheetInfo::from(gc.sheet(sheet_id2));
@@ -586,13 +587,14 @@ mod tests {
             "10 + 10".to_string(),
             None,
             None,
+            false,
         );
 
         let op = vec![Operation::DuplicateSheet {
             sheet_id,
             new_sheet_id: SheetId::new(),
         }];
-        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
+        gc.start_user_ai_transaction(op, None, TransactionName::DuplicateSheet, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
@@ -615,7 +617,7 @@ mod tests {
             sheet_id,
             new_sheet_id: SheetId::new(),
         }];
-        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
+        gc.start_user_ai_transaction(op, None, TransactionName::DuplicateSheet, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         let duplicated_sheet_id2 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
@@ -629,7 +631,7 @@ mod tests {
             sheet_id,
             new_sheet_id: SheetId::new(),
         }];
-        gc.start_user_transaction(op, None, TransactionName::DuplicateSheet);
+        gc.start_user_ai_transaction(op, None, TransactionName::DuplicateSheet, false);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Sheet 1 Copy 1");
         assert_eq!(gc.grid.sheets()[2].name, "Sheet 1 Copy");
@@ -672,6 +674,7 @@ mod tests {
             format!("q.cells('{file_name}')"),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos![J10]).unwrap().name(),
@@ -686,14 +689,15 @@ mod tests {
             format!(r#"q.cells("F5") + q.cells("{quoted_sheet}!Q9")"#),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).data_table_at(&pos![T20]).unwrap().name(),
             "Table2"
         );
 
-        let ops = gc.duplicate_sheet_operations(sheet_id);
-        gc.start_user_transaction(ops, None, TransactionName::DuplicateSheet);
+        let ops = gc.duplicate_sheet_operations(sheet_id, None);
+        gc.start_user_ai_transaction(ops, None, TransactionName::DuplicateSheet, false);
 
         let duplicated_sheet_id = gc.sheet_ids()[1];
         let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();

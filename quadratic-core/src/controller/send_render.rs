@@ -269,7 +269,10 @@ impl GridController {
 
         match serde_json::to_vec(&SheetInfo::from(sheet)) {
             Ok(sheet_info) => {
-                crate::wasm_bindings::js::jsAddSheet(sheet_info, transaction.is_user_undo_redo());
+                crate::wasm_bindings::js::jsAddSheet(
+                    sheet_info,
+                    transaction.is_user_ai_undo_redo(),
+                );
             }
             Err(e) => {
                 dbgjs!(format!(
@@ -297,7 +300,7 @@ impl GridController {
 
         crate::wasm_bindings::js::jsDeleteSheet(
             sheet_id.to_string(),
-            transaction.is_user_undo_redo(),
+            transaction.is_user_ai_undo_redo(),
         );
     }
 
@@ -725,6 +728,7 @@ mod test {
             "test".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id.to_string();
         gc.calculation_complete(JsCodeResult {
@@ -746,6 +750,7 @@ mod test {
             1,
             2,
             None,
+            false,
         );
 
         expect_js_call(
@@ -773,8 +778,13 @@ mod test {
         let mut gc = GridController::test_with_viewport_buffer();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None);
-        gc.set_cell_value((100, 100, sheet_id).into(), "test 2".to_string(), None);
+        gc.set_cell_value((0, 0, sheet_id).into(), "test 1".to_string(), None, false);
+        gc.set_cell_value(
+            (100, 100, sheet_id).into(),
+            "test 2".to_string(),
+            None,
+            false,
+        );
 
         let render_cells = vec![JsHashRenderCells {
             sheet_id,

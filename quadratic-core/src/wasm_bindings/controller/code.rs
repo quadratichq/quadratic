@@ -59,6 +59,7 @@ impl GridController {
     }
 
     /// Sets the code on a cell
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "setCellCode")]
     pub fn js_set_cell_code(
         &mut self,
@@ -68,18 +69,31 @@ impl GridController {
         code_string: String,
         code_cell_name: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Option<String> {
         let pos = serde_json::from_str::<Pos>(&pos).ok()?;
         let sheet_id = SheetId::from_str(&sheet_id).ok()?;
         let sheet_pos = pos.to_sheet_pos(sheet_id);
         let language = serde_wasm_bindgen::from_value(language).ok()?;
-        Some(self.set_code_cell(sheet_pos, language, code_string, code_cell_name, cursor))
+        Some(self.set_code_cell(
+            sheet_pos,
+            language,
+            code_string,
+            code_cell_name,
+            cursor,
+            is_ai,
+        ))
     }
 
     /// Reruns all code cells in grid.
     #[wasm_bindgen(js_name = "rerunAllCodeCells")]
-    pub fn js_rerun_code_cells(&mut self, cursor: Option<String>) -> Option<String> {
-        Some(self.rerun_all_code_cells(cursor))
+    pub fn js_rerun_code_cells(&mut self, cursor: Option<String>, is_ai: bool) -> JsValue {
+        capture_core_error(|| {
+            let transaction_id = self.rerun_all_code_cells(cursor, is_ai);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 
     /// Reruns all code cells in a sheet.
@@ -88,11 +102,16 @@ impl GridController {
         &mut self,
         sheet_id: String,
         cursor: Option<String>,
-    ) -> Option<String> {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            return Some(self.rerun_sheet_code_cells(sheet_id, cursor));
-        }
-        None
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+            let transaction_id = self.rerun_sheet_code_cells(sheet_id, cursor, is_ai);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 
     /// Reruns one code cell
@@ -102,13 +121,18 @@ impl GridController {
         sheet_id: String,
         selection: String,
         cursor: Option<String>,
-    ) -> Option<String> {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            if let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context()) {
-                return Some(self.rerun_code_cell(selection, cursor));
-            }
-        }
-        None
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+                .map_err(|e| format!("Invalid selection: {e}"))?;
+            let transaction_id = self.rerun_code_cell(selection, cursor, is_ai);
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 
     #[wasm_bindgen(js_name = "connectionComplete")]

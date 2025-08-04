@@ -5,7 +5,6 @@ import {
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -30,7 +29,7 @@ export const useSaveAndRunCell = () => {
           tablePos: undefined,
           codeString,
           language,
-          cursor: sheets.getCursorPosition(),
+          isAi: false,
         });
 
         set(codeEditorEditorContentAtom, codeString);

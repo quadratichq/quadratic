@@ -317,11 +317,9 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-
     use crate::grid::js_types::JsHashRenderCells;
     use crate::grid::sheet::validations::rules::ValidationRule;
-    use crate::grid::sheet::validations::validation::Validation;
+    use crate::grid::sheet::validations::validation::ValidationUpdate;
     use crate::{SheetPos, test_util::*};
     use crate::{
         Value,
@@ -386,7 +384,7 @@ mod tests {
         assert!(sheet.has_render_cells(rect));
 
         let selection = A1Selection::from_xy(2, 3, sheet_id);
-        gc.delete_cells(&selection, None);
+        gc.delete_cells(&selection, None, false);
         let sheet = gc.sheet(sheet_id);
         assert!(!sheet.has_render_cells(rect));
     }
@@ -521,6 +519,7 @@ mod tests {
             "1 + 1".to_string(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id)
@@ -542,12 +541,12 @@ mod tests {
     fn render_cells_boolean() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value((0, 0, sheet_id).into(), "true".to_string(), None);
-        gc.set_cell_value((1, 1, sheet_id).into(), "false".to_string(), None);
-        gc.set_cell_value((2, 2, sheet_id).into(), "TRUE".to_string(), None);
-        gc.set_cell_value((3, 3, sheet_id).into(), "FALSE".to_string(), None);
-        gc.set_cell_value((4, 4, sheet_id).into(), "tRUE".to_string(), None);
-        gc.set_cell_value((5, 5, sheet_id).into(), "fALSE".to_string(), None);
+        gc.set_cell_value((0, 0, sheet_id).into(), "true".to_string(), None, false);
+        gc.set_cell_value((1, 1, sheet_id).into(), "false".to_string(), None, false);
+        gc.set_cell_value((2, 2, sheet_id).into(), "TRUE".to_string(), None, false);
+        gc.set_cell_value((3, 3, sheet_id).into(), "FALSE".to_string(), None, false);
+        gc.set_cell_value((4, 4, sheet_id).into(), "tRUE".to_string(), None, false);
+        gc.set_cell_value((5, 5, sheet_id).into(), "fALSE".to_string(), None, false);
 
         let sheet = gc.sheet(sheet_id);
         let rendering = sheet.get_render_cells(
@@ -571,10 +570,30 @@ mod tests {
     fn render_cells_duration() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_value((0, 0, sheet_id).into(), "1 week, 3 days".to_string(), None);
-        gc.set_cell_value((0, 1, sheet_id).into(), "36 mo 500 ms".to_string(), None);
-        gc.set_cell_value((0, 2, sheet_id).into(), "1 min, 10 ms".to_string(), None);
-        gc.set_cell_value((0, 3, sheet_id).into(), "0.2 millisecond".to_string(), None);
+        gc.set_cell_value(
+            (0, 0, sheet_id).into(),
+            "1 week, 3 days".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            (0, 1, sheet_id).into(),
+            "36 mo 500 ms".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            (0, 2, sheet_id).into(),
+            "1 min, 10 ms".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            (0, 3, sheet_id).into(),
+            "0.2 millisecond".to_string(),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         let rendering = sheet.get_render_cells(
@@ -603,6 +622,7 @@ mod tests {
             "{TRUE(), FALSE(), TRUE()}".into(),
             None,
             None,
+            false,
         );
         let expected = vec![
             JsRenderCell {
@@ -657,14 +677,15 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
 
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
             },
             None,
+            false,
         );
     }
 
@@ -728,6 +749,7 @@ mod tests {
             "5 + 5".to_string(),
             None,
             None,
+            false,
         );
 
         print_first_sheet(&gc);

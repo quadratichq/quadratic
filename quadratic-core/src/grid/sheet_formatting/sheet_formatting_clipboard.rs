@@ -49,7 +49,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        let _ = gc.set_bold(&A1Selection::test_a1("A1:B2"), Some(true), None);
+        let _ = gc.set_bold(&A1Selection::test_a1("A1:B2"), Some(true), None, false);
 
         let sheet = gc.sheet(sheet_id);
         let a1_context = gc.a1_context();

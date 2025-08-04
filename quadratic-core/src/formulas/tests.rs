@@ -328,18 +328,18 @@ fn test_find_cell_references() {
     let mut g = GridController::new();
     let sheet1 = g.sheet_ids()[0];
 
-    g.add_sheet(None);
-    g.add_sheet(None);
-    g.add_sheet(None);
-    g.add_sheet(None);
+    g.add_sheet(None, None, None, false);
+    g.add_sheet(None, None, None, false);
+    g.add_sheet(None, None, None, false);
+    g.add_sheet(None, None, None, false);
     let apple = g.sheet_ids()[1];
-    g.set_sheet_name(apple, "apple".into(), None);
+    g.set_sheet_name(apple, "apple".into(), None, false);
     let orange = g.sheet_ids()[2];
-    g.set_sheet_name(orange, "orange".into(), None);
+    g.set_sheet_name(orange, "orange".into(), None, false);
     let banana = g.sheet_ids()[3];
-    g.set_sheet_name(banana, "banana".into(), None);
+    g.set_sheet_name(banana, "banana".into(), None, false);
     let plum = g.sheet_ids()[4];
-    g.set_sheet_name(plum, "plum".into(), None);
+    g.set_sheet_name(plum, "plum".into(), None, false);
 
     let a = CellRefCoord::new_abs;
     let r = CellRefCoord::new_rel;
@@ -396,12 +396,12 @@ fn test_sheet_references() {
 
     let id1 = g.sheet_ids()[0];
     let name1 = "MySheet".to_string();
-    g.set_sheet_name(id1, name1.clone(), None);
+    g.set_sheet_name(id1, name1.clone(), None, false);
 
-    g.add_sheet(None);
+    g.add_sheet(None, None, None, false);
     let id2 = g.sheet_ids()[1];
     let name2 = "My Other Sheet".to_string();
-    g.set_sheet_name(id2, name2.clone(), None);
+    g.set_sheet_name(id2, name2.clone(), None, false);
 
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A1], 42);
     let _ = g.try_sheet_mut(id1).unwrap().set_cell_value(pos![A3], 6);
@@ -560,6 +560,7 @@ fn test_table_this_row() {
         "test_table[[#this row],[Column 1]]".to_string(),
         None,
         None,
+        false,
     );
 
     print_first_sheet(&gc);
@@ -581,6 +582,7 @@ fn test_table_this_row_short() {
         "test_table[@Column 1]".to_string(),
         None,
         None,
+        false,
     );
 
     print_first_sheet(&gc);

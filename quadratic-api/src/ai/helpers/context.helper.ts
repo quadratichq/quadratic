@@ -1,12 +1,15 @@
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import type { AIModelKey, AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
+import { A1Docs } from '../docs/A1Docs';
 import { ConnectionDocs } from '../docs/ConnectionDocs';
 import { FormulaDocs } from '../docs/FormulaDocs';
 import { JavascriptDocs } from '../docs/JavascriptDocs';
 import { PythonDocs } from '../docs/PythonDocs';
 import { QuadraticDocs } from '../docs/QuadraticDocs';
+import { ValidationDocs } from '../docs/ValidationDocs';
 
-export const getQuadraticContext = (language?: CodeCellType): ChatMessage[] => [
+export const getQuadraticContext = (source: AISource, language?: CodeCellType): ChatMessage[] => [
   {
     role: 'user',
     content: [
@@ -32,7 +35,9 @@ ${
     : 'Choose the language of your response based on the context and user prompt.'
 }
 Provide complete code blocks with language syntax highlighting. Don't provide small code snippets of changes.
-Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks. Think step by step before responding.
+Respond in minimum number of words and include a concise explanation of the actions you are taking. Don't guess the answer itself, just the actions you are taking to respond to the user prompt and what the user can do next. Use Formulas for simple tasks like summing and averaging and use Python for more complex tasks. Think step by step before responding.\n\n
+${['AIAnalyst', 'AIAssistant'].includes(source) ? A1Docs : ''}\n\n
+${source === 'AIAnalyst' ? ValidationDocs : ''}
 `,
       },
     ],
@@ -52,7 +57,8 @@ I will follow all your instructions with context of quadratic documentation, and
   },
 ];
 
-export const getToolUseContext = (source: AISource): ChatMessage[] => {
+export const getToolUseContext = (source: AISource, modelKey: AIModelKey): ChatMessage[] => {
+  const aiModelMode = MODELS_CONFIGURATION[modelKey].mode;
   return [
     {
       role: 'user',
@@ -75,7 +81,7 @@ ${
 }
 
 ${Object.entries(aiToolsSpec)
-  .filter(([_, { sources }]) => sources.includes(source))
+  .filter(([_, { sources, aiModelModes }]) => sources.includes(source) && aiModelModes.includes(aiModelMode))
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 

@@ -17,7 +17,8 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
-        remove_selection: A1Selection,
+        remove_selection: &A1Selection,
+        ignore_validation_id: Option<Uuid>,
     ) -> Vec<Operation> {
         let mut reverse_operations = vec![];
 
@@ -28,15 +29,16 @@ impl GridController {
             // Collect validations that need to be processed first
             let validations_to_process: Vec<_> = sheet
                 .validations
-                .validation_overlaps_selection(&remove_selection, &self.a1_context)
+                .validation_overlaps_selection(remove_selection, &self.a1_context)
                 .iter()
+                .filter(|v| ignore_validation_id.is_none_or(|ignore| ignore != v.id))
                 .map(|v| (v.id, (*v).clone()))
                 .collect();
 
             for (validation_id, validation) in validations_to_process {
                 if let Some(new_selection) = validation
                     .selection
-                    .delete_selection(&remove_selection, &self.a1_context)
+                    .delete_selection(remove_selection, &self.a1_context)
                 {
                     // if the selection is different, then update the validation
                     if validation.selection != new_selection {
@@ -86,7 +88,7 @@ impl GridController {
         };
 
         for validation in validations {
-            self.apply_validation_warnings(transaction, sheet_rect.sheet_id, validation);
+            self.apply_validation_warnings(transaction, sheet_rect.sheet_id, &validation);
         }
     }
 
@@ -100,19 +102,24 @@ impl GridController {
         if let Some(sheet) = self.try_sheet_mut(sheet_id) {
             sheet.validations.warnings.retain(|pos, id| {
                 if *id == validation_id {
-                    transaction
-                        .forward_operations
-                        .push(Operation::SetValidationWarning {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                            validation_id: None,
-                        });
-                    transaction
-                        .reverse_operations
-                        .push(Operation::SetValidationWarning {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                            validation_id: Some(validation_id),
-                        });
                     transaction.validation_warning_deleted(sheet_id, *pos);
+
+                    if transaction.is_user_ai_undo_redo() {
+                        transaction
+                            .reverse_operations
+                            .push(Operation::SetValidationWarning {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                validation_id: Some(validation_id),
+                            });
+
+                        transaction
+                            .forward_operations
+                            .push(Operation::SetValidationWarning {
+                                sheet_pos: pos.to_sheet_pos(sheet_id),
+                                validation_id: None,
+                            });
+                    }
+
                     false
                 } else {
                     true
@@ -126,7 +133,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         sheet_id: SheetId,
-        validation: Validation,
+        validation: &Validation,
     ) {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return;
@@ -153,47 +160,57 @@ impl GridController {
                 }
             });
         }
-        let validation_warnings = transaction
-            .validations_warnings
-            .entry(sheet_id)
-            .or_default();
 
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             return;
         };
+
         warnings.iter().for_each(|(pos, validation_id)| {
             let sheet_pos = pos.to_sheet_pos(sheet_id);
             let old = sheet
                 .validations
                 .set_warning(sheet_pos, Some(*validation_id));
+
             transaction
-                .forward_operations
-                .push(Operation::SetValidationWarning {
-                    sheet_pos,
-                    validation_id: Some(*validation_id),
-                });
-            transaction.reverse_operations.push(old);
-            validation_warnings.insert(
-                *pos,
-                JsValidationWarning {
-                    pos: *pos,
-                    style: Some(validation.error.style.clone()),
-                    validation: Some(*validation_id),
-                },
-            );
+                .validations_warnings
+                .entry(sheet_id)
+                .or_default()
+                .insert(
+                    *pos,
+                    JsValidationWarning {
+                        pos: *pos,
+                        style: Some(validation.error.style.clone()),
+                        validation: Some(*validation_id),
+                    },
+                );
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction.reverse_operations.push(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos,
+                        validation_id: Some(*validation_id),
+                    });
+            }
         });
 
         remove_warnings.iter().for_each(|pos| {
             let sheet_pos = pos.to_sheet_pos(sheet_id);
             let old = sheet.validations.set_warning(sheet_pos, None);
-            transaction
-                .forward_operations
-                .push(Operation::SetValidationWarning {
-                    sheet_pos,
-                    validation_id: None,
-                });
-            transaction.reverse_operations.push(old);
             transaction.validation_warning_deleted(sheet_id, *pos);
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction.reverse_operations.push(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos,
+                        validation_id: None,
+                    });
+            }
         });
     }
 
@@ -205,22 +222,32 @@ impl GridController {
         if let Operation::SetValidation { validation } = op {
             let sheet_id = validation.selection.sheet_id;
             self.remove_validation_warnings(transaction, sheet_id, validation.id);
+            self.check_deleted_validations(
+                transaction,
+                sheet_id,
+                &validation.selection,
+                Some(validation.id),
+            );
+
             let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
                 return;
             };
 
-            transaction
-                .forward_operations
-                .push(Operation::SetValidation {
-                    validation: validation.clone(),
-                });
-            transaction
-                .reverse_operations
-                .extend(sheet.validations.set(validation.clone()));
+            let old = sheet.validations.set(validation.clone());
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction.reverse_operations.extend(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidation {
+                        validation: validation.clone(),
+                    });
+            }
 
             transaction.validations.insert(sheet_id);
 
-            self.apply_validation_warnings(transaction, sheet_id, validation.clone());
+            self.apply_validation_warnings(transaction, sheet_id, &validation);
 
             if transaction.is_server() {
                 return;
@@ -232,6 +259,86 @@ impl GridController {
                     sheet,
                     self.a1_context(),
                     vec![validation.selection],
+                );
+            }
+        }
+    }
+
+    pub(crate) fn execute_create_or_update_validation(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::CreateOrUpdateValidation { validation } = op {
+            // first, remove any validations that overlap new validation's
+            // selection since you can only have one validation per cell
+            self.check_deleted_validations(
+                transaction,
+                validation.selection.sheet_id,
+                &validation.selection,
+                Some(validation.id),
+            );
+
+            let sheet_id = validation.selection.sheet_id;
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+                return;
+            };
+
+            let updated_validation: Validation = if let Some(existing_validation) =
+                sheet.validations.similar_validation(&validation)
+            {
+                if transaction.is_user_ai_undo_redo() {
+                    transaction
+                        .reverse_operations
+                        .push(Operation::SetValidation {
+                            validation: existing_validation.clone(),
+                        });
+                }
+                let new_selection = existing_validation
+                    .selection
+                    .append_selection(&validation.selection);
+                Validation {
+                    selection: new_selection,
+                    ..existing_validation.clone()
+                }
+            } else {
+                if transaction.is_user_ai_undo_redo() {
+                    transaction
+                        .reverse_operations
+                        .push(Operation::RemoveValidation {
+                            sheet_id,
+                            validation_id: validation.id,
+                        });
+                }
+                validation
+            };
+            sheet.validations.set(updated_validation.clone());
+
+            self.remove_validation_warnings(transaction, sheet_id, updated_validation.id);
+            self.apply_validation_warnings(transaction, sheet_id, &updated_validation);
+
+            let selection = updated_validation.selection.clone();
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidation {
+                        validation: updated_validation,
+                    });
+            }
+
+            transaction.validations.insert(sheet_id);
+
+            if transaction.is_server() {
+                return;
+            }
+
+            self.send_updated_bounds(transaction, sheet_id);
+            if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![selection],
                 );
             }
         }
@@ -253,21 +360,23 @@ impl GridController {
                 return;
             };
 
-            transaction
-                .forward_operations
-                .push(Operation::RemoveValidation {
-                    sheet_id,
-                    validation_id,
-                });
-
             let selection = sheet
                 .validations
                 .validation(validation_id)
                 .map(|v| v.selection.clone());
 
-            transaction
-                .reverse_operations
-                .extend(sheet.validations.remove(validation_id));
+            let old = sheet.validations.remove(validation_id);
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction.reverse_operations.extend(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::RemoveValidation {
+                        sheet_id,
+                        validation_id,
+                    });
+            }
 
             transaction.validations.insert(sheet.id);
 
@@ -288,6 +397,54 @@ impl GridController {
         }
     }
 
+    pub(crate) fn execute_remove_validation_selection(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        if let Operation::RemoveValidationSelection {
+            sheet_id,
+            selection,
+        } = op
+        {
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+                return;
+            };
+
+            let Some(reverse) = sheet
+                .validations
+                .remove_selection(&selection, &self.a1_context)
+            else {
+                return;
+            };
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction.reverse_operations.extend(reverse);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::RemoveValidationSelection {
+                        sheet_id,
+                        selection: selection.clone(),
+                    });
+            }
+
+            if transaction.is_server() {
+                return;
+            }
+            transaction.validations.insert(sheet_id);
+
+            self.send_updated_bounds(transaction, sheet_id);
+            if let Some(sheet) = self.grid.try_sheet(sheet_id) {
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    self.a1_context(),
+                    vec![selection],
+                );
+            }
+        }
+    }
+
     pub(crate) fn execute_set_validation_warning(
         &mut self,
         transaction: &mut PendingTransaction,
@@ -302,15 +459,18 @@ impl GridController {
                 return;
             };
 
-            transaction
-                .forward_operations
-                .push(Operation::SetValidationWarning {
-                    sheet_pos,
-                    validation_id,
-                });
-
             let old = sheet.validations.set_warning(sheet_pos, validation_id);
-            transaction.reverse_operations.push(old);
+
+            if transaction.is_user_ai_undo_redo() {
+                transaction.reverse_operations.push(old);
+
+                transaction
+                    .forward_operations
+                    .push(Operation::SetValidationWarning {
+                        sheet_pos,
+                        validation_id,
+                    });
+            }
 
             if transaction.is_server() {
                 return;
@@ -572,9 +732,9 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None, false);
 
-        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
+        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
 
         // hack changing the sheet without updating the validations
         let sheet = gc.sheet_mut(sheet_id);
@@ -608,11 +768,15 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
+        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1:B2"));
 
         let mut transaction = PendingTransaction::default();
-        let reverse =
-            gc.check_deleted_validations(&mut transaction, sheet_id, A1Selection::test_a1("A1"));
+        let reverse = gc.check_deleted_validations(
+            &mut transaction,
+            sheet_id,
+            &A1Selection::test_a1("A1"),
+            None,
+        );
 
         // check reverse operations
         assert!(transaction.validations.contains(&sheet_id));
@@ -631,6 +795,42 @@ mod tests {
     }
 
     #[test]
+    fn test_check_deleted_validations_undo() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.validations.validations.first().unwrap().selection,
+            A1Selection::test_a1_sheet_id("A1:B2", sheet_id)
+        );
+
+        gc.delete_cells(&A1Selection::test_a1("A1"), None, false);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet
+                .validations
+                .validations
+                .first()
+                .unwrap()
+                .selection
+                .ranges,
+            A1Selection::test_a1("A2:B2,B1").ranges
+        );
+
+        dbg!(&gc.undo_stack);
+
+        gc.undo(None);
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.validations.validations.first().unwrap().selection,
+            A1Selection::test_a1_sheet_id("A1:B2", sheet_id)
+        );
+    }
+
+    #[test]
     fn test_check_validations_table() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
@@ -638,12 +838,12 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!B4], Some(validation.id));
 
         let mut transaction = PendingTransaction::default();
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let reverse = gc.check_deleted_validations(&mut transaction, sheet_id, selection);
+        let reverse = gc.check_deleted_validations(&mut transaction, sheet_id, &selection, None);
 
         assert!(transaction.validations.contains(&sheet_id));
         assert_eq!(reverse.len(), 1);
@@ -655,5 +855,17 @@ mod tests {
         );
 
         assert_validation_id(&gc, pos![sheet_id!B4], None);
+    }
+
+    #[test]
+    fn test_create_or_update_validation() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_checkbox(&mut gc, A1Selection::test_a1("A1:B2"));
+        test_create_checkbox(&mut gc, A1Selection::test_a1("D1"));
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(sheet.validations.validations.len(), 1);
     }
 }

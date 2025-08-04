@@ -10,6 +10,7 @@ impl GridController {
         sheet_id: String,
         transient_resize: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let Ok(sheet_id) = SheetId::from_str(&sheet_id) else {
             // sheet may have been deleted before resize is completed
@@ -25,7 +26,7 @@ impl GridController {
                         )));
                     }
                 };
-                self.commit_offsets_resize(sheet_id, transient_resize, cursor);
+                self.commit_offsets_resize(sheet_id, transient_resize, cursor, is_ai);
                 Ok(())
             }
             None => Ok(()),
@@ -41,10 +42,11 @@ impl GridController {
         row: Option<i32>,
         size: f64,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<JsValue, JsValue> {
         let sheet_id = SheetId::from_str(&sheet_id).unwrap();
         Ok(serde_wasm_bindgen::to_value(&self.commit_single_resize(
-            sheet_id, column, row, size, cursor,
+            sheet_id, column, row, size, cursor, is_ai,
         ))?)
     }
 
@@ -73,25 +75,39 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "resizeColumns")]
-    pub fn js_resize_columns(&mut self, sheet_id: String, columns: String, cursor: Option<String>) {
-        if let (Ok(sheet_id), Ok(columns)) =
-            (SheetId::from_str(&sheet_id), serde_json::from_str(&columns))
-        {
-            self.resize_columns(sheet_id, columns, cursor);
-        } else {
-            dbgjs!("Failed to parse values in resizeColumns");
-        }
+    pub fn js_resize_columns(
+        &mut self,
+        sheet_id: String,
+        columns: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let columns = serde_json::from_str(&columns)
+                .map_err(|e| format!("Unable to parse columns: {e}"))?;
+            self.resize_columns(sheet_id, columns, cursor, is_ai);
+            Ok(None)
+        })
     }
 
     #[wasm_bindgen(js_name = "resizeRows")]
-    pub fn js_resize_rows(&mut self, sheet_id: String, rows: String, cursor: Option<String>) {
-        if let (Ok(sheet_id), Ok(rows)) =
-            (SheetId::from_str(&sheet_id), serde_json::from_str(&rows))
-        {
-            self.resize_rows(sheet_id, rows, cursor);
-        } else {
-            dbgjs!("Failed to parse values in resizeRows");
-        }
+    pub fn js_resize_rows(
+        &mut self,
+        sheet_id: String,
+        rows: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let rows =
+                serde_json::from_str(&rows).map_err(|e| format!("Unable to parse rows: {e}"))?;
+            self.resize_rows(sheet_id, rows, cursor, is_ai);
+            Ok(None)
+        })
     }
 
     #[wasm_bindgen(js_name = "resizeAllColumns")]
@@ -100,9 +116,10 @@ impl GridController {
         sheet_id: String,
         size: f64,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            self.resize_all_columns(sheet_id, size, cursor);
+            self.resize_all_columns(sheet_id, size, cursor, is_ai);
             Ok(())
         } else {
             Err(JsValue::from_str("Failed to parse sheet_id"))
@@ -115,9 +132,10 @@ impl GridController {
         sheet_id: String,
         size: f64,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            self.resize_all_rows(sheet_id, size, cursor);
+            self.resize_all_rows(sheet_id, size, cursor, is_ai);
             Ok(())
         } else {
             Err(JsValue::from_str("Failed to parse sheet_id"))

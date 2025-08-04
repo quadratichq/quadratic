@@ -30,11 +30,10 @@ export function useRenameTableName() {
         return;
       }
 
-      const cursor = sheets.getCursorPosition();
       if (oldName !== undefined) {
         sheets.updateTableName(oldName, newName);
       }
-      quadraticCore.dataTableMeta(sheetId, x, y, { name: newName }, cursor);
+      quadraticCore.dataTableMeta(sheetId, x, y, { name: newName }, false);
     },
     [addGlobalSnackbar]
   );

@@ -69,7 +69,7 @@ impl GridController {
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user() {
+                    if transaction.is_user_ai() {
                         columns_to_adjust.sort_unstable();
                         columns_to_adjust.dedup();
                         columns_to_adjust.reverse();
@@ -134,7 +134,7 @@ impl GridController {
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user() {
+                    if transaction.is_user_ai() {
                         rows_to_adjust.sort_unstable();
                         rows_to_adjust.dedup();
                         rows_to_adjust.reverse();
@@ -216,7 +216,7 @@ impl GridController {
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user() {
+                    if transaction.is_user_ai() {
                         self.adjust_code_cell_references(
                             transaction,
                             &[RefAdjust::new_insert_column(sheet_id, column)],
@@ -252,7 +252,7 @@ impl GridController {
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user() {
+                    if transaction.is_user_ai() {
                         self.adjust_code_cell_references(
                             transaction,
                             &[RefAdjust::new_insert_row(sheet_id, row)],
@@ -296,8 +296,6 @@ impl GridController {
 mod tests {
     use std::collections::HashMap;
 
-    use uuid::Uuid;
-
     use crate::{
         Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, MultiPos, Pos, Rect, SheetPos,
         SheetRect, Value,
@@ -305,7 +303,7 @@ mod tests {
         cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            sheet::validations::{rules::ValidationRule, validation::Validation},
+            sheet::validations::{rules::ValidationRule, validation::ValidationUpdate},
         },
         test_create_gc,
         test_util::*,
@@ -334,15 +332,16 @@ mod tests {
     fn adjust_code_cells_formula() {
         let mut gc = GridController::new();
         let sheet_id = gc.sheet_ids()[0];
-        gc.add_sheet(Some("Other".to_string()));
-        gc.set_cell_value(SheetPos::new(sheet_id, 2, 16), "1".into(), None);
-        gc.set_cell_value(SheetPos::new(sheet_id, 2, 17), "2".into(), None);
+        gc.add_sheet(Some("Other".to_string()), None, None, false);
+        gc.set_cell_value(SheetPos::new(sheet_id, 2, 16), "1".into(), None, false);
+        gc.set_cell_value(SheetPos::new(sheet_id, 2, 17), "2".into(), None, false);
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B$16 + $B17".into(),
             None,
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos::new(sheet_id, 1, 2),
@@ -350,6 +349,7 @@ mod tests {
             "'Sheet 1'!F1+Other!F1 - Nonexistent!F1".into(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -418,6 +418,7 @@ mod tests {
             },
             "1".into(),
             None,
+            false,
         );
         gc.set_cell_value(
             SheetPos {
@@ -427,6 +428,7 @@ mod tests {
             },
             "2".into(),
             None,
+            false,
         );
 
         let sheet_pos = SheetPos {
@@ -441,6 +443,7 @@ mod tests {
             r#"q.cells("B1:B2")"#.into(),
             None,
             None,
+            false,
         );
 
         let mut cells_accessed = CellsAccessed::default();
@@ -503,6 +506,7 @@ mod tests {
             },
             "1".into(),
             None,
+            false,
         );
         gc.set_cell_value(
             SheetPos {
@@ -512,6 +516,7 @@ mod tests {
             },
             "2".into(),
             None,
+            false,
         );
 
         let sheet_pos = SheetPos {
@@ -526,6 +531,7 @@ mod tests {
             r#"return q.cells("B1:B2");"#.into(),
             None,
             None,
+            false,
         );
 
         let mut cells_accessed = CellsAccessed::default();
@@ -590,6 +596,7 @@ mod tests {
             },
             vec![vec!["A".into(), "B".into(), "C".into()]],
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -597,7 +604,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 3, 1))
         );
-        gc.insert_columns(sheet_id, 3, 1, true, None);
+        gc.insert_columns(sheet_id, 3, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -619,6 +626,7 @@ mod tests {
             },
             vec![vec!["A".into()], vec!["B".into()], vec!["C".into()]],
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -626,7 +634,7 @@ mod tests {
             sheet.bounds(false),
             GridBounds::NonEmpty(Rect::new(1, 1, 1, 3))
         );
-        gc.insert_rows(sheet_id, 3, 1, true, None);
+        gc.insert_rows(sheet_id, 3, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -648,6 +656,7 @@ mod tests {
             },
             "1".into(),
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -656,6 +665,7 @@ mod tests {
             "C1".into(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -664,10 +674,14 @@ mod tests {
             "1".to_string()
         );
 
-        gc.delete_rows(sheet_id, vec![2], None);
+        gc.delete_rows(sheet_id, vec![2], None, false);
 
         // rerun the code cell to get the new value
-        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
+        gc.rerun_code_cell(
+            A1Selection::test_a1_context("A1", gc.a1_context()),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -676,7 +690,11 @@ mod tests {
         );
 
         gc.undo(None);
-        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
+        gc.rerun_code_cell(
+            A1Selection::test_a1_context("A1", gc.a1_context()),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -698,6 +716,7 @@ mod tests {
             },
             "1".into(),
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -706,6 +725,7 @@ mod tests {
             "A3".into(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -714,10 +734,14 @@ mod tests {
             "1".to_string()
         );
 
-        gc.delete_rows(sheet_id, vec![2], None);
+        gc.delete_rows(sheet_id, vec![2], None, false);
 
         // rerun the code cell to get the new value
-        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
+        gc.rerun_code_cell(
+            A1Selection::test_a1_context("A1", gc.a1_context()),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -726,7 +750,11 @@ mod tests {
         );
 
         gc.undo(None);
-        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
+        gc.rerun_code_cell(
+            A1Selection::test_a1_context("A1", gc.a1_context()),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -746,10 +774,11 @@ mod tests {
             "$F6".into(),
             None,
             None,
+            false,
         );
 
-        gc.delete_columns(sheet_id, vec![1, 3, 4, 5], None);
-        gc.delete_rows(sheet_id, vec![2, 7, 8], None);
+        gc.delete_columns(sheet_id, vec![1, 3, 4, 5], None, false);
+        gc.delete_rows(sheet_id, vec![2, 7, 8], None, false);
 
         assert_eq!(
             gc.sheet(sheet_id).cell_value(pos![F7]).unwrap(), // 6,10
@@ -765,17 +794,18 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,B"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
             },
             None,
+            false,
         );
 
-        gc.insert_columns(sheet_id, 2, 1, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -790,17 +820,18 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
             },
             None,
+            false,
         );
 
-        gc.insert_rows(sheet_id, 2, 1, true, None);
+        gc.insert_rows(sheet_id, 2, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -815,17 +846,18 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,B"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
             },
             None,
+            false,
         );
 
-        gc.delete_columns(sheet_id, vec![2], None);
+        gc.delete_columns(sheet_id, vec![2], None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -840,17 +872,18 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
                 error: Default::default(),
             },
             None,
+            false,
         );
 
-        gc.delete_rows(sheet_id, vec![2], None);
+        gc.delete_rows(sheet_id, vec![2], None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -873,9 +906,10 @@ mod tests {
             },
             vec![vec!["A".into(), "B".into(), "C".into(), "D".into()]],
             None,
+            false,
         );
 
-        gc.delete_columns(sheet_id, vec![2, 3], None);
+        gc.delete_columns(sheet_id, vec![2, 3], None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -909,9 +943,10 @@ mod tests {
                 vec!["D".into()],
             ],
             None,
+            false,
         );
 
-        gc.delete_rows(sheet_id, vec![2, 3], None);
+        gc.delete_rows(sheet_id, vec![2, 3], None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -934,7 +969,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.insert_columns(sheet_id, 1, 1, true, None);
+        gc.insert_columns(sheet_id, 1, 1, true, None, false);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -942,7 +977,7 @@ mod tests {
         sheet.offsets.set_column_width(2, 200.0);
         sheet.offsets.set_column_width(4, 400.0);
 
-        gc.insert_columns(sheet_id, 2, 1, true, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None, false);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
         offsets.insert((Some(3), None), 200.0);
         offsets.insert((Some(4), None), DEFAULT_COLUMN_WIDTH);
@@ -963,7 +998,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.delete_columns(sheet_id, vec![2], None);
+        gc.delete_columns(sheet_id, vec![2], None, false);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -971,7 +1006,7 @@ mod tests {
         sheet.offsets.set_column_width(2, 200.0);
         sheet.offsets.set_column_width(4, 400.0);
 
-        gc.delete_columns(sheet_id, vec![2], None);
+        gc.delete_columns(sheet_id, vec![2], None, false);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
         offsets.insert((Some(2), None), DEFAULT_COLUMN_WIDTH);
         offsets.insert((Some(3), None), 400.0);
@@ -991,7 +1026,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.insert_rows(sheet_id, 1, 1, true, None);
+        gc.insert_rows(sheet_id, 1, 1, true, None, false);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -999,7 +1034,7 @@ mod tests {
         sheet.offsets.set_row_height(2, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
-        gc.insert_rows(sheet_id, 2, 1, true, None);
+        gc.insert_rows(sheet_id, 2, 1, true, None, false);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
         offsets.insert((None, Some(3)), 200.0);
         offsets.insert((None, Some(4)), DEFAULT_ROW_HEIGHT);
@@ -1020,7 +1055,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.delete_rows(sheet_id, vec![2, 3], None);
+        gc.delete_rows(sheet_id, vec![2, 3], None, false);
         expect_js_call_count("jsOffsetsModified", 0, true);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1029,7 +1064,7 @@ mod tests {
         sheet.offsets.set_row_height(3, 200.0);
         sheet.offsets.set_row_height(4, 400.0);
 
-        gc.delete_rows(sheet_id, vec![2, 3], None);
+        gc.delete_rows(sheet_id, vec![2, 3], None, false);
         let mut offsets = HashMap::<(Option<i64>, Option<i64>), f64>::new();
         offsets.insert((None, Some(2)), 400.0);
         offsets.insert((None, Some(3)), DEFAULT_ROW_HEIGHT);
@@ -1050,7 +1085,7 @@ mod tests {
         test_create_html_chart(&mut gc, sheet_id, pos![B2], 3, 3);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
-        gc.delete_rows(sheet_id, vec![3], None);
+        gc.delete_rows(sheet_id, vec![3], None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 2, false);
 
         gc.undo(None);
@@ -1073,7 +1108,7 @@ mod tests {
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
 
         // deletes the bottom tow rows of the chart
-        gc.delete_rows(sheet_id, vec![3, 4], None);
+        gc.delete_rows(sheet_id, vec![3, 4], None, false);
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 1, false);
 
         gc.undo(None);
@@ -1087,7 +1122,7 @@ mod tests {
 
         let table = test_create_code_table(&mut gc, sheet_id, pos![C2], 2, 2);
 
-        gc.insert_columns(sheet_id, 3, 1, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None, false);
 
         assert_eq!(&table, gc.data_table_at(pos![sheet_id!d2].into()).unwrap());
         assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
@@ -1101,7 +1136,7 @@ mod tests {
         let _table = test_create_data_table(&mut gc, sheet_id, pos![C2], 2, 2);
 
         print_first_sheet(&gc);
-        gc.insert_columns(sheet_id, 3, 1, false, None);
+        gc.insert_columns(sheet_id, 3, 1, false, None, false);
 
         // todo: this should be correct
         // assert_data_table_eq(&gc, pos![sheet_id!d2], &table);

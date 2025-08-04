@@ -749,6 +749,7 @@ mod tests {
             "1 + 1".to_string(),
             None,
             None,
+            false,
         );
     }
 }

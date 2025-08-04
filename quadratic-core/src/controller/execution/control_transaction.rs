@@ -79,7 +79,7 @@ impl GridController {
         }
 
         match transaction.source {
-            TransactionSource::User => {
+            TransactionSource::User | TransactionSource::AI => {
                 let undo = transaction.to_undo_transaction();
                 self.undo_stack.push(undo);
                 self.redo_stack.clear();
@@ -115,6 +115,8 @@ impl GridController {
 
         transaction.send_transaction();
 
+        transaction.send_ai_updates(self);
+
         if cfg!(target_family = "wasm") || cfg!(test) {
             let transaction_name = serde_json::to_string(&transaction.transaction_name)
                 .unwrap_or("Unknown".to_string());
@@ -125,14 +127,20 @@ impl GridController {
         }
     }
 
-    pub fn start_user_transaction(
+    pub fn start_user_ai_transaction(
         &mut self,
         operations: Vec<Operation>,
         cursor: Option<String>,
         transaction_name: TransactionName,
+        is_ai: bool,
     ) -> String {
+        let source = if is_ai {
+            TransactionSource::AI
+        } else {
+            TransactionSource::User
+        };
         let mut transaction = PendingTransaction {
-            source: TransactionSource::User,
+            source,
             operations: operations.into(),
             cursor,
             transaction_name,
@@ -318,7 +326,6 @@ mod tests {
 
         // TransactionType::User
         let mut transaction = PendingTransaction {
-            source: TransactionSource::User,
             operations: vec![operation].into(),
             ..Default::default()
         };
@@ -366,7 +373,12 @@ mod tests {
         assert!(!gc.has_undo());
         assert!(!gc.has_redo());
 
-        gc.start_user_transaction(vec![operation.clone()], None, TransactionName::Unknown);
+        gc.start_user_ai_transaction(
+            vec![operation.clone()],
+            None,
+            TransactionName::Unknown,
+            false,
+        );
         assert!(gc.has_undo());
         assert!(!gc.has_redo());
         assert_eq!(vec![operation_undo.clone()], gc.undo_stack[0].operations);
@@ -389,7 +401,6 @@ mod tests {
         assert_eq!(gc.grid().sheets()[0].bounds(true), GridBounds::Empty);
 
         let mut transaction = PendingTransaction {
-            source: TransactionSource::User,
             operations: vec![operation.clone()].into(),
             ..Default::default()
         };
@@ -421,6 +432,7 @@ mod tests {
             "1 + 1".into(),
             None,
             None,
+            false,
         );
 
         let transaction_id = gc.last_transaction().unwrap().id;
@@ -447,6 +459,7 @@ mod tests {
             "select * from table".into(),
             None,
             None,
+            false,
         );
 
         let transaction_id = gc.last_transaction().unwrap().id;

@@ -194,9 +194,9 @@ mod test {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_bold(&A1Selection::test_a1("A1:A5"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("A1:A5"), Some(true), None, false)
             .unwrap();
-        gc.set_italic(&A1Selection::test_a1("B1:B5"), Some(true), None)
+        gc.set_italic(&A1Selection::test_a1("B1:B5"), Some(true), None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -225,7 +225,7 @@ mod test {
 
         test_create_data_table(&mut gc, sheet_id, pos![B1], 2, 2);
 
-        gc.set_bold(&A1Selection::test_a1("B3"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("B3"), Some(true), None, false)
             .unwrap();
 
         gc.set_formats(
@@ -234,6 +234,8 @@ mod test {
                 italic: Some(Some(true)),
                 ..Default::default()
             },
+            None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);

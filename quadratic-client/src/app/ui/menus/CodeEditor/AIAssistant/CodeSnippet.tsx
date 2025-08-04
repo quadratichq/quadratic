@@ -4,7 +4,6 @@ import {
   codeEditorCodeCellAtom,
   codeEditorEditorContentAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CopyIcon, SaveAndRunIcon } from '@/shared/components/Icons';
@@ -165,7 +164,7 @@ const CodeSnippetRunButton = memo(
             tablePos: undefined,
             codeString: text ?? '',
             language: codeCell.language,
-            cursor: sheets.getCursorPosition(),
+            isAi: false,
           });
         },
       [language, text]

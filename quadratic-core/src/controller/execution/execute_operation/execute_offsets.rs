@@ -30,7 +30,7 @@ impl GridController {
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
                     || transaction.is_multiplayer()
-                    || (!client_resized && transaction.is_user()))
+                    || (!client_resized && transaction.is_user_ai()))
             {
                 transaction
                     .offsets_modified
@@ -39,7 +39,7 @@ impl GridController {
                     .insert((Some(column), None), new_size);
             }
 
-            if transaction.is_user() {
+            if transaction.is_user_ai() {
                 let rows = sheet.get_rows_with_wrap_in_column(column, false);
                 if !rows.is_empty() {
                     let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
@@ -50,7 +50,7 @@ impl GridController {
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: column,
                     y: 1,
@@ -100,7 +100,7 @@ impl GridController {
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
                     || transaction.is_multiplayer()
-                    || (!client_resized && transaction.is_user()))
+                    || (!client_resized && transaction.is_user_ai()))
             {
                 transaction
                     .offsets_modified
@@ -112,7 +112,7 @@ impl GridController {
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: 1,
                     y: row,
@@ -178,7 +178,7 @@ impl GridController {
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 row_heights.iter().any(|JsRowHeight { row, .. }| {
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: 0,
@@ -237,7 +237,7 @@ impl GridController {
                     });
             }
 
-            if transaction.is_user() {
+            if transaction.is_user_ai() {
                 for JsColumnWidth { column, .. } in column_widths.iter() {
                     let rows = sheet.get_rows_with_wrap_in_column(*column, false);
                     if !rows.is_empty() {
@@ -250,7 +250,7 @@ impl GridController {
             transaction.add_fill_cells(sheet_id);
             transaction.add_borders(sheet_id);
 
-            if transaction.is_user_undo_redo() {
+            if transaction.is_user_ai_undo_redo() {
                 column_widths.iter().any(|JsColumnWidth { column, .. }| {
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: *column,
@@ -305,7 +305,7 @@ impl GridController {
             }
         }
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);
 
             transaction
@@ -358,7 +358,7 @@ impl GridController {
             }
         }
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);
 
             transaction.reverse_operations.push(Operation::ResizeRows {
@@ -404,7 +404,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let column = 0;
         let new_size = 120.0;
-        gc.commit_single_resize(sheet_id, Some(column), None, new_size, None);
+        gc.commit_single_resize(sheet_id, Some(column), None, new_size, None, false);
         let column_width = gc
             .grid
             .try_sheet(sheet_id)
@@ -426,7 +426,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         let row = 0;
         let new_size = 100.0;
-        gc.commit_single_resize(sheet_id, None, Some(row), new_size, None);
+        gc.commit_single_resize(sheet_id, None, Some(row), new_size, None, false);
         let row_height = gc
             .grid
             .try_sheet(sheet_id)
@@ -457,6 +457,7 @@ mod tests {
                 },
             ],
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(2), 200.0);

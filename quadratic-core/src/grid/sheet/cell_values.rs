@@ -141,7 +141,7 @@ mod test {
             sheet::validations::{rules::ValidationRule, validation::Validation},
         },
         number::decimal_from_str,
-        test_create_gc,
+        test_util::*,
         wasm_bindings::js::expect_js_call,
     };
 
@@ -239,7 +239,7 @@ mod test {
             sheet_pos: pos![sheet_id!A1],
             values: cell_values,
         }];
-        gc.start_user_transaction(op, None, TransactionName::SetCells);
+        gc.start_user_ai_transaction(op, None, TransactionName::SetCells, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

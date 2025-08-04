@@ -1,5 +1,4 @@
 import { editorInteractionStateShowValidationAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { SheetRange } from '@/app/ui/components/SheetRange';
 import { useValidationData } from '@/app/ui/menus/Validations/Validation/useValidationData';
 import { ValidationDateTime } from '@/app/ui/menus/Validations/Validation/ValidationDateTime/ValidationDateTime';
@@ -35,8 +34,8 @@ export const Validation = () => {
     validationData;
 
   const removeValidation = useCallback(() => {
-    if (validation) {
-      quadraticCore.removeValidation(sheetId, validation.id, sheets.getCursorPosition());
+    if (validation?.id) {
+      quadraticCore.removeValidation(sheetId, validation.id, false);
     }
     setShowValidation(true);
   }, [setShowValidation, sheetId, validation]);
@@ -52,8 +51,9 @@ export const Validation = () => {
 
   return (
     <div
-      className="border-gray relative flex h-full flex-col border-l bg-background px-3 py-1 text-sm"
-      style={{ width: '30rem' }}
+      className="border-gray relative flex h-full shrink-0 flex-col border-l bg-background px-3 text-sm"
+      style={{ width: '20rem' }}
+      data-testid="validation-panel"
     >
       <ValidationHeader validationData={validationData} />
 

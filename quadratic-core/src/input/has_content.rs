@@ -173,7 +173,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None, false);
         test_create_data_table_with_values(&mut gc, sheet_id, pos![2, 2], 3, 1, &["1", "", "3"]);
 
         let sheet = gc.sheet(sheet_id);
@@ -214,8 +214,9 @@ mod tests {
             "A1".into(),
             None,
             None,
+            false,
         );
-        gc.set_cell_value(pos![sheet_id!F1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!F1], "1".into(), None, false);
 
         let sheet = gc.sheet(sheet_id);
         let sheet_data_tables_cache = sheet.data_tables.cache_ref();

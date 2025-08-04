@@ -191,7 +191,7 @@ mod tests {
     #[test]
     fn test_parse_formula_output() {
         let mut g = GridController::new();
-        g.add_sheet(None);
+        g.add_sheet(None, None, None, false);
         let sheet2_id = g.sheet_ids()[1];
         let sheet2_name = &g.sheet(sheet2_id).name;
         let result = parse(&g, &format!("'{sheet2_name}'!A1"));

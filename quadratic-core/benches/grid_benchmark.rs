@@ -86,6 +86,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 js_clipboard,
                 PasteSpecial::None,
                 None,
+                false,
             );
         });
     });
@@ -116,6 +117,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 js_clipboard,
                 PasteSpecial::None,
                 None,
+                false,
             );
         });
     });
@@ -153,7 +155,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None);
+                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None, false);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -173,7 +175,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None);
+                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None, false);
                 gc
             },
             |mut gc| {
@@ -198,7 +200,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     max: Pos { x: 10000, y: 10000 },
                     sheet_id,
                 };
-                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None);
+                gc.delete_cells(&A1Selection::from_rect(sheet_rect), None, false);
                 gc.undo(None);
                 gc
             },
@@ -218,7 +220,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |mut gc| {
                 // Test
-                gc.add_sheet(None);
+                gc.add_sheet(None, None, None, false);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -242,7 +244,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_rect)| {
                 // Test
-                gc.clear_formatting(&A1Selection::from_rect(sheet_rect), None);
+                gc.clear_formatting(&A1Selection::from_rect(sheet_rect), None, false);
             },
             criterion::BatchSize::SmallInput,
         )
@@ -258,7 +260,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             },
             |(mut gc, sheet_id)| {
                 // Test
-                gc.delete_sheet(sheet_id, None)
+                gc.delete_sheet(sheet_id, None, false)
             },
             criterion::BatchSize::SmallInput,
         )
@@ -270,7 +272,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 // Setup
                 let mut gc = GridController::from_grid(grid.clone(), 0);
                 let sheet_id = gc.sheet_ids()[0];
-                gc.delete_sheet(sheet_id, None);
+                gc.delete_sheet(sheet_id, None, false);
                 gc
             },
             |mut gc| {
@@ -313,6 +315,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                     None,
                     Some(b','),
                     Some(false),
+                    false,
                 );
             },
             criterion::BatchSize::SmallInput,

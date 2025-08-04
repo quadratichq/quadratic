@@ -17,13 +17,7 @@ export const HtmlValidationCheckbox = (props: Props) => {
       if (!location || location.x !== column || location.y !== row) return;
       if (validation.rule !== 'None' && 'Logical' in validation.rule) {
         const value = await quadraticCore.getDisplayCell(sheets.current, column, row);
-        quadraticCore.setCellValue(
-          sheets.current,
-          column,
-          row,
-          value === 'true' ? 'false' : 'true',
-          sheets.getCursorPosition()
-        );
+        quadraticCore.setCellValue(sheets.current, column, row, value === 'true' ? 'false' : 'true', false);
       }
     };
     events.on('triggerCell', triggerCell);

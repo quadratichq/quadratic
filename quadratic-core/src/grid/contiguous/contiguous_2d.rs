@@ -602,6 +602,50 @@ impl<T: Default + Clone + PartialEq + fmt::Debug> Contiguous2D<T> {
     pub fn all_in_row(&self, row: i64, f: impl Fn(&T) -> bool) -> bool {
         !self.any_in_row(row, |value| !f(value))
     }
+
+    /// Returns the bounding rect of the contiguous 2d.
+    pub fn bounding_rect(&self) -> Option<Rect> {
+        if self.is_all_default() {
+            return None;
+        }
+
+        let mut min_x = i64::MAX;
+        let mut max_x = i64::MIN;
+        let mut min_y = i64::MAX;
+        let mut max_y = i64::MIN;
+
+        let mut found_any = false;
+
+        for xy_block in self.xy_blocks() {
+            let x1 = xy_block.start as i64;
+            let x2 = match xy_block.end {
+                u64::MAX => i64::MAX,
+                finite => (finite - 1) as i64,
+            };
+
+            for y_block in xy_block.value {
+                let y1 = y_block.start as i64;
+                let y2 = match y_block.end {
+                    u64::MAX => i64::MAX,
+                    finite => (finite - 1) as i64,
+                };
+
+                if y_block.value != T::default() {
+                    found_any = true;
+                    min_x = min_x.min(x1);
+                    max_x = max_x.max(x2);
+                    min_y = min_y.min(y1);
+                    max_y = max_y.max(y2);
+                }
+            }
+        }
+
+        if found_any {
+            Some(Rect::new(min_x, min_y, max_x, max_y))
+        } else {
+            None
+        }
+    }
 }
 
 impl<T: Clone + PartialEq + fmt::Debug> Contiguous2D<Option<T>> {
@@ -1263,5 +1307,52 @@ mod tests {
             ]),
             c.nondefault_rects_in_rect(r).collect()
         );
+    }
+
+    #[test]
+    fn test_bounding_rect() {
+        // Test empty/all default case
+        let c = Contiguous2D::<u8>::new();
+        assert_eq!(c.bounding_rect(), None);
+
+        // Test single cell
+        let mut c = Contiguous2D::<u8>::new();
+        c.set(pos![A1], 42);
+        assert_eq!(c.bounding_rect(), Some(Rect::new(1, 1, 1, 1)));
+
+        // Test single rectangle
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(2, 3, Some(5), Some(7), 42);
+        assert_eq!(c.bounding_rect(), Some(Rect::new(2, 3, 5, 7)));
+
+        // Test multiple separate regions
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(3), Some(3), 42);
+        c.set_rect(10, 10, Some(15), Some(12), 99);
+        assert_eq!(c.bounding_rect(), Some(Rect::new(1, 1, 15, 12)));
+
+        // Test with some regions that are default (should be ignored)
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(5, 5, Some(8), Some(8), 42);
+        c.set_rect(1, 1, Some(2), Some(2), 0); // default value, should be ignored
+        assert_eq!(c.bounding_rect(), Some(Rect::new(5, 5, 8, 8)));
+
+        // Test infinite regions (should be clamped to i64::MAX)
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(5, 5, None, None, 42);
+        assert_eq!(c.bounding_rect(), Some(Rect::new(5, 5, i64::MAX, i64::MAX)));
+
+        // Test mixed finite and infinite regions
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(3), Some(3), 42);
+        c.set_rect(10, 10, None, Some(15), 99);
+        assert_eq!(c.bounding_rect(), Some(Rect::new(1, 1, i64::MAX, 15)));
+
+        // Test after clearing all values
+        let mut c = Contiguous2D::<u8>::new();
+        c.set_rect(1, 1, Some(5), Some(5), 42);
+        assert_eq!(c.bounding_rect(), Some(Rect::new(1, 1, 5, 5)));
+        c.set_rect(1, 1, Some(5), Some(5), 0); // set to default
+        assert_eq!(c.bounding_rect(), None);
     }
 }

@@ -781,6 +781,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let exported = export(gc.grid().clone()).unwrap();

@@ -13,9 +13,14 @@ use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, NumericFormatKind};
 
 impl GridController {
-    pub(crate) fn clear_format_borders(&mut self, selection: &A1Selection, cursor: Option<String>) {
+    pub(crate) fn clear_format_borders(
+        &mut self,
+        selection: &A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = self.clear_format_borders_operations(selection, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
     /// Separately apply sheet and table formats.
@@ -141,13 +146,14 @@ impl GridController {
         selection: &A1Selection,
         align: CellAlign,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             align: Some(Some(align)),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -156,13 +162,14 @@ impl GridController {
         selection: &A1Selection,
         vertical_align: CellVerticalAlign,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             vertical_align: Some(Some(vertical_align)),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -171,6 +178,7 @@ impl GridController {
         selection: &A1Selection,
         bold: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let bold = match bold {
             Some(bold) => bold,
@@ -188,7 +196,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -197,6 +205,7 @@ impl GridController {
         selection: &A1Selection,
         italic: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let italic = match italic {
             Some(italic) => italic,
@@ -214,7 +223,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -223,13 +232,14 @@ impl GridController {
         selection: &A1Selection,
         wrap: CellWrap,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             wrap: Some(Some(wrap)),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -240,6 +250,7 @@ impl GridController {
         selection: &A1Selection,
         symbol: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Err("Sheet not found".into());
@@ -259,7 +270,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -269,6 +280,7 @@ impl GridController {
         kind: NumericFormatKind,
         symbol: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Err("Sheet not found".into());
@@ -284,7 +296,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -293,6 +305,7 @@ impl GridController {
         selection: &A1Selection,
         commas: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let commas = match commas {
             Some(commas) => commas,
@@ -310,7 +323,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -319,13 +332,14 @@ impl GridController {
         selection: &A1Selection,
         color: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             text_color: Some(color),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -334,13 +348,14 @@ impl GridController {
         selection: &A1Selection,
         color: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             fill_color: Some(color),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -348,13 +363,14 @@ impl GridController {
         &mut self,
         selection: &A1Selection,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             numeric_format: Some(None),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -363,6 +379,7 @@ impl GridController {
         selection: &A1Selection,
         delta: i32,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let Some(sheet) = self.try_sheet(selection.sheet_id) else {
             return Err("Sheet not found".into());
@@ -377,7 +394,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -386,13 +403,14 @@ impl GridController {
         selection: &A1Selection,
         date_time: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let format_update = FormatUpdate {
             date_time: Some(date_time),
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -401,6 +419,7 @@ impl GridController {
         selection: &A1Selection,
         underline: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let underline = match underline {
             Some(underline) => underline,
@@ -418,7 +437,7 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
@@ -427,6 +446,7 @@ impl GridController {
         selection: &A1Selection,
         strike_through: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let strike_through = match strike_through {
             Some(strike_through) => strike_through,
@@ -444,13 +464,19 @@ impl GridController {
             ..Default::default()
         };
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
         Ok(())
     }
 
-    pub(crate) fn set_formats(&mut self, selection: &A1Selection, format_update: FormatUpdate) {
+    pub(crate) fn set_formats(
+        &mut self,
+        selection: &A1Selection,
+        format_update: FormatUpdate,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = self.format_ops(selection, format_update, false);
-        self.start_user_transaction(ops, None, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 }
 
@@ -473,6 +499,7 @@ mod test {
             &A1Selection::test_a1("A1:B2"),
             crate::grid::CellAlign::Center,
             None,
+            false,
         )
         .unwrap();
 
@@ -491,6 +518,7 @@ mod test {
             &A1Selection::test_a1("A1:B2"),
             crate::grid::CellVerticalAlign::Middle,
             None,
+            false,
         )
         .unwrap();
 
@@ -509,7 +537,7 @@ mod test {
     fn test_set_bold() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_bold(&A1Selection::test_a1("A1:B2"), Some(true), None)
+        gc.set_bold(&A1Selection::test_a1("A1:B2"), Some(true), None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -520,7 +548,7 @@ mod test {
     fn test_set_cell_wrap_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_cell_wrap(&A1Selection::test_a1("A1:B2"), CellWrap::Clip, None)
+        gc.set_cell_wrap(&A1Selection::test_a1("A1:B2"), CellWrap::Clip, None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -535,7 +563,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let selection = A1Selection::from_xy(1, 1, sheet_id);
-        gc.set_currency(&selection, "€".to_string(), None).unwrap();
+        gc.set_currency(&selection, "€".to_string(), None, false)
+            .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -560,6 +589,7 @@ mod test {
             crate::grid::NumericFormatKind::Exponential,
             None,
             None,
+            false,
         )
         .unwrap();
 
@@ -586,6 +616,7 @@ mod test {
             crate::grid::NumericFormatKind::Percentage,
             None,
             None,
+            false,
         )
         .unwrap();
 
@@ -607,7 +638,7 @@ mod test {
     fn test_toggle_commas_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_commas(&A1Selection::test_a1("A1:B2"), Some(true), None)
+        gc.set_commas(&A1Selection::test_a1("A1:B2"), Some(true), None, false)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -619,7 +650,7 @@ mod test {
             Some(true)
         );
 
-        gc.set_commas(&A1Selection::test_a1("A1:B2"), Some(false), None)
+        gc.set_commas(&A1Selection::test_a1("A1:B2"), Some(false), None, false)
             .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -636,7 +667,7 @@ mod test {
     fn test_set_italic_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_italic(&A1Selection::test_a1("A1:B2"), Some(true), None)
+        gc.set_italic(&A1Selection::test_a1("A1:B2"), Some(true), None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -658,6 +689,7 @@ mod test {
             &A1Selection::test_a1("A1:B2"),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -680,6 +712,7 @@ mod test {
             &A1Selection::test_a1("A1:B2"),
             Some("blue".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -700,7 +733,7 @@ mod test {
         let sheet_id = gc.sheet_ids()[0];
 
         // normal case
-        gc.change_decimal_places(&A1Selection::test_a1("A1:B2"), 2, None)
+        gc.change_decimal_places(&A1Selection::test_a1("A1:B2"), 2, None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -718,7 +751,7 @@ mod test {
     fn test_set_underline_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_underline(&A1Selection::test_a1("A1:B2"), Some(true), None)
+        gc.set_underline(&A1Selection::test_a1("A1:B2"), Some(true), None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -729,7 +762,7 @@ mod test {
     fn test_set_strike_through_selection() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_strike_through(&A1Selection::test_a1("A1:B2"), Some(true), None)
+        gc.set_strike_through(&A1Selection::test_a1("A1:B2"), Some(true), None, false)
             .unwrap();
 
         let sheet = gc.sheet(sheet_id);
@@ -744,6 +777,7 @@ mod test {
             &A1Selection::test_a1("A1:B2"),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -758,7 +792,7 @@ mod test {
         );
 
         let selection = A1Selection::from_xy(1, 1, sheet_id);
-        gc.clear_format_borders(&selection, None);
+        gc.clear_format_borders(&selection, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -775,8 +809,13 @@ mod test {
     fn test_clear_format_column() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        gc.set_text_color(&A1Selection::test_a1("A"), Some("red".to_string()), None)
-            .unwrap();
+        gc.set_text_color(
+            &A1Selection::test_a1("A"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -789,7 +828,7 @@ mod test {
         );
 
         let selection = A1Selection::test_a1("A");
-        gc.clear_format_borders(&selection, None);
+        gc.clear_format_borders(&selection, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.formats.text_color.get(pos![A1]), None);
@@ -804,6 +843,7 @@ mod test {
             &A1Selection::test_a1("1,3,A"),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -830,6 +870,7 @@ mod test {
             &A1Selection::test_a1("A1:B2"),
             Some("red".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -851,7 +892,7 @@ mod test {
             Some("red".to_string())
         );
 
-        gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None);
+        gc.clear_format_borders(&A1Selection::test_a1("A1:B2"), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.formats.text_color.get(pos![A1]), None);
@@ -868,6 +909,7 @@ mod test {
             &A1Selection::test_a1("A1:B2"),
             Some("yyyy-mm-dd".to_string()),
             None,
+            false,
         )
         .unwrap();
 
@@ -921,7 +963,7 @@ mod test {
             }
         );
 
-        gc.start_user_transaction(ops, None, TransactionName::SetFormats);
+        gc.start_user_ai_transaction(ops, None, TransactionName::SetFormats, false);
 
         let sheet = gc.sheet(sheet_id);
         let format = sheet.cell_format(pos![F7]);
@@ -945,7 +987,7 @@ mod test {
         };
 
         // Apply the formats
-        gc.set_formats(&selection, format_update);
+        gc.set_formats(&selection, format_update, None, false);
 
         // Verify the changes were applied
         let sheet = gc.sheet(sheet_id);
@@ -972,7 +1014,8 @@ mod test {
         let selection = A1Selection::from_xy(1, 1, sheet_id);
 
         // First call: set currency format
-        gc.set_currency(&selection, "€".to_string(), None).unwrap();
+        gc.set_currency(&selection, "€".to_string(), None, false)
+            .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
@@ -987,7 +1030,8 @@ mod test {
         );
 
         // Second call: should toggle back to Number format
-        gc.set_currency(&selection, "€".to_string(), None).unwrap();
+        gc.set_currency(&selection, "€".to_string(), None, false)
+            .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
@@ -1002,7 +1046,8 @@ mod test {
         );
 
         // Third call: should toggle back to Currency format
-        gc.set_currency(&selection, "€".to_string(), None).unwrap();
+        gc.set_currency(&selection, "€".to_string(), None, false)
+            .unwrap();
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet
@@ -1029,6 +1074,7 @@ mod test {
             crate::grid::NumericFormatKind::Percentage,
             None,
             None,
+            false,
         )
         .unwrap();
         let sheet = gc.sheet(sheet_id);
@@ -1050,6 +1096,7 @@ mod test {
             crate::grid::NumericFormatKind::Percentage,
             None,
             None,
+            false,
         )
         .unwrap();
         let sheet = gc.sheet(sheet_id);
@@ -1071,6 +1118,7 @@ mod test {
             crate::grid::NumericFormatKind::Percentage,
             None,
             None,
+            false,
         )
         .unwrap();
         let sheet = gc.sheet(sheet_id);

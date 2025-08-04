@@ -38,11 +38,12 @@ impl GridController {
         selection: String,
         align: JsValue,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let align = serde_wasm_bindgen::from_value(align).map_err(|_| "Invalid align")?;
-        self.set_align(&selection, align, cursor)
+        self.set_align(&selection, align, cursor, is_ai)
     }
 
     /// Sets cell vertical align formatting given as an optional [`CellVerticalAlign`].
@@ -52,12 +53,13 @@ impl GridController {
         selection: String,
         vertical_align: JsValue,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let vertical_align =
             serde_wasm_bindgen::from_value(vertical_align).map_err(|_| "Invalid vertical align")?;
-        self.set_vertical_align(&selection, vertical_align, cursor)
+        self.set_vertical_align(&selection, vertical_align, cursor, is_ai)
     }
 
     /// Sets cell wrap formatting given as an optional [`CellWrap`].
@@ -67,11 +69,12 @@ impl GridController {
         selection: String,
         wrap: JsValue,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let wrap = serde_wasm_bindgen::from_value(wrap).map_err(|_| "Invalid wrap")?;
-        self.set_cell_wrap(&selection, wrap, cursor)
+        self.set_cell_wrap(&selection, wrap, cursor, is_ai)
     }
 
     /// Sets cells numeric_format to normal
@@ -80,10 +83,11 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.remove_number_formatting(&selection, cursor)?;
+        self.remove_number_formatting(&selection, cursor, is_ai)?;
         Ok(())
     }
 
@@ -94,10 +98,11 @@ impl GridController {
         selection: String,
         symbol: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_currency(&selection, symbol, cursor)?;
+        self.set_currency(&selection, symbol, cursor, is_ai)?;
         Ok(())
     }
 
@@ -107,10 +112,17 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_numeric_format(&selection, NumericFormatKind::Percentage, None, cursor)?;
+        self.set_numeric_format(
+            &selection,
+            NumericFormatKind::Percentage,
+            None,
+            cursor,
+            is_ai,
+        )?;
         Ok(())
     }
 
@@ -120,10 +132,17 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_numeric_format(&selection, NumericFormatKind::Exponential, None, cursor)?;
+        self.set_numeric_format(
+            &selection,
+            NumericFormatKind::Exponential,
+            None,
+            cursor,
+            is_ai,
+        )?;
         Ok(())
     }
 
@@ -134,10 +153,11 @@ impl GridController {
         selection: String,
         commas: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_commas(&selection, commas, cursor)?;
+        self.set_commas(&selection, commas, cursor, is_ai)?;
         Ok(())
     }
 
@@ -148,10 +168,11 @@ impl GridController {
         selection: String,
         bold: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_bold(&selection, bold, cursor)?;
+        self.set_bold(&selection, bold, cursor, is_ai)?;
         Ok(())
     }
     /// Sets cell italic formatting given as an optional [`bool`].
@@ -161,10 +182,11 @@ impl GridController {
         selection: String,
         italic: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_italic(&selection, italic, cursor)?;
+        self.set_italic(&selection, italic, cursor, is_ai)?;
         Ok(())
     }
 
@@ -175,10 +197,11 @@ impl GridController {
         selection: String,
         text_color: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_text_color(&selection, text_color, cursor)?;
+        self.set_text_color(&selection, text_color, cursor, is_ai)?;
         Ok(())
     }
 
@@ -189,10 +212,11 @@ impl GridController {
         selection: String,
         fill_color: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_fill_color(&selection, fill_color, cursor)?;
+        self.set_fill_color(&selection, fill_color, cursor, is_ai)?;
         Ok(())
     }
 
@@ -204,15 +228,16 @@ impl GridController {
         columns: i32,
         rows: i32,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             if columns <= 0 || rows <= 0 {
                 return Err("Invalid chart size".to_string());
             }
 
-            let sheet_pos =
-                serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
-            self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
+            let sheet_pos = serde_json::from_str::<SheetPos>(&sheet_pos)
+                .map_err(|e| format!("Invalid sheet pos: {e}"))?;
+            self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor, is_ai);
             Ok(None)
         })
     }
@@ -223,10 +248,11 @@ impl GridController {
         selection: String,
         date_time: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_date_time_format(&selection, date_time, cursor)?;
+        self.set_date_time_format(&selection, date_time, cursor, is_ai)?;
         Ok(())
     }
 
@@ -237,10 +263,11 @@ impl GridController {
         selection: String,
         delta: i32,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.change_decimal_places(&selection, delta, cursor)?;
+        self.change_decimal_places(&selection, delta, cursor, is_ai)?;
         Ok(())
     }
 
@@ -251,10 +278,11 @@ impl GridController {
         selection: String,
         underline: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_underline(&selection, underline, cursor)?;
+        self.set_underline(&selection, underline, cursor, is_ai)?;
         Ok(())
     }
 
@@ -265,10 +293,11 @@ impl GridController {
         selection: String,
         strike_through: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.set_strike_through(&selection, strike_through, cursor)?;
+        self.set_strike_through(&selection, strike_through, cursor, is_ai)?;
         Ok(())
     }
 
@@ -278,10 +307,11 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        self.clear_format_borders(&selection, cursor);
+        self.clear_format_borders(&selection, cursor, is_ai);
         Ok(())
     }
 
@@ -289,7 +319,7 @@ impl GridController {
     pub fn js_get_format_selection(&self, selection: String) -> JsValue {
         capture_core_error(|| {
             let selection = serde_json::from_str::<A1Selection>(&selection)
-                .map_err(|_| "Unable to parse A1Selection")?;
+                .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
 
             let sheet = self
                 .try_sheet(selection.sheet_id)
@@ -309,14 +339,18 @@ impl GridController {
         sheet_id: String,
         selection: String,
         formats: String,
+        cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
 
             let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-                .map_err(|_| "Invalid selection")?;
+                .map_err(|e| format!("Invalid selection: {e}"))?;
 
-            let format = serde_json::from_str::<Format>(&formats).map_err(|_| "Invalid formats")?;
+            let format = serde_json::from_str::<Format>(&formats)
+                .map_err(|e| format!("Invalid formats: {e}"))?;
 
             let mut format_update = FormatUpdate::from(format);
 
@@ -337,7 +371,7 @@ impl GridController {
                 format_update.fill_color = Some(None);
             }
 
-            self.set_formats(&selection, format_update);
+            self.set_formats(&selection, format_update, cursor, is_ai);
             Ok(None)
         })
     }

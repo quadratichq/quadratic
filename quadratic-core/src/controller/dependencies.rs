@@ -141,6 +141,7 @@ mod test {
             },
             "1".to_string(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos::new(sheet_id, 2, 1),
@@ -148,6 +149,7 @@ mod test {
             "A1 + 5".to_string(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.get_dependent_code_cells(&SheetRect {

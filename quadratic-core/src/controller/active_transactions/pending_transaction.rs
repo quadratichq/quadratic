@@ -12,10 +12,14 @@ use crate::{
     MultiPos, Pos, Rect, SheetPos, SheetRect,
     a1::{A1Context, A1Selection},
     controller::{
-        execution::TransactionSource, operations::operation::Operation, transaction::Transaction,
+        GridController,
+        execution::TransactionSource,
+        operations::{ai_operation::AIOperation, operation::Operation},
+        transaction::Transaction,
     },
     grid::{
-        CellsAccessed, CodeCellValue, Sheet, SheetId, js_types::JsValidationWarning,
+        CellsAccessed, CodeCellValue, Sheet, SheetId,
+        js_types::{JsAITransactions, JsValidationWarning},
         sheet::validations::validation::Validation,
     },
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -189,9 +193,32 @@ impl PendingTransaction {
         }
     }
 
+    /// Sends the forward transaction to the AI.
+    pub fn send_ai_updates(&self, gc: &GridController) {
+        if self.complete && (cfg!(target_family = "wasm") || cfg!(test)) {
+            let ops = self
+                .forward_operations
+                .iter()
+                .flat_map(|op| AIOperation::from_operation(op, gc))
+                .collect::<Vec<_>>();
+
+            if !ops.is_empty() {
+                // send the ops to the client to populate the AI
+                if let Ok(ops_str) = serde_json::to_string(&JsAITransactions {
+                    ops,
+                    source: self.source,
+                }) {
+                    crate::wasm_bindings::js::jsSendAIUpdates(ops_str.into_bytes());
+                }
+            }
+        }
+    }
+
     /// Sends the transaction to the multiplayer server (if needed)
     pub fn send_transaction(&self) {
-        if self.complete && self.is_user_undo_redo() && (cfg!(target_family = "wasm") || cfg!(test))
+        if self.complete
+            && self.is_user_ai_undo_redo()
+            && (cfg!(target_family = "wasm") || cfg!(test))
         {
             let transaction_id = self.id.to_string();
 
@@ -225,7 +252,7 @@ impl PendingTransaction {
     /// Returns whether the transaction is from an action directly performed by
     /// the local user; i.e., whether it is `User` or `Unsaved`. This does not
     /// include undo/redo.
-    pub fn is_user(&self) -> bool {
+    fn is_user(&self) -> bool {
         self.source == TransactionSource::User || self.source == TransactionSource::Unsaved
     }
 
@@ -237,6 +264,14 @@ impl PendingTransaction {
         self.source == TransactionSource::Redo
     }
 
+    fn is_ai(&self) -> bool {
+        self.source == TransactionSource::AI
+    }
+
+    pub fn is_user_ai(&self) -> bool {
+        self.is_user() || self.is_ai()
+    }
+
     /// Returns whether the transaction is from an undo/redo.
     pub fn is_undo_redo(&self) -> bool {
         self.is_undo() || self.is_redo()
@@ -244,8 +279,8 @@ impl PendingTransaction {
 
     /// Returns whether the transaction is from the local user, including
     /// undo/redo.
-    pub fn is_user_undo_redo(&self) -> bool {
-        self.is_user() || self.is_undo_redo()
+    pub fn is_user_ai_undo_redo(&self) -> bool {
+        self.is_user_ai() || self.is_undo_redo()
     }
 
     /// Returns whether the transaction is from another multiplayer user.
@@ -617,6 +652,21 @@ mod tests {
             ..Default::default()
         };
         assert!(!transaction.is_user());
+    }
+
+    #[test]
+    fn is_ai() {
+        let transaction = PendingTransaction {
+            source: TransactionSource::AI,
+            ..Default::default()
+        };
+        assert!(transaction.is_ai());
+
+        let transaction = PendingTransaction {
+            source: TransactionSource::User,
+            ..Default::default()
+        };
+        assert!(!transaction.is_ai());
     }
 
     #[test]

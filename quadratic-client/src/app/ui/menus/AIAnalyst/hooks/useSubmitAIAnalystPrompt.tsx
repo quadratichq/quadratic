@@ -5,6 +5,7 @@ import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetCo
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -78,6 +79,7 @@ export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  const { getSheetInfoContext } = useSheetInfoMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
@@ -89,17 +91,18 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [filesContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
+        const [filesContext, sheetInfoContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
           await Promise.all([
             getFilesContext({ chatMessages }),
+            getSheetInfoContext({ sheets: sheets.sheets }),
             getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
             getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
           ]);
-
         const messagesWithContext: ChatMessage[] = [
           ...filesContext,
+          ...sheetInfoContext,
           ...otherSheetsContext,
           ...tablesContext,
           ...getCurrentDateTimeContext(),
@@ -117,6 +120,7 @@ export function useSubmitAIAnalystPrompt() {
       getCurrentSheetContext,
       getVisibleContext,
       getFilesContext,
+      getSheetInfoContext,
     ]
   );
 
@@ -264,11 +268,14 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             toolCallIterations++;
 
+            console.log({ chatMessages });
             // Update internal context
             chatMessages = await updateInternalContext({ context, chatMessages });
+            console.log({ afterUpdate: chatMessages });
             set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
+            console.log({ messagesForAI });
             lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
 
             if (debugFlag('debugLogJsonAIInternalContext')) {
@@ -353,7 +360,7 @@ export function useSubmitAIAnalystPrompt() {
                 try {
                   inlineEditorHandler.close({ skipFocusGrid: true });
                   const aiTool = toolCall.name as AITool;
-                  const argsObject = JSON.parse(toolCall.arguments);
+                  const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
                   const toolResultContent = await aiToolsActions[aiTool](args as any, {
                     source: 'AIAnalyst',
@@ -394,7 +401,7 @@ export function useSubmitAIAnalystPrompt() {
 
             const importPDFToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.PDFImport);
             for (const toolCall of importPDFToolCalls) {
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
               const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
@@ -405,7 +412,7 @@ export function useSubmitAIAnalystPrompt() {
 
             const webSearchToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.WebSearch);
             for (const toolCall of webSearchToolCalls) {
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
               const { toolResultContent, internal } = await search({ searchArgs });
               toolResultMessage.content.push({

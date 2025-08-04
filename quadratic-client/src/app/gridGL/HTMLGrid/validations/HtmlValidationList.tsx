@@ -99,7 +99,7 @@ export const HtmlValidationList = (props: Props) => {
         sheets.sheet.cursor.position.x,
         sheets.sheet.cursor.position.y,
         value,
-        sheets.getCursorPosition()
+        false
       );
       setAnnotationState(undefined);
       inlineEditorHandler.close({ cancel: true });
@@ -149,6 +149,7 @@ export const HtmlValidationList = (props: Props) => {
         'border.gray-300 pointer-events-auto absolute cursor-pointer overflow-y-auto border bg-white text-gray-500',
         inlineEditorStatus ? 'mt-1' : 'mt-0'
       )}
+      data-testid="validation-list"
       style={{
         top: offsets.bottom,
         left: offsets.left,

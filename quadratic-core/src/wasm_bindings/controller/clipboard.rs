@@ -37,10 +37,11 @@ impl GridController {
         &mut self,
         selection: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<Vec<u8>, JsValue> {
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
-        let js_clipboard = self.cut_to_clipboard(&selection, true, cursor)?;
+        let js_clipboard = self.cut_to_clipboard(&selection, true, cursor, is_ai)?;
         Ok(serde_json::to_vec(&js_clipboard).map_err(|e| e.to_string())?)
     }
 
@@ -51,13 +52,14 @@ impl GridController {
         js_clipboard: Vec<u8>,
         special: &str,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let special = PasteSpecial::from(special);
         let selection = serde_json::from_str::<A1Selection>(&selection)
             .map_err(|_| "Unable to parse A1Selection")?;
         let js_clipboard =
             serde_json::from_slice(&js_clipboard).map_err(|_| "Unable to parse js_clipboard")?;
-        self.paste_from_clipboard(&selection, js_clipboard, special, cursor);
+        self.paste_from_clipboard(&selection, js_clipboard, special, cursor, is_ai);
         Ok(())
     }
 
@@ -69,13 +71,15 @@ impl GridController {
         columns: bool,
         rows: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let source = SheetRect::from_str(&source)?;
         let dest = SheetPos::from_str(&dest)?;
-        self.move_cells(source, dest, columns, rows, cursor);
+        self.move_cells(source, dest, columns, rows, cursor, is_ai);
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "moveCodeCellVertically")]
     pub fn js_move_code_cell_vertically(
         &mut self,
@@ -85,11 +89,13 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             match serde_wasm_bindgen::to_value(
-                &self.move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor),
+                &self.move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor, is_ai),
             ) {
                 Ok(value) => Ok(Some(value)),
                 Err(e) => Err(e.to_string()),
@@ -97,6 +103,7 @@ impl GridController {
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "moveCodeCellHorizontally")]
     pub fn js_move_code_cell_horizontally(
         &mut self,
@@ -106,11 +113,14 @@ impl GridController {
         sheet_end: bool,
         reverse: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             match serde_wasm_bindgen::to_value(
-                &self.move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor),
+                &self
+                    .move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor, is_ai),
             ) {
                 Ok(value) => Ok(Some(value)),
                 Err(e) => Err(e.to_string()),
