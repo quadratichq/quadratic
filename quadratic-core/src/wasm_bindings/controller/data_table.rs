@@ -11,10 +11,11 @@ impl GridController {
         sheet_id: String,
         pos: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.flatten_data_table(pos.to_sheet_pos(sheet_id), cursor);
+        self.flatten_data_table(pos.to_sheet_pos(sheet_id), cursor, is_ai);
 
         Ok(())
     }
@@ -27,10 +28,17 @@ impl GridController {
         table_name: Option<String>,
         first_row_is_header: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| match serde_json::from_str::<SheetRect>(&sheet_rect) {
             Ok(sheet_rect) => {
-                match self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor) {
+                match self.grid_to_data_table(
+                    sheet_rect,
+                    table_name,
+                    first_row_is_header,
+                    cursor,
+                    is_ai,
+                ) {
                     Ok(_) => Ok(None),
                     Err(e) => Err(e.to_string()),
                 }
@@ -46,10 +54,11 @@ impl GridController {
         sheet_id: String,
         pos: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
-        self.code_data_table_to_data_table(pos.to_sheet_pos(sheet_id), cursor)
+        self.code_data_table_to_data_table(pos.to_sheet_pos(sheet_id), cursor, is_ai)
             .map_err(|e| e.to_string())?;
 
         Ok(())
@@ -63,6 +72,7 @@ impl GridController {
         pos: String,
         sort_js: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
@@ -71,7 +81,7 @@ impl GridController {
             .map(|s| serde_json::from_str::<Vec<DataTableSort>>(&s).map_err(|e| e.to_string()))
             .transpose()?;
 
-        self.sort_data_table(pos.to_sheet_pos(sheet_id), sort, cursor);
+        self.sort_data_table(pos.to_sheet_pos(sheet_id), sort, cursor, is_ai);
 
         Ok(())
     }
@@ -84,6 +94,7 @@ impl GridController {
         pos: String,
         first_row_is_header: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let pos = serde_json::from_str::<Pos>(&pos)
@@ -95,6 +106,7 @@ impl GridController {
                 pos.to_sheet_pos(sheet_id),
                 first_row_is_header,
                 cursor,
+                is_ai,
             );
 
             Ok(None)
@@ -113,6 +125,7 @@ impl GridController {
         show_name: Option<bool>,
         show_columns: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let pos = serde_json::from_str::<Pos>(&pos)
@@ -136,6 +149,7 @@ impl GridController {
                 show_name.map(Some),
                 show_columns.map(Some),
                 cursor,
+                is_ai,
             );
 
             Ok(None)
@@ -156,6 +170,7 @@ impl GridController {
         flatten_on_delete: Option<bool>,
         swallow_on_insert: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> JsValue {
         capture_core_error(|| {
             let pos = serde_json::from_str::<Pos>(&pos)
@@ -173,12 +188,14 @@ impl GridController {
                 flatten_on_delete,
                 swallow_on_insert,
                 cursor,
+                is_ai,
             );
 
             Ok(None)
         })
     }
 
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "addDataTable")]
     pub fn js_add_data_table(
         &mut self,
@@ -188,6 +205,7 @@ impl GridController {
         values: JsValue,
         first_row_is_header: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<(), JsValue> {
         let pos = serde_json::from_str::<Pos>(&pos).map_err(|e| e.to_string())?;
         let sheet_id = SheetId::from_str(&sheet_id).map_err(|e| e.to_string())?;
@@ -201,6 +219,7 @@ impl GridController {
             values,
             first_row_is_header,
             cursor,
+            is_ai,
         );
 
         Ok(())

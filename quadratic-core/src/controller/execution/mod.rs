@@ -30,6 +30,8 @@ pub enum TransactionSource {
     /// Local user performed an action and the transaction has not yet been sent
     /// to the server.
     Unsaved,
+    /// AI performed an action.
+    AI,
 }
 
 impl GridController {

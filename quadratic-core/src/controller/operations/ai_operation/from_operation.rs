@@ -54,13 +54,11 @@ impl AIOperation {
                 sheet_pos,
                 data_table,
                 ..
-            } => {
-                return Some(Self::SetDataTable {
-                    selection: data_table_to_selection(data_table.as_ref(), *sheet_pos, gc),
-                    name: get_table_name(data_table.as_ref()),
-                    deleted: data_table.is_none(),
-                });
-            }
+            } => Some(Self::SetDataTable {
+                selection: data_table_to_selection(data_table.as_ref(), *sheet_pos, gc),
+                name: get_table_name(data_table.as_ref()),
+                deleted: data_table.is_none(),
+            }),
             Operation::AddDataTable {
                 sheet_pos,
                 data_table,
@@ -131,7 +129,7 @@ impl AIOperation {
             }
 
             Operation::AddSheet { sheet } => Some(Self::AddSheet {
-                sheet_id: (*sheet).id.to_string(),
+                sheet_id: sheet.id.to_string(),
             }),
 
             // Sheet operations

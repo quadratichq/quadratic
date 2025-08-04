@@ -317,15 +317,15 @@ export class Sheets {
   }
 
   userAddSheet() {
-    quadraticCore.addSheet(undefined, undefined);
+    quadraticCore.addSheet(undefined, undefined, false);
   }
 
   duplicate() {
-    quadraticCore.duplicateSheet(this.current, undefined);
+    quadraticCore.duplicateSheet(this.current, undefined, false);
   }
 
   userDeleteSheet(id: string) {
-    quadraticCore.deleteSheet(id);
+    quadraticCore.deleteSheet(id, false);
   }
 
   moveSheet(options: { id: string; toBefore?: string; delta?: number }) {
@@ -341,7 +341,7 @@ export class Sheets {
 
         const nextNext = next ? this.getNext(next.order) : undefined;
 
-        quadraticCore.moveSheet(id, nextNext?.id);
+        quadraticCore.moveSheet(id, nextNext?.id, false);
       } else if (delta === -1) {
         const previous = this.getPrevious(sheet.order);
 
@@ -349,12 +349,12 @@ export class Sheets {
         if (!previous) return;
 
         // if not defined, then this is id will become first sheet
-        quadraticCore.moveSheet(id, previous?.id);
+        quadraticCore.moveSheet(id, previous?.id, false);
       } else {
         throw new Error(`Unhandled delta ${delta} in sheets.changeOrder`);
       }
     } else {
-      quadraticCore.moveSheet(id, toBefore);
+      quadraticCore.moveSheet(id, toBefore, false);
     }
     this.sort();
   }

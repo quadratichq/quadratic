@@ -4,13 +4,29 @@ use crate::{SheetPos, a1::A1Selection};
 
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
-    pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
+    pub fn set_cell_value(
+        &mut self,
+        sheet_pos: SheetPos,
+        value: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         match self.set_cell_values_operations(sheet_pos, vec![vec![value]], true) {
             Ok((ops, data_table_ops)) => {
-                self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
+                self.start_user_ai_transaction(
+                    ops,
+                    cursor.to_owned(),
+                    TransactionName::SetCells,
+                    is_ai,
+                );
 
                 if !data_table_ops.is_empty() {
-                    self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+                    self.start_user_ai_transaction(
+                        data_table_ops,
+                        cursor,
+                        TransactionName::SetCells,
+                        is_ai,
+                    );
                 }
             }
             Err(e) => dbgjs!(e),
@@ -23,14 +39,25 @@ impl GridController {
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         // TODO(ddimaria): implement actual error bubbling and remove this dbgjs! and return a Result
         match self.set_cell_values_operations(sheet_pos, values, false) {
             Ok((ops, data_table_ops)) => {
-                self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
+                self.start_user_ai_transaction(
+                    ops,
+                    cursor.to_owned(),
+                    TransactionName::SetCells,
+                    is_ai,
+                );
 
                 if !data_table_ops.is_empty() {
-                    self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+                    self.start_user_ai_transaction(
+                        data_table_ops,
+                        cursor,
+                        TransactionName::SetCells,
+                        is_ai,
+                    );
                 }
             }
             Err(e) => dbgjs!(e),
@@ -38,15 +65,20 @@ impl GridController {
     }
 
     /// Starts a transaction to deletes the cell values and code in a given rect and updates dependent cells.
-    pub fn delete_cells(&mut self, selection: &A1Selection, cursor: Option<String>) {
+    pub fn delete_cells(&mut self, selection: &A1Selection, cursor: Option<String>, is_ai: bool) {
         let ops = self.delete_cells_operations(selection, true);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, is_ai);
     }
 
     /// Starts a transaction to clear formatting in a given rect.
-    pub fn clear_formatting(&mut self, selection: &A1Selection, cursor: Option<String>) {
+    pub fn clear_formatting(
+        &mut self,
+        selection: &A1Selection,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = self.clear_format_borders_operations(selection, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetFormats, is_ai);
     }
 
     /// Starts a transaction to delete values and formatting in a given rect, and updates dependent cells.
@@ -54,9 +86,10 @@ impl GridController {
         &mut self,
         selection: &A1Selection,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.delete_values_and_formatting_operations(selection, false);
-        self.start_user_transaction(ops, cursor, TransactionName::SetCells);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetCells, is_ai);
     }
 }
 
@@ -88,10 +121,10 @@ mod test {
         assert_eq!(get_cell(&g), CellValue::Blank);
 
         // test undo/redo of a single cell value and ensure that cell_sheets_modified is properly populated for the renderer
-        g.set_cell_value(sheet_pos, String::from("a"), None);
+        g.set_cell_value(sheet_pos, String::from("a"), None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("a")));
 
-        g.set_cell_value(sheet_pos, String::from("b"), None);
+        g.set_cell_value(sheet_pos, String::from("b"), None, false);
         assert_eq!(get_cell(&g), CellValue::Text(String::from("b")));
 
         g.undo(None);
@@ -127,6 +160,7 @@ mod test {
             },
             String::from("c"),
             None,
+            false,
         );
     }
 
@@ -182,11 +216,11 @@ mod test {
         };
 
         // empty string converts to blank cell value
-        gc.set_cell_value(sheet_pos, " ".into(), None);
+        gc.set_cell_value(sheet_pos, " ".into(), None, false);
         assert_eq!(get_cell_value(&gc), CellValue::Blank);
 
         // currency
-        gc.set_cell_value(sheet_pos, "$1.22".into(), None);
+        gc.set_cell_value(sheet_pos, "$1.22".into(), None, false);
         assert_eq!(
             get_cell_value(&gc),
             CellValue::Number(decimal_from_str("1.22").unwrap())
@@ -202,7 +236,7 @@ mod test {
         assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // number
-        gc.set_cell_value(sheet_pos, "1.22".into(), None);
+        gc.set_cell_value(sheet_pos, "1.22".into(), None, false);
         assert_eq!(
             get_cell_value(&gc),
             CellValue::Number(decimal_from_str("1.22").unwrap())
@@ -210,7 +244,7 @@ mod test {
         assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // percentage
-        gc.set_cell_value(sheet_pos, "10.55%".into(), None);
+        gc.set_cell_value(sheet_pos, "10.55%".into(), None, false);
         assert_eq!(
             get_cell_value(&gc),
             CellValue::Number(decimal_from_str(".1055").unwrap())
@@ -225,7 +259,7 @@ mod test {
         assert_eq!(get_cell_numeric_decimals(&gc), None);
 
         // array
-        gc.set_cell_value(sheet_pos, "[1,2,3]".into(), None);
+        gc.set_cell_value(sheet_pos, "[1,2,3]".into(), None, false);
         assert_eq!(get_cell_value(&gc), CellValue::Text("[1,2,3]".into()));
     }
 
@@ -238,10 +272,10 @@ mod test {
             y: 1,
             sheet_id,
         };
-        gc.set_cell_value(sheet_pos, String::from("1.12345678"), None);
+        gc.set_cell_value(sheet_pos, String::from("1.12345678"), None, false);
         let selection = A1Selection::from_single_cell(sheet_pos);
-        let _ = gc.set_currency(&selection, "$".to_string(), None);
-        gc.clear_formatting(&selection, None);
+        let _ = gc.set_currency(&selection, "$".to_string(), None, false);
+        gc.clear_formatting(&selection, None, false);
         let cells = gc.sheet(sheet_id).get_render_cells(
             Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }),
             gc.a1_context(),
@@ -251,7 +285,7 @@ mod test {
 
         // ensure not found sheet_id fails silently
         let selection = A1Selection::from_xy(1, 1, SheetId::new());
-        gc.clear_formatting(&selection, None);
+        gc.clear_formatting(&selection, None, false);
     }
 
     #[test]
@@ -263,10 +297,10 @@ mod test {
             y: 1,
             sheet_id,
         };
-        gc.set_cell_value(sheet_pos, String::from("1.12345678"), None);
+        gc.set_cell_value(sheet_pos, String::from("1.12345678"), None, false);
         let selection = A1Selection::from_single_cell(sheet_pos);
-        let _ = gc.set_currency(&selection, "$".to_string(), None);
-        gc.delete_values_and_formatting(&selection, None);
+        let _ = gc.set_currency(&selection, "$".to_string(), None, false);
+        gc.delete_values_and_formatting(&selection, None, false);
         let cells = gc.sheet(sheet_id).get_render_cells(
             Rect::new_span(Pos { x: 1, y: 1 }, Pos { x: 1, y: 1 }),
             gc.a1_context(),
@@ -275,7 +309,7 @@ mod test {
 
         // ensure not found sheet_id fails silently
         let selection = A1Selection::from_xy(1, 1, SheetId::new());
-        gc.delete_values_and_formatting(&selection, None);
+        gc.delete_values_and_formatting(&selection, None, false);
     }
 
     #[test]
@@ -308,7 +342,7 @@ mod test {
             CellValue::Text("Southborough".into())
         );
 
-        gc.set_cell_value(sheet_pos, "test".into(), None);
+        gc.set_cell_value(sheet_pos, "test".into(), None, false);
         assert_eq!(get_cell(&gc, sheet_pos), CellValue::Text("test".into()));
         assert_eq!(
             get_data_table_value(&gc, pos, (0, 1).into()),
@@ -372,8 +406,18 @@ mod test {
         );
 
         // set value
-        gc.set_cell_value(SheetPos::from((pos![E4], sheet_id)), "city1".into(), None);
-        gc.set_cell_value(SheetPos::from((pos![H5], sheet_id)), "1111".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((pos![E4], sheet_id)),
+            "city1".into(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            SheetPos::from((pos![H5], sheet_id)),
+            "1111".into(),
+            None,
+            false,
+        );
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E4], sheet_id))),
             CellValue::Text("city1".into())
@@ -408,8 +452,18 @@ mod test {
         );
 
         // set value
-        gc.set_cell_value(SheetPos::from((pos![E3], sheet_id)), "city2".into(), None);
-        gc.set_cell_value(SheetPos::from((pos![H4], sheet_id)), "2222".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((pos![E3], sheet_id)),
+            "city2".into(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            SheetPos::from((pos![H4], sheet_id)),
+            "2222".into(),
+            None,
+            false,
+        );
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E3], sheet_id))),
             CellValue::Text("city2".into())
@@ -444,8 +498,18 @@ mod test {
         );
 
         // set the value on the source cell, which is a header since the name is not shown
-        gc.set_cell_value(SheetPos::from((pos![E2], sheet_id)), "city3".into(), None);
-        gc.set_cell_value(SheetPos::from((pos![H3], sheet_id)), "3333".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((pos![E2], sheet_id)),
+            "city3".into(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            SheetPos::from((pos![H3], sheet_id)),
+            "3333".into(),
+            None,
+            false,
+        );
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![E2], sheet_id))),
             CellValue::Text("city3".into())
@@ -517,7 +581,12 @@ mod test {
         );
 
         // set value
-        gc.set_cell_value(SheetPos::from((pos![G4], sheet_id)), "999999".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((pos![G4], sheet_id)),
+            "999999".into(),
+            None,
+            false,
+        );
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![G4], sheet_id))),
             CellValue::Number(999999.into())
@@ -584,7 +653,12 @@ mod test {
         );
 
         // set value
-        gc.set_cell_value(SheetPos::from((pos![H4], sheet_id)), "999999".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((pos![H4], sheet_id)),
+            "999999".into(),
+            None,
+            false,
+        );
         assert_eq!(
             get_cell(&gc, SheetPos::from((pos![H4], sheet_id))),
             CellValue::Number(999999.into())
@@ -635,7 +709,12 @@ mod test {
         print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 10, 13));
         // assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 13));
 
-        gc.set_cell_value(SheetPos::from((8, 4, sheet_id)), "test1".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((8, 4, sheet_id)),
+            "test1".into(),
+            None,
+            false,
+        );
 
         print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 10, 13));
 
@@ -657,7 +736,12 @@ mod test {
             Some(CellValue::Text("test1".into()))
         );
 
-        gc.set_cell_value(SheetPos::from((8, 6, sheet_id)), "test2".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((8, 6, sheet_id)),
+            "test2".into(),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
@@ -668,7 +752,12 @@ mod test {
         );
 
         // row expand
-        gc.set_cell_value(SheetPos::from((6, 14, sheet_id)), "test3".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((6, 14, sheet_id)),
+            "test3".into(),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
@@ -688,7 +777,12 @@ mod test {
             Some(CellValue::Text("test3".into()))
         );
 
-        gc.set_cell_value(SheetPos::from((8, 14, sheet_id)), "test4".into(), None);
+        gc.set_cell_value(
+            SheetPos::from((8, 14, sheet_id)),
+            "test4".into(),
+            None,
+            false,
+        );
 
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
@@ -708,7 +802,7 @@ mod test {
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 1));
 
-        gc.set_cell_values(sheet_pos, values, None);
+        gc.set_cell_values(sheet_pos, values, None, false);
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 1));
 
@@ -725,7 +819,7 @@ mod test {
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 10, 12));
 
-        gc.set_cell_values(sheet_pos, values, None);
+        gc.set_cell_values(sheet_pos, values, None, false);
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 10, 12));
 
@@ -750,7 +844,7 @@ mod test {
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 10, 12));
 
-        gc.set_cell_values(sheet_pos, values, None);
+        gc.set_cell_values(sheet_pos, values, None, false);
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 12, 13));
 
@@ -776,7 +870,7 @@ mod test {
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 4, 12));
 
-        gc.set_cell_values(sheet_pos, values, None);
+        gc.set_cell_values(sheet_pos, values, None, false);
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 6, 12));
 
@@ -794,7 +888,7 @@ mod test {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None, false);
 
         assert_cell_value(
             &gc,
@@ -810,9 +904,11 @@ mod test {
                 numeric_format: Some(Some(NumericFormat::percentage())),
                 ..Default::default()
             },
+            None,
+            false,
         );
 
-        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None, false);
 
         assert_cell_value(
             &gc,
@@ -828,7 +924,7 @@ mod test {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "5s".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "5s".to_string(), None, false);
         assert_cell_value(
             &gc,
             sheet_id,

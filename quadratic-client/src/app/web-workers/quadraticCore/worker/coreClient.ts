@@ -131,11 +131,11 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellValue':
-        core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor);
+        core.setCellValue(e.data.sheetId, e.data.x, e.data.y, e.data.value, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellValues':
-        core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor);
+        core.setCellValues(e.data.sheetId, e.data.x, e.data.y, e.data.values, e.data.cursor, e.data.isAi);
         this.send({
           type: 'coreClientSetCellValues',
           id: e.data.id,
@@ -175,35 +175,35 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellBold':
-        core.setBold(e.data.selection, e.data.bold, e.data.cursor);
+        core.setBold(e.data.selection, e.data.bold, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellItalic':
-        core.setItalic(e.data.selection, e.data.italic, e.data.cursor);
+        core.setItalic(e.data.selection, e.data.italic, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellTextColor':
-        core.setTextColor(e.data.selection, e.data.color, e.data.cursor);
+        core.setTextColor(e.data.selection, e.data.color, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellUnderline':
-        core.setUnderline(e.data.selection, e.data.underline, e.data.cursor);
+        core.setUnderline(e.data.selection, e.data.underline, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellStrikeThrough':
-        core.setStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor);
+        core.setStrikeThrough(e.data.selection, e.data.strikeThrough, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellFillColor':
-        core.setFillColor(e.data.selection, e.data.fillColor, e.data.cursor);
+        core.setFillColor(e.data.selection, e.data.fillColor, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCommas':
-        core.setCommas(e.data.selection, e.data.commas, e.data.cursor);
+        core.setCommas(e.data.selection, e.data.commas, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCurrency':
-        core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor);
+        core.setCurrency(e.data.selection, e.data.symbol, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreUpgradeGridFile':
@@ -220,7 +220,7 @@ class CoreClient {
         this.send({
           type: 'coreClientDeleteCellValues',
           id: e.data.id,
-          response: core.deleteCellValues(e.data.selection, e.data.cursor),
+          response: core.deleteCellValues(e.data.selection, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -232,7 +232,8 @@ class CoreClient {
           e.data.language,
           e.data.codeString,
           e.data.codeCellName,
-          e.data.cursor
+          e.data.cursor,
+          e.data.isAi
         );
         this.send({
           type: 'coreClientSetCodeCellValue',
@@ -245,7 +246,7 @@ class CoreClient {
         this.send({
           type: 'coreClientAddSheetResponse',
           id: e.data.id,
-          response: core.addSheet(e.data.sheetName, e.data.insertBeforeSheetName, e.data.cursor),
+          response: core.addSheet(e.data.sheetName, e.data.insertBeforeSheetName, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -253,7 +254,7 @@ class CoreClient {
         this.send({
           type: 'coreClientDuplicateSheetResponse',
           id: e.data.id,
-          response: core.duplicateSheet(e.data.sheetId, e.data.nameOfNewSheet, e.data.cursor),
+          response: core.duplicateSheet(e.data.sheetId, e.data.nameOfNewSheet, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -261,7 +262,7 @@ class CoreClient {
         this.send({
           type: 'coreClientDeleteSheetResponse',
           id: e.data.id,
-          response: core.deleteSheet(e.data.sheetId, e.data.cursor),
+          response: core.deleteSheet(e.data.sheetId, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -269,7 +270,7 @@ class CoreClient {
         this.send({
           type: 'coreClientMoveSheetResponse',
           id: e.data.id,
-          response: core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor),
+          response: core.moveSheet(e.data.sheetId, e.data.previous, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -277,7 +278,7 @@ class CoreClient {
         this.send({
           type: 'coreClientSetSheetNameResponse',
           id: e.data.id,
-          response: core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor),
+          response: core.setSheetName(e.data.sheetId, e.data.name, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -285,7 +286,7 @@ class CoreClient {
         this.send({
           type: 'coreClientSetSheetColorResponse',
           id: e.data.id,
-          response: core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor),
+          response: core.setSheetColor(e.data.sheetId, e.data.color, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -293,7 +294,7 @@ class CoreClient {
         this.send({
           type: 'coreClientSetSheetsColorResponse',
           id: e.data.id,
-          response: core.setSheetsColor(e.data.sheetNameToColor, e.data.cursor),
+          response: core.setSheetsColor(e.data.sheetNameToColor, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -332,15 +333,15 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCellAlign':
-        core.setAlign(e.data.selection, e.data.align, e.data.cursor);
+        core.setAlign(e.data.selection, e.data.align, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetCellVerticalAlign':
-        core.setVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor);
+        core.setVerticalAlign(e.data.selection, e.data.verticalAlign, e.data.cursor, e.data.isAi);
         break;
 
       case 'clientCoreSetCellWrap':
-        core.setWrap(e.data.selection, e.data.wrap, e.data.cursor);
+        core.setWrap(e.data.selection, e.data.wrap, e.data.cursor, e.data.isAi);
         break;
 
       case 'clientCoreCopyToClipboard':
@@ -356,7 +357,7 @@ class CoreClient {
         return;
 
       case 'clientCoreCutToClipboard':
-        const cutResult = core.cutToClipboard(e.data.selection, e.data.cursor);
+        const cutResult = core.cutToClipboard(e.data.selection, e.data.cursor, e.data.isAi);
         this.send(
           {
             type: 'coreClientCutToClipboard',
@@ -375,7 +376,7 @@ class CoreClient {
         this.send({
           type: 'coreClientSetBorders',
           id: e.data.id,
-          response: core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor),
+          response: core.setBorders(e.data.selection, e.data.borderSelection, e.data.style, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -386,7 +387,8 @@ class CoreClient {
           e.data.y,
           e.data.width,
           e.data.height,
-          e.data.cursor
+          e.data.cursor,
+          e.data.isAi
         );
         this.send({
           type: 'coreClientSetCellRenderResize',
@@ -406,7 +408,8 @@ class CoreClient {
           e.data.fullY1,
           e.data.fullX2,
           e.data.fullY2,
-          e.data.cursor
+          e.data.cursor,
+          e.data.isAi
         );
         return;
 
@@ -416,11 +419,11 @@ class CoreClient {
         return;
 
       case 'clientCoreCommitTransientResize':
-        core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor);
+        core.commitTransientResize(e.data.sheetId, e.data.transientResize, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreCommitSingleResize':
-        core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor);
+        core.commitSingleResize(e.data.sheetId, e.data.column, e.data.row, e.data.size, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreInit':
@@ -436,14 +439,14 @@ class CoreClient {
         break;
 
       case 'clientCoreClearFormatting':
-        core.clearFormatting(e.data.selection, e.data.cursor);
+        core.clearFormatting(e.data.selection, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreRerunCodeCells':
         this.send({
           type: 'coreClientRerunCodeCells',
           id: e.data.id,
-          response: core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor),
+          response: core.rerunCodeCells(e.data.sheetId, e.data.selection, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -461,19 +464,19 @@ class CoreClient {
         return;
 
       case 'clientCoreChangeDecimals':
-        core.changeDecimalPlaces(e.data.selection, e.data.delta, e.data.cursor);
+        core.changeDecimalPlaces(e.data.selection, e.data.delta, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetPercentage':
-        core.setPercentage(e.data.selection, e.data.cursor);
+        core.setPercentage(e.data.selection, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreSetExponential':
-        core.setExponential(e.data.selection, e.data.cursor);
+        core.setExponential(e.data.selection, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreRemoveCellNumericFormat':
-        core.removeNumericFormat(e.data.selection, e.data.cursor);
+        core.removeNumericFormat(e.data.selection, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreMoveCells':
@@ -501,11 +504,11 @@ class CoreClient {
         return;
 
       case 'clientCoreSetDateTimeFormat':
-        core.setDateTimeFormat(e.data.selection, e.data.format, e.data.cursor);
+        core.setDateTimeFormat(e.data.selection, e.data.format, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreUpdateValidation':
-        core.updateValidation(e.data.validation, e.data.cursor);
+        core.updateValidation(e.data.validation, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreGetValidations':
@@ -517,11 +520,11 @@ class CoreClient {
         return;
 
       case 'clientCoreRemoveValidation':
-        core.removeValidation(e.data.sheetId, e.data.validationId, e.data.cursor);
+        core.removeValidation(e.data.sheetId, e.data.validationId, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreRemoveValidations':
-        core.removeValidations(e.data.sheetId, e.data.cursor);
+        core.removeValidations(e.data.sheetId, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreGetValidationFromPos':
@@ -584,7 +587,7 @@ class CoreClient {
         this.send({
           type: 'coreClientDeleteColumns',
           id: e.data.id,
-          response: core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor),
+          response: core.deleteColumns(e.data.sheetId, e.data.columns, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -592,7 +595,7 @@ class CoreClient {
         this.send({
           type: 'coreClientDeleteRows',
           id: e.data.id,
-          response: core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor),
+          response: core.deleteRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -600,7 +603,14 @@ class CoreClient {
         this.send({
           type: 'coreClientInsertColumns',
           id: e.data.id,
-          response: core.insertColumns(e.data.sheetId, e.data.column, e.data.count, e.data.right, e.data.cursor),
+          response: core.insertColumns(
+            e.data.sheetId,
+            e.data.column,
+            e.data.count,
+            e.data.right,
+            e.data.cursor,
+            e.data.isAi
+          ),
         });
         return;
 
@@ -608,23 +618,29 @@ class CoreClient {
         this.send({
           type: 'coreClientInsertRows',
           id: e.data.id,
-          response: core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor),
+          response: core.insertRows(e.data.sheetId, e.data.row, e.data.count, e.data.below, e.data.cursor, e.data.isAi),
         });
         return;
 
       case 'clientCoreFlattenDataTable':
-        core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        core.flattenDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreCodeDataTableToDataTable':
-        core.codeDataTableToDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor);
+        core.codeDataTableToDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreGridToDataTable':
         this.send({
           type: 'coreClientGridToDataTable',
           id: e.data.id,
-          response: core.gridToDataTable(e.data.sheetRect, e.data.tableName, e.data.firstRowIsHeader, e.data.cursor),
+          response: core.gridToDataTable(
+            e.data.sheetRect,
+            e.data.tableName,
+            e.data.firstRowIsHeader,
+            e.data.cursor,
+            e.data.isAi
+          ),
         });
         return;
 
@@ -641,7 +657,8 @@ class CoreClient {
             e.data.columns,
             e.data.showName,
             e.data.showColumns,
-            e.data.cursor
+            e.data.cursor,
+            e.data.isAi
           ),
         });
         return;
@@ -662,12 +679,13 @@ class CoreClient {
             flatten_on_delete: e.data.flatten_on_delete,
             swallow_on_insert: e.data.swallow_on_insert,
             cursor: e.data.cursor,
+            isAi: e.data.isAi,
           }),
         });
         return;
 
       case 'clientCoreSortDataTable':
-        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.sort, e.data.cursor);
+        core.sortDataTable(e.data.sheetId, e.data.x, e.data.y, e.data.sort, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreDataTableFirstRowAsHeader':
@@ -679,7 +697,8 @@ class CoreClient {
             e.data.x,
             e.data.y,
             e.data.firstRowAsHeader,
-            e.data.cursor
+            e.data.cursor,
+            e.data.isAi
           ),
         });
         return;
@@ -693,11 +712,11 @@ class CoreClient {
         return;
 
       case 'clientCoreMoveColumns':
-        core.moveColumns(e.data.sheetId, e.data.colStart, e.data.colEnd, e.data.to, e.data.cursor);
+        core.moveColumns(e.data.sheetId, e.data.colStart, e.data.colEnd, e.data.to, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreMoveRows':
-        core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor);
+        core.moveRows(e.data.sheetId, e.data.rowStart, e.data.rowEnd, e.data.to, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreGetAICells':
@@ -720,7 +739,7 @@ class CoreClient {
         this.send({
           type: 'coreClientSetFormats',
           id: e.data.id,
-          response: core.setFormats(e.data.sheetId, e.data.selection, e.data.formats),
+          response: core.setFormats(e.data.sheetId, e.data.selection, e.data.formats, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -728,7 +747,7 @@ class CoreClient {
         this.send({
           type: 'coreClientResizeColumns',
           id: e.data.id,
-          response: core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor),
+          response: core.resizeColumns(e.data.sheetId, e.data.columns, e.data.cursor, e.data.isAi),
         });
         return;
 
@@ -736,16 +755,16 @@ class CoreClient {
         this.send({
           type: 'coreClientResizeRows',
           id: e.data.id,
-          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor),
+          response: core.resizeRows(e.data.sheetId, e.data.rows, e.data.cursor, e.data.isAi),
         });
         return;
 
       case 'clientCoreResizeAllColumns':
-        core.resizeAllColumns(e.data.sheetId, e.data.size, e.data.cursor);
+        core.resizeAllColumns(e.data.sheetId, e.data.size, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreResizeAllRows':
-        core.resizeAllRows(e.data.sheetId, e.data.size, e.data.cursor);
+        core.resizeAllRows(e.data.sheetId, e.data.size, e.data.cursor, e.data.isAi);
         return;
 
       case 'clientCoreGetFormatSelection':

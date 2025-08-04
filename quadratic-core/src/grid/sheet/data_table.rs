@@ -692,6 +692,7 @@ mod test {
             js_clipboard,
             PasteSpecial::None,
             None,
+            false,
         );
 
         println!(

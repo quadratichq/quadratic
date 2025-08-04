@@ -68,6 +68,7 @@ export const UpdateCodeCell = memo(
             y: codeCell.pos.y,
             codeString: code_string ?? '',
             language: codeCell.language,
+            isAi: false,
           });
         },
       [toolArgs]

@@ -451,7 +451,8 @@ mod tests {
         // avoid collision with the default sheet
         gc.grid.update_sheet_name(sheet_id, "ignore").unwrap();
 
-        gc.import_excel(&excel.unwrap(), file_name, None).unwrap();
+        gc.import_excel(&excel.unwrap(), file_name, None, false)
+            .unwrap();
         let sheet_id = gc.sheet_ids()[1];
         let pos = Pos { x: 1, y: 1 };
 

@@ -572,7 +572,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "invalid".to_string(), None, false);
 
         let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
 

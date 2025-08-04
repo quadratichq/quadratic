@@ -189,7 +189,7 @@ export const gridToDataTable = () => {
       min: { x: BigInt(rectangle.x), y: BigInt(rectangle.y) },
       max: { x: BigInt(rectangle.x + rectangle.width - 1), y: BigInt(rectangle.y + rectangle.height - 1) },
     };
-    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), undefined, false);
+    quadraticCore.gridToDataTable(JSON.stringify(sheetRect, bigIntReplacer), undefined, false, false);
   }
 };
 
@@ -198,7 +198,7 @@ export const flattenDataTable = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.flattenDataTable(sheets.current, table.x, table.y);
+    quadraticCore.flattenDataTable(sheets.current, table.x, table.y, false);
   }
 };
 
@@ -207,7 +207,7 @@ export const toggleFirstRowAsHeader = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableFirstRowAsHeader(sheets.current, table.x, table.y, !isFirstRowHeader());
+    quadraticCore.dataTableFirstRowAsHeader(sheets.current, table.x, table.y, !isFirstRowHeader(), false);
   }
 };
 
@@ -232,7 +232,7 @@ export const deleteDataTable = () => {
       BigInt(table.x + table.w - 1),
       BigInt(table.y + table.h - 1)
     );
-    quadraticCore.deleteCellValues(selection);
+    quadraticCore.deleteCellValues(selection, false);
   }
 };
 
@@ -241,7 +241,7 @@ export const codeToDataTable = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y);
+    quadraticCore.codeDataTableToDataTable(sheets.current, table.x, table.y, false);
   }
 };
 
@@ -256,7 +256,13 @@ export const toggleTableAlternatingColors = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { alternatingColors: !isAlternatingColorsShowing() });
+    quadraticCore.dataTableMeta(
+      sheets.current,
+      table.x,
+      table.y,
+      { alternatingColors: !isAlternatingColorsShowing() },
+      false
+    );
   }
 };
 
@@ -277,7 +283,7 @@ const sortTableColumn = (direction: 'Ascending' | 'Descending') => {
   const column = getColumn();
 
   if (table && column !== undefined) {
-    quadraticCore.sortDataTable(sheets.current, table.x, table.y, [{ column_index: column, direction }]);
+    quadraticCore.sortDataTable(sheets.current, table.x, table.y, [{ column_index: column, direction }], false);
   }
 };
 
@@ -307,6 +313,7 @@ export const insertTableColumn = (increment: number = 0, selectTable = false) =>
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
+      isAi: false,
     });
   }
 };
@@ -329,6 +336,7 @@ export const removeTableColumn = (selectTable = false) => {
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
+      isAi: false,
     });
   }
 };
@@ -342,7 +350,7 @@ export const hideTableColumn = () => {
 
   if (table && columns && column !== undefined && columns[column]) {
     columns[column].display = false;
-    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns });
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, false);
   }
 };
 
@@ -354,7 +362,7 @@ export const showAllTableColumns = () => {
 
   if (table && columns) {
     columns.forEach((column) => (column.display = true));
-    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns });
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { columns }, false);
   }
 };
 
@@ -376,6 +384,7 @@ export const insertTableRow = (increment: number = 0, selectTable = false) => {
       rows_to_remove: undefined,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
+      isAi: false,
     });
   }
 };
@@ -397,6 +406,7 @@ export const removeTableRow = (selectTable = false) => {
       rows_to_remove: rows,
       flatten_on_delete: undefined,
       swallow_on_insert: undefined,
+      isAi: false,
     });
   }
 };
@@ -415,7 +425,7 @@ export const toggleTableColumns = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { showColumns: !table.show_columns });
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { showColumns: !table.show_columns }, false);
   }
 };
 
@@ -424,7 +434,7 @@ export const toggleTableName = () => {
 
   const table = getTable();
   if (table) {
-    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { showName: !table.show_name });
+    quadraticCore.dataTableMeta(sheets.current, table.x, table.y, { showName: !table.show_name }, false);
   }
 };
 

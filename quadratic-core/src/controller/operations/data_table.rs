@@ -517,13 +517,13 @@ mod test {
             vec!["$123".into(), "123,456.00".into()],
         ];
 
-        gc.set_cell_values(sheet_pos, values, None);
+        gc.set_cell_values(sheet_pos, values, None, false);
         print_table_in_rect(&gc, sheet_id, sheet_rect.into());
 
         let ops = gc
             .grid_to_data_table_operations(sheet_rect, None, false)
             .unwrap();
-        gc.start_user_transaction(ops, None, TransactionName::GridToDataTable);
+        gc.start_user_ai_transaction(ops, None, TransactionName::GridToDataTable, false);
 
         let import = Import::new("Table1".into());
         let cell_value = CellValue::Import(import.to_owned());
@@ -545,6 +545,7 @@ mod test {
             "=1+1".into(),
             None,
             None,
+            false,
         );
         assert_eq!(gc.grid.sheets()[0].data_tables.len(), 1);
 

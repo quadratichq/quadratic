@@ -35,6 +35,7 @@ impl GridController {
         &mut self,
         validation: String, // Validation
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let validation = match serde_json::from_str::<Validation>(&validation) {
             Ok(validation) => validation,
@@ -43,7 +44,7 @@ impl GridController {
                 return;
             }
         };
-        self.update_validation(validation, cursor);
+        self.update_validation(validation, cursor, is_ai);
     }
 
     /// Removes a validation
@@ -53,19 +54,20 @@ impl GridController {
         sheet_id: String,
         validation_id: String,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         if let (Ok(sheet_id), Ok(validation_id)) =
             (SheetId::from_str(&sheet_id), Uuid::from_str(&validation_id))
         {
-            self.remove_validation(sheet_id, validation_id, cursor);
+            self.remove_validation(sheet_id, validation_id, cursor, is_ai);
         }
     }
 
     /// Removes all validations in a sheet
     #[wasm_bindgen(js_name = "removeValidations")]
-    pub fn js_remove_validations(&mut self, sheet_id: String, cursor: Option<String>) {
+    pub fn js_remove_validations(&mut self, sheet_id: String, cursor: Option<String>, is_ai: bool) {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            self.remove_validations(sheet_id, cursor);
+            self.remove_validations(sheet_id, cursor, is_ai);
         }
     }
 

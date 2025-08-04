@@ -36,7 +36,12 @@ impl GridController {
     }
 
     /// Creates or updates a validation.
-    pub fn update_validation(&mut self, validation: Validation, cursor: Option<String>) {
+    pub fn update_validation(
+        &mut self,
+        validation: Validation,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         // Update the selection to take advantage of any table-based selections.
         // DF: This helps validations work better with tables--there are still
         // edge cases where it doesn't work, like setting individual cells
@@ -55,7 +60,7 @@ impl GridController {
                 ..validation
             },
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::Validation);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
     }
 
     pub fn remove_validation(
@@ -63,15 +68,16 @@ impl GridController {
         sheet_id: SheetId,
         validation_id: Uuid,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = vec![Operation::RemoveValidation {
             sheet_id,
             validation_id,
         }];
-        self.start_user_transaction(ops, cursor, TransactionName::Validation);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
     }
 
-    pub fn remove_validations(&mut self, sheet_id: SheetId, cursor: Option<String>) {
+    pub fn remove_validations(&mut self, sheet_id: SheetId, cursor: Option<String>, is_ai: bool) {
         if let Some(sheet) = self.try_sheet(sheet_id) {
             if let Some(validations) = sheet.validations.validations() {
                 let ops = validations
@@ -81,7 +87,7 @@ impl GridController {
                         validation_id: v.id,
                     })
                     .collect();
-                self.start_user_transaction(ops, cursor, TransactionName::Validation);
+                self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
             }
         }
     }
@@ -173,7 +179,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation.clone(), None);
+        gc.update_validation(validation.clone(), None, false);
 
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 1);
         assert_eq!(gc.validation_selection(selection), Some(&validation));
@@ -205,7 +211,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation1.clone(), None);
+        gc.update_validation(validation1.clone(), None, false);
 
         let validation2 = Validation {
             id: Uuid::new_v4(),
@@ -217,7 +223,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation2.clone(), None);
+        gc.update_validation(validation2.clone(), None, false);
 
         assert_eq!(gc.validations(sheet_id).unwrap().len(), 2);
         expect_js_call(
@@ -230,7 +236,7 @@ mod tests {
             true,
         );
 
-        gc.remove_validations(sheet_id, None);
+        gc.remove_validations(sheet_id, None, false);
 
         assert!(gc.validations(sheet_id).is_none());
         expect_js_call(
@@ -259,7 +265,7 @@ mod tests {
             message: Default::default(),
             error: Default::default(),
         };
-        gc.update_validation(validation.clone(), None);
+        gc.update_validation(validation.clone(), None, false);
 
         assert_eq!(
             gc.get_validation_from_pos(sheet_id, (1, 1).into()),
@@ -418,18 +424,18 @@ mod tests {
         assert_validation_warning(&gc, pos![sheet_id!c4], None);
 
         // set the contents to true
-        gc.set_cell_value(pos![sheet_id!c4], "true".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!c4], "true".to_string(), None, false);
 
         // there should be no warning since the content is true
         assert_validation_warning(&gc, pos![sheet_id!c4], None);
 
         // set the contents to a, causing a validation error
-        gc.set_cell_value(pos![sheet_id!c4], "a".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!c4], "a".to_string(), None, false);
 
         // there should be a warning since the content is not true, false, or empty
         assert_validation_warning(&gc, pos![sheet_id!c4], Some(validation));
 
-        gc.set_cell_value(pos![sheet_id!c4], "false".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!c4], "false".to_string(), None, false);
 
         // there should be no warning since the content is false
         assert_validation_warning(&gc, pos![sheet_id!c4], None);

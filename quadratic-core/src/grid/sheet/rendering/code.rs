@@ -230,6 +230,7 @@ mod tests {
             "<html></html>".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.async_transactions()[0].id;
         gc.calculation_complete(JsCodeResult {
@@ -264,6 +265,7 @@ mod tests {
             1,
             2,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let render_cells = sheet.get_html_output();

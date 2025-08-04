@@ -260,6 +260,7 @@ pub mod test {
             "code".to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         gc.calculation_complete(JsCodeResult {
@@ -269,7 +270,7 @@ pub mod test {
             ..Default::default()
         })
         .unwrap();
-        gc.set_chart_size(sheet_pos, 10, 10, None);
+        gc.set_chart_size(sheet_pos, 10, 10, None, false);
 
         let sheet = gc.sheet(sheet_id);
 

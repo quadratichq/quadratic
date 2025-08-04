@@ -197,9 +197,9 @@ mod test {
         assert!(!sheet.has_content_in_selection(empty_selection, gc.a1_context()));
 
         // Test 2: Selection with regular cell data
-        gc.set_cell_value(pos![sheet_id!A1], "cell_data".to_string(), None);
-        gc.set_cell_value(pos![sheet_id!B1], "more_data".to_string(), None);
-        gc.set_cell_value(pos![sheet_id!C1], "even_more".to_string(), None);
+        gc.set_cell_value(pos![sheet_id!A1], "cell_data".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!B1], "more_data".to_string(), None, false);
+        gc.set_cell_value(pos![sheet_id!C1], "even_more".to_string(), None, false);
 
         let sheet = gc.sheet(sheet_id);
 

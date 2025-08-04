@@ -2,7 +2,6 @@ import type {
   AIMessagePrompt,
   AIModelKey,
   AIResponseContent,
-  AIUpdateMessage,
   ChatMessage,
   Content,
   GoogleSearchContent,
@@ -23,34 +22,21 @@ import { isQuadraticModel } from './model.helper';
 const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
     (message): message is SystemMessage =>
-      message.role === 'user' &&
-      message.contextType !== 'userPrompt' &&
-      message.contextType !== 'toolResult' &&
-      message.contextType !== 'aiUpdates'
+      message.role === 'user' && message.contextType !== 'userPrompt' && message.contextType !== 'toolResult'
   );
   return systemMessages.flatMap((message) => message.content.map((content) => content.text));
 };
 
-const getPromptMessages = (
-  messages: ChatMessage[]
-): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt | AIUpdateMessage)[] => {
-  return messages.filter(
-    (message): message is UserMessagePrompt | ToolResultMessage | AIMessagePrompt | AIUpdateMessage =>
-      message.contextType === 'userPrompt' ||
-      message.contextType === 'toolResult' ||
-      message.contextType === 'aiUpdates'
-  );
+const getPromptMessages = (messages: ChatMessage[]): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
+  return messages.filter((message) => message.contextType === 'userPrompt' || message.contextType === 'toolResult');
 };
 
 export const getPromptAndInternalMessages = (
   messages: ChatMessage[]
-): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt | InternalMessage | AIUpdateMessage)[] => {
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt | InternalMessage)[] => {
   return messages.filter(
-    (message): message is UserMessagePrompt | ToolResultMessage | AIMessagePrompt | InternalMessage | AIUpdateMessage =>
-      message.contextType === 'userPrompt' ||
-      message.contextType === 'toolResult' ||
-      message.role === 'internal' ||
-      message.contextType === 'aiUpdates'
+    (message) =>
+      message.contextType === 'userPrompt' || message.contextType === 'toolResult' || message.role === 'internal'
   );
 };
 
@@ -73,7 +59,7 @@ export const getMessagesForAI = (messages: ChatMessage[]): ChatMessage[] => {
 
 export const getPromptMessagesForAI = (
   messages: ChatMessage[]
-): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt | AIUpdateMessage)[] => {
+): (UserMessagePrompt | ToolResultMessage | AIMessagePrompt)[] => {
   return getPromptMessages(getPromptMessagesWithoutPDF(messages));
 };
 

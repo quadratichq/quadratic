@@ -35,7 +35,7 @@ export const Validation = () => {
 
   const removeValidation = useCallback(() => {
     if (validation) {
-      quadraticCore.removeValidation(sheetId, validation.id);
+      quadraticCore.removeValidation(sheetId, validation.id, false);
     }
     setShowValidation(true);
   }, [setShowValidation, sheetId, validation]);

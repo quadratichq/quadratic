@@ -160,8 +160,8 @@ mod test {
     #[test]
     fn test_move_sheet_operation() {
         let mut gc = GridController::test();
-        gc.add_sheet(None, None, None);
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
+        gc.add_sheet(None, None, None, false);
 
         // 1, 2, 3
         let sheet_ids = gc.sheet_ids();
@@ -207,17 +207,17 @@ mod test {
     fn get_sheet_next_name() {
         // Sheet1
         let mut gc = GridController::test();
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         // Sheet1 | Sheet 2
         assert_eq!(gc.sheet_index(1).name, "Sheet 2");
         gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
         // Sheet1 | Sheet 2 modified
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         // Sheet1 | Sheet 2 modified | Sheet 2
         assert_eq!(gc.sheet_index(2).name, "Sheet 2");
-        gc.delete_sheet(gc.sheet_ids()[0], None);
+        gc.delete_sheet(gc.sheet_ids()[0], None, false);
         // Sheet 2 modified | Sheet 2
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
         // Sheet 2 modified | Sheet 2 | Sheet 3
         assert_eq!(gc.sheet_index(2).name, "Sheet 3");
     }
@@ -225,8 +225,8 @@ mod test {
     #[test]
     fn sheet_names() {
         let mut gc = GridController::test();
-        gc.add_sheet(None, None, None);
-        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None, false);
+        gc.add_sheet(None, None, None, false);
         assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
     }
 

@@ -27,7 +27,7 @@ pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> 
         message: Default::default(),
         error: Default::default(),
     };
-    gc.update_validation(validation.clone(), None);
+    gc.update_validation(validation.clone(), None, false);
     validation
 }
 
@@ -119,7 +119,7 @@ mod tests {
 
         // Test case 2: Create a validation and ensure it fails
         let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
-        gc.set_cell_value(sheet_pos, "a".to_string(), None);
+        gc.set_cell_value(sheet_pos, "a".to_string(), None, false);
         assert_validation_warning(&gc, sheet_pos, Some(validation.clone()));
 
         // Test case 3: Wrong validation warning (should panic)
