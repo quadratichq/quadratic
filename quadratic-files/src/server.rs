@@ -14,6 +14,7 @@ use std::{net::SocketAddr, sync::Arc};
 use tokio::time;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::trace::{DefaultMakeSpan, TraceLayer};
+use tracing_subscriber::Layer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::file::get_files_to_process;
@@ -98,12 +99,18 @@ pub(crate) fn app(state: Arc<State>) -> Router {
 /// Start the websocket server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
+    let tracing_layer = if config()?.environment.is_production() {
+        tracing_subscriber::fmt::layer().json().boxed()
+    } else {
+        tracing_subscriber::fmt::layer().boxed()
+    };
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "quadratic_files=debug,tower_http=debug".into()),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_layer)
         .init();
 
     let config = config()?;
