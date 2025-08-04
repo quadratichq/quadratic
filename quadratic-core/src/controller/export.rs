@@ -15,6 +15,7 @@ use crate::{
     CellValue, Pos, Value,
     a1::{A1Selection, CellRefRange},
     color::Rgba,
+    controller::operations::import::{COLUMN_WIDTH_MULTIPLIER, ROW_HEIGHT_MULTIPLIER},
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, GridBounds, NumericFormatKind,
@@ -114,7 +115,7 @@ impl GridController {
             for (col, width) in custom_column_widths {
                 let excel_col = (col - 1) as u16;
                 // convert from pixels to Excel column width units
-                let excel_width = width / 7.0;
+                let excel_width = width / COLUMN_WIDTH_MULTIPLIER;
 
                 worksheet
                     .set_column_width(excel_col, excel_width)
@@ -127,7 +128,7 @@ impl GridController {
             for (row, height) in custom_row_heights {
                 let excel_row = (row - 1) as u32;
                 // convert from pixels to Excel row height units
-                let excel_height = height / 1.5;
+                let excel_height = height / ROW_HEIGHT_MULTIPLIER;
 
                 worksheet
                     .set_row_height(excel_row, excel_height)
@@ -455,7 +456,7 @@ mod tests {
     use crate::{
         Array,
         controller::user_actions::import::tests::{assert_flattened_simple_csv, simple_csv},
-        grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp},
+        grid::sheet::borders::{BorderSelection, BorderStyle, Borders},
     };
 
     #[test]
@@ -554,72 +555,163 @@ mod tests {
 
     #[test]
     fn test_exports_excel_with_borders() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
+        let mut gc_1 = GridController::test();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+        let pos = Pos { x: 1, y: 1 };
 
         // Add some data
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, "Border Test");
-
-        // Add borders to the cell
-        let border_style = BorderStyleTimestamp::new(
-            Rgba::new(255, 0, 0, 255), // Red color
-            CellBorderLine::Line2,     // Medium line
+        gc_1.set_cell_value(
+            pos.to_sheet_pos(sheet_id_1),
+            "Border Test".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
         );
 
-        let border_cell = BorderStyleCell {
-            top: Some(border_style),
-            bottom: Some(border_style),
-            left: Some(border_style),
-            right: Some(border_style),
-        };
-
-        sheet
-            .borders
-            .set_style_cell(Pos { x: 1, y: 1 }, border_cell);
+        // Add borders to the cell
+        gc_1.set_borders(
+            A1Selection::from_single_cell(pos.to_sheet_pos(sheet_id_1)),
+            BorderSelection::All,
+            Some(BorderStyle {
+                color: Rgba::new(255, 0, 0, 255),
+                line: CellBorderLine::Line2,
+            }),
+            None,
+        );
 
         // Test that export succeeds
-        let excel = gc.export_excel();
+        let excel = gc_1.export_excel();
         assert!(excel.is_ok());
-
-        // Test that the exported file has some content (should be larger than a minimal file)
         let excel_data = excel.unwrap();
-        assert!(excel_data.len() > 1000); // A file with borders should be reasonably sized
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Check that the cell value is the same
+        assert_eq!(
+            gc_2.sheet(sheet_id_2).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
+        );
+
+        // Compare the borders of the two sheets
+        assert!(Borders::compare_borders(
+            &gc_1.sheet(sheet_id_1).borders,
+            &gc_2.sheet(sheet_id_2).borders
+        ));
     }
 
     #[test]
     fn test_exports_excel_with_borders_beyond_data() {
-        let mut gc = GridController::test();
-        let sheet_id = gc.sheet_ids()[0];
-        let sheet = gc.sheet_mut(sheet_id);
+        let mut gc_1 = GridController::test();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+        let pos = Pos { x: 1, y: 1 };
 
-        // Add some data in a small area
-        sheet.set_cell_value(Pos { x: 1, y: 1 }, "Data");
-
-        // Add borders that extend well beyond the data bounds
-        let border_style = BorderStyleTimestamp::new(
-            Rgba::new(0, 255, 0, 255), // Green color
-            CellBorderLine::Line1,     // Thin line
+        // Add some data
+        gc_1.set_cell_value(
+            pos.to_sheet_pos(sheet_id_1),
+            "Border Test".to_string(),
+            None,
         );
-
-        let border_cell = BorderStyleCell {
-            right: Some(border_style),
-            ..Default::default()
-        };
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
+        );
 
         // Add borders at positions far from the data
         for x in 5..=10 {
             for y in 5..=10 {
-                sheet.borders.set_style_cell(Pos { x, y }, border_cell);
+                gc_1.set_borders(
+                    A1Selection::from_single_cell(pos![sheet_id_1! x, y]),
+                    BorderSelection::Right,
+                    Some(BorderStyle {
+                        color: Rgba::new(0, 255, 0, 255),
+                        line: CellBorderLine::Line1,
+                    }),
+                    None,
+                );
             }
         }
 
-        // Test that export succeeds and includes the border areas
-        let excel = gc.export_excel();
+        // Test that export succeeds
+        let excel = gc_1.export_excel();
         assert!(excel.is_ok());
-
-        // The exported file should be larger due to the additional border formatting
         let excel_data = excel.unwrap();
-        assert!(excel_data.len() > 1000);
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Check that the cell value is the same
+        assert_eq!(
+            gc_2.sheet(sheet_id_2).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
+        );
+
+        // Compare the borders of the two sheets
+        assert!(Borders::compare_borders(
+            &gc_1.sheet(sheet_id_1).borders,
+            &gc_2.sheet(sheet_id_2).borders
+        ));
+    }
+
+    #[test]
+    fn test_import_export_import_excel_with_styles() {
+        let file = include_bytes!("../../test-files/styles.xlsx");
+
+        let mut gc_1 = GridController::new_blank();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+
+        // Test that export succeeds
+        let excel = gc_1.export_excel();
+        assert!(excel.is_ok());
+        let excel_data = excel.unwrap();
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Check that the columns are the same
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).columns,
+            gc_2.sheet(sheet_id_2).columns
+        );
+
+        // Check that the formats are the same
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).formats,
+            gc_2.sheet(sheet_id_2).formats
+        );
+    }
+
+    #[test]
+    fn test_import_export_import_excel_with_borders() {
+        let file = include_bytes!("../../test-files/borders.xlsx");
+
+        let mut gc_1 = GridController::new_blank();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+
+        // Test that export succeeds
+        let excel = gc_1.export_excel();
+        assert!(excel.is_ok());
+        let excel_data = excel.unwrap();
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Compare the borders of the two sheets
+        assert!(Borders::compare_borders(
+            &gc_1.sheet(sheet_id_1).borders,
+            &gc_2.sheet(sheet_id_2).borders
+        ));
     }
 }

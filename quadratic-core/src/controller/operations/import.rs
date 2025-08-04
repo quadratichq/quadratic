@@ -33,6 +33,8 @@ use super::{
 };
 
 const IMPORT_LINES_PER_OPERATION: u32 = 10000;
+pub const COLUMN_WIDTH_MULTIPLIER: f64 = 7.0;
+pub const ROW_HEIGHT_MULTIPLIER: f64 = 1.5;
 
 impl GridController {
     /// Guesses if the first row of a CSV file is a header based on the types of the
@@ -489,12 +491,14 @@ impl GridController {
                 let column = column_width.column as i64 + 1;
                 sheet
                     .offsets
-                    .set_column_width(column, column_width.width * 8.0);
+                    .set_column_width(column, column_width.width * COLUMN_WIDTH_MULTIPLIER);
             }
 
             for row_height in layout.row_heights.iter() {
                 let row = row_height.row as i64 + 1;
-                sheet.offsets.set_row_height(row, row_height.height * 1.5);
+                sheet
+                    .offsets
+                    .set_row_height(row, row_height.height * ROW_HEIGHT_MULTIPLIER);
             }
         }
 
