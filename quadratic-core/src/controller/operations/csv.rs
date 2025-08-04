@@ -235,7 +235,7 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         let file = read_test_csv_file("csv-error-1.csv");
-        gc.import_csv(sheet_id, file, "file_name", pos![A1], None, None, None)
+        gc.import_csv(sheet_id, &file, "file_name", pos![A1], None, None, None)
             .unwrap();
 
         assert_display_cell_value(&gc, sheet_id, 1, 2, "Database");

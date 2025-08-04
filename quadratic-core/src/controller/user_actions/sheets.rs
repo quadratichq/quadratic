@@ -75,7 +75,6 @@ mod test {
             js::{clear_js_calls, expect_js_call},
         },
     };
-    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_set_sheet_name() {
@@ -394,7 +393,7 @@ mod test {
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
 
         gc.duplicate_sheet(sheet_id, None);
@@ -421,12 +420,12 @@ mod test {
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
                 .get_code_cell_value((2, 1).into()),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
 
         // update dependent cell value in duplicate sheet
@@ -442,12 +441,12 @@ mod test {
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
                 .get_code_cell_value((2, 1).into()),
-            Some(CellValue::Number(BigDecimal::from(4)))
+            Some(CellValue::Number(4.into()))
         );
     }
 }

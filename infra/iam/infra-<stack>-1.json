@@ -88,12 +88,15 @@
         "ec2:PutResourcePolicy",
         "ec2:DeleteLaunchTemplate",
         "ec2:TerminateInstances",
+        "ec2:StopInstances",
+        "ec2:StartInstances",
         "ec2:DescribeLocalGatewayRouteTablePermissions",
         "ec2:DescribeTags",
         "ec2:SendSpotInstanceInterruptions",
         "ec2:DescribeLaunchTemplateVersions",
         "ec2:DescribeNatGateways",
         "ec2:AllocateAddress",
+        "ec2:AssociateAddress",
         "ec2:DisassociateAddress",
         "ec2:DescribeSecurityGroups",
         "ec2:DescribeSecurityGroupRules",
@@ -107,7 +110,11 @@
         "ec2:AuthorizeSecurityGroupIngress",
         "ec2:AuthorizeSecurityGroupEgress",
         "ec2:RevokeSecurityGroupIngress",
-        "ec2:RevokeSecurityGroupEgress"
+        "ec2:RevokeSecurityGroupEgress",
+        "ec2:ImportKeyPair",
+        "ec2:CreateKeyPair",
+        "ec2:DeleteKeyPair",
+        "ec2:DescribeKeyPairs"
       ],
       "Resource": "*"
     },

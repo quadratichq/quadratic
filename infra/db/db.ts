@@ -7,6 +7,7 @@ import {
   apiPrivateSubnet3,
   apiVPC,
 } from "../api/api_network";
+import { bastionSecurityGroup } from "./bastian";
 
 const config = new pulumi.Config();
 
@@ -62,6 +63,13 @@ const dbSecurityGroup = new aws.ec2.SecurityGroup(
         fromPort: 5432,
         toPort: 5432,
         securityGroups: [apiEc2SecurityGroup.id],
+      },
+      {
+        description: "Allow bastion host to connect to the database",
+        protocol: "tcp",
+        fromPort: 5432,
+        toPort: 5432,
+        securityGroups: [bastionSecurityGroup.id],
       },
     ],
     tags: { Name: "db-postgresql-security-group" },

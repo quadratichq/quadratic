@@ -7,7 +7,6 @@ use std::str::FromStr;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
@@ -180,9 +179,9 @@ impl<'a> Connection<'a> for MsSqlConnection {
 
         config.trust_cert();
 
-        let tcp = TcpStream::connect(config.get_addr()).await.map_err(|e| {
-            SharedError::Sql(SqlError::Connect(format!("Failed to connect: {e}")))
-        })?;
+        let tcp = TcpStream::connect(config.get_addr())
+            .await
+            .map_err(|e| SharedError::Sql(SqlError::Connect(format!("Failed to connect: {e}"))))?;
         tcp.set_nodelay(true).map_err(|e| {
             SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {e}")))
         })?;
@@ -318,8 +317,8 @@ ORDER BY
                 ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
                 ColumnData::Numeric(_) => {
                     convert_mssql_type::<Decimal, _>(column_data, |decimal| {
-                        ArrowType::BigDecimal(
-                            BigDecimal::from_str(&decimal.to_string()).unwrap_or_default(),
+                        ArrowType::Decimal(
+                            Decimal::from_str(&decimal.to_string()).unwrap_or_default(),
                         )
                     })
                 }
@@ -407,6 +406,14 @@ impl UsesSsh for MsSqlConnection {
         self.port = Some(port.to_string());
     }
 
+    fn host(&self) -> String {
+        self.host.clone()
+    }
+
+    fn set_host(&mut self, host: String) {
+        self.host = host;
+    }
+
     fn ssh_host(&self) -> Option<String> {
         self.ssh_host.to_owned()
     }
@@ -423,7 +430,6 @@ mod tests {
 
     use super::*;
     // use std::io::Read;
-    use bigdecimal::BigDecimal;
 
     fn new_mssql_connection() -> MsSqlConnection {
         MsSqlConnection::new(
@@ -481,11 +487,11 @@ mod tests {
         assert_eq!(to_arrow(5), ArrowType::Boolean(true));
         assert_eq!(
             to_arrow(6),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap())
         );
         assert_eq!(
             to_arrow(7),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap())
         );
         assert_eq!(to_arrow(8), ArrowType::Float64(922337203685477.6));
         assert_eq!(to_arrow(9), ArrowType::Float64(214748.3647));

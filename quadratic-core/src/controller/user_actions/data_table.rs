@@ -45,9 +45,13 @@ impl GridController {
         table_name: Option<String>,
         first_row_is_header: bool,
         cursor: Option<String>,
-    ) {
-        let ops = self.grid_to_data_table_operations(sheet_rect, table_name, first_row_is_header);
+    ) -> Result<()> {
+        let ops =
+            self.grid_to_data_table_operations(sheet_rect, table_name, first_row_is_header)?;
+
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
+
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]

@@ -38,12 +38,21 @@ export function EmptyPage(props: EmptyPageProps) {
   // If this is an error, log it
   useEffect(() => {
     if (error) {
+      const errorString = JSON.stringify(
+        error instanceof Error
+          ? {
+              name: error.name,
+              message: error.message,
+              stack: error.stack,
+            }
+          : error
+      );
       // for core errors, we send the source but don't share it with the user
       const sourceTitle = source ? `Core Error in ${source}` : title;
       mixpanel.track('[Empty].error', {
         title: sourceTitle,
         description,
-        error: JSON.stringify(error),
+        error: errorString,
       });
       Sentry.captureException(new Error('error-page'), {
         extra: {

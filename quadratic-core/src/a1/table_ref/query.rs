@@ -131,6 +131,17 @@ impl TableRef {
         let bounds = table.bounds;
         let mut min_x = bounds.max.x;
         let mut max_x = bounds.min.x;
+        let mut min_y = bounds.min.y;
+        let max_y = match (self.headers, self.data) {
+            (true, false) => {
+                if !table.show_columns {
+                    return None;
+                } else {
+                    bounds.min.y + (if table.show_name { 1 } else { 0 })
+                }
+            }
+            _ => bounds.max.y,
+        };
 
         match &self.col_range {
             ColRange::All => {
@@ -141,6 +152,7 @@ impl TableRef {
                 let col = table.visible_columns.iter().position(|c| c == col)?;
                 min_x = min_x.min(bounds.min.x + col as i64);
                 max_x = max_x.max(bounds.min.x + col as i64);
+                min_y += if table.show_name { 1 } else { 0 };
             }
             ColRange::ColRange(col_range_start, col_range_end) => {
                 let start = table
@@ -157,18 +169,16 @@ impl TableRef {
                 max_x = max_x
                     .max(bounds.min.x + start as i64)
                     .max(bounds.min.x + end as i64);
+                min_y += if table.show_name { 1 } else { 0 };
             }
             ColRange::ColToEnd(col) => {
                 let start = table.visible_columns.iter().position(|c| c == col)?;
                 min_x = min_x.min(bounds.min.x + start as i64);
                 max_x = min_x.max(bounds.min.x + table.visible_columns.len() as i64 - 1);
+                min_y += if table.show_name { 1 } else { 0 };
             }
         }
 
-        let min_y = bounds.min.y
-            + (if table.show_name { 1 } else { 0 })
-            + (if table.show_columns { 1 } else { 0 });
-        let max_y = bounds.max.y;
         Some(Rect::new(min_x, min_y, max_x, max_y))
     }
 
@@ -241,7 +251,7 @@ impl TableRef {
                 if let (Some(start), Some(end)) =
                     (table.try_col_index(start), table.try_col_index(end))
                 {
-                    for col in start..=end {
+                    for col in start.min(end)..=start.max(end) {
                         cols.push(col);
                     }
                 } else {
@@ -404,7 +414,7 @@ mod tests {
         };
 
         let rect = table_ref.to_largest_rect(&context);
-        assert_eq!(rect.unwrap(), Rect::test_a1("A3:B3"));
+        assert_eq!(rect.unwrap(), Rect::test_a1("A2:B3"));
     }
 
     #[test]
@@ -554,6 +564,18 @@ mod tests {
         let table_ref = TableRef {
             table_name: "test_table".to_string(),
             col_range: ColRange::ColRange("A".to_string(), "B".to_string()),
+            data: true,
+            headers: true,
+            totals: false,
+            this_row: false,
+        };
+        let cols = table_ref.table_column_selection("test_table", &context);
+        assert_eq!(cols, Some(vec![0, 1]));
+
+        // Test reversed column range
+        let table_ref = TableRef {
+            table_name: "test_table".to_string(),
+            col_range: ColRange::ColRange("B".to_string(), "A".to_string()),
             data: true,
             headers: true,
             totals: false,
@@ -809,7 +831,7 @@ mod tests {
             this_row: false,
         };
         let rect = table_ref.to_largest_rect(&context);
-        assert_eq!(rect.unwrap(), Rect::test_a1("B3:C3"));
+        assert_eq!(rect.unwrap(), Rect::test_a1("B2:C3"));
 
         // Test with hidden columns
         let context = setup_test_context_with_hidden_columns();
@@ -822,7 +844,7 @@ mod tests {
             this_row: false,
         };
         let rect = table_ref.to_largest_rect(&context);
-        assert_eq!(rect.unwrap(), Rect::test_a1("A3:C3"));
+        assert_eq!(rect.unwrap(), Rect::test_a1("A1:C3"));
 
         // Test with non-existent column
         let table_ref = TableRef {

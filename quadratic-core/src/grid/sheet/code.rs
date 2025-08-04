@@ -143,7 +143,7 @@ impl Sheet {
 
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_values(&self, rect: Rect) -> CellValues {
-        self.iter_code_output_in_rect(rect)
+        self.iter_data_tables_in_rect(rect)
             .flat_map(|(data_table_rect, data_table)| match &data_table.value {
                 Value::Single(v) => vec![vec![v.to_owned()]],
                 Value::Array(_) => rect
@@ -165,27 +165,6 @@ impl Sheet {
             })
             .collect::<Vec<Vec<CellValue>>>()
             .into()
-    }
-
-    pub fn iter_code_output_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
-        self.data_tables_intersect_rect(rect)
-            .map(|(_, pos, data_table)| {
-                let output_rect = data_table.output_rect(pos, false);
-                (output_rect, data_table)
-            })
-    }
-
-    pub fn iter_code_output_intersects_rect(
-        &self,
-        rect: Rect,
-    ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
-        self.data_tables_intersect_rect(rect)
-            .filter_map(move |(_, pos, data_table)| {
-                let output_rect = data_table.output_rect(pos, false);
-                output_rect
-                    .intersection(&rect)
-                    .map(|intersection_rect| (output_rect, intersection_rect, data_table))
-            })
     }
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
@@ -210,10 +189,10 @@ impl Sheet {
             }
             // return the code table that contains the pos
             else {
-                let data_table_pos = self.data_table_pos_that_contains(pos).ok()?;
+                let data_table_pos = self.data_table_pos_that_contains(pos)?;
                 (
                     data_table_pos.to_multi_pos(self.id),
-                    self.cell_value(data_table_pos)
+                    self.cell_value_ref(data_table_pos)
                         .and_then(|cell_value| cell_value.code_cell_value())?,
                 )
             };

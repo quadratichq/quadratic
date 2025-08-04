@@ -1,6 +1,5 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
@@ -20,7 +19,7 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { Link } from 'react-router';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
@@ -39,6 +38,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const { debug } = useDebugFlags();
 
   const {
+    isOnPaidPlan,
     modelKey: selectedModel,
     setModelKey: setSelectedModel,
     modelConfig: selectedModelConfig,
@@ -111,17 +111,6 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [selectedModelMode]
   );
 
-  const { isOnPaidPlan } = useIsOnPaidPlan();
-  useEffect(() => {
-    if (debug || isOnPaidPlan) {
-      return;
-    }
-
-    if (selectedModelMode === 'pro') {
-      setModelMode('basic');
-    }
-  }, [debug, isOnPaidPlan, selectedModelMode, setModelMode]);
-
   return (
     <>
       {canToggleThinking ? (
@@ -130,7 +119,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             aria-label="Extended thinking"
             size="sm"
             disabled={loading}
-            onClick={() => handleThinkingToggle(!thinkingToggle)}
+            onClick={() => handleThinkingToggle(!thinking)}
             className={cn(
               thinking && '!bg-border !text-primary',
               !thinking && 'w-7 hover:text-foreground',

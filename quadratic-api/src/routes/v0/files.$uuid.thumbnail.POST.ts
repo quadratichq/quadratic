@@ -10,6 +10,7 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { S3Bucket } from '../../storage/s3';
 import { uploadMiddleware } from '../../storage/storage';
 import type { RequestWithFile, RequestWithUser } from '../../types/Request';
+
 const { FILE_EDIT } = FilePermissionSchema.enum;
 
 async function handler(req: RequestWithUser & RequestWithFile, res: Response) {

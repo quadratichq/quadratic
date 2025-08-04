@@ -71,7 +71,7 @@ class Thumbnail {
   private generate = async (): Promise<Blob | null> => {
     const sheetId = sheets.getFirst().id;
     const rectangle = new Rectangle(0, 0, imageWidth, imageHeight);
-    await pixiApp.prepareForCopying({ sheetId, cull: rectangle, gridLines: true });
+    await pixiApp.prepareForCopying({ sheetId, cull: rectangle, gridLines: true, thumbnail: true });
     pixiApp.gridLines.update(rectangle, undefined, true);
     this.renderer.render(pixiApp.viewportContents);
     pixiApp.cleanUpAfterCopying();

@@ -30,12 +30,12 @@ class CoreMultiplayer {
     }
   }
 
-  private handleMessage = (e: MessageEvent<MultiplayerCoreMessage>) => {
+  private handleMessage = async (e: MessageEvent<MultiplayerCoreMessage>) => {
     if (debugFlag('debugWebWorkersMessages')) console.log(`[coreMultiplayer] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'multiplayerCoreReceiveTransaction':
-        core.receiveTransaction(e.data);
+        await core.receiveTransaction(e.data);
         break;
 
       case 'multiplayerCoreReceiveCurrentTransaction':
@@ -43,11 +43,11 @@ class CoreMultiplayer {
         break;
 
       case 'multiplayerCoreReceiveTransactions':
-        core.receiveTransactions(e.data);
+        await core.receiveTransactions(e.data);
         break;
 
       case 'multiplayerCoreReceiveTransactionAck':
-        core.receiveTransactionAck(e.data.transactionId, e.data.sequenceNum);
+        await core.receiveTransactionAck(e.data.transactionId, e.data.sequenceNum);
         break;
 
       default:

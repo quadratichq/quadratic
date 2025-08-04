@@ -12,15 +12,14 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { downloadFile } from '@/app/helpers/downloadFileInBrowser';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   CopyAsPng,
   CopyIcon,
-  CsvIcon,
   CutIcon,
+  DownloadIcon,
   FindInFileIcon,
   PasteIcon,
   RedoIcon,
@@ -154,7 +153,7 @@ export const editActionsSpec: EditActionSpec = {
   [Action.DownloadAsCsv]: {
     label: () => 'Download as CSV',
     labelVerbose: 'Download selection as CSV',
-    Icon: CsvIcon,
+    Icon: DownloadIcon,
     run: async () => {
       pixiAppSettings.setContextMenu?.({});
       // use table name if available, otherwise use timestamp
@@ -187,25 +186,7 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const cursor = sheets.sheet.cursor.position;
-        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
-        if (codeCell) {
-          doubleClickCell({
-            column: cursor.x,
-            row: cursor.y,
-            cell: '',
-            cursorMode: CursorMode.Edit,
-          });
-        } else {
-          quadraticCore.getEditCell(sheets.current, cursor.x, cursor.y).then((cell) => {
-            doubleClickCell({
-              column: cursor.x,
-              row: cursor.y,
-              cell,
-              cursorMode: cell ? CursorMode.Edit : CursorMode.Enter,
-            });
-          });
-        }
-
+        doubleClickCell({ column: cursor.x, row: cursor.y, cursorMode: CursorMode.Edit });
         return true;
       }
     },
@@ -215,19 +196,7 @@ export const editActionsSpec: EditActionSpec = {
     run: () => {
       if (!inlineEditorHandler.isEditingFormula()) {
         const cursor = sheets.sheet.cursor.position;
-        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(cursor);
-        if (codeCell) {
-          doubleClickCell({
-            column: codeCell.x,
-            row: codeCell.y,
-            cell: '',
-            cursorMode: CursorMode.Edit,
-          });
-        } else {
-          quadraticCore.getEditCell(sheets.current, cursor.x, cursor.y).then((cell) => {
-            doubleClickCell({ column: cursor.x, row: cursor.y, cell, cursorMode: CursorMode.Edit });
-          });
-        }
+        doubleClickCell({ column: cursor.x, row: cursor.y, cell: '', cursorMode: CursorMode.Edit });
         return true;
       }
     },

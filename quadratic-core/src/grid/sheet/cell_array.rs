@@ -11,7 +11,6 @@ use super::Sheet;
 impl Sheet {
     pub fn set_cell_values(&mut self, rect: Rect, values: Array) -> Array {
         let mut old_values = Array::new_empty(values.size());
-
         for x in rect.x_range() {
             for y in rect.y_range() {
                 let new_value = values
@@ -33,7 +32,6 @@ impl Sheet {
                 }
             }
         }
-
         old_values
     }
 
@@ -77,16 +75,16 @@ impl Sheet {
                     .x_range()
                     .map(|x| {
                         let pos = Pos { x, y };
-                        let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
+                        let cell_value = self.cell_value_ref(pos).unwrap_or(&CellValue::Blank);
 
-                        match (include_code, &cell_value) {
+                        match (include_code, cell_value) {
                             (
                                 true,
                                 CellValue::Code(_)
                                 | CellValue::Import(_)
                                 | CellValue::Image(_)
                                 | CellValue::Html(_),
-                            ) => cell_value,
+                            ) => cell_value.to_owned(),
                             (_, _) => self.display_value(pos).unwrap_or(CellValue::Blank),
                         }
                     })
@@ -116,10 +114,10 @@ impl Sheet {
                     .x_range()
                     .map(|x| {
                         let pos = Pos { x, y };
-                        let cell_value = self.cell_value(pos).unwrap_or(CellValue::Blank);
+                        let cell_value = self.cell_value_ref(pos).unwrap_or(&CellValue::Blank);
 
                         match (include_code, &cell_value) {
-                            (true, CellValue::Code(_)) => (cell_value, Some(pos)),
+                            (true, CellValue::Code(_)) => (cell_value.to_owned(), Some(pos)),
                             (_, _) => (self.display_value(pos).unwrap_or(CellValue::Blank), None),
                         }
                     })
@@ -149,7 +147,7 @@ impl Sheet {
             for y in spill_rect.y_range() {
                 let cell_pos = Pos { x, y };
                 if self
-                    .data_table_pos_that_contains(cell_pos)
+                    .data_table_pos_that_contains_result(cell_pos)
                     .is_ok_and(|data_table_pos| code_pos != data_table_pos)
                 {
                     results.insert(cell_pos);

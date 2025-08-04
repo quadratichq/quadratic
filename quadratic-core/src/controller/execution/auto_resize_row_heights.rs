@@ -79,8 +79,6 @@ impl GridController {
 mod tests {
     use std::collections::HashMap;
 
-    use bigdecimal::BigDecimal;
-
     use crate::controller::GridController;
     use crate::controller::active_transactions::pending_transaction::PendingTransaction;
     use crate::controller::execution::run_code::get_cells::JsCellsA1Response;
@@ -153,6 +151,7 @@ mod tests {
                 vec![vec![
                     "test_auto_resize_row_heights_on_set_cell_value_1".to_string(),
                 ]],
+                false,
             )
             .unwrap();
         // mock response from renderer
@@ -192,6 +191,7 @@ mod tests {
                 vec![vec![
                     "test_auto_resize_row_heights_on_set_cell_value_2".to_string(),
                 ]],
+                false,
             )
             .unwrap();
         let row_heights = vec![JsRowHeight {
@@ -552,7 +552,7 @@ mod tests {
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(10)))
+            Some(CellValue::Number(10.into()))
         );
 
         expect_js_call(
@@ -676,6 +676,7 @@ mod tests {
                 vec![vec![
                     "test_auto_resize_row_heights_on_user_transaction_only".to_string(),
                 ]],
+                false,
             )
             .unwrap();
         // mock response from renderer

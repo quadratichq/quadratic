@@ -62,9 +62,9 @@ export const TableColumnHeaderRename = () => {
 
   useEffect(() => {
     updatePosition();
-    events.on('viewportChanged', updatePosition);
+    events.on('viewportReadyAfterUpdate', updatePosition);
     return () => {
-      events.off('viewportChanged', updatePosition);
+      events.off('viewportReadyAfterUpdate', updatePosition);
     };
   }, [updatePosition]);
 

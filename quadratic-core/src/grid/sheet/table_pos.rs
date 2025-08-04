@@ -11,7 +11,12 @@ impl Sheet {
 
         let pos = table_pos.pos;
         let x = table.get_display_index_from_column_index(u32::try_from(pos.x).ok()?, false);
-        let y = table.get_display_index_from_row_index(u64::try_from(pos.y).ok()?) as i64
+
+        let reverse_display_buffer = table.get_reverse_display_buffer();
+        let y = table.get_display_index_from_reverse_display_buffer(
+            u64::try_from(pos.y).ok()?,
+            reverse_display_buffer.as_ref(),
+        ) as i64
             + table.y_adjustment(true);
 
         Some(SheetPos {

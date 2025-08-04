@@ -159,10 +159,9 @@ impl GridController {
     /// Delete cell values and formats in a given range.
     fn shrink(&mut self, delete_rect: SheetRect) -> Vec<Operation> {
         let mut ops = vec![];
-
         let selection = A1Selection::from_rect(delete_rect);
         ops.extend(self.delete_cells_operations(&selection, false));
-        ops.extend(self.clear_format_borders_operations(&selection));
+        ops.extend(self.clear_format_borders_operations(&selection, false));
         ops
     }
 
@@ -340,6 +339,7 @@ impl GridController {
         initial_range: &Rect,
         final_range: &Rect,
     ) -> Result<Vec<Operation>> {
+        let height = initial_range.height() as usize;
         let mut formats = SheetFormatUpdates::default();
         let mut borders = BordersUpdates::default();
 
@@ -348,7 +348,6 @@ impl GridController {
             .rev()
             .map(|x| {
                 // for each row, apply the formats to a block (x, initial_range.height) of new cells
-                let height = initial_range.height() as usize;
                 final_range.y_range().step_by(height).for_each(|y| {
                     let new_y = final_range.max.y.min(y + height as i64 - 1);
                     let start_pos = (x, initial_range.min.y).into();
@@ -395,6 +394,7 @@ impl GridController {
         initial_range: &Rect,
         final_range: &Rect,
     ) -> Result<Vec<Operation>> {
+        let height = initial_range.height() as usize;
         let mut formats = SheetFormatUpdates::default();
         let mut borders = BordersUpdates::default();
 
@@ -402,7 +402,6 @@ impl GridController {
             .x_range()
             .map(|x| {
                 // for each row, apply the formats to a block (x, initial_range.height) of new cells
-                let height = initial_range.height() as usize;
                 final_range.y_range().rev().step_by(height).for_each(|y| {
                     let mut new_y = y - height as i64 + 1;
                     let start_pos: Pos = if new_y < final_range.min.y {
@@ -458,10 +457,10 @@ impl GridController {
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
+        let height = values.len() as i64 / width;
         let mut formats = SheetFormatUpdates::default();
         let mut borders = BordersUpdates::default();
 
-        let height = values.len() as i64 / width;
         let mut ops = final_range
             .x_range()
             .enumerate()
@@ -510,7 +509,7 @@ impl GridController {
                 let (operations, _) = self.apply_auto_complete(
                     sheet_id,
                     direction == ExpandDirection::Up,
-                    &target_col,
+                    initial_range,
                     &target_col,
                     Some(vals),
                 )?;
@@ -538,10 +537,9 @@ impl GridController {
         width: i64,
         direction: ExpandDirection,
     ) -> Result<Vec<Operation>> {
+        let height = values.len() as i64 / width;
         let mut formats = SheetFormatUpdates::default();
         let mut borders = BordersUpdates::default();
-
-        let height = values.len() as i64 / width;
 
         let mut ops = final_range
             .x_range()
@@ -597,7 +595,7 @@ impl GridController {
                 let (operations, _) = self.apply_auto_complete(
                     sheet_id,
                     direction == ExpandDirection::Up,
-                    &target_col,
+                    initial_range,
                     &target_col,
                     Some(vals),
                 )?;
@@ -628,22 +626,23 @@ impl GridController {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             return Err(Error::msg("Sheet not found"));
         };
+
         let values = if let Some(cell_values) = cell_values {
             cell_values
         } else {
             sheet.cell_values_pos_in_rect(initial_range, true)
         };
 
-        let mut series = find_auto_complete(SeriesOptions {
+        let series = find_auto_complete(SeriesOptions {
             series: values,
             spaces: (final_range.width() * final_range.height()) as i32,
             negative,
         });
+        let mut new_series = series.clone();
 
         // we don't need to apply any operations to the cells set in
         // data_tables_and_cell_values_in_rect() for no_op_cells
         let mut no_op_cells = CellValues::default();
-        let mut values = CellValues::new(final_range.width(), final_range.height());
         let context = self.a1_context();
         let selection =
             A1Selection::from_rect(SheetRect::new_from_rect(final_range.to_owned(), sheet_id));
@@ -651,75 +650,67 @@ impl GridController {
         let data_tables_in_rect = sheet.data_tables_and_cell_values_in_rect(
             initial_range,
             &mut no_op_cells,
-            &mut values,
+            &mut None,
             context,
             &selection,
             false,
         );
 
-        // gather ComputeCode operations for any code cells
-        let compute_code_ops = final_range
-            .iter()
-            .enumerate()
-            .filter_map(|(i, Pos { x, y })| {
-                if let Some((CellValue::Code(code_cell), original_pos)) = series.get_mut(i) {
-                    let mut data_table_ops = vec![];
-                    if let Some(original_pos) = original_pos {
-                        code_cell.adjust_references(
-                            sheet_id,
-                            context,
-                            original_pos.to_sheet_pos(sheet_id),
-                            RefAdjust {
-                                sheet_id: None,
-                                relative_only: true,
-                                dx: x - original_pos.x,
-                                dy: y - original_pos.y,
-                                x_start: 0,
-                                y_start: 0,
-                            },
-                        );
+        // gather SetDataTable and ComputeCode operations for any code cells
+        let mut data_table_ops = vec![];
+        let mut compute_code_ops = vec![];
+        for (i, Pos { x, y }) in final_range.iter().enumerate() {
+            let final_sheet_pos = SheetPos::new(sheet_id, x, y);
 
-                        let source_pos = original_pos.to_owned();
-                        original_pos.x = x;
-                        original_pos.y = y;
+            if let Some((CellValue::Code(code_cell), original_pos)) = new_series.get_mut(i) {
+                if let Some(original_pos) = original_pos {
+                    code_cell.adjust_references(
+                        sheet_id,
+                        context,
+                        original_pos.to_sheet_pos(sheet_id),
+                        RefAdjust {
+                            sheet_id: None,
+                            relative_only: true,
+                            dx: x - original_pos.x,
+                            dy: y - original_pos.y,
+                            x_start: 0,
+                            y_start: 0,
+                        },
+                    );
 
-                        // collect SetDataTable operations for any data tables in the source_pos
-                        if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
-                            let mut data_table = data_table.to_owned();
-                            let old_name = data_table.name().to_string();
-                            let new_name = unique_data_table_name(&old_name, false, None, context);
-                            data_table.name = new_name.into();
+                    let source_pos = original_pos.to_owned();
+                    original_pos.x = x;
+                    original_pos.y = y;
 
-                            data_table_ops.push(Operation::SetDataTableMultiPos {
-                                multi_pos: original_pos.to_multi_pos(sheet_id),
-                                data_table: Some(data_table),
-                                index: usize::MAX,
-                            });
-                        }
+                    // collect SetDataTable operations for any data tables in the source_pos
+                    if let Some(data_table) = data_tables_in_rect.get(&source_pos) {
+                        let mut data_table = data_table.to_owned();
+                        let old_name = data_table.name().to_string();
+                        let new_name = unique_data_table_name(&old_name, false, None, context);
+                        data_table.name = new_name.into();
+
+                        data_table_ops.push(Operation::SetDataTableMultiPos {
+                            multi_pos: final_sheet_pos.into(),
+                            data_table: Some(data_table),
+                            index: usize::MAX,
+                        });
                     }
-
-                    let sheet_pos = SheetPos::new(sheet_id, x, y);
-                    data_table_ops.push(Operation::ComputeCodeMultiPos {
-                        multi_pos: sheet_pos.into(),
-                    });
-
-                    Some(data_table_ops)
-                } else {
-                    None
                 }
-            })
-            .flatten()
-            .collect::<Vec<Operation>>();
 
+                compute_code_ops.push(Operation::ComputeCodeMultiPos {
+                    multi_pos: final_sheet_pos.into(),
+                });
+            }
+        }
+
+        let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
+        let mut cells = CellValues::default();
         let values = CellValues::from_flat_array(
             final_range.width(),
             final_range.height(),
-            series.iter().map(|(v, _)| v.to_owned()).collect(),
+            new_series.into_iter().map(|(v, _)| v).collect(),
         );
-        let sheet_pos = final_range.min.to_sheet_pos(sheet_id);
-
-        let mut cells = CellValues::default();
-        let mut ops = self.cell_values_operations(
+        let cell_values_ops = self.cell_values_operations(
             Some(&selection),
             sheet_pos,
             Pos::new(0, 0),
@@ -728,14 +719,15 @@ impl GridController {
             false,
         )?;
 
+        let mut ops = vec![];
         if !cells.is_empty() {
-            ops.extend(vec![Operation::SetCellValues {
+            ops.push(Operation::SetCellValues {
                 sheet_pos,
                 values: cells,
-            }]);
+            });
         }
-
-        // the compute code operations need to be applied after the cell values
+        ops.extend(cell_values_ops);
+        ops.extend(data_table_ops);
         ops.extend(compute_code_ops);
 
         Ok((ops, series))

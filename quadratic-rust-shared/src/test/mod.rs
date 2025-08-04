@@ -3,7 +3,7 @@
 #[cfg(feature = "benchmark")]
 pub mod benchmark;
 
-#[cfg(any(test, feature = "test", feature = "sql"))]
+#[cfg(any(test, feature = "test"))]
 pub mod request;
 
 include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/auto_gen_path.rs"));

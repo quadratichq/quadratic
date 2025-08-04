@@ -52,19 +52,62 @@ impl MultiCellTablesCache {
                     }
 
                     // handle sorted rows
-                    if let Some(display_buffer) = &data_table.display_buffer {
-                        let mut sorted_empty_values_cache = Contiguous2D::new();
-                        for (display_row, &actual_row) in display_buffer.iter().enumerate() {
-                            if let Some(mut row) = empty_values_cache.copy_row(actual_row as i64) {
-                                row.translate_in_place(0, display_row as i64 - actual_row as i64);
-                                sorted_empty_values_cache.set_from(&row);
-                            }
-                        }
-                        std::mem::swap(&mut empty_values_cache, &mut sorted_empty_values_cache);
-                    }
+                    let empty_values_cache =
+                        if let Some(reverse_display_buffer) =
+                            data_table.get_reverse_display_buffer()
+                        {
+                            let mut empty_rects = vec![];
 
-                    // convert to sheet coordinates
-                    empty_values_cache.translate_in_place(x1, y1 + y_adjustment);
+                            for (rect, value) in empty_values_cache
+                                .nondefault_rects_in_rect(Rect::new(0, 0, i64::MAX, i64::MAX))
+                            {
+                                if value == Some(Some(true)) {
+                                    for y in rect.y_range() {
+                                        if let Ok(actual_row) = u64::try_from(y) {
+                                            let display_row = data_table
+                                                .get_display_index_from_reverse_display_buffer(
+                                                    actual_row,
+                                                    Some(&reverse_display_buffer),
+                                                );
+
+                                            empty_rects.push(Rect::new(
+                                                x1 + rect.min.x,
+                                                y1 + y_adjustment + display_row as i64,
+                                                x1 + rect.max.x,
+                                                y1 + y_adjustment + display_row as i64,
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+
+                            let mut sorted_empty_values_cache = Contiguous2D::new();
+                            sorted_empty_values_cache.set_rect(
+                                x1,
+                                y1 + y_adjustment,
+                                Some(x2),
+                                Some(y2),
+                                Some(None),
+                            );
+
+                            empty_rects.sort_by(|a, b| (a.min.y, a.min.x).cmp(&(b.min.y, b.min.x)));
+                            for rect in empty_rects {
+                                sorted_empty_values_cache.set_rect(
+                                    rect.min.x,
+                                    rect.min.y,
+                                    Some(rect.max.x),
+                                    Some(rect.max.y),
+                                    Some(Some(true)),
+                                );
+                            }
+
+                            sorted_empty_values_cache
+                        } else {
+                            // convert to sheet coordinates
+                            empty_values_cache.translate_in_place(x1, y1 + y_adjustment);
+                            empty_values_cache
+                        };
+
                     self.multi_cell_tables_empty.set_from(&empty_values_cache);
 
                     // mark table name and column headers as non-empty
@@ -73,7 +116,7 @@ impl MultiCellTablesCache {
                             x1,
                             y1,
                             Some(x2),
-                            Some(y1 - 1 + y_adjustment),
+                            Some(y1 + y_adjustment - 1),
                             None,
                         );
                     }

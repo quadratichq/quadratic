@@ -93,7 +93,7 @@ impl Sheet {
             && data_table.alternating_colors;
 
         let language = match code {
-            CellValue::Code(code) => code.language.clone(),
+            CellValue::Code(code) => code.language.to_owned(),
             CellValue::Import(_) => CodeCellLanguage::Import,
             _ => return None,
         };

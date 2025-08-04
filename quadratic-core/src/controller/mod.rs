@@ -1,9 +1,9 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    MultiPos, Rect,
+    MultiPos,
     a1::A1Context,
     controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::{CodeCellLanguage, DataTable, Grid, RegionMap, SheetId},
+    grid::{DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
 
@@ -152,16 +152,6 @@ impl GridController {
         }
     }
 
-    pub(crate) fn a1_context_sheet_table_bounds(&mut self, sheet_id: SheetId) -> Vec<Rect> {
-        self.a1_context()
-            .iter_tables()
-            .filter(|table| {
-                table.sheet_id() == sheet_id && table.language == CodeCellLanguage::Import
-            })
-            .map(|table| table.bounds)
-            .collect::<Vec<_>>()
-    }
-
     pub(crate) fn update_cells_accessed_cache(
         &mut self,
         multi_pos: MultiPos,
@@ -198,34 +188,5 @@ impl GridController {
     /// Returns the redo stack for testing purposes
     pub fn redo_stack(&self) -> &Vec<Transaction> {
         &self.redo_stack
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use itertools::Itertools;
-
-    #[test]
-    fn test_a1_context_sheet_table_bounds() {
-        let mut grid_controller = GridController::new();
-        let sheet_id = SheetId::TEST;
-        grid_controller.a1_context = A1Context::test(
-            &[("Sheet1", SheetId::TEST)],
-            &[
-                ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
-                ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
-            ],
-        );
-        let table_bounds = grid_controller.a1_context_sheet_table_bounds(sheet_id);
-
-        assert_eq!(table_bounds.len(), 2);
-        // table bounds can be in any order
-        let table_bounds_sorted = table_bounds
-            .into_iter()
-            .sorted_by_key(|rect| rect.min.x)
-            .collect::<Vec<_>>();
-        assert_eq!(table_bounds_sorted[0], Rect::test_a1("A1:B3"));
-        assert_eq!(table_bounds_sorted[1], Rect::test_a1("D1:E3"));
     }
 }

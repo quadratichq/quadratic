@@ -1,19 +1,11 @@
 use anyhow::Result;
-use regex::Regex;
 
 use crate::{
     RunError, RunErrorMsg, SheetPos,
     a1::{A1Error, A1Selection},
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
-    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind, SheetId},
+    grid::{CodeCellLanguage, CodeCellValue, ConnectionKind, HANDLEBARS_REGEX_COMPILED, SheetId},
 };
-
-use lazy_static::lazy_static;
-
-lazy_static! {
-    static ref HANDLEBARS_REGEX: Regex =
-        Regex::new(r#"\{\{(.*?)\}\}"#).expect("Failed to compile regex");
-}
 
 impl GridController {
     /// Attempts to replace handlebars with the actual value from the grid
@@ -31,7 +23,11 @@ impl GridController {
         let mut last_match_end = 0;
 
         let context = self.a1_context();
-        for cap in HANDLEBARS_REGEX.captures_iter(code) {
+        for cap in HANDLEBARS_REGEX_COMPILED.captures_iter(code) {
+            let Ok(cap) = cap else {
+                continue;
+            };
+
             let Some(whole_match) = cap.get(0) else {
                 continue;
             };

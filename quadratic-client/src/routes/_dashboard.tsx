@@ -159,6 +159,9 @@ export const Component = () => {
               isLoading ? 'overflow-hidden' : 'overflow-auto',
               isLoading && 'pointer-events-none opacity-25'
             )}
+            style={{
+              scrollbarGutter: 'stable',
+            }}
           >
             <div className={`sticky top-0 z-50 -mx-4 flex items-center justify-end bg-background px-2 py-1 lg:hidden`}>
               <Sheet open={isOpen} onOpenChange={setIsOpen}>

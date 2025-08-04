@@ -133,6 +133,7 @@ fn arc_cotangent(x: f64) -> f64 {
 
 #[cfg(test)]
 mod tests {
+
     use crate::util::assert_f64_approx_eq;
     use crate::{controller::GridController, formulas::tests::*};
 
@@ -180,7 +181,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, 0.0),
             (-1.5 * PI, 1.0),
-            (-1.0 * PI, 0.0),
+            (-PI, 0.0),
             (-0.75 * PI, -FRAC_1_SQRT_2),
             (-0.5 * PI, -1.0),
             (-0.25 * PI, -FRAC_1_SQRT_2),
@@ -197,7 +198,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, 1.0),
             (-1.5 * PI, 0.0),
-            (-1.0 * PI, -1.0),
+            (-PI, -1.0),
             (-0.75 * PI, -FRAC_1_SQRT_2),
             (-0.5 * PI, 0.0),
             (-0.25 * PI, FRAC_1_SQRT_2),
@@ -213,7 +214,7 @@ mod tests {
 
         let test_cases = &[
             (-2.0 * PI, 0.0),
-            (-1.0 * PI, 0.0),
+            (-PI, 0.0),
             (-0.75 * PI, 1.0),
             (-0.25 * PI, -1.0),
             (0.0 * PI, 0.0),
@@ -238,7 +239,7 @@ mod tests {
 
         let test_cases = &[
             (-2.0 * PI, 1.0),
-            (-1.0 * PI, -1.0),
+            (-PI, -1.0),
             (-0.75 * PI, -SQRT_2),
             (-0.25 * PI, SQRT_2),
             (0.0 * PI, 1.0),
@@ -266,7 +267,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, -267.74489),
             (-1.5 * PI, -55.6544),
-            (-1.0 * PI, -11.54874),
+            (-PI, -11.54874),
             (-0.75 * PI, -5.22797),
             (-0.5 * PI, -2.3013),
             (-0.25 * PI, -0.86867),
@@ -283,7 +284,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, 267.74676),
             (-1.5 * PI, 55.66338),
-            (-1.0 * PI, 11.59195),
+            (-PI, 11.59195),
             (-0.75 * PI, 5.32275),
             (-0.5 * PI, 2.50918),
             (-0.25 * PI, 1.32461),
@@ -300,7 +301,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, -0.99999),
             (-1.5 * PI, -0.99984),
-            (-1.0 * PI, -0.99627),
+            (-PI, -0.99627),
             (-0.75 * PI, -0.98219),
             (-0.5 * PI, -0.91715),
             (-0.25 * PI, -0.65579),
@@ -317,7 +318,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, -0.00373),
             (-1.5 * PI, -0.01797),
-            (-1.0 * PI, -0.08659),
+            (-PI, -0.08659),
             (-0.75 * PI, -0.19128),
             (-0.5 * PI, -0.43454),
             (-0.25 * PI, -1.15118),
@@ -333,7 +334,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, 0.00373),
             (-1.5 * PI, 0.01797),
-            (-1.0 * PI, 0.08627),
+            (-PI, 0.08627),
             (-0.75 * PI, 0.18787),
             (-0.5 * PI, 0.39854),
             (-0.25 * PI, 0.75494),
@@ -350,7 +351,7 @@ mod tests {
         let test_cases = &[
             (-2.0 * PI, -1.00001),
             (-1.5 * PI, -1.00016),
-            (-1.0 * PI, -1.00374),
+            (-PI, -1.00374),
             (-0.75 * PI, -1.01813),
             (-0.5 * PI, -1.09033),
             (-0.25 * PI, -1.52487),
@@ -416,7 +417,7 @@ mod tests {
         let test_cases = &[
             (-267.74489, -2.0 * PI),
             (-55.6544, -1.5 * PI),
-            (-11.54874, -1.0 * PI),
+            (-11.54874, -PI),
             (-5.22797, -0.75 * PI),
             (-2.3013, -0.5 * PI),
             (-0.86867, -0.25 * PI),
@@ -442,7 +443,7 @@ mod tests {
         test_trig_fn("ACOSH", test_cases);
 
         let test_cases = &[
-            (-0.99627208, -1.0 * PI),
+            (-0.99627208, -PI),
             (-0.98219338, -0.75 * PI),
             (-0.91715234, -0.5 * PI),
             (-0.6557942, -0.25 * PI),
@@ -457,7 +458,7 @@ mod tests {
         let test_cases = &[
             (-0.0037349, -2.0 * PI),
             (-0.01796803, -1.5 * PI),
-            (-0.08658954, -1.0 * PI),
+            (-0.08658954, -PI),
             (-0.19127876, -0.75 * PI),
             (-0.43453721, -0.5 * PI),
             (-1.15118387, -0.25 * PI),
@@ -483,7 +484,7 @@ mod tests {
 
         let test_cases = &[
             (-1.000161412, -1.5 * PI),
-            (-1.00374187, -1.0 * PI),
+            (-1.00374187, -PI),
             (-1.01812944, -0.75 * PI),
             (-1.09033141, -0.5 * PI),
             (-1.52486862, -0.25 * PI),
@@ -507,5 +508,23 @@ mod tests {
             RunErrorMsg::DivideByZero,
             eval_to_err(&g, "ATAN2(0, 0)").msg,
         );
+    }
+
+    #[test]
+    fn test_precision() {
+        let g = GridController::new();
+
+        assert_eq!("5", eval_to_string(&g, "ABS(-5)"));
+        assert_eq!("3.1622776601684", eval_to_string(&g, "SQRT(10)"));
+        assert_eq!("100", eval_to_string(&g, "POWER(10, 2)"));
+        assert_eq!("3", eval_to_string(&g, "CEILING(2.718, 1)"));
+        assert_eq!("2", eval_to_string(&g, "FLOOR(2.718, 1)"));
+        assert_eq!("2", eval_to_string(&g, "INT(2.718)"));
+        assert_eq!("2.718281828459", eval_to_string(&g, "EXP(1)"));
+        assert_eq!("0.99999999999998", eval_to_string(&g, "LN(EXP(1))"));
+        assert_eq!("2", eval_to_string(&g, "LOG(100)"));
+        assert_eq!("2", eval_to_string(&g, "LOG10(100)"));
+        assert_eq!("179.90874767108", eval_to_string(&g, "DEGREES(3.14)"));
+        assert_eq!("60", eval_to_string(&g, "DEGREES(ACOS(0.5))"));
     }
 }

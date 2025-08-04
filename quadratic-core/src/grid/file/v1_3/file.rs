@@ -1,13 +1,12 @@
 use anyhow::Result;
-use bigdecimal::BigDecimal;
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::vec;
 
 use super::schema::{Any, ArrayOutput, Cell};
 use crate::color::Rgba;
 use crate::grid::file::v1_3::schema::GridSchema;
 use crate::grid::file::v1_4::schema as v1_4;
+use crate::number::decimal_from_str;
 
 pub(crate) fn upgrade(schema: GridSchema) -> Result<v1_4::GridSchema> {
     let sheet = upgrade_sheet(schema)?;
@@ -33,7 +32,7 @@ pub fn language_conversion(language: &str) -> String {
 impl From<Any> for v1_4::OutputValueValue {
     fn from(val: Any) -> Self {
         match val {
-            Any::Number(n) => match BigDecimal::from_str(n.to_string().as_str()).ok() {
+            Any::Number(n) => match decimal_from_str(n.to_string().as_str()).ok() {
                 Some(n) => Self {
                     type_field: "NUMBER".into(),
                     value: n.to_string(),
@@ -43,7 +42,7 @@ impl From<Any> for v1_4::OutputValueValue {
                     value: n.to_string(),
                 },
             },
-            Any::String(s) => match BigDecimal::from_str(&s) {
+            Any::String(s) => match decimal_from_str(&s) {
                 Ok(n) => Self {
                     type_field: "NUMBER".into(),
                     value: n.to_string(),
@@ -97,7 +96,7 @@ impl SheetBuilder {
         let column = self.column(x);
 
         if type_field == "text" {
-            let type_field = match BigDecimal::from_str(value) {
+            let type_field = match decimal_from_str(value) {
                 Ok(_) => "NUMBER",
                 Err(_) => "TEXT",
             };
@@ -327,15 +326,26 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<v1_4::Sheet> {
         let column = sheet.column(border.x);
         let column_id = column.id.to_string();
         let top = border.horizontal.map(|horizontal| v1_4::CellBorder {
-            color: Rgba::from_css_str(&horizontal.color.unwrap_or("rgb(0, 0, 0)".into()))
-                .unwrap_or_default()
-                .as_string(),
+            color: Rgba::try_from(
+                horizontal
+                    .color
+                    .as_ref()
+                    .unwrap_or(&"rgb(0, 0, 0)".to_string())
+                    .as_str(),
+            )
+            .unwrap_or_default()
+            .as_string(),
             line: horizontal.border_type.unwrap_or("line1".into()),
         });
         let left = border.vertical.map(|vertical| v1_4::CellBorder {
-            color: Rgba::from_css_str(&vertical.color.unwrap_or("rgb(0, 0, 0)".into()))
-                .unwrap_or_default()
-                .as_string(),
+            color: Rgba::try_from(
+                vertical
+                    .color
+                    .unwrap_or("rgb(0, 0, 0)".to_string())
+                    .as_str(),
+            )
+            .unwrap_or_default()
+            .as_string(),
             line: vertical.border_type.unwrap_or("line1".into()),
         });
 

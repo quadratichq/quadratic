@@ -14,6 +14,7 @@ pub mod date_time;
 pub mod empty_values_cache;
 mod from_js;
 mod isblank;
+pub mod number;
 pub mod parquet;
 mod time;
 

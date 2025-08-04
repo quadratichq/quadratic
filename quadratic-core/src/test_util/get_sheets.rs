@@ -42,6 +42,15 @@ pub fn first_sheet_id(gc: &GridController) -> SheetId {
 }
 
 #[cfg(test)]
+pub fn test_export_and_import(gc: &GridController) -> GridController {
+    use crate::grid::file::{export, import};
+
+    let exported = export(gc.grid().clone()).unwrap();
+    let grid = import(exported).unwrap();
+    GridController::from_grid(grid, 0)
+}
+
+#[cfg(test)]
 mod tests {
     use crate::grid::SheetId;
 

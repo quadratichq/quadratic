@@ -32,9 +32,13 @@ impl TableMap {
     }
 
     pub fn remove_at(&mut self, multi_pos: MultiPos) {
-        self.multi_pos_to_table
-            .remove(&multi_pos)
-            .and_then(|table_name| self.tables.swap_remove(&table_name));
+        if let Some(table_name) = self.multi_pos_to_table.remove(&multi_pos) {
+            if let Some(table) = self.tables.get(&table_name) {
+                if table.multi_pos == multi_pos {
+                    self.tables.swap_remove(&table_name);
+                }
+            }
+        }
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
@@ -112,9 +116,13 @@ impl TableMap {
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        self.tables.values().find(|table| {
-            table.sheet_id() == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
-        })
+        if let Some(table_name) = self.multi_pos_to_table.get(&sheet_pos.into()) {
+            self.tables.get(table_name)
+        } else {
+            self.tables.values().find(|table| {
+                table.sheet_id() == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
+            })
+        }
     }
 
     pub fn hide_column(&mut self, table_name: &str, column_name: &str) {

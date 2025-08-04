@@ -8,8 +8,8 @@ pub type MariaDBConnection = MySqlConnection;
 #[cfg(test)]
 mod tests {
 
-    use bigdecimal::BigDecimal;
     use chrono::{DateTime, Local, NaiveDateTime, NaiveTime};
+    use rust_decimal::Decimal;
     use serde_json::json;
     use sqlx::Row;
     use std::str::FromStr;
@@ -74,7 +74,7 @@ mod tests {
         assert_eq!(to_arrow(5), ArrowType::Int64(9223372036854775807));
         assert_eq!(
             to_arrow(6),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap())
         );
         assert_eq!(to_arrow(7), ArrowType::Float32(123.45));
         assert_eq!(to_arrow(8), ArrowType::Float64(123456789.123456));

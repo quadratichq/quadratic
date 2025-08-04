@@ -59,7 +59,7 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_pixel_output;
             let (data_table, dirty_rects) =
                 sheet.modify_data_table_at(data_table_pos.to_multi_pos(sheet_id), |dt| {
@@ -103,7 +103,7 @@ impl GridController {
         if let Operation::SetChartCellSize { sheet_pos, w, h } = op {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_output;
             let (data_table, dirty_rects) =
                 sheet.modify_data_table_at(data_table_pos.to_multi_pos(sheet_id), |dt| {

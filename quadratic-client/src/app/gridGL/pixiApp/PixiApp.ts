@@ -313,6 +313,7 @@ export class PixiApp {
     cull: Rectangle;
     gridLines?: boolean;
     ai?: boolean;
+    thumbnail?: boolean;
   }): Promise<Container> => {
     // this is expensive, so we do it first, before blocking the canvas renderer
     await this.htmlPlaceholders.prepare({ sheetId: options.sheetId, cull: options.cull });
@@ -329,6 +330,9 @@ export class PixiApp {
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
     this.cellsSheets.cull(options.cull);
+    if (options.thumbnail) {
+      this.cellsSheet().tables.forceUpdate(options.cull);
+    }
     return this.viewportContents;
   };
 
@@ -342,7 +346,9 @@ export class PixiApp {
     this.htmlPlaceholders.hide();
     this.cellsSheets.toggleOutlines();
     this.copy.visible = true;
-    this.cellsSheets.cull(this.viewport.getVisibleBounds());
+    const bounds = this.viewport.getVisibleBounds();
+    this.cellsSheets.cull(bounds);
+    this.cellsSheet().tables.forceUpdate(bounds);
     this.copying = false;
   };
 

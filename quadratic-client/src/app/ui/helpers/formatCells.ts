@@ -1,13 +1,8 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { convertReactColorToString } from '@/app/helpers/convertColor';
-import type { CellAlign, CellVerticalAlign, CellWrap, Format } from '@/app/quadratic-core-types';
+import type { CellAlign, CellVerticalAlign, CellWrap } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ColorResult } from 'react-color';
-
-export const getFormatCell = (): Promise<Format | undefined> => {
-  const cursor = sheets.sheet.cursor.position;
-  return quadraticCore.getFormatCell(sheets.current, cursor.x, cursor.y);
-};
 
 export const setFillColor = (color?: ColorResult) => {
   quadraticCore.setFillColor(

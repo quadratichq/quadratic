@@ -397,7 +397,7 @@ export const SheetBar = memo((): JSX.Element => {
   return (
     <div
       ref={sheetBarRef}
-      className="align-stretch z-[1] flex h-8 flex-shrink-0 select-none flex-row justify-between bg-background text-xs"
+      className="pointer-up-ignore align-stretch z-[1] flex h-8 flex-shrink-0 select-none flex-row justify-between bg-background text-xs"
     >
       {hasPermission && (
         <SheetBarButton

@@ -103,6 +103,9 @@ export class PixiAppSettings {
   }
 
   private getSettings = (): void => {
+    // need to wait until pixiApp is initialized before we can set it
+    if (!pixiApp?.initialized) return;
+
     const settings = localStorage.getItem('viewSettings');
     if (settings) {
       this.settings = JSON.parse(settings) as GridSettings;

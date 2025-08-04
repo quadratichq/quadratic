@@ -3,13 +3,11 @@ import { PanMode } from '@/app/atoms/gridPanModeAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
-import { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
 import { inlineEditorMonaco } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorMonaco';
 import { doubleClickCell } from '@/app/gridGL/interaction/pointer/doubleClickCell';
 import { DOUBLE_CLICK_TIME } from '@/app/gridGL/interaction/pointer/pointerUtils';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isLinux } from '@/shared/utils/isLinux';
 import { isMac } from '@/shared/utils/isMac';
 import { Point, Rectangle, type FederatedPointerEvent } from 'pixi.js';
@@ -113,13 +111,7 @@ export class PointerDown {
           return;
         }
         event.preventDefault();
-        const codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects({ x: column, y: row });
-        if (codeCell) {
-          doubleClickCell({ column, row });
-        } else {
-          const cell = await quadraticCore.getEditCell(sheets.current, column, row);
-          doubleClickCell({ column, row, cell, cursorMode: cell ? CursorMode.Edit : CursorMode.Enter });
-        }
+        doubleClickCell({ column, row });
         this.active = false;
         return;
       }

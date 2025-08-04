@@ -3,12 +3,15 @@ import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
 import 'express-async-errors';
+import expressWinston from 'express-winston';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
-import { CORS, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
+import winston from 'winston';
+import { CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
+import logger, { format } from './utils/logger';
 
 export const app = express();
 
@@ -27,6 +30,18 @@ app.use(helmet());
 // set CORS origin from env variable
 app.use(cors({ origin: CORS }));
 
+// Request logging middleware for Datadog
+if (LOG_REQUEST_INFO) {
+  app.use(
+    expressWinston.logger({
+      transports: [new winston.transports.Console()],
+      format,
+      headerBlacklist: ['authorization'],
+      meta: true,
+    })
+  );
+}
+
 // Health-check
 app.get('/', (req, res) => {
   res.status(200).json({ message: 'OK' });
@@ -39,36 +54,39 @@ app.get('/health', (req, res) => {
 // Internal routes
 app.use('/v0/internal', internal_router);
 
-// Register all our dynamic routes, then regsiter the error middleware last of all
+// Register all our dynamic routes, then register the error middleware last of all
 registerRoutes().then(() => {
   // Error-logging middleware
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  app.use((error: any, req: Request, res: Response, next: NextFunction) => {
     if (NODE_ENV !== 'test') {
-      if (err.status >= 500) {
-        if (NODE_ENV === 'production') console.error(`[${new Date().toISOString()}]`, err);
-        else console.log(`[${new Date().toISOString()}]`, err);
+      if (error.status >= 500) {
+        if (NODE_ENV === 'production') {
+          logger.error('Server error (production)', error);
+        } else {
+          logger.error('Server error (development)', error);
+        }
       }
     }
-    next(err);
+    next(error);
   });
 
   // Error-handling middleware
-  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  app.use((error: any, req: Request, res: Response, next: NextFunction) => {
     // Check if headers have already been sent
     if (res.headersSent) {
-      return next(err);
+      return next(error);
     }
 
     // Application-specific error handling
-    if (err instanceof ApiError) {
-      res.status(err.status).json({ error: { message: err.message, ...(err.meta ? { meta: err.meta } : {}) } });
+    if (error instanceof ApiError) {
+      res.status(error.status).json({ error: { message: error.message, ...(error.meta ? { meta: error.meta } : {}) } });
     } else {
-      console.error(err);
+      logger.error('Unhandled application error', error);
 
       // Generic error handling
-      res.status(err.status || 500).json({
+      res.status(error.status || 500).json({
         error: {
-          message: err.message,
+          message: error.message,
         },
       });
     }
@@ -100,7 +118,7 @@ async function registerRoutes() {
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('DELETE');
 
     if (httpMethodIndex === -1) {
-      console.error('File route is malformed. It needs an HTTP method: %s', file);
+      logger.error('File route is malformed. It needs an HTTP method', { file });
     } else {
       const httpMethod = segments[httpMethodIndex].toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
       const routeSegments = segments.slice(0, httpMethodIndex);
@@ -111,15 +129,20 @@ async function registerRoutes() {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
-      } catch (err) {
-        console.error(`Failed to register route: ${expressRoute}`, err);
+      } catch (error) {
+        logger.error(`Failed to register route ${expressRoute}`, error);
       }
     }
   }
 
   // Keep around for debugging
   // if (NODE_ENV !== 'production' && NODE_ENV !== 'test') {
-  //   console.log(`Dynamically registered routes: ${registeredRoutes.map((route) => `\n  ${route}`).join('')}`);
+  //   console.log(
+  //     JSON.stringify({
+  //       message: 'Dynamically registered routes',
+  //       routes: registeredRoutes.map((route) => `\n  ${route}`).join(''),
+  //     })
+  //   );
   // }
 }
 

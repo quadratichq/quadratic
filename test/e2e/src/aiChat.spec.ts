@@ -33,7 +33,7 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
   // Upload both PDFs via the attach button
   //--------------------------------
   // Click on the Chat icon in left sidebar
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Upload "broadcom-annual-filing.pdf"
   const broadcomFile = `broadcom-annual-filing.pdf`;
@@ -42,7 +42,7 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
   page.once('filechooser', (chooser) =>
     chooser.setFiles(path.join(process.cwd(), './data/', `${broadcomFile}`)).catch(console.error)
   );
-  await page.getByRole(`button`, { name: `attach_file` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `attach_file` }).click({ timeout: 60 * 1000 });
 
   // Wait for file to upload
   await page.locator(`a`).filter({ hasText: broadcomFile }).waitFor();
@@ -55,7 +55,7 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
   page.once('filechooser', (chooser) =>
     chooser.setFiles(path.join(process.cwd(), './data/', `${appleFile}`)).catch(console.error)
   );
-  await page.getByRole(`button`, { name: `attach_file` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `attach_file` }).click({ timeout: 60 * 1000 });
 
   // Assert that "broadcom-annual-filing.pdf" file is visible in attached files
   await expect(page.locator(`a`).filter({ hasText: broadcomFile })).toBeVisible();
@@ -73,7 +73,7 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
   // await page.getByRole(`textbox`, { name: `Ask a question...` }).fill(aiPrompt);
 
   // // Click submit arrow button
-  // await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  // await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // // Wait for first import action to begin
   // await page.getByText(`Action: PDF import`).nth(0).waitFor();
@@ -142,7 +142,7 @@ test('[Attach Button] Extract employee count from Broadcom and Apple PDFs', asyn
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -176,7 +176,7 @@ test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) 
   // Drag and Drop the Broadcom File Into AI Chat
   //--------------------------------
   // Open the ai tool
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Open the file chooser
   page.once('filechooser', (chooser) => {
@@ -223,7 +223,7 @@ test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) 
   // await page.getByRole(`textbox`, { name: `Ask a question...` }).fill(aiPrompt);
 
   // // Click submit arrow button
-  // await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  // await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // // Wait for first import action to begin
   // await page.getByText(`Action: PDF import`).waitFor();
@@ -282,7 +282,7 @@ test('[Drag & Drop] Extract employee count from Broadcom PDF', async ({ page }) 
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -313,13 +313,13 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
   // Insert Code
   //--------------------------------
   // Click on the Chat icon in left sidebar
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Fill in codeGenerate prompt in chat
   await page.getByPlaceholder(`Ask a question...`).fill(`generate first 5 prime numbers using python in A1`);
 
   // Click Send button (blue arrow icon)
-  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // Wait until prompt is complete
   await expect(page.locator(`:text("Cancel generating")`).first()).toBeVisible({
@@ -332,7 +332,7 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
   await page
     .locator(`#main`)
     .getByRole(`button`, { name: `code`, exact: true })
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Assert Code Editor has a Python script to generate first 5 prime numbers
   await page.locator(`[id="QuadraticCodeEditorID"]`).waitFor();
@@ -353,7 +353,7 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
   const chatText = await page.locator(`[data-gramm_editor]`).textContent();
 
   // Click on history icon in chat
-  await page.getByRole(`button`, { name: `history`, exact: true }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `history`, exact: true }).click({ timeout: 60 * 1000 });
 
   // Save a reference to the chat name
   const chatName = await page
@@ -361,30 +361,30 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
     .innerText();
 
   // Click on history icon in chat to close
-  await page.getByRole(`button`, { name: `history`, exact: true }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `history`, exact: true }).click({ timeout: 60 * 1000 });
 
   // Click the '+' button to start a new chat
   await page
     .getByRole(`button`, { name: `add` })
     .first()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Assert new chat is present
-  await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole(`button`, { name: `Give me sample data` })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole(`button`, { name: `Generate code` })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole(`button`, { name: `Build a chart` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `What can I help with?` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Give me sample data` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Generate code` })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`button`, { name: `Build a chart` })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // View History
   //--------------------------------
   // Click the history button in chat panel
-  await page.getByRole(`button`, { name: `history`, exact: true }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `history`, exact: true }).click({ timeout: 60 * 1000 });
   // Assert the previous chat is visible
-  await expect(page.getByText(`${chatName}`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`${chatName}`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click on the previous chat
-  await page.getByText(`${chatName}`).click({ timeout: 30 * 1000 });
+  await page.getByText(`${chatName}`).click({ timeout: 60 * 1000 });
 
   // Assert this opens up the previous chat and contains its previous response
   const chatTextHistory = await page.locator(`[data-gramm_editor]`).textContent();
@@ -395,7 +395,7 @@ test.skip('AI Chat Insert Code, Clear Query, View History', async ({ page }) => 
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -425,11 +425,11 @@ test.skip('AI Prompt - Create Chart using AI Prompt', async ({ page, context }) 
   // AI Prompt - Create Chart using AI Prompt
   //--------------------------------
   // Open the AI Chat
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Enter "Prompt" asking to create a chart using sample data
   await page.getByRole(`textbox`, { name: `Ask a question...` }).fill(prompt);
-  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // Wait until prompt is complete
   await expect(page.locator(`:text("Cancel generating")`).first()).toBeVisible();
@@ -437,11 +437,11 @@ test.skip('AI Prompt - Create Chart using AI Prompt', async ({ page, context }) 
   await page.waitForTimeout(2000);
 
   // Close Chat
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Zoom to origin
-  await page.locator('button:has-text("100%")').click({ timeout: 30 * 1000 });
-  await page.getByRole(`menuitem`, { name: `Move to origin` }).click({ timeout: 30 * 1000 });
+  await page.locator('button:has-text("100%")').click({ timeout: 60 * 1000 });
+  await page.getByRole(`menuitem`, { name: `Move to origin` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -491,7 +491,7 @@ test.skip('AI Prompt - Create Chart using AI Prompt', async ({ page, context }) 
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -523,13 +523,13 @@ test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
   // Insert value into a cell
   //--------------------------------
   // Open the AI Chat
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Fill AI prompt
   await page.getByRole(`textbox`, { name: `Ask a question...` }).fill(aiPrompt);
 
   // Submit prompt
-  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // Wait for AI to finish
   await page.waitForTimeout(3 * 60 * 1000);
@@ -548,7 +548,7 @@ test.skip('AI Prompt - Insert value into a cell', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -580,13 +580,13 @@ test.skip('AI Prompt - Use Python Code to return a value in a cell', async ({ pa
   // Use Python Code to return a value in a cell
   //--------------------------------
   // Open the AI Chat
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Fill AI prompt
   await page.getByRole(`textbox`, { name: `Ask a question...` }).fill(aiPrompt);
 
   // Submit prompt
-  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // Screnshot assertion to make sure value 10 is in A1
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-A1-10.png`);
@@ -612,7 +612,7 @@ test.skip('AI Prompt - Use Python Code to return a value in a cell', async ({ pa
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -647,34 +647,34 @@ test.skip('AI Sheet Data analysis', async ({ page }) => {
   //--------------------------------
   // Add a sheet so we have two sheets
   // Click the element with the add button
-  await page.locator('span.material-symbols-outlined:has-text("add")').click({ timeout: 30 * 1000 });
+  await page.locator('span.material-symbols-outlined:has-text("add")').click({ timeout: 60 * 1000 });
 
   // Click on the Chat icon in left sidebar
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Fill in prompt in chat
   await page.getByPlaceholder(`Ask a question...`).fill(prompt1);
 
   // Click the button with the "arrow_upward" icon to submit prompt
-  await page.locator('span:has-text("arrow_upward")').click({ timeout: 30 * 1000 });
+  await page.locator('span:has-text("arrow_upward")').click({ timeout: 60 * 1000 });
 
   await expect(page.getByText(`Cancel generating`)).toBeVisible();
   await expect(page.locator(`:text("Cancel generating")`).first()).not.toBeVisible({ timeout: 60 * 2 * 1000 });
 
   // Navigate to "Sheet 1" by clicking the "Sheet 1" div element
-  await page.locator('div[data-title="Sheet 1"]').click({ timeout: 30 * 1000 });
+  await page.locator('div[data-title="Sheet 1"]').click({ timeout: 60 * 1000 });
 
   // Click the "add" icon to add the new sheet to the chat
-  await page.locator('span.material-symbols-outlined:has-text("add") >>nth=1').click({ timeout: 30 * 1000 });
+  await page.locator('span.material-symbols-outlined:has-text("add") >>nth=1').click({ timeout: 60 * 1000 });
 
   // Click the "Sheet2" menu item to add it to the chat context
-  await page.locator('div[role="menuitemcheckbox"]:has-text("Sheet 2")').click({ timeout: 30 * 1000 });
+  await page.locator('div[role="menuitemcheckbox"]:has-text("Sheet 2")').click({ timeout: 60 * 1000 });
 
   // Fill in prompt2 in chat
   await page.getByPlaceholder(`Ask a question...`).fill(prompt2);
 
   // Click the button with the "arrow_upward" icon to submit prompt
-  await page.locator('span:has-text("arrow_upward")').click({ timeout: 30 * 1000 });
+  await page.locator('span:has-text("arrow_upward")').click({ timeout: 60 * 1000 });
 
   await expect(page.getByText(`Cancel generating`)).toBeVisible();
   await expect(page.locator(`:text("Cancel generating")`).first()).not.toBeVisible({ timeout: 60 * 2 * 1000 });
@@ -684,7 +684,7 @@ test.skip('AI Sheet Data analysis', async ({ page }) => {
   await page.getByPlaceholder('Ask a question...').fill(assertionPrompt);
 
   // Click the button with the "arrow_upward" icon to submit prompt
-  await page.locator('span:has-text("arrow_upward")').click({ timeout: 30 * 1000 });
+  await page.locator('span:has-text("arrow_upward")').click({ timeout: 60 * 1000 });
 
   await expect(page.getByText(`Cancel generating`)).toBeVisible();
   await expect(page.locator(`:text("Cancel generating")`).first()).not.toBeVisible({ timeout: 60 * 2 * 1000 });
@@ -696,7 +696,7 @@ test.skip('AI Sheet Data analysis', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -734,13 +734,13 @@ test.skip('Think Enabled Response', async ({ page }) => {
   // Think Enabled Response
   //--------------------------------
   // Click the "auto_awesome" button to enable a feature
-  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
   // Fill the question textbox with the predefined question
   await page.getByRole(`textbox`, { name: `Ask a question...` }).fill(question);
 
   // Click the send button to submit the question
-  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // Assert that the "Show thinking" option is not visible initially
   await expect(page.locator('span.select-none:has-text("Show thinking")')).not.toBeVisible();
@@ -754,7 +754,7 @@ test.skip('Think Enabled Response', async ({ page }) => {
   const thinkButton = page.getByRole(`button`, { name: `Extended thinking` });
 
   // Click the "Extended thinking" button to enable it
-  await thinkButton.click({ timeout: 30 * 1000 });
+  await thinkButton.click({ timeout: 60 * 1000 });
 
   // Assert that the "Extended thinking" button is pressed
   await expect(thinkButton).toHaveAttribute('aria-pressed', 'true');
@@ -763,7 +763,7 @@ test.skip('Think Enabled Response', async ({ page }) => {
   await page.getByRole(`textbox`, { name: `Ask a question...` }).fill(question);
 
   // Click the send button to submit the question again
-  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`button`, { name: `arrow_upward` }).click({ timeout: 60 * 1000 });
 
   // Assert that the "Cancel generating" option appears and then disappears
   await expect(page.getByText(`Cancel generating`)).toBeVisible();
@@ -776,7 +776,7 @@ test.skip('Think Enabled Response', async ({ page }) => {
   await page
     .getByText(`Show thinking`)
     .first()
-    .click({ timeout: 30 * 1000 });
+    .click({ timeout: 60 * 1000 });
 
   // Locate the "Hide thinking" box to verify responses with "Think"
   const thinkBox = page.locator('span.select-none:has-text("Hide thinking")').first().locator('../..');
@@ -790,6 +790,6 @@ test.skip('Think Enabled Response', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

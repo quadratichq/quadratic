@@ -379,6 +379,11 @@ impl SheetDataTables {
             .dedup()
     }
 
+    /// Returns the rectangles that have some value in the given rectangle.
+    pub fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
+        self.cache.get_nondefault_rects_in_rect(rect)
+    }
+
     /// Returns an iterator over all data tables in the sheet data tables that intersect with a given rectangle.
     pub fn get_in_rect(
         &self,

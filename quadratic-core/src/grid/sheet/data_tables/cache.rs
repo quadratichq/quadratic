@@ -3,7 +3,7 @@
 
 use crate::{
     Pos, Rect,
-    a1::{A1Context, A1Selection},
+    a1::{A1Context, A1Selection, RefRangeBounds},
     grid::{
         CodeCellLanguage, Contiguous2D, DataTable,
         sheet::data_tables::{
@@ -151,6 +151,34 @@ impl SheetDataTablesCache {
         false
     }
 
+    /// Returns the unique table anchor positions in range
+    pub fn tables_in_range(&self, range: RefRangeBounds) -> impl Iterator<Item = Pos> {
+        self.single_cell_tables
+            .nondefault_rects_in_range(range)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+            .chain(
+                self.multi_cell_tables
+                    .unique_values_in_range(range)
+                    .into_iter()
+                    .flatten(),
+            )
+    }
+
+    /// Returns the rectangles that have some value in the given rectangle.
+    pub fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
+        self.single_cell_tables
+            .nondefault_rects_in_rect(rect)
+            .map(|(rect, _)| rect)
+            .chain(
+                self.multi_cell_tables
+                    .nondefault_rects_in_rect(rect)
+                    .map(|(rect, _)| rect),
+            )
+    }
+
     /// Removes the in-table code tables that are within the given rect.
     pub(super) fn remove_from_in_table_code(&mut self, old_spilled_output_rect: Rect) {
         let Some(in_table_code) = self.in_table_code.as_mut() else {
@@ -224,7 +252,12 @@ impl SheetDataTablesCache {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::A1Selection, grid::CodeCellLanguage, test_util::*};
+    use crate::{
+        Rect,
+        a1::{A1Selection, RefRangeBounds},
+        grid::CodeCellLanguage,
+        test_util::*,
+    };
 
     #[test]
     fn test_has_content_ignore_blank_table() {
@@ -303,6 +336,46 @@ mod tests {
         // Test selection with no code tables
         let selection = A1Selection::test_a1("A1");
         assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
+    }
+
+    #[test]
+    fn test_tables_in_range() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+
+        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
+
+        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let tables = sheet_data_tables_cache
+            .tables_in_range(RefRangeBounds::new_relative(1, 1, 6, 6))
+            .collect::<Vec<_>>();
+
+        assert_eq!(tables, vec![pos![2, 2], pos![5, 5]]);
+    }
+
+    #[test]
+    fn test_get_nondefault_rects_in_rect() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+
+        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
+
+        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let rects = sheet_data_tables_cache
+            .get_nondefault_rects_in_rect(Rect::new(1, 1, 12, 12))
+            .collect::<Vec<_>>();
+
+        assert_eq!(rects, vec![rect![B2:B2], rect![E5:G9], rect![J10:L12]]);
     }
 
     #[test]

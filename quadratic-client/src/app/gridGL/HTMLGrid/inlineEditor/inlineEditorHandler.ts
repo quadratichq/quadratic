@@ -20,6 +20,7 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
+import BigNumber from 'bignumber.js';
 import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 
@@ -51,7 +52,7 @@ class InlineEditorHandler {
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
-    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('sheetOffsetsUpdated', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
     events.on('contextMenu', this.closeIfOpen);
@@ -169,14 +170,15 @@ class InlineEditorHandler {
         this.updateMonacoCursorPosition();
       }
     } else {
-      this.close(0, 0, false, true);
+      this.close({ skipChangeSheet: true });
     }
   };
 
   // Handler for the changeInput event.
   private changeInput = async (input: boolean, initialValue?: string, cursorMode?: CursorMode) => {
-    if (!input && !this.open) return;
-
+    if (!input && !this.open) {
+      return;
+    }
     if (initialValue) {
       this.initialValue += initialValue;
       initialValue = this.initialValue;
@@ -185,8 +187,9 @@ class InlineEditorHandler {
     }
 
     if (!this.div) {
-      throw new Error('Expected div and editor to be defined in InlineEditorHandler');
+      return;
     }
+
     if (input) {
       const sheet = sheets.sheet;
       const cursor = sheet.cursor.position;
@@ -195,23 +198,56 @@ class InlineEditorHandler {
         x: cursor.x,
         y: cursor.y,
       };
-      this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
+
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
+        this.location.sheetId,
+        this.location.x,
+        this.location.y
+      );
+
       let value: string;
       let changeToFormula = false;
       if (initialValue) {
+        changeToFormula = initialValue[0] === '=';
+
         value = initialValue;
-        changeToFormula = value[0] === '=';
       } else {
         const formula = await quadraticCore.getCodeCell(this.location.sheetId, this.location.x, this.location.y);
+
         if (formula?.language === 'Formula') {
-          value = '=' + formula.code_string;
           changeToFormula = true;
+
+          value = '=' + formula.code_string;
         } else {
-          value = (await quadraticCore.getEditCell(this.location.sheetId, this.location.x, this.location.y)) || '';
           changeToFormula = false;
+
+          const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
+          if (jsCellValue) {
+            if (jsCellValue.kind === 'number') {
+              this.formatSummary.align = this.formatSummary.align ?? 'right';
+            }
+            value = jsCellValue.kind === 'number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
+            if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
+              try {
+                const number = new BigNumber(value).multipliedBy(100).toString();
+                value = number + '%';
+              } catch (e) {}
+            }
+
+            // open the calendar pick if the cell is a date
+            if (['date', 'date time'].includes(jsCellValue.kind)) {
+              pixiAppSettings.setEditorInteractionState?.({
+                ...pixiAppSettings.editorInteractionState,
+                annotationState: `calendar${jsCellValue.kind === 'date time' ? '-time' : ''}`,
+              });
+            }
+          } else {
+            value = '';
+          }
         }
       }
 
+      // this.codeCell = pixiApp.cellsSheet().tables.getCodeCellIntersects(this.location);
       // if (this.codeCell?.language === 'Import' && changeToFormula) {
       //   pixiAppSettings.snackbar('Cannot create formula inside table', { severity: 'error' });
       //   this.closeIfOpen();
@@ -225,16 +261,12 @@ class InlineEditorHandler {
           cursorMode = value ? CursorMode.Edit : CursorMode.Enter;
         }
       }
+
       pixiAppSettings.setInlineEditorState?.((prev) => ({
         ...prev,
         editMode: cursorMode === CursorMode.Edit,
       }));
 
-      this.formatSummary = await quadraticCore.getCellFormatSummary(
-        this.location.sheetId,
-        this.location.x,
-        this.location.y
-      );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       this.temporaryUnderline = this.formatSummary?.underline || undefined;
@@ -249,13 +281,14 @@ class InlineEditorHandler {
       this.showDiv();
       this.changeToFormula(changeToFormula);
       this.updateMonacoCursorPosition();
+
       inlineEditorEvents.emit('status', true, value);
 
       // this needs to be at the end to avoid a race condition where the cursor
       // draws at 0,0 when editing in a data table
       this.open = true;
     } else {
-      this.close(0, 0, false);
+      this.close({});
     }
   };
 
@@ -426,7 +459,7 @@ class InlineEditorHandler {
 
   closeIfOpen = async () => {
     if (this.open) {
-      await this.close(0, 0, false);
+      await this.close({});
     }
   };
 
@@ -445,7 +478,20 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-  close = async (deltaX = 0, deltaY = 0, cancel: boolean, skipChangeSheet = false): Promise<boolean> => {
+
+  close = async ({
+    deltaX = 0,
+    deltaY = 0,
+    cancel = false,
+    skipChangeSheet = false,
+    skipFocusGrid = false,
+  }: {
+    deltaX?: number;
+    deltaY?: number;
+    cancel?: boolean;
+    skipChangeSheet?: boolean;
+    skipFocusGrid?: boolean;
+  }): Promise<boolean> => {
     if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
@@ -519,7 +565,9 @@ class InlineEditorHandler {
     }
 
     // Set focus back to Grid
-    focusGrid();
+    if (!skipFocusGrid) {
+      focusGrid();
+    }
     return true;
   };
 
@@ -558,7 +606,7 @@ class InlineEditorHandler {
         initialCode: inlineEditorMonaco.get().slice(1),
       },
     });
-    this.close(0, 0, true);
+    this.close({ cancel: true });
   };
 
   // Attaches the inline editor to a div created by React in InlineEditor.tsx
@@ -569,7 +617,7 @@ class InlineEditorHandler {
     }
     this.div = div;
 
-    this.close(0, 0, true);
+    this.close({ cancel: true });
   }
 
   detach() {
@@ -629,7 +677,7 @@ class InlineEditorHandler {
   async handleCellPointerDown(): Promise<boolean> {
     if (this.open) {
       if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
-        return await this.close(0, 0, false);
+        return await this.close({});
       } else {
         if (!this.cursorIsMoving) {
           this.cursorIsMoving = true;

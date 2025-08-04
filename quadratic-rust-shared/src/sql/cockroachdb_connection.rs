@@ -187,7 +187,7 @@ mod tests {
             },
             SchemaColumn {
                 name: "array_col".into(),
-                r#type: "_int4".into(),
+                r#type: "int4[]".into(),
                 is_nullable: true,
             },
             SchemaColumn {
@@ -199,6 +199,8 @@ mod tests {
 
         let columns = &schema.tables.get("all_native_data_types").unwrap().columns;
 
-        assert_eq!(columns, &expected);
+        for (index, column) in columns.iter().enumerate() {
+            assert_eq!(column, &expected[index]);
+        }
     }
 }

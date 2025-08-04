@@ -23,18 +23,9 @@ impl GridController {
         };
 
         // copy all data in the columns range
-        let html = {
-            let selection = A1Selection::cols(sheet_id, col_start, col_end);
-            let Ok(clipboard) = sheet.copy_to_clipboard(
-                &selection,
-                &self.a1_context,
-                ClipboardOperation::Cut,
-                false,
-            ) else {
-                return;
-            };
-            clipboard.html
-        };
+        let selection = A1Selection::cols(sheet_id, col_start, col_end);
+        let clipboard =
+            sheet.copy_to_clipboard(&selection, &self.a1_context, ClipboardOperation::Cut, false);
 
         // delete existing columns
         let min_column = col_start.min(col_end);
@@ -75,9 +66,13 @@ impl GridController {
         let selection = A1Selection::from_single_cell((adjusted_to, 1, sheet_id).into());
         let insert_at = selection.cursor;
 
-        if let Ok((ops, data_table_ops)) =
-            self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
-        {
+        if let Ok((ops, data_table_ops)) = self.paste_html_operations(
+            insert_at,
+            insert_at,
+            &selection,
+            clipboard,
+            PasteSpecial::None,
+        ) {
             transaction.operations.extend(ops);
 
             if !data_table_ops.is_empty() {
@@ -99,18 +94,9 @@ impl GridController {
         };
 
         // copy all data in the rows range
-        let html = {
-            let selection = A1Selection::rows(sheet_id, row_start, row_end);
-            let Ok(clipboard) = sheet.copy_to_clipboard(
-                &selection,
-                &self.a1_context,
-                ClipboardOperation::Cut,
-                false,
-            ) else {
-                return;
-            };
-            clipboard.html
-        };
+        let selection = A1Selection::rows(sheet_id, row_start, row_end);
+        let clipboard =
+            sheet.copy_to_clipboard(&selection, &self.a1_context, ClipboardOperation::Cut, false);
 
         // delete existing rows
         let min_row = row_start.min(row_end);
@@ -157,9 +143,13 @@ impl GridController {
         let selection = A1Selection::from_single_cell((1, adjusted_to, sheet_id).into());
         let insert_at = selection.cursor;
 
-        if let Ok((ops, data_table_ops)) =
-            self.paste_html_operations(insert_at, insert_at, &selection, html, PasteSpecial::None)
-        {
+        if let Ok((ops, data_table_ops)) = self.paste_html_operations(
+            insert_at,
+            insert_at,
+            &selection,
+            clipboard,
+            PasteSpecial::None,
+        ) {
             transaction.operations.extend(ops);
 
             if !data_table_ops.is_empty() {

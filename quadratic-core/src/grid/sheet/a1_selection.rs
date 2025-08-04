@@ -267,8 +267,8 @@ impl Sheet {
     pub fn selection_bounds(
         &self,
         selection: &A1Selection,
-        auto_detect_table_bounds: bool,
         force_columns: bool,
+        auto_detect_table_bounds: bool,
         ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Option<Rect> {

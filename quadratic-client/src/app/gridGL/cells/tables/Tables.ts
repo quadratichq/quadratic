@@ -68,8 +68,8 @@ export class Tables extends Container<Table> {
     events.on('updateCodeCells', this.updateCodeCells);
 
     events.on('cursorPosition', this.cursorPosition);
-    events.on('a1ContextUpdated', this.cursorPosition);
-    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('a1ContextUpdated', this.handleA1ContextUpdated);
+    events.on('sheetOffsetsUpdated', this.sheetOffsets);
 
     events.on('contextMenu', this.contextMenu);
 
@@ -85,7 +85,8 @@ export class Tables extends Container<Table> {
     events.off('updateCodeCells', this.updateCodeCells);
 
     events.off('cursorPosition', this.cursorPosition);
-    events.off('sheetOffsets', this.sheetOffsets);
+    events.off('a1ContextUpdated', this.handleA1ContextUpdated);
+    events.off('sheetOffsetsUpdated', this.sheetOffsets);
 
     events.off('contextMenu', this.contextMenu);
 
@@ -133,7 +134,11 @@ export class Tables extends Container<Table> {
 
   /// Returns true if the code cell has no UI and is 1x1.
   private isCodeCellSingle = (codeCell: JsRenderCodeCell): boolean => {
-    return codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns;
+    return (
+      codeCell.state === 'SpillError' ||
+      codeCell.state === 'RunError' ||
+      (codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns)
+    );
   };
 
   /// Deletes a table from Tables and removes cache.
@@ -226,7 +231,7 @@ export class Tables extends Container<Table> {
       }
     }
 
-    this.cursorPosition();
+    this.cursorPosition(true);
     pixiApp.singleCellOutlines.setDirty();
     pixiApp.setViewportDirty();
   };
@@ -265,18 +270,18 @@ export class Tables extends Container<Table> {
       }
     });
     // ensures that a table at A1 gets highlighted
-    this.cursorPosition();
+    this.cursorPosition(true);
   };
 
   /// Returns the tables that are visible in the viewport.
-  private getVisibleTables = (): Table[] => {
-    const bounds = pixiApp.viewport.getVisibleBounds();
+  private getVisibleTables = (forceBounds?: Rectangle): Table[] => {
+    const bounds = forceBounds ?? pixiApp.viewport.getVisibleBounds();
     const cellBounds = sheets.sheet.getRectangleFromScreen(bounds);
     const tables = this.dataTablesCache?.getLargeTablesInRect(
-      cellBounds.x,
-      cellBounds.y,
-      cellBounds.width,
-      cellBounds.height
+      cellBounds.left,
+      cellBounds.top,
+      cellBounds.right - 1,
+      cellBounds.bottom - 1
     );
     return (
       tables?.flatMap((pos) => {
@@ -289,6 +294,13 @@ export class Tables extends Container<Table> {
     );
   };
 
+  /// Forces an update of all tables to the given bounds (used by thumbnail generation)
+  forceUpdate = (bounds: Rectangle) => {
+    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+    const visibleTables = this.getVisibleTables(bounds);
+    visibleTables?.forEach((table) => table.update(bounds, gridHeading));
+  };
+
   update = (dirtyViewport: boolean) => {
     if (dirtyViewport) {
       const bounds = pixiApp.viewport.getVisibleBounds();
@@ -298,13 +310,19 @@ export class Tables extends Container<Table> {
     }
   };
 
+  private handleA1ContextUpdated = () => {
+    this.cursorPosition(true);
+  };
+
   // Updates the active table when the cursor moves.
-  private cursorPosition = () => {
+  private cursorPosition = (checkForTableRef = false) => {
     if (this.cellsSheet.sheetId !== sheets.current) {
       return;
     }
 
-    sheets.sheet.cursor.checkForTableRef();
+    if (checkForTableRef) {
+      sheets.sheet.cursor.checkForTableRef();
+    }
 
     const tables = sheets.sheet.cursor.getSelectedTableNames();
 
@@ -391,6 +409,7 @@ export class Tables extends Container<Table> {
   // that table active while the context menu is open)
   private contextMenu = (options: ContextMenuState) => {
     if (this.actionDataTable) {
+      this.actionDataTable.hideActive();
       this.actionDataTable.showColumnHeaders();
       this.actionDataTable = undefined;
     }
@@ -619,10 +638,10 @@ export class Tables extends Container<Table> {
   getSingleCellTablesInRectangle = (cellRectangle: Rectangle): Pos[] => {
     if (!this.dataTablesCache) return [];
     return this.dataTablesCache.getSingleCellTablesInRect(
-      cellRectangle.x,
-      cellRectangle.y,
-      cellRectangle.right,
-      cellRectangle.bottom
+      cellRectangle.left,
+      cellRectangle.top,
+      cellRectangle.right - 1,
+      cellRectangle.bottom - 1
     );
   };
 
