@@ -9,16 +9,16 @@ use crate::{
     grid::SheetId,
     grid::sheet::validations::{
         rules::{ValidationRule, validation_logical::ValidationLogical},
-        validation::Validation,
+        validation::{Validation, ValidationUpdate},
     },
 };
 
 /// Creates a checkbox validation for a given selection. show_checkbox = true
 /// and ignore_blank = true. Returns a clone of the validation.
 #[cfg(test)]
-pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> Validation {
-    let validation = Validation {
-        id: Uuid::new_v4(),
+pub fn test_create_checkbox_with_id(gc: &mut GridController, selection: A1Selection) -> Validation {
+    let validation = ValidationUpdate {
+        id: Some(Uuid::new_v4()),
         selection,
         rule: ValidationRule::Logical(ValidationLogical {
             show_checkbox: true,
@@ -28,7 +28,25 @@ pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> 
         error: Default::default(),
     };
     gc.update_validation(validation.clone(), None, false);
-    validation
+    validation.into()
+}
+
+/// Creates a checkbox validation for a given selection. show_checkbox = true
+/// and ignore_blank = true. Returns a clone of the validation.
+#[cfg(test)]
+pub fn test_create_checkbox(gc: &mut GridController, selection: A1Selection) -> Validation {
+    let validation = ValidationUpdate {
+        id: None,
+        selection,
+        rule: ValidationRule::Logical(ValidationLogical {
+            show_checkbox: true,
+            ignore_blank: true,
+        }),
+        message: Default::default(),
+        error: Default::default(),
+    };
+    gc.update_validation(validation.clone(), None, false);
+    validation.into()
 }
 
 #[track_caller]
@@ -94,7 +112,7 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = gc.sheet_ids()[0];
         let selection = A1Selection::test_a1("A1");
-        test_create_checkbox(&mut gc, selection.clone());
+        test_create_checkbox_with_id(&mut gc, selection.clone());
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 1);
@@ -118,12 +136,12 @@ mod tests {
         assert_validation_warning(&gc, sheet_pos, None);
 
         // Test case 2: Create a validation and ensure it fails
-        let validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
+        let validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
         gc.set_cell_value(sheet_pos, "a".to_string(), None, false);
         assert_validation_warning(&gc, sheet_pos, Some(validation.clone()));
 
         // Test case 3: Wrong validation warning (should panic)
-        let wrong_validation = test_create_checkbox(&mut gc, A1Selection::test_a1("A2"));
+        let wrong_validation = test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A2"));
         let result = std::panic::catch_unwind(|| {
             assert_validation_warning(&gc, sheet_pos, Some(wrong_validation));
         });
@@ -145,11 +163,11 @@ mod tests {
         assert_validation_count(&gc, sheet_id, 0);
 
         // Test case 2: Add one validation
-        test_create_checkbox(&mut gc, A1Selection::test_a1("A1"));
+        test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A1"));
         assert_validation_count(&gc, sheet_id, 1);
 
         // Test case 3: Add another validation
-        test_create_checkbox(&mut gc, A1Selection::test_a1("A2"));
+        test_create_checkbox_with_id(&mut gc, A1Selection::test_a1("A2"));
         assert_validation_count(&gc, sheet_id, 2);
 
         // Test case 4: Wrong count (should panic)

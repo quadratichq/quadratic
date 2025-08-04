@@ -8,7 +8,7 @@ import {
 } from '@/app/atoms/editorInteractionStateAtom';
 import { bigIntReplacer } from '@/app/bigint';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { Validation, ValidationRule } from '@/app/quadratic-core-types';
+import type { ValidationRule, ValidationUpdate } from '@/app/quadratic-core-types';
 import type { JsSelection } from '@/app/quadratic-core/quadratic_core';
 import type { ValidationRuleSimple, ValidationUndefined } from '@/app/ui/menus/Validations/Validation/validationType';
 import { validationRuleSimple, ValidationRuleSimpleValues } from '@/app/ui/menus/Validations/Validation/validationType';
@@ -216,10 +216,16 @@ export const useValidationData = (): ValidationData => {
       if (old && 'rule' in old) {
         if (old.rule === 'None') return old;
         if ('List' in old.rule) {
-          const rule: Validation = { ...old, rule: { List: { ...old.rule.List, drop_down: checked } } };
+          const rule: ValidationUndefined = {
+            ...old,
+            rule: { List: { ...old.rule.List, drop_down: checked } },
+          };
           return rule;
         } else if ('Logical' in old.rule) {
-          const rule: Validation = { ...old, rule: { Logical: { ...old.rule.Logical, show_checkbox: checked } } };
+          const rule: ValidationUndefined = {
+            ...old,
+            rule: { Logical: { ...old.rule.Logical, show_checkbox: checked } },
+          };
           return rule;
         }
         return old;
@@ -305,7 +311,7 @@ export const useValidationData = (): ValidationData => {
       }
 
       // gets the validation for the current selection or creates a new one
-      let v: Validation | Omit<Validation, 'rule'> | undefined;
+      let v: ValidationUpdate | Omit<ValidationUpdate, 'rule'> | undefined;
       if (showValidation && showValidation !== true && showValidation !== 'new' && rule === undefined) {
         v = sheets.getById(sheetId)?.validations.find((v) => v.id === showValidation);
       }
@@ -317,7 +323,7 @@ export const useValidationData = (): ValidationData => {
           selection: sheets.sheet.cursor.selection(),
           rule: 'None',
           message: {
-            show: true,
+            show: false,
             title: '',
             message: '',
           },

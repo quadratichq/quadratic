@@ -1,7 +1,8 @@
 //! WASM functions for Validations
 
-use sheet::validations::validation::Validation;
 use uuid::Uuid;
+
+use crate::{a1::A1Selection, grid::sheet::validations::validation::ValidationUpdate};
 
 use super::*;
 
@@ -36,15 +37,13 @@ impl GridController {
         validation: String, // Validation
         cursor: Option<String>,
         is_ai: bool,
-    ) {
-        let validation = match serde_json::from_str::<Validation>(&validation) {
-            Ok(validation) => validation,
-            Err(e) => {
-                dbgjs!(format!("Error parsing validation: {}", e.to_string()));
-                return;
-            }
-        };
-        self.update_validation(validation, cursor, is_ai);
+    ) -> JsValue {
+        capture_core_error(|| {
+            let validation = serde_json::from_str::<ValidationUpdate>(&validation)
+                .map_err(|e| format!("Error parsing validation: {e}"))?;
+            self.update_validation(validation, cursor, is_ai);
+            Ok(None)
+        })
     }
 
     /// Removes a validation
@@ -69,6 +68,24 @@ impl GridController {
         if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
             self.remove_validations(sheet_id, cursor, is_ai);
         }
+    }
+
+    #[wasm_bindgen(js_name = "removeValidationSelection")]
+    pub fn js_remove_validation_selection(
+        &mut self,
+        sheet_id: String,
+        selection: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context(), None)
+                .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
+            self.remove_validation_selection(sheet_id, selection, cursor, is_ai);
+            Ok(None)
+        })
     }
 
     /// Gets a Validation from a Position

@@ -508,7 +508,19 @@ class CoreClient {
         return;
 
       case 'clientCoreUpdateValidation':
-        core.updateValidation(e.data.validation, e.data.cursor, e.data.isAi);
+        this.send({
+          type: 'coreClientUpdateValidation',
+          id: e.data.id,
+          response: core.updateValidation(e.data.validation, e.data.cursor, e.data.isAi),
+        });
+        return;
+
+      case 'clientCoreRemoveValidationSelection':
+        this.send({
+          type: 'coreClientRemoveValidationSelection',
+          id: e.data.id,
+          response: core.removeValidationSelection(e.data.sheetId, e.data.selection, e.data.cursor, e.data.isAi),
+        });
         return;
 
       case 'clientCoreGetValidations':

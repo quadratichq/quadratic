@@ -34,6 +34,7 @@ import type {
   SearchOptions,
   SheetPos,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import initCore, { GridController } from '@/app/quadratic-core/quadratic_core';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
@@ -80,8 +81,25 @@ class Core {
   };
 
   private fetchGridFile = async (file: string): Promise<Uint8Array> => {
+    if (debugFlag('debugStartupTime')) {
+      console.time('[core] Loading grid file from API');
+    }
     const res = await fetch(file);
-    return new Uint8Array(await res.arrayBuffer());
+    const array = new Uint8Array(await res.arrayBuffer());
+    if (debugFlag('debugStartupTime')) {
+      console.timeEnd('[core] Loading grid file from API');
+    }
+    return array;
+  };
+
+  private loadCore = async () => {
+    if (debugFlag('debugStartupTime')) {
+      console.time('[core] Loading core');
+    }
+    await initCore();
+    if (debugFlag('debugStartupTime')) {
+      console.timeEnd('[core] Loading core');
+    }
   };
 
   // Creates a Grid from a file. Initializes bother coreClient and coreRender w/metadata.
@@ -94,7 +112,7 @@ class Core {
     coreRender.init(renderPort);
 
     try {
-      const results = await Promise.all([this.fetchGridFile(message.url), initCore()]);
+      const results = await Promise.all([this.fetchGridFile(message.url), this.loadCore()]);
       this.gridController = GridController.newFromFile(results[0], message.sequenceNumber, true);
     } catch (e) {
       this.sendAnalyticsError('loadFile', e);
@@ -996,10 +1014,10 @@ class Core {
     }
   }
 
-  updateValidation(validation: Validation, cursor: string, isAi: boolean) {
+  updateValidation(validation: ValidationUpdate, cursor: string, isAi: boolean): JsResponse | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor, isAi);
+      return this.gridController.updateValidation(JSON.stringify(validation, bigIntReplacer), cursor, isAi);
     } catch (e) {
       this.handleCoreError('updateValidation', e);
     }
@@ -1011,6 +1029,15 @@ class Core {
       this.gridController.removeValidation(sheetId, validationId, cursor, isAi);
     } catch (e) {
       this.handleCoreError('removeValidation', e);
+    }
+  }
+
+  removeValidationSelection(sheetId: string, selection: string, cursor: string, isAi: boolean): JsResponse | undefined {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.removeValidationSelection(sheetId, selection, cursor, isAi);
+    } catch (e) {
+      this.handleCoreError('removeValidationSelection', e);
     }
   }
 

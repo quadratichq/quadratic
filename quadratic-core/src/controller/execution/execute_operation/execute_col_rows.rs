@@ -292,8 +292,6 @@ impl GridController {
 mod tests {
     use std::collections::HashMap;
 
-    use uuid::Uuid;
-
     use crate::{
         Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, Pos, Rect, SheetPos, SheetRect,
         Value,
@@ -301,7 +299,7 @@ mod tests {
         cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            sheet::validations::{rules::ValidationRule, validation::Validation},
+            sheet::validations::{rules::ValidationRule, validation::ValidationUpdate},
         },
         test_create_gc,
         test_util::*,
@@ -798,8 +796,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,B"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
@@ -824,8 +822,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
@@ -850,8 +848,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,B"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),
@@ -876,8 +874,8 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1("A1:C3,2"),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),

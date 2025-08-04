@@ -303,11 +303,9 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-
     use crate::grid::js_types::JsHashRenderCells;
     use crate::grid::sheet::validations::rules::ValidationRule;
-    use crate::grid::sheet::validations::validation::Validation;
+    use crate::grid::sheet::validations::validation::ValidationUpdate;
     use crate::test_util::*;
     use crate::{
         SheetPos, Value,
@@ -669,8 +667,8 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
 
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),

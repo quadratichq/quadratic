@@ -68,6 +68,7 @@ use quadratic_core::grid::sheet::validations::rules::validation_number::{
 use quadratic_core::grid::sheet::validations::rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
+use quadratic_core::grid::sheet::validations::validation::ValidationUpdate;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
@@ -209,7 +210,8 @@ fn main() {
         ValidationNumber,
         ValidationRule,
         ValidationStyle,
-        ValidationText
+        ValidationText,
+        ValidationUpdate,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

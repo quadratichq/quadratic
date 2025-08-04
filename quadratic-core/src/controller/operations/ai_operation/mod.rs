@@ -134,6 +134,10 @@ pub enum AIOperation {
         sheet_id: String,
         validation_id: Uuid,
     },
+    ValidationRemovedSelection {
+        sheet_id: String,
+        selection: String,
+    },
 
     /// Column/row structure changes
     ColumnInserted {

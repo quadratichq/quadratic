@@ -257,7 +257,10 @@ mod tests {
     use crate::{
         CellValue, CopyFormats,
         controller::{GridController, active_transactions::transaction_name::TransactionName},
-        grid::sheet::validations::rules::{ValidationRule, validation_logical::ValidationLogical},
+        grid::sheet::validations::{
+            rules::{ValidationRule, validation_logical::ValidationLogical},
+            validation::ValidationMessage,
+        },
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
 
@@ -275,27 +278,27 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_columns = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,A:C", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
-            message: Default::default(),
+            message: ValidationMessage::test("1"),
             error: Default::default(),
         };
 
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("B2:B3,B", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("B10:B20", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
-            message: Default::default(),
+            message: ValidationMessage::test("2"),
             error: Default::default(),
         };
 
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A,5:10", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A5:A,30:40", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
-            message: Default::default(),
+            message: ValidationMessage::test("3"),
             error: Default::default(),
         };
 
@@ -322,20 +325,6 @@ mod tests {
             sheet.validations.warnings.get(&pos![C3]),
             Some(&validation_rect_columns.id)
         );
-        expect_js_call(
-            "jsSheetValidations",
-            format!(
-                "{},{:?}",
-                sheet_id,
-                serde_json::to_vec(&vec![
-                    validation_rect_columns.clone(),
-                    validation_removed.clone(),
-                    validation_not_changed.clone()
-                ])
-                .unwrap()
-            ),
-            false,
-        );
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove column 2
@@ -353,7 +342,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_column = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:B3,A:B", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:B3", sheet_id),
             ..validation_rect_columns.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_column);
@@ -381,27 +370,24 @@ mod tests {
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 3);
-        assert_eq!(sheet.validations.validations[0], validation_rect_columns);
-        assert_eq!(sheet.validations.validations[1], validation_not_changed);
-        assert_eq!(sheet.validations.validations[2], validation_removed);
+        assert!(
+            sheet
+                .validations
+                .validations
+                .contains(&validation_rect_columns)
+        );
+        assert!(
+            sheet
+                .validations
+                .validations
+                .contains(&validation_not_changed)
+        );
+        assert!(sheet.validations.validations.contains(&validation_removed));
         assert_eq!(
             sheet.validations.warnings.get(&pos![C3]),
             Some(&validation_rect_columns.id)
         );
-        expect_js_call(
-            "jsSheetValidations",
-            format!(
-                "{},{:?}",
-                sheet_id,
-                serde_json::to_vec(&vec![
-                    validation_rect_columns,
-                    validation_not_changed,
-                    validation_removed,
-                ])
-                .unwrap()
-            ),
-            false,
-        );
+        expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
@@ -432,27 +418,27 @@ mod tests {
         // rect and rows to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,1:3", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A2:C3", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
-            message: Default::default(),
+            message: ValidationMessage::test("1"),
             error: Default::default(),
         };
 
         // to be removed
         let validation_removed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A2:C2,2", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("E2:G2", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
-            message: Default::default(),
+            message: ValidationMessage::test("2"),
             error: Default::default(),
         };
 
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A1:D1,1", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
-            message: Default::default(),
+            message: ValidationMessage::test("3"),
             error: Default::default(),
         };
 
@@ -479,20 +465,7 @@ mod tests {
             sheet.validations.warnings.get(&pos![C3]),
             Some(&validation_rect_rows.id)
         );
-        expect_js_call(
-            "jsSheetValidations",
-            format!(
-                "{},{:?}",
-                sheet_id,
-                serde_json::to_vec(&vec![
-                    validation_rect_rows.clone(),
-                    validation_removed.clone(),
-                    validation_not_changed.clone()
-                ])
-                .unwrap()
-            ),
-            false,
-        );
+        expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         // remove row 2
@@ -510,55 +483,50 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_row = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:C2,1:2", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A2:C2", sheet_id),
             ..validation_rect_rows.clone()
         };
-        assert_eq!(sheet.validations.validations[0], new_validation_rect_row);
-        assert_eq!(sheet.validations.validations[1], validation_not_changed);
+        assert!(
+            sheet
+                .validations
+                .validations
+                .contains(&new_validation_rect_row)
+        );
+        assert!(
+            sheet
+                .validations
+                .validations
+                .contains(&validation_not_changed)
+        );
         assert_eq!(
             sheet.validations.warnings.get(&pos![C2]),
             Some(&validation_rect_rows.id)
         );
         assert!(!sheet.validations.warnings.contains_key(&pos![C3]));
-        expect_js_call(
-            "jsSheetValidations",
-            format!(
-                "{},{:?}",
-                sheet_id,
-                serde_json::to_vec(&vec![
-                    new_validation_rect_row.clone(),
-                    validation_not_changed.clone()
-                ])
-                .unwrap()
-            ),
-            false,
-        );
+        expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 3);
-        assert_eq!(sheet.validations.validations[0], validation_rect_rows);
-        assert_eq!(sheet.validations.validations[1], validation_not_changed);
-        assert_eq!(sheet.validations.validations[2], validation_removed);
+        assert!(
+            sheet
+                .validations
+                .validations
+                .contains(&validation_rect_rows)
+        );
+        assert!(
+            sheet
+                .validations
+                .validations
+                .contains(&validation_not_changed)
+        );
+        assert!(sheet.validations.validations.contains(&validation_removed));
         assert_eq!(
             sheet.validations.warnings.get(&pos![C3]),
             Some(&validation_rect_rows.id)
         );
-        expect_js_call(
-            "jsSheetValidations",
-            format!(
-                "{},{:?}",
-                sheet_id,
-                serde_json::to_vec(&vec![
-                    validation_rect_rows,
-                    validation_not_changed,
-                    validation_removed,
-                ])
-                .unwrap()
-            ),
-            false,
-        );
+        expect_js_call_count("jsSheetValidations", 1, false);
         expect_js_call_count("jsValidationWarnings", 1, true);
 
         gc.undo(None);
@@ -578,7 +546,7 @@ mod tests {
     }
 
     #[test]
-    fn inserted_column() {
+    fn test_inserted_column() {
         clear_js_calls();
 
         let mut gc = GridController::default();
@@ -589,7 +557,7 @@ mod tests {
         // rect and rows to be updated
         let validation_rect_cols = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,A,B,C", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:C3,B,C", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -598,8 +566,11 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,A", sheet_id),
-            rule: ValidationRule::Logical(ValidationLogical::default()),
+            selection: A1Selection::test_a1_sheet_id("A10", sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: false,
+            }),
             message: Default::default(),
             error: Default::default(),
         };
@@ -653,7 +624,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_col = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:D3,A,C,D", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A1:D3,C,D", sheet_id),
             ..validation_rect_cols.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_col);
@@ -716,7 +687,7 @@ mod tests {
     }
 
     #[test]
-    fn inserted_row() {
+    fn test_inserted_row() {
         clear_js_calls();
 
         let mut gc = GridController::default();
@@ -727,7 +698,7 @@ mod tests {
         // rect and columns to be updated
         let validation_rect_rows = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:C3,1,2,3", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A2:C3,4,5", sheet_id),
             rule: ValidationRule::Logical(ValidationLogical::default()),
             message: Default::default(),
             error: Default::default(),
@@ -736,8 +707,11 @@ mod tests {
         // nothing to do with this one
         let validation_not_changed = Validation {
             id: Uuid::new_v4(),
-            selection: A1Selection::test_a1_sheet_id("A1:A1,1", sheet_id),
-            rule: ValidationRule::Logical(ValidationLogical::default()),
+            selection: A1Selection::test_a1_sheet_id("A1", sheet_id),
+            rule: ValidationRule::Logical(ValidationLogical {
+                show_checkbox: true,
+                ignore_blank: false,
+            }),
             message: Default::default(),
             error: Default::default(),
         };
@@ -782,7 +756,7 @@ mod tests {
         gc.start_user_ai_transaction(
             vec![Operation::InsertRow {
                 sheet_id,
-                row: 2,
+                row: 3,
                 copy_formats: CopyFormats::None,
             }],
             None,
@@ -792,7 +766,7 @@ mod tests {
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.validations.validations.len(), 2);
         let new_validation_rect_row = Validation {
-            selection: A1Selection::test_a1_sheet_id("A1:C4,1,3,4", sheet_id),
+            selection: A1Selection::test_a1_sheet_id("A2:C4,5,6", sheet_id),
             ..validation_rect_rows.clone()
         };
         assert_eq!(sheet.validations.validations[0], new_validation_rect_row);

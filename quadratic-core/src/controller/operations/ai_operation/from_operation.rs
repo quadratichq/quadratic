@@ -233,12 +233,22 @@ impl AIOperation {
             Operation::SetValidation { validation } => Some(Self::ValidationSet {
                 validation: validation.clone(),
             }),
+            Operation::CreateOrUpdateValidation { validation } => Some(Self::ValidationSet {
+                validation: validation.clone(),
+            }),
             Operation::RemoveValidation {
                 sheet_id,
                 validation_id,
             } => Some(Self::ValidationRemoved {
                 sheet_id: sheet_id.to_string(),
                 validation_id: *validation_id,
+            }),
+            Operation::RemoveValidationSelection {
+                sheet_id,
+                selection,
+            } => Some(Self::ValidationRemovedSelection {
+                sheet_id: sheet_id.to_string(),
+                selection: selection.to_string(Some(*sheet_id), gc.a1_context()),
             }),
 
             // Column/row structure changes
