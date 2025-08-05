@@ -119,21 +119,31 @@ export function initMixpanelAnalytics(user: User) {
     cookie_domain: '.quadratichq.com',
   });
 
+  // Only do this stuff it they're logged in
+  // Mixpanel identity management best practices:
+  // https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified#best-practices
+  if (!user?.sub) return;
+
+  // Identify the user
+  mixpanel.identify(user.sub);
+
+  // Globally register stuff we want to send with every event
   mixpanel.register({
-    email: user?.email,
-    distinct_id: user?.sub,
+    email: user.email,
     ...utmData,
   });
 
-  mixpanel.identify(user?.sub);
-
+  // Set properties from the auth service to the user's profile in mixpanel
   mixpanel.people.set_once({
-    $distinct_id: user?.sub,
-    $email: user?.email,
-    $name: user?.name,
-    $avatar: user?.picture,
+    $email: user.email,
+    $name: user.name,
+    $avatar: user.picture,
     ...utmData,
   });
+
+  // After calling identify, we're supposed to send an event, so we use just a
+  // dummy event here
+  mixpanel.track('[mixpanel].initialized');
 }
 
 function configureSentry(user: User) {
