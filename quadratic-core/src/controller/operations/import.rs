@@ -7,7 +7,8 @@ use rust_decimal::prelude::ToPrimitive;
 use crate::color::Rgba;
 use crate::grid::sheet::borders::{BorderStyleCell, BorderStyleTimestamp, CellBorderLine};
 use crate::{
-    Array, ArraySize, CellValue, Pos, SheetPos,
+    Array, CellValue, Pos, SheetPos,
+    cell_values::CellValues,
     cellvalue::Import,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -39,8 +40,8 @@ pub const ROW_HEIGHT_MULTIPLIER: f64 = 1.5;
 impl GridController {
     /// Guesses if the first row of a CSV file is a header based on the types of the
     /// first three rows.
-    fn guess_csv_first_row_is_header(cell_values: &Array) -> bool {
-        if cell_values.height() < 3 {
+    fn guess_csv_first_row_is_header(cell_values: &CellValues) -> bool {
+        if cell_values.h < 3 {
             return false;
         }
 
@@ -49,7 +50,7 @@ impl GridController {
 
         let types = |row: usize| {
             cell_values
-                .get_row(row)
+                .get_row(row as u32)
                 .unwrap_or_default()
                 .iter()
                 .map(|c| c.type_id())
@@ -127,8 +128,9 @@ impl GridController {
                 .flexible(flexible)
                 .from_reader(converted_file.as_slice())
         };
-        let array_size = ArraySize::new_or_err(width, height).map_err(|e| error(e.to_string()))?;
-        let mut cell_values = Array::new_empty(array_size);
+
+        let mut cell_values = CellValues::new(width, height);
+
         let mut sheet_format_updates = SheetFormatUpdates::default();
 
         let mut y: u32 = 0;
@@ -139,9 +141,8 @@ impl GridController {
                 Ok(record) => {
                     for (x, value) in record.iter().enumerate() {
                         let (cell_value, format_update) = self.string_to_cell_value(value, false);
-                        cell_values
-                            .set(u32::try_from(x)?, y, cell_value, false)
-                            .map_err(|e| error(e.to_string()))?;
+
+                        cell_values.set(x as u32, y, cell_value);
 
                         if !format_update.is_default() {
                             let pos = Pos {
@@ -163,6 +164,10 @@ impl GridController {
             }
         }
 
+        if cell_values.w == 0 || cell_values.h == 0 {
+            bail!("CSV file is empty");
+        }
+
         let mut ops = vec![];
 
         let apply_first_row_as_header = match create_table {
@@ -172,12 +177,16 @@ impl GridController {
         };
 
         if is_table && apply_first_row_as_header {
-            let context = self.a1_context();
-            let import = Import::new(sanitize_table_name(file_name.into()));
-            let mut data_table =
-                DataTable::from((import.to_owned(), Array::new_empty(array_size), context));
+            let cell_values: Array = cell_values.into();
 
+            let import = Import::new(sanitize_table_name(file_name.into()));
+            let mut data_table = DataTable::from((
+                import.to_owned(),
+                Array::new_empty(cell_values.size()),
+                self.a1_context(),
+            ));
             data_table.value = cell_values.into();
+
             if !sheet_format_updates.is_default() {
                 data_table
                     .formats
@@ -196,7 +205,7 @@ impl GridController {
         } else {
             ops.push(Operation::SetCellValues {
                 sheet_pos,
-                values: cell_values.into(),
+                values: cell_values,
             });
             sheet_format_updates.translate_in_place(sheet_pos.x, sheet_pos.y);
             ops.push(Operation::SetCellFormatsA1 {
@@ -541,7 +550,6 @@ impl GridController {
     }
 }
 
-
 /// Converts Excel number format to our quadratic format.
 fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &NumberFormat) {
     let format_id = number_format.format_id;
@@ -582,7 +590,6 @@ fn import_excel_number_format(sheet: &mut Sheet, pos: Pos, number_format: &Numbe
         // default to positive format
         _ => format_sections[0],
     };
-
 
     if let Some(format_id) = format_id {
         match format_id {
@@ -1242,7 +1249,6 @@ fn excel_serial_to_date_time(
         }
     }
 
-
     None
 }
 
@@ -1304,7 +1310,7 @@ fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyl
 mod test {
     use super::*;
     use crate::{
-        CellValue, controller::user_actions::import::tests::simple_csv_at,
+        ArraySize, CellValue, controller::user_actions::import::tests::simple_csv_at,
         number::decimal_from_str, test_util::*,
     };
     use calamine::{BorderStyle, Color};
@@ -1314,8 +1320,14 @@ mod test {
     fn test_guesses_the_csv_header() {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
         let sheet = gc.sheet(sheet_id);
-        let values = sheet.data_table_at(&pos).unwrap().value_as_array().unwrap();
-        assert!(GridController::guess_csv_first_row_is_header(values));
+        let cell_values = sheet
+            .data_table_at(&pos)
+            .unwrap()
+            .value_as_array()
+            .unwrap()
+            .clone()
+            .into();
+        assert!(GridController::guess_csv_first_row_is_header(&cell_values));
     }
 
     #[test]
@@ -1820,6 +1832,23 @@ mod test {
     }
 
     #[test]
+    fn test_csv_width_error() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+        let file = include_bytes!("../../../../quadratic-rust-shared/data/csv/width_error.csv");
+        gc.import_csv(
+            sheet_id,
+            file,
+            "width_error.csv",
+            pos![A1],
+            None,
+            None,
+            Some(true),
+        )
+        .unwrap();
+    }
+
+    #[test]
     fn import_xlsx_styles() {
         let mut gc = GridController::new_blank();
         let file = include_bytes!("../../../test-files/styles.xlsx");
@@ -2295,7 +2324,9 @@ mod test {
             .set(2, 1, CellValue::Text("NYC".to_string()), false)
             .unwrap();
 
-        assert!(!GridController::guess_csv_first_row_is_header(&cell_values));
+        assert!(!GridController::guess_csv_first_row_is_header(
+            &cell_values.into()
+        ));
 
         // test with blank values in first row (should return false)
         let mut cell_values = Array::new_empty(ArraySize::new(3, 3).unwrap());
@@ -2325,7 +2356,9 @@ mod test {
             .set(2, 2, CellValue::Text("LA".to_string()), false)
             .unwrap();
 
-        assert!(!GridController::guess_csv_first_row_is_header(&cell_values));
+        assert!(!GridController::guess_csv_first_row_is_header(
+            &cell_values.into()
+        ));
 
         // test case where first row is all text and subsequent rows are different types
         let mut cell_values = Array::new_empty(ArraySize::new(3, 3).unwrap());
@@ -2357,7 +2390,9 @@ mod test {
             .set(2, 2, CellValue::Number(60000.into()), false)
             .unwrap();
 
-        assert!(GridController::guess_csv_first_row_is_header(&cell_values));
+        assert!(GridController::guess_csv_first_row_is_header(
+            &cell_values.into()
+        ));
 
         // test case where all rows have same types (should return false)
         let mut cell_values = Array::new_empty(ArraySize::new(2, 3).unwrap());
@@ -2380,7 +2415,9 @@ mod test {
             .set(1, 2, CellValue::Number(6.into()), false)
             .unwrap();
 
-        assert!(!GridController::guess_csv_first_row_is_header(&cell_values));
+        assert!(!GridController::guess_csv_first_row_is_header(
+            &cell_values.into()
+        ));
     }
 
     #[test]

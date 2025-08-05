@@ -4,8 +4,7 @@ import { EmptyState, type EmptyStateProps } from '@/shared/components/EmptyState
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
-import * as Sentry from '@sentry/react';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
 
@@ -13,6 +12,10 @@ type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
   showLoggedInUser?: boolean;
   error?: unknown;
   source?: string;
+};
+
+const emptyPageSendAnalyticsError = (from: string, error: Error | unknown, description?: string) => {
+  sendAnalyticsError('Empty', from, error, description);
 };
 
 /**
@@ -38,29 +41,9 @@ export function EmptyPage(props: EmptyPageProps) {
   // If this is an error, log it
   useEffect(() => {
     if (error) {
-      const errorString = JSON.stringify(
-        error instanceof Error
-          ? {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            }
-          : error
-      );
       // for core errors, we send the source but don't share it with the user
       const sourceTitle = source ? `Core Error in ${source}` : title;
-      trackEvent('[Empty].error', {
-        title: sourceTitle,
-        description,
-        error: errorString,
-      });
-      Sentry.captureException(new Error('error-page'), {
-        extra: {
-          title: sourceTitle,
-          description,
-          error,
-        },
-      });
+      emptyPageSendAnalyticsError(sourceTitle, error, typeof description === 'string' ? description : undefined);
     }
   }, [error, title, description, source]);
 

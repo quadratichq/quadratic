@@ -57,8 +57,7 @@ import {
   posToPos,
   toSheetPos,
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import { trackEvent } from '@/shared/utils/analyticsEvents';
-import * as Sentry from '@sentry/react';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
 
 class Core {
@@ -66,11 +65,7 @@ class Core {
   teamUuid?: string;
 
   private sendAnalyticsError = (from: string, error: Error | unknown) => {
-    console.error(error);
-    trackEvent(`[core] ${from} error`, {
-      error,
-    });
-    Sentry.captureException(error);
+    sendAnalyticsError('core', from, error);
   };
 
   private handleCoreError = (from: string, error: Error | unknown) => {
