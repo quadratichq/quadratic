@@ -1,8 +1,8 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { User as AuthUser } from '@/auth/auth';
+import { identifyEventAnalyticsUser } from '@/shared/utils/analyticsEvents';
 import * as amplitude from '@amplitude/analytics-browser';
 import { setUser } from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
 
 // Quadratic only shares analytics on the QuadraticHQ.com hosted version where the environment variables are set.
 
@@ -12,7 +12,7 @@ export function googleAnalyticsAvailable(): boolean {
   return import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none';
 }
 
-function getUtmDataFromCookie(): {
+export function getUtmDataFromCookie(): {
   utm_source: string | undefined;
   utm_medium: string | undefined;
   utm_campaign: string | undefined;
@@ -40,7 +40,7 @@ function getUtmDataFromCookie(): {
 export function initializeAnalytics(user: User) {
   loadGoogleAnalytics(user);
   initAmplitudeAnalytics(user);
-  initMixpanelAnalytics(user);
+  if (user) identifyEventAnalyticsUser(user);
   configureSentry(user);
 }
 
@@ -100,50 +100,6 @@ function initAmplitudeAnalytics(user: User) {
   });
 
   if (debugFlag('debugShow')) console.log('[Analytics] Amplitude activated');
-}
-
-export function initMixpanelAnalytics(user: User) {
-  if (!import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY && import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY !== 'none') {
-    // Without init Mixpanel, all mixpanel events throw an error and break the app.
-    // So we have to init Mixpanel with a fake key, and disable Mixpanel.
-    mixpanel.init('FAKE_KEY');
-    mixpanel.disable();
-    return;
-  }
-
-  const utmData = getUtmDataFromCookie();
-
-  mixpanel.init(import.meta.env.VITE_MIXPANEL_ANALYTICS_KEY, {
-    api_host: 'https://mixpanel-proxy.quadratichq.com',
-    cross_subdomain_cookie: true,
-    cookie_domain: '.quadratichq.com',
-  });
-
-  // Only do this stuff it they're logged in
-  // Mixpanel identity management best practices:
-  // https://docs.mixpanel.com/docs/tracking-methods/id-management/identifying-users-simplified#best-practices
-  if (!user?.sub) return;
-
-  // Identify the user
-  mixpanel.identify(user.sub);
-
-  // Globally register stuff we want to send with every event
-  mixpanel.register({
-    email: user.email,
-    ...utmData,
-  });
-
-  // Set properties from the auth service to the user's profile in mixpanel
-  mixpanel.people.set_once({
-    $email: user.email,
-    $name: user.name,
-    $avatar: user.picture,
-    ...utmData,
-  });
-
-  // After calling identify, we're supposed to send an event, so we use just a
-  // dummy event here
-  mixpanel.track('[mixpanel].initialized');
 }
 
 function configureSentry(user: User) {

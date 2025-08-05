@@ -1,5 +1,5 @@
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 const initialState = {};
 export type FeatureFlagKey = keyof typeof initialState;
@@ -10,9 +10,9 @@ export const useFeatureFlag = (key: FeatureFlagKey) => {
   const localState = state[key];
   const setLocalState = (value: boolean) => {
     if (value) {
-      mixpanel.track('[FeatureFlag].on', { key });
+      trackEvent('[FeatureFlag].on', { key });
     } else {
-      mixpanel.track('[FeatureFlag].off', { key });
+      trackEvent('[FeatureFlag].off', { key });
     }
     setState((prevState) => ({ ...prevState, [key]: value }));
   };

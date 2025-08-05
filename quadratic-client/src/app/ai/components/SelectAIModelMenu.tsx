@@ -15,8 +15,8 @@ import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useMemo } from 'react';
@@ -159,7 +159,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 key={key}
                 checked={selectedModel === key}
                 onCheckedChange={() => {
-                  mixpanel.track('[AI].model.change', { model: modelConfig.model });
+                  trackEvent('[AI].model.change', { model: modelConfig.model });
                   setSelectedModel(key);
                 }}
               >

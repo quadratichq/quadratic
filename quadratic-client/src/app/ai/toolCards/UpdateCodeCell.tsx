@@ -7,8 +7,8 @@ import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/com
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { Editor } from '@monaco-editor/react';
-import mixpanel from 'mixpanel-browser';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,7 +31,7 @@ export const UpdateCodeCell = memo(
           return;
         }
 
-        mixpanel.track('[AI].UpdateCodeCell.copy', { language: getLanguage(codeCell.language) });
+        trackEvent('[AI].UpdateCodeCell.copy', { language: getLanguage(codeCell.language) });
         navigator.clipboard.writeText(toolArgs.data.code_string);
       },
       [codeCell.language, toolArgs?.data]

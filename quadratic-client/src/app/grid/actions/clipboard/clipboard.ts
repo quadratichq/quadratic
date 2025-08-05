@@ -8,9 +8,9 @@ import type { JsClipboard, PasteSpecial } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
 import localforage from 'localforage';
-import mixpanel from 'mixpanel-browser';
 import { isSafari } from 'react-device-detect';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
@@ -206,7 +206,7 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
   try {
     if (!fullClipboardSupport()) {
       console.log('copy to PNG is not supported in Firefox (yet)');
-      mixpanel.track('[clipboard].copySelectionToPNG.notSupported');
+      trackEvent('[clipboard].copySelectionToPNG.notSupported');
       return;
     }
 

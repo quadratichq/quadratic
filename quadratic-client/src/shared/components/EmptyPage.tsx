@@ -4,8 +4,8 @@ import { EmptyState, type EmptyStateProps } from '@/shared/components/EmptyState
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
 
@@ -49,7 +49,7 @@ export function EmptyPage(props: EmptyPageProps) {
       );
       // for core errors, we send the source but don't share it with the user
       const sourceTitle = source ? `Core Error in ${source}` : title;
-      mixpanel.track('[Empty].error', {
+      trackEvent('[Empty].error', {
         title: sourceTitle,
         description,
         error: errorString,
