@@ -121,8 +121,6 @@ export class Update {
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();
     debugTimeCheck('[Update] boxCells');
-    pixiApp.cursor.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] cursor');
     pixiApp.cellHighlights.update();
     debugTimeCheck('[Update] cellHighlights');
     pixiApp.multiplayerCursor.update(pixiApp.viewport.dirty);
@@ -133,6 +131,8 @@ export class Update {
     debugTimeCheck('[Update] cellMoving');
     pixiApp.cellsSheets.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] cellsSheets');
+    pixiApp.cursor.update(pixiApp.viewport.dirty);
+    debugTimeCheck('[Update] cursor');
     pixiApp.validations.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] validations');
     pixiApp.background.update(pixiApp.viewport.dirty);

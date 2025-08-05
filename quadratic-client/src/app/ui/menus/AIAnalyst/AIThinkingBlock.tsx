@@ -62,7 +62,7 @@ export const ThinkingBlock = memo(
 
         {isExpanded && (
           <div className="mt-1 border-l-2 border-muted-foreground/40 pl-4 italic text-muted-foreground">
-            <Markdown text={thinkingContent.text} onChange={handleContentChange} />
+            <Markdown text={thinkingContent.text} onChange={onContentChange && handleContentChange} />
           </div>
         )}
       </div>
