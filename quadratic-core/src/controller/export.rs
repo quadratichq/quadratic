@@ -142,8 +142,8 @@ impl GridController {
             match sheet.all_bounds() {
                 GridBounds::Empty => continue,
                 GridBounds::NonEmpty(mut rect) => {
-                    rect.max.x = rect.max.x.min(MAX_EXCEL_COL as i64);
-                    rect.max.y = rect.max.y.min(MAX_EXCEL_ROW as i64);
+                    rect.max.x = rect.max.x.min(MAX_EXCEL_COL);
+                    rect.max.y = rect.max.y.min(MAX_EXCEL_ROW);
                     for pos in rect.iter() {
                         let (col, row) = (pos.x as u16 - 1, pos.y as u32 - 1);
                         let mut is_formula_output = false;
