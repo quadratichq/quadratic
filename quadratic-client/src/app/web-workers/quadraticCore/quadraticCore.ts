@@ -43,6 +43,7 @@ import type {
   SheetInfo,
   SheetRect,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
@@ -94,6 +95,7 @@ import type {
   CoreClientMoveCodeCellVertically,
   CoreClientMoveSheetResponse,
   CoreClientNeighborText,
+  CoreClientRemoveValidationSelection,
   CoreClientRerunCodeCells,
   CoreClientResizeColumns,
   CoreClientSearch,
@@ -105,6 +107,7 @@ import type {
   CoreClientSetSheetNameResponse,
   CoreClientSetSheetsColorResponse,
   CoreClientSummarizeSelection,
+  CoreClientUpdateValidation,
   CoreClientUpgradeFile,
   CoreClientValidateInput,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -1236,11 +1239,18 @@ class QuadraticCore {
     });
   }
 
-  updateValidation(validation: Validation) {
-    this.send({
-      type: 'clientCoreUpdateValidation',
-      validation,
-      cursor: sheets.getCursorPosition(),
+  updateValidation(validation: ValidationUpdate): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientUpdateValidation) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreUpdateValidation',
+        id,
+        validation,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 
@@ -1250,6 +1260,22 @@ class QuadraticCore {
       sheetId,
       validationId,
       cursor: sheets.getCursorPosition(),
+    });
+  }
+
+  removeValidationSelection(sheetId: string, selection: string): Promise<JsResponse | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientRemoveValidationSelection) => {
+        resolve(message.response);
+      };
+      this.send({
+        type: 'clientCoreRemoveValidationSelection',
+        id,
+        sheetId,
+        selection,
+        cursor: sheets.getCursorPosition(),
+      });
     });
   }
 

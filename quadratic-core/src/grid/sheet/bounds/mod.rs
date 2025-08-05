@@ -446,14 +446,13 @@ mod test {
                 borders::{BorderSelection, BorderStyle},
                 validations::{
                     rules::{ValidationRule, validation_logical::ValidationLogical},
-                    validation::Validation,
+                    validation::ValidationUpdate,
                 },
             },
         },
     };
     use proptest::proptest;
     use std::collections::HashMap;
-    use uuid::Uuid;
 
     #[test]
     fn test_is_empty() {
@@ -819,8 +818,8 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 rule: ValidationRule::Logical(ValidationLogical {
                     show_checkbox: true,
                     ignore_blank: true,
