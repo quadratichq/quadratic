@@ -1,3 +1,4 @@
+import { isAvailableBecauseFileLocationIsAccessibleAndWriteable } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { openCodeEditor } from '@/app/grid/actions/openCodeEditor';
@@ -177,6 +178,7 @@ export const viewActionsSpec: ViewActionSpec = {
   },
   [Action.ToggleAIAnalyst]: {
     label: () => 'Sheet chat',
+    isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
     run: () => {
       if (!pixiAppSettings.setAIAnalystState) return;
       pixiAppSettings.setAIAnalystState((prev) => ({ ...prev, showAIAnalyst: !prev.showAIAnalyst }));
