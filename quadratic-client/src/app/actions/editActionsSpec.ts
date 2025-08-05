@@ -145,9 +145,7 @@ export const editActionsSpec: EditActionSpec = {
     labelVerbose: 'Copy selection as PNG',
     Icon: CopyAsPng,
     run: () => {
-      pixiAppSettings.setContextMenu?.({});
-      if (!pixiAppSettings.addGlobalSnackbar) return;
-      copySelectionToPNG(pixiAppSettings.addGlobalSnackbar);
+      copySelectionToPNG();
     },
   },
   [Action.DownloadAsCsv]: {
