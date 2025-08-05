@@ -3,7 +3,6 @@ import { copySelectionToPNG, fullClipboardSupport } from '@/app/grid/actions/cli
 import { KeyboardSymbols } from '@/app/helpers/keyboardSymbols';
 import type { CommandGroup } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
 import { CommandPaletteListItem } from '@/app/ui/menus/CommandPalette/CommandPaletteListItem';
-import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { CopyAsPng } from '@/shared/components/Icons';
 
 const data: CommandGroup = {
@@ -25,11 +24,10 @@ const data: CommandGroup = {
       label: 'Copy selection as PNG',
       isAvailable: () => fullClipboardSupport(),
       Component: (props) => {
-        const { addGlobalSnackbar } = useGlobalSnackbar();
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => copySelectionToPNG(addGlobalSnackbar)}
+            action={() => copySelectionToPNG()}
             icon={<CopyAsPng />}
             shortcutModifiers={[KeyboardSymbols.Shift, KeyboardSymbols.Command]}
             shortcut="C"
