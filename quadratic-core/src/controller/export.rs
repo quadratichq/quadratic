@@ -48,6 +48,9 @@ lazy_static! {
     };
 }
 
+const MAX_EXCEL_ROW: i64 = 1048576;
+const MAX_EXCEL_COL: i64 = 16384;
+
 impl GridController {
     /// exports a CSV string from a selection on the grid.
     ///
@@ -138,7 +141,9 @@ impl GridController {
             // add grid values to the worksheet
             match sheet.all_bounds() {
                 GridBounds::Empty => continue,
-                GridBounds::NonEmpty(rect) => {
+                GridBounds::NonEmpty(mut rect) => {
+                    rect.max.x = rect.max.x.min(MAX_EXCEL_COL as i64);
+                    rect.max.y = rect.max.y.min(MAX_EXCEL_ROW as i64);
                     for pos in rect.iter() {
                         let (col, row) = (pos.x as u16 - 1, pos.y as u32 - 1);
                         let mut is_formula_output = false;
