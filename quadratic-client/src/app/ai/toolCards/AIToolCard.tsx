@@ -1,4 +1,10 @@
 import { AddDataTable } from '@/app/ai/toolCards/AddDataTable';
+import { AddDateTimeValidation } from '@/app/ai/toolCards/AddDateTimeValidation';
+import { AddListValidation } from '@/app/ai/toolCards/AddListValidation';
+import { AddLogicalValidation } from '@/app/ai/toolCards/AddLogicalValidations';
+import { AddMessage } from '@/app/ai/toolCards/AddMessage';
+import { AddNumberValidation } from '@/app/ai/toolCards/AddNumberValidation';
+import { AddTextValidation } from '@/app/ai/toolCards/AddTextValidation';
 import { ColorSheets } from '@/app/ai/toolCards/ColorSheets';
 import { ConvertToTable } from '@/app/ai/toolCards/ConvertToTable';
 import { NewSheet } from '@/app/ai/toolCards/CreateNewSheet';
@@ -10,12 +16,14 @@ import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
 import { GetDatabaseSchemas } from '@/app/ai/toolCards/GetDatabaseSchemas';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
+import { GetValidations } from '@/app/ai/toolCards/GetValidations';
 import { HasCellData } from '@/app/ai/toolCards/HasCellData';
 import { InsertColumns } from '@/app/ai/toolCards/InsertColumns';
 import { InsertRows } from '@/app/ai/toolCards/InsertRows';
 import { MoveCells } from '@/app/ai/toolCards/MoveCells';
 import { MoveSheet } from '@/app/ai/toolCards/MoveSheet';
 import { PDFImport } from '@/app/ai/toolCards/PDFImport';
+import { RemoveValidations } from '@/app/ai/toolCards/RemoveValidations';
 import { RenameSheet } from '@/app/ai/toolCards/RenameSheet';
 import { RerunCode } from '@/app/ai/toolCards/RerunCode';
 import { ResizeColumns } from '@/app/ai/toolCards/ResizeColumns';
@@ -54,6 +62,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <SetCellValues toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCodeCellValue:
       return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.GetDatabaseSchemas:
+      return <GetDatabaseSchemas toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetSQLCodeCellValue:
       return <SetSQLCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetFormulaCellValue:
@@ -114,8 +124,22 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <TableMeta toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.TableColumnSettings:
       return <TableColumnSettings toolCall={toolCall} className={cn('tool-card', className)} />;
-    case AITool.GetDatabaseSchemas:
-      return <GetDatabaseSchemas toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.GetValidations:
+      return <GetValidations toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddMessage:
+      return <AddMessage toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddLogicalValidation:
+      return <AddLogicalValidation toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddListValidation:
+      return <AddListValidation toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddTextValidation:
+      return <AddTextValidation toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddNumberValidation:
+      return <AddNumberValidation toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.AddDateTimeValidation:
+      return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.RemoveValidations:
+      return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

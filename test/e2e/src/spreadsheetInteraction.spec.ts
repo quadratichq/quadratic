@@ -5,6 +5,7 @@ import * as xlsx from 'xlsx';
 import { navigateOnSheet, selectCells, typeInCell } from './helpers/app.helper';
 import { logIn } from './helpers/auth.helpers';
 import { cleanUpFiles, createFile, navigateIntoFile, uploadFile } from './helpers/file.helpers';
+import { gotoCells } from './helpers/sheet.helper';
 
 test('Appearance Customization', async ({ page }) => {
   //--------------------------------
@@ -887,6 +888,7 @@ test('Data Validation', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert the Python cell (0, 1) correctly updates to FALSE
+  await gotoCells(page, { a1: 'E5' });
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`data_validation__checkbox_false.png`);
 
   //--------------------------------
@@ -911,6 +913,7 @@ test('Data Validation', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert the Python cell (1, 1) correctly updates to 'a'
+  await gotoCells(page, { a1: 'E5' });
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`data_validation__dropdown_a.png`);
 
   //--------------------------------

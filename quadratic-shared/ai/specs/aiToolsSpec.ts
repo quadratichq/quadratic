@@ -1,4 +1,10 @@
-import type { AIModelKey, AISource, AIToolArgs, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
+import type {
+  AIModelKey,
+  AISource,
+  AIToolArgs,
+  AIToolArgsPrimitive,
+  ModelMode,
+} from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
 export enum AITool {
@@ -7,6 +13,7 @@ export enum AITool {
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
   SetCodeCellValue = 'set_code_cell_value',
+  GetDatabaseSchemas = 'get_database_schemas',
   SetSQLCodeCellValue = 'set_sql_code_cell_value',
   SetFormulaCellValue = 'set_formula_cell_value',
   MoveCells = 'move_cells',
@@ -39,7 +46,14 @@ export enum AITool {
   DeleteRows = 'delete_rows',
   TableMeta = 'table_meta',
   TableColumnSettings = 'table_column_settings',
-  GetDatabaseSchemas = 'get_database_schemas',
+  GetValidations = 'get_validations',
+  AddMessage = 'add_message',
+  AddLogicalValidation = 'add_logical_validation',
+  AddListValidation = 'add_list_validation',
+  AddTextValidation = 'add_text_validation',
+  AddNumberValidation = 'add_number_validation',
+  AddDateTimeValidation = 'add_date_time_validation',
+  RemoveValidations = 'remove_validation',
 }
 
 export const AIToolSchema = z.enum([
@@ -48,6 +62,7 @@ export const AIToolSchema = z.enum([
   AITool.AddDataTable,
   AITool.SetCellValues,
   AITool.SetCodeCellValue,
+  AITool.GetDatabaseSchemas,
   AITool.SetSQLCodeCellValue,
   AITool.SetFormulaCellValue,
   AITool.MoveCells,
@@ -80,7 +95,14 @@ export const AIToolSchema = z.enum([
   AITool.DeleteRows,
   AITool.TableMeta,
   AITool.TableColumnSettings,
-  AITool.GetDatabaseSchemas,
+  AITool.GetValidations,
+  AITool.AddMessage,
+  AITool.AddLogicalValidation,
+  AITool.AddListValidation,
+  AITool.AddTextValidation,
+  AITool.AddNumberValidation,
+  AITool.AddDateTimeValidation,
+  AITool.RemoveValidations,
 ]);
 
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
@@ -140,6 +162,25 @@ const array2DSchema = z
     return array.map((row) => (row.length === maxColumns ? row : row.concat(Array(maxColumns - row.length).fill(''))));
   });
 
+const enumToFirstLetterCapitalSchema = <T extends string>(enumValues: readonly T[]) =>
+  z
+    .string()
+    .transform((val) => val.charAt(0).toUpperCase() + val.slice(1).toLowerCase())
+    .pipe(z.enum(enumValues as readonly string[] as [T, ...T[]]));
+
+const cellLanguageSchema = enumToFirstLetterCapitalSchema(['Python', 'Javascript']);
+
+// Common schema for validation message and error
+const validationMessageErrorSchema = z.object({
+  show_message: booleanSchema.nullable().optional(),
+  message_title: z.string().nullable().optional(),
+  message_text: z.string().nullable().optional(),
+  show_error: booleanSchema.nullable().optional(),
+  error_style: enumToFirstLetterCapitalSchema(['Stop', 'Warning', 'Information']).nullable().optional(),
+  error_message: z.string().nullable().optional(),
+  error_title: z.string().nullable().optional(),
+});
+
 export const AIToolsArgsSchema = {
   [AITool.SetAIModel]: z.object({
     ai_model: z
@@ -159,14 +200,14 @@ export const AIToolsArgsSchema = {
   [AITool.SetCodeCellValue]: z.object({
     sheet_name: z.string().nullable().optional(),
     code_cell_name: z.string(),
-    code_cell_language: z
-      .string()
-      .transform((val) => val.toLowerCase())
-      .pipe(z.enum(['python', 'javascript']))
-      .transform((val) => val.charAt(0).toUpperCase() + val.slice(1))
-      .pipe(z.enum(['Python', 'Javascript'])),
+    code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
+  }),
+  [AITool.GetDatabaseSchemas]: z.object({
+    connection_ids: z
+      .preprocess((val) => (val ? val : []), z.array(z.string().uuid()))
+      .transform((val) => val.filter((id) => !!id)),
   }),
   [AITool.SetSQLCodeCellValue]: z.object({
     sheet_name: z.string().nullable().optional(),
@@ -362,12 +403,84 @@ export const AIToolsArgsSchema = {
       })
     ),
   }),
-  [AITool.GetDatabaseSchemas]: z.object({
-    connection_ids: z
-      .preprocess((val) => (val ? val : []), z.array(z.string().uuid()))
-      .transform((val) => val.filter((id) => !!id)),
+  [AITool.GetValidations]: z.object({
+    sheet_name: z.string().optional(),
+  }),
+  [AITool.AddMessage]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
+    message_title: z.string().nullable().optional(),
+    message_text: z.string().nullable().optional(),
+  }),
+  [AITool.AddLogicalValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      show_checkbox: booleanSchema.nullable().optional(),
+      ignore_blank: booleanSchema.nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddListValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      drop_down: booleanSchema.nullable().optional(),
+      list_source_list: z.string().nullable().optional(),
+      list_source_selection: z.string().nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddTextValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      max_length: numberSchema.nullable().optional(),
+      min_length: numberSchema.nullable().optional(),
+      contains_case_sensitive: z.string().nullable().optional(),
+      contains_case_insensitive: z.string().nullable().optional(),
+      not_contains_case_sensitive: z.string().nullable().optional(),
+      not_contains_case_insensitive: z.string().nullable().optional(),
+      exactly_case_sensitive: z.string().nullable().optional(),
+      exactly_case_insensitive: z.string().nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddNumberValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      range: z.string().nullable().optional(),
+      equal: z.string().nullable().optional(),
+      not_equal: z.string().nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.AddDateTimeValidation]: z
+    .object({
+      sheet_name: z.string().optional(),
+      selection: z.string(),
+      ignore_blank: booleanSchema.nullable().optional(),
+      date_range: z.string().nullable().optional(),
+      date_equal: z.string().nullable().optional(),
+      date_not_equal: z.string().nullable().optional(),
+      time_range: z.string().nullable().optional(),
+      time_equal: z.string().nullable().optional(),
+      time_not_equal: z.string().nullable().optional(),
+      require_date: booleanSchema.nullable().optional(),
+      require_time: booleanSchema.nullable().optional(),
+      prohibit_date: booleanSchema.nullable().optional(),
+      prohibit_time: booleanSchema.nullable().optional(),
+    })
+    .merge(validationMessageErrorSchema),
+  [AITool.RemoveValidations]: z.object({
+    sheet_name: z.string().optional(),
+    selection: z.string(),
   }),
 } as const;
+
+export type AIToolsArgs = {
+  [K in keyof typeof AIToolsArgsSchema]: z.infer<(typeof AIToolsArgsSchema)[K]>;
+};
 
 export type AIToolSpecRecord = {
   [K in AITool]: AIToolSpec<K>;
@@ -379,6 +492,40 @@ export const MODELS_ROUTER_CONFIGURATION: {
   claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   '4.1': 'azure-openai:gpt-4.1',
 };
+
+const validationMessageErrorPrompt: Record<string, AIToolArgsPrimitive> = {
+  show_message: {
+    type: ['boolean', 'null'],
+    description:
+      'Whether the message is shown whenever the cursor is on the cell with this validation. This is usually set to false unless specifically requested, for example, include instructions.',
+  },
+  message_title: {
+    type: ['string', 'null'],
+    description:
+      'The title of the message to show when the cursor is on the cell with this validation. This defaults to null.',
+  },
+  message_text: {
+    type: ['string', 'null'],
+    description:
+      'The text of the message to show when the cursor is on the cell with this validation. This defaults to null.',
+  },
+  show_error: {
+    type: ['boolean', 'null'],
+    description: 'Whether an error message is shown when the validation fails. This defaults to true.',
+  },
+  error_style: {
+    type: ['string', 'null'],
+    description: `Selected from Stop, Warning, and Information. This is the style of the error. Stop will stop the user from saving the cell; Warning will show a warning message but allows the user to enter the value. Information will show an information message if the validation fails. The default is Stop.`,
+  },
+  error_message: {
+    type: ['string', 'null'],
+    description: 'The text of the error message to show when the validation fails. This defaults to null.',
+  },
+  error_title: {
+    type: ['string', 'null'],
+    description: 'The title of the error message to show when the validation fails.',
+  },
+} as const;
 
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
@@ -679,6 +826,45 @@ Code cell (Python and Javascript) placement instructions:\n
 - A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
 `,
   },
+  [AITool.GetDatabaseSchemas]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+Retrieves detailed database table schemas including column names, data types, and constraints.\n
+Use this tool when you need detailed column information beyond the table names already available in context.\n
+Essential for writing accurate SQL queries that reference specific columns and their data types.\n
+If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
+`,
+    parameters: {
+      type: 'object',
+      properties: {
+        connection_ids: {
+          type: 'array',
+          items: {
+            type: 'string',
+            description:
+              'UUID string corresponding to the connection ID of the SQL Connection for which you want to get the schemas.',
+          },
+        },
+      },
+      required: ['connection_ids'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
+    prompt: `
+Use this tool to retrieve detailed database table schemas when you need column-level information for SQL queries.\n
+You already have table names in context - use this tool when you need:\n
+- Column names and their data types\n
+- Constraints and nullable information\n
+- Detailed schema structure for writing accurate SQL queries\n
+Call this tool when:\n
+- User asks for specific column information or data types\n
+- You need to write SQL queries that reference specific columns\n
+- User wants detailed database schema information\n
+- You need to understand column relationships and constraints\n
+The tool returns comprehensive schema information including column names, data types, constraints, and nullable flags.\n
+`,
+  },
   [AITool.SetSQLCodeCellValue]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
@@ -756,6 +942,7 @@ For SQL Connection code cells:\n
 - MARIADB has the same syntax as MySQL\n
 `,
   },
+
   [AITool.SetFormulaCellValue]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
@@ -1918,43 +2105,406 @@ In the parameters, include only columns that you want to change. The remaining c
 This tool changes the columns of a table. It can rename them or show or hide them.\n
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
-  [AITool.GetDatabaseSchemas]: {
+
+  [AITool.GetValidations]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'basic', 'pro'],
     description: `
-Retrieves detailed database table schemas including column names, data types, and constraints.\n
-Use this tool when you need detailed column information beyond the table names already available in context.\n
-Essential for writing accurate SQL queries that reference specific columns and their data types.\n
-If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
+This tool gets the validations in a sheet.\n
+It requires the sheet name.\n
 `,
     parameters: {
       type: 'object',
       properties: {
-        connection_ids: {
-          type: 'array',
-          items: {
-            type: 'string',
-            description:
-              'UUID string corresponding to the connection ID of the SQL Connection for which you want to get the schemas.',
-          },
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to get the validations in',
         },
       },
-      required: ['connection_ids'],
+      required: ['sheet_name'],
       additionalProperties: false,
     },
-    responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
+    responseSchema: AIToolsArgsSchema[AITool.GetValidations],
     prompt: `
-Use this tool to retrieve detailed database table schemas when you need column-level information for SQL queries.\n
-You already have table names in context - use this tool when you need:\n
-- Column names and their data types\n
-- Constraints and nullable information\n
-- Detailed schema structure for writing accurate SQL queries\n
-Call this tool when:\n
-- User asks for specific column information or data types\n
-- You need to write SQL queries that reference specific columns\n
-- User wants detailed database schema information\n
-- You need to understand column relationships and constraints\n
-The tool returns comprehensive schema information including column names, data types, constraints, and nullable flags.\n
+This tool gets the validations in a sheet.\n
+It requires the sheet name.\n
 `,
+  },
+  [AITool.AddMessage]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a message to a sheet using validations.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the message to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the message to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        message_title: {
+          type: 'string',
+          description: 'The title of the message to add',
+        },
+        message_text: {
+          type: 'string',
+          description: 'The text of the message to add',
+        },
+      },
+      required: ['sheet_name', 'selection', 'message_title', 'message_text'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddMessage],
+    prompt: `
+This tool adds a message to a sheet using validations.\n`,
+  },
+  [AITool.AddLogicalValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the logical validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the logical validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        show_checkbox: {
+          type: ['boolean', 'null'],
+          description:
+            'Whether to show a checkbox in the cell to allow the user to toggle the cell between true and false. This defaults to false.',
+        },
+        ignore_blank: {
+          type: ['boolean', 'null'],
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
+        },
+        ...validationMessageErrorPrompt,
+      },
+      required: [
+        'sheet_name',
+        'selection',
+        'show_checkbox',
+        'ignore_blank',
+        ...Object.keys(validationMessageErrorPrompt),
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddLogicalValidation],
+    prompt: `
+This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
+  },
+  [AITool.AddListValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a list validation to a sheet. This can be used to limit the values that can be entered into a cell to a list of values.\n
+The list should have either a list_source_list or a list_source_selection, but not both.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the list validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the list validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: ['boolean', 'null'],
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
+        },
+        drop_down: {
+          type: 'boolean',
+          description: 'Whether to show a drop down list of values in the cell. This defaults to false.',
+        },
+        list_source_list: {
+          type: ['string', 'null'],
+          description:
+            'The value to add to the list validation. The items should be in a list format separated by commas, for example: "Item 1, Item 2, Item 3". This defaults to null.',
+        },
+        list_source_selection: {
+          type: ['string', 'null'],
+          description:
+            'The selection of cells to add to the list validation. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]. This defaults to null.',
+        },
+        ...validationMessageErrorPrompt,
+      },
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'drop_down',
+        'list_source_list',
+        'list_source_selection',
+        ...Object.keys(validationMessageErrorPrompt),
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddListValidation],
+    prompt: `
+This tool adds a text validation to a sheet. This can be used to limit the values that can be entered into a cell to text rules.\n`,
+  },
+  [AITool.AddTextValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the text validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the text validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: ['boolean', 'null'],
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
+        },
+        max_length: {
+          type: ['number', 'null'],
+          description: 'The maximum length of the text. This defaults to null.',
+        },
+        min_length: {
+          type: ['number', 'null'],
+          description: 'The minimum length of the text. This defaults to null.',
+        },
+        contains_case_sensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell contains it. This can be text or items separated by commas. The list is case sensitive. This defaults to null.',
+        },
+        contains_case_insensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell contains it. This can be text or items separated by commas. The list is case insensitive. This defaults to null.',
+        },
+        not_contains_case_sensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell does not contain it. This can be text or items separated by commas. The list is case sensitive. This defaults to null.',
+        },
+        not_contains_case_insensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell does not contain it. This can be text or items separated by commas. The list is case insensitive. This defaults to null.',
+        },
+        exactly_case_sensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell exactly matches it. This can be text or items separated by commas. The list is case sensitive. This defaults to null.',
+        },
+        exactly_case_insensitive: {
+          type: ['string', 'null'],
+          description:
+            'The text to check if the cell exactly matches it. This can be text or items separated by commas. The list is case insensitive. This defaults to null.',
+        },
+        ...validationMessageErrorPrompt,
+      },
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'max_length',
+        'min_length',
+        'contains_case_sensitive',
+        'contains_case_insensitive',
+        'not_contains_case_sensitive',
+        'not_contains_case_insensitive',
+        'exactly_case_sensitive',
+        'exactly_case_insensitive',
+        ...Object.keys(validationMessageErrorPrompt),
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddTextValidation],
+    prompt: `
+This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
+  },
+  [AITool.AddNumberValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the number validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the number validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: ['boolean', 'null'],
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
+        },
+        range: {
+          type: ['string', 'null'],
+          description:
+            'A list of ranges of numbers. For example: "5..10,2..20,30..,..2". Each range is separated by a comma and must contain "..". You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
+        },
+        equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of numbers that the cell must be equal to. This must be a list of numbers separated by commas. This defaults to null.',
+        },
+        not_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of numbers that the cell must not be equal to. This must be a list of numbers separated by commas. This defaults to null.',
+        },
+        ...validationMessageErrorPrompt,
+      },
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'range',
+        'equal',
+        'not_equal',
+        ...Object.keys(validationMessageErrorPrompt),
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddNumberValidation],
+    prompt: `
+This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
+  },
+  [AITool.AddDateTimeValidation]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to add the date time validation to',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to add the date time validation to. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]',
+        },
+        ignore_blank: {
+          type: ['boolean', 'null'],
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
+        },
+        require_date: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must be a date. This defaults to false.',
+        },
+        require_time: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must be a time. This defaults to false.',
+        },
+        prohibit_date: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must not be a date. This defaults to false.',
+        },
+        prohibit_time: {
+          type: ['boolean', 'null'],
+          description: 'Whether the cell must not be a time. This defaults to false.',
+        },
+        date_range: {
+          type: ['string', 'null'],
+          description:
+            'A list of ranges of dates. Use YYYY/MM/DD or YYYY-MM-DD HH:MM:SS. For example: "2025/01/01..2025/01/31,2025/02/01 11:10:10..2025/02/28 05:00:00,2025/12/31 13:12:11..,..2025/02/01". Use ".." to create a range. You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
+        },
+        time_range: {
+          type: ['string', 'null'],
+          description:
+            'A list of ranges of times. For example: "10:00..12:00,14:00..16:00,18:00..,..10:00". Use ".." to create a range. You can leave the start or end blank to indicate no minimum or maximum. This defaults to null.',
+        },
+        date_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of dates that the cell must be equal to. Use YYYY/MM/DD or YYYY-MM-DD HH:MM:SS. This must be a list of dates separated by commas. This defaults to null.',
+        },
+        date_not_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of dates that the cell must not be equal to. Use YYYY/MM/DD or YYYY-MM-DD HH:MM:SS. This must be a list of dates separated by commas. This defaults to null.',
+        },
+        time_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of times that the cell must be equal to. Use HH:MM:SS. This must be a list of times separated by commas. This defaults to null.',
+        },
+        time_not_equal: {
+          type: ['string', 'null'],
+          description:
+            'A list of times that the cell must not be equal to. Use HH:MM:SS. This must be a list of times separated by commas. This defaults to null.',
+        },
+        ...validationMessageErrorPrompt,
+      },
+      required: [
+        'sheet_name',
+        'selection',
+        'ignore_blank',
+        'require_date',
+        'require_time',
+        'prohibit_date',
+        'prohibit_time',
+        'date_range',
+        'time_range',
+        'date_equal',
+        'date_not_equal',
+        'time_equal',
+        'time_not_equal',
+        ...Object.keys(validationMessageErrorPrompt),
+      ],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.AddDateTimeValidation],
+    prompt: `
+This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
+  },
+  [AITool.RemoveValidations]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool removes all validations in a sheet from a range.\n`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name to remove the validations from',
+        },
+        selection: {
+          type: 'string',
+          description:
+            'The selection of cells to remove the validations from. This must be in A1 notation, for example: A1:D1 or TableName[Column 1]. All validations in this range will be removed.',
+        },
+      },
+      required: ['sheet_name', 'selection'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
+    prompt: `
+This tool removes all validations in a sheet from a range.\n`,
   },
 } as const;
