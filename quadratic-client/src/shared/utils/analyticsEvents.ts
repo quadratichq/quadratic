@@ -22,7 +22,7 @@ const isMixpanelEnabled = Boolean(MIXPANEL_KEY);
 
 /**
  *
- * INITIALIZE ON IMPORT
+ * INITIALIZE (ON MODULE IMPORT)
  *
  */
 
