@@ -218,13 +218,9 @@ class Offline {
 
   // Used by tests to clear all entries from the indexedDb for this fileId
   testClear = async () => {
-    try {
-      const { transactionsTable } = this.validateState('testClear');
+    const { transactionsTable } = this.validateState('testClear');
 
-      await transactionsTable.clear();
-    } catch (error) {
-      this.sendAnalyticsError('testClear', error);
-    }
+    await transactionsTable.clear();
   };
 }
 

@@ -94,8 +94,10 @@ class AIAnalystOfflineChats {
       const chatEntries: ChatEntry[] = chats.map((chat) => ({
         userEmail,
         fileId,
-        ...chat,
-        messages: getPromptAndInternalMessages(chat.messages),
+        ...{
+          ...chat,
+          messages: getPromptAndInternalMessages(chat.messages),
+        },
       }));
 
       await chatsTable.bulkPut(chatEntries);
@@ -138,13 +140,9 @@ class AIAnalystOfflineChats {
 
   // Used by tests to clear all entries from the indexedDb
   testClear = async () => {
-    try {
-      const { chatsTable } = this.validateState('testClear');
+    const { chatsTable } = this.validateState('testClear');
 
-      await chatsTable.clear();
-    } catch (error) {
-      this.sendAnalyticsError('testClear', error);
-    }
+    await chatsTable.clear();
   };
 }
 
