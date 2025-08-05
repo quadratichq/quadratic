@@ -73,7 +73,7 @@ export const useEditorCellHighlights = (
       } else if (codeCell.language === 'Formula') {
         let parsed: JsFormulaParseResult;
         try {
-          parsed = parseFormula(modelValue, sheets.jsA1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
+          parsed = parseFormula(modelValue, sheets.jsA1Context, codeCell.sheetId);
         } catch (e) {
           console.error(e);
           return;

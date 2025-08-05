@@ -346,7 +346,7 @@ impl GridController {
             let sheet_id =
                 SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
 
-            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context())
                 .map_err(|e| format!("Invalid selection: {e}"))?;
 
             let format = serde_json::from_str::<Format>(&formats)

@@ -31,7 +31,7 @@ fn selection_to_sheet_rect(
     context: &JsA1Context,
 ) -> Result<SheetRect, String> {
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
-    let selection = A1Selection::parse_a1(selection, sheet_id, context.get_context())
+    let selection = A1Selection::parse(selection, sheet_id, context.get_context())
         .map_err(|e| format!("Invalid selection: {e}"))?;
     let range = selection
         .ranges
@@ -72,7 +72,7 @@ pub fn to_selection(
     context: &JsA1Context,
 ) -> Result<JsSelection, String> {
     let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
-    let selection = A1Selection::parse_a1(a1, default_sheet_id, context.get_context())
+    let selection = A1Selection::parse(a1, default_sheet_id, context.get_context())
         .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
     Ok(JsSelection::new_with_selection(selection))
 }

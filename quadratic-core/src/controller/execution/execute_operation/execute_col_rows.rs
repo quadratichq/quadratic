@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    CellValue, CopyFormats, MultiPos, RefAdjust,
+    CellValue, CopyFormats, RefAdjust,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -13,38 +13,39 @@ use anyhow::{Result, bail};
 
 impl GridController {
     fn adjust_code_cell_references(
-        &self,
+        &mut self,
         transaction: &mut PendingTransaction,
         adjustments: &[RefAdjust],
     ) {
+        let mut data_tables_pos_to_adjust = vec![];
+
         for sheet in self.grid.sheets().values() {
             for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs(sheet.id) {
+                let sheet_id = multi_pos.sheet_id();
                 if let Some(CellValue::Code(code)) = sheet.cell_value_multi_pos_ref(multi_pos) {
-                    match multi_pos {
-                        MultiPos::SheetPos(sheet_pos) => {
-                            let mut new_code = code.clone();
-                            for &adj in adjustments {
-                                new_code.adjust_references(
-                                    sheet_pos.sheet_id,
-                                    &self.a1_context,
-                                    sheet_pos,
-                                    adj,
-                                );
-                            }
-                            if code.code != new_code.code {
-                                transaction.operations.push_back(Operation::SetCellValues {
-                                    sheet_pos,
-                                    values: CellValue::Code(new_code).into(),
-                                });
-                                transaction
-                                    .operations
-                                    .push_back(Operation::ComputeCodeMultiPos { multi_pos });
-                            }
-                        }
-                        MultiPos::TablePos(_table_pos) => todo!(),
+                    let mut new_code = code.clone();
+                    for &adj in adjustments {
+                        new_code.adjust_references(sheet_id, &self.a1_context, sheet_id, adj);
+                    }
+                    if code.code != new_code.code {
+                        data_tables_pos_to_adjust.push((multi_pos, new_code));
                     }
                 }
             }
+        }
+
+        for (multi_pos, new_code) in data_tables_pos_to_adjust {
+            let sheet_id = multi_pos.sheet_id();
+            let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
+                continue;
+            };
+            let Some(CellValue::Code(code)) = sheet.cell_value_multi_mut(multi_pos) else {
+                continue;
+            };
+            *code = new_code;
+            transaction
+                .operations
+                .push_back(Operation::ComputeCodeMultiPos { multi_pos });
         }
     }
 
@@ -300,7 +301,6 @@ mod tests {
         Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, MultiPos, Pos, Rect, SheetPos,
         SheetRect, Value,
         a1::A1Selection,
-        cell_values::CellValues,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
             sheet::validations::{rules::ValidationRule, validation::ValidationUpdate},
@@ -314,7 +314,7 @@ mod tests {
 
     #[test]
     fn adjust_code_cells_nothing() {
-        let gc = GridController::test();
+        let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         let column = 1;
         let row = 1;
@@ -359,28 +359,30 @@ mod tests {
         );
 
         let single_formula = |formula_str: &str| {
-            CellValues::from(CellValue::Code(CodeCellValue {
+            CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Formula,
                 code: formula_str.to_string(),
-            }))
+            })
         };
 
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
+        // first formula, y += 1 for y >= 2
+        // second formula doesn't change because all Y coordinates are < 2
+        // so no operations needed
+        assert_eq!(
+            gc.grid()
+                .try_sheet(sheet_id)
+                .unwrap()
+                .cell_value(Pos { x: 1, y: 1 })
+                .unwrap(),
+            single_formula("B$17 + $B18"),
+        );
         assert_eq!(
             &transaction.operations,
-            &[
-                // first formula, y += 1 for y >= 2
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 1),
-                    values: single_formula("B$17 + $B18"),
-                },
-                Operation::ComputeCodeMultiPos {
-                    multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 1).into())
-                },
-                // second formula doesn't change because all Y coordinates are < 2
-                // so no operations needed
-            ]
+            &[Operation::ComputeCodeMultiPos {
+                multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 1).into())
+            },]
         );
 
         let mut transaction = PendingTransaction::default();
@@ -388,21 +390,23 @@ mod tests {
             &mut transaction,
             &[RefAdjust::new_insert_column(sheet_id, 5)],
         );
+        // first formula doesn't change because all X coordinates are < 5
+        // so no operations needed
+        //
+        // second formula, x += 1 for x >= 5
+        assert_eq!(
+            gc.grid()
+                .try_sheet(sheet_id)
+                .unwrap()
+                .cell_value(Pos { x: 1, y: 2 })
+                .unwrap(),
+            single_formula("'Sheet 1'!G1+Other!F1 - Nonexistent!F1"),
+        );
         assert_eq!(
             &transaction.operations,
-            &[
-                // first formula doesn't change because all X coordinates are < 5
-                // so no operations needed
-                //
-                // second formula, x += 1 for x >= 5
-                Operation::SetCellValues {
-                    sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: single_formula("'Sheet 1'!G1+Other!F1 - Nonexistent!F1"),
-                },
-                Operation::ComputeCodeMultiPos {
-                    multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 2).into())
-                },
-            ]
+            &[Operation::ComputeCodeMultiPos {
+                multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 2).into())
+            },]
         );
     }
 
@@ -480,17 +484,22 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
-        assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
-            transaction.operations[0],
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Python,
-                    code: r#"q.cells("B1:B3")"#.to_string()
-                })
-                .into(),
-            }
+            gc.grid()
+                .try_sheet(sheet_id)
+                .unwrap()
+                .cell_value(sheet_pos.into())
+                .unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Python,
+                code: r#"q.cells("B1:B3")"#.to_string()
+            })
+        );
+        assert_eq!(
+            &transaction.operations,
+            &[Operation::ComputeCodeMultiPos {
+                multi_pos: sheet_pos.into()
+            },]
         );
     }
 
@@ -569,17 +578,22 @@ mod tests {
 
         let mut transaction = PendingTransaction::default();
         gc.adjust_code_cell_references(&mut transaction, &[RefAdjust::new_insert_row(sheet_id, 2)]);
-        assert_eq!(transaction.operations.len(), 2);
         assert_eq!(
-            transaction.operations[0],
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValue::Code(CodeCellValue {
-                    language: CodeCellLanguage::Javascript,
-                    code: r#"return q.cells("B1:B3");"#.to_string()
-                })
-                .into(),
-            }
+            gc.grid()
+                .try_sheet(sheet_id)
+                .unwrap()
+                .cell_value(sheet_pos.into())
+                .unwrap(),
+            CellValue::Code(CodeCellValue {
+                language: CodeCellLanguage::Javascript,
+                code: r#"return q.cells("B1:B3");"#.to_string()
+            })
+        );
+        assert_eq!(
+            &transaction.operations,
+            &[Operation::ComputeCodeMultiPos {
+                multi_pos: sheet_pos.into()
+            },]
         );
     }
 

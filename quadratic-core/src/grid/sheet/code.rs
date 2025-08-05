@@ -3,11 +3,9 @@ use std::ops::Range;
 use super::Sheet;
 use crate::{
     CellValue, MultiPos, Pos, Rect, Value,
-    a1::A1Context,
     cell_values::CellValues,
-    formulas::convert_rc_to_a1,
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTableKind,
+        CodeCellValue, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
     },
@@ -169,8 +167,8 @@ impl Sheet {
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
-    pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
-        let (code_multi_pos, mut code_cell_value) =
+    pub fn edit_code_value(&self, pos: Pos) -> Option<JsCodeCell> {
+        let (code_multi_pos,  code_cell_value) =
             // check for code cell on the sheet
             if let Some(cell_value) = self.cell_value_ref(pos) {
                 (pos.to_multi_pos(self.id), cell_value.code_cell_value()?)
@@ -198,12 +196,6 @@ impl Sheet {
             };
 
         let code_pos = code_multi_pos.to_sheet_pos(self).unwrap();
-
-        // replace internal cell references with a1 notation
-        if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-            let replaced = convert_rc_to_a1(&code_cell_value.code, a1_context, code_pos);
-            code_cell_value.code = replaced;
-        }
 
         if let Some(data_table) = self.data_table_multi_pos(&code_multi_pos) {
             let evaluation_result = serde_json::to_string(&data_table.value).unwrap_or("".into());
@@ -340,7 +332,7 @@ mod test {
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         let sheet = gc.sheet(sheet_id);
-        let edit_code_value = sheet.edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context());
+        let edit_code_value = sheet.edit_code_value(Pos { x: 1, y: 1 });
         let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
             edit_code_value,
@@ -358,7 +350,7 @@ mod test {
                 last_modified,
             })
         );
-        let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 }, gc.a1_context());
+        let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 });
         let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
             edit_code_value,
@@ -376,10 +368,7 @@ mod test {
                 last_modified,
             })
         );
-        assert_eq!(
-            sheet.edit_code_value(Pos { x: 3, y: 3 }, gc.a1_context()),
-            None
-        );
+        assert_eq!(sheet.edit_code_value(Pos { x: 3, y: 3 }), None);
     }
 
     #[test]
@@ -411,9 +400,7 @@ mod test {
         );
         let render = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
-        let code = sheet
-            .edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context())
-            .unwrap();
+        let code = sheet.edit_code_value(Pos { x: 1, y: 1 }).unwrap();
         assert_eq!(code.spill_error, Some(vec![Pos { x: 2, y: 1 }]));
     }
 

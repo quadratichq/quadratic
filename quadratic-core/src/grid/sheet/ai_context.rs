@@ -81,9 +81,7 @@ impl Sheet {
                                 .unwrap_or(false)
                             {
                                 // if there is an error, then add the code cell to the vec
-                                if let Some(code_cell) =
-                                    self.edit_code_value((x, y).into(), a1_context)
-                                {
+                                if let Some(code_cell) = self.edit_code_value((x, y).into()) {
                                     code_cells.push(code_cell);
                                 }
                             }

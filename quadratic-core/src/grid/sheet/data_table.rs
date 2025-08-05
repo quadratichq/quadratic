@@ -6,7 +6,7 @@ use crate::{
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTableKind,
+        CodeCellLanguage, CodeCellValue, DataTableKind, SheetId,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
     },
@@ -300,7 +300,7 @@ impl Sheet {
     }
 
     /// Calls a function to mutate all code cells.
-    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
+    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetId)) {
         let positions = self
             .data_tables
             .expensive_iter()
@@ -310,7 +310,7 @@ impl Sheet {
         for pos in positions.into_iter() {
             if let Some(cell_value) = self.cell_value_mut(pos) {
                 if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, pos.to_sheet_pos(sheet_id));
+                    func(code_cell_value, sheet_id);
                 }
             }
         }
@@ -323,9 +323,9 @@ impl Sheet {
         new_name: &str,
         a1_context: &A1Context,
     ) {
-        self.update_code_cells(|code_cell_value, pos| {
+        self.update_code_cells(|code_cell_value, sheet_id| {
             code_cell_value
-                .replace_table_name_in_cell_references(a1_context, pos, old_name, new_name);
+                .replace_table_name_in_cell_references(a1_context, sheet_id, old_name, new_name);
         });
     }
 
@@ -337,9 +337,9 @@ impl Sheet {
         new_name: &str,
         a1_context: &A1Context,
     ) {
-        self.update_code_cells(|code_cell_value, pos| {
+        self.update_code_cells(|code_cell_value, sheet_id| {
             code_cell_value.replace_column_name_in_cell_references(
-                a1_context, pos, table_name, old_name, new_name,
+                a1_context, sheet_id, table_name, old_name, new_name,
             );
         });
     }

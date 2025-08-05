@@ -81,7 +81,7 @@ impl GridController {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
-            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context(), None)
+            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context())
                 .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
             self.remove_validation_selection(sheet_id, selection, cursor, is_ai);
             Ok(None)

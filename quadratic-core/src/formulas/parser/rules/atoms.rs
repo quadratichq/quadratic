@@ -112,7 +112,7 @@ impl SyntaxRule for CellReference {
 
         let span = Span::merge(start_span, p.span());
 
-        let inner = match RefRangeBounds::from_str(p.token_str(), Some(p.pos.into())) {
+        let inner = match RefRangeBounds::from_str(p.token_str(), p.base_pos) {
             Ok(ref_range_bounds) => Ok((opt_sheet_id, ref_range_bounds)),
             Err(A1Error::OutOfBounds(ref_error)) => Err(ref_error),
             Err(_) => return Err(RunErrorMsg::BadCellReference.with_span(span)),
@@ -144,7 +144,7 @@ impl SyntaxRule for CellRangeReference {
                 });
             }
         };
-        let sheet_id = sheet1.unwrap_or(p.pos.sheet_id);
+        let sheet_id = sheet1.unwrap_or(p.sheet_id);
 
         // Check for a range reference.
         let span;

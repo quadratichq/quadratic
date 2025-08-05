@@ -2,18 +2,19 @@ use crate::compression::{
     CompressionFormat, SerializationFormat, add_header, decompress_and_deserialize, deserialize,
     remove_header, serialize, serialize_and_compress,
 };
+use crate::grid::file::migrate_code_cell_references::replace_formula_rc_references_to_a1;
 
 use super::Grid;
 use anyhow::{Result, anyhow};
 use migrate_code_cell_references::{
-    migrate_code_cell_references, replace_formula_a1_references_to_r1c1,
+    migrate_code_cell_references, replace_formula_a1_references_to_rc,
 };
 use migrate_data_table_spills::migrate_all_data_table_spills;
 use serde::{Deserialize, Serialize};
 pub use shift_negative_offsets::{add_import_offset_to_contiguous_2d_rect, shift_negative_offsets};
 use std::fmt::Debug;
 use std::str;
-pub use v1_11 as current;
+pub use v1_12 as current;
 
 mod migrate_code_cell_references;
 mod migrate_data_table_spills;
@@ -21,7 +22,8 @@ pub mod serialize;
 pub mod sheet_schema;
 mod shift_negative_offsets;
 mod v1_10;
-pub mod v1_11;
+mod v1_11;
+pub mod v1_12;
 mod v1_3;
 mod v1_4;
 mod v1_5;
@@ -32,7 +34,7 @@ mod v1_8;
 mod v1_9;
 
 // Default values serialization and compression formats (current version)
-pub static CURRENT_VERSION: &str = "1.11";
+pub static CURRENT_VERSION: &str = "1.12";
 pub static SERIALIZATION_FORMAT: SerializationFormat = SerializationFormat::Json;
 pub static COMPRESSION_FORMAT: CompressionFormat = CompressionFormat::Zstd;
 
@@ -47,6 +49,11 @@ pub struct FileVersion {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "version")]
 enum GridFile {
+    #[serde(rename = "1.12")]
+    V1_12 {
+        #[serde(flatten)]
+        grid: v1_12::GridSchema,
+    },
     #[serde(rename = "1.11")]
     V1_11 {
         #[serde(flatten)]
@@ -103,7 +110,10 @@ impl GridFile {
     // Upgrade to the next version
     fn upgrade_next(self) -> Result<GridFile> {
         let next = match self {
-            GridFile::V1_11 { grid } => GridFile::V1_11 { grid },
+            GridFile::V1_12 { grid } => GridFile::V1_12 { grid },
+            GridFile::V1_11 { grid } => GridFile::V1_11 {
+                grid: v1_11::upgrade(grid)?,
+            },
             GridFile::V1_10 { grid } => GridFile::V1_11 {
                 grid: v1_10::upgrade(grid)?,
             },
@@ -141,7 +151,7 @@ impl GridFile {
         let mut file = self;
 
         loop {
-            if let GridFile::V1_11 { grid } = file {
+            if let GridFile::V1_12 { grid } = file {
                 // Sanity check to ensure that the above GridFile is the current version.
                 // This is to break tests the the current version isn't updated.
                 if grid.version != Some(CURRENT_VERSION.into()) {
@@ -176,11 +186,13 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
     let file_version = deserialize::<FileVersion>(&HEADER_SERIALIZATION_FORMAT, header)?;
     let mut check_for_negative_offsets = false;
     let mut migrate_data_table_spills = false;
+    let mut migrate_rc_to_a1 = false;
 
     let schema = match file_version.version.as_str() {
         "1.6" => {
             check_for_negative_offsets = true;
             migrate_data_table_spills = true;
+            migrate_rc_to_a1 = true;
             let schema = decompress_and_deserialize::<v1_6::schema::GridSchema>(
                 &SerializationFormat::Json,
                 &CompressionFormat::Zlib,
@@ -192,6 +204,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         "1.7" => {
             check_for_negative_offsets = true;
             migrate_data_table_spills = true;
+            migrate_rc_to_a1 = true;
             let schema = decompress_and_deserialize::<v1_7::schema::GridSchema>(
                 &SerializationFormat::Json,
                 &CompressionFormat::Zlib,
@@ -202,6 +215,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         }
         "1.7.1" => {
             migrate_data_table_spills = true;
+            migrate_rc_to_a1 = true;
             let schema = decompress_and_deserialize::<v1_7_1::GridSchema>(
                 &SerializationFormat::Json,
                 &CompressionFormat::Zlib,
@@ -212,6 +226,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         }
         "1.8" => {
             migrate_data_table_spills = true;
+            migrate_rc_to_a1 = true;
             let schema = decompress_and_deserialize::<v1_8::GridSchema>(
                 &SerializationFormat::Json,
                 &CompressionFormat::Zlib,
@@ -222,6 +237,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         }
         "1.9" => {
             migrate_data_table_spills = true;
+            migrate_rc_to_a1 = true;
             let schema = decompress_and_deserialize::<v1_9::GridSchema>(
                 &SerializationFormat::Json,
                 &CompressionFormat::Zlib,
@@ -232,6 +248,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
         }
         "1.10" => {
             migrate_data_table_spills = true;
+            migrate_rc_to_a1 = true;
             let schema = decompress_and_deserialize::<v1_10::GridSchema>(
                 &SerializationFormat::Json,
                 &CompressionFormat::Zlib,
@@ -241,6 +258,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             GridFile::V1_10 { grid: schema }.into_latest()
         }
         "1.11" => {
+            migrate_rc_to_a1 = true;
             let schema = decompress_and_deserialize::<v1_11::GridSchema>(
                 &SERIALIZATION_FORMAT,
                 &COMPRESSION_FORMAT,
@@ -248,6 +266,15 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
             )?;
 
             GridFile::V1_11 { grid: schema }.into_latest()
+        }
+        "1.12" => {
+            let schema = decompress_and_deserialize::<v1_12::GridSchema>(
+                &SERIALIZATION_FORMAT,
+                &COMPRESSION_FORMAT,
+                data,
+            )?;
+
+            GridFile::V1_12 { grid: schema }.into_latest()
         }
         _ => Err(anyhow::anyhow!(
             "Unsupported file version: {}",
@@ -259,6 +286,7 @@ fn import_binary(file_contents: Vec<u8>) -> Result<Grid> {
 
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
     handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
+    handle_migrate_rc_to_a1(&mut grid, migrate_rc_to_a1);
 
     grid
 }
@@ -269,7 +297,7 @@ fn handle_negative_offsets(grid: &mut Result<Grid>, check_for_negative_offsets: 
     }
 
     if let Ok(grid) = grid {
-        replace_formula_a1_references_to_r1c1(grid);
+        replace_formula_a1_references_to_rc(grid);
         let shifted_offsets = shift_negative_offsets(grid);
         migrate_code_cell_references(grid, &shifted_offsets);
     }
@@ -282,6 +310,16 @@ fn handle_migrate_data_table_spills(grid: &mut Result<Grid>, migrate_data_table_
 
     if let Ok(grid) = grid {
         migrate_all_data_table_spills(grid);
+    }
+}
+
+fn handle_migrate_rc_to_a1(grid: &mut Result<Grid>, migrate_rc_to_a1: bool) {
+    if !migrate_rc_to_a1 {
+        return;
+    }
+
+    if let Ok(grid) = grid {
+        replace_formula_rc_references_to_a1(grid);
     }
 }
 
@@ -311,11 +349,26 @@ fn import_json(file_contents: String) -> Result<Grid> {
             | GridFile::V1_10 { .. }
     );
 
+    let migrate_rc_to_a1 = matches!(
+        &json,
+        GridFile::V1_3 { .. }
+            | GridFile::V1_4 { .. }
+            | GridFile::V1_5 { .. }
+            | GridFile::V1_6 { .. }
+            | GridFile::V1_7 { .. }
+            | GridFile::V1_7_1 { .. }
+            | GridFile::V1_8 { .. }
+            | GridFile::V1_9 { .. }
+            | GridFile::V1_10 { .. }
+            | GridFile::V1_11 { .. }
+    );
+
     let file = json.into_latest()?;
     let mut grid = serialize::import(file);
 
     handle_negative_offsets(&mut grid, check_for_negative_offsets);
     handle_migrate_data_table_spills(&mut grid, migrate_data_table_spills);
+    handle_migrate_rc_to_a1(&mut grid, migrate_rc_to_a1);
 
     grid
 }
@@ -428,9 +481,8 @@ mod tests {
                 .get_at(&Pos { x: 1, y: 3 })
                 .is_some()
         );
-        let a1_context = imported.expensive_make_a1_context();
         let code_cell = imported.sheets[0]
-            .edit_code_value(Pos { x: 1, y: 3 }, &a1_context)
+            .edit_code_value(Pos { x: 1, y: 3 })
             .unwrap();
 
         match code_cell.language {

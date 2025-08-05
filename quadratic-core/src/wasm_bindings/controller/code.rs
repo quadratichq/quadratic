@@ -51,7 +51,7 @@ impl GridController {
         let Some(sheet) = self.try_sheet_from_string_id(&sheet_id) else {
             return JsValue::UNDEFINED;
         };
-        if let Some(edit_code) = sheet.edit_code_value(pos, self.a1_context()) {
+        if let Some(edit_code) = sheet.edit_code_value(pos) {
             serde_wasm_bindgen::to_value(&edit_code).unwrap_or(JsValue::UNDEFINED)
         } else {
             JsValue::UNDEFINED
@@ -70,19 +70,27 @@ impl GridController {
         code_cell_name: Option<String>,
         cursor: Option<String>,
         is_ai: bool,
-    ) -> Option<String> {
-        let pos = serde_json::from_str::<Pos>(&pos).ok()?;
-        let sheet_id = SheetId::from_str(&sheet_id).ok()?;
-        let sheet_pos = pos.to_sheet_pos(sheet_id);
-        let language = serde_wasm_bindgen::from_value(language).ok()?;
-        Some(self.set_code_cell(
-            sheet_pos,
-            language,
-            code_string,
-            code_cell_name,
-            cursor,
-            is_ai,
-        ))
+    ) -> JsValue {
+        capture_core_error(|| {
+            let pos =
+                serde_json::from_str::<Pos>(&pos).map_err(|e| format!("Invalid position: {e}"))?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
+            let sheet_pos = pos.to_sheet_pos(sheet_id);
+            let language = serde_wasm_bindgen::from_value(language)
+                .map_err(|e| format!("Invalid language: {e}"))?;
+            let transaction_id = self.set_code_cell(
+                sheet_pos,
+                language,
+                code_string,
+                code_cell_name,
+                cursor,
+                is_ai,
+            );
+            Ok(Some(
+                serde_wasm_bindgen::to_value(&transaction_id).unwrap_or(JsValue::UNDEFINED),
+            ))
+        })
     }
 
     /// Reruns all code cells in grid.
@@ -126,7 +134,7 @@ impl GridController {
         capture_core_error(|| {
             let sheet_id =
                 SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
-            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context())
                 .map_err(|e| format!("Invalid selection: {e}"))?;
             let transaction_id = self.rerun_code_cell(selection, cursor, is_ai);
             Ok(Some(

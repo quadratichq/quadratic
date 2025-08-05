@@ -148,11 +148,11 @@ impl Sheet {
         old_a1_context: &A1Context,
         new_a1_context: &A1Context,
     ) {
-        self.update_code_cells(|code_cell_value, pos| {
+        self.update_code_cells(|code_cell_value, sheet_id| {
             code_cell_value.replace_sheet_name_in_cell_references(
                 old_a1_context,
                 new_a1_context,
-                pos,
+                sheet_id,
             );
         });
     }

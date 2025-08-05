@@ -77,9 +77,7 @@ pub fn assert_display_cell_value_pos(
 #[cfg(test)]
 pub fn assert_code_cell_value(gc: &GridController, sheet_id: SheetId, x: i64, y: i64, value: &str) {
     let sheet = gc.sheet(sheet_id);
-    let cell_value = sheet
-        .edit_code_value(Pos { x, y }, gc.a1_context())
-        .unwrap();
+    let cell_value = sheet.edit_code_value(Pos { x, y }).unwrap();
 
     assert_eq!(
         value, cell_value.code_string,

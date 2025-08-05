@@ -30,7 +30,7 @@ pub(crate) fn eval_at(grid_controller: &GridController, pos: SheetPos, s: &str) 
     match parse_formula(
         s,
         grid_controller.a1_context(),
-        grid_controller.grid().origin_in_first_sheet(),
+        grid_controller.grid().first_sheet_id(),
     ) {
         Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
@@ -133,7 +133,7 @@ fn test_formula_circular_array_ref() {
     let g = GridController::new();
     let sheet_id = g.sheet_ids()[0];
     let pos = pos![B3].to_sheet_pos(sheet_id);
-    let form = parse_formula("$B$1:$C$4", g.a1_context(), pos).unwrap();
+    let form = parse_formula("$B$1:$C$4", g.a1_context(), sheet_id).unwrap();
     let mut ctx = Ctx::new(&g, pos);
     assert_eq!(
         RunErrorMsg::CircularReference,
@@ -351,7 +351,7 @@ fn test_find_cell_references() {
         })
     };
 
-    // Another test checks that `parse_a1()` is correct.
+    // Another test checks that `parse()` is correct.
     let test_cases = [
         // Basic cell reference
         ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1), false)),
@@ -378,8 +378,7 @@ fn test_find_cell_references() {
         ),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
-    let pos = Pos::ORIGIN.to_sheet_pos(sheet1);
-    let cell_references_found = find_cell_references(&formula_string, g.a1_context(), pos)
+    let cell_references_found = find_cell_references(&formula_string, g.a1_context(), sheet1, None)
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();

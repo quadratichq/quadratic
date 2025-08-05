@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    SheetPos, Span, Spanned,
+    Span, Spanned,
     a1::{A1Context, SheetCellRefRange},
     formulas,
+    grid::SheetId,
 };
 
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
@@ -117,15 +118,19 @@ impl From<Spanned<SheetCellRefRange>> for CellRefSpan {
 ///
 /// `parse_error_msg` may be null, and `parse_error_span` may be null. Even if
 /// `parse_error_span`, `parse_error_msg` may still be present.
-pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> FormulaParseResult {
+pub fn parse_formula(
+    formula_string: &str,
+    ctx: &A1Context,
+    sheet_id: SheetId,
+) -> FormulaParseResult {
     let parse_error: Option<crate::RunError> =
-        formulas::parse_formula(formula_string, ctx, pos).err();
+        formulas::parse_formula(formula_string, ctx, sheet_id).err();
 
     FormulaParseResult {
         parse_error_msg: parse_error.as_ref().map(|e| e.msg.to_string()),
         parse_error_span: parse_error.and_then(|e| e.span),
 
-        cell_refs: formulas::find_cell_references(formula_string, ctx, pos)
+        cell_refs: formulas::find_cell_references(formula_string, ctx, sheet_id, None)
             .into_iter()
             .filter_map(|spanned_result| spanned_result.transpose().ok())
             .map(|spanned| spanned.into())
@@ -136,15 +141,15 @@ pub fn parse_formula(formula_string: &str, ctx: &A1Context, pos: SheetPos) -> Fo
 #[cfg(test)]
 mod tests {
     use super::{CellRefSpan, FormulaParseResult, parse_formula};
+    use crate::Span;
     use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
     use crate::controller::GridController;
     use crate::grid::SheetId;
-    use crate::{Pos, Span};
 
     fn parse(grid_controller: &GridController, s: &str) -> FormulaParseResult {
         println!("Parsing {s}");
-        let pos = Pos::ORIGIN.to_sheet_pos(grid_controller.sheet_ids()[0]);
-        parse_formula(s, grid_controller.a1_context(), pos)
+        let sheet_id = grid_controller.sheet_ids()[0];
+        parse_formula(s, grid_controller.a1_context(), sheet_id)
     }
 
     /// Run this test with `--nocapture` to generate the example for the

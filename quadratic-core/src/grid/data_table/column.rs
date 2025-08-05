@@ -201,6 +201,15 @@ impl DataTable {
         }
         display_index + hidden_columns
     }
+
+    /// Returns true if the column is hidden.
+    pub fn is_column_hidden(&self, index: usize) -> bool {
+        self.column_headers.as_ref().is_some_and(|column_headers| {
+            column_headers
+                .get(index)
+                .is_some_and(|column_header| !column_header.display)
+        })
+    }
 }
 
 #[cfg(test)]

@@ -85,7 +85,7 @@ impl JsSelection {
         context: &JsA1Context,
     ) -> Result<String, String> {
         let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
-        let selection = A1Selection::parse_a1(selection, sheet_id, context.get_context())
+        let selection = A1Selection::parse(selection, sheet_id, context.get_context())
             .map_err(|e| format!("Invalid selection: {e}"))?;
         let range = selection
             .ranges

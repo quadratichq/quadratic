@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Pos, RefAdjust, RefError, SheetPos, grid::SheetId};
+use crate::{Pos, RefAdjust, RefError, grid::SheetId};
 
 use super::{A1Context, A1Error, CellRefRange, parse_optional_sheet_name_to_id};
 
@@ -16,14 +16,6 @@ pub struct SheetCellRefRange {
 }
 
 impl SheetCellRefRange {
-    /// Parses a cell range reference using A1 or RC notation.
-    ///
-    /// Ranges without an explicit sheet use `pos.sheet_id`.
-    ///
-    /// This is a wrapper around [`Self::parse()`] that takes a [`SheetPos`].
-    pub fn parse_at(a1: &str, pos: SheetPos, a1_context: &A1Context) -> Result<Self, A1Error> {
-        Self::parse(a1, pos.sheet_id, a1_context, Some(pos.into()))
-    }
     /// Parses a cell range reference using A1 notation.
     ///
     /// Ranges without an explicit sheet use `default_sheet_id`.

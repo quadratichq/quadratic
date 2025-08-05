@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Pos, Span, Spanned,
+    Span, Spanned,
     a1::{A1Context, SheetCellRefRange},
     grid::{JsCellsAccessed, SheetId},
 };
@@ -74,16 +74,10 @@ pub fn parse_formula_results(
     formula_string: &str,
     ctx: &A1Context,
     sheet_id: SheetId,
-    x: i32,
-    y: i32,
 ) -> JsFormulaParseResult {
-    let x = x as i64;
-    let y = y as i64;
-    let code_cell_pos = Pos { x, y }.to_sheet_pos(sheet_id);
+    let parse_error = parse_formula(formula_string, ctx, sheet_id).err();
 
-    let parse_error = parse_formula(formula_string, ctx, code_cell_pos).err();
-
-    let parse_result = super::find_cell_references(formula_string, ctx, code_cell_pos);
+    let parse_result = super::find_cell_references(formula_string, ctx, sheet_id, None);
     let spans = parse_result.iter().map(|spanned| spanned.span).collect();
     let cells_accessed = parse_result
         .into_iter()
@@ -145,7 +139,7 @@ mod tests {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B10"))]);
         let sheet_id = SheetId::TEST;
 
-        let result = parse_formula_results("Table1", &context, sheet_id, 1, 1);
+        let result = parse_formula_results("Table1", &context, sheet_id);
 
         println!("{result:?}");
 

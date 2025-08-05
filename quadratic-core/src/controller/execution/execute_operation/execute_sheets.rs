@@ -72,7 +72,7 @@ impl GridController {
                     if let Some(sheet_pos) = sheet_pos {
                         code_cell_value.replace_table_name_in_cell_references(
                             &context,
-                            sheet_pos,
+                            sheet_pos.sheet_id,
                             &old_name,
                             &unique_name,
                         );

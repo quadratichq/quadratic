@@ -10,7 +10,16 @@ impl Sheet {
         let table = self.data_table_at(&table_sheet_pos.into())?;
 
         let pos = table_pos.pos;
-        let x = table.get_display_index_from_column_index(u32::try_from(pos.x).ok()?, false);
+
+        let Ok(x_u32) = u32::try_from(pos.x) else {
+            return None;
+        };
+
+        if table.is_column_hidden(x_u32 as usize) {
+            return None;
+        }
+
+        let x = table.get_display_index_from_column_index(x_u32, false);
 
         let reverse_display_buffer = table.get_reverse_display_buffer();
         let y = table.get_display_index_from_reverse_display_buffer(

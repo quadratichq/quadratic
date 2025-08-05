@@ -35,7 +35,7 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-            let selection = A1Selection::parse_a1(content, default_sheet_id, context)?;
+            let selection = A1Selection::parse(content, default_sheet_id, context)?;
 
             let Some(pos) = selection.try_to_pos(context) else {
                 return Err(A1Error::WrongCellCount(

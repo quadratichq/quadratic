@@ -950,16 +950,10 @@ impl GridController {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                         for (&cols_y, cell) in col {
                             if let CellValue::Code(code_cell) = cell {
-                                let original_pos = SheetPos {
-                                    x: clipboard.origin.x + cols_x as i64,
-                                    y: clipboard.origin.y + cols_y as i64,
-                                    sheet_id: clipboard.origin.sheet_id,
-                                };
-
                                 code_cell.adjust_references(
                                     sheet_id,
                                     self.a1_context(),
-                                    original_pos,
+                                    clipboard.origin.sheet_id,
                                     adjust,
                                 );
                             }

@@ -1,13 +1,13 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range};
 
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
-    CellValue, Pos, Rect,
-    a1::CellRefRange,
-    formulas::convert_a1_to_rc,
-    grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
+    CellValue, Pos, Rect, RefError, Spanned,
+    a1::{A1Context, CellRefRange, SheetCellRefRange},
+    formulas::find_cell_references,
+    grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds, SheetId},
 };
 
 const PYTHON_C_CELL_GETCELL_REGEX: &str = r#"\b(?:c|cell|getCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*(?:sheet\s*=\s*)?['"`]([^'"`]+)['"`]\s*)?\)"#;
@@ -49,7 +49,7 @@ lazy_static! {
         Regex::new(POS_REGEX).expect("Failed to compile POS_REGEX");
 }
 
-pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
+pub fn replace_formula_a1_references_to_rc(grid: &mut Grid) {
     let a1_context = grid.expensive_make_a1_context();
     for (sheet_id, sheet) in grid.sheets.iter_mut() {
         sheet.migration_recalculate_bounds(&a1_context);
@@ -63,10 +63,11 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                 for y in bounds.y_range() {
                     if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
                         if code_cell.language == CodeCellLanguage::Formula {
-                            code_cell.code = convert_a1_to_rc(
+                            code_cell.code = migration_convert_a1_to_rc(
                                 &code_cell.code,
                                 &a1_context,
-                                crate::SheetPos::new(*sheet_id, x + 1, y),
+                                *sheet_id,
+                                (x + 1, y).into(),
                             );
                         }
                     }
@@ -74,6 +75,81 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
             }
         }
     }
+}
+
+pub fn replace_formula_rc_references_to_a1(grid: &mut Grid) {
+    let a1_context = grid.expensive_make_a1_context();
+    for (sheet_id, sheet) in grid.sheets.iter_mut() {
+        sheet.migration_recalculate_bounds(&a1_context);
+        sheet.columns.migration_regenerate_has_cell_value();
+
+        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            for x in bounds.x_range() {
+                if sheet.get_column(x).is_none() {
+                    continue;
+                }
+                for y in bounds.y_range() {
+                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
+                        if code_cell.language == CodeCellLanguage::Formula {
+                            code_cell.code = migration_convert_rc_to_a1(
+                                &code_cell.code,
+                                &a1_context,
+                                *sheet_id,
+                                (x, y).into(),
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn migration_convert_a1_to_rc(
+    source: &str,
+    ctx: &A1Context,
+    sheet_id: SheetId,
+    base_pos: Pos,
+) -> String {
+    let replace_fn =
+        |range_ref: SheetCellRefRange| Ok(range_ref.to_rc_string(Some(sheet_id), ctx, base_pos));
+    migration_replace_cell_range_references(source, ctx, sheet_id, base_pos, replace_fn)
+}
+
+fn migration_convert_rc_to_a1(
+    source: &str,
+    ctx: &A1Context,
+    sheet_id: SheetId,
+    base_pos: Pos,
+) -> String {
+    let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(Some(sheet_id), ctx));
+    migration_replace_cell_range_references(source, ctx, sheet_id, base_pos, replace_fn)
+}
+
+fn migration_replace_cell_range_references(
+    source: &str,
+    ctx: &A1Context,
+    sheet_id: SheetId,
+    base_pos: Pos,
+    replace_fn: impl Fn(SheetCellRefRange) -> Result<String, RefError>,
+) -> String {
+    let spans = find_cell_references(source, ctx, sheet_id, Some(base_pos));
+    let mut replaced = source.to_string();
+
+    // replace in reverse order to preserve previous span indexes into string
+    spans
+        .into_iter()
+        .rev()
+        .for_each(|spanned: Spanned<Result<SheetCellRefRange, RefError>>| {
+            let Spanned { span, inner } = spanned;
+            let new_str = match inner.and_then(&replace_fn) {
+                Ok(new_ref) => new_ref,
+                Err(RefError) => RefError.to_string(),
+            };
+            replaced.replace_range::<Range<usize>>(span.into(), &new_str);
+        });
+
+    replaced
 }
 
 pub fn migrate_code_cell_references(
@@ -568,6 +644,30 @@ mod test {
             language,
             code: code.to_string(),
         }
+    }
+
+    #[test]
+    fn test_convert_rc_to_a1() {
+        let ctx = A1Context::test(&[], &[]);
+        let src = "SUM(R[1]C[2])
+        + SUM(R[2]C[4])";
+        let expected = "SUM(C2)
+        + SUM(E3)";
+
+        let replaced = migration_convert_rc_to_a1(src, &ctx, SheetId::TEST, pos![A1]);
+        assert_eq!(replaced, expected);
+    }
+
+    #[test]
+    fn test_convert_a1_to_rc() {
+        let ctx = A1Context::test(&[], &[]);
+        let src = "SUM(A$1)
+        + SUM($B3)";
+        let expected = "SUM(R{1}C[0])
+        + SUM(R[2]C{2})";
+
+        let replaced = migration_convert_a1_to_rc(src, &ctx, SheetId::TEST, pos![A1]);
+        assert_eq!(expected, replaced);
     }
 
     #[test]

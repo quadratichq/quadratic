@@ -3,7 +3,7 @@ use std::str::FromStr;
 #[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
-use crate::{Pos, grid::SheetId, wasm_bindings::js_a1_context::JsA1Context};
+use crate::{grid::SheetId, wasm_bindings::js_a1_context::JsA1Context};
 
 use super::{parse_and_check_formula, parse_formula::parse_formula_results};
 
@@ -12,11 +12,9 @@ pub fn parse_formula(
     formula_string: &str,
     context: &JsA1Context,
     sheet_id: &str,
-    x: i32,
-    y: i32,
 ) -> Result<JsValue, String> {
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
-    let results = parse_formula_results(formula_string, context.get_context(), sheet_id, x, y);
+    let results = parse_formula_results(formula_string, context.get_context(), sheet_id);
     serde_wasm_bindgen::to_value(&results).map_err(|e| e.to_string())
 }
 
@@ -25,19 +23,12 @@ pub fn check_formula(
     formula_string: &str,
     context: &JsA1Context,
     sheet_id: &str,
-    x: i32,
-    y: i32,
 ) -> Result<bool, String> {
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| e.to_string())?;
-    let pos = Pos {
-        x: x as i64,
-        y: y as i64,
-    }
-    .to_sheet_pos(sheet_id);
     Ok(parse_and_check_formula(
         formula_string,
         context.get_context(),
-        pos,
+        sheet_id,
     ))
 }
 

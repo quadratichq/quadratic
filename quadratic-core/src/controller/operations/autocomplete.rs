@@ -667,7 +667,7 @@ impl GridController {
                     code_cell.adjust_references(
                         sheet_id,
                         context,
-                        original_pos.to_sheet_pos(sheet_id),
+                        sheet_id,
                         RefAdjust {
                             sheet_id: None,
                             relative_only: true,

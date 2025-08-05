@@ -6,7 +6,6 @@ use crate::{
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
-    formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, CodeCellValue, SheetId},
 };
 
@@ -26,11 +25,6 @@ impl GridController {
         };
 
         let multi_pos = sheet.convert_to_multi_pos(sheet_pos.into());
-
-        let code = match language {
-            CodeCellLanguage::Formula => convert_rc_to_a1(&code, &self.a1_context, sheet_pos),
-            _ => code,
-        };
 
         let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
 

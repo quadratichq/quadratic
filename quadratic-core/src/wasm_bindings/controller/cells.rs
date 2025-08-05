@@ -135,7 +135,7 @@ impl GridController {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
-            let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
+            let selection = A1Selection::parse(&a1, sheet_id, self.a1_context())
                 .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
 
             let page = u32::try_from(page).map_err(|e| format!("Unable to parse page: {e}"))?;
@@ -154,7 +154,7 @@ impl GridController {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id)
                 .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
-            let selection = A1Selection::parse_a1(&a1, sheet_id, self.a1_context())
+            let selection = A1Selection::parse(&a1, sheet_id, self.a1_context())
                 .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
 
             match &self.get_ai_cell_formats(selection, page as u32) {
@@ -170,7 +170,7 @@ impl GridController {
     pub fn js_has_cell_data(&self, sheet_id: String, selection: String) -> JsValue {
         capture_core_error(|| {
             let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Unable to parse SheetId")?;
-            let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
+            let selection = A1Selection::parse(&selection, sheet_id, self.a1_context())
                 .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
 
             let has_data = if let Some(sheet) = self.try_sheet(sheet_id) {

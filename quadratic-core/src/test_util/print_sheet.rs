@@ -1,8 +1,7 @@
 use crate::{
     CellValue, Pos, Rect,
-    a1::{A1Context, column_name},
+    a1::column_name,
     controller::GridController,
-    formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, GridBounds, Sheet, SheetId},
 };
 
@@ -51,8 +50,6 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
     let mut fill_colors = vec![];
     let mut count_x = 0;
     let mut count_y = 0;
-    // `self.a1_context()` is default--DF: may cause issues?
-    let parse_ctx = A1Context::default();
 
     // convert the selected range in the sheet to tabled
     rect.y_range().for_each(|y| {
@@ -89,15 +86,8 @@ pub fn print_table_sheet(sheet: &Sheet, rect: Rect, display_cell_values: bool) {
             let cell_value = match cell_value {
                 Some(CellValue::Code(code_cell)) => {
                     match code_cell.language {
-                        CodeCellLanguage::Formula => convert_rc_to_a1(
-                            &code_cell.code.to_string(),
-                            &parse_ctx,
-                            pos.to_sheet_pos(sheet.id),
-                        ),
-                        CodeCellLanguage::Python => code_cell.code.to_string(),
-                        CodeCellLanguage::Connection { .. } => code_cell.code.to_string(),
-                        CodeCellLanguage::Javascript => code_cell.code.to_string(),
                         CodeCellLanguage::Import => "import".to_string(),
+                        _ => code_cell.code.to_string(),
                     };
                     let value = sheet
                         .display_value(pos)

@@ -19,7 +19,7 @@ impl GridController {
         let parse_ctx = self.a1_context();
         transaction.current_multi_pos = Some(multi_pos);
 
-        match parse_formula(&code, parse_ctx, translated_pos) {
+        match parse_formula(&code, parse_ctx, translated_pos.sheet_id) {
             Ok(parsed) => {
                 let output = parsed.eval(&mut eval_ctx).into_non_tuple();
                 let errors = output.inner.errors();
@@ -65,7 +65,7 @@ impl GridController {
         transaction.current_multi_pos = Some(multi_pos);
 
         let mut cells_accessed = CellsAccessed::default();
-        let cell_references = find_cell_references(code, parse_ctx, translated_pos);
+        let cell_references = find_cell_references(code, parse_ctx, translated_pos.sheet_id, None);
         for cell_ref in cell_references {
             if let Ok(cell_ref) = cell_ref.inner {
                 cells_accessed.add(cell_ref.sheet_id, cell_ref.cells);
