@@ -92,7 +92,7 @@ function startMixpanel(user: User) {
 
   // After calling identify, we're supposed to send an event, so we use just a
   // dummy event here
-  trackEvent('[mixpanel].initialized');
+  trackEvent('[mixpanel].identify');
 }
 
 // function startPosthog(user: User) {…}
