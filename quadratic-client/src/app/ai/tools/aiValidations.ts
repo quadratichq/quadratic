@@ -243,7 +243,7 @@ export const addLogicalValidationToolCall = async (args: AIToolsArgs[AITool.AddL
     rule: {
       Logical: {
         show_checkbox: args.show_checkbox ?? true,
-        ignore_blank: args.ignore_blank ?? false,
+        ignore_blank: args.ignore_blank ?? true,
       },
     },
     message: {
@@ -277,7 +277,7 @@ export const addListValidationToolCall = async (args: AIToolsArgs[AITool.AddList
     rule: {
       List: {
         drop_down: args.drop_down ?? false,
-        ignore_blank: args.ignore_blank ?? false,
+        ignore_blank: args.ignore_blank ?? true,
         source,
       },
     },
@@ -359,7 +359,7 @@ export const addTextValidationToolCall = async (args: AIToolsArgs[AITool.AddText
     selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       Text: {
-        ignore_blank: args.ignore_blank ?? false,
+        ignore_blank: args.ignore_blank ?? true,
         text_match: textMatch,
       },
     },
@@ -417,7 +417,7 @@ export const addNumberValidationToolCall = async (args: AIToolsArgs[AITool.AddNu
     selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       Number: {
-        ignore_blank: args.ignore_blank ?? false,
+        ignore_blank: args.ignore_blank ?? true,
         ranges,
       },
     },
@@ -520,7 +520,7 @@ export const addDateTimeValidationToolCall = async (
     selection: getSelectionFromString(args.selection, sheet.id),
     rule: {
       DateTime: {
-        ignore_blank: args.ignore_blank ?? false,
+        ignore_blank: args.ignore_blank ?? true,
         require_date: args.require_date ?? false,
         require_time: args.require_time ?? false,
         prohibit_date: args.prohibit_date ?? false,
