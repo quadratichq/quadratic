@@ -1381,7 +1381,8 @@ impl GridController {
                     reverse_operations.extend(self.check_deleted_validations(
                         transaction,
                         sheet_id,
-                        deleted_selection,
+                        &deleted_selection,
+                        None,
                     ));
                 }
             }
@@ -2197,7 +2198,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
         let selection = A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context());
-        let checkbox = test_create_checkbox(&mut gc, selection);
+        let checkbox = test_create_checkbox_with_id(&mut gc, selection);
         assert_validation_id(&gc, pos![sheet_id!a3], Some(checkbox.id));
 
         gc.flatten_data_table(pos![sheet_id!a1], None);
@@ -2763,7 +2764,7 @@ mod tests {
 
         test_create_data_table(&mut gc, sheet_id, sheet_pos.into(), 2, 2);
         let selection = A1Selection::test_a1_context("test_table[Column 1]", &gc.a1_context);
-        let validation = test_create_checkbox(&mut gc, selection);
+        let validation = test_create_checkbox_with_id(&mut gc, selection);
 
         let checkbox_pos = pos![sheet_id!a3];
         assert_validation_id(&gc, checkbox_pos, Some(validation.id));

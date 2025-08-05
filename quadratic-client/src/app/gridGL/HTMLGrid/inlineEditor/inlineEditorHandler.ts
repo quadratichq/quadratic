@@ -478,7 +478,6 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-
   close = async ({
     deltaX = 0,
     deltaY = 0,

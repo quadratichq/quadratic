@@ -289,7 +289,7 @@ test('Code Editor Displays Return', async ({ page }) => {
   const expectedOutputs = [`int`, `str`, `bool`];
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_chart_resizing` });
+  await logIn(page, { emailPrefix: `e2e_code_editor_displays_return` });
 
   // // Create a new team
   // const teamName = `Code Editor Displays Return - ${Date.now()}`;
@@ -330,7 +330,7 @@ test('Code Editor Displays Return', async ({ page }) => {
     // Click run
     await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
-    // Check expected return test near the btotom of the code editor
+    // Check expected return test near the bottom of the code editor
     await expect(page.getByText(`Line ${i + 1} returned ${expectedOutputs[i]}`)).toBeVisible();
 
     // Click code editor
@@ -633,14 +633,8 @@ test('File Actions', async ({ page }) => {
   //--------------------------------
   // Download File
   //--------------------------------
-  // locators
-  const downloadButton = page.getByRole(`menuitem`, { name: `download Download` });
-
-  // Navigate to Renamed Copy Spreedsheet
+  // Navigate to Renamed Copy Spreadsheet
   await page.locator(`:text("${renamedFileName} (Copy)")`).click({ timeout: 60 * 1000 });
-
-  // click Main Menu drop down
-  // await mainMenu.click({ timeout: 60 * 1000 });
 
   // click File
   await fileMenu.click({ timeout: 60 * 1000 });
@@ -649,7 +643,11 @@ test('File Actions', async ({ page }) => {
   const downloadPromise = page.waitForEvent('download');
 
   // click Download
-  await downloadButton.click({ timeout: 60 * 1000 });
+  await page.getByRole(`menuitem`, { name: `download Download` }).click({ timeout: 60 * 1000 });
+
+  // click Quadratic (.grid)
+  await page.getByRole('menuitem', { name: 'Quadratic (.grid)' }).click({ timeout: 60 * 1000 });
+
   const download = await downloadPromise;
 
   // assert that download was successful

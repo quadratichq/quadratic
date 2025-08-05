@@ -130,7 +130,7 @@ async function registerRoutes() {
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
       } catch (error) {
-        logger.error('Failed to register route', { expressRoute, error });
+        logger.error(`Failed to register route ${expressRoute}`, error);
       }
     }
   }

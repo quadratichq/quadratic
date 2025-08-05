@@ -141,7 +141,7 @@ export const handleAIRequest = async (
 
     return parsedResponse;
   } catch (error) {
-    logger.error('Error in handleAIRequest', { modelKey, error });
+    logger.error(`Error in handleAIRequest ${modelKey}`, error);
 
     Sentry.captureException(error, {
       level: 'error',
