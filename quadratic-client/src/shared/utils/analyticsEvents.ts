@@ -1,5 +1,5 @@
 import type { User } from '@/auth/auth';
-import { getUtmDataFromCookie } from '@/shared/utils/analytics';
+import { getUtmDataFromCookie } from '@/shared/utils/getUtmDataFromCookie';
 import mixpanel from 'mixpanel-browser';
 // posthog is meant to be an example of how we could use multiple event analytics
 // providers at the same time and have it all centralized here.

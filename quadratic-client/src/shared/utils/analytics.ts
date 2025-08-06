@@ -1,6 +1,7 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { User as AuthUser } from '@/auth/auth';
 import { identifyEventAnalyticsUser } from '@/shared/utils/analyticsEvents';
+import { getUtmDataFromCookie } from '@/shared/utils/getUtmDataFromCookie';
 import * as amplitude from '@amplitude/analytics-browser';
 import { setUser } from '@sentry/react';
 
@@ -10,30 +11,6 @@ type User = AuthUser | undefined;
 
 export function googleAnalyticsAvailable(): boolean {
   return import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG && import.meta.env.VITE_GOOGLE_ANALYTICS_GTAG !== 'none';
-}
-
-export function getUtmDataFromCookie(): {
-  utm_source: string | undefined;
-  utm_medium: string | undefined;
-  utm_campaign: string | undefined;
-  utm_content: string | undefined;
-  utm_term: string | undefined;
-} {
-  let utmData = {
-    utm_source: undefined,
-    utm_medium: undefined,
-    utm_campaign: undefined,
-    utm_content: undefined,
-    utm_term: undefined,
-  };
-
-  // get utm data from cookie
-  const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));
-  if (utmCookie) {
-    utmData = JSON.parse(decodeURIComponent(utmCookie.split('=')[1]));
-  }
-
-  return utmData;
 }
 
 // This runs in the root loader, so analytics calls can run inside loaders.
