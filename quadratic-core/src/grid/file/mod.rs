@@ -111,7 +111,7 @@ impl GridFile {
     fn upgrade_next(self) -> Result<GridFile> {
         let next = match self {
             GridFile::V1_12 { grid } => GridFile::V1_12 { grid },
-            GridFile::V1_11 { grid } => GridFile::V1_11 {
+            GridFile::V1_11 { grid } => GridFile::V1_12 {
                 grid: v1_11::upgrade(grid)?,
             },
             GridFile::V1_10 { grid } => GridFile::V1_11 {
