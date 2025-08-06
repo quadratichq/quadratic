@@ -289,7 +289,7 @@ test('Code Editor Displays Return', async ({ page }) => {
   const expectedOutputs = [`int`, `str`, `bool`];
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_chart_resizing` });
+  await logIn(page, { emailPrefix: `e2e_code_editor_displays_return` });
 
   // // Create a new team
   // const teamName = `Code Editor Displays Return - ${Date.now()}`;
