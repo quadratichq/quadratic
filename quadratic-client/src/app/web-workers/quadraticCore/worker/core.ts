@@ -242,7 +242,7 @@ class Core {
         typeof data.operations === 'string' ? new Uint8Array(Buffer.from(data.operations, 'base64')) : data.operations;
 
       this.gridController.multiplayerTransaction(data.id, data.sequence_num, operations);
-      offline.markTransactionSent(data.id);
+      await offline.markTransactionSent(data.id);
 
       // update the multiplayer state
       await this.updateMultiplayerState();
@@ -256,7 +256,7 @@ class Core {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.receiveMultiplayerTransactionAck(transaction_id, sequence_num);
-      offline.markTransactionSent(transaction_id);
+      await offline.markTransactionSent(transaction_id);
 
       // sends multiplayer synced to the client, to proceed from file loading screen
       coreClient.sendMultiplayerSynced();

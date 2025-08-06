@@ -5,7 +5,7 @@ import { ErrorIcon, SpinnerIcon } from '@/shared/components/Icons';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { Alert, AlertDescription, AlertTitle } from '@/shared/shadcn/ui/alert';
 import { Button } from '@/shared/shadcn/ui/button';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect, useState } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
@@ -53,7 +53,7 @@ export function ConnectionFormActions({
                 className="flex-shrink-0"
                 onClick={async () => {
                   if (await confirmFn()) {
-                    mixpanel.track('[Connections].delete', { type: connectionType });
+                    trackEvent('[Connections].delete', { type: connectionType });
                     const { json, options } = getDeleteConnectionAction(connectionUuid, teamUuid);
                     submit(json, {
                       ...options,

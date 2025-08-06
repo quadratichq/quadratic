@@ -7,9 +7,9 @@ import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
 import type { JsClipboard, PasteSpecial } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import localforage from 'localforage';
-import mixpanel from 'mixpanel-browser';
 import { isSafari } from 'react-device-detect';
 
 const clipboardLocalStorageKey = 'quadratic-clipboard';
@@ -210,7 +210,7 @@ export const copySelectionToPNG = async () => {
   try {
     if (!fullClipboardSupport()) {
       console.log('copy to PNG is not supported in Firefox (yet)');
-      mixpanel.track('[clipboard].copySelectionToPNG.notSupported');
+      trackEvent('[clipboard].copySelectionToPNG.notSupported');
       return;
     }
 

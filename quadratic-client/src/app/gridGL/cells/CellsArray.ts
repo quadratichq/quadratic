@@ -87,7 +87,7 @@
 //           const runError = JSON.parse(codeCell.evaluation_result) as RunError;
 //           // track unimplemented errors
 //           if (typeof runError.msg === 'object' && 'Unimplemented' in runError.msg) {
-//             mixpanel.track('[CellsArray].updateCodeCell', {
+//             trackEvent('[CellsArray].updateCodeCell', {
 //               type: codeCell.language,
 //               error: runError.msg,
 //             });
