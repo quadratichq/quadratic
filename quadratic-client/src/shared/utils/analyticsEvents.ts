@@ -70,6 +70,16 @@ export function identifyEventAnalyticsUser(user: User) {
   // }
 }
 
+export function registerEventAnalyticsData(data: Record<string, any>) {
+  if (isMixpanelEnabled) {
+    mixpanel.register(data);
+  }
+
+  // if (isPosthogEnabled) {
+  //   ...
+  // }
+}
+
 /**
  *
  * SESSION START MANAGEMENT
