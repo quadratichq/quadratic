@@ -66,6 +66,33 @@ const booleanSchema = z.preprocess((val) => {
   return val === 'true';
 }, z.boolean());
 
+const booleanNullableOptionalSchema = z.preprocess((val) => {
+  if (val === null || val === undefined) {
+    return val;
+  }
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean());
+
+const stringSchema = z.preprocess((val) => {
+  if (typeof val === 'string') {
+    return val;
+  }
+  return String(val);
+}, z.string());
+
+const stringNullableOptionalSchema = z.preprocess((val) => {
+  if (val === null || val === undefined) {
+    return val;
+  }
+  if (typeof val === 'string') {
+    return val;
+  }
+  return String(val);
+}, z.string());
+
 const array2DSchema = z
   .array(
     z.array(
@@ -117,96 +144,96 @@ export const AIToolsArgsSchema = {
     ai_model: modelRouterModels,
   }),
   [AITool.SetChatName]: z.object({
-    chat_name: z.string(),
+    chat_name: stringSchema,
   }),
   [AITool.AddDataTable]: z.object({
-    sheet_name: z.string(),
-    top_left_position: z.string(),
-    table_name: z.string(),
+    sheet_name: stringSchema,
+    top_left_position: stringSchema,
+    table_name: stringSchema,
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    code_cell_name: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    code_cell_name: stringSchema,
     code_cell_language: cellLanguageSchema,
-    code_cell_position: z.string(),
-    code_string: z.string(),
+    code_cell_position: stringSchema,
+    code_string: stringSchema,
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    code_cell_position: z.string(),
-    formula_string: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    code_cell_position: stringSchema,
+    formula_string: stringSchema,
   }),
   [AITool.SetCellValues]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    top_left_position: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    top_left_position: stringSchema,
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    source_selection_rect: z.string(),
-    target_top_left_position: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    source_selection_rect: stringSchema,
+    target_top_left_position: stringSchema,
   }),
   [AITool.DeleteCells]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
   }),
   [AITool.UpdateCodeCell]: z.object({
-    code_string: z.string(),
+    code_string: stringSchema,
   }),
   [AITool.CodeEditorCompletions]: z.object({
-    text_delta_at_cursor: z.string(),
+    text_delta_at_cursor: stringSchema,
   }),
   [AITool.UserPromptSuggestions]: z.object({
     prompt_suggestions: z.array(
       z.object({
-        label: z.string(),
-        prompt: z.string(),
+        label: stringSchema,
+        prompt: stringSchema,
       })
     ),
   }),
   [AITool.PDFImport]: z.object({
-    file_name: z.string(),
-    prompt: z.string(),
+    file_name: stringSchema,
+    prompt: stringSchema,
   }),
   [AITool.GetCellData]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
     page: numberSchema,
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
-    bold: booleanSchema.nullable().optional(),
-    italic: booleanSchema.nullable().optional(),
-    underline: booleanSchema.nullable().optional(),
-    strike_through: booleanSchema.nullable().optional(),
-    text_color: z.string().nullable().optional(),
-    fill_color: z.string().nullable().optional(),
-    align: z.string().nullable().optional(),
-    vertical_align: z.string().nullable().optional(),
-    wrap: z.string().nullable().optional(),
-    numeric_commas: booleanSchema.nullable().optional(),
-    number_type: z.string().nullable().optional(),
-    currency_symbol: z.string().nullable().optional(),
-    date_time: z.string().nullable().optional(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    bold: booleanNullableOptionalSchema,
+    italic: booleanNullableOptionalSchema,
+    underline: booleanNullableOptionalSchema,
+    strike_through: booleanNullableOptionalSchema,
+    text_color: stringNullableOptionalSchema,
+    fill_color: stringNullableOptionalSchema,
+    align: stringNullableOptionalSchema,
+    vertical_align: stringNullableOptionalSchema,
+    wrap: stringNullableOptionalSchema,
+    numeric_commas: booleanNullableOptionalSchema,
+    number_type: stringNullableOptionalSchema,
+    currency_symbol: stringNullableOptionalSchema,
+    date_time: stringNullableOptionalSchema,
   }),
   [AITool.GetTextFormats]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
     page: numberSchema,
   }),
   [AITool.ConvertToTable]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
-    table_name: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    table_name: stringSchema,
     first_row_is_column_names: booleanSchema,
   }),
   [AITool.WebSearch]: z.object({
-    query: z.string(),
+    query: stringSchema,
   }),
   [AITool.WebSearchInternal]: z.object({
-    query: z.string(),
+    query: stringSchema,
   }),
 } as const;
 
