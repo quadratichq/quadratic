@@ -152,3 +152,29 @@ test('Validations', async ({ page }) => {
   await page.locator(`nav a svg`).click();
   await cleanUpFiles(page, { fileName });
 });
+
+test('Validation Rendering', async ({ page }) => {
+  // Constants
+  const fileName = 'Validations-Rendering';
+  const fileType = 'grid';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_validations_rendering`, createAccount: true });
+
+  // Create a new team
+  // const teamName = `Validations Rendering - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  // Import file
+  await uploadFile(page, { fileName, fileType });
+
+  await page.waitForTimeout(2000);
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Validation_Rendering.png');
+
+  // All done
+  await page.locator(`nav a svg`).click();
+  await cleanUpFiles(page, { fileName });
+});

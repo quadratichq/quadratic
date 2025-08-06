@@ -7,8 +7,7 @@ import { copyAsPNG } from '@/app/gridGL/pixiApp/copyAsPNG';
 import type { JsClipboard, PasteSpecial } from '@/app/quadratic-core-types';
 import { toUint8Array } from '@/app/shared/utils/Uint8Array';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import type { GlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
-import * as Sentry from '@sentry/react';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import localforage from 'localforage';
 import mixpanel from 'mixpanel-browser';
 import { isSafari } from 'react-device-detect';
@@ -27,6 +26,10 @@ const canvasIsTarget = () => {
   return target === document.body || target === pixiApp.canvas || (target as HTMLElement)?.contains(pixiApp.canvas);
 };
 
+const clipboardSendAnalyticsError = (from: string, error: Error | unknown) => {
+  sendAnalyticsError('clipboard', from, error);
+};
+
 export const copyToClipboardEvent = async (e: ClipboardEvent) => {
   try {
     if (!canvasIsTarget()) return;
@@ -36,9 +39,8 @@ export const copyToClipboardEvent = async (e: ClipboardEvent) => {
     pixiApp.copy.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
-    console.error(error);
+    clipboardSendAnalyticsError('copyToClipboardEvent', error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
   }
 };
 
@@ -51,51 +53,55 @@ export const cutToClipboardEvent = async (e: ClipboardEvent) => {
     await toClipboardCut();
     debugTimeCheck('[Clipboard] cut to clipboard');
   } catch (error) {
-    console.error(error);
+    clipboardSendAnalyticsError('cutToClipboardEvent', error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
   }
 };
 
 export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
-  if (!canvasIsTarget()) return;
-  if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
+  try {
+    if (!canvasIsTarget()) return;
+    if (!hasPermissionToEditFile(pixiAppSettings.permissions)) return;
 
-  if (!e.clipboardData) {
-    console.warn('clipboardData is not defined');
-    return;
+    if (!e.clipboardData) {
+      console.warn('clipboardData is not defined');
+      return;
+    }
+    e.preventDefault();
+
+    let plainText = '';
+    if (e.clipboardData.types.includes('text/plain')) {
+      plainText = e.clipboardData.getData('text/plain');
+    }
+
+    let html = '';
+    if (e.clipboardData.types.includes('text/html')) {
+      html = e.clipboardData.getData('text/html');
+    }
+
+    if (plainText || html) {
+      const jsClipboard: JsClipboard = {
+        plainText,
+        html,
+      };
+      const jsClipboardUint8Array = toUint8Array(jsClipboard);
+      plainText = '';
+      html = '';
+
+      quadraticCore.pasteFromClipboard({
+        selection: sheets.sheet.cursor.save(),
+        jsClipboard: jsClipboardUint8Array,
+        special: 'None',
+        isAi: false,
+      });
+    }
+
+    // enables Firefox menu pasting after a ctrl+v paste
+    localforage.setItem(clipboardLocalStorageKey, html);
+  } catch (error) {
+    clipboardSendAnalyticsError('pasteFromClipboardEvent', error);
+    pixiAppSettings.addGlobalSnackbar?.('Failed to paste from clipboard.', { severity: 'error' });
   }
-  e.preventDefault();
-
-  let plainText = '';
-  if (e.clipboardData.types.includes('text/plain')) {
-    plainText = e.clipboardData.getData('text/plain');
-  }
-
-  let html = '';
-  if (e.clipboardData.types.includes('text/html')) {
-    html = e.clipboardData.getData('text/html');
-  }
-
-  if (plainText || html) {
-    const jsClipboard: JsClipboard = {
-      plainText,
-      html,
-    };
-    const jsClipboardUint8Array = toUint8Array(jsClipboard);
-    plainText = '';
-    html = '';
-
-    quadraticCore.pasteFromClipboard({
-      selection: sheets.sheet.cursor.save(),
-      jsClipboard: jsClipboardUint8Array,
-      special: 'None',
-      isAi: false,
-    });
-  }
-
-  // enables Firefox menu pasting after a ctrl+v paste
-  localforage.setItem(clipboardLocalStorageKey, html);
 };
 
 //#endregion
@@ -177,9 +183,8 @@ export const cutToClipboard = async () => {
     await toClipboardCut();
     debugTimeCheck('cut to clipboard (fallback)');
   } catch (error) {
-    console.error(error);
+    clipboardSendAnalyticsError('cutToClipboard', error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to cut to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
   }
 };
 
@@ -190,13 +195,12 @@ export const copyToClipboard = async () => {
     pixiApp.copy.changeCopyRanges();
     debugTimeCheck('copy to clipboard');
   } catch (error) {
-    console.error(error);
+    clipboardSendAnalyticsError('copyToClipboard', error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to copy to clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
   }
 };
 
-export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addGlobalSnackbar']) => {
+export const copySelectionToPNG = async () => {
   try {
     if (!fullClipboardSupport()) {
       console.log('copy to PNG is not supported in Firefox (yet)');
@@ -219,11 +223,10 @@ export const copySelectionToPNG = async (addGlobalSnackbar: GlobalSnackbar['addG
       }),
     ]);
 
-    addGlobalSnackbar('Copied selection as PNG to clipboard');
+    pixiAppSettings.addGlobalSnackbar?.('Copied selection as PNG to clipboard');
   } catch (error) {
-    console.error(error);
-    addGlobalSnackbar('Failed to copy selection as PNG.', { severity: 'error' });
-    Sentry.captureException(error);
+    clipboardSendAnalyticsError('copySelectionToPNG', error);
+    pixiAppSettings.addGlobalSnackbar?.('Failed to copy selection as PNG.', { severity: 'error' });
   }
 };
 
@@ -288,9 +291,8 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
       }
     }
   } catch (error) {
-    console.error(error);
+    clipboardSendAnalyticsError('pasteFromClipboard', error);
     pixiAppSettings.addGlobalSnackbar?.('Failed to paste from clipboard.', { severity: 'error' });
-    Sentry.captureException(error);
   }
 };
 

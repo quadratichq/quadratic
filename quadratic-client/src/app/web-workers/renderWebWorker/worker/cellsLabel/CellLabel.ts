@@ -157,7 +157,6 @@ export class CellLabel {
         text = '';
         break;
       case 'Checkbox':
-      case 'List':
         text = '';
         break;
       default:

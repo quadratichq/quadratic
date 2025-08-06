@@ -108,6 +108,17 @@ impl CellValues {
         values
     }
 
+    pub fn get_row(&self, row: u32) -> Result<Vec<CellValue>, anyhow::Error> {
+        if row >= self.h {
+            anyhow::bail!("Row out of bounds: row={row}, h={}", self.h);
+        }
+        let mut values = Vec::with_capacity(self.w as usize);
+        for x in 0..self.w {
+            values.push(self.get(x, row).unwrap_or(&CellValue::Blank).clone());
+        }
+        Ok(values)
+    }
+
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
         if y >= self.h {
             self.h = y + 1;
@@ -250,8 +261,9 @@ impl From<Vec<Vec<Option<CellValue>>>> for CellValues {
 /// Convert a 2D array of strings into a CellValues.
 /// The first dimension is the x-axis, the second is the y-axis.
 /// Therefore, [[1, 2, 3], [4, 5, 6]] becomes:
-/// 1 2 3
-/// 4 5 6
+/// 1 4
+/// 2 5
+/// 3 6
 impl From<Vec<Vec<&str>>> for CellValues {
     fn from(values: Vec<Vec<&str>>) -> Self {
         let w = values.len() as u32;
@@ -433,5 +445,47 @@ mod test {
         assert_eq!(cell_values.get(0, 0), Some(&CellValue::from("a")));
         assert_eq!(cell_values.get(1, 0), Some(&CellValue::from("b")));
         assert_eq!(cell_values.get(3, 0), Some(&CellValue::from("c")));
+    }
+
+    #[test]
+    fn test_get_row() {
+        let cell_values = CellValues::from(vec![
+            vec!["a", "b", "c"], // column 0
+            vec!["d", "e"],      // column 1 (shorter)
+            vec!["f", "g", "h"], // column 2
+        ]);
+
+        // Should have w=3, h=3
+        assert_eq!(cell_values.w, 3);
+        assert_eq!(cell_values.h, 3);
+
+        // Test row 0: ["a", "d", "f"]
+        let row0 = cell_values.get_row(0).unwrap();
+        assert_eq!(
+            row0,
+            vec![
+                CellValue::from("a"),
+                CellValue::from("d"),
+                CellValue::from("f")
+            ]
+        );
+
+        // Test row 1: ["b", "e", "g"]
+        let row1 = cell_values.get_row(1).unwrap();
+        assert_eq!(
+            row1,
+            vec![
+                CellValue::from("b"),
+                CellValue::from("e"),
+                CellValue::from("g"),
+            ]
+        );
+
+        // Test row 2: ["c", Blank, "h"]
+        let row2 = cell_values.get_row(2).unwrap();
+        assert_eq!(
+            row2,
+            vec![CellValue::from("c"), CellValue::Blank, CellValue::from("h"),]
+        );
     }
 }

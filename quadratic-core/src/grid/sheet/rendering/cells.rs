@@ -265,7 +265,7 @@ impl Sheet {
 
         // Populate validations for cells that are not yet in the render_cells
         self.validations
-            .in_rect(rect, a1_context)
+            .in_rect_unbounded(rect, a1_context)
             .iter()
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {

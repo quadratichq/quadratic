@@ -1,214 +1,179 @@
 import type { DbFile, FromIframeMessages, ToIframeMessages } from '@/app/ai/iframeAiChatFiles/IframeMessages';
+import { sendAnalyticsError } from '@/shared/utils/error';
+import { Dexie, type Table } from 'dexie';
 
 const DB_NAME = 'Iframe-AI-Chat-Files';
 const DB_VERSION = 1;
 const DB_STORE = 'iframeAiChatFiles';
 
-declare const parent: Window;
+declare const parent: Window | null;
+
+// [chatId, fileId]
+type ChatFileKey = [string, string];
 
 class IframeAiChatFiles {
-  private db?: IDBDatabase;
+  private db?: Dexie;
+  private filesTable?: Table<DbFile, ChatFileKey>;
 
   constructor() {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onerror = (e) => {
-      console.error('[IframeAiChatFiles] Error opening database', e);
-    };
-    request.onsuccess = () => {
-      this.db = request.result;
-      this.setUpEventListeners();
-    };
-    request.onupgradeneeded = () => {
-      const db = request.result;
-      const objectStore = db.createObjectStore(DB_STORE, {
-        keyPath: ['chatId', 'fileId'],
+    try {
+      this.db = new Dexie(DB_NAME);
+      this.db.version(DB_VERSION).stores({
+        [DB_STORE]: '[chatId+fileId], chatId, fileId',
       });
-      objectStore.createIndex('chatId', 'chatId');
-      objectStore.createIndex('fileId', 'fileId');
-    };
+
+      this.filesTable = this.db.table(DB_STORE);
+
+      this.db
+        .open()
+        .then(() => {
+          this.setUpEventListeners();
+        })
+        .catch((error) => {
+          this.sendAnalyticsError('init', error);
+        });
+    } catch (error) {
+      this.sendAnalyticsError('init', error);
+    }
   }
 
+  private sendAnalyticsError = (from: string, error: Error | unknown) => {
+    sendAnalyticsError('IframeAiChatFiles', from, error);
+  };
+
   private setUpEventListeners = () => {
-    window.addEventListener('message', this.handleMessage);
-    parent.postMessage({ type: 'iframe-indexeddb-ready' }, '*');
+    try {
+      if (parent) {
+        window.addEventListener('message', this.handleMessage);
+        parent.postMessage({ type: 'iframe-indexeddb-ready' }, '*');
+      } else {
+        this.sendAnalyticsError('setUpEventListeners', new Error('parent is null'));
+      }
+    } catch (error) {
+      this.sendAnalyticsError('setUpEventListeners', error);
+    }
   };
 
   private handleMessage = async (event: MessageEvent<ToIframeMessages>) => {
-    switch (event.data.type) {
-      case 'save-files':
-        try {
-          const savedFiles = await this.saveFiles(event.data.dbFiles);
-          const transferables = savedFiles.map((dbFile) => dbFile.data);
-          this.sendMessage(
-            { type: 'save-files-response', success: true, dbFiles: savedFiles },
-            event.origin,
-            transferables
-          );
-        } catch (error) {
-          console.error('[IframeAiChatFiles] Error saving files:', error);
-          this.sendMessage({ type: 'save-files-response', success: false, dbFiles: [], error: error }, event.origin);
-        }
-        break;
-      case 'get-files':
-        try {
-          const dbFiles = await this.getFiles(event.data.chatId);
-          const transferables = dbFiles.map((dbFile) => dbFile.data);
-          this.sendMessage({ type: 'get-files-response', dbFiles }, event.origin, transferables);
-        } catch (error) {
-          this.sendMessage({ type: 'get-files-response', dbFiles: [], error: error }, event.origin);
-        }
-        break;
-      case 'delete-files':
-        try {
-          const deletedFileIds = await this.deleteFiles(event.data.chatId, event.data.fileIds);
-          this.sendMessage({ type: 'delete-files-response', success: true, fileIds: deletedFileIds }, event.origin);
-        } catch (error) {
-          this.sendMessage({ type: 'delete-files-response', success: false, fileIds: [], error: error }, event.origin);
-        }
-        break;
+    try {
+      switch (event.data.type) {
+        case 'save-files':
+          try {
+            const savedFiles = await this.saveFiles(event.data.dbFiles);
+            const transferables = savedFiles.map((dbFile) => dbFile.data);
+            this.sendMessage(
+              { type: 'save-files-response', success: true, dbFiles: savedFiles },
+              event.origin,
+              transferables
+            );
+          } catch (error) {
+            this.sendAnalyticsError('save-files', error);
+            this.sendMessage({ type: 'save-files-response', success: false, dbFiles: [], error: error }, event.origin);
+          }
+          break;
+        case 'get-files':
+          try {
+            const dbFiles = await this.getFiles(event.data.chatId);
+            const transferables = dbFiles.map((dbFile) => dbFile.data);
+            this.sendMessage({ type: 'get-files-response', dbFiles }, event.origin, transferables);
+          } catch (error) {
+            this.sendAnalyticsError('get-files', error);
+            this.sendMessage({ type: 'get-files-response', dbFiles: [], error: error }, event.origin);
+          }
+          break;
+        case 'delete-files':
+          try {
+            const deletedFileIds = await this.deleteFiles(event.data.chatId, event.data.fileIds);
+            this.sendMessage({ type: 'delete-files-response', success: true, fileIds: deletedFileIds }, event.origin);
+          } catch (error) {
+            this.sendAnalyticsError('delete-files', error);
+            this.sendMessage(
+              { type: 'delete-files-response', success: false, fileIds: [], error: error },
+              event.origin
+            );
+          }
+          break;
+      }
+    } catch (error) {
+      this.sendAnalyticsError('handleMessage', error);
     }
   };
 
   private sendMessage = (message: FromIframeMessages, origin: string, transferables?: Transferable[]) => {
-    if (transferables) {
-      parent.postMessage(message, origin, transferables);
-    } else {
-      parent.postMessage(message, origin);
+    try {
+      if (!parent) {
+        this.sendAnalyticsError('sendMessage', new Error('parent is null'));
+        return;
+      }
+
+      if (transferables) {
+        parent.postMessage(message, origin, transferables);
+      } else {
+        parent.postMessage(message, origin);
+      }
+    } catch (error) {
+      this.sendAnalyticsError('sendMessage', error);
     }
   };
 
-  private validateState = (methodName: string): { db: IDBDatabase } => {
-    if (!this.db) {
-      throw new Error(`Expected db to be set in ${methodName} method.`);
+  private validateState = (methodName: string): { db: Dexie; filesTable: Table<DbFile, [string, string]> } => {
+    if (!this.db || !this.filesTable) {
+      throw new Error(`Expected db and filesTable to be set in ${methodName} method.`);
     }
-    return { db: this.db };
+
+    return { db: this.db, filesTable: this.filesTable };
   };
 
   private saveFiles = async (dbFiles: DbFile[]): Promise<DbFile[]> => {
     try {
-      const { db } = this.validateState('saveFiles');
+      const { filesTable } = this.validateState('saveFiles');
 
-      const savedFiles = await new Promise<DbFile[]>((resolve, reject) => {
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        const store = tx.objectStore(DB_STORE);
-        const savedFiles: DbFile[] = [];
+      await filesTable.bulkPut(dbFiles);
 
-        tx.oncomplete = () => resolve(savedFiles);
-        tx.onerror = () => reject(tx.error);
-
-        dbFiles.forEach((dbFile) => {
-          const request = store.put(dbFile);
-          request.onsuccess = () => {
-            savedFiles.push(dbFile);
-          };
-          request.onerror = () => {
-            console.error('[IframeAiChatFiles] Error saving file:', request.error);
-          };
-        });
-      });
-
-      return savedFiles;
+      return dbFiles;
     } catch (error) {
-      console.error('[IframeAiChatFiles] Error in saveFiles:', error);
+      this.sendAnalyticsError('saveFiles', error);
       return [];
     }
   };
 
   private getFiles = async (chatId: string): Promise<DbFile[]> => {
     try {
-      const { db } = this.validateState('getFiles');
+      const { filesTable } = this.validateState('getFiles');
 
-      const dbFiles = await new Promise<DbFile[]>((resolve, reject) => {
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        const store = tx.objectStore(DB_STORE);
-
-        tx.onerror = () => reject(tx.error);
-
-        const index = store.index('chatId');
-        const request = index.getAll(chatId);
-
-        request.onsuccess = () => {
-          resolve(request.result);
-        };
-
-        request.onerror = () => {
-          console.error('[IframeAiChatFiles] Error getting files for chat:', chatId, request.error);
-          reject(request.error);
-        };
-      });
+      const dbFiles = await filesTable.where('chatId').equals(chatId).toArray();
 
       await this.clearStore();
 
       return dbFiles;
     } catch (error) {
-      console.error('[IframeAiChatFiles] Error in getFiles:', error);
+      this.sendAnalyticsError('getFiles', error);
       return [];
     }
   };
 
   private deleteFiles = async (chatId: string, fileIds: string[]): Promise<string[]> => {
     try {
-      const { db } = this.validateState('deleteFiles');
+      const { filesTable } = this.validateState('deleteFiles');
 
-      const deletedFileIds = await new Promise<string[]>((resolve, reject) => {
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        const store = tx.objectStore(DB_STORE);
-        let completed = 0;
-        const deletedFileIds: string[] = [];
+      const keysToDelete = fileIds.map<ChatFileKey>((fileId) => [chatId, fileId]);
 
-        tx.onerror = () => reject(tx.error);
+      await filesTable.bulkDelete(keysToDelete);
 
-        fileIds.forEach((fileId) => {
-          const request = store.delete([chatId, fileId]);
-
-          request.onsuccess = () => {
-            completed++;
-            deletedFileIds.push(fileId);
-            if (completed === fileIds.length) {
-              resolve(deletedFileIds);
-            }
-          };
-
-          request.onerror = () => {
-            console.error('[IframeAiChatFiles] Error deleting file:', fileId, request.error);
-            completed++;
-            if (completed === fileIds.length) {
-              resolve(deletedFileIds);
-            }
-          };
-        });
-      });
-
-      return deletedFileIds;
+      return fileIds;
     } catch (error) {
-      console.error('[IframeAiChatFiles] Error in deleteFiles:', error);
+      this.sendAnalyticsError('deleteFiles', error);
       return [];
     }
   };
 
   private clearStore = async () => {
     try {
-      const { db } = this.validateState('clearStore');
+      const { filesTable } = this.validateState('clearStore');
 
-      await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(DB_STORE, 'readwrite');
-        const store = tx.objectStore(DB_STORE);
-
-        const request = store.clear();
-
-        request.onsuccess = () => {
-          resolve();
-        };
-
-        request.onerror = () => {
-          console.error('[IframeAiChatFiles] Error deleting all files:', request.error);
-          reject(request.error);
-        };
-
-        tx.onerror = () => reject(tx.error);
-      });
+      await filesTable.clear();
     } catch (error) {
-      console.error('[IframeAiChatFiles] Error in clearStore:', error);
+      this.sendAnalyticsError('clearStore', error);
     }
   };
 }
