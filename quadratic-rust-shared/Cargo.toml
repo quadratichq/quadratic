@@ -45,8 +45,8 @@ reqwest = { version = "0.11.22", features = [
   "json",
   "serde_json",
 ], optional = true }
-russh = { version = "0.53.0", optional = true }
-russh-config = { version = "0.50.0", optional = true }
+russh = { version = "0.54.1", optional = true }
+russh-config = { version = "0.54.0", optional = true }
 rust_decimal = "1.30.0"
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = { version = "1.0.108" }
