@@ -27,7 +27,7 @@ import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
@@ -328,7 +328,7 @@ const FeedbackButtons = memo(() => {
     ({ snapshot }) =>
       (newLike: boolean | null) => {
         // Log it to mixpanel
-        mixpanel.track('[AIAnalyst].feedback', { like: newLike });
+        trackEvent('[AIAnalyst].feedback', { like: newLike });
 
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();

@@ -13,9 +13,9 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { InfoCircledIcon, PieChartIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -192,7 +192,7 @@ export const Component = () => {
                       <Button
                         disabled={!canManageBilling}
                         onClick={() => {
-                          mixpanel.track('[TeamSettings].upgradeToProClicked', {
+                          trackEvent('[TeamSettings].upgradeToProClicked', {
                             team_uuid: team.uuid,
                           });
                           apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
@@ -209,7 +209,7 @@ export const Component = () => {
                         variant="secondary"
                         className="mt-4 w-full"
                         onClick={() => {
-                          mixpanel.track('[TeamSettings].manageBillingClicked', {
+                          trackEvent('[TeamSettings].manageBillingClicked', {
                             team_uuid: team.uuid,
                           });
                           apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {

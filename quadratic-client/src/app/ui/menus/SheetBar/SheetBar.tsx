@@ -9,7 +9,7 @@ import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { JSX } from 'react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -402,7 +402,7 @@ export const SheetBar = memo((): JSX.Element => {
       {hasPermission && (
         <SheetBarButton
           onClick={() => {
-            mixpanel.track('[Sheets].add');
+            trackEvent('[Sheets].add');
             sheets.userAddSheet();
             focusGrid();
           }}

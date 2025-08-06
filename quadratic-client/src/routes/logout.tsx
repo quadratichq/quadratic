@@ -1,4 +1,5 @@
 import { authClient } from '@/auth/auth';
+import { resetEventAnalytics } from '@/shared/utils/analyticsEvents';
 import { redirect } from 'react-router';
 
 // If you visit `/logout` directly in your browser, we'll log you out.
@@ -11,5 +12,6 @@ export const action = logout;
 async function logout() {
   localStorage.clear();
   await authClient.logout();
+  resetEventAnalytics();
   return redirect('/');
 }

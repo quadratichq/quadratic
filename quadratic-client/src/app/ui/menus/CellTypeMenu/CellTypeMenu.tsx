@@ -20,7 +20,7 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
@@ -66,7 +66,7 @@ export default function CellTypeMenu() {
   const searchLabel = useMemo(() => `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`, [includeLanguages]);
 
   useEffect(() => {
-    mixpanel.track('[CellTypeMenu].opened');
+    trackEvent('[CellTypeMenu].opened');
   }, []);
 
   const close = useCallback(() => {
@@ -75,7 +75,7 @@ export default function CellTypeMenu() {
 
   const openEditor = useCallback(
     (language: CodeCellLanguage) => {
-      mixpanel.track('[CellTypeMenu].selected', { language });
+      trackEvent('[CellTypeMenu].selected', { language });
 
       setShowCellTypeMenu(false);
 
