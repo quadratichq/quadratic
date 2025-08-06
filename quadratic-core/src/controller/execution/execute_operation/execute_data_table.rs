@@ -763,8 +763,6 @@ impl GridController {
                 Some(values_sheet_rect.union(&data_table_rect)),
             );
 
-            self.check_deleted_data_tables(transaction, &values_sheet_rect);
-
             return Ok(());
         };
 
@@ -886,8 +884,6 @@ impl GridController {
             let (_, _, dirty_rects) =
                 sheet.data_table_insert_full(&sheet_rect.min, data_table.to_owned());
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
-
-            self.check_deleted_data_tables(transaction, &rect.to_sheet_rect(sheet_id));
 
             // Sets the cursor to the entire table, including the new header
             Self::select_full_data_table(transaction, sheet_id, sheet_rect.min, &data_table);
@@ -1355,10 +1351,6 @@ impl GridController {
                         sheet_pos: values_rect.min.to_sheet_pos(sheet_id),
                         values: old_sheet_values.into(),
                     });
-                    self.check_deleted_data_tables(
-                        transaction,
-                        &values_rect.to_sheet_rect(sheet_id),
-                    );
                 }
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
@@ -1768,10 +1760,6 @@ impl GridController {
                             &A1Selection::from_rect(values_rect.to_sheet_rect(sheet_id)),
                             FormatUpdate::cleared(),
                         ));
-                    self.check_deleted_data_tables(
-                        transaction,
-                        &values_rect.to_sheet_rect(sheet_id),
-                    );
                 }
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
