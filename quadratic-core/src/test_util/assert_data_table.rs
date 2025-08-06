@@ -96,9 +96,7 @@ pub fn assert_data_table_size(
     };
     match cell_value {
         CellValue::Import(_) | CellValue::Code(_) => (),
-        _ => panic!(
-            "Anchor for data table at {pos} is not a code or import cell"
-        ),
+        _ => panic!("Anchor for data table at {pos} is not a code or import cell"),
     }
 
     if data_table.is_html_or_image() {
