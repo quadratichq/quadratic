@@ -34,7 +34,7 @@ impl DataTable {
             .filter_map(|index| {
                 value
                     .get_row(*index as usize)
-                    .map(|row| self.display_columns(&columns_to_show, row))
+                    .map(|row| self.display_columns(&columns_to_show, row, *index as usize))
                     .ok()
             })
             .collect::<Vec<Vec<CellValue>>>();
@@ -72,7 +72,8 @@ impl DataTable {
             .to_owned()
             .into_array()?
             .rows()
-            .map(|row| self.display_columns(&columns_to_show, row))
+            .enumerate()
+            .map(|(row_index, row)| self.display_columns(&columns_to_show, row, row_index))
             .collect::<Vec<Vec<CellValue>>>();
         let array = Array::from(values);
 
@@ -208,12 +209,28 @@ impl DataTable {
     }
 
     /// For a given row of CellValues, return only the columns that should be displayed
-    pub fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
+    pub fn display_columns(
+        &self,
+        columns_to_show: &[usize],
+        row: &[CellValue],
+        row_index: usize,
+    ) -> Vec<CellValue> {
         row.iter()
             .cloned()
             .enumerate()
-            .filter(|(i, _)| columns_to_show.contains(i))
-            .map(|(_, v)| v)
+            .filter(|(column_index, _)| columns_to_show.contains(column_index))
+            .map(|(column_index, cell_value)| match cell_value {
+                CellValue::Code(_) => self
+                    .tables
+                    .as_ref()
+                    .and_then(|tables| {
+                        tables.get_at(&(column_index as i64, row_index as i64).into())
+                    })
+                    .and_then(|table| table.value.get(0, 0).ok())
+                    .unwrap_or(&CellValue::Blank)
+                    .to_owned(),
+                _ => cell_value,
+            })
             .collect::<Vec<CellValue>>()
     }
 

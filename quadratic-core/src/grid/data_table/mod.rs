@@ -588,7 +588,17 @@ impl DataTable {
                     CellValue::Html(_) => CellValue::Blank,
                     _ => v.clone(),
                 },
-                Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                Value::Array(a) => match a.get(x, y).ok() {
+                    Some(CellValue::Code(_)) => self
+                        .tables
+                        .as_ref()
+                        .and_then(|tables| tables.get_at(&(x as i64, y as i64).into()))
+                        .and_then(|table| table.value.get(0, 0).ok())
+                        .unwrap_or(&CellValue::Blank)
+                        .to_owned(),
+                    Some(v) => v.to_owned(),
+                    None => CellValue::Blank,
+                },
                 Value::Tuple(_) => CellValue::Error(Box::new(
                     // should never happen
                     RunErrorMsg::InternalError("tuple saved as code run result".into())
@@ -831,30 +841,6 @@ impl DataTable {
             Value::Array(a) => a.get_mut(&pos),
             Value::Single(v) => Some(v),
             Value::Tuple(_) => None,
-        }
-    }
-
-    /// Returns the code value inside the data table at the given position.
-    pub fn code_value_at(&self, x: u32, y: u32) -> Option<&CellValue> {
-        if self.is_code() || self.has_spill() || self.has_error() {
-            None
-        } else {
-            let value = match &self.value {
-                Value::Array(a) => a
-                    .get(x, u32::try_from(y as i64 - self.y_adjustment(true)).ok()?)
-                    .ok(),
-                Value::Single(v) => Some(v),
-                Value::Tuple(_) => None,
-            };
-            if let Some(v) = value {
-                if matches!(v, CellValue::Code(_)) {
-                    Some(v)
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
         }
     }
 }

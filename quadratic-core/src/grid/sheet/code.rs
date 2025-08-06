@@ -122,18 +122,19 @@ impl Sheet {
                 pos.y - data_table_pos.y - data_table.y_adjustment(true),
             );
 
-            let (sub_table_pos, sub_data_table) = data_table
-                .tables
-                .as_ref()
-                .and_then(|tables| tables.get_contains(pos_relative_to_data_table))?;
+            let column_index = data_table.get_column_index_from_display_index(
+                u32::try_from(pos_relative_to_data_table.x).ok()?,
+                true,
+            );
+            let row_index = data_table.get_row_index_from_display_index(
+                u64::try_from(pos_relative_to_data_table.y).ok()?,
+            );
 
-            sub_data_table.display_value_at(
-                (
-                    pos_relative_to_data_table.x - sub_table_pos.x,
-                    pos_relative_to_data_table.y - sub_table_pos.y,
-                )
-                    .into(),
-            )
+            let sub_data_table = data_table.tables.as_ref().and_then(|tables| {
+                tables.get_at(&(column_index as i64, row_index as i64).into())
+            })?;
+
+            sub_data_table.display_value_at((0, 0).into())
         } else {
             Some(cell_value.to_owned())
         }

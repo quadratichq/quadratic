@@ -3047,4 +3047,118 @@ mod tests {
             CellValue::Text("Column 6".to_string())
         );
     }
+
+    #[test]
+    fn test_execute_flatten_data_table_with_code_cell() {
+        let (mut gc, sheet_id, pos, _) = simple_csv_at(pos!(E2));
+        let sheet_pos = pos.to_sheet_pos(sheet_id);
+
+        assert_simple_csv(&gc, sheet_id, pos, "simple.csv");
+        print_table_in_rect(&gc, sheet_id, Rect::from_numbers(5, 2, 4, 12));
+
+        // hide first column
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+        let mut column_headers = data_table.column_headers.to_owned().unwrap();
+        column_headers[1].display = false;
+        gc.test_data_table_update_meta(sheet_pos, Some(column_headers), None, None);
+        // assert hidden column
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            5,
+            7,
+            8,
+            vec!["Springfield", "United States", "152227"],
+        );
+
+        // sort by population
+        gc.sort_data_table(
+            sheet_pos,
+            Some(vec![DataTableSort {
+                column_index: 3,
+                direction: SortDirection::Ascending,
+            }]),
+            None,
+            false,
+        );
+        // assert sorted
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            5,
+            7,
+            8,
+            vec!["Marlborough", "United States", "38334"],
+        );
+
+        // set code cell within table
+        gc.set_code_cell(
+            pos!(sheet_id!F8),
+            CodeCellLanguage::Formula,
+            "123+456".to_string(),
+            None,
+            None,
+            false,
+        );
+        // assert code cell result
+        assert_cell_value_row(&gc, sheet_id, 5, 7, 8, vec!["Marlborough", "579", "38334"]);
+
+        // assert main table
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            5,
+            2,
+            CellValue::Import(Import::new("simple.csv".into())),
+        );
+
+        let op = Operation::FlattenDataTable { sheet_pos };
+        gc.start_user_ai_transaction(vec![op], None, TransactionName::FlattenDataTable, false);
+
+        // assert main table got flattened
+        assert_cell_value(&gc, sheet_id, 5, 2, CellValue::Text("simple.csv".into()));
+
+        // table data got flattened
+        assert_cell_value_row(&gc, sheet_id, 5, 7, 8, vec!["Marlborough", "579", "38334"]);
+
+        // assert child table got flattened
+        assert_cell_value(&gc, sheet_id, 6, 8, CellValue::Number(579.into()));
+
+        // undo flatten
+        gc.undo(None);
+
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            5,
+            2,
+            CellValue::Import(Import::new("simple.csv".into())),
+        );
+
+        assert_cell_value_row(&gc, sheet_id, 5, 7, 8, vec!["Marlborough", "579", "38334"]);
+
+        // undo set child table code cell
+        gc.undo(None);
+
+        assert_cell_value_row(
+            &gc,
+            sheet_id,
+            5,
+            7,
+            8,
+            vec!["Marlborough", "United States", "38334"],
+        );
+
+        // redo set child table code cell
+        gc.redo(None);
+
+        assert_cell_value_row(&gc, sheet_id, 5, 7, 8, vec!["Marlborough", "579", "38334"]);
+
+        // redo flatten
+        gc.redo(None);
+
+        assert_cell_value(&gc, sheet_id, 5, 2, CellValue::Text("simple.csv".into()));
+
+        assert_cell_value_row(&gc, sheet_id, 5, 7, 8, vec!["Marlborough", "579", "38334"]);
+    }
 }
