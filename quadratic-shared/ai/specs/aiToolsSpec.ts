@@ -2047,7 +2047,7 @@ This tool adds a logical validation to a sheet. This also can display a checkbox
         },
         ignore_blank: {
           type: ['boolean', 'null'],
-          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
         },
         ...validationMessageErrorPrompt,
       },
@@ -2084,7 +2084,7 @@ The list should have either a list_source_list or a list_source_selection, but n
         },
         ignore_blank: {
           type: ['boolean', 'null'],
-          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
         },
         drop_down: {
           type: 'boolean',
@@ -2136,7 +2136,7 @@ This tool adds a text validation to a sheet. This validates a text string to ens
         },
         ignore_blank: {
           type: ['boolean', 'null'],
-          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
         },
         max_length: {
           type: ['number', 'null'],
@@ -2217,7 +2217,7 @@ This tool adds a number validation to a sheet. This validates a number to ensure
         },
         ignore_blank: {
           type: ['boolean', 'null'],
-          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
         },
         range: {
           type: ['string', 'null'],
@@ -2270,7 +2270,7 @@ This tool adds a date time validation to a sheet. This validates a date time to 
         },
         ignore_blank: {
           type: ['boolean', 'null'],
-          description: 'Whether to ignore blank cells when validating. This defaults to false.',
+          description: 'Whether to ignore blank cells when validating. This defaults to true.',
         },
         require_date: {
           type: ['boolean', 'null'],

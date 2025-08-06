@@ -61,20 +61,15 @@ import {
   posToPos,
   toSheetPos,
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import * as Sentry from '@sentry/react';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
-import mixpanel from 'mixpanel-browser';
 
 class Core {
   gridController?: GridController;
   teamUuid?: string;
 
   private sendAnalyticsError = (from: string, error: Error | unknown) => {
-    console.error(error);
-    mixpanel.track(`[core] ${from} error`, {
-      error,
-    });
-    Sentry.captureException(error);
+    sendAnalyticsError('core', from, error);
   };
 
   private handleCoreError = (from: string, error: Error | unknown) => {

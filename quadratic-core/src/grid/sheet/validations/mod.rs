@@ -169,6 +169,19 @@ impl Validations {
         })
     }
 
+    pub fn in_rect_unbounded(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
+        self.validations
+            .iter()
+            .filter(|validation| {
+                validation
+                    .selection
+                    .ranges
+                    .iter()
+                    .any(|range| range.might_intersect_rect(rect, a1_context))
+            })
+            .collect()
+    }
+
     /// Returns validations that intersect with a rect.
     pub fn in_rect(&self, rect: Rect, a1_context: &A1Context) -> Vec<&Validation> {
         self.validations

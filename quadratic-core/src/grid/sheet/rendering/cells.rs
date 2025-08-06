@@ -279,7 +279,7 @@ impl Sheet {
 
         // Populate validations for cells that are not yet in the render_cells
         self.validations
-            .in_rect(rect, a1_context)
+            .in_rect_unbounded(rect, a1_context)
             .iter()
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {
@@ -289,23 +289,29 @@ impl Sheet {
                         .ranges
                         .iter()
                         .for_each(|validations_range| {
-                            if let Some(validation_rect) = validations_range.to_rect(a1_context) {
-                                validation_rect
-                                    .iter()
-                                    .filter(|pos| rect.contains(*pos))
-                                    .for_each(|pos| {
-                                        if !render_cells
-                                            .iter()
-                                            .any(|cell| cell.x == pos.x && cell.y == pos.y)
-                                        {
-                                            render_cells.push(JsRenderCell {
-                                                x: pos.x,
-                                                y: pos.y,
-                                                special: Some(special.clone()),
-                                                ..Default::default()
-                                            });
-                                        }
-                                    });
+                            if let Some(validation_rect) =
+                                validations_range.to_rect_unbounded(a1_context)
+                            {
+                                if let Some(validation_intersect) =
+                                    validation_rect.intersection(&rect)
+                                {
+                                    validation_intersect
+                                        .iter()
+                                        .filter(|pos| rect.contains(*pos))
+                                        .for_each(|pos| {
+                                            if !render_cells
+                                                .iter()
+                                                .any(|cell| cell.x == pos.x && cell.y == pos.y)
+                                            {
+                                                render_cells.push(JsRenderCell {
+                                                    x: pos.x,
+                                                    y: pos.y,
+                                                    special: Some(special.clone()),
+                                                    ..Default::default()
+                                                });
+                                            }
+                                        });
+                                }
                             }
                         });
                 }

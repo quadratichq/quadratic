@@ -22,8 +22,8 @@ use crate::{CodeResult, Pos, RunError, RunErrorMsg, Span};
 macro_rules! array {
     ($( $( $value:expr ),+ );+ $(;)?) => {{
         let values = [$( [$( $crate::CellValue::from($value) ),+] ),+];
+        let width = values.iter().map(|row| row.len()).max().unwrap_or(0);
         let height = values.len();
-        let width = values[0].len(); // This will generate a compile-time error if there are no values.
         let size = $crate::ArraySize::new(width as u32, height as u32)
             .expect("empty array is not allowed");
         $crate::Array::new_row_major(size, values.into_iter().flatten().collect()).unwrap()
@@ -124,7 +124,7 @@ impl TryFrom<Value> for Vec<Array> {
 
 impl From<Vec<Vec<String>>> for Array {
     fn from(v: Vec<Vec<String>>) -> Self {
-        let w = v[0].len();
+        let w = v.iter().map(|row| row.len()).max().unwrap_or(0);
         let h = v.len();
         let size = ArraySize::new(w as u32, h as u32).unwrap();
         let values = v.into_iter().flatten().map(CellValue::from).collect();
@@ -139,7 +139,7 @@ impl From<Vec<Vec<String>>> for Array {
 
 impl From<Vec<Vec<&str>>> for Array {
     fn from(v: Vec<Vec<&str>>) -> Self {
-        let w = v[0].len();
+        let w = v.iter().map(|row| row.len()).max().unwrap_or(0);
         let h = v.len();
         let size = ArraySize::new(w as u32, h as u32).unwrap();
         let values = v.into_iter().flatten().map(CellValue::from).collect();
@@ -157,7 +157,7 @@ impl From<Vec<Vec<CellValue>>> for Array {
         if v.is_empty() {
             return Array::new_empty(ArraySize::_1X1);
         }
-        let w = v[0].len();
+        let w = v.iter().map(|row| row.len()).max().unwrap_or(0);
         let h = v.len();
         let size = ArraySize::new(w as u32, h as u32).unwrap_or(ArraySize::_1X1);
         let values = v.into_iter().flatten().collect();
@@ -654,7 +654,7 @@ impl Array {
 
     // convert from a Vec<Vec<&str>> to an Array, auto-picking the type if selected
     pub fn from_str_vec(array: Vec<Vec<&str>>, auto_pick_type: bool) -> anyhow::Result<Self> {
-        let w = array[0].len();
+        let w = array.iter().map(|row| row.len()).max().unwrap_or(0);
         let h = array.len();
         let size = ArraySize::new_or_err(w as u32, h as u32)?;
         let values = array
@@ -678,33 +678,31 @@ impl Array {
         sheet: &mut Sheet,
         v: Vec<Vec<JsCellValueResult>>,
     ) -> (Option<Array>, Vec<Operation>) {
+        let w = v.iter().map(|row| row.len()).max().unwrap_or(0);
+        let h = v.len();
         // catch the unlikely case where we receive an array of empty arrays
-        if v[0].is_empty() {
+        if w == 0 || h == 0 {
             return (None, vec![]);
         }
-        let size = ArraySize::new(v[0].len() as u32, v.len() as u32).unwrap();
+
+        let size = ArraySize::new(w as u32, h as u32).unwrap();
+        let mut values = SmallVec::with_capacity(w * h);
         let mut ops = vec![];
-        let Pos { mut x, mut y } = start;
-        let x_end = v[0].len() as i64 + start.x;
-        let values = v
-            .into_iter()
-            .flatten()
-            .map(|cell_value| {
-                x += 1;
-                if x == x_end {
-                    x = start.x;
-                    y += 1;
-                }
-                match CellValue::from_js(cell_value, start, sheet) {
-                    Ok(value) => value,
+
+        for row in v.into_iter() {
+            let row_width = row.len();
+            for cell_value in row.into_iter() {
+                let (value, updated_ops) = match CellValue::from_js(cell_value, start, sheet) {
+                    Ok((value, updated_ops)) => (value, updated_ops),
                     Err(_) => (CellValue::Blank, vec![]),
-                }
-            })
-            .map(|(value, updated_ops)| {
+                };
+                values.push(value);
                 ops.extend(updated_ops);
-                value
-            })
-            .collect::<SmallVec<[CellValue; 1]>>();
+            }
+            for _ in row_width..w {
+                values.push(CellValue::Blank);
+            }
+        }
 
         let empty_values_cache = Some(EmptyValuesCache::from((&size, &values)));
 
