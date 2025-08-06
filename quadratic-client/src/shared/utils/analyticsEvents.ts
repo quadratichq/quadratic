@@ -52,6 +52,14 @@ export function trackEvent(event: string, properties?: Record<string, any>, call
   // if (isPosthogEnabled) {…}
 }
 
+export function resetEventAnalytics() {
+  if (isMixpanelEnabled) {
+    mixpanel.reset();
+  }
+
+  // if (isPosthogEnabled) {…}
+}
+
 export function identifyEventAnalyticsUser(user: User) {
   if (isMixpanelEnabled) {
     startMixpanel(user);
