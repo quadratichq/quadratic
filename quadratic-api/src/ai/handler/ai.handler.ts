@@ -7,6 +7,7 @@ import {
   isBasetenModel,
   isBedrockAnthropicModel,
   isBedrockModel,
+  isFireworksModel,
   isGenAIModel,
   isOpenAIModel,
   isOpenRouterModel,
@@ -17,27 +18,28 @@ import {
 import { DEFAULT_BACKUP_MODEL, DEFAULT_BACKUP_MODEL_THINKING } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
-import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
-import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
-import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
+import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
+import logger from '../../utils/logger';
+import { createFileForFineTuning } from '../helpers/fineTuning.helper';
+import { calculateUsage } from '../helpers/usage.helper';
 import {
   anthropic,
   azureOpenAI,
   baseten,
   bedrock,
   bedrock_anthropic,
+  fireworks,
   geminiai,
   open_router,
   openai,
   vertex_anthropic,
   vertexai,
   xai,
-} from '../../ai/providers';
-import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
-import logger from '../../utils/logger';
-import { createFileForFineTuning } from '../helpers/fineTuning.helper';
-import { calculateUsage } from '../helpers/usage.helper';
+} from '../providers';
+import { handleAnthropicRequest } from './anthropic.handler';
+import { handleBedrockRequest } from './bedrock.handler';
 import { handleGenAIRequest } from './genai.handler';
+import { handleOpenAIRequest } from './openai.handler';
 
 export const handleAIRequest = async (
   modelKey: AIModelKey,
@@ -91,6 +93,15 @@ export const handleAIRequest = async (
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
     } else if (isBasetenModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, baseten, response);
+    } else if (isFireworksModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        fireworks,
+        response
+      );
     } else if (isOpenRouterModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(
         modelKey,

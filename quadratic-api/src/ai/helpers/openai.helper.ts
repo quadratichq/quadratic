@@ -26,6 +26,7 @@ import type {
   AzureOpenAIModelKey,
   BasetenModelKey,
   Content,
+  FireworksModelKey,
   ImageContent,
   OpenAIModelKey,
   OpenRouterModelKey,
@@ -173,7 +174,13 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -208,7 +215,7 @@ export async function parseOpenAIStream(
     if (!response?.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
-        if (chunk.choices[0].delta.content?.trim()) {
+        if (chunk.choices[0].delta.content) {
           const currentContent = {
             ...(responseMessage.content.pop() ?? {
               type: 'text',
@@ -297,7 +304,13 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
