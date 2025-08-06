@@ -65,15 +65,30 @@ export function useSqlContextMessages() {
             return [];
           }
 
+          let contextText = `
+# Database Connections
+`;
+
           // format as lightweight context message
-          const contextText = validConnections
-            .map((conn) => {
-              const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
+          validConnections.forEach((conn) => {
+            const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 
-              return `Connection: ${conn.connectionName} (${conn.connectionType}), id: ${conn.connectionId}\nDatabase: ${conn.database}\nTables: ${tablesText}`;
-            })
-            .join('\n\n');
+            contextText += `
+## Connection
+${conn.connectionName}
 
+### Information
+type: ${conn.connectionType}
+id: ${conn.connectionId}
+
+### Database
+${conn.database}
+
+#### Tables
+${tablesText}
+
+`;
+          });
           return [
             {
               role: 'user',
