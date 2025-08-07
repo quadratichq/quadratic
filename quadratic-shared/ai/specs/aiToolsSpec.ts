@@ -80,7 +80,10 @@ const stringSchema = z.preprocess((val) => {
   if (typeof val === 'string') {
     return val;
   }
-  return String(val);
+  if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint' || typeof val === 'symbol') {
+    return String(val);
+  }
+  return val;
 }, z.string());
 
 const stringNullableOptionalSchema = z.preprocess((val) => {
@@ -90,7 +93,10 @@ const stringNullableOptionalSchema = z.preprocess((val) => {
   if (typeof val === 'string') {
     return val;
   }
-  return String(val);
+  if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint' || typeof val === 'symbol') {
+    return String(val);
+  }
+  return val;
 }, z.string().nullable().optional());
 
 const array2DSchema = z
