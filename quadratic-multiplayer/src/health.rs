@@ -4,7 +4,7 @@ use axum::{Extension, Json};
 use quadratic_rust_shared::{pubsub::PubSub, quadratic_api::is_healthy};
 use serde::{Deserialize, Serialize};
 
-use crate::state::State;
+use crate::{state::State, state::stats::Stats};
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct HealthResponse {
@@ -23,6 +23,7 @@ pub struct FullHealthResponse {
     pub version: String,
     pub redis_is_healthy: bool,
     pub api_is_healthy: bool,
+    pub stats: Stats,
 }
 
 pub(crate) async fn full_healthcheck(
@@ -36,6 +37,7 @@ pub(crate) async fn full_healthcheck(
         version,
         redis_is_healthy,
         api_is_healthy,
+        stats: state.stats().await,
     }
     .into()
 }

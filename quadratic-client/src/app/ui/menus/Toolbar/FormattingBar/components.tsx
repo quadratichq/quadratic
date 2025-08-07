@@ -15,7 +15,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo, type JSX, type ReactNode } from 'react';
 
 export const FormatSeparator = memo(() => {
@@ -143,7 +143,7 @@ export const FormatButtonDropdownActions = memo(
         <DropdownMenuItem
           key={key}
           onClick={() => {
-            mixpanel.track('[FormattingBar].button', { label });
+            trackEvent('[FormattingBar].button', { label });
             actionSpec.run(actionArgs);
           }}
           aria-label={hideLabel ? '' : label}
@@ -186,7 +186,7 @@ export const FormatButton = memo(
               checked ? 'bg-accent' : ''
             )}
             onClick={() => {
-              mixpanel.track('[FormattingBar].button', { label });
+              trackEvent('[FormattingBar].button', { label });
               actionSpec.run(actionArgs);
               focusGrid();
             }}

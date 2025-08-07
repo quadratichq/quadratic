@@ -1,13 +1,11 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { getRedirectTo } from '@/shared/utils/getRedirectToOrLoginResult';
 import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
 export const loader = async ({ request }: { request: Request }) => {
-  // Show onboarding for ~25% of new users
-  const SHOW_ONBOARDING = Math.random() < 0.25;
-
   // try/catch here handles case where this _could_ error out and we
   // have no errorElement so we just redirect back to home
   try {
@@ -20,6 +18,7 @@ export const loader = async ({ request }: { request: Request }) => {
 
       // Special case for first-time users
       if (userCreated) {
+        trackEvent('[Auth].signup');
         try {
           // Read UTM cookie if it exists
           const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));
@@ -50,7 +49,7 @@ export const loader = async ({ request }: { request: Request }) => {
       // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
-        return SHOW_ONBOARDING ? redirect('/onboarding') : redirect('/files/create?private=false');
+        return redirect('/onboarding');
       }
       return redirect(redirectTo);
     }

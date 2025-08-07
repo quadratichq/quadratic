@@ -1,9 +1,9 @@
 import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { ApiError, fetchFromApi } from '@/shared/api/fetchFromApi';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureEvent } from '@sentry/react';
 import { Buffer } from 'buffer';
-import mixpanel from 'mixpanel-browser';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
 // TODO(ddimaria): make this dynamic
@@ -158,7 +158,7 @@ export const apiClient = {
     },
 
     delete(uuid: string) {
-      mixpanel.track('[Files].deleteFile', { id: uuid });
+      trackEvent('[Files].deleteFile', { id: uuid });
       return fetchFromApi(`/v0/files/${uuid}`, { method: 'DELETE' }, ApiSchemas['/v0/files/:uuid.DELETE.response']);
     },
 
@@ -276,7 +276,7 @@ export const apiClient = {
         );
       },
       update(uuid: string, body: ApiTypes['/v0/files/:uuid/sharing.PATCH.request']) {
-        mixpanel.track('[FileSharing].publicLinkAccess.update', { value: body.publicLinkAccess });
+        trackEvent('[FileSharing].publicLinkAccess.update', { value: body.publicLinkAccess });
         return fetchFromApi(
           `/v0/files/${uuid}/sharing`,
           {
@@ -290,7 +290,7 @@ export const apiClient = {
 
     invites: {
       create(uuid: string, body: ApiTypes['/v0/files/:uuid/invites.POST.request']) {
-        mixpanel.track('[FileSharing].invite.create');
+        trackEvent('[FileSharing].invite.create');
         return fetchFromApi(
           `/v0/files/${uuid}/invites`,
           {
@@ -301,7 +301,7 @@ export const apiClient = {
         );
       },
       delete(uuid: string, inviteId: string) {
-        mixpanel.track('[FileSharing].invite.delete');
+        trackEvent('[FileSharing].invite.delete');
         return fetchFromApi(
           `/v0/files/${uuid}/invites/${inviteId}`,
           {
@@ -314,7 +314,7 @@ export const apiClient = {
 
     users: {
       update(uuid: string, userId: string, body: ApiTypes['/v0/files/:uuid/users/:userId.PATCH.request']) {
-        mixpanel.track('[FileSharing].users.updateRole');
+        trackEvent('[FileSharing].users.updateRole');
         return fetchFromApi(
           `/v0/files/${uuid}/users/${userId}`,
           { method: 'PATCH', body: JSON.stringify(body) },
@@ -322,7 +322,7 @@ export const apiClient = {
         );
       },
       delete(uuid: string, userId: string) {
-        mixpanel.track('[FileSharing].users.remove');
+        trackEvent('[FileSharing].users.remove');
         return fetchFromApi(
           `/v0/files/${uuid}/users/${userId}`,
           { method: 'DELETE' },

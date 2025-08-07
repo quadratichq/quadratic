@@ -17,6 +17,7 @@ import { EmptyPage } from '@/shared/components/EmptyPage';
 import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import { CONTACT_URL, SCHEDULE_MEETING } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
+import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
 import { captureEvent } from '@sentry/react';
@@ -138,6 +139,10 @@ export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<F
 
   if (debugFlag('debugStartupTime'))
     console.timeEnd('[file.$uuid.tsx] initializing Rust and loading Quadratic file (parallel)');
+
+  registerEventAnalyticsData({
+    isOnPaidPlan: data.team.isOnPaidPlan,
+  });
 
   return data;
 };

@@ -163,7 +163,7 @@ export class Control {
         data,
         {
           success: "Server running",
-          error: "error",
+          error: `"level":"error"`,
           start: "> quadratic-api",
         },
         () => {

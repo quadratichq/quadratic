@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
+import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
@@ -108,6 +109,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       if (status >= 400 && status < 500) throw new Response('4xx level error', { status });
       throw error;
     });
+
+  registerEventAnalyticsData({
+    isOnPaidPlan: activeTeam.billing.status === 'ACTIVE',
+  });
 
   return { teams, userMakingRequest, eduStatus, activeTeam };
 };

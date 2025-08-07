@@ -8,12 +8,16 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { captureException } from '@sentry/react';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
-import mixpanel from 'mixpanel-browser';
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useSetRecoilState } from 'recoil';
+
+const fileImportSendAnalyticsError = (from: string, error: Error | unknown) => {
+  sendAnalyticsError('useFileImport', from, error);
+};
 
 export function useFileImport() {
   const setFilesImportProgressState = useSetRecoilState(filesImportProgressAtom);
@@ -56,7 +60,7 @@ export function useFileImport() {
         setFilesImportProgressListState(() => ({ show: true }));
       }
 
-      mixpanel.track('[ImportData].useFileImport', {
+      trackEvent('[ImportData].useFileImport', {
         files: files.map((file) => ({
           type: getFileType(file),
           size: file.size,
@@ -226,11 +230,11 @@ export function useFileImport() {
               await uploadFilePromise;
             }
           }
-        } catch (e) {
-          if (e instanceof Error) {
-            captureException(e);
+        } catch (error) {
+          if (error instanceof Error) {
+            fileImportSendAnalyticsError('handleImport', error);
             updateCurrentFileState({ step: 'error', progress: 0, abortController: undefined });
-            addGlobalSnackbar(e.message, { severity: 'warning' });
+            addGlobalSnackbar(error.message, { severity: 'warning' });
           }
         }
       }
@@ -240,8 +244,7 @@ export function useFileImport() {
         try {
           await uploadFilePromise;
         } catch (e) {
-          captureException(e);
-          console.error(e);
+          fileImportSendAnalyticsError('handleImport', e);
         }
       }
 

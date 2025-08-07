@@ -4,21 +4,23 @@ import { EmptyState, type EmptyStateProps } from '@/shared/components/EmptyState
 import { ROUTES } from '@/shared/constants/routes';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
 import { Button } from '@/shared/shadcn/ui/button';
-import { captureException } from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
 
-type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
-  showLoggedInUser?: boolean;
-  error?: unknown;
-  source?: string;
+const emptyPageSendAnalyticsError = (from: string, error: Error | unknown, description?: string) => {
+  sendAnalyticsError('Empty', from, error, description);
 };
 
 /**
  * For use in routes when errors occur or when there is no data to display.
  * Will displays context on the logged in user (if applicable/available)
  */
+type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
+  showLoggedInUser?: boolean;
+  error?: unknown;
+  source?: string;
+};
 export function EmptyPage(props: EmptyPageProps) {
   const { error, title, description, source, Icon, actions, showLoggedInUser } = props;
   const [loggedInUser, setLoggedInUser] = useState<User | undefined>(undefined);
@@ -34,29 +36,9 @@ export function EmptyPage(props: EmptyPageProps) {
   // If this is an error, log it
   useEffect(() => {
     if (error) {
-      const errorString = JSON.stringify(
-        error instanceof Error
-          ? {
-              name: error.name,
-              message: error.message,
-              stack: error.stack,
-            }
-          : error
-      );
       // for core errors, we send the source but don't share it with the user
       const sourceTitle = source ? `Core Error in ${source}` : title;
-      mixpanel.track('[Empty].error', {
-        title: sourceTitle,
-        description,
-        error: errorString,
-      });
-      captureException(new Error('error-page'), {
-        extra: {
-          title: sourceTitle,
-          description,
-          error,
-        },
-      });
+      emptyPageSendAnalyticsError(sourceTitle, error, typeof description === 'string' ? description : undefined);
     }
   }, [error, title, description, source]);
 

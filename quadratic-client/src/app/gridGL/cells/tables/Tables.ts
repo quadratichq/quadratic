@@ -139,7 +139,11 @@ export class Tables extends Container<Table> {
 
   /// Returns true if the code cell has no UI and is 1x1.
   private isCodeCellSingle = (codeCell: JsRenderCodeCell): boolean => {
-    return codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns;
+    return (
+      codeCell.state === 'SpillError' ||
+      codeCell.state === 'RunError' ||
+      (codeCell.w === 1 && codeCell.h === 1 && !codeCell.show_name && !codeCell.show_columns)
+    );
   };
 
   /// Deletes a table from Tables and removes cache.
@@ -514,12 +518,23 @@ export class Tables extends Container<Table> {
   isInTableHeader = (cell: JsCoordinate): boolean => {
     const table = this.getTableIntersects(cell);
     if (!table) return false;
-    return (
-      table.codeCell.show_name &&
-      cell.x >= table.codeCell.x &&
-      cell.x < table.codeCell.x + table.codeCell.w &&
-      cell.y === table.codeCell.y
-    );
+
+    // outside the table
+    if (cell.x < table.codeCell.x || cell.x > table.codeCell.x + table.codeCell.w) {
+      return false;
+    }
+
+    // in name row
+    if (table.codeCell.show_name && cell.y === table.codeCell.y) {
+      return true;
+    }
+
+    // in column header row
+    if (table.codeCell.show_columns && cell.y === table.codeCell.y + (table.codeCell.show_name ? 1 : 0)) {
+      return true;
+    }
+
+    return false;
   };
 
   // Checks whether we're hovering a code cell with either an error or peek

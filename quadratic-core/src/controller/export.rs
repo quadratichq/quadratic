@@ -6,7 +6,8 @@ use itertools::PeekingNext;
 use lazy_static::lazy_static;
 use rust_decimal::{Decimal, prelude::ToPrimitive};
 use rust_xlsxwriter::{
-    Format, FormatAlign, FormatPattern, FormatUnderline, Workbook, XlsxError, worksheet::Worksheet,
+    Format, FormatAlign, FormatBorder, FormatPattern, FormatUnderline, Workbook, XlsxError,
+    worksheet::Worksheet,
 };
 
 use super::GridController;
@@ -14,10 +15,11 @@ use crate::{
     CellValue, Pos, Value,
     a1::{A1Selection, CellRefRange},
     color::Rgba,
+    controller::operations::import::{COLUMN_WIDTH_MULTIPLIER, ROW_HEIGHT_MULTIPLIER},
     date_time::{DEFAULT_DATE_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIME_FORMAT},
     grid::{
         CellAlign, CellVerticalAlign, CellWrap, CodeCellLanguage, GridBounds, NumericFormatKind,
-        Sheet,
+        Sheet, sheet::borders::CellBorderLine,
     },
 };
 
@@ -45,6 +47,9 @@ lazy_static! {
         mapping
     };
 }
+
+const MAX_EXCEL_ROW: i64 = 1048576;
+const MAX_EXCEL_COL: i64 = 16384;
 
 impl GridController {
     /// exports a CSV string from a selection on the grid.
@@ -113,7 +118,7 @@ impl GridController {
             for (col, width) in custom_column_widths {
                 let excel_col = (col - 1) as u16;
                 // convert from pixels to Excel column width units
-                let excel_width = width / 7.0;
+                let excel_width = width / COLUMN_WIDTH_MULTIPLIER;
 
                 worksheet
                     .set_column_width(excel_col, excel_width)
@@ -126,7 +131,7 @@ impl GridController {
             for (row, height) in custom_row_heights {
                 let excel_row = (row - 1) as u32;
                 // convert from pixels to Excel row height units
-                let excel_height = height / 1.5;
+                let excel_height = height / ROW_HEIGHT_MULTIPLIER;
 
                 worksheet
                     .set_row_height(excel_row, excel_height)
@@ -134,16 +139,18 @@ impl GridController {
             }
 
             // add grid values to the worksheet
-            match sheet.bounds(false) {
+            match sheet.all_bounds() {
                 GridBounds::Empty => continue,
-                GridBounds::NonEmpty(rect) => {
+                GridBounds::NonEmpty(mut rect) => {
+                    rect.max.x = rect.max.x.min(MAX_EXCEL_COL);
+                    rect.max.y = rect.max.y.min(MAX_EXCEL_ROW);
                     for pos in rect.iter() {
                         let (col, row) = (pos.x as u16 - 1, pos.y as u32 - 1);
                         let mut is_formula_output = false;
 
                         // data table output
-                        if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos) {
-                            if let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
+                        if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos)
+                            && let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
                                 let is_formula =
                                     code_cell_value.language == CodeCellLanguage::Formula;
 
@@ -180,7 +187,6 @@ impl GridController {
                                     }
                                 }
                             }
-                        }
 
                         // flatten all non-formula data
                         if !is_formula_output {
@@ -262,18 +268,16 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
         format = format.set_font_strikethrough();
     }
 
-    if let Some(text_color) = cell_format.text_color {
-        if let Ok(color) = Rgba::try_from(text_color.as_str()) {
+    if let Some(text_color) = cell_format.text_color
+        && let Ok(color) = Rgba::try_from(text_color.as_str()) {
             format = format.set_font_color(color.as_rgb_hex().as_str());
         }
-    }
 
-    if let Some(fill_color) = cell_format.fill_color {
-        if let Ok(color) = Rgba::try_from(fill_color.as_str()) {
+    if let Some(fill_color) = cell_format.fill_color
+        && let Ok(color) = Rgba::try_from(fill_color.as_str()) {
             format = format.set_pattern(FormatPattern::Solid);
             format = format.set_background_color(color.as_rgb_hex().as_str());
         }
-    }
 
     if let Some(align) = cell_format.align {
         let align = match align {
@@ -309,11 +313,10 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
     }
 
     // this needs to be before the numeric decimals
-    if let Some(numeric_commas) = cell_format.numeric_commas {
-        if numeric_commas {
+    if let Some(numeric_commas) = cell_format.numeric_commas
+        && numeric_commas {
             num_format = "#,##0".to_string();
         }
-    }
 
     if let Some(numeric_decimals) = cell_format.numeric_decimals {
         num_format = format!("{num_format}.{}", "0".repeat(numeric_decimals as usize));
@@ -343,21 +346,61 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
         }
     }
 
+    // borders
+    let border_style = sheet.borders.get_style_cell(pos);
+    if !border_style.is_empty() {
+        // top border
+        if let Some(top_border) = border_style.top {
+            let style = border_line_to_excel_style(top_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_top(style);
+                format = format.set_border_top_color(top_border.color.as_rgb_hex().as_str());
+            }
+        }
+
+        // bottom border
+        if let Some(bottom_border) = border_style.bottom {
+            let style = border_line_to_excel_style(bottom_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_bottom(style);
+                format = format.set_border_bottom_color(bottom_border.color.as_rgb_hex().as_str());
+            }
+        }
+
+        // left border
+        if let Some(left_border) = border_style.left {
+            let style = border_line_to_excel_style(left_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_left(style);
+                format = format.set_border_left_color(left_border.color.as_rgb_hex().as_str());
+            }
+        }
+
+        // right border
+        if let Some(right_border) = border_style.right {
+            let style = border_line_to_excel_style(right_border.line);
+            if style != FormatBorder::None {
+                format = format.set_border_right(style);
+                format = format.set_border_right_color(right_border.color.as_rgb_hex().as_str());
+            }
+        }
+    }
+
     format
 }
 
+/// Adjusts a cell value for excel.
+/// Currently only needs to handle percentages.
 fn adjust_cell_value_for_excel(mut v: CellValue, pos: Pos, sheet: &Sheet) {
     let cell_format = sheet.cell_format(pos);
 
-    if let Some(numeric_format) = cell_format.numeric_format {
-        if numeric_format.kind == NumericFormatKind::Percentage {
-            if let CellValue::Number(n) = &mut v {
+    if let Some(numeric_format) = cell_format.numeric_format
+        && numeric_format.kind == NumericFormatKind::Percentage
+            && let CellValue::Number(n) = &mut v {
                 *n = n
                     .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
                     .unwrap_or(Decimal::ZERO);
             }
-        }
-    }
 }
 
 /// Converts a chrono format to an excel format.
@@ -391,6 +434,19 @@ fn chrono_to_excel_format(chrono_format: &str) -> String {
     result
 }
 
+/// Converts a CellBorderLine to an Excel border style integer.
+fn border_line_to_excel_style(line: CellBorderLine) -> FormatBorder {
+    match line {
+        CellBorderLine::Line1 => FormatBorder::Thin,
+        CellBorderLine::Line2 => FormatBorder::Medium,
+        CellBorderLine::Line3 => FormatBorder::Thick,
+        CellBorderLine::Dotted => FormatBorder::Dotted,
+        CellBorderLine::Dashed => FormatBorder::Dashed,
+        CellBorderLine::Double => FormatBorder::Double,
+        CellBorderLine::Clear => FormatBorder::None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -399,6 +455,7 @@ mod tests {
     use crate::{
         Array,
         controller::user_actions::import::tests::{assert_flattened_simple_csv, simple_csv},
+        grid::sheet::borders::{BorderSelection, BorderStyle, Borders},
     };
 
     #[test]
@@ -493,5 +550,167 @@ mod tests {
 
         let result = chrono_to_excel_format("%Y-%m-%d %H:%M:%S");
         assert_eq!(result, "yyyy-mm-dd hh:mm:ss");
+    }
+
+    #[test]
+    fn test_exports_excel_with_borders() {
+        let mut gc_1 = GridController::test();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+        let pos = Pos { x: 1, y: 1 };
+
+        // Add some data
+        gc_1.set_cell_value(
+            pos.to_sheet_pos(sheet_id_1),
+            "Border Test".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
+        );
+
+        // Add borders to the cell
+        gc_1.set_borders(
+            A1Selection::from_single_cell(pos.to_sheet_pos(sheet_id_1)),
+            BorderSelection::All,
+            Some(BorderStyle {
+                color: Rgba::new(255, 0, 0, 255),
+                line: CellBorderLine::Line2,
+            }),
+            None,
+        );
+
+        // Test that export succeeds
+        let excel = gc_1.export_excel();
+        assert!(excel.is_ok());
+        let excel_data = excel.unwrap();
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Check that the cell value is the same
+        assert_eq!(
+            gc_2.sheet(sheet_id_2).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
+        );
+
+        // Compare the borders of the two sheets
+        assert!(Borders::compare_borders(
+            &gc_1.sheet(sheet_id_1).borders,
+            &gc_2.sheet(sheet_id_2).borders
+        ));
+    }
+
+    #[test]
+    fn test_exports_excel_with_borders_beyond_data() {
+        let mut gc_1 = GridController::test();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+        let pos = Pos { x: 1, y: 1 };
+
+        // Add some data
+        gc_1.set_cell_value(
+            pos.to_sheet_pos(sheet_id_1),
+            "Border Test".to_string(),
+            None,
+        );
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
+        );
+
+        // Add borders at positions far from the data
+        for x in 5..=10 {
+            for y in 5..=10 {
+                gc_1.set_borders(
+                    A1Selection::from_single_cell(pos![sheet_id_1! x, y]),
+                    BorderSelection::Right,
+                    Some(BorderStyle {
+                        color: Rgba::new(0, 255, 0, 255),
+                        line: CellBorderLine::Line1,
+                    }),
+                    None,
+                );
+            }
+        }
+
+        // Test that export succeeds
+        let excel = gc_1.export_excel();
+        assert!(excel.is_ok());
+        let excel_data = excel.unwrap();
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Check that the cell value is the same
+        assert_eq!(
+            gc_2.sheet(sheet_id_2).cell_value(pos),
+            Some(CellValue::Text("Border Test".to_string()))
+        );
+
+        // Compare the borders of the two sheets
+        assert!(Borders::compare_borders(
+            &gc_1.sheet(sheet_id_1).borders,
+            &gc_2.sheet(sheet_id_2).borders
+        ));
+    }
+
+    #[test]
+    fn test_import_export_import_excel_with_styles() {
+        let file = include_bytes!("../../test-files/styles.xlsx");
+
+        let mut gc_1 = GridController::new_blank();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+
+        // Test that export succeeds
+        let excel = gc_1.export_excel();
+        assert!(excel.is_ok());
+        let excel_data = excel.unwrap();
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Check that the columns are the same
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).columns,
+            gc_2.sheet(sheet_id_2).columns
+        );
+
+        // Check that the formats are the same
+        assert_eq!(
+            gc_1.sheet(sheet_id_1).formats,
+            gc_2.sheet(sheet_id_2).formats
+        );
+    }
+
+    #[test]
+    fn test_import_export_import_excel_with_borders() {
+        let file = include_bytes!("../../test-files/borders.xlsx");
+
+        let mut gc_1 = GridController::new_blank();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        let sheet_id_1 = gc_1.sheet_ids()[0];
+
+        // Test that export succeeds
+        let excel = gc_1.export_excel();
+        assert!(excel.is_ok());
+        let excel_data = excel.unwrap();
+
+        // Import the excel file into a new grid
+        let mut gc_2 = GridController::new_blank();
+        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        let sheet_id_2 = gc_2.sheet_ids()[0];
+
+        // Compare the borders of the two sheets
+        assert!(Borders::compare_borders(
+            &gc_1.sheet(sheet_id_1).borders,
+            &gc_2.sheet(sheet_id_2).borders
+        ));
     }
 }

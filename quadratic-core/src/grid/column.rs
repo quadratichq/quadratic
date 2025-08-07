@@ -136,7 +136,7 @@ impl<B: BlockContent> ColumnData<B> {
                     // There are no adjacent blocks, so insert a new block and
                     // don't run any other checks.
                     self.add_block(Block::new(y, value));
-                    return None;
+                    None
                 }
             }
             (Some(block), None) => {
@@ -155,11 +155,11 @@ impl<B: BlockContent> ColumnData<B> {
     }
 
     fn try_merge_at(&mut self, y: i64) {
-        if self.0.contains_key(&y) {
-            if let Some(block_above) = self.remove_block_containing(y - 1) {
-                let block_below = self.remove_block_at(y).expect("block should not vanish");
-                self.add_blocks(Block::try_merge(block_above, block_below));
-            }
+        if self.0.contains_key(&y)
+            && let Some(block_above) = self.remove_block_containing(y - 1)
+        {
+            let block_below = self.remove_block_at(y).expect("block should not vanish");
+            self.add_blocks(Block::try_merge(block_above, block_below));
         }
     }
 
