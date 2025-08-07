@@ -32,8 +32,8 @@ const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
   { label: string; description: string }
 > = {
-  basic: { label: 'Basic', description: 'good for everyday tasks' },
-  pro: { label: 'Pro', description: 'smartest and most capable' },
+  basic: { label: 'Fast', description: 'Good for everyday tasks' },
+  pro: { label: 'Max', description: 'Smartest and most capable' },
 };
 
 interface SelectAIModelMenuProps {
@@ -149,6 +149,9 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     }
   }, [initialKnowsAboutModelPicker, knowsAboutModelPicker]);
   const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+  // If they've already seen the popover, don't show it.
+  // Otherwise, only show it to them when they've used the AI a bit.
+  const isOpenDidYouKnowDialog = knowsAboutModelPicker ? false : userMessagesCount > 4;
 
   return (
     <>
@@ -214,12 +217,10 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         </DropdownMenu>
       ) : DEFAULT_MODEL_FREE !== DEFAULT_MODEL_PRO ? (
         <DidYouKnowPopover
-          // If they've already seen the popover, don't show it.
-          // Otherwise, only show it to them when they've used the AI a bit.
-          open={knowsAboutModelPicker ? false : userMessagesCount > 4}
+          open={isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
-          title="Try our Pro model"
-          description="Pro is our best and most capable model. But be careful, it uses credits more quickly."
+          title="AI model choices"
+          description="Fast is our fastest model available. Max is slower but offers the most intelligence."
         >
           <Popover>
             {/* Needs a min-width or it shifts as the popover closes */}
@@ -247,14 +248,15 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                   {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
                     <Label
                       className={cn(
-                        'cursor-pointer px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
+                        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
                         i !== 0 && 'border-t border-border'
                       )}
                       key={mode}
                       onPointerDown={() => setModelMode(mode as ModelMode)}
                     >
-                      <strong className="font-bold">{label}</strong>: <span className="font-normal">{description}</span>
-                      <RadioGroupItem value={mode} className="float-right ml-auto" disabled={!isOnPaidPlan} />
+                      <RadioGroupItem value={mode} className="mr-2" disabled={!isOnPaidPlan} />
+                      <strong className="font-bold">{label}</strong>
+                      <span className="ml-auto font-normal">{description}</span>
                     </Label>
                   ))}
                 </RadioGroup>
