@@ -63,9 +63,9 @@ impl GridController {
         for range in &selection.ranges {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 // we use the bounds to limit the number of cells we need to check
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                    if let Some(rect) = range.to_rect(self.a1_context()) {
-                        if let Some(rect) = rect.intersection(&bounds) {
+                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
+                    && let Some(rect) = range.to_rect(self.a1_context())
+                        && let Some(rect) = rect.intersection(&bounds) {
                             let (rects, new_count) = Self::breakup_rect_into_pages(
                                 rect,
                                 count,
@@ -88,8 +88,6 @@ impl GridController {
                                 }
                             }
                         }
-                    }
-                }
             }
         }
         if !has_content {
@@ -141,9 +139,9 @@ impl GridController {
         for range in &selection.ranges {
             if let Some(sheet) = self.try_sheet(selection.sheet_id) {
                 // we use the bounds to limit the number of cells we need to check
-                if let Some(bounds) = sheet.format_bounds().into() {
-                    if let Some(rect) = range.to_rect(self.a1_context()) {
-                        if let Some(rect) = rect.intersection(&bounds) {
+                if let Some(bounds) = sheet.format_bounds().into()
+                    && let Some(rect) = range.to_rect(self.a1_context())
+                        && let Some(rect) = rect.intersection(&bounds) {
                             let (rects, new_count) = Self::breakup_rect_into_pages(
                                 rect,
                                 count,
@@ -162,8 +160,6 @@ impl GridController {
                                 }
                             }
                         }
-                    }
-                }
             }
         }
         if !has_content {

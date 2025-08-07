@@ -163,11 +163,10 @@ impl SheetBuilder {
                                 ArrayOutput::Block(mut values) => {
                                     // TODO(ddimaria): this is a hack, but makes a single use case pass
                                     // review approaches and refine this
-                                    if values.is_empty() {
-                                        if let Some(output_value) = result.output_value {
+                                    if values.is_empty()
+                                        && let Some(output_value) = result.output_value {
                                             values = vec![vec![Some(Any::String(output_value))]];
                                         }
-                                    }
 
                                     for dy in 0..values.len() {
                                         for dx in 0..values.first()?.len() {
