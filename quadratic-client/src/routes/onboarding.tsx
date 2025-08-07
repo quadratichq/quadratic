@@ -108,15 +108,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     try {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
       const uploadToMixpanelPromise = new Promise((resolve, reject) => {
-        trackEvent('[Onboarding].submit', result.data);
-        // Wait a tad for event analytics to be sent. If they drop, not mission critical.
-        // Also not a huge degradataion in user experience, as it gives a semblance
-        // of progress beyond the onboarding form to the next thing (new file).
-        setTimeout(() => {
+        trackEvent('[Onboarding].submit', result.data, () => {
           resolve(true);
-        }, 500);
+        });
       });
-      const [serverResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
+      const [serverResult, mixpanelResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
 
       if (serverResult.status === 'rejected') {
         Sentry.captureException({
@@ -128,7 +124,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         });
         sentryPromises.push(Sentry.flush(2000));
       }
+
+      if (mixpanelResult.status === 'rejected') {
+        Sentry.captureException({
+          message: 'Failed to upload user onboarding responses to Mixpanel',
+          level: 'error',
+          extra: {
+            error: mixpanelResult.reason,
+          },
+        });
+        sentryPromises.push(Sentry.flush(2000));
+      }
     } catch (error) {
+      console.error(error);
       Sentry.captureException({
         message: 'Unexpected error during onboarding submission',
         level: 'error',
@@ -139,6 +147,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       sentryPromises.push(Sentry.flush(2000));
     }
   } else {
+    console.error(result.error);
     // This should never happen in prod. If it does, that's a bug and we'll send to Sentry
     Sentry.captureException({
       message: 'Invalid onboarding payload. This is a developer bug.',

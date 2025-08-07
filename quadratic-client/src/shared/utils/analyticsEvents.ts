@@ -42,12 +42,19 @@ if (isMixpanelEnabled) {
  *
  */
 
-export function trackEvent(event: string, properties?: Record<string, any>) {
+export function trackEvent(event: string, properties?: Record<string, any>, callback?: () => void) {
   // Only run SDKs that are enabled
 
   if (isMixpanelEnabled) {
-    mixpanel.track(event, properties);
+    mixpanel.track(event, properties, callback);
+  } else {
+    callback?.();
   }
+
+  // Note: if/when we implement other providers and use `callback`, we will want
+  // to ensure that we only call the `callback` once for all providers because
+  // the callback may be a promise and we would only want it to resolve once
+  // when all providers have sent their events.
 
   // if (isPosthogEnabled) {…}
 }
