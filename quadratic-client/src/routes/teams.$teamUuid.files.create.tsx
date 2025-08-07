@@ -1,10 +1,9 @@
-import { authClient, requireAuth } from '@/auth/auth';
+import { requireAuth } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
-import { initMixpanelAnalytics } from '@/shared/utils/analytics';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { replace } from 'react-router';
 
@@ -21,13 +20,6 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   await requireAuth();
 
   const { request, params } = loaderArgs;
-
-  // We initialize mixpanel here (again, as we do it in the root loader) because
-  // it helps us prevent the app from failing because all the loaders run in parallel
-  // and we can't guarantee this loader finishes before the root one
-  // Once this proposal ships, we should use it: https://github.com/remix-run/react-router/discussions/9564
-  let user = await authClient.user();
-  initMixpanelAnalytics(user);
 
   // Get the team we're creating the file in
   const teamUuid = params.teamUuid;
@@ -52,7 +44,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
         teamUuid,
         isPrivate,
       });
-      mixpanel.track('[Files].newExampleFile', { fileName: name });
+      trackEvent('[Files].newExampleFile', { fileName: name });
       return replace(ROUTES.FILE({ uuid, searchParams: searchParams.toString() }));
     } catch (error) {
       Sentry.captureEvent({
@@ -70,7 +62,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   // If there's no query params for the kind of file to create, just create a
   // new, blank file. If it's private, that's passed as a query param
   // /teams/:teamUuid/files/create?private
-  mixpanel.track('[Files].newFile', { isPrivate });
+  trackEvent('[Files].newFile', { isPrivate });
   try {
     const {
       file: { uuid },
@@ -115,7 +107,7 @@ export const action = async ({ params, request }: ActionFunctionArgs) => {
 
   const { name, contents, version }: CreateActionRequest = await request.json();
 
-  mixpanel.track('[Files].loadFileFromDisk', { fileName: name });
+  trackEvent('[Files].loadFileFromDisk', { fileName: name });
   try {
     const {
       file: { uuid },

@@ -1,3 +1,4 @@
+import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
 import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
 import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
@@ -16,7 +17,6 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
-import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
@@ -27,16 +27,18 @@ import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
   isContentGoogleSearchInternal,
   isInternalMessage,
   isToolResultMessage,
+  isUserPromptMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
+import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilCallback, useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -44,8 +46,13 @@ type AIAnalystMessagesProps = {
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
   const { debug, debugFlags } = useDebugFlags();
+  const debugShowAIInternalContext = useMemo(() => debugFlags.getFlag('debugShowAIInternalContext'), [debugFlags]);
+  const debugAIAnalystChatEditing = useMemo(
+    () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
+    [debugFlags]
+  );
 
-  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const [messages, setMessages] = useRecoilState(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
@@ -169,10 +176,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (
-          !debugFlags.getFlag('debugShowAIInternalContext') &&
-          !['userPrompt', 'webSearchInternal'].includes(message.contextType)
-        ) {
+        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
           return null;
         }
 
@@ -195,45 +199,96 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               isContentGoogleSearchInternal(message.content) ? (
                 <GoogleSearchSources content={message.content} />
               ) : null
-            ) : message.role === 'user' && message.contextType === 'userPrompt' ? (
+            ) : isUserPromptMessage(message) ? (
               <AIAnalystUserMessageForm
                 initialContent={message.content}
                 initialContext={message.context}
                 textareaRef={textareaRef}
                 messageIndex={index}
+                onContentChange={
+                  debugAIAnalystChatEditing &&
+                  ((content) => {
+                    const newMessages = [...messages];
+                    newMessages[index] = { ...message, content };
+                    setMessages(newMessages);
+                  })
+                }
               />
             ) : isToolResultMessage(message) ? (
-              message.content.map((result) => (
+              message.content.map((result, resultIndex) => (
                 <AIAnalystUserMessageForm
                   key={`${index}-${result.id}`}
                   initialContent={result.content}
                   textareaRef={textareaRef}
                   messageIndex={index}
+                  onContentChange={
+                    debugAIAnalystChatEditing &&
+                    ((content) => {
+                      const newMessages = [...messages];
+                      newMessages[index] = { ...message, content: [...message.content] };
+                      newMessages[index].content[resultIndex] = {
+                        ...result,
+                        content: content as ToolResultContent,
+                      };
+                      setMessages(newMessages);
+                    })
+                  }
                 />
               ))
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  (item.type === 'anthropic_thinking' || item.type === 'google_thinking') && !!item.text ? (
+                  item.type === 'anthropic_thinking' || item.type === 'google_thinking' ? (
                     <ThinkingBlock
-                      key={item.text}
+                      key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
                       expandedDefault={true}
+                      onContentChange={
+                        debugAIAnalystChatEditing &&
+                        ((newItem) => {
+                          const newMessage = { ...message, content: [...message.content] };
+                          newMessage.content[contentIndex] = newItem;
+                          const newMessages = [...messages];
+                          (newMessages as typeof messages)[index] = newMessage as typeof message;
+                          setMessages(newMessages);
+                        })
+                      }
                     />
-                  ) : item.type === 'text' && !!item.text ? (
-                    <Markdown key={item.text}>{item.text}</Markdown>
+                  ) : item.type === 'text' ? (
+                    <Markdown
+                      key={`${index}-${contentIndex}-${item.type}`}
+                      text={item.text}
+                      onChange={
+                        debugAIAnalystChatEditing &&
+                        ((text) => {
+                          const newMessage = { ...message, content: [...message.content] };
+                          newMessage.content[contentIndex] = { ...item, text };
+                          const newMessages = [...messages];
+                          (newMessages as typeof messages)[index] = newMessage as typeof message;
+                          setMessages(newMessages);
+                        })
+                      }
+                    />
                   ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall, index) => (
-                    <AIAnalystToolCard
-                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
-                      name={toolCall.name}
-                      args={toolCall.arguments}
-                      loading={toolCall.loading}
+                  message.toolCalls.map((toolCall, toolCallIndex) => (
+                    <AIToolCardEditable
+                      key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
+                      toolCall={toolCall}
+                      onToolCallChange={
+                        debugAIAnalystChatEditing &&
+                        ((newToolCall) => {
+                          const newMessage = { ...message, toolCalls: [...message.toolCalls] };
+                          newMessage.toolCalls[toolCallIndex] = newToolCall;
+                          const newMessages = [...messages];
+                          (newMessages as typeof messages)[index] = newMessage as typeof message;
+                          setMessages(newMessages);
+                        })
+                      }
                     />
                   ))}
               </>
@@ -250,7 +305,15 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       <WebSearchLoading />
 
-      <UserPromptSuggestionsSkeleton args={''} loading={promptSuggestionsLoading} />
+      <UserPromptSuggestionsSkeleton
+        toolCall={{
+          id: 'user_prompt_suggestions',
+          name: 'UserPromptSuggestions',
+          arguments: '',
+          loading: promptSuggestionsLoading,
+        }}
+        className="tool-card"
+      />
 
       <AILoading loading={loading} />
     </div>
@@ -265,7 +328,7 @@ const FeedbackButtons = memo(() => {
     ({ snapshot }) =>
       (newLike: boolean | null) => {
         // Log it to mixpanel
-        mixpanel.track('[AIAnalyst].feedback', { like: newLike });
+        trackEvent('[AIAnalyst].feedback', { like: newLike });
 
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();

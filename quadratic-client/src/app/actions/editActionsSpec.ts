@@ -18,8 +18,8 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import {
   CopyAsPng,
   CopyIcon,
-  CsvIcon,
   CutIcon,
+  DownloadIcon,
   FindInFileIcon,
   PasteIcon,
   RedoIcon,
@@ -145,15 +145,13 @@ export const editActionsSpec: EditActionSpec = {
     labelVerbose: 'Copy selection as PNG',
     Icon: CopyAsPng,
     run: () => {
-      pixiAppSettings.setContextMenu?.({});
-      if (!pixiAppSettings.addGlobalSnackbar) return;
-      copySelectionToPNG(pixiAppSettings.addGlobalSnackbar);
+      copySelectionToPNG();
     },
   },
   [Action.DownloadAsCsv]: {
     label: () => 'Download as CSV',
     labelVerbose: 'Download selection as CSV',
-    Icon: CsvIcon,
+    Icon: DownloadIcon,
     run: async () => {
       pixiAppSettings.setContextMenu?.({});
       // use table name if available, otherwise use timestamp

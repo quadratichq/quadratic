@@ -91,11 +91,10 @@ impl GridController {
                         }
                     });
 
-                    if !html.is_empty() {
-                        if let Ok(html) = serde_json::to_vec(&html) {
+                    if !html.is_empty()
+                        && let Ok(html) = serde_json::to_vec(&html) {
                             crate::wasm_bindings::js::jsHtmlOutput(html);
                         }
-                    }
                     drop(html);
                 }
                 Ok(grid)

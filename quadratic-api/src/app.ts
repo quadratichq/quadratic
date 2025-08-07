@@ -3,13 +3,15 @@ import cors from 'cors';
 import type { NextFunction, Request, Response } from 'express';
 import express from 'express';
 import 'express-async-errors';
+import expressWinston from 'express-winston';
 import fs from 'fs';
 import helmet from 'helmet';
 import path from 'path';
+import winston from 'winston';
 import { CORS, LOG_REQUEST_INFO, NODE_ENV, SENTRY_DSN, VERSION } from './env-vars';
-import { logRequestInfo } from './middleware/logRequestInfo';
 import internal_router from './routes/internal';
 import { ApiError } from './utils/ApiError';
+import logger, { format } from './utils/logger';
 
 export const app = express();
 
@@ -30,7 +32,14 @@ app.use(cors({ origin: CORS }));
 
 // Request logging middleware for Datadog
 if (LOG_REQUEST_INFO) {
-  app.use(logRequestInfo);
+  app.use(
+    expressWinston.logger({
+      transports: [new winston.transports.Console()],
+      format,
+      headerBlacklist: ['authorization'],
+      meta: true,
+    })
+  );
 }
 
 // Health-check
@@ -52,9 +61,9 @@ registerRoutes().then(() => {
     if (NODE_ENV !== 'test') {
       if (error.status >= 500) {
         if (NODE_ENV === 'production') {
-          console.error(JSON.stringify({ error }));
+          logger.error('Server error (production)', error);
         } else {
-          console.log(JSON.stringify({ error }));
+          logger.error('Server error (development)', error);
         }
       }
     }
@@ -72,7 +81,7 @@ registerRoutes().then(() => {
     if (error instanceof ApiError) {
       res.status(error.status).json({ error: { message: error.message, ...(error.meta ? { meta: error.meta } : {}) } });
     } else {
-      console.error(JSON.stringify({ error }));
+      logger.error('Unhandled application error', error);
 
       // Generic error handling
       res.status(error.status || 500).json({
@@ -109,7 +118,7 @@ async function registerRoutes() {
     if (httpMethodIndex === -1) httpMethodIndex = segments.indexOf('DELETE');
 
     if (httpMethodIndex === -1) {
-      console.error(JSON.stringify({ message: 'File route is malformed. It needs an HTTP method', file }));
+      logger.error('File route is malformed. It needs an HTTP method', { file });
     } else {
       const httpMethod = segments[httpMethodIndex].toLowerCase() as 'get' | 'post' | 'put' | 'patch' | 'delete';
       const routeSegments = segments.slice(0, httpMethodIndex);
@@ -120,8 +129,8 @@ async function registerRoutes() {
         const callbacks = await import(path.join(currentDirectory, file)).then((module) => module.default);
         app[httpMethod](expressRoute, ...callbacks);
         registeredRoutes.push(httpMethod.toUpperCase() + ' ' + expressRoute);
-      } catch (err) {
-        console.error(JSON.stringify({ message: 'Failed to register route', expressRoute, error: err }));
+      } catch (error) {
+        logger.error(`Failed to register route ${expressRoute}`, error);
       }
     }
   }

@@ -126,10 +126,10 @@ impl<'a> Connection<'a> for SnowflakeConnection {
             while let Some(bytes) = bytes_stream.next().await {
                 let bytes = bytes.map_err(|e| query_error(e.to_string()))?;
 
-                if let Some(max_bytes) = max_bytes {
-                    if (chunks.len() + bytes.len()) as u64 > max_bytes {
-                        return Ok((Bytes::new(), true, 0));
-                    }
+                if let Some(max_bytes) = max_bytes
+                    && (chunks.len() + bytes.len()) as u64 > max_bytes
+                {
+                    return Ok((Bytes::new(), true, 0));
                 }
 
                 chunks.push(bytes);

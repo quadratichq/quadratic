@@ -168,10 +168,16 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     description: 'Logs the AI Context to the console in a readable form',
     group: 'AI',
   },
-  debugAIAnalystDebugChatInput: {
+  debugAIAnalystChatStringInput: {
     initial: false,
-    title: 'AI Analyst Debug Chat Input',
-    description: 'Debug AI Analyst chat input',
+    title: 'AI Analyst Chat String Input',
+    description: 'Enable input box with json string representation of the chat',
+    group: 'AI',
+  },
+  debugAIAnalystChatEditing: {
+    initial: false,
+    title: 'AI Analyst Chat Editing',
+    description: 'Change chat to edit mode. This allows you to edit the chat in real time.',
     group: 'AI',
   },
 

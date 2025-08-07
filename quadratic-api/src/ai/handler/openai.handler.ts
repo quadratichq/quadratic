@@ -6,6 +6,7 @@ import type {
   AIRequestHelperArgs,
   AzureOpenAIModelKey,
   BasetenModelKey,
+  FireworksModelKey,
   OpenAIModelKey,
   OpenRouterModelKey,
   ParsedAIResponse,
@@ -14,7 +15,13 @@ import type {
 import { getOpenAIApiArgs, parseOpenAIResponse, parseOpenAIStream } from '../helpers/openai.helper';
 
 export const handleOpenAIRequest = async (
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
@@ -23,6 +30,7 @@ export const handleOpenAIRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
+
   const { messages, tools, tool_choice } = getOpenAIApiArgs(args, options.strictParams, options.imageSupport);
 
   let apiArgs: ChatCompletionCreateParamsStreaming | ChatCompletionCreateParamsNonStreaming = {
@@ -33,6 +41,10 @@ export const handleOpenAIRequest = async (
     stream: options.stream,
     tools,
     tool_choice,
+    ...(options.top_p !== undefined ? { top_p: options.top_p } : {}),
+    ...(options.top_k !== undefined ? { top_k: options.top_k } : {}),
+    ...(options.min_p !== undefined ? { min_p: options.min_p } : {}),
+    ...(options.repetition_penalty !== undefined ? { repetition_penalty: options.repetition_penalty } : {}),
   };
 
   if (options.stream) {

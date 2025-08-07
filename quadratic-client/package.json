@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.15.2",
+  "version": "0.16.0",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -67,6 +67,7 @@
     "clsx": "^2.0.0",
     "cmdk": "^1.0.0",
     "color": "^5.0.0",
+    "dexie": "^4.0.11",
     "esbuild-wasm": "0.25.3",
     "eventemitter3": "^5.0.1",
     "fontfaceobserver": "^2.3.0",

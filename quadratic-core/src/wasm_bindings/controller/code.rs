@@ -69,9 +69,9 @@ impl GridController {
         code_cell_name: Option<String>,
         cursor: Option<String>,
     ) -> Option<String> {
-        if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
-            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-                if let Ok(language) = serde_wasm_bindgen::from_value(language) {
+        if let Ok(pos) = serde_json::from_str::<Pos>(&pos)
+            && let Ok(sheet_id) = SheetId::from_str(&sheet_id)
+                && let Ok(language) = serde_wasm_bindgen::from_value(language) {
                     return Some(self.set_code_cell(
                         pos.to_sheet_pos(sheet_id),
                         language,
@@ -80,8 +80,6 @@ impl GridController {
                         cursor,
                     ));
                 }
-            }
-        }
         None
     }
 
@@ -112,11 +110,10 @@ impl GridController {
         selection: String,
         cursor: Option<String>,
     ) -> Option<String> {
-        if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-            if let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context()) {
+        if let Ok(sheet_id) = SheetId::from_str(&sheet_id)
+            && let Ok(selection) = A1Selection::parse_a1(&selection, sheet_id, self.a1_context()) {
                 return Some(self.rerun_code_cell(selection, cursor));
             }
-        }
         None
     }
 

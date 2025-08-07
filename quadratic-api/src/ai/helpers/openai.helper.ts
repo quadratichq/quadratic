@@ -26,6 +26,7 @@ import type {
   AzureOpenAIModelKey,
   BasetenModelKey,
   Content,
+  FireworksModelKey,
   ImageContent,
   OpenAIModelKey,
   OpenRouterModelKey,
@@ -38,9 +39,10 @@ import { v4 } from 'uuid';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
     .filter(
       (content): content is TextContent | ImageContent =>
-        isContentText(content) || (imageSupport && isContentImage(content))
+        (imageSupport && isContentImage(content)) || (isContentText(content) && !!content.text.trim())
     )
     .map((content) => {
       if (isContentText(content)) {
@@ -57,7 +59,12 @@ function convertContent(content: Content, imageSupport: boolean): Array<ChatComp
 }
 
 function convertToolResultContent(content: ToolResultContent): Array<ChatCompletionContentPartText> {
-  return content.filter((content): content is TextContent => isContentText(content));
+  return content
+    .filter((content): content is TextContent => isContentText(content) && !!content.text.trim())
+    .map((content) => ({
+      type: 'text' as const,
+      text: content.text.trim(),
+    }));
 }
 
 export function getOpenAIApiArgs(
@@ -79,10 +86,10 @@ export function getOpenAIApiArgs(
       const openaiMessage: ChatCompletionMessageParam = {
         role: message.role,
         content: message.content
-          .filter((content) => content.text && content.type === 'text')
+          .filter((content) => content.type === 'text' && !!content.text.trim())
           .map((content) => ({
             type: 'text',
-            text: content.text,
+            text: content.text.trim(),
           })),
         tool_calls:
           message.toolCalls.length > 0
@@ -120,7 +127,7 @@ export function getOpenAIApiArgs(
   }, []);
 
   const openaiMessages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemMessages.map((message) => ({ type: 'text', text: message })) },
+    { role: 'system', content: systemMessages.map((message) => ({ type: 'text', text: message.trim() })) },
     ...messages,
   ];
 
@@ -167,7 +174,13 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
 
 export async function parseOpenAIStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -209,7 +222,7 @@ export async function parseOpenAIStream(
               text: '',
             }),
           };
-          currentContent.text += chunk.choices[0].delta.content ?? '';
+          currentContent.text += chunk.choices[0].delta.content;
           responseMessage.content.push(currentContent);
 
           responseMessage.toolCalls = responseMessage.toolCalls.map((toolCall) => ({
@@ -291,7 +304,13 @@ export async function parseOpenAIStream(
 
 export function parseOpenAIResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey:
+    | OpenAIModelKey
+    | AzureOpenAIModelKey
+    | XAIModelKey
+    | BasetenModelKey
+    | FireworksModelKey
+    | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -311,7 +330,7 @@ export function parseOpenAIResponse(
   if (message.content) {
     responseMessage.content.push({
       type: 'text',
-      text: message.content,
+      text: message.content.trim(),
     });
   }
 

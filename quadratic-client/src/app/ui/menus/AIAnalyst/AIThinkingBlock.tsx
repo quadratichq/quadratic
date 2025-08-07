@@ -10,10 +10,11 @@ interface ThinkingBlockProps {
   isLoading: boolean;
   thinkingContent: AIResponseContent[number];
   expandedDefault: boolean;
+  onContentChange?: (content: AIResponseContent[number]) => void;
 }
 
 export const ThinkingBlock = memo(
-  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault }: ThinkingBlockProps) => {
+  ({ isCurrentMessage, isLoading, thinkingContent, expandedDefault, onContentChange }: ThinkingBlockProps) => {
     // Each thinking block tracks its own expanded state
     const [isExpanded, setIsExpanded] = useState(isLoading && isCurrentMessage && expandedDefault);
     // Track whether this is the first load completion
@@ -37,6 +38,13 @@ export const ThinkingBlock = memo(
       }
     }, [isLoading, isCurrentMessage]);
 
+    const handleContentChange = useCallback(
+      (text: string) => {
+        onContentChange?.({ ...thinkingContent, text });
+      },
+      [onContentChange, thinkingContent]
+    );
+
     return (
       <div className="flex flex-col">
         <div
@@ -54,7 +62,7 @@ export const ThinkingBlock = memo(
 
         {isExpanded && (
           <div className="mt-1 border-l-2 border-muted-foreground/40 pl-4 italic text-muted-foreground">
-            <Markdown>{thinkingContent.text}</Markdown>
+            <Markdown text={thinkingContent.text} onChange={onContentChange && handleContentChange} />
           </div>
         )}
       </div>
