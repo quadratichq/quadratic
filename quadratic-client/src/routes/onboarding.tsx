@@ -109,7 +109,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
       const uploadToMixpanelPromise = new Promise((resolve, reject) => {
         trackEvent('[Onboarding].submit', result.data);
-        // Wait just a ad for event analytics to be sent. If they drop, not mission critical.
+        // Wait a tad for event analytics to be sent. If they drop, not mission critical.
         // Also not a huge degradataion in user experience, as it gives a semblance
         // of progress beyond the onboarding form to the next thing (new file).
         setTimeout(() => {
