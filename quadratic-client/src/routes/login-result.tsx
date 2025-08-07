@@ -5,9 +5,6 @@ import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
 export const loader = async () => {
-  // Show onboarding for ~25% of new users
-  const SHOW_ONBOARDING = Math.random() < 0.25;
-
   // try/catch here handles case where this _could_ error out and we
   // have no errorElement so we just redirect back to home
   try {
@@ -51,7 +48,7 @@ export const loader = async () => {
       // For new users coming directly to `/` on desktop, handle them specially
       // Otherwise, respect the route they were trying to access (e.g. `/files/create?prompt=...`)
       if (userCreated && !isMobile && redirectTo === '/') {
-        return SHOW_ONBOARDING ? redirect('/onboarding') : redirect('/files/create?private=false');
+        return redirect('/onboarding');
       }
       return redirect(redirectTo);
     }
