@@ -85,11 +85,10 @@ impl RegionMap {
             .filter(|pos| pos.sheet_id != sheet_id)
             .collect();
         for pos in positions {
-            if let Some(map) = self.pos_to_region.get_mut(&pos.sheet_id) {
-                if let Some(regions) = map.get_mut(&pos.into()) {
+            if let Some(map) = self.pos_to_region.get_mut(&pos.sheet_id)
+                && let Some(regions) = map.get_mut(&pos.into()) {
                     regions.retain(|&(region_sheet, _region_rect)| region_sheet != sheet_id);
                 }
-            }
         }
     }
 
