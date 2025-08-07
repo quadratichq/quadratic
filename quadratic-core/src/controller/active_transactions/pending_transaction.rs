@@ -205,11 +205,10 @@ impl PendingTransaction {
                 }
             };
 
-            if self.is_undo_redo() {
-                if let Some(cursor) = &self.cursor_undo_redo {
+            if self.is_undo_redo()
+                && let Some(cursor) = &self.cursor_undo_redo {
                     crate::wasm_bindings::js::jsSetCursor(cursor.clone());
                 }
-            }
 
             if self.generate_thumbnail {
                 crate::wasm_bindings::js::jsGenerateThumbnail();
