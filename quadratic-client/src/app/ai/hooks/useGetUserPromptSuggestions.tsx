@@ -1,5 +1,5 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
-import { toXml } from '@/app/ai/utils/xmlFormatter';
+import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystPromptSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
 import { getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
@@ -31,7 +31,7 @@ export const useGetUserPromptSuggestions = () => {
 Use user_prompt_suggestions tool to provide follow up prompts for the user based on the following chat messages between AI assistant and the user.\n
 Previous messages:\n
 \`\`\`
-${toXml(chatPromptMessages, 'chat_messages')}
+${toMarkdown(chatPromptMessages, 'chat_messages')}
 \`\`\`
 `,
               },

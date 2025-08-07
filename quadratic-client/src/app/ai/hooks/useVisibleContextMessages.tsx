@@ -1,5 +1,5 @@
 import { maxRects, maxRows } from '@/app/ai/constants/context';
-import { toXml } from '@/app/ai/utils/xmlFormatter';
+import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
@@ -55,7 +55,7 @@ I am sharing visible tables summary in the viewport as an array of table summary
 
 There are following visible tables in the viewport:\n
 \`\`\`markdown
-${toXml(visibleContext[0].tables_summary, 'tables_summary')}
+${toMarkdown(visibleContext[0].tables_summary, 'tables_summary')}
 \`\`\`
 `
     : ''
@@ -74,7 +74,7 @@ Take into account chart bounds when adding values, code or charts to the sheet. 
 
 There are following visible charts in the viewport:\n
 \`\`\`markdown
-${toXml(visibleContext[0].charts_summary, 'charts_summary')}
+${toMarkdown(visibleContext[0].charts_summary, 'charts_summary')}
 \`\`\`
 `
     : ''
@@ -100,7 +100,7 @@ This is being shared so that you can understand the data format, size and value 
 
 There are following visible data in the viewport:\n
 \`\`\`markdown
-${toXml(visibleContext[0].data_rects, 'data_rects')}
+${toMarkdown(visibleContext[0].data_rects, 'data_rects')}
 \`\`\`
 `
     : ''
@@ -146,7 +146,7 @@ The code in the code cell is:\n
 
 Code was run recently and the console output is:\n
 \`\`\`markdown
-${toXml(consoleOutput, 'console_output')}
+${toMarkdown(consoleOutput, 'console_output')}
 \`\`\`
 `;
 })}`

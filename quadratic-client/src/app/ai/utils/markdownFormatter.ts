@@ -119,6 +119,6 @@ function formatTitle(text: string): string {
  * @param rootElement - The root element name (default: 'data')
  * @returns Markdown formatted string
  */
-export function toXml(data: any, rootElement: string = 'data'): string {
+export function toMarkdown(data: any, rootElement: string = 'data'): string {
   return convertToMarkdown(data, rootElement, 1).trim();
 }

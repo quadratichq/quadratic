@@ -1,4 +1,4 @@
-import { toXml } from '@/app/ai/utils/xmlFormatter';
+import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { DEFAULT_HTML_CELL_HEIGHT, DEFAULT_HTML_CELL_WIDTH } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -95,7 +95,7 @@ first_row_visible_values is an array of objects with following properties:\n
 There are following data tables in the currently open file:\n
 
 \`\`\`text
-${toXml(dataTables, 'data_tables')}
+${toMarkdown(dataTables, 'data_tables')}
 \`\`\`
 
 Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
@@ -138,7 +138,7 @@ first_row_visible_values is an array of objects with following properties:\n
 There are following code tables in the currently open file:\n
 
 \`\`\`
-${toXml(codeTables, 'code_tables')}
+${toMarkdown(codeTables, 'code_tables')}
 \`\`\`
 
 Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
@@ -166,7 +166,7 @@ Note: Formula table details (formula content, error details) are provided separa
 There are following formula tables in the currently open file:\n
 
 \`\`\`
-${toXml(formulaTables, 'formula_tables')}
+${toMarkdown(formulaTables, 'formula_tables')}
 \`\`\`
 
 Always avoid table bounds when adding values, code or charts to the sheet. Reference table values where ever required.\n
@@ -190,7 +190,7 @@ Each chart has following properties:\n
 
 There are following charts in the currently open file:\n
 \`\`\`text
-${toXml(charts, 'charts')}
+${toMarkdown(charts, 'charts')}
 \`\`\`
 
 Always avoid chart bounds when adding values, code or charts to the sheet. Reference chart values where ever required.

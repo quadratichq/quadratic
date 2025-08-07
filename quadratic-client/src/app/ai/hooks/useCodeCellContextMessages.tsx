@@ -1,4 +1,4 @@
-import { toXml } from '@/app/ai/utils/xmlFormatter';
+import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { getConnectionInfo, getConnectionKind } from '@/app/helpers/codeCellLanguage';
 import { xyToA1 } from '@/app/quadratic-core/quadratic_core';
@@ -30,7 +30,8 @@ export function useCodeCellContextMessages() {
             teamUuid
           );
         }
-        const schemaJsonForAi = schemaData ? toXml(schemaData, 'database_schema') : undefined;
+        const schemaMarkdownForAi = schemaData ? toMarkdown(schemaData, 'database_schema') : undefined;
+
         const a1Pos = xyToA1(pos.x, pos.y);
         const language = getConnectionKind(cellLanguage);
         const consoleHasOutput = consoleOutput.std_out !== '' || consoleOutput.std_err !== '';
@@ -45,8 +46,8 @@ export function useCodeCellContextMessages() {
 Currently, you are in a code cell that is being edited.\n
 The code cell type is ${language}. The code cell is located at ${a1Pos}.\n
 ${
-  schemaJsonForAi
-    ? `The schema for the database is:\n\`\`\`\n${schemaJsonForAi}\`\`\`\n${
+  schemaMarkdownForAi
+    ? `The schema for the database is:\n\`\`\`\n${schemaMarkdownForAi}\`\`\`\n${
         language === 'POSTGRES' || language === 'COCKROACHDB' || language === 'SUPABASE' || language === 'NEON'
           ? 'When generating postgres queries, put schema and table names in quotes, e.g. "schema"."TableName".'
           : ''
@@ -86,7 +87,7 @@ The code in the code cell is:\n
 ${
   consoleHasOutput
     ? `Code was run recently and the console output is:\n
-\`\`\`\n${toXml(consoleOutput, 'console_output')}\`\`\`
+\`\`\`\n${toMarkdown(consoleOutput, 'console_output')}\`\`\`
 `
     : ``
 }`,

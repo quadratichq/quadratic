@@ -1,5 +1,5 @@
 import { maxRects, maxRows } from '@/app/ai/constants/context';
-import { toXml } from '@/app/ai/utils/xmlFormatter';
+import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { rectToA1 } from '@/app/quadratic-core/quadratic_core';
@@ -96,7 +96,7 @@ WARNING: This is ONLY a subset of the data. Use the get_cell_data function to ge
 
 There are following data in the currently open sheet:
 \`\`\`
-${toXml(
+${toMarkdown(
   currentSheetContext[0].data_rects.map(({ sheet_name, ...dataRect }) => dataRect),
   'data_rects'
 )}

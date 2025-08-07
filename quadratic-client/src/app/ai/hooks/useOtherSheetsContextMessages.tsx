@@ -1,5 +1,5 @@
 import { maxRects, maxRows } from '@/app/ai/constants/context';
-import { toXml } from '@/app/ai/utils/xmlFormatter';
+import { toMarkdown } from '@/app/ai/utils/markdownFormatter';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -46,7 +46,7 @@ Note: This is an internal message for context. Do not quote it in your response.
 
 I have the following sheets in the currently open file:\n
 \`\`\`
-${toXml(sheetNames, 'sheet_names')}
+${toMarkdown(sheetNames, 'sheet_names')}
 \`\`\`
 
 You can reference data from these sheets in the context of following messages. Refer to cells if required in code.\n\n
@@ -65,7 +65,7 @@ ${otherSheetsContext.map((otherSheetContext) => {
 Tables in sheet '${otherSheetContext.sheet_name}':
 
 \`\`\`
-${toXml(otherSheetContext.tables_summary, 'tables_summary')}
+${toMarkdown(otherSheetContext.tables_summary, 'tables_summary')}
 \`\`\`
 `;
 })}
@@ -94,7 +94,7 @@ ${otherSheetsContext.map((otherSheetContext) => {
 Data in sheet '${otherSheetContext.sheet_name}':
 
 \`\`\`
-${toXml(otherSheetContext.data_rects, 'data_rects')}
+${toMarkdown(otherSheetContext.data_rects, 'data_rects')}
 \`\`\`
 `;
 })}
