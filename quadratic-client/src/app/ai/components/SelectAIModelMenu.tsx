@@ -1,8 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
-import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -17,17 +15,16 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
-import { DEFAULT_MODEL_FREE, DEFAULT_MODEL_PRO, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useMemo } from 'react';
-import { Link } from 'react-router';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
   { label: string; description: string }
 > = {
-  basic: { label: 'Basic', description: 'good for everyday tasks' },
-  pro: { label: 'Pro', description: 'smartest and most capable' },
+  fast: { label: 'Fast', description: 'good for everyday tasks' },
+  max: { label: 'Max', description: 'smartest and most capable' },
 };
 
 interface SelectAIModelMenuProps {
@@ -38,7 +35,6 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const { debug } = useDebugFlags();
 
   const {
-    isOnPaidPlan,
     modelKey: selectedModel,
     setModelKey: setSelectedModel,
     modelConfig: selectedModelConfig,
@@ -89,7 +85,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   );
 
   const selectedModelMode = useMemo(
-    () => (selectedModelConfig.mode === 'disabled' ? 'pro' : selectedModelConfig.mode),
+    () => (selectedModelConfig.mode === 'disabled' ? 'max' : selectedModelConfig.mode),
     [selectedModelConfig.mode]
   );
   const setModelMode = useCallback(
@@ -173,7 +169,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : DEFAULT_MODEL_FREE !== DEFAULT_MODEL_PRO ? (
+      ) : (
         <Popover>
           {/* Needs a min-width or it shifts as the popover closes */}
           <PopoverTrigger className="group mr-1.5 flex min-w-24 items-center justify-end gap-0 text-right">
@@ -202,22 +198,14 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                     onPointerDown={() => setModelMode(mode as ModelMode)}
                   >
                     <strong className="font-bold">{label}</strong>: <span className="font-normal">{description}</span>
-                    <RadioGroupItem value={mode} className="float-right ml-auto" disabled={!isOnPaidPlan} />
+                    <RadioGroupItem value={mode} className="float-right ml-auto" />
                   </Label>
                 ))}
               </RadioGroup>
             </form>
-
-            {!isOnPaidPlan && (
-              <Button variant="link" asChild>
-                <Link to={ROUTES.ACTIVE_TEAM_SETTINGS} target="_blank">
-                  Upgrade now for access to Pro
-                </Link>
-              </Button>
-            )}
           </PopoverContent>
         </Popover>
-      ) : null}
+      )}
     </>
   );
 });

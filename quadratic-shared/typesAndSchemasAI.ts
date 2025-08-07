@@ -45,11 +45,7 @@ const OpenAIModelSchema = z.enum([
 ]);
 const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
-const BasetenModelSchema = z.enum([
-  'moonshotai/Kimi-K2-Instruct',
-  'Qwen/Qwen3-Coder-480B-A35B-Instruct',
-  'Qwen/Qwen3-235B-A22B-Instruct-2507',
-]);
+const BasetenModelSchema = z.enum(['moonshotai/Kimi-K2-Instruct', 'Qwen/Qwen3-Coder-480B-A35B-Instruct']);
 const FireworksModelSchema = z.enum(['accounts/fireworks/models/qwen3-coder-480b-a35b-instruct']);
 const OpenRouterModelSchema = z.enum([
   'deepseek/deepseek-r1-0528',
@@ -142,7 +138,6 @@ export type XAIModelKey = z.infer<typeof XAIModelKeySchema>;
 const BasetenModelKeySchema = z.enum([
   'baseten:moonshotai/Kimi-K2-Instruct',
   'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
-  'baseten:Qwen/Qwen3-235B-A22B-Instruct-2507',
 ]);
 export type BasetenModelKey = z.infer<typeof BasetenModelKeySchema>;
 
@@ -180,11 +175,12 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_write_tokens: z.number(),
 });
 export type AIRates = z.infer<typeof AIRatesSchema>;
-const ModelModeSchema = z.enum(['disabled', 'basic', 'pro']);
+const ModelModeSchema = z.enum(['disabled', 'fast', 'max']);
 export type ModelMode = z.infer<typeof ModelModeSchema>;
 export const AIModelConfigSchema = z
   .object({
     model: AIModelSchema,
+    backupModel: AIModelKeySchema.optional(),
     displayName: z.string(),
     temperature: z.number(),
     max_tokens: z.number(),
