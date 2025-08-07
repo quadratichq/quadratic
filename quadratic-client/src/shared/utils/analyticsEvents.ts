@@ -42,21 +42,23 @@ if (isMixpanelEnabled) {
  *
  */
 
-export function trackEvent(event: string, properties?: Record<string, any>, callback?: () => void) {
+export async function trackEvent(event: string, properties?: Record<string, any>) {
   // Only run SDKs that are enabled
 
-  if (isMixpanelEnabled) {
-    mixpanel.track(event, properties, callback);
-  } else {
-    callback?.();
-  }
+  return new Promise((resolve, reject) => {
+    if (isMixpanelEnabled) {
+      mixpanel.track(event, properties, () => {
+        resolve(true);
+      });
+    } else {
+      resolve(true);
+    }
 
-  // Note: if/when we implement other providers and use `callback`, we will want
-  // to ensure that we only call the `callback` once for all providers because
-  // the callback may be a promise and we would only want it to resolve once
-  // when all providers have sent their events.
+    // Note: if/when we implement other providers, we will want to ensure that
+    // we only call the `resolve` once for all providers
 
-  // if (isPosthogEnabled) {…}
+    // if (isPosthogEnabled) {…}
+  });
 }
 
 export function resetEventAnalytics() {
