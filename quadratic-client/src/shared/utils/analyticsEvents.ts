@@ -42,11 +42,11 @@ if (isMixpanelEnabled) {
  *
  */
 
-export function trackEvent(event: string, properties?: Record<string, any>, callback?: () => void) {
+export function trackEvent(event: string, properties?: Record<string, any>) {
   // Only run SDKs that are enabled
 
   if (isMixpanelEnabled) {
-    mixpanel.track(event, properties, callback);
+    mixpanel.track(event, properties);
   }
 
   // if (isPosthogEnabled) {…}
