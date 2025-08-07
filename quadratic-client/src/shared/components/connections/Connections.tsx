@@ -181,10 +181,11 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
               breadcrumbs={[
                 connectionsBreadcrumb,
                 {
-                  label: `Edit (${connectionsByType[activeConnectionState.type].name})`,
+                  label: `Edit`,
                   onClick: handleNavigateToListView,
                 },
               ]}
+              Logo={connectionsByType[activeConnectionState.type].Logo}
             />
             <ConnectionFormEdit
               connectionUuid={activeConnectionState.uuid}
@@ -199,10 +200,11 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
               breadcrumbs={[
                 connectionsBreadcrumb,
                 {
-                  label: `Browse (${connectionsByType[activeConnectionState.type].name})`,
+                  label: 'Browse',
                   onClick: handleNavigateToListView,
                 },
               ]}
+              Logo={connectionsByType[activeConnectionState.type].Logo}
             />
             <ConnectionDetails
               connectionUuid={activeConnectionState.uuid}
@@ -228,6 +230,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
                 { label: `New`, onClick: handleNavigateToNewView },
                 { label: connectionsByType[activeConnectionState.type].name },
               ]}
+              Logo={connectionsByType[activeConnectionState.type].Logo}
             />
             <ConnectionFormCreate
               teamUuid={teamUuid}
@@ -243,6 +246,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
                 { label: `New`, onClick: handleNavigateToNewView },
                 { label: potentialConnectionsByType[activeConnectionState.type].name },
               ]}
+              Logo={potentialConnectionsByType[activeConnectionState.type].Logo}
             />
             <div className="flex flex-col gap-2">
               <p className="mb-4 text-sm">
@@ -280,9 +284,15 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   );
 };
 
-function ConnectionBreadcrumbs({ breadcrumbs }: { breadcrumbs: Array<{ label: string; onClick?: () => void }> }) {
+function ConnectionBreadcrumbs({
+  breadcrumbs,
+  Logo,
+}: {
+  breadcrumbs: Array<{ label: string; onClick?: () => void }>;
+  Logo?: React.ComponentType;
+}) {
   return (
-    <div className="flex items-center gap-2 pb-6 pt-2">
+    <div className="flex items-center gap-2 pb-5 pt-0.5">
       <Breadcrumb>
         <BreadcrumbList>
           {breadcrumbs.map(({ label, onClick }, i) =>
@@ -301,6 +311,7 @@ function ConnectionBreadcrumbs({ breadcrumbs }: { breadcrumbs: Array<{ label: st
           )}
         </BreadcrumbList>
       </Breadcrumb>
+      <div className="ml-auto h-8">{Logo && <Logo />}</div>
     </div>
   );
 }
