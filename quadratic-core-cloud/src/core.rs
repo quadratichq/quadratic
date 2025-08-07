@@ -9,10 +9,8 @@ use uuid::Uuid;
 
 use crate::{
     error::{CoreCloudError, Result},
-    python::python,
+    python::execute::execute,
 };
-
-static PYTHON_TIMEOUT_MS: u128 = 30000; // 30 seconds
 
 // from main
 // receive the transaction
@@ -73,7 +71,7 @@ pub(crate) async fn process_transaction(
                 // send the request
                 tx_get_cells_request.lock()?.send(a1).await?;
 
-                // receive the response
+                // receive and return the response
                 rx_get_cells_response.lock()?.recv().await.ok_or_else(|| {
                     CoreCloudError::Python(format!("Error receiving get_cells response"))
                 })
@@ -90,7 +88,7 @@ pub(crate) async fn process_transaction(
     if let Ok(async_transaction) = async_transaction {
         if let Some(waiting_for_async) = async_transaction.waiting_for_async {
             // run python
-            let js_code_result = python::execute(
+            let js_code_result = execute(
                 &waiting_for_async.code,
                 &transaction_id,
                 Box::new(get_cells),
@@ -152,7 +150,7 @@ mod tests {
         sheet.set_cell_values(pos![A1].into(), to_number("1").into());
 
         // set B2 to a Python cell
-        let code = "print(q.cells('A1'))\n2 * 2".to_string();
+        let code = "q.cells('A1') +  10".to_string();
         sheet.set_cell_values(pos![A2].into(), to_code(&code).into());
 
         // generate the operation
@@ -170,6 +168,6 @@ mod tests {
             .try_sheet(sheet_id)
             .unwrap()
             .display_value(pos![A2]);
-        assert_eq!(value, Some(to_number("4")));
+        assert_eq!(value, Some(to_number("11")));
     }
 }

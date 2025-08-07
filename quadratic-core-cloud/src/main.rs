@@ -10,7 +10,7 @@ mod error;
 mod health;
 mod multiplayer;
 mod proto;
-mod python;
+pub(crate) mod python;
 mod scheduled_tasks;
 mod server;
 mod state;
