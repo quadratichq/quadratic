@@ -136,7 +136,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         sentryPromises.push(Sentry.flush(2000));
       }
     } catch (error) {
-      console.error(error);
       Sentry.captureException({
         message: 'Unexpected error during onboarding submission',
         level: 'error',
@@ -147,7 +146,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       sentryPromises.push(Sentry.flush(2000));
     }
   } else {
-    console.error(result.error);
     // This should never happen in prod. If it does, that's a bug and we'll send to Sentry
     Sentry.captureException({
       message: 'Invalid onboarding payload. This is a developer bug.',
