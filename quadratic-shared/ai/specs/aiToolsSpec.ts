@@ -47,15 +47,48 @@ export const AIToolSchema = z.enum([
 type AIToolSpec<T extends keyof typeof AIToolsArgsSchema> = {
   sources: AISource[];
   description: string; // this is sent with tool definition, has a maximum character limit
-  parameters: {
-    type: 'object';
-    properties: Record<string, AIToolArgs>;
-    required: string[];
-    additionalProperties: boolean;
-  };
+  parameters: AIToolArgs;
   responseSchema: (typeof AIToolsArgsSchema)[T];
   prompt: string; // this is sent as internal message to AI, no character limit
 };
+
+const numberSchema = z.preprocess((val) => {
+  if (typeof val === 'number') {
+    return val;
+  }
+  return Number(val);
+}, z.number());
+
+const booleanSchema = z.preprocess((val) => {
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean());
+
+const booleanNullableOptionalSchema = z.preprocess((val) => {
+  if (val === null || val === undefined) {
+    return val;
+  }
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean().nullable().optional());
+
+const stringSchema = z.preprocess((val) => {
+  if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint' || typeof val === 'symbol') {
+    return String(val);
+  }
+  return val;
+}, z.string());
+
+const stringNullableOptionalSchema = z.preprocess((val) => {
+  if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint' || typeof val === 'symbol') {
+    return String(val);
+  }
+  return val;
+}, z.string().nullable().optional());
 
 const array2DSchema = z
   .array(
@@ -108,96 +141,96 @@ export const AIToolsArgsSchema = {
     ai_model: modelRouterModels,
   }),
   [AITool.SetChatName]: z.object({
-    chat_name: z.string(),
+    chat_name: stringSchema,
   }),
   [AITool.AddDataTable]: z.object({
-    sheet_name: z.string(),
-    top_left_position: z.string(),
-    table_name: z.string(),
+    sheet_name: stringSchema,
+    top_left_position: stringSchema,
+    table_name: stringSchema,
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    sheet_name: z.string(),
-    code_cell_name: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    code_cell_name: stringSchema,
     code_cell_language: cellLanguageSchema,
-    code_cell_position: z.string(),
-    code_string: z.string(),
+    code_cell_position: stringSchema,
+    code_string: stringSchema,
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: z.string(),
-    code_cell_position: z.string(),
-    formula_string: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    code_cell_position: stringSchema,
+    formula_string: stringSchema,
   }),
   [AITool.SetCellValues]: z.object({
-    sheet_name: z.string(),
-    top_left_position: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    top_left_position: stringSchema,
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
-    sheet_name: z.string(),
-    source_selection_rect: z.string(),
-    target_top_left_position: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    source_selection_rect: stringSchema,
+    target_top_left_position: stringSchema,
   }),
   [AITool.DeleteCells]: z.object({
-    sheet_name: z.string(),
-    selection: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
   }),
   [AITool.UpdateCodeCell]: z.object({
-    code_string: z.string(),
+    code_string: stringSchema,
   }),
   [AITool.CodeEditorCompletions]: z.object({
-    text_delta_at_cursor: z.string(),
+    text_delta_at_cursor: stringSchema,
   }),
   [AITool.UserPromptSuggestions]: z.object({
     prompt_suggestions: z.array(
       z.object({
-        label: z.string(),
-        prompt: z.string(),
+        label: stringSchema,
+        prompt: stringSchema,
       })
     ),
   }),
   [AITool.PDFImport]: z.object({
-    file_name: z.string(),
-    prompt: z.string(),
+    file_name: stringSchema,
+    prompt: stringSchema,
   }),
   [AITool.GetCellData]: z.object({
-    sheet_name: z.string(),
-    selection: z.string(),
-    page: z.number(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    page: numberSchema,
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: z.string(),
-    selection: z.string(),
-    bold: z.boolean().optional(),
-    italic: z.boolean().optional(),
-    underline: z.boolean().optional(),
-    strike_through: z.boolean().optional(),
-    text_color: z.string().optional(),
-    fill_color: z.string().optional(),
-    align: z.string().optional(),
-    vertical_align: z.string().optional(),
-    wrap: z.string().optional(),
-    numeric_commas: z.boolean().optional(),
-    number_type: z.string().optional(),
-    currency_symbol: z.string().optional(),
-    date_time: z.string().optional(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    bold: booleanNullableOptionalSchema,
+    italic: booleanNullableOptionalSchema,
+    underline: booleanNullableOptionalSchema,
+    strike_through: booleanNullableOptionalSchema,
+    text_color: stringNullableOptionalSchema,
+    fill_color: stringNullableOptionalSchema,
+    align: stringNullableOptionalSchema,
+    vertical_align: stringNullableOptionalSchema,
+    wrap: stringNullableOptionalSchema,
+    numeric_commas: booleanNullableOptionalSchema,
+    number_type: stringNullableOptionalSchema,
+    currency_symbol: stringNullableOptionalSchema,
+    date_time: stringNullableOptionalSchema,
   }),
   [AITool.GetTextFormats]: z.object({
-    sheet_name: z.string(),
-    selection: z.string(),
-    page: z.number(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    page: numberSchema,
   }),
   [AITool.ConvertToTable]: z.object({
-    sheet_name: z.string(),
-    selection: z.string(),
-    table_name: z.string(),
-    first_row_is_column_names: z.boolean(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    table_name: stringSchema,
+    first_row_is_column_names: booleanSchema,
   }),
   [AITool.WebSearch]: z.object({
-    query: z.string(),
+    query: stringSchema,
   }),
   [AITool.WebSearchInternal]: z.object({
-    query: z.string(),
+    query: stringSchema,
   }),
 } as const;
 
@@ -209,7 +242,7 @@ export const MODELS_ROUTER_CONFIGURATION: {
   [key in z.infer<(typeof AIToolsArgsSchema)[AITool.SetAIModel]>['ai_model']]: AIModelKey;
 } = {
   claude: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
-  '4.1': 'openai:gpt-4.1-2025-04-14',
+  '4.1': 'azure-openai:gpt-4.1',
 };
 
 export const aiToolsSpec: AIToolSpecRecord = {
@@ -225,7 +258,7 @@ Choose the AI model for this user prompt based on the following instructions, al
         ai_model: {
           type: 'string',
           description:
-            'Value can be only one of the following: "claude" or "pro" models exactly, this is the model best suited for the user prompt based based on examples and model capabilities.\n',
+            'Value can be only one of the following: "claude" or "4.1" models exactly, this is the model best suited for the user prompt based on examples and model capabilities.\n',
         },
       },
       required: ['ai_model'],
@@ -290,7 +323,7 @@ The string representation (in a1 notation) of the selection of cells to get the 
             'The page number of the results to return. The first page is always 0. Use the parameters with a different page to get the next set of results.',
         },
       },
-      required: ['selection', 'sheet_name', 'page'],
+      required: ['sheet_name', 'selection', 'page'],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
@@ -694,64 +727,80 @@ There must be at least one format to set.\n
           description: 'The selection of cells to set the formats of, in a1 notation',
         },
         bold: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to bold',
         },
         italic: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to italic',
         },
         underline: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to underline',
         },
         strike_through: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description: 'Whether to set the cell to strike through',
         },
         text_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the text, in hex format. To remove the text color, set the value to an empty string.',
         },
         fill_color: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The color of the background, in hex format. To remove the fill color, set the value to an empty string.',
         },
         align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The horizontal alignment of the text, this can be one of "left", "center", "right"',
         },
         vertical_align: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The vertical alignment of the text, this can be one of "top", "middle", "bottom"',
         },
         wrap: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'The wrapping of the text, this can be one of "wrap", "clip", "overflow"',
         },
         numeric_commas: {
-          type: 'boolean',
+          type: ['boolean', 'null'],
           description:
             'For numbers larger than three digits, whether to show commas. If true, then numbers will be formatted with commas.',
         },
         number_type: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'The type for the numbers, this can be one of "number", "currency", "percentage", or "exponential". If "currency" is set, you MUST set the currency_symbol.',
         },
         currency_symbol: {
-          type: 'string',
+          type: ['string', 'null'],
           description:
             'If number_type is "currency", use this to set the currency symbol, for example "$" for USD or "€" for EUR',
         },
         date_time: {
-          type: 'string',
+          type: ['string', 'null'],
           description: 'formats a date time value using Rust\'s chrono::format, e.g., "%Y-%m-%d %H:%M:%S", "%d/%m/%Y"',
         },
       },
-      required: ['sheet_name', 'selection'],
+      required: [
+        'sheet_name',
+        'selection',
+        'bold',
+        'italic',
+        'underline',
+        'strike_through',
+        'text_color',
+        'fill_color',
+        'align',
+        'vertical_align',
+        'wrap',
+        'numeric_commas',
+        'number_type',
+        'currency_symbol',
+        'date_time',
+      ],
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.SetTextFormats],
@@ -803,7 +852,7 @@ The label is a descriptive label for the prompt suggestion with maximum 40 chara
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the follow up prompts and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
     parameters: {
       type: 'object',
@@ -838,7 +887,7 @@ The label is a descriptive label for the prompt suggestion with maximum 40 chara
 The prompt is the actual prompt that will be used to generate the prompt suggestion.\n
 Use the internal context and the chat history to provide the prompt suggestions.\n
 Always maintain strong correlation between the prompt suggestions and the user's chat history and the internal context.\n
-This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
+IMPORTANT: This tool should always be called after you have provided the response to the user's prompt and all tool calls are finished, to provide user follow up prompts suggestions.\n
 `,
   },
   [AITool.PDFImport]: {

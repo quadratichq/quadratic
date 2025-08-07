@@ -4,12 +4,16 @@ import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
-import { OpenAI } from 'openai';
+import { AzureOpenAI, OpenAI } from 'openai';
 import {
   ANTHROPIC_API_KEY,
   AWS_S3_ACCESS_KEY_ID,
   AWS_S3_REGION,
   AWS_S3_SECRET_ACCESS_KEY,
+  AZURE_OPENAI_API_KEY,
+  AZURE_OPENAI_ENDPOINT,
+  BASETEN_API_KEY,
+  FIREWORKS_API_KEY,
   GCP_CLIENT_EMAIL,
   GCP_GEMINI_API_KEY,
   GCP_PRIVATE_KEY,
@@ -71,13 +75,29 @@ export const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
 
+export const azureOpenAI = new AzureOpenAI({
+  apiKey: AZURE_OPENAI_API_KEY,
+  endpoint: AZURE_OPENAI_ENDPOINT,
+  apiVersion: '2024-10-21',
+});
+
 export const xai = new OpenAI({
   apiKey: XAI_API_KEY,
   baseURL: 'https://api.x.ai/v1',
 });
 
+export const baseten = new OpenAI({
+  apiKey: BASETEN_API_KEY,
+  baseURL: 'https://inference.baseten.co/v1',
+});
+
+export const fireworks = new OpenAI({
+  apiKey: FIREWORKS_API_KEY,
+  baseURL: 'https://api.fireworks.ai/inference/v1',
+});
+
 export const open_router = new OpenAI({
-  apiKey: OPEN_ROUTER_API_KEY || '',
+  apiKey: OPEN_ROUTER_API_KEY,
   baseURL: 'https://openrouter.ai/api/v1',
   defaultHeaders: {
     'HTTP-Referer': 'https://quadratic.ai',

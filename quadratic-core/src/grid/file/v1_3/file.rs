@@ -163,11 +163,10 @@ impl SheetBuilder {
                                 ArrayOutput::Block(mut values) => {
                                     // TODO(ddimaria): this is a hack, but makes a single use case pass
                                     // review approaches and refine this
-                                    if values.is_empty() {
-                                        if let Some(output_value) = result.output_value {
+                                    if values.is_empty()
+                                        && let Some(output_value) = result.output_value {
                                             values = vec![vec![Some(Any::String(output_value))]];
                                         }
-                                    }
 
                                     for dy in 0..values.len() {
                                         for dx in 0..values.first()?.len() {
@@ -326,15 +325,26 @@ pub(crate) fn upgrade_sheet(v: GridSchema) -> Result<v1_4::Sheet> {
         let column = sheet.column(border.x);
         let column_id = column.id.to_string();
         let top = border.horizontal.map(|horizontal| v1_4::CellBorder {
-            color: Rgba::from_css_str(&horizontal.color.unwrap_or("rgb(0, 0, 0)".into()))
-                .unwrap_or_default()
-                .as_string(),
+            color: Rgba::try_from(
+                horizontal
+                    .color
+                    .as_ref()
+                    .unwrap_or(&"rgb(0, 0, 0)".to_string())
+                    .as_str(),
+            )
+            .unwrap_or_default()
+            .as_string(),
             line: horizontal.border_type.unwrap_or("line1".into()),
         });
         let left = border.vertical.map(|vertical| v1_4::CellBorder {
-            color: Rgba::from_css_str(&vertical.color.unwrap_or("rgb(0, 0, 0)".into()))
-                .unwrap_or_default()
-                .as_string(),
+            color: Rgba::try_from(
+                vertical
+                    .color
+                    .unwrap_or("rgb(0, 0, 0)".to_string())
+                    .as_str(),
+            )
+            .unwrap_or_default()
+            .as_string(),
             line: vertical.border_type.unwrap_or("line1".into()),
         });
 

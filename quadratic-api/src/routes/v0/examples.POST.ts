@@ -10,6 +10,7 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { createFile } from '../../utils/createFile';
+import logger from '../../utils/logger';
 
 export default [validateAccessToken, userMiddleware, handler];
 
@@ -69,8 +70,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/example
       jwt,
     });
     return res.status(201).json({ uuid: dbFile.uuid, name: dbFile.name });
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    logger.error('Error in examples.POST handler', error);
     throw new ApiError(500, 'Failed to fetch example file. Ensure the file exists and is publicly accessible.');
   }
 }

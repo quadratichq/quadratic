@@ -58,6 +58,11 @@ impl Room {
         self.user_index += 1;
         index
     }
+
+    /// Get the number of users in the room.
+    pub fn num_users(&self) -> u64 {
+        self.users.len() as u64
+    }
 }
 
 impl State {

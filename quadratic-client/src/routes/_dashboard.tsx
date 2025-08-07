@@ -13,6 +13,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/shared/shadcn/ui/sheet';
 import { TooltipProvider } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
+import { registerEventAnalyticsData } from '@/shared/utils/analyticsEvents';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useEffect, useRef, useState } from 'react';
@@ -109,6 +110,10 @@ export const loader = async (loaderArgs: LoaderFunctionArgs): Promise<LoaderData
       throw error;
     });
 
+  registerEventAnalyticsData({
+    isOnPaidPlan: activeTeam.billing.status === 'ACTIVE',
+  });
+
   return { teams, userMakingRequest, eduStatus, activeTeam };
 };
 export const useDashboardRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.DASHBOARD) as LoaderData;
@@ -159,6 +164,9 @@ export const Component = () => {
               isLoading ? 'overflow-hidden' : 'overflow-auto',
               isLoading && 'pointer-events-none opacity-25'
             )}
+            style={{
+              scrollbarGutter: 'stable',
+            }}
           >
             <div className={`sticky top-0 z-50 -mx-4 flex items-center justify-end bg-background px-2 py-1 lg:hidden`}>
               <Sheet open={isOpen} onOpenChange={setIsOpen}>

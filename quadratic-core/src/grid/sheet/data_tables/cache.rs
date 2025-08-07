@@ -9,6 +9,7 @@ use crate::{
     grid::{CodeCellLanguage, Contiguous2D, DataTable},
 };
 
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -123,16 +124,42 @@ impl SheetDataTablesCache {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
                             context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                        {
-                            if table.language != CodeCellLanguage::Import {
+                            && table.language != CodeCellLanguage::Import {
                                 return true;
                             }
-                        }
                     }
                 }
             }
         }
         false
+    }
+
+    /// Returns the unique table anchor positions in range
+    pub fn tables_in_range(&self, range: RefRangeBounds) -> impl Iterator<Item = Pos> {
+        self.single_cell_tables
+            .nondefault_rects_in_range(range)
+            .flat_map(|(rect, _)| {
+                rect.x_range()
+                    .flat_map(move |x| rect.y_range().map(move |y| Pos { x, y }))
+            })
+            .chain(
+                self.multi_cell_tables
+                    .unique_values_in_range(range)
+                    .into_iter()
+                    .flatten(),
+            )
+    }
+
+    /// Returns the rectangles that have some value in the given rectangle.
+    pub fn get_nondefault_rects_in_rect(&self, rect: Rect) -> impl Iterator<Item = Rect> {
+        self.single_cell_tables
+            .nondefault_rects_in_rect(rect)
+            .map(|(rect, _)| rect)
+            .chain(
+                self.multi_cell_tables
+                    .nondefault_rects_in_rect(rect)
+                    .map(|(rect, _)| rect),
+            )
     }
 }
 
@@ -175,7 +202,10 @@ impl MultiCellTablesCache {
 
                     // handle hidden columns
                     if let Some(column_headers) = &data_table.column_headers {
-                        for column_header in column_headers.iter() {
+                        for column_header in column_headers
+                            .iter()
+                            .sorted_by(|a, b| b.value_index.cmp(&a.value_index))
+                        {
                             if !column_header.display {
                                 empty_values_cache
                                     .remove_column(column_header.value_index as i64 + 1);
@@ -184,21 +214,62 @@ impl MultiCellTablesCache {
                     }
 
                     // handle sorted rows
-                    if let Some(display_buffer) = &data_table.display_buffer {
-                        let mut sorted_empty_values_cache = Contiguous2D::new();
-                        for (display_row, &actual_row) in display_buffer.iter().enumerate() {
-                            if let Some(mut row) =
-                                empty_values_cache.copy_row(actual_row as i64 + 1)
-                            {
-                                row.translate_in_place(0, display_row as i64 - actual_row as i64);
-                                sorted_empty_values_cache.set_from(&row);
-                            }
-                        }
-                        std::mem::swap(&mut empty_values_cache, &mut sorted_empty_values_cache);
-                    }
+                    let empty_values_cache =
+                        if let Some(reverse_display_buffer) =
+                            data_table.get_reverse_display_buffer()
+                        {
+                            let mut empty_rects = vec![];
 
-                    // convert to sheet coordinates
-                    empty_values_cache.translate_in_place(x1 - 1, y1 - 1 + y_adjustment);
+                            for (rect, value) in empty_values_cache
+                                .nondefault_rects_in_rect(Rect::new(1, 1, i64::MAX, i64::MAX))
+                            {
+                                if value == Some(Some(true)) {
+                                    for y in rect.y_range() {
+                                        if let Ok(actual_row) = u64::try_from(y - 1) {
+                                            let display_row = data_table
+                                                .get_display_index_from_reverse_display_buffer(
+                                                    actual_row,
+                                                    Some(&reverse_display_buffer),
+                                                );
+
+                                            empty_rects.push(Rect::new(
+                                                x1 + rect.min.x - 1,
+                                                y1 + y_adjustment + display_row as i64,
+                                                x1 + rect.max.x - 1,
+                                                y1 + y_adjustment + display_row as i64,
+                                            ));
+                                        }
+                                    }
+                                }
+                            }
+
+                            let mut sorted_empty_values_cache = Contiguous2D::new();
+                            sorted_empty_values_cache.set_rect(
+                                x1,
+                                y1 + y_adjustment,
+                                Some(x2),
+                                Some(y2),
+                                Some(None),
+                            );
+
+                            empty_rects.sort_by(|a, b| (a.min.y, a.min.x).cmp(&(b.min.y, b.min.x)));
+                            for rect in empty_rects {
+                                sorted_empty_values_cache.set_rect(
+                                    rect.min.x,
+                                    rect.min.y,
+                                    Some(rect.max.x),
+                                    Some(rect.max.y),
+                                    Some(Some(true)),
+                                );
+                            }
+
+                            sorted_empty_values_cache
+                        } else {
+                            // convert to sheet coordinates
+                            empty_values_cache.translate_in_place(x1 - 1, y1 + y_adjustment - 1);
+                            empty_values_cache
+                        };
+
                     self.multi_cell_tables_empty.set_from(&empty_values_cache);
 
                     // mark table name and column headers as non-empty
@@ -207,7 +278,7 @@ impl MultiCellTablesCache {
                             x1,
                             y1,
                             Some(x2),
-                            Some(y1 - 1 + y_adjustment),
+                            Some(y1 + y_adjustment - 1),
                             None,
                         );
                     }
@@ -284,7 +355,11 @@ impl MultiCellTablesCache {
 
 #[cfg(test)]
 mod tests {
-    use crate::{a1::A1Selection, test_util::*};
+    use crate::{
+        Rect,
+        a1::{A1Selection, RefRangeBounds},
+        test_util::*,
+    };
 
     #[test]
     fn test_has_content_ignore_blank_table() {
@@ -363,5 +438,45 @@ mod tests {
         // Test selection with no code tables
         let selection = A1Selection::test_a1("A1");
         assert!(!sheet_data_tables_cache.code_in_selection(&selection, context));
+    }
+
+    #[test]
+    fn test_tables_in_range() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+
+        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
+
+        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let tables = sheet_data_tables_cache
+            .tables_in_range(RefRangeBounds::new_relative(1, 1, 6, 6))
+            .collect::<Vec<_>>();
+
+        assert_eq!(tables, vec![pos![2, 2], pos![5, 5]]);
+    }
+
+    #[test]
+    fn test_get_nondefault_rects_in_rect() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!2,2], "=1".to_string(), None);
+
+        test_create_data_table(&mut gc, sheet_id, pos![5, 5], 3, 3);
+
+        test_create_data_table(&mut gc, sheet_id, pos![10, 10], 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        let sheet_data_tables_cache = sheet.data_tables.cache_ref();
+        let rects = sheet_data_tables_cache
+            .get_nondefault_rects_in_rect(Rect::new(1, 1, 12, 12))
+            .collect::<Vec<_>>();
+
+        assert_eq!(rects, vec![rect![B2:B2], rect![E5:G9], rect![J10:L12]]);
     }
 }

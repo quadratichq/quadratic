@@ -23,8 +23,8 @@ import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
 import { VERSION } from '@/shared/constants/appConstants';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { displayName } from '@/shared/utils/userUtil';
-import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 
 // time to recheck the version of the client after receiving a different version
@@ -77,18 +77,15 @@ export class Multiplayer {
     });
   }
 
+  private sendAnalyticsError = (from: string, error: Error | unknown) => {
+    sendAnalyticsError('multiplayer', from, error);
+  };
+
   initWorker() {
     this.worker = new Worker(new URL('./worker/multiplayer.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
-    this.worker.onerror = (e) => {
-      console.warn(`[multiplayer.worker] error: ${e.message}`);
-      Sentry.captureException({
-        message: 'Error for multiplayer.worker',
-        level: 'error',
-        extra: {
-          error: e.message,
-        },
-      });
+    this.worker.onerror = (error) => {
+      this.sendAnalyticsError('initWorker', error);
     };
   }
 
@@ -123,7 +120,7 @@ export class Multiplayer {
         break;
 
       case 'multiplayerClientUsersInRoom':
-        this.receiveUsersInRoom(e.data.room);
+        await this.receiveUsersInRoom(e.data.room);
         break;
 
       case 'multiplayerClientReload':
@@ -412,14 +409,13 @@ export class Multiplayer {
         setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
       }
     } catch (e) {
-      console.error('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
+      console.warn('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
       setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
     }
   }
 
   // updates the React hook to populate the Avatar list
-  private receiveUsersInRoom(room: ReceiveRoom) {
-    this.checkVersion(room.version);
+  private async receiveUsersInRoom(room: ReceiveRoom) {
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {
@@ -476,6 +472,8 @@ export class Multiplayer {
     });
     events.emit('multiplayerUpdate', this.getUsers());
     pixiApp.multiplayerCursor.dirty = true;
+
+    await this.checkVersion(room.version);
   }
 }
 

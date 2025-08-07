@@ -39,17 +39,17 @@
 //   // fill out log in page and log in
 //   await page.locator(`#username`).fill(email);
 //   await page.locator(`#password`).fill(password);
-//   await page.locator(`button:text("Continue")`).click({ timeout: 30 * 1000 });
+//   await page.locator(`button:text("Continue")`).click({ timeout: 60 * 1000 });
 
 //   // assert that we are logged in
-//   await expect(page.locator(`button:has-text("${email}")`)).toBeVisible({ timeout: 30 * 1000 });
+//   await expect(page.locator(`button:has-text("${email}")`)).toBeVisible({ timeout: 60 * 1000 });
 
 //   // Click team dropdown
 //   if (options.teamName) {
-//     await page.locator(`nav button[aria-expanded="false"]`).click({ timeout: 30 * 1000 });
+//     await page.locator(`nav button[aria-expanded="false"]`).click({ timeout: 60 * 1000 });
 //     await page
 //       .locator(`div[data-state="open"] a:has-text("${options.teamName}")`)
-//       .click({ timeout: 30 * 1000 });
+//       .click({ timeout: 60 * 1000 });
 //   }
 
 //   // return necessary info
@@ -200,7 +200,7 @@
 
 //   // Click the button with 'Show table UI'
 //   await page.getByRole(`menuitem`, { name: `table Table` }).hover();
-//   await page.getByRole("menuitem", { name: "Show table UI" }).click({ timeout: 30 * 1000 });
+//   await page.getByRole("menuitem", { name: "Show table UI" }).click({ timeout: 60 * 1000 });
 // }
 
 // /**

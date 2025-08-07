@@ -3,8 +3,11 @@ import type { Response } from 'express';
 import {
   getModelOptions,
   isAnthropicModel,
+  isAzureOpenAIModel,
+  isBasetenModel,
   isBedrockAnthropicModel,
   isBedrockModel,
+  isFireworksModel,
   isGenAIModel,
   isOpenAIModel,
   isOpenRouterModel,
@@ -15,52 +18,39 @@ import {
 import { DEFAULT_BACKUP_MODEL, DEFAULT_BACKUP_MODEL_THINKING } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
-import { handleAnthropicRequest } from '../../ai/handler/anthropic.handler';
-import { handleBedrockRequest } from '../../ai/handler/bedrock.handler';
-import { handleOpenAIRequest } from '../../ai/handler/openai.handler';
-import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
+import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
+import logger from '../../utils/logger';
+import { createFileForFineTuning } from '../helpers/fineTuning.helper';
+import { calculateUsage } from '../helpers/usage.helper';
 import {
   anthropic,
+  azureOpenAI,
+  baseten,
   bedrock,
   bedrock_anthropic,
+  fireworks,
   geminiai,
   open_router,
   openai,
   vertex_anthropic,
   vertexai,
   xai,
-} from '../../ai/providers';
-import { debugAndNotInProduction, ENVIRONMENT, FINE_TUNE } from '../../env-vars';
-import { createFileForFineTuning } from '../helpers/fineTuning.helper';
-import { calculateUsage } from '../helpers/usage.helper';
+} from '../providers';
+import { handleAnthropicRequest } from './anthropic.handler';
+import { handleBedrockRequest } from './bedrock.handler';
 import { handleGenAIRequest } from './genai.handler';
+import { handleOpenAIRequest } from './openai.handler';
 
 export const handleAIRequest = async (
   modelKey: AIModelKey,
-  inputArgs: AIRequestHelperArgs,
+  args: AIRequestHelperArgs,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse | undefined> => {
-  let args = inputArgs;
   try {
-    if (args.useToolsPrompt) {
-      const toolUseContext = getToolUseContext(args.source);
-      args = {
-        ...args,
-        messages: [...toolUseContext, ...args.messages],
-      };
-    }
-
-    if (args.useQuadraticContext) {
-      const quadraticContext = getQuadraticContext(args.language);
-      args = {
-        ...args,
-        messages: [...quadraticContext, ...args.messages],
-      };
-    }
-
     let parsedResponse: ParsedAIResponse | undefined;
+
     if (isVertexAIAnthropicModel(modelKey)) {
       parsedResponse = await handleAnthropicRequest(
         modelKey,
@@ -90,8 +80,28 @@ export const handleAIRequest = async (
       );
     } else if (isOpenAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, openai, response);
+    } else if (isAzureOpenAIModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        azureOpenAI,
+        response
+      );
     } else if (isXAIModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
+    } else if (isBasetenModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, baseten, response);
+    } else if (isFireworksModel(modelKey)) {
+      parsedResponse = await handleOpenAIRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        fireworks,
+        response
+      );
     } else if (isOpenRouterModel(modelKey)) {
       parsedResponse = await handleOpenAIRequest(
         modelKey,
@@ -122,7 +132,7 @@ export const handleAIRequest = async (
       parsedResponse.usage.source = args.source;
       parsedResponse.usage.modelKey = modelKey;
       parsedResponse.usage.cost = calculateUsage(parsedResponse.usage);
-      console.log('[AI.Usage]', parsedResponse.usage);
+      logger.info('AI.Usage', { usage: parsedResponse.usage });
     }
 
     if (debugAndNotInProduction && FINE_TUNE === 'true' && !!parsedResponse) {
@@ -131,7 +141,7 @@ export const handleAIRequest = async (
 
     return parsedResponse;
   } catch (error) {
-    console.error('Error in handleAIRequest: ', modelKey, error);
+    logger.error(`Error in handleAIRequest ${modelKey}`, error);
 
     Sentry.captureException(error, {
       level: 'error',
@@ -142,7 +152,7 @@ export const handleAIRequest = async (
     });
 
     if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
-      const options = getModelOptions(modelKey, inputArgs);
+      const options = getModelOptions(modelKey, args);
 
       // thinking backup model
       if (options.thinking && modelKey !== DEFAULT_BACKUP_MODEL_THINKING) {
@@ -162,6 +172,7 @@ export const handleAIRequest = async (
       modelKey,
       isOnPaidPlan,
       exceededBillingLimit,
+      error: true,
     };
     const options = getModelOptions(modelKey, args);
     if (!options.stream || !response?.headersSent) {

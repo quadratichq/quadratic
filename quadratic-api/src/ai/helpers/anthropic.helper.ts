@@ -34,69 +34,73 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const imageBlockParam: ImageBlockParam = {
-        type: 'image' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
-          type: 'base64' as const,
-        },
-      };
-      return imageBlockParam;
-    } else if (isContentPdfFile(content)) {
-      const documentBlockParam: DocumentBlockParam = {
-        type: 'document' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
-          type: 'base64' as const,
-        },
-        title: content.fileName,
-      };
-      return documentBlockParam;
-    } else if (isContentTextFile(content)) {
-      const documentBlockParam: DocumentBlockParam = {
-        type: 'document' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const imageBlockParam: ImageBlockParam = {
+          type: 'image' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'base64' as const,
+          },
+        };
+        return imageBlockParam;
+      } else if (isContentPdfFile(content)) {
+        const documentBlockParam: DocumentBlockParam = {
+          type: 'document' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'base64' as const,
+          },
+          title: content.fileName,
+        };
+        return documentBlockParam;
+      } else if (isContentTextFile(content)) {
+        const documentBlockParam: DocumentBlockParam = {
+          type: 'document' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'text' as const,
+          },
+          title: content.fileName,
+        };
+        return documentBlockParam;
+      } else {
+        const textBlockParam: TextBlockParam = {
           type: 'text' as const,
-        },
-        title: content.fileName,
-      };
-      return documentBlockParam;
-    } else {
-      const textBlockParam: TextBlockParam = {
-        type: 'text' as const,
-        text: content.text,
-      };
-      return textBlockParam;
-    }
-  });
+          text: content.text.trim(),
+        };
+        return textBlockParam;
+      }
+    });
 }
 
 function convertToolResultContent(content: ToolResultContent): Array<TextBlockParam | ImageBlockParam> {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const imageBlockParam: ImageBlockParam = {
-        type: 'image' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
-          type: 'base64' as const,
-        },
-      };
-      return imageBlockParam;
-    } else {
-      const textBlockParam: TextBlockParam = {
-        type: 'text' as const,
-        text: content.text,
-      };
-      return textBlockParam;
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const imageBlockParam: ImageBlockParam = {
+          type: 'image' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'base64' as const,
+          },
+        };
+        return imageBlockParam;
+      } else {
+        const textBlockParam: TextBlockParam = {
+          type: 'text' as const,
+          text: content.text.trim(),
+        };
+        return textBlockParam;
+      }
+    });
 }
 
 export function getAnthropicApiArgs(
@@ -116,7 +120,7 @@ export function getAnthropicApiArgs(
   let cacheRemaining = promptCaching ? 4 : 0;
   const system: TextBlockParam[] = systemMessages.map((message) => ({
     type: 'text' as const,
-    text: message,
+    text: message.trim(),
     ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
 
@@ -130,7 +134,7 @@ export function getAnthropicApiArgs(
           ...message.content
             .filter(
               (content) =>
-                content.text &&
+                !!content.text.trim() &&
                 (content.type !== 'anthropic_thinking' || !!content.signature) &&
                 (!!thinking || content.type === 'text')
             )
@@ -149,7 +153,7 @@ export function getAnthropicApiArgs(
               } else {
                 return {
                   type: 'text' as const,
-                  text: content.text,
+                  text: content.text.trim(),
                 };
               }
             }),
@@ -253,10 +257,10 @@ export async function parseAnthropicStream(
       switch (chunk.type) {
         case 'content_block_start':
           if (chunk.content_block.type === 'text') {
-            if (chunk.content_block.text) {
+            if (chunk.content_block.text.trim()) {
               responseMessage.content.push({
                 type: 'text',
-                text: chunk.content_block.text ?? '',
+                text: chunk.content_block.text,
               });
 
               responseMessage.toolCalls.forEach((toolCall) => {

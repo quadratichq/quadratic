@@ -156,10 +156,28 @@ export const debugFlagDescriptions: Record<string, DebugFlagDescription> = {
     description: 'Shows the internal context in AI chat',
     group: 'AI',
   },
-  debugPrintAIInternalContext: {
+  debugLogJsonAIInternalContext: {
     initial: false,
-    title: 'Print readable AI Context',
-    description: 'Prints the AI Context to the console in a readable form',
+    title: 'Log JSON AI Internal Context',
+    description: 'Logs the AI Context to the console in JSON format',
+    group: 'AI',
+  },
+  debugLogReadableAIInternalContext: {
+    initial: false,
+    title: 'Log readable AI Internal Context',
+    description: 'Logs the AI Context to the console in a readable form',
+    group: 'AI',
+  },
+  debugAIAnalystChatStringInput: {
+    initial: false,
+    title: 'AI Analyst Chat String Input',
+    description: 'Enable input box with json string representation of the chat',
+    group: 'AI',
+  },
+  debugAIAnalystChatEditing: {
+    initial: false,
+    title: 'AI Analyst Chat Editing',
+    description: 'Change chat to edit mode. This allows you to edit the chat in real time.',
     group: 'AI',
   },
 

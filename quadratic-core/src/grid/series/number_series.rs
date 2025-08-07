@@ -35,11 +35,10 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
 
         if index == 0 {
             addition = Some(difference);
-        } else if let Some(add) = &addition {
-            if &difference != add {
+        } else if let Some(add) = &addition
+            && &difference != add {
                 addition = None;
             }
-        }
 
         // no divide by zero
         if numbers[number - 1] == &Decimal::zero() {
@@ -49,11 +48,10 @@ pub(crate) fn find_number_series(options: &SeriesOptions) -> Option<Vec<CellValu
 
             if index == 0 {
                 multiplication = Some(quotient);
-            } else if let Some(bd) = &multiplication {
-                if &quotient != bd {
+            } else if let Some(bd) = &multiplication
+                && &quotient != bd {
                     multiplication = None;
                 }
-            }
         }
     });
 

@@ -96,19 +96,27 @@ impl CellValues {
             .ok_or_else(|| anyhow::anyhow!("No value found at ({x}, {y})"))
     }
 
-    pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<CellValue>> {
-        let mut values =
-            vec![vec![CellValue::Blank; rect.width() as usize]; rect.height() as usize];
-
-        for (y_index, y) in rect.y_range().enumerate() {
-            for (x_index, x) in rect.x_range().enumerate() {
+    pub fn get_rect(&mut self, rect: Rect) -> Vec<Vec<Option<CellValue>>> {
+        let mut values = vec![vec![None; rect.height() as usize]; rect.width() as usize];
+        for (x_index, x) in rect.x_range().enumerate() {
+            for (y_index, y) in rect.y_range().enumerate() {
                 let new_x = u32::try_from(x).unwrap_or(0);
                 let new_y = u32::try_from(y).unwrap_or(0);
-
-                values[y_index][x_index] = self.remove(new_x, new_y).unwrap_or(CellValue::Blank);
+                values[x_index][y_index] = self.remove(new_x, new_y);
             }
         }
         values
+    }
+
+    pub fn get_row(&self, row: u32) -> Result<Vec<CellValue>, anyhow::Error> {
+        if row >= self.h {
+            anyhow::bail!("Row out of bounds: row={row}, h={}", self.h);
+        }
+        let mut values = Vec::with_capacity(self.w as usize);
+        for x in 0..self.w {
+            values.push(self.get(x, row).unwrap_or(&CellValue::Blank).clone());
+        }
+        Ok(values)
     }
 
     pub fn set(&mut self, x: u32, y: u32, value: CellValue) {
@@ -173,13 +181,6 @@ impl CellValues {
             col.into_iter()
                 .map(move |(y, value)| (x as u32, y as u32, value))
         })
-    }
-
-    pub fn into_vec(&mut self) -> Vec<Vec<CellValue>> {
-        let width = self.w as i64;
-        let height = self.h as i64;
-
-        self.get_rect(Rect::new(0, 0, width, height))
     }
 
     pub fn into_owned_vec(self) -> Vec<Vec<CellValue>> {
@@ -260,8 +261,9 @@ impl From<Vec<Vec<Option<CellValue>>>> for CellValues {
 /// Convert a 2D array of strings into a CellValues.
 /// The first dimension is the x-axis, the second is the y-axis.
 /// Therefore, [[1, 2, 3], [4, 5, 6]] becomes:
-/// 1 2 3
-/// 4 5 6
+/// 1 4
+/// 2 5
+/// 3 6
 impl From<Vec<Vec<&str>>> for CellValues {
     fn from(values: Vec<Vec<&str>>) -> Self {
         let w = values.len() as u32;
@@ -292,12 +294,6 @@ impl From<Array> for CellValues {
         let cell_values_vec = array.into_cell_values_vec().into_vec();
 
         CellValues::from_flat_array(w.get(), h.get(), cell_values_vec)
-    }
-}
-
-impl From<CellValues> for Vec<Vec<CellValue>> {
-    fn from(mut cell_values: CellValues) -> Self {
-        cell_values.into_vec()
     }
 }
 
@@ -449,5 +445,47 @@ mod test {
         assert_eq!(cell_values.get(0, 0), Some(&CellValue::from("a")));
         assert_eq!(cell_values.get(1, 0), Some(&CellValue::from("b")));
         assert_eq!(cell_values.get(3, 0), Some(&CellValue::from("c")));
+    }
+
+    #[test]
+    fn test_get_row() {
+        let cell_values = CellValues::from(vec![
+            vec!["a", "b", "c"], // column 0
+            vec!["d", "e"],      // column 1 (shorter)
+            vec!["f", "g", "h"], // column 2
+        ]);
+
+        // Should have w=3, h=3
+        assert_eq!(cell_values.w, 3);
+        assert_eq!(cell_values.h, 3);
+
+        // Test row 0: ["a", "d", "f"]
+        let row0 = cell_values.get_row(0).unwrap();
+        assert_eq!(
+            row0,
+            vec![
+                CellValue::from("a"),
+                CellValue::from("d"),
+                CellValue::from("f")
+            ]
+        );
+
+        // Test row 1: ["b", "e", "g"]
+        let row1 = cell_values.get_row(1).unwrap();
+        assert_eq!(
+            row1,
+            vec![
+                CellValue::from("b"),
+                CellValue::from("e"),
+                CellValue::from("g"),
+            ]
+        );
+
+        // Test row 2: ["c", Blank, "h"]
+        let row2 = cell_values.get_row(2).unwrap();
+        assert_eq!(
+            row2,
+            vec![CellValue::from("c"), CellValue::Blank, CellValue::from("h"),]
+        );
     }
 }

@@ -2,30 +2,26 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 19;
+export const DEFAULT_MODEL_VERSION = 21;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL_PRO: AIModelKey = 'quadratic:quadratic-auto:thinking-toggle-off';
-export const DEFAULT_MODEL_FREE: AIModelKey = 'vertexai:gemini-2.5-pro:thinking';
-
-export const DEFAULT_SQL_MODEL: AIModelKey =
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
-export const DEFAULT_SQL_MODEL_THINKING: AIModelKey =
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off';
+export const DEFAULT_MODEL_PRO: AIModelKey = 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct';
+export const DEFAULT_MODEL_FREE: AIModelKey = 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct';
+export const DEFAULT_MODEL_FREE_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
-export const DEFAULT_BACKUP_MODEL: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-off';
+export const DEFAULT_BACKUP_MODEL: AIModelKey = 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct';
 export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'bedrock-anthropic:claude:thinking-toggle-on';
 
 // Internal tool call models
 export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
-export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
 export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
-export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
+export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
 
 export const MODELS_CONFIGURATION: {
   [key in AIModelKey]: AIModelConfig;
@@ -39,11 +35,12 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'pro',
+    mode: 'disabled',
     provider: 'quadratic',
     promptCaching: false,
     thinking: false,
     thinkingToggle: false,
+    imageSupport: true,
     ...AI_RATES.gemini_2_0_flash_rate,
   },
   'quadratic:quadratic-auto:thinking-toggle-on': {
@@ -53,13 +50,28 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'pro',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
     thinkingToggle: true,
     thinkingBudget: 32768,
+    imageSupport: true,
     ...AI_RATES.gemini_2_5_pro_rate,
+  },
+  'vertexai-anthropic:claude-sonnet-4:thinking': {
+    model: 'claude-sonnet-4@20250514',
+    displayName: 'claude sonnet 4',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'vertexai-anthropic',
+    promptCaching: true,
+    thinking: true,
+    imageSupport: true,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4@20250514',
@@ -73,6 +85,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: false,
     thinkingToggle: false,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on': {
@@ -87,6 +100,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'vertexai:gemini-2.5-pro:thinking-toggle-off': {
@@ -102,6 +116,7 @@ export const MODELS_CONFIGURATION: {
     thinking: false,
     thinkingToggle: false,
     thinkingBudget: 128,
+    imageSupport: true,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
   'vertexai:gemini-2.5-pro:thinking-toggle-on': {
@@ -117,6 +132,7 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingToggle: true,
     thinkingBudget: 32768,
+    imageSupport: true,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
   'vertexai:gemini-2.5-pro:thinking': {
@@ -126,11 +142,12 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'basic',
+    mode: 'disabled',
     provider: 'vertexai',
     promptCaching: false,
     thinking: true,
     thinkingBudget: 32768,
+    imageSupport: true,
     ...AI_RATES.gemini_2_5_pro_rate,
   },
   'vertexai:gemini-2.5-flash:thinking-toggle-off': {
@@ -145,6 +162,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingBudget: 0,
+    imageSupport: true,
     ...AI_RATES.gemini_2_5_flash_rate,
   },
   'vertexai:gemini-2.5-flash:thinking-toggle-on': {
@@ -160,6 +178,7 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingToggle: true,
     thinkingBudget: 24576,
+    imageSupport: true,
     ...AI_RATES.gemini_2_5_flash_rate,
   },
   'vertexai:gemini-2.0-flash': {
@@ -173,6 +192,7 @@ export const MODELS_CONFIGURATION: {
     provider: 'vertexai',
     promptCaching: false,
     thinking: false,
+    imageSupport: true,
     ...AI_RATES.gemini_2_0_flash_rate,
   },
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {
@@ -187,6 +207,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingBudget: 0,
+    imageSupport: true,
     ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-off': {
@@ -201,6 +222,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: false,
     thinkingToggle: false,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'bedrock-anthropic:claude-sonnet-4:thinking-toggle-on': {
@@ -215,6 +237,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'bedrock-anthropic:claude:thinking-toggle-off': {
@@ -229,6 +252,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: false,
     thinking: false,
     thinkingToggle: false,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_3_5_20250514_rate,
   },
   'bedrock-anthropic:claude:thinking-toggle-on': {
@@ -243,6 +267,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-off': {
@@ -257,6 +282,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: false,
     thinkingToggle: false,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on': {
@@ -271,6 +297,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
   },
   'bedrock:us.deepseek.r1-v1:0': {
@@ -284,6 +311,7 @@ export const MODELS_CONFIGURATION: {
     provider: 'bedrock',
     promptCaching: false,
     thinking: false,
+    imageSupport: true,
     rate_per_million_input_tokens: 1.35,
     rate_per_million_output_tokens: 5.4,
     rate_per_million_cache_read_tokens: 0,
@@ -301,6 +329,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: false,
     thinkingToggle: false,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'anthropic:claude-sonnet-4:thinking-toggle-on': {
@@ -315,6 +344,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'anthropic:claude:thinking-toggle-off': {
@@ -329,6 +359,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: false,
     thinkingToggle: false,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_3_5_20250514_rate,
   },
   'anthropic:claude:thinking-toggle-on': {
@@ -343,7 +374,59 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
+    imageSupport: true,
     ...AI_RATES.claude_sonnet_3_7_20250514_rate,
+  },
+  'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW': {
+    model: 'ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
+    displayName: 'quad-ft-BvusunQW',
+    temperature: 0.1,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 3,
+    rate_per_million_output_tokens: 12,
+    rate_per_million_cache_read_tokens: 0.75,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BupmrWcz',
+    displayName: 'quad-mini-ft-BupmrWcz',
+    temperature: 0.1,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.8,
+    rate_per_million_output_tokens: 3.2,
+    rate_per_million_cache_read_tokens: 0.2,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'openai:ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n': {
+    model: 'ft:gpt-4.1-nano-2025-04-14:quadratic::BuLAij8n',
+    displayName: 'quad-nano-ft-BuLAij8n',
+    temperature: 0.1,
+    max_tokens: 16384,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.2,
+    rate_per_million_output_tokens: 0.8,
+    rate_per_million_cache_read_tokens: 0.05,
+    rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
@@ -355,26 +438,11 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: false,
+    strictParams: true,
+    imageSupport: true,
     rate_per_million_input_tokens: 2,
     rate_per_million_output_tokens: 8,
     rate_per_million_cache_read_tokens: 0.5,
-    rate_per_million_cache_write_tokens: 0,
-  },
-  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl': {
-    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::BZi7tAgl',
-    displayName: 'gpt 4.1 mini fine-tuned (stable)',
-    temperature: 0,
-    max_tokens: 16384,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    mode: 'disabled',
-    provider: 'openai',
-    promptCaching: true, // not used for openai, managed by the api
-    strictParams: false,
-    rate_per_million_input_tokens: 0.8,
-    rate_per_million_output_tokens: 3.2,
-    rate_per_million_cache_read_tokens: 0.2,
     rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-4.1-mini-2025-04-14': {
@@ -387,7 +455,8 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: false,
+    strictParams: true,
+    imageSupport: true,
     rate_per_million_input_tokens: 0.4,
     rate_per_million_output_tokens: 1.6,
     rate_per_million_cache_read_tokens: 0.1,
@@ -403,7 +472,8 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: false,
+    strictParams: true,
+    imageSupport: true,
     rate_per_million_input_tokens: 1.1,
     rate_per_million_output_tokens: 4.4,
     rate_per_million_cache_read_tokens: 0.275,
@@ -419,10 +489,45 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
-    strictParams: false,
+    strictParams: true,
+    imageSupport: true,
     rate_per_million_input_tokens: 10,
     rate_per_million_output_tokens: 40,
     rate_per_million_cache_read_tokens: 2.5,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:gpt-4.1': {
+    model: 'gpt-4.1',
+    displayName: 'gpt 4.1',
+    temperature: 0,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'azure-openai',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 2,
+    rate_per_million_output_tokens: 8,
+    rate_per_million_cache_read_tokens: 0.5,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'azure-openai:gpt-4.1-mini': {
+    model: 'gpt-4.1-mini',
+    displayName: 'gpt 4.1 mini',
+    temperature: 0,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'azure-openai',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 0.4,
+    rate_per_million_output_tokens: 1.6,
+    rate_per_million_cache_read_tokens: 0.1,
     rate_per_million_cache_write_tokens: 0,
   },
   'xai:grok-4-0709': {
@@ -435,43 +540,100 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'xai',
     promptCaching: true, // not used for xai
-    strictParams: false,
+    strictParams: true,
+    imageSupport: true,
     rate_per_million_input_tokens: 3,
     rate_per_million_output_tokens: 15,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
-  'open-router:qwen/qwen3-32b': {
-    model: 'qwen/qwen3-32b',
-    displayName: 'qwen3-32b',
+  'baseten:moonshotai/Kimi-K2-Instruct': {
+    model: 'moonshotai/Kimi-K2-Instruct',
+    displayName: 'Kimi K2 Instruct',
     temperature: 0,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
-    provider: 'open-router',
+    provider: 'baseten',
     promptCaching: true,
-    strictParams: false,
-    rate_per_million_input_tokens: 0.1,
-    rate_per_million_output_tokens: 0.3,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.6,
+    rate_per_million_output_tokens: 2.5,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
   },
-  'open-router:qwen/qwen3-235b-a22b': {
-    model: 'qwen/qwen3-235b-a22b',
-    displayName: 'qwen3-235b-a22b',
-    temperature: 0,
+  'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct': {
+    model: 'Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    displayName: 'Qwen3 Coder 480B',
+    temperature: 0.7,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'basic',
+    provider: 'baseten',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.38,
+    rate_per_million_output_tokens: 1.53,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'baseten:Qwen/Qwen3-235B-A22B-Instruct-2507': {
+    model: 'Qwen/Qwen3-235B-A22B-Instruct-2507',
+    displayName: 'Qwen3 235B A22B Instruct',
+    temperature: 0.7,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
-    provider: 'open-router',
+    provider: 'baseten',
     promptCaching: true,
-    strictParams: false,
-    rate_per_million_input_tokens: 0.13,
-    rate_per_million_output_tokens: 0.6,
+    strictParams: true,
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.22,
+    rate_per_million_output_tokens: 0.8,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
+  },
+  'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct': {
+    model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
+    displayName: 'Qwen3 Coder 480B',
+    temperature: 0.1,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'basic',
+    provider: 'fireworks',
+    promptCaching: true,
+    strictParams: false, // Fireworks doesn't support strict parameter
+    imageSupport: false,
+    rate_per_million_input_tokens: 0.45,
+    rate_per_million_output_tokens: 1.8,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+    // Sampling parameters
+    top_p: 0.8,
+    top_k: 20,
+    min_p: 0,
+    repetition_penalty: 1.05,
   },
   'open-router:deepseek/deepseek-r1-0528': {
     model: 'deepseek/deepseek-r1-0528',
@@ -483,41 +645,10 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'open-router',
     promptCaching: true,
-    strictParams: false,
+    strictParams: true,
+    imageSupport: false,
     rate_per_million_input_tokens: 0.5,
     rate_per_million_output_tokens: 2.15,
-    rate_per_million_cache_read_tokens: 0,
-    rate_per_million_cache_write_tokens: 0,
-  },
-  'open-router:deepseek/deepseek-r1-0528-qwen3-8b': {
-    model: 'deepseek/deepseek-r1-0528-qwen3-8b',
-    displayName: 'deepseek r1 0528 qwen3-8b',
-    temperature: 0,
-    max_tokens: 0, // use api default
-    canStream: true,
-    canStreamWithToolCalls: true,
-    mode: 'disabled',
-    provider: 'open-router',
-    promptCaching: true,
-    strictParams: false,
-    rate_per_million_input_tokens: 0.01,
-    rate_per_million_output_tokens: 0.02,
-    rate_per_million_cache_read_tokens: 0,
-    rate_per_million_cache_write_tokens: 0,
-  },
-  'open-router:deepseek/deepseek-r1-distill-qwen-7b': {
-    model: 'deepseek/deepseek-r1-distill-qwen-7b',
-    displayName: 'deepseek r1 distill qwen-7b',
-    temperature: 0,
-    max_tokens: 0, // use api default
-    canStream: true,
-    canStreamWithToolCalls: true,
-    mode: 'disabled',
-    provider: 'open-router',
-    promptCaching: true,
-    strictParams: false,
-    rate_per_million_input_tokens: 0.01,
-    rate_per_million_output_tokens: 0.02,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },
@@ -531,9 +662,27 @@ export const MODELS_CONFIGURATION: {
     mode: 'disabled',
     provider: 'open-router',
     promptCaching: true,
-    strictParams: false,
+    strictParams: true,
+    imageSupport: true,
     rate_per_million_input_tokens: 0.28,
     rate_per_million_output_tokens: 0.88,
+    rate_per_million_cache_read_tokens: 0,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'open-router:moonshotai/kimi-k2': {
+    model: 'moonshotai/kimi-k2',
+    displayName: 'kimi k2',
+    temperature: 0,
+    max_tokens: 0, // use api default
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'open-router',
+    promptCaching: true,
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 0.5,
+    rate_per_million_output_tokens: 1.5,
     rate_per_million_cache_read_tokens: 0,
     rate_per_million_cache_write_tokens: 0,
   },

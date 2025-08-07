@@ -25,8 +25,8 @@ import viewCommandGroup from '@/app/ui/menus/CommandPalette/commands/View';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import fuzzysort from 'fuzzysort';
-import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -52,7 +52,7 @@ export const CommandPalette = () => {
   }, [setAnnotationState]);
 
   useEffect(() => {
-    mixpanel.track('[CommandPalette].open');
+    trackEvent('[CommandPalette].open');
   }, []);
 
   const borderCommandGroup = BordersHook();

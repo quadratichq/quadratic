@@ -7,7 +7,7 @@ import type {
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient } from '@/auth/auth';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 class JavascriptWebWorker {
   state: LanguageState = 'loading';
@@ -48,7 +48,7 @@ class JavascriptWebWorker {
     }
   };
 
-  init() {
+  initWorker() {
     this.worker?.terminate();
     this.worker = new Worker(new URL('./worker/javascript.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
@@ -59,8 +59,8 @@ class JavascriptWebWorker {
   }
 
   cancelExecution = () => {
-    mixpanel.track('[JavascriptWebWorker].restartFromUser');
-    this.init();
+    trackEvent('[JavascriptWebWorker].restartFromUser');
+    this.initWorker();
     quadraticCore.sendCancelExecution('Javascript');
     events.emit('javascriptState', 'ready');
   };

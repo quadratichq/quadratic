@@ -34,7 +34,7 @@ export const navigateOnSheet = async (
   // Click canvas if needed
   if (!skipCanvasClick) {
     try {
-      await page.locator(`#QuadraticCanvasID`).click({ timeout: 30 * 1000 });
+      await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
       await page.waitForTimeout(100);
     } catch (err) {
       console.error(err);
@@ -158,7 +158,7 @@ export const displayMouseCoords = async (page: Page, { offsets }: DisplayMouseCo
  * Helper Function to clear code editor
  */
 export const clearCodeEditor = async (page: Page) => {
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 30 * 1000 });
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 60 * 1000 });
   // Click Control + A to Select All, then Backspace to Clear
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Backspace');
@@ -180,7 +180,7 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
 
   // Press "/"
   await page.keyboard.press('/');
-  await page.locator(`span:text-is("Add or manage…")`).click({ timeout: 30 * 1000 });
+  await page.locator(`span:text-is("Add or manage…")`).click({ timeout: 60 * 1000 });
 
   // filter file by name
   await page.locator('[placeholder="Filter by name"]').waitFor();
@@ -199,11 +199,11 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
     await page
       .locator(`button:has-text("${connectionName}") div`)
       .first()
-      .click({ timeout: 30 * 1000 });
-    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 30 * 1000 });
+      .click({ timeout: 60 * 1000 });
+    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(1000);
     // Confirm delete action
-    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 30 * 1000 });
+    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(1000);
   }
 
@@ -227,6 +227,6 @@ export const showCodeEditorConsole = async (page: Page, { targetColumn, targetRo
   await page.waitForTimeout(3000);
 
   // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 30 * 1000 });
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 };

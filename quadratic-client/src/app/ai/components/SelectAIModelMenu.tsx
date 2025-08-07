@@ -2,7 +2,6 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
-import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { apiClient } from '@/shared/api/apiClient';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
@@ -21,9 +20,9 @@ import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
-import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { DEFAULT_MODEL_FREE, DEFAULT_MODEL_PRO, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo } from 'react';
 import { Link } from 'react-router';
@@ -45,6 +44,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const { debug } = useDebugFlags();
 
   const {
+    isOnPaidPlan,
     modelKey: selectedModel,
     setModelKey: setSelectedModel,
     modelConfig: selectedModelConfig,
@@ -117,7 +117,6 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [selectedModelMode]
   );
 
-  const { isOnPaidPlan } = useIsOnPaidPlan();
   useEffect(() => {
     if (debug || isOnPaidPlan) {
       return;
@@ -199,7 +198,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                 key={key}
                 checked={selectedModel === key}
                 onCheckedChange={() => {
-                  mixpanel.track('[AI].model.change', { model: modelConfig.model });
+                  trackEvent('[AI].model.change', { model: modelConfig.model });
                   setSelectedModel(key);
                 }}
               >
@@ -213,7 +212,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : (
+      ) : DEFAULT_MODEL_FREE !== DEFAULT_MODEL_PRO ? (
         <DidYouKnowPopover
           // If they've already seen the popover, don't show it.
           // Otherwise, only show it to them when they've used the AI a bit.
@@ -271,7 +270,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             </PopoverContent>
           </Popover>
         </DidYouKnowPopover>
-      )}
+      ) : null}
     </>
   );
 });

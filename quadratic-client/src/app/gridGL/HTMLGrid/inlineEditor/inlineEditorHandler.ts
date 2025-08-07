@@ -20,7 +20,8 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
+import BigNumber from 'bignumber.js';
 import { Rectangle } from 'pixi.js';
 
 class InlineEditorHandler {
@@ -51,7 +52,7 @@ class InlineEditorHandler {
   constructor() {
     events.on('changeInput', this.changeInput);
     events.on('changeSheet', this.changeSheet);
-    events.on('sheetOffsets', this.sheetOffsets);
+    events.on('sheetOffsetsUpdated', this.sheetOffsets);
     events.on('resizeHeadingColumn', this.sheetOffsets);
     events.on('resizeHeadingRow', this.sheetOffsets);
     events.on('contextMenu', this.closeIfOpen);
@@ -169,7 +170,7 @@ class InlineEditorHandler {
         this.updateMonacoCursorPosition();
       }
     } else {
-      this.close(0, 0, false, true);
+      this.close({ skipChangeSheet: true });
     }
   };
 
@@ -178,7 +179,6 @@ class InlineEditorHandler {
     if (!input && !this.open) {
       return;
     }
-
     if (initialValue) {
       this.initialValue += initialValue;
       initialValue = this.initialValue;
@@ -199,9 +199,14 @@ class InlineEditorHandler {
         y: cursor.y,
       };
 
+      this.formatSummary = await quadraticCore.getCellFormatSummary(
+        this.location.sheetId,
+        this.location.x,
+        this.location.y
+      );
+
       let value: string;
       let changeToFormula = false;
-
       if (initialValue) {
         changeToFormula = initialValue[0] === '=';
 
@@ -218,7 +223,16 @@ class InlineEditorHandler {
 
           const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
           if (jsCellValue) {
-            value = jsCellValue.kind === 'number' ? parseFloat(jsCellValue.value).toString() : jsCellValue.value;
+            if (jsCellValue.kind === 'number') {
+              this.formatSummary.align = this.formatSummary.align ?? 'right';
+            }
+            value = jsCellValue.kind === 'number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
+            if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
+              try {
+                const number = new BigNumber(value).multipliedBy(100).toString();
+                value = number + '%';
+              } catch (e) {}
+            }
 
             // open the calendar pick if the cell is a date
             if (['date', 'date time'].includes(jsCellValue.kind)) {
@@ -253,11 +267,6 @@ class InlineEditorHandler {
         editMode: cursorMode === CursorMode.Edit,
       }));
 
-      this.formatSummary = await quadraticCore.getCellFormatSummary(
-        this.location.sheetId,
-        this.location.x,
-        this.location.y
-      );
       this.temporaryBold = this.formatSummary?.bold || undefined;
       this.temporaryItalic = this.formatSummary?.italic || undefined;
       this.temporaryUnderline = this.formatSummary?.underline || undefined;
@@ -279,7 +288,7 @@ class InlineEditorHandler {
       // draws at 0,0 when editing in a data table
       this.open = true;
     } else {
-      this.close(0, 0, false);
+      this.close({});
     }
   };
 
@@ -450,7 +459,7 @@ class InlineEditorHandler {
 
   closeIfOpen = async () => {
     if (this.open) {
-      await this.close(0, 0, false);
+      await this.close({});
     }
   };
 
@@ -469,7 +478,20 @@ class InlineEditorHandler {
   // Close editor. It saves the value if cancel = false. It also moves the
   // cursor by (deltaX, deltaY).
   // @returns whether the editor closed successfully
-  close = async (deltaX = 0, deltaY = 0, cancel: boolean, skipChangeSheet = false): Promise<boolean> => {
+
+  close = async ({
+    deltaX = 0,
+    deltaY = 0,
+    cancel = false,
+    skipChangeSheet = false,
+    skipFocusGrid = false,
+  }: {
+    deltaX?: number;
+    deltaY?: number;
+    cancel?: boolean;
+    skipChangeSheet?: boolean;
+    skipFocusGrid?: boolean;
+  }): Promise<boolean> => {
     if (!this.open) return true;
     if (!this.location) {
       throw new Error('Expected location to be defined in InlineEditorHandler');
@@ -497,7 +519,7 @@ class InlineEditorHandler {
           codeString: value.slice(1),
           cursor: sheets.getCursorPosition(),
         });
-        mixpanel.track('[CodeEditor].cellRun', {
+        trackEvent('[CodeEditor].cellRun', {
           type: 'Formula',
           inline: true,
         });
@@ -543,7 +565,9 @@ class InlineEditorHandler {
     }
 
     // Set focus back to Grid
-    focusGrid();
+    if (!skipFocusGrid) {
+      focusGrid();
+    }
     return true;
   };
 
@@ -582,7 +606,7 @@ class InlineEditorHandler {
         initialCode: inlineEditorMonaco.get().slice(1),
       },
     });
-    this.close(0, 0, true);
+    this.close({ cancel: true });
   };
 
   // Attaches the inline editor to a div created by React in InlineEditor.tsx
@@ -593,7 +617,7 @@ class InlineEditorHandler {
     }
     this.div = div;
 
-    this.close(0, 0, true);
+    this.close({ cancel: true });
   }
 
   detach() {
@@ -653,7 +677,7 @@ class InlineEditorHandler {
   async handleCellPointerDown(): Promise<boolean> {
     if (this.open) {
       if (!this.formula || !inlineEditorFormula.wantsCellRef()) {
-        return await this.close(0, 0, false);
+        return await this.close({});
       } else {
         if (!this.cursorIsMoving) {
           this.cursorIsMoving = true;

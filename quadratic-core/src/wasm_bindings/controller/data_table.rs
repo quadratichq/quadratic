@@ -27,12 +27,16 @@ impl GridController {
         table_name: Option<String>,
         first_row_is_header: bool,
         cursor: Option<String>,
-    ) -> Result<(), JsValue> {
-        let sheet_rect =
-            serde_json::from_str::<SheetRect>(&sheet_rect).map_err(|e| e.to_string())?;
-        self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor);
-
-        Ok(())
+    ) -> JsValue {
+        capture_core_error(|| match serde_json::from_str::<SheetRect>(&sheet_rect) {
+            Ok(sheet_rect) => {
+                match self.grid_to_data_table(sheet_rect, table_name, first_row_is_header, cursor) {
+                    Ok(_) => Ok(None),
+                    Err(e) => Err(e.to_string()),
+                }
+            }
+            Err(e) => Err(e.to_string()),
+        })
     }
 
     /// Converts a DataTableKind::CodeRun to DataTableKind::Import
@@ -72,7 +76,7 @@ impl GridController {
         Ok(())
     }
 
-    /// Toggle appling the first row as head
+    /// Toggle applying the first row as head
     #[wasm_bindgen(js_name = "dataTableFirstRowAsHeader")]
     pub fn js_data_table_first_row_as_header(
         &mut self,

@@ -85,12 +85,12 @@ mod tests {
                     grid_controller.set_cell_value(sheet_pos, cell_value.to_string(), None);
                 }
 
-                if let Some(is_bold) = bolds.get(count) {
-                    if *is_bold {
-                        grid_controller
-                            .set_bold(&A1Selection::from_single_cell(sheet_pos), Some(true), None)
-                            .unwrap();
-                    }
+                if let Some(is_bold) = bolds.get(count)
+                    && *is_bold
+                {
+                    grid_controller
+                        .set_bold(&A1Selection::from_single_cell(sheet_pos), Some(true), None)
+                        .unwrap();
                 }
 
                 if let Some(fill_color) = fill_colors.get(count) {

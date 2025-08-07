@@ -87,15 +87,13 @@ impl Sheet {
                                 for y in intersection.y_range() {
                                     if let Some(entry) = data_table
                                         .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                    {
-                                        if !matches!(entry, &CellValue::Blank) {
+                                        && !matches!(entry, &CellValue::Blank) {
                                             count += 1;
                                             if count >= max_count {
                                                 return None;
                                             }
                                             cells.insert(Pos { x, y }, entry);
                                         }
-                                    }
                                 }
                             }
                         }
@@ -256,8 +254,8 @@ impl Sheet {
     pub fn selection_bounds(
         &self,
         selection: &A1Selection,
-        auto_detect_table_bounds: bool,
         force_columns: bool,
+        auto_detect_table_bounds: bool,
         ignore_formatting: bool,
         a1_context: &A1Context,
     ) -> Option<Rect> {

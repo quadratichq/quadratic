@@ -30,7 +30,7 @@ import {
   SnippetsIcon,
 } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type * as monaco from 'monaco-editor';
 import { useCallback, useMemo } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -125,7 +125,7 @@ export function CodeEditorEmptyState({ editorInst }: CodeEditorEmptyStateProps) 
             className="flex h-auto flex-col gap-0.5 bg-background pb-3 pt-3"
             variant="outline"
             onClick={() => {
-              mixpanel.track('[SnippetsEmpty].selected', { label, language: codeCell.id });
+              trackEvent('[SnippetsEmpty].selected', { label, language: codeCell.id });
               onClick();
             }}
           >

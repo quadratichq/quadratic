@@ -116,6 +116,9 @@ impl Grid {
     }
 }
 
+pub const MAX_TABLE_NAME_LENGTH: usize = 255;
+pub const MAX_COLUMN_NAME_LENGTH: usize = 255;
+
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
 
@@ -410,7 +413,7 @@ impl DataTable {
         a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
-        if name.is_empty() || name.len() > 255 {
+        if name.is_empty() || name.len() > MAX_TABLE_NAME_LENGTH {
             return Err("Table name must be between 1 and 255 characters".to_string());
         }
 
@@ -430,11 +433,10 @@ impl DataTable {
         }
 
         // Check if table name already exists
-        if let Some(table) = a1_context.table_map.try_table(name) {
-            if table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into() {
+        if let Some(table) = a1_context.table_map.try_table(name)
+            && (table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()) {
                 return Err("Table name must be unique".to_string());
             }
-        }
 
         std::result::Result::Ok(true)
     }
@@ -451,7 +453,7 @@ impl DataTable {
         a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
-        if column_name.is_empty() || column_name.len() > 255 {
+        if column_name.is_empty() || column_name.len() > MAX_COLUMN_NAME_LENGTH {
             return Err("Column name must be between 1 and 255 characters".to_string());
         }
 

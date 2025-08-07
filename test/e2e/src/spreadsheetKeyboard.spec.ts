@@ -1,8 +1,8 @@
 import { test } from '@playwright/test';
 import { logIn } from './helpers/auth.helpers';
-import { cleanUpFiles, uploadFile } from './helpers/file.helpers';
+import { cleanUpFiles, createFile, uploadFile } from './helpers/file.helpers';
 import { addQueryParams, assertTopLeftPosition } from './helpers/query.helper';
-import { assertSelection, gotoCells } from './helpers/sheet.helper';
+import { assertCellValue, assertSelection, gotoCells, sheetRefreshPage } from './helpers/sheet.helper';
 
 test('Keyboard Navigation', async ({ page }) => {
   // Constants
@@ -133,24 +133,24 @@ test('Keyboard Navigation', async ({ page }) => {
 
   await gotoCells(page, { a1: 'A1' });
 
-  await page.keyboard.press('PageDown', { delay: 100 });
+  await page.keyboard.press('PageDown', { delay: 250 });
   await assertSelection(page, { a1: 'A28' });
 
   await page.keyboard.press('PageDown');
   await assertSelection(page, { a1: 'A55' });
 
-  await page.keyboard.press('ArrowDown', { delay: 100 });
-  await page.keyboard.press('ArrowDown', { delay: 100 });
-  await page.keyboard.press('ArrowDown', { delay: 100 });
+  await page.keyboard.press('ArrowDown', { delay: 250 });
+  await page.keyboard.press('ArrowDown', { delay: 250 });
+  await page.keyboard.press('ArrowDown', { delay: 250 });
   await assertSelection(page, { a1: 'A58' });
 
-  await page.keyboard.press('PageUp', { delay: 100 });
+  await page.keyboard.press('PageUp', { delay: 250 });
   await assertSelection(page, { a1: 'A30' });
 
-  await page.keyboard.press('PageUp', { delay: 100 });
+  await page.keyboard.press('PageUp', { delay: 250 });
   await assertSelection(page, { a1: 'A2' });
 
-  await page.keyboard.press('PageUp', { delay: 100 });
+  await page.keyboard.press('PageUp', { delay: 250 });
   await assertSelection(page, { a1: 'A1' });
 
   // All done
@@ -182,30 +182,70 @@ test('Keyboard Selection', async ({ page }) => {
   // Test of the top left position flag
   await assertTopLeftPosition(page, 'A1');
 
-  await page.keyboard.press('Shift+PageDown', { delay: 100 });
+  await page.keyboard.press('Shift+PageDown', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:A28' });
   await assertTopLeftPosition(page, 'A28');
 
-  await page.keyboard.press('Shift+PageDown', { delay: 100 });
+  await page.keyboard.press('Shift+PageDown', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:A55' });
   await assertTopLeftPosition(page, 'A55');
 
-  await page.keyboard.press('Shift+ArrowRight', { delay: 100 });
-  await page.keyboard.press('Shift+ArrowRight', { delay: 100 });
+  await page.keyboard.press('Shift+ArrowRight', { delay: 250 });
+  await page.keyboard.press('Shift+ArrowRight', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:C55' });
 
-  await page.keyboard.press('Shift+PageUp', { delay: 100 });
+  await page.keyboard.press('Shift+PageUp', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:C27' });
   await assertTopLeftPosition(page, 'A27');
 
-  await page.keyboard.press('Shift+PageUp', { delay: 100 });
+  await page.keyboard.press('Shift+PageUp', { delay: 250 });
   await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1: 'A1:C1' });
   await assertTopLeftPosition(page, 'A1');
+
+  // All done
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
+  await cleanUpFiles(page, { fileName });
+});
+
+test('Keyboard Editing', async ({ page }) => {
+  // Constants
+  const fileName = 'Keyboard Editing';
+
+  // Log in
+  await logIn(page, { emailPrefix: `e2e_keyboard_editing` });
+
+  // Create a new team
+  // const teamName = `Keyboarding Editing - ${Date.now()}`;
+  // await createNewTeamByURL(page, { teamName });
+
+  // Clean up lingering files
+  await cleanUpFiles(page, { fileName });
+
+  await createFile(page, { fileName, skipNavigateBack: true });
+
+  await page.keyboard.type('Hello', { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 100 });
+  await assertCellValue(page, { a1: 'A1', value: 'Hello' });
+
+  await gotoCells(page, { a1: 'A2' });
+  await page.keyboard.type('14%', { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 100 });
+  await assertCellValue(page, { a1: 'A2', value: '14%' });
+
+  await gotoCells(page, { a1: 'A3' });
+  await page.keyboard.type('5s', { delay: 250 });
+  await page.keyboard.press('Enter', { delay: 100 });
+  await assertCellValue(page, { a1: 'A3', value: '5s' });
+
+  await sheetRefreshPage(page);
+  await assertCellValue(page, { a1: 'A1', value: 'Hello' });
+  await assertCellValue(page, { a1: 'A2', value: '14%' });
+  await assertCellValue(page, { a1: 'A3', value: '5s' });
 
   // All done
   await page.locator(`nav a svg`).click({ timeout: 30 * 1000 });

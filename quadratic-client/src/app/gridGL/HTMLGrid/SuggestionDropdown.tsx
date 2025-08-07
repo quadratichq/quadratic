@@ -17,11 +17,6 @@ export const SuggestionDropDown = () => {
   const [list, setList] = useState<string[] | undefined>();
   const [filteredList, setFilteredList] = useState<string[] | undefined>();
   const [offsets, setOffsets] = useState<Rectangle | undefined>();
-  const [autocompleteShowingList, setAutocompleteShowingList] = useState(inlineEditorMonaco.autocompleteShowingList);
-
-  useEffect(() => {
-    inlineEditorMonaco.autocompleteShowingList = autocompleteShowingList;
-  }, [autocompleteShowingList]);
 
   useEffect(() => {
     const populateList = async () => {
@@ -29,7 +24,7 @@ export const SuggestionDropDown = () => {
       const cursor = sheet.cursor;
       if (cursor.isMultiCursor()) {
         setList(undefined);
-        setAutocompleteShowingList(false);
+        inlineEditorMonaco.setShowingList(false);
         return;
       }
 
@@ -56,7 +51,7 @@ export const SuggestionDropDown = () => {
           }
         } else {
           setList(undefined);
-          setAutocompleteShowingList(false);
+          inlineEditorMonaco.setShowingList(false);
         }
       } else {
         let values: string[] | undefined;
@@ -75,7 +70,7 @@ export const SuggestionDropDown = () => {
 
     const valueChanged = (input = inlineEditorMonaco.get()) => {
       if (inlineEditorHandler.formula || input.trim() === '' || !list) {
-        setAutocompleteShowingList(false);
+        inlineEditorMonaco.autocompleteShowingList = false;
         setFilteredList(undefined);
         return;
       }
@@ -83,16 +78,16 @@ export const SuggestionDropDown = () => {
       const possibleValues = list.filter((v) => v.toLowerCase().startsWith(lowerCaseValue));
       if (possibleValues.length === 1) {
         setFilteredList(undefined);
-        setAutocompleteShowingList(false);
+        inlineEditorMonaco.setShowingList(false);
         setTimeout(() => inlineEditorMonaco.triggerSuggestion(), 100);
       } else if (possibleValues.length > 1) {
         const lowerCaseValue = input.toLowerCase();
         const possibleValues = list.filter((v) => v.toLowerCase().startsWith(lowerCaseValue));
         setFilteredList(possibleValues);
-        setAutocompleteShowingList(true);
+        inlineEditorMonaco.setShowingList(true);
       } else {
         setFilteredList(undefined);
-        setAutocompleteShowingList(false);
+        inlineEditorMonaco.setShowingList(false);
       }
     };
 
@@ -107,8 +102,8 @@ export const SuggestionDropDown = () => {
 
   const changeValue = useCallback((value: string, moveRight: boolean) => {
     inlineEditorEvents.emit('replaceText', value, 0);
-    inlineEditorHandler.close(moveRight ? 1 : 0, moveRight ? 0 : 1, false);
-    setAutocompleteShowingList(false);
+    inlineEditorHandler.close({ deltaX: moveRight ? 1 : 0, deltaY: moveRight ? 0 : 1 });
+    inlineEditorMonaco.setShowingList(false);
     setIndex(-1);
   }, []);
 
@@ -166,7 +161,7 @@ export const SuggestionDropDown = () => {
         maxHeight: `min(50vh, calc(${pixiApp.viewport.bottom - offsets.bottom}px))`,
       }}
     >
-      <div className="block w-full px-1">
+      <div className="pointer-up-ignore block w-full px-1">
         {filteredList.map((item, i) => (
           <div
             className={cn('block w-full whitespace-nowrap px-1 hover:bg-accent', i === index ? 'bg-accent' : '')}

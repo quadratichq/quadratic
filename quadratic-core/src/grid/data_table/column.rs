@@ -57,7 +57,7 @@ impl DataTable {
         values: Option<Vec<CellValue>>,
     ) -> Result<()> {
         let column_name = self
-            .unique_column_header_name(column_header.as_deref(), column_index + 1)
+            .unique_column_header_name(column_header.as_deref(), column_index, None)
             .to_string();
 
         let array = self.mut_value_as_array()?;
@@ -105,8 +105,8 @@ impl DataTable {
             }
         }
 
-        if self.display_buffer.is_some() {
-            if let Some(cell_values) = values {
+        if self.display_buffer.is_some()
+            && let Some(cell_values) = values {
                 let mut sorted_cell_values = vec![CellValue::Blank; cell_values.len()];
 
                 for (index, cell_value) in cell_values.into_iter().enumerate() {
@@ -115,7 +115,6 @@ impl DataTable {
                 }
                 values = Some(sorted_cell_values);
             }
-        }
 
         self.insert_column(column_index, column_header, values)?;
 
