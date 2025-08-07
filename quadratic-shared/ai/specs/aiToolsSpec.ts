@@ -74,7 +74,7 @@ const booleanNullableOptionalSchema = z.preprocess((val) => {
     return val;
   }
   return val === 'true';
-}, z.boolean());
+}, z.boolean().nullable().optional());
 
 const stringSchema = z.preprocess((val) => {
   if (typeof val === 'string') {
@@ -91,7 +91,7 @@ const stringNullableOptionalSchema = z.preprocess((val) => {
     return val;
   }
   return String(val);
-}, z.string());
+}, z.string().nullable().optional());
 
 const array2DSchema = z
   .array(
