@@ -56,11 +56,10 @@ impl Sheet {
             return;
         }
 
-        if !warnings.is_empty() {
-            if let Ok(warnings) = serde_json::to_vec(&warnings) {
+        if !warnings.is_empty()
+            && let Ok(warnings) = serde_json::to_vec(&warnings) {
                 crate::wasm_bindings::js::jsValidationWarnings(warnings);
             }
-        }
     }
 
     /// Sends validation warnings for a hashed region to the client.
@@ -72,8 +71,8 @@ impl Sheet {
         let mut hashes_warnings = HashMap::<Pos, Vec<JsValidationWarning>>::new();
 
         for (&pos, validation_id) in self.validations.warnings.iter() {
-            if rect.contains(pos) {
-                if let Some(validation) = self.validations.validation(*validation_id) {
+            if rect.contains(pos)
+                && let Some(validation) = self.validations.validation(*validation_id) {
                     let hash = pos.quadrant().into();
                     hashes_warnings
                         .entry(hash)
@@ -84,7 +83,6 @@ impl Sheet {
                             style: Some(validation.error.style.clone()),
                         });
                 }
-            }
         }
 
         hashes_warnings
