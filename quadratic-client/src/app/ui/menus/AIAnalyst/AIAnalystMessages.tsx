@@ -1,3 +1,6 @@
+import { AIToolCardEditable } from '@/app/ai/toolCards/AIToolCardEditable';
+import { ToolCardQuery } from '@/app/ai/toolCards/ToolCardQuery';
+import { UserPromptSuggestionsSkeleton } from '@/app/ai/toolCards/UserPromptSuggestionsSkeleton';
 import {
   aiAnalystCurrentChatAtom,
   aiAnalystCurrentChatMessagesAtom,
@@ -6,42 +9,55 @@ import {
   aiAnalystPDFImportLoadingAtom,
   aiAnalystPromptSuggestionsAtom,
   aiAnalystPromptSuggestionsCountAtom,
+  aiAnalystPromptSuggestionsLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
+  aiAnalystWebSearchLoadingAtom,
 } from '@/app/atoms/aiAnalystAtom';
-import { debug, debugShowAIInternalContext } from '@/app/debugFlags';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
-import { AIAnalystToolCard } from '@/app/ui/menus/AIAnalyst/AIAnalystToolCard';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
+import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/GoogleSearchSources';
 import { apiClient } from '@/shared/api/apiClient';
 import { ThumbDownIcon, ThumbUpIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
+  isContentGoogleSearchInternal,
+  isInternalMessage,
   isToolResultMessage,
+  isUserPromptMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
+import type { ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilCallback, useRecoilValue } from 'recoil';
+import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
-  const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
+  const { debug, debugFlags } = useDebugFlags();
+  const debugShowAIInternalContext = useMemo(() => debugFlags.getFlag('debugShowAIInternalContext'), [debugFlags]);
+  const debugAIAnalystChatEditing = useMemo(
+    () => (debugFlags.getFlag('debugAIAnalystChatEditing') ? true : undefined),
+    [debugFlags]
+  );
+
+  const [messages, setMessages] = useRecoilState(aiAnalystCurrentChatMessagesAtom);
   const messagesCount = useRecoilValue(aiAnalystCurrentChatMessagesCountAtom);
   const loading = useRecoilValue(aiAnalystLoadingAtom);
   const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
   const promptSuggestionsCount = useRecoilValue(aiAnalystPromptSuggestionsCountAtom);
+  const promptSuggestionsLoading = useRecoilValue(aiAnalystPromptSuggestionsLoadingAtom);
 
   const [div, setDiv] = useState<HTMLDivElement | null>(null);
   const ref = useCallback((div: HTMLDivElement | null) => {
@@ -160,7 +176,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
       data-enable-grammarly="false"
     >
       {messages.map((message, index) => {
-        if (!debugShowAIInternalContext && message.contextType !== 'userPrompt') {
+        if (!debugShowAIInternalContext && !['userPrompt', 'webSearchInternal'].includes(message.contextType)) {
           return null;
         }
 
@@ -174,52 +190,105 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
               'flex flex-col gap-3',
               message.role === 'assistant' ? 'px-2' : '',
               // For debugging internal context
-              message.contextType === 'userPrompt' ? '' : 'rounded-lg bg-gray-500 p-2'
+              ['userPrompt', 'webSearchInternal'].includes(message.contextType) ? '' : 'rounded-lg bg-gray-500 p-2'
             )}
           >
-            {debug && !!modelKey && (
-              <span className="text-xs text-muted-foreground">{getModelFromModelKey(modelKey)}</span>
-            )}
+            {debug && !!modelKey && <span className="text-xs text-muted-foreground">{modelKey}</span>}
 
-            {message.role === 'user' && message.contextType === 'userPrompt' ? (
+            {isInternalMessage(message) ? (
+              isContentGoogleSearchInternal(message.content) ? (
+                <GoogleSearchSources content={message.content} />
+              ) : null
+            ) : isUserPromptMessage(message) ? (
               <AIAnalystUserMessageForm
                 initialContent={message.content}
                 initialContext={message.context}
                 textareaRef={textareaRef}
                 messageIndex={index}
+                onContentChange={
+                  debugAIAnalystChatEditing &&
+                  ((content) => {
+                    const newMessages = [...messages];
+                    newMessages[index] = { ...message, content };
+                    setMessages(newMessages);
+                  })
+                }
               />
             ) : isToolResultMessage(message) ? (
-              message.content.map((result) => (
+              message.content.map((result, resultIndex) => (
                 <AIAnalystUserMessageForm
                   key={`${index}-${result.id}`}
                   initialContent={result.content}
                   textareaRef={textareaRef}
                   messageIndex={index}
+                  onContentChange={
+                    debugAIAnalystChatEditing &&
+                    ((content) => {
+                      const newMessages = [...messages];
+                      newMessages[index] = { ...message, content: [...message.content] };
+                      newMessages[index].content[resultIndex] = {
+                        ...result,
+                        content: content as ToolResultContent,
+                      };
+                      setMessages(newMessages);
+                    })
+                  }
                 />
               ))
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' ? (
+                  item.type === 'anthropic_thinking' || item.type === 'google_thinking' ? (
                     <ThinkingBlock
-                      key={item.text}
+                      key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}
                       isLoading={loading}
                       thinkingContent={item}
                       expandedDefault={true}
+                      onContentChange={
+                        debugAIAnalystChatEditing &&
+                        ((newItem) => {
+                          const newMessage = { ...message, content: [...message.content] };
+                          newMessage.content[contentIndex] = newItem;
+                          const newMessages = [...messages];
+                          (newMessages as typeof messages)[index] = newMessage as typeof message;
+                          setMessages(newMessages);
+                        })
+                      }
                     />
                   ) : item.type === 'text' ? (
-                    <Markdown key={item.text}>{item.text}</Markdown>
+                    <Markdown
+                      key={`${index}-${contentIndex}-${item.type}`}
+                      text={item.text}
+                      onChange={
+                        debugAIAnalystChatEditing &&
+                        ((text) => {
+                          const newMessage = { ...message, content: [...message.content] };
+                          newMessage.content[contentIndex] = { ...item, text };
+                          const newMessages = [...messages];
+                          (newMessages as typeof messages)[index] = newMessage as typeof message;
+                          setMessages(newMessages);
+                        })
+                      }
+                    />
                   ) : null
                 )}
 
                 {message.contextType === 'userPrompt' &&
-                  message.toolCalls.map((toolCall, index) => (
-                    <AIAnalystToolCard
-                      key={`${index}-${toolCall.id}-${toolCall.arguments}`}
-                      name={toolCall.name}
-                      args={toolCall.arguments}
-                      loading={toolCall.loading}
+                  message.toolCalls.map((toolCall, toolCallIndex) => (
+                    <AIToolCardEditable
+                      key={`${index}-${toolCallIndex}-${toolCall.id}-${toolCall.name}`}
+                      toolCall={toolCall}
+                      onToolCallChange={
+                        debugAIAnalystChatEditing &&
+                        ((newToolCall) => {
+                          const newMessage = { ...message, toolCalls: [...message.toolCalls] };
+                          newMessage.toolCalls[toolCallIndex] = newToolCall;
+                          const newMessages = [...messages];
+                          (newMessages as typeof messages)[index] = newMessage as typeof message;
+                          setMessages(newMessages);
+                        })
+                      }
                     />
                   ))}
               </>
@@ -234,6 +303,18 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
 
       <PDFImportLoading />
 
+      <WebSearchLoading />
+
+      <UserPromptSuggestionsSkeleton
+        toolCall={{
+          id: 'user_prompt_suggestions',
+          name: 'UserPromptSuggestions',
+          arguments: '',
+          loading: promptSuggestionsLoading,
+        }}
+        className="tool-card"
+      />
+
       <AILoading loading={loading} />
     </div>
   );
@@ -247,7 +328,7 @@ const FeedbackButtons = memo(() => {
     ({ snapshot }) =>
       (newLike: boolean | null) => {
         // Log it to mixpanel
-        mixpanel.track('[AIAnalyst].feedback', { like: newLike });
+        trackEvent('[AIAnalyst].feedback', { like: newLike });
 
         // Otherwise, log it to our DB
         const messages = snapshot.getLoadable(aiAnalystCurrentChatMessagesAtom).getValue();
@@ -312,13 +393,7 @@ const PromptSuggestions = memo(() => {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
   const promptSuggestions = useRecoilValue(aiAnalystPromptSuggestionsAtom);
   const messages = useRecoilValue(aiAnalystCurrentChatMessagesAtom);
-  const lastContext = useMemo(
-    () =>
-      getUserPromptMessages(messages)
-        .filter((message) => message.contextType === 'userPrompt')
-        .at(-1)?.context,
-    [messages]
-  );
+  const lastContext = useMemo(() => getUserPromptMessages(messages).at(-1)?.context, [messages]);
 
   if (!messages.length || !promptSuggestions.suggestions.length) {
     return null;
@@ -332,6 +407,7 @@ const PromptSuggestions = memo(() => {
           className="flex h-8 cursor-pointer items-center justify-between rounded-md bg-accent p-2 text-sm hover:bg-accent/80"
           onClick={() =>
             submitPrompt({
+              messageSource: 'User',
               content: [
                 {
                   type: 'text',
@@ -359,5 +435,21 @@ const PDFImportLoading = memo(() => {
     return null;
   }
 
-  return <div className="px-2 text-xs text-muted-foreground">Reading file. Large files may take a few minutes...</div>;
+  return (
+    <ToolCardQuery
+      className="px-2"
+      label="Reading file. Large files may take a few minutes."
+      isLoading={pdfImportLoading}
+    />
+  );
+});
+
+const WebSearchLoading = memo(() => {
+  const webSearchLoading = useRecoilValue(aiAnalystWebSearchLoadingAtom);
+
+  if (!webSearchLoading) {
+    return null;
+  }
+
+  return <ToolCardQuery className="px-2" label="Searching the web." isLoading={webSearchLoading} />;
 });

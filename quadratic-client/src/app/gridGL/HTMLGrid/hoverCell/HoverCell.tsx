@@ -17,7 +17,7 @@ import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useS
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { Rectangle } from 'pixi.js';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -250,11 +250,12 @@ function HoverCellRunError({ codeCell: codeCellCore, onClick }: { codeCell: JsCo
           size="sm"
           variant="destructive"
           onClick={() => {
-            mixpanel.track('[HoverCell].fixWithAI', {
+            trackEvent('[HoverCell].fixWithAI', {
               language: codeCellCore.language,
             });
             submitPrompt({
               content: [{ type: 'text', text: 'Fix the error in the code cell' }],
+              messageSource: 'FixWithAI',
               messageIndex: 0,
               codeCell,
             }).catch(console.error);

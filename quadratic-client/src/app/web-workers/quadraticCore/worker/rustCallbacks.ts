@@ -6,15 +6,7 @@ declare var self: WorkerGlobalScope &
   typeof globalThis & {
     addUnsentTransaction: (transactionId: string, transaction: string, operations: number) => void;
     sendTransaction: (transactionId: string, operations: ArrayBufferLike) => void;
-    sendImportProgress: (
-      filename: string,
-      current: number,
-      total: number,
-      x: number,
-      y: number,
-      width: number,
-      height: number
-    ) => void;
+    sendImportProgress: (filename: string, current: number, total: number) => void;
     sendAddSheetClient: (sheetInfo: Uint8Array, user: boolean) => void;
     sendAddSheetRender: (sheetInfo: Uint8Array) => void;
     sendDeleteSheetClient: (sheetId: string, user: boolean) => void;
@@ -39,7 +31,6 @@ declare var self: WorkerGlobalScope &
     sendSheetBoundsUpdateRender: (sheetBounds: Uint8Array) => void;
     sendTransactionStartClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionStartRender: (transactionId: string, transactionName: TransactionName) => void;
-    sendTransactionProgress: (transactionId: string, remainingOperations: number) => void;
     sendTransactionEndClient: (transactionId: string, transactionName: TransactionName) => void;
     sendTransactionEndRender: (transactionId: string, transactionName: TransactionName) => void;
     sendRunPython: (transactionId: string, x: number, y: number, sheetId: string, code: string) => void;
@@ -64,6 +55,8 @@ declare var self: WorkerGlobalScope &
     sendHashesDirtyRender: (dirtyHashes: Uint8Array) => void;
     sendViewportBuffer: (buffer: SharedArrayBuffer) => void;
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
+    sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
+    sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -77,16 +70,8 @@ export const jsSendTransaction = (transactionId: string, operations: Uint8Array)
 export const jsTime = (name: string) => console.time(name);
 export const jsTimeEnd = (name: string) => console.timeEnd(name);
 
-export const jsImportProgress = (
-  filename: string,
-  current: number,
-  total: number,
-  x: number,
-  y: number,
-  width: number,
-  height: number
-) => {
-  return self.sendImportProgress(filename, current, total, x, y, width, height);
+export const jsImportProgress = (filename: string, current: number, total: number) => {
+  return self.sendImportProgress(filename, current, total);
 };
 
 export const jsAddSheet = (sheetInfo: Uint8Array, user: boolean) => {
@@ -166,10 +151,6 @@ export const jsTransactionStart = (transaction_id: string, transaction_name: str
   self.sendTransactionStartRender(transaction_id, transactionName);
 };
 
-export const jsTransactionProgress = (transactionId: string, remainingOperations: number) => {
-  self.sendTransactionProgress(transactionId, remainingOperations);
-};
-
 export const jsTransactionEnd = (transaction_id: string, transaction_name: string) => {
   const transactionName = JSON.parse(transaction_name);
   self.sendTransactionEndClient(transaction_id, transactionName);
@@ -242,4 +223,12 @@ export const jsSendViewportBuffer = (buffer: SharedArrayBuffer) => {
 
 export const jsA1Context = (context: Uint8Array) => {
   self.sendA1Context(context);
+};
+
+export const jsSendDataTablesCache = (sheetId: string, dataTablesCache: Uint8Array) => {
+  self.sendDataTablesCache(sheetId, dataTablesCache);
+};
+
+export const jsSendContentCache = (sheetId: string, contentCache: Uint8Array) => {
+  self.sendContentCache(sheetId, contentCache);
 };

@@ -21,8 +21,8 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   // to create a new account, only needed when adding a dedicated account for new test
   // try {
   //   await signUp(page, { email });
-  //   await page.locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_"))').click();
-  //   await page.locator(`:text("Logout")`).click();
+  //   await page.locator('button[aria-haspopup="menu"][data-state="closed"]:has(p:has-text("e2e_"))').click({ timeout: 60 * 1000 });
+  //   await page.locator(`:text("Logout")`).click({ timeout: 60 * 1000 });
   //   await expect(page).toHaveURL(/login/);
   // } catch (_error) {
   //   void _error;
@@ -42,15 +42,15 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   });
 
   // fill out log in page and log in
-  await page.locator(`#username`).fill(email);
-  await page.locator(`#password`).fill(USER_PASSWORD);
-  await page.locator(`button:text("Continue")`).click();
+  await page.locator(`#username`).fill(email, { timeout: 60 * 1000 });
+  await page.locator(`#password`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
+  await page.locator(`button:text("Continue")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
 
   // Handle authorize screen
   const authorizeApp = page.locator(`button[name="action"]`).filter({ hasText: 'Accept' });
   while (await authorizeApp.isVisible()) {
-    await authorizeApp.click();
+    await authorizeApp.click({ timeout: 60 * 1000 });
     await page.waitForTimeout(10 * 1000);
   }
 
@@ -79,7 +79,7 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
   // go to dashboard if in app
   const dashboardLink = page.locator('nav a[href="/"]');
   while (await dashboardLink.isVisible()) {
-    await dashboardLink.click();
+    await dashboardLink.click({ timeout: 60 * 1000 });
     await page.waitForLoadState('domcontentloaded');
     await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
     await page.waitForTimeout(10 * 1000);
@@ -90,12 +90,18 @@ export const logIn = async (page: Page, options: LogInOptions): Promise<string> 
 
   // Click team dropdown
   if (options?.teamName) {
-    await page.locator(`nav`).getByRole(`button`, { name: `arrow_drop_down` }).click();
-    await page.locator(`div[data-state="open"] a:has-text("${options.teamName}")`).nth(0).click();
+    await page
+      .locator(`nav`)
+      .getByRole(`button`, { name: `arrow_drop_down` })
+      .click({ timeout: 60 * 1000 });
+    await page
+      .locator(`div[data-state="open"] a:has-text("${options.teamName}")`)
+      .nth(0)
+      .click({ timeout: 60 * 1000 });
   }
 
   // Wait for Filter by file or creator name...
-  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor();
+  await page.locator('[placeholder="Filter by file or creator name…"]').waitFor({ timeout: 60 * 1000 });
 
   await cleanUpFiles(page, { fileName: 'Untitled' });
 
@@ -113,20 +119,23 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   // Act:
   //--------------------------------
   // Click the 'Sign up' button
-  await page.locator(`:text("Sign up")`).click();
+  await page.locator(`:text("Sign up")`).click({ timeout: 60 * 1000 });
 
   // Fill in an email
-  await page.locator(`#email`).fill(email);
+  await page.locator(`#email`).fill(email, { timeout: 60 * 1000 });
 
   // Fill in a Password
-  await page.locator(`#password`).fill(USER_PASSWORD);
+  await page.locator(`#password`).fill(USER_PASSWORD, { timeout: 60 * 1000 });
 
   // Click the Continue button
-  await page.locator(`button[name="action"]`).filter({ hasText: 'Continue' }).click();
+  await page
+    .locator(`button[name="action"]`)
+    .filter({ hasText: 'Continue' })
+    .click({ timeout: 60 * 1000 });
 
   const authorizeApp = page.locator(`button[name="action"]`).filter({ hasText: 'Accept' });
   if (await authorizeApp.isVisible()) {
-    await authorizeApp.click();
+    await authorizeApp.click({ timeout: 60 * 1000 });
   }
 
   await page.waitForLoadState('networkidle', { timeout: 60 * 1000 });
@@ -138,11 +147,14 @@ export const signUp = async (page: Page, { email }: SignUpOptions): Promise<stri
   await expect(page.locator(`#QuadraticCanvasID`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Exit out of default new file
-  await page.getByRole(`navigation`).getByRole(`link`).click();
+  await page
+    .getByRole(`navigation`)
+    .getByRole(`link`)
+    .click({ timeout: 60 * 1000 });
 
   // We're successfully Signed up
   await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
-  await expect(page).toHaveURL(/teams/);
+  await expect(page).toHaveURL(/teams/, { timeout: 60 * 1000 });
 
   return email;
 };

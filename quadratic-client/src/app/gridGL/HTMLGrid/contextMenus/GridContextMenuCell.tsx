@@ -2,6 +2,7 @@ import { Action } from '@/app/actions/actions';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { ContextMenuBase, ContextMenuItemAction } from '@/app/gridGL/HTMLGrid/contextMenus/Base';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { DropdownMenuSeparator } from '@/shared/shadcn/ui/dropdown-menu';
 import { useEffect, useState } from 'react';
 
@@ -12,6 +13,7 @@ export function GridContextMenuCell() {
   const [columnAvailable, setColumnAvailable] = useState(false);
   const [rowAvailable, setRowAvailable] = useState(false);
   const [canConvertToDataTable, setCanConvertToDataTable] = useState(false);
+  const [canRunSelection, setCanRunSelection] = useState(false);
 
   useEffect(() => {
     const updateCursor = () => {
@@ -23,6 +25,7 @@ export function GridContextMenuCell() {
         setRowAvailable(false);
       }
       setCanConvertToDataTable(sheets.sheet.cursor.canConvertToDataTable());
+      setCanRunSelection(pixiApp.cellsSheet().tables.hasCodeCellInCurrentSelection());
     };
 
     updateCursor();
@@ -37,27 +40,33 @@ export function GridContextMenuCell() {
 
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.Cut} />
-      <ContextMenuItemAction action={Action.Copy} />
-      <ContextMenuItemAction action={Action.Paste} />
-      <ContextMenuItemAction action={Action.PasteValuesOnly} />
-      <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
-      <ContextMenuItemAction action={Action.DownloadAsCsv} />
+      {canRunSelection && <ContextMenuItemAction action={Action.ExecuteCode} actionArgs={undefined} />}
+
       <DropdownMenuSeparator />
-      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} />}
-      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnRight} />}
-      <ContextMenuItemAction action={Action.DeleteColumn} />
-      {columnAvailable && (rowAvailable || canConvertToDataTable) && <DropdownMenuSeparator />}
-      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} />}
-      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} />}
-      <ContextMenuItemAction action={Action.DeleteRow} />
-      {canConvertToDataTable && (
-        <>
-          <DropdownMenuSeparator />
-          <ContextMenuItemAction action={Action.GridToDataTable} />
-        </>
-      )}
+
+      <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
+
+      <DropdownMenuSeparator />
+
+      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnLeft} actionArgs={undefined} />}
+      {columnAvailable && <ContextMenuItemAction action={Action.InsertColumnRight} actionArgs={undefined} />}
+      <ContextMenuItemAction action={Action.DeleteColumn} actionArgs={undefined} />
+
+      <DropdownMenuSeparator />
+
+      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowAbove} actionArgs={undefined} />}
+      {rowAvailable && <ContextMenuItemAction action={Action.InsertRowBelow} actionArgs={undefined} />}
+      <ContextMenuItemAction action={Action.DeleteRow} actionArgs={undefined} />
+
+      <DropdownMenuSeparator />
+
+      {canConvertToDataTable && <ContextMenuItemAction action={Action.GridToDataTable} actionArgs={undefined} />}
     </ContextMenuBase>
   );
 }

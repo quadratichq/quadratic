@@ -42,7 +42,6 @@ mod tests {
         },
         grid::js_types::JsRenderCell,
     };
-    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_run_python() {
@@ -192,7 +191,7 @@ mod tests {
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(pos![A2]),
-            Some(CellValue::Number(BigDecimal::from(10)))
+            Some(CellValue::Number(10.into()))
         );
 
         // transaction should be completed
@@ -273,7 +272,7 @@ mod tests {
         let sheet = gc.try_sheet(sheet_id).unwrap();
         assert_eq!(
             sheet.display_value(pos![A2]),
-            Some(CellValue::Number(BigDecimal::from(11)))
+            Some(CellValue::Number(11.into()))
         );
 
         // transaction should be completed
@@ -357,7 +356,6 @@ mod tests {
             transaction_id: transaction_id.to_string(),
             success: true,
             output_value: Some(JsCellValueResult("".into(), 0)),
-            cancel_compute: Some(true),
             ..Default::default()
         };
         gc.calculation_complete(result).unwrap();
@@ -553,15 +551,15 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
             sheet.display_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(pos![B1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(pos![C1]),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
 
         // transaction should be completed

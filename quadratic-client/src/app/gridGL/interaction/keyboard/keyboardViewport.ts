@@ -1,7 +1,7 @@
 import { hasPermissionToEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import { viewActionsSpec } from '@/app/actions/viewActionsSpec';
-import { debug } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheets } from '@/app/grid/controller/Sheets.js';
 import { zoomIn, zoomOut, zoomTo100, zoomToFit, zoomToSelection } from '@/app/gridGL/helpers/zoom';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
@@ -197,7 +197,10 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
 
   // Fill right
   // Disabled in debug mode, to allow page reload
-  if ((!debug && matchShortcut(Action.FillRight, event)) || (debug && event.ctrlKey && event.key === 'r')) {
+  if (
+    (!debugFlag('debug') && matchShortcut(Action.FillRight, event)) ||
+    (debugFlag('debug') && event.ctrlKey && event.key === 'r')
+  ) {
     const cursor = sheets.sheet.cursor;
     const rect = cursor.getSingleRectangleOrCursor();
     if (rect) {

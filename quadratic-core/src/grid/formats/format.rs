@@ -219,42 +219,42 @@ impl Display for Format {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = String::new();
         if let Some(align) = self.align {
-            s.push_str(&format!("align: {:?}, ", align));
+            s.push_str(&format!("align: {align:?}, "));
         }
         if let Some(wrap) = self.wrap {
-            s.push_str(&format!("wrap: {:?}, ", wrap));
+            s.push_str(&format!("wrap: {wrap:?}, "));
         }
         if let Some(numeric_format) = &self.numeric_format {
-            s.push_str(&format!("numeric_format: {:?}, ", numeric_format));
+            s.push_str(&format!("numeric_format: {numeric_format:?}, "));
         }
         if let Some(numeric_decimals) = self.numeric_decimals {
-            s.push_str(&format!("numeric_decimals: {:?}, ", numeric_decimals));
+            s.push_str(&format!("numeric_decimals: {numeric_decimals:?}, "));
         }
         if let Some(numeric_commas) = self.numeric_commas {
-            s.push_str(&format!("numeric_commas: {:?}, ", numeric_commas));
+            s.push_str(&format!("numeric_commas: {numeric_commas:?}, "));
         }
         if let Some(bold) = self.bold {
-            s.push_str(&format!("bold: {:?}, ", bold));
+            s.push_str(&format!("bold: {bold:?}, "));
         }
         if let Some(italic) = self.italic {
-            s.push_str(&format!("italic: {:?}, ", italic));
+            s.push_str(&format!("italic: {italic:?}, "));
         }
         if let Some(text_color) = &self.text_color {
-            s.push_str(&format!("text_color: {:?}, ", text_color));
+            s.push_str(&format!("text_color: {text_color:?}, "));
         }
         if let Some(fill_color) = &self.fill_color {
-            s.push_str(&format!("fill_color: {:?}, ", fill_color));
+            s.push_str(&format!("fill_color: {fill_color:?}, "));
         }
         if let Some(date_time) = &self.date_time {
-            s.push_str(&format!("date_time: {:?}, ", date_time));
+            s.push_str(&format!("date_time: {date_time:?}, "));
         }
         if let Some(underline) = self.underline {
-            s.push_str(&format!("underline: {:?}, ", underline));
+            s.push_str(&format!("underline: {underline:?}, "));
         }
         if let Some(strike_through) = self.strike_through {
-            s.push_str(&format!("strike_through: {:?}, ", strike_through));
+            s.push_str(&format!("strike_through: {strike_through:?}, "));
         }
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

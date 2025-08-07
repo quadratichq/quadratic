@@ -6,7 +6,9 @@ import {
 import { showAIAnalystOnStartupAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { focusGrid } from '@/app/helpers/focusGrid';
-import type { AITool, AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { isToolResultMessage } from 'quadratic-shared/ai/helpers/message.helper';
+import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { Chat, ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 import { v4 } from 'uuid';
@@ -24,6 +26,10 @@ export interface AIAnalystState {
     suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'];
   };
   pdfImport: {
+    abortController: AbortController | undefined;
+    loading: boolean;
+  };
+  webSearch: {
     abortController: AbortController | undefined;
     loading: boolean;
   };
@@ -48,6 +54,10 @@ export const defaultAIAnalystState: AIAnalystState = {
     suggestions: [],
   },
   pdfImport: {
+    abortController: undefined,
+    loading: false,
+  },
+  webSearch: {
     abortController: undefined,
     loading: false,
   },
@@ -232,6 +242,28 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         chats = [...chats.filter((chat) => chat.id !== newValue.id), newValue];
       }
 
+      let suggestions: z.infer<(typeof AIToolsArgsSchema)[AITool.UserPromptSuggestions]>['prompt_suggestions'] = [];
+
+      const lastMessage = newValue.messages.at(-1);
+      const secondToLastMessage = newValue.messages.at(-2);
+      const lastAIMessage = !!lastMessage && isToolResultMessage(lastMessage) ? secondToLastMessage : lastMessage;
+      if (lastAIMessage?.role === 'assistant' && lastAIMessage.contextType === 'userPrompt') {
+        const promptSuggestions = lastAIMessage.toolCalls
+          .filter(
+            (toolCall) =>
+              toolCall.name === AITool.UserPromptSuggestions && toolCall.arguments.length > 0 && !toolCall.loading
+          )
+          .at(-1);
+        if (promptSuggestions) {
+          try {
+            const argsObject = JSON.parse(promptSuggestions.arguments);
+            suggestions = aiToolsSpec[AITool.UserPromptSuggestions].responseSchema.parse(argsObject).prompt_suggestions;
+          } catch {
+            suggestions = [];
+          }
+        }
+      }
+
       return {
         ...prev,
         showChatHistory: false,
@@ -239,7 +271,7 @@ export const aiAnalystCurrentChatAtom = selector<Chat>({
         currentChat: newValue,
         promptSuggestions: {
           abortController: undefined,
-          suggestions: [],
+          suggestions,
         },
       };
     });
@@ -328,11 +360,21 @@ export const aiAnalystPromptSuggestionsCountAtom = selector<number>({
   key: 'aiAnalystPromptSuggestionsCountAtom',
   get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).suggestions.length,
 });
+export const aiAnalystPromptSuggestionsLoadingAtom = selector<boolean>({
+  key: 'aiAnalystPromptSuggestionsLoadingAtom',
+  get: ({ get }) => get(aiAnalystPromptSuggestionsAtom).abortController !== undefined,
+});
 
 export const aiAnalystPDFImportAtom = createSelector('pdfImport');
 export const aiAnalystPDFImportLoadingAtom = selector<boolean>({
   key: 'aiAnalystPDFImportLoadingAtom',
   get: ({ get }) => get(aiAnalystPDFImportAtom).loading,
+});
+
+export const aiAnalystWebSearchAtom = createSelector('webSearch');
+export const aiAnalystWebSearchLoadingAtom = selector<boolean>({
+  key: 'aiAnalystWebSearchLoadingAtom',
+  get: ({ get }) => get(aiAnalystWebSearchAtom).loading,
 });
 
 export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
@@ -347,23 +389,6 @@ export const aiAnalystWaitingOnMessageIndexAtom = selector<number | undefined>({
       return {
         ...prev,
         waitingOnMessageIndex: newValue,
-      };
-    });
-  },
-});
-
-export const aiAnalystDelaySecondsAtom = selector<number>({
-  key: 'aiAnalystDelaySecondsAtom',
-  get: ({ get }) => get(aiAnalystAtom).delaySeconds,
-  set: ({ set }, newValue) => {
-    set(aiAnalystAtom, (prev) => {
-      if (newValue instanceof DefaultValue) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        delaySeconds: newValue,
       };
     });
   },

@@ -173,9 +173,7 @@ export const viewActionsSpec: ViewActionSpec = {
   [Action.ShowCellTypeMenu]: {
     label: () => 'Code editor',
     Icon: CodeIcon,
-    run: () => {
-      openCodeEditor();
-    },
+    run: () => openCodeEditor(),
   },
   [Action.ToggleAIAnalyst]: {
     label: () => 'Sheet chat',

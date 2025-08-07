@@ -15,15 +15,15 @@ jobs:
       matrix:
         include:
           - service: client
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: files
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

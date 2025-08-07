@@ -9,7 +9,8 @@ export const ROUTES = {
   SIGNUP_WITH_REDIRECT: () => '/login?signup&from=' + encodeURIComponent(window.location.pathname),
   LOGIN_RESULT: '/login-result',
   FILES_SHARED_WITH_ME: '/files/shared-with-me',
-  FILE: (uuid: string) => `/file/${uuid}`,
+  FILE: ({ uuid, searchParams }: { uuid: string; searchParams?: string }) =>
+    `/file/${uuid}${searchParams ? `?${searchParams}` : ''}`,
   FILE_DUPLICATE: (uuid: string) => `/file/${uuid}/duplicate`,
   FILE_HISTORY: (uuid: string) => `/file/${uuid}/history`,
   CREATE_FILE: (
@@ -18,6 +19,7 @@ export const ROUTES = {
       state?: UrlParamsDevState['insertAndRunCodeInNewSheet'];
       prompt?: string | null;
       private?: boolean;
+      chatId?: string | null;
     } = {}
   ) => {
     let url = new URL(window.location.origin + `/teams/${teamUuid}/files/create`);
@@ -31,11 +33,24 @@ export const ROUTES = {
     if (searchParams.private) {
       url.searchParams.set('private', 'true');
     }
+    if (searchParams.chatId) {
+      url.searchParams.set('chat-id', searchParams.chatId);
+    }
 
     return url.toString();
   },
-  CREATE_FILE_EXAMPLE: (teamUuid: string, publicFileUrlInProduction: string) =>
-    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private`,
+  CREATE_FILE_EXAMPLE: ({
+    teamUuid,
+    publicFileUrlInProduction,
+    additionalParams,
+  }: {
+    teamUuid: string;
+    publicFileUrlInProduction: string;
+    additionalParams: string;
+  }) =>
+    `/teams/${teamUuid}/files/create?example=${publicFileUrlInProduction}&private${
+      additionalParams ? `&${additionalParams}` : ''
+    }`,
   TEAMS: `/teams`,
   TEAMS_CREATE: `/teams/create`,
   TEAM: (teamUuid: string) => `/teams/${teamUuid}`,
@@ -49,6 +64,7 @@ export const ROUTES = {
   TEAM_MEMBERS: (teamUuid: string) => `/teams/${teamUuid}/members`,
   TEAM_SETTINGS: (teamUuid: string) => `/teams/${teamUuid}/settings`,
   EDIT_TEAM: (teamUuid: string) => `/teams/${teamUuid}/edit`,
+  ACTIVE_TEAM_SETTINGS: `/team/settings`,
   EXAMPLES: '/examples',
   LABS: '/labs',
 
@@ -62,6 +78,8 @@ export const ROUTES = {
         `/api/connections?team-uuid=${teamUuid}&connection-uuid=${connectionUuid}`,
     },
   },
+
+  IFRAME_INDEXEDDB: '/iframe-indexeddb',
 };
 
 export const ROUTE_LOADER_IDS = {

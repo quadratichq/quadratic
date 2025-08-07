@@ -1,47 +1,24 @@
 import '@/app/ui/styles/floating-dialog.css';
 
 import { editorInteractionStateShowGoToMenuAtom } from '@/app/atoms/editorInteractionStateAtom';
-import { events } from '@/app/events/events';
+import { tableInfoAtom } from '@/app/atoms/tableInfoAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getConnectionKind } from '@/app/helpers/codeCellLanguage';
-import type { A1Error, JsTableInfo } from '@/app/quadratic-core-types';
-import { convertTableToRange, getTableInfo, stringToSelection } from '@/app/quadratic-core/quadratic_core';
+import type { A1Error } from '@/app/quadratic-core-types';
 import { GoToIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Command, CommandGroup, CommandInput, CommandItem, CommandList } from '@/shared/shadcn/ui/command';
 import { CommandSeparator } from 'cmdk';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useRecoilState } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const GoTo = memo(() => {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [showGotoToMenu, setShowGoToMenu] = useRecoilState(editorInteractionStateShowGoToMenuAtom);
+  const setShowGoToMenu = useSetRecoilState(editorInteractionStateShowGoToMenuAtom);
   const [value, setValue] = useState<string>();
   const [currentSheet, setCurrentSheet] = useState<string>(sheets.current);
-  const [tableInfo, setTablesInfo] = useState<JsTableInfo[]>([]);
-
-  useEffect(() => {
-    const sync = () => {
-      let tableInfo: JsTableInfo[] = [];
-      try {
-        tableInfo = getTableInfo(sheets.a1Context);
-      } catch (e) {
-        console.error('Error getting table info in CursorPosition.tsx', e);
-      }
-      tableInfo.sort((a, b) => a.name.localeCompare(b.name));
-      setTablesInfo(tableInfo);
-    };
-
-    if (showGotoToMenu) {
-      sync();
-      events.on('a1ContextUpdated', sync);
-    }
-
-    return () => {
-      events.off('a1ContextUpdated', sync);
-    };
-  }, [showGotoToMenu]);
+  const tableInfo = useRecoilValue(tableInfoAtom);
 
   const closeMenu = useCallback(() => {
     setShowGoToMenu(false);
@@ -50,7 +27,7 @@ export const GoTo = memo(() => {
   const tableNameToRange = useCallback((tableName: string): string => {
     let range = '';
     try {
-      range = convertTableToRange(sheets.a1Context, tableName, sheets.current);
+      range = sheets.convertTableToRange(tableName, sheets.current);
     } catch (e) {
       console.error('Error getting table name range in GoTo.tsx', e);
     }
@@ -66,10 +43,10 @@ export const GoTo = memo(() => {
       );
     }
     try {
-      const selection = stringToSelection(value, sheets.current, sheets.a1Context);
+      const selection = sheets.stringToSelection(value, sheets.current);
       return (
         <span>
-          <span className="font-bold">{selection.toA1String(sheets.current)}</span>
+          <span className="font-bold">{selection.toA1String(sheets.current, sheets.jsA1Context)}</span>
         </span>
       );
     } catch (e: any) {
@@ -102,7 +79,7 @@ export const GoTo = memo(() => {
       pixiApp.viewport.reset();
     } else {
       try {
-        const selection = stringToSelection(value, sheets.current, sheets.a1Context);
+        const selection = sheets.stringToSelection(value, sheets.current);
         sheets.changeSelection(selection);
       } catch (_) {
         // nothing to do if we can't parse the input
@@ -113,7 +90,7 @@ export const GoTo = memo(() => {
 
   const selectTable = useCallback(
     (tableName: string) => {
-      const selection = stringToSelection(tableName, sheets.current, sheets.a1Context);
+      const selection = sheets.stringToSelection(tableName, sheets.current);
       sheets.changeSelection(selection);
       closeMenu();
     },
@@ -162,7 +139,7 @@ export const GoTo = memo(() => {
   }, [currentSheet]);
 
   return (
-    <Command shouldFilter={false}>
+    <Command shouldFilter={false} data-testid="goto-menu">
       <div className="flex w-full items-center justify-between">
         <div className="relative w-full flex-grow">
           <CommandInput
@@ -193,7 +170,7 @@ export const GoTo = memo(() => {
         {tablesFiltered.length > 0 && (
           <>
             <CommandGroup heading="Tables">
-              {tablesFiltered.map(({ name, sheet_name }, i) => (
+              {tablesFiltered.map(({ name }, i) => (
                 <CommandItemGoto
                   key={name}
                   value={name}

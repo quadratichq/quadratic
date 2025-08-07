@@ -1,7 +1,8 @@
 use itertools::Itertools;
 
 use crate::{
-    Instant, Pos, Rect,
+    Pos, Rect,
+    compression::{SerializationFormat, serialize},
     grid::{
         SheetId,
         js_types::{
@@ -16,8 +17,6 @@ use crate::{
 
 use super::{GridController, active_transactions::pending_transaction::PendingTransaction};
 
-const CLIENT_UPDATE_INTERVAL_SEC: f64 = 0.5;
-
 impl GridController {
     pub(crate) fn send_viewport_buffer(&mut self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
@@ -29,56 +28,16 @@ impl GridController {
         self.viewport_buffer = Some(viewport_buffer);
     }
 
-    /// Sends all updates to the client during the transaction
-    pub(crate) fn send_client_updates_during_transaction(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        send_hashes_dirty: bool,
-    ) {
-        let code_cells_a1_context = std::mem::take(&mut transaction.code_cells_a1_context);
-        self.update_a1_context_table_map(code_cells_a1_context, false);
-
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
+    /// Sends all pending updates to the client and render worker
+    pub(crate) fn send_client_render_updates(&mut self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             return;
         }
 
-        if transaction
-            .last_client_update
-            .is_some_and(|last_client_update| {
-                Instant::now().seconds - last_client_update.seconds < CLIENT_UPDATE_INTERVAL_SEC
-            })
-        {
-            return;
-        }
-        transaction.last_client_update = Some(Instant::now());
-
-        self.send_transaction_progress(transaction);
+        self.update_a1_context_table_map(transaction);
+        self.send_a1_context();
         self.send_sheet_info(transaction);
-        self.send_code_cells(transaction);
-        self.process_visible_dirty_hashes(transaction);
-        if send_hashes_dirty {
-            self.process_remaining_dirty_hashes(transaction);
-        }
-    }
-
-    /// Sends all pending updates to the client
-    pub(crate) fn send_client_updates_after_transaction(
-        &mut self,
-        transaction: &mut PendingTransaction,
-    ) {
-        let code_cells_a1_context = std::mem::take(&mut transaction.code_cells_a1_context);
-        self.update_a1_context_table_map(code_cells_a1_context, true);
-
-        if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
-            return;
-        }
-
-        crate::wasm_bindings::js::jsUndoRedo(
-            !self.undo_stack.is_empty(),
-            !self.redo_stack.is_empty(),
-        );
-
-        self.send_sheet_info(transaction);
+        self.send_content_cache(transaction);
         self.send_offsets_modified(transaction);
         self.send_code_cells(transaction);
         self.process_visible_dirty_hashes(transaction);
@@ -86,13 +45,8 @@ impl GridController {
         self.send_validations(transaction);
         self.send_borders(transaction);
         self.send_fills(transaction);
-
-        // send updated SheetMap and TableMap to client
-        self.send_a1_context();
-
-        if let Some(selection) = transaction.update_selection.to_owned() {
-            crate::wasm_bindings::js::jsSetCursor(selection);
-        }
+        self.send_undo_redo();
+        self.send_set_cursor(transaction);
     }
 
     pub(crate) fn process_visible_dirty_hashes(&self, transaction: &mut PendingTransaction) {
@@ -142,6 +96,10 @@ impl GridController {
                 remaining_hashes.push(pos);
             }
         }
+
+        // send sheet info, offsets are required before sending render cells
+        self.send_sheet_info(transaction);
+        self.send_offsets_modified(transaction);
 
         self.send_render_cells_in_hashes(transaction, viewport_sheet_id, viewport_hashes);
 
@@ -320,6 +278,9 @@ impl GridController {
                 ));
             }
         }
+
+        sheet.send_content_cache();
+        sheet.send_data_tables_cache();
     }
 
     /// Sends delete sheet to the client
@@ -341,7 +302,7 @@ impl GridController {
     }
 
     /// Sends sheet info to the client
-    pub(crate) fn send_sheet_info(&mut self, transaction: &mut PendingTransaction) {
+    pub(crate) fn send_sheet_info(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
             transaction.sheet_info.clear();
             return;
@@ -367,38 +328,6 @@ impl GridController {
         }
     }
 
-    pub(crate) fn send_code_cells(&mut self, transaction: &mut PendingTransaction) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            return;
-        }
-
-        let mut update_code_cells = Vec::new();
-
-        let code_cells = std::mem::take(&mut transaction.code_cells);
-        for (sheet_id, positions) in code_cells.into_iter() {
-            let Some(sheet) = self.try_sheet(sheet_id) else {
-                continue;
-            };
-
-            for pos in positions.into_iter() {
-                update_code_cells.push(JsUpdateCodeCell {
-                    sheet_id: sheet.id,
-                    pos,
-                    render_code_cell: sheet.get_render_code_cell(pos),
-                });
-            }
-        }
-
-        if !update_code_cells.is_empty() {
-            if let Ok(update_code_cells) = serde_json::to_vec(&update_code_cells) {
-                crate::wasm_bindings::js::jsUpdateCodeCells(update_code_cells);
-            }
-        }
-
-        self.send_html_cells(transaction);
-        self.send_images(transaction);
-    }
-
     /// Sends individual offsets that have been modified to the client
     pub(crate) fn send_offsets_modified(&self, transaction: &mut PendingTransaction) {
         if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
@@ -406,10 +335,11 @@ impl GridController {
             return;
         }
 
-        for (sheet_id, offsets) in transaction.offsets_modified.iter() {
+        let offsets_modified = std::mem::take(&mut transaction.offsets_modified);
+        for (sheet_id, offsets) in offsets_modified.into_iter() {
             let mut offsets = offsets
-                .iter()
-                .map(|(&(column, row), &size)| JsOffset {
+                .into_iter()
+                .map(|((column, row), size)| JsOffset {
                     column: column.map(|c| c as i32),
                     row: row.map(|r| r as i32),
                     size,
@@ -429,7 +359,125 @@ impl GridController {
                 }
             }
         }
-        transaction.offsets_modified.clear();
+    }
+
+    pub(crate) fn send_code_cells(&mut self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.sheet_data_tables_cache.clear();
+            transaction.code_cells.clear();
+            transaction.html_cells.clear();
+            transaction.image_cells.clear();
+            return;
+        }
+
+        self.send_sheet_data_tables_cache(transaction);
+
+        let mut update_code_cells = Vec::new();
+        let code_cells = std::mem::take(&mut transaction.code_cells);
+        for (sheet_id, positions) in code_cells.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            for pos in positions.into_iter() {
+                update_code_cells.push(JsUpdateCodeCell {
+                    sheet_id: sheet.id,
+                    pos,
+                    render_code_cell: sheet.get_render_code_cell(pos),
+                });
+            }
+        }
+        if !update_code_cells.is_empty() {
+            // Sort so that None render cells come first, then Some render cells
+            update_code_cells.sort_by(|a, b| {
+                match (a.render_code_cell.is_none(), b.render_code_cell.is_none()) {
+                    (true, false) => std::cmp::Ordering::Less,
+                    (false, true) => std::cmp::Ordering::Greater,
+                    _ => std::cmp::Ordering::Equal,
+                }
+            });
+
+            if let Ok(update_code_cells) = serde_json::to_vec(&update_code_cells) {
+                crate::wasm_bindings::js::jsUpdateCodeCells(update_code_cells);
+            }
+        }
+
+        self.send_html_cells(transaction);
+        self.send_images(transaction);
+    }
+
+    fn send_sheet_data_tables_cache(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.sheet_data_tables_cache.clear();
+            return;
+        }
+
+        let sheet_data_tables_cache = std::mem::take(&mut transaction.sheet_data_tables_cache);
+        for sheet_id in sheet_data_tables_cache.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            sheet.send_data_tables_cache();
+        }
+    }
+
+    fn send_html_cells(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.html_cells.clear();
+            return;
+        }
+
+        let html_cells = std::mem::take(&mut transaction.html_cells);
+        for (sheet_id, positions) in html_cells.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            for pos in positions.iter() {
+                // prepare the html for the client, or fallback to an empty html cell
+                let html = sheet.get_single_html_output(*pos).unwrap_or(JsHtmlOutput {
+                    sheet_id: sheet_id.to_string(),
+                    x: pos.x as i32,
+                    y: pos.y as i32,
+                    w: 0,
+                    h: 0,
+                    html: None,
+                    name: "".to_string(),
+                    show_name: true,
+                });
+
+                match serde_json::to_vec(&html) {
+                    Ok(html) => {
+                        crate::wasm_bindings::js::jsUpdateHtml(html);
+                    }
+                    Err(e) => {
+                        dbgjs!(format!(
+                            "[send_html_cells] Error serializing JsHtmlOutput {:?}",
+                            e.to_string()
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    fn send_images(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.image_cells.clear();
+            return;
+        }
+
+        let image_cells = std::mem::take(&mut transaction.image_cells);
+        for (sheet_id, positions) in image_cells.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            for pos in positions.iter() {
+                sheet.send_image(pos.to_owned());
+            }
+        }
     }
 
     fn send_validations(&self, transaction: &mut PendingTransaction) {
@@ -466,14 +514,14 @@ impl GridController {
             return;
         }
 
-        for sheet_id in transaction.sheet_borders.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
+        let sheet_borders = std::mem::take(&mut transaction.sheet_borders);
+        for sheet_id in sheet_borders.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
                 continue;
             };
 
             sheet.send_sheet_borders();
         }
-        transaction.sheet_borders.clear();
     }
 
     fn send_fills(&self, transaction: &mut PendingTransaction) {
@@ -482,10 +530,10 @@ impl GridController {
             return;
         }
 
-        for sheet_id in transaction.fill_cells.iter() {
-            self.send_all_fills(*sheet_id);
+        let fill_cells = std::mem::take(&mut transaction.fill_cells);
+        for sheet_id in fill_cells.into_iter() {
+            self.send_all_fills(sheet_id);
         }
-        transaction.fill_cells.clear();
     }
 
     pub(crate) fn send_all_fills(&self, sheet_id: SheetId) {
@@ -508,85 +556,59 @@ impl GridController {
         }
     }
 
-    fn send_html_cells(&self, transaction: &mut PendingTransaction) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            transaction.html_cells.clear();
-            return;
-        }
-
-        for (sheet_id, positions) in transaction.html_cells.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
-                continue;
-            };
-
-            for pos in positions.iter() {
-                // prepare the html for the client, or fallback to an empty html cell
-                let html = sheet.get_single_html_output(*pos).unwrap_or(JsHtmlOutput {
-                    sheet_id: sheet_id.to_string(),
-                    x: pos.x as i32,
-                    y: pos.y as i32,
-                    w: 0,
-                    h: 0,
-                    html: None,
-                    name: "".to_string(),
-                    show_name: true,
-                });
-
-                match serde_json::to_vec(&html) {
-                    Ok(html) => {
-                        crate::wasm_bindings::js::jsUpdateHtml(html);
-                    }
-                    Err(e) => {
-                        dbgjs!(format!(
-                            "[send_html_cells] Error serializing JsHtmlOutput {:?}",
-                            e.to_string()
-                        ));
-                    }
-                }
-            }
-        }
-        transaction.html_cells.clear();
-    }
-
-    fn send_images(&self, transaction: &mut PendingTransaction) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            transaction.image_cells.clear();
-            return;
-        }
-
-        for (sheet_id, positions) in transaction.image_cells.iter() {
-            let Some(sheet) = self.try_sheet(*sheet_id) else {
-                continue;
-            };
-
-            for pos in positions.iter() {
-                sheet.send_image(pos.to_owned());
-            }
-        }
-        transaction.image_cells.clear();
-    }
-
-    /// Send transaction progress to client
-    pub(crate) fn send_transaction_progress(&self, transaction: &PendingTransaction) {
-        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
-            return;
-        }
-
-        crate::wasm_bindings::js::jsTransactionProgress(
-            transaction.id.to_string(),
-            transaction.operations.len() as i32,
-        );
-    }
-
+    /// Sends A1Context as bytes to the client.
     pub(crate) fn send_a1_context(&self) {
         if !cfg!(target_family = "wasm") && !cfg!(test) {
             return;
         }
 
-        let context = self.a1_context();
-        if let Ok(context) = serde_json::to_vec(context) {
-            crate::wasm_bindings::js::jsA1Context(context);
+        match serialize(&SerializationFormat::Bincode, self.a1_context()) {
+            Ok(bytes) => crate::wasm_bindings::js::jsA1Context(bytes),
+            Err(e) => {
+                dbgjs!(format!(
+                    "[send_a1_context] Error serializing A1Context {:?}",
+                    e.to_string()
+                ));
+            }
         }
+    }
+
+    /// Sends the content cache to the client.
+    pub fn send_content_cache(&self, transaction: &mut PendingTransaction) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        let sheet_content_cache = std::mem::take(&mut transaction.sheet_content_cache);
+        for sheet_id in sheet_content_cache.into_iter() {
+            let Some(sheet) = self.try_sheet(sheet_id) else {
+                continue;
+            };
+
+            sheet.send_content_cache();
+        }
+    }
+
+    fn send_set_cursor(&self, transaction: &mut PendingTransaction) {
+        if (!cfg!(target_family = "wasm") && !cfg!(test)) || transaction.is_server() {
+            transaction.update_selection = None;
+            return;
+        }
+
+        if let Some(selection) = std::mem::take(&mut transaction.update_selection) {
+            crate::wasm_bindings::js::jsSetCursor(selection);
+        }
+    }
+
+    fn send_undo_redo(&self) {
+        if !cfg!(target_family = "wasm") && !cfg!(test) {
+            return;
+        }
+
+        crate::wasm_bindings::js::jsUndoRedo(
+            !self.undo_stack.is_empty(),
+            !self.redo_stack.is_empty(),
+        );
     }
 }
 

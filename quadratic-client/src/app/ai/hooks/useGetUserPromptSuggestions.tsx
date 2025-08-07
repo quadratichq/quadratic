@@ -1,6 +1,6 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { aiAnalystCurrentChatMessagesAtom, aiAnalystPromptSuggestionsAtom } from '@/app/atoms/aiAnalystAtom';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, type AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -15,7 +15,7 @@ export const useGetUserPromptSuggestions = () => {
     ({ snapshot, set }) =>
       async () => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
-        const chatPromptMessages = getPromptMessages(chatMessages);
+        const chatPromptMessages = getPromptMessagesForAI(chatMessages);
         if (!chatPromptMessages.length) {
           return [];
         }
@@ -51,6 +51,7 @@ ${JSON.stringify(chatPromptMessages)}
         const response = await handleAIRequestToAPI({
           chatId: v4(),
           source: 'GetUserPromptSuggestions',
+          messageSource: 'GetUserPromptSuggestions',
           modelKey: DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL,
           messages,
           signal: abortController.signal,

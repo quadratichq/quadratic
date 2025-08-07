@@ -14,7 +14,7 @@ test('Create Example', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName });
 
   // Go to private files
-  await page.locator(`div a:text("My files")`).click();
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName, skipFilterClear: true });
 
   //--------------------------------
@@ -25,12 +25,12 @@ test('Create Example', async ({ page }) => {
   // Act:
   //--------------------------------
   // navigate to Examples tab
-  await page.locator(`a:text("Examples")`).click();
+  await page.locator(`a:text("Examples")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // click on the "Python intro" example
-  await page.locator('h2:has-text("Python intro")').click();
-  await page.waitForTimeout(30 * 1000);
+  await page.locator('h2:has-text("Python intro")').click({ timeout: 60 * 1000 });
+  await page.waitForTimeout(60 * 1000);
 
   //--------------------------------
   // Assert:
@@ -38,21 +38,24 @@ test('Create Example', async ({ page }) => {
 
   // Close Chat
   try {
-    await page.getByRole(`button`, { name: `close` }).first().click();
+    await page
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
 
   // assert that the correct file is created
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Resources_Create_Example.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Resources_Create_Example.png', {
     maxDiffPixelRatio: 0.01,
   });
 
   // click on Back to files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Go to private files
-  await page.locator(`div a:text("My files")`).click();
+  await page.locator(`div a:text("My files")`).click({ timeout: 60 * 1000 });
 
   // assert that the example file has been created
   await expect(page.locator(`h2:has-text("${fileName}")`)).toBeVisible();

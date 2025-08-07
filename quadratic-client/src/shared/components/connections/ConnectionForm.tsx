@@ -1,12 +1,11 @@
 import { getCreateConnectionAction, getUpdateConnectionAction } from '@/routes/api.connections';
 import { connectionClient } from '@/shared/api/connectionClient';
 import { ConnectionFormActions } from '@/shared/components/connections/ConnectionFormActions';
-import { ConnectionHeader } from '@/shared/components/connections/ConnectionHeader';
 import type { ConnectionFormValues } from '@/shared/components/connections/connectionsByType';
 import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { ROUTES } from '@/shared/constants/routes';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useEffect } from 'react';
@@ -32,7 +31,7 @@ export function ConnectionFormCreate({
 
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     const { name, type, ...typeDetails } = formValues;
-    mixpanel.track('[Connections].create', { type });
+    trackEvent('[Connections].create', { type });
     const { json, options } = getCreateConnectionAction({ name, type, typeDetails }, teamUuid);
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
@@ -43,14 +42,7 @@ export function ConnectionFormCreate({
     handleSubmitForm,
   };
 
-  return (
-    <>
-      <ConnectionHeader type={type} handleNavigateToListView={handleNavigateToListView}>
-        Create
-      </ConnectionHeader>
-      <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />
-    </>
-  );
+  return <ConnectionFormWrapper teamUuid={teamUuid} type={type} props={props} />;
 }
 
 export function ConnectionFormEdit({
@@ -76,36 +68,29 @@ export function ConnectionFormEdit({
   const handleSubmitForm = (formValues: ConnectionFormValues) => {
     // Enhancement: if nothing changed, don't submit. Just navigate back
     const { name, type, ...typeDetails } = formValues;
-    mixpanel.track('[Connections].edit', { type });
+    trackEvent('[Connections].edit', { type });
     const { json, options } = getUpdateConnectionAction(connectionUuid, teamUuid, { name, typeDetails });
     submit(json, { ...options, navigate: false });
     handleNavigateToListView();
   };
 
-  return (
-    <>
-      <ConnectionHeader type={connectionType} handleNavigateToListView={handleNavigateToListView}>
-        Edit
-      </ConnectionHeader>
-      {fetcher.data?.ok ? (
-        <ConnectionFormWrapper
-          type={fetcher.data.connection.type}
-          teamUuid={teamUuid}
-          props={{
-            connection: fetcher.data.connection,
-            handleNavigateToListView,
-            handleSubmitForm,
-          }}
-        />
-      ) : (
-        <div className="gap-2 pt-2">
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-8 w-full" />
-          </div>
-        </div>
-      )}
-    </>
+  return fetcher.data?.ok ? (
+    <ConnectionFormWrapper
+      type={fetcher.data.connection.type}
+      teamUuid={teamUuid}
+      props={{
+        connection: fetcher.data.connection,
+        handleNavigateToListView,
+        handleSubmitForm,
+      }}
+    />
+  ) : (
+    <div className="gap-2 pt-2">
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-8 w-full" />
+      </div>
+    </div>
   );
 }
 

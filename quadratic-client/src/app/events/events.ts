@@ -17,6 +17,7 @@ import type {
   SheetInfo,
   Validation,
 } from '@/app/quadratic-core-types';
+import type { SheetContentCache, SheetDataTablesCache } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { RefreshType } from '@/app/shared/types/RefreshType';
 import type { SheetPosTS } from '@/app/shared/types/size';
@@ -28,7 +29,6 @@ import type {
   CoreClientImage,
   CoreClientImportProgress,
   CoreClientTransactionEnd,
-  CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import EventEmitter from 'eventemitter3';
@@ -61,6 +61,7 @@ interface EventTypes {
   gridSettings: () => void;
 
   sheetOffsets: (sheetId: string, offsets: JsOffset[]) => void;
+  sheetOffsetsUpdated: (sheetId: string) => void;
   sheetFills: (sheetId: string, fills: JsRenderFill[]) => void;
   sheetMetaFills: (sheetId: string, fills: JsSheetFill[]) => void;
   htmlOutput: (html: JsHtmlOutput[]) => void;
@@ -81,7 +82,6 @@ interface EventTypes {
   importProgress: (message: CoreClientImportProgress) => void;
 
   transactionStart: (message: CoreClientTransactionStart) => void;
-  transactionProgress: (message: CoreClientTransactionProgress) => void;
   transactionEnd: (message: CoreClientTransactionEnd) => void;
 
   multiplayerUpdate: (users: MultiplayerUser[]) => void;
@@ -130,6 +130,10 @@ interface EventTypes {
 
   // use this only if you need to immediately get the viewport's value (ie, from React)
   viewportChangedReady: () => void;
+
+  // use this to get the viewport's value after an update is complete
+  viewportReadyAfterUpdate: () => void;
+
   hashContentChanged: (sheetId: string, hashX: number, hashY: number) => void;
 
   recentFiles: (url: string, name: string, loaded: boolean) => void;
@@ -140,6 +144,7 @@ interface EventTypes {
 
   aiAnalystInitialized: () => void;
   pixiAppSettingsInitialized: () => void;
+  filesFromIframeInitialized: () => void;
 
   gridLinesDirty: () => void;
 
@@ -149,6 +154,11 @@ interface EventTypes {
   scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
 
   bitmapFontsLoaded: () => void;
+
+  dataTablesCache: (sheetId: string, dataTablesCache: SheetDataTablesCache) => void;
+  contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
+
+  debugFlags: () => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

@@ -1,6 +1,6 @@
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { useCallback } from 'react';
 import './HtmlCells.css';
-import { htmlCellsHandler } from './htmlCellsHandler';
 
 // parent of htmlCells. Handled in htmlCells.ts
 export const HtmlCells = () => {

@@ -13,22 +13,21 @@ const dockerImageTag = config.require("docker-image-tag");
 const quadraticApiUri = config.require("quadratic-api-uri");
 const filesECRName = config.require("files-ecr-repo-name");
 const filesPulumiEscEnvironmentName = config.require(
-  "files-pulumi-esc-environment-name"
+  "files-pulumi-esc-environment-name",
 );
 
 // Configuration from Pulumi ESC
 const instanceSize = config.require("files-instance-size");
 const domain = config.require("domain");
 
-
 const instance = new aws.ec2.Instance("files-instance", {
   tags: {
     Name: `files-instance-${filesSubdomain}`,
   },
   instanceType: instanceSize,
+  ami: latestAmazonLinuxAmi.id,
   iamInstanceProfile: instanceProfileIAMContainerRegistry,
   vpcSecurityGroupIds: [filesEc2SecurityGroup.id],
-  ami: latestAmazonLinuxAmi.id,
   userDataReplaceOnChange: true,
   userData: pulumi.all([redisHost, redisPort]).apply(([host, port]) =>
     runDockerImageBashScript(
@@ -40,8 +39,8 @@ const instance = new aws.ec2.Instance("files-instance", {
         PUBSUB_PORT: port.toString(),
         QUADRATIC_API_URI: quadraticApiUri,
       },
-      true
-    )
+      true,
+    ),
   ),
 });
 
@@ -51,8 +50,8 @@ const hostedZone = pulumi.output(
     {
       name: domain,
     },
-    { async: true }
-  )
+    { async: true },
+  ),
 );
 
 // Create a Route 53 record pointing to EC2 instance

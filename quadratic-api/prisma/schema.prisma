@@ -129,7 +129,8 @@ model Team {
     clientDataKv Json @default("{}") @map("client_data_kv")
 
     // Settings
-    settingAnalyticsAi Boolean @default(true) @map("setting_analytics_ai")
+    settingAnalyticsAi        Boolean @default(true) @map("setting_analytics_ai")
+    settingShowConnectionDemo Boolean @default(true) @map("setting_show_connection_demo")
 
     // SSH Keys
     sshPrivateKey Bytes?
@@ -149,6 +150,11 @@ enum ConnectionType {
     MYSQL
     MSSQL
     SNOWFLAKE
+    BIGQUERY
+    COCKROACHDB
+    MARIADB
+    NEON
+    SUPABASE
 }
 
 model Connection {
@@ -271,6 +277,7 @@ enum AIChatSource {
     GetUserPromptSuggestions @map("get_user_prompt_suggestions")
     PDFImport                @map("pdf_import")
     ModelRouter              @map("model_router")
+    WebSearch                @map("web_search")
 }
 
 enum AIChatMessageType {
@@ -285,6 +292,7 @@ model AnalyticsAIChatMessage {
     model            String
     messageIndex     Int                @map("message_index")
     messageType      AIChatMessageType? @map("message_type")
+    source           String?
     s3Key            String?            @map("s3_key")
     like             Boolean?
     undo             Boolean?

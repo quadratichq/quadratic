@@ -47,7 +47,7 @@ export const TableColumnHeaderRename = () => {
       );
       if (!bounds || !inputElement.current) return;
       inputElement.current.style.top = `${bounds.y - 1}px`;
-      inputElement.current.style.left = `${bounds.x + 1}px`;
+      inputElement.current.style.left = `${bounds.x}px`;
       inputElement.current.style.height = `${bounds.height}px`;
     }
   }, [contextMenu, inputElement]);
@@ -62,9 +62,9 @@ export const TableColumnHeaderRename = () => {
 
   useEffect(() => {
     updatePosition();
-    events.on('viewportChanged', updatePosition);
+    events.on('viewportReadyAfterUpdate', updatePosition);
     return () => {
-      events.off('viewportChanged', updatePosition);
+      events.off('viewportReadyAfterUpdate', updatePosition);
     };
   }, [updatePosition]);
 
@@ -121,12 +121,13 @@ export const TableColumnHeaderRename = () => {
       defaultValue={defaultValue}
       initialValue={contextMenu.initialValue}
       width={width}
-      className="darker-selection origin-bottom-left border-none p-0 text-sm font-bold text-primary-foreground outline-none"
+      className="darker-selection origin-bottom-left border-none text-sm text-primary-foreground outline-none"
       styles={{
         fontFamily: 'OpenSans-Bold, sans-serif',
         fontSize: FONT_SIZE,
         color: 'var(--primary-foreground)',
         backgroundColor: 'var(--accent)',
+        padding: '0 2px',
       }}
       onSave={handleSave}
       onClose={() => events.emit('contextMenu', {})}

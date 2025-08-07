@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 
 use anyhow::{Result, anyhow};
-use bigdecimal::RoundingMode;
 use borders::Borders;
 use columns::SheetColumns;
 use data_tables::SheetDataTables;
@@ -13,10 +12,11 @@ use validations::Validations;
 use super::bounds::GridBounds;
 use super::column::Column;
 use super::ids::SheetId;
-use super::js_types::{CellFormatSummary, CellType, JsCellValue, JsCellValuePos};
+use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
-use crate::a1::{A1Context, A1Selection, CellRefRange};
+use crate::a1::{A1Context, UNBOUNDED};
+use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
 
@@ -34,8 +34,8 @@ pub mod col_row;
 pub mod columns;
 pub mod data_table;
 pub mod data_tables;
+mod format_summary;
 pub mod formats;
-pub mod keyboard;
 pub mod rendering;
 pub mod rendering_date_time;
 pub mod row_resize;
@@ -182,7 +182,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a vertical edge of a table.
-    pub fn is_at_table_edge_col(&self, pos: &Pos) -> bool {
+    pub fn is_at_table_edge_col(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
@@ -198,7 +198,7 @@ impl Sheet {
     }
 
     /// Returns true if the cell at Pos is at a horizontal edge of a table.
-    pub fn is_at_table_edge_row(&self, pos: &Pos) -> bool {
+    pub fn is_at_table_edge_row(&self, pos: Pos) -> bool {
         if let Some((dt_pos, dt)) = self.data_table_that_contains(pos) {
             // we handle charts separately in find_next_*;
             // we ignore single_value tables
@@ -229,12 +229,8 @@ impl Sheet {
     /// Returns the cell_value at a Pos using both column.values and data_tables (i.e., what would be returned if code asked
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
-        let cell_value = self
-            .get_column(pos.x)
-            .and_then(|column| column.values.get(&pos.y));
-
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
-        if let Some(cell_value) = cell_value {
+        if let Some(cell_value) = self.cell_value_ref(pos) {
             if !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
@@ -290,17 +286,16 @@ impl Sheet {
         rect_values
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
-    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y).cloned()
-    }
-
     /// Returns the ref of the cell_value at the Pos in column.values. This does
     /// not check or return results within data_tables.
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
-        let column = self.get_column(pos.x)?;
-        column.values.get(&pos.y)
+        self.get_column(pos.x)
+            .and_then(|column| column.values.get(&pos.y))
+    }
+
+    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
+        self.cell_value_ref(pos).cloned()
     }
 
     /// Returns the cell value at a position, or an error if the cell value is not found.
@@ -345,19 +340,11 @@ impl Sheet {
         }
     }
 
-    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
-    pub fn cell_numeric_format_kind(&self, pos: Pos) -> NumericFormatKind {
-        match self.formats.numeric_format.get(pos) {
-            Some(format) => format.kind,
-            None => NumericFormatKind::Number,
-        }
-    }
-
     /// Returns the format of a cell taking into account the sheet and data_tables formatting.
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
-        if let Ok(data_table_pos) = self.data_table_pos_that_contains(&pos) {
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos) {
             if let Some(data_table) = self.data_table_at(&data_table_pos) {
                 if !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
@@ -370,6 +357,14 @@ impl Sheet {
         }
 
         sheet_format
+    }
+
+    /// Returns the type of number (defaulting to NumericFormatKind::Number) for a cell.
+    pub fn cell_format_numeric_kind(&self, pos: Pos) -> NumericFormatKind {
+        self.cell_format(pos)
+            .numeric_format
+            .map(|nf| nf.kind)
+            .unwrap_or(NumericFormatKind::Number)
     }
 
     /// Returns a string representation of the format of a cell for use by AI.
@@ -413,14 +408,14 @@ impl Sheet {
             if let Some(numeric_format) = format.numeric_format {
                 values.push(format!("numeric kind is {}", numeric_format.kind));
                 if let Some(symbol) = numeric_format.symbol {
-                    values.push(format!("numeric symbol is {}", symbol));
+                    values.push(format!("numeric symbol is {symbol}"));
                 }
             }
             if let Some(numeric_decimals) = format.numeric_decimals {
-                values.push(format!("numeric decimals is {}", numeric_decimals));
+                values.push(format!("numeric decimals is {numeric_decimals}"));
             }
             if let Some(numeric_commas) = format.numeric_commas {
-                values.push(format!("numeric commas is {}", numeric_commas));
+                values.push(format!("numeric commas is {numeric_commas}"));
             }
             if let Some(date_time) = format.date_time {
                 values.push(format!("date time is {}", date_time.clone()));
@@ -430,37 +425,12 @@ impl Sheet {
         }
     }
 
-    /// Returns a summary of formatting in a region.
-    pub fn cell_format_summary(&self, pos: Pos) -> CellFormatSummary {
-        let format = self.cell_format(pos);
-        let cell_type = self
-            .display_value(pos)
-            .and_then(|cell_value| match cell_value {
-                CellValue::Date(_) => Some(CellType::Date),
-                CellValue::DateTime(_) => Some(CellType::DateTime),
-                _ => None,
-            });
-        CellFormatSummary {
-            bold: format.bold,
-            italic: format.italic,
-            text_color: format.text_color,
-            fill_color: format.fill_color,
-            commas: format.numeric_commas,
-            align: format.align,
-            vertical_align: format.vertical_align,
-            wrap: format.wrap,
-            date_time: format.date_time,
-            cell_type,
-            underline: format.underline,
-            strike_through: format.strike_through,
-        }
-    }
-
     /// Returns a column of a sheet from the column index.
     pub(crate) fn get_column(&self, index: i64) -> Option<&Column> {
         self.columns.get_column(index)
     }
 
+    /// Returns the sheet id as a string.
     pub fn id_to_string(&self) -> String {
         self.id.to_string()
     }
@@ -485,19 +455,18 @@ impl Sheet {
                         return Some(n.to_string().len() as i16 - 1);
                     }
 
-                    let exponent = n.as_bigint_and_exponent().1;
+                    let scale = n.scale();
                     let max_decimals = 9;
-                    let mut decimals = n
-                        .with_scale_round(exponent.min(max_decimals), RoundingMode::HalfUp)
-                        .normalized()
-                        .as_bigint_and_exponent()
-                        .1 as i16;
+                    let mut decimals = n;
+                    decimals.rescale(scale.min(max_decimals));
+                    decimals = normalize(decimals);
+                    let mut decimals = decimals.scale();
 
                     if kind == NumericFormatKind::Percentage {
                         decimals -= 2;
                     }
 
-                    Some(decimals)
+                    Some(decimals as i16)
                 }
                 _ => None,
             }
@@ -506,80 +475,45 @@ impl Sheet {
         }
     }
 
-    /// Returns true if the cell at Pos has wrap formatting.
-    pub fn check_if_wrap_in_cell(&self, pos: Pos) -> bool {
-        if !self.has_content(pos) {
-            return false;
-        }
-        self.formats.wrap.get(pos) == Some(CellWrap::Wrap)
+    /// Returns the rows with wrap formatting in a rect.
+    pub fn get_rows_with_wrap_in_rect(&self, rect: Rect, include_blanks: bool) -> Vec<i64> {
+        self.formats
+            .wrap
+            .nondefault_rects_in_rect(rect)
+            .filter(|(_, wrap)| wrap == &Some(CellWrap::Wrap))
+            .flat_map(|(rect, _)| {
+                if include_blanks {
+                    rect.y_range().collect::<Vec<i64>>()
+                } else {
+                    self.columns
+                        .get_nondefault_rects_in_rect(rect)
+                        .flat_map(|(rect, _)| rect.y_range())
+                        .chain(
+                            self.data_tables
+                                .get_nondefault_rects_in_rect(rect)
+                                .flat_map(|rect| rect.y_range()),
+                        )
+                        .collect()
+                }
+            })
+            .chain(self.iter_data_tables_intersects_rect(rect).flat_map(
+                |(output_rect, intersection_rect, data_table)| {
+                    let mut rows_to_resize = HashSet::new();
+                    data_table.get_rows_with_wrap_in_display_rect(
+                        &output_rect.min,
+                        &intersection_rect,
+                        include_blanks,
+                        &mut rows_to_resize,
+                    );
+                    rows_to_resize
+                },
+            ))
+            .collect()
     }
 
-    pub fn check_if_wrap_in_row(&self, y: i64) -> bool {
-        self.formats.wrap.any_in_row(y, |wrap| {
-            let pos = Pos { x: 1, y };
-            self.has_content(pos) && *wrap == Some(CellWrap::Wrap)
-        })
-    }
-
-    pub fn get_rows_with_wrap_in_column(&self, x: i64) -> Vec<i64> {
-        let mut rows = vec![];
-        if let Some((start, end)) = self.column_bounds(x, true) {
-            for y in start..=end {
-                if self.has_content(Pos { x, y })
-                    && self
-                        .formats
-                        .wrap
-                        .get(Pos { x, y })
-                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
-                    rows.push(y);
-                }
-            }
-        }
-        rows
-    }
-
-    pub fn get_rows_with_wrap_in_rect(&self, rect: &Rect, include_blanks: bool) -> Vec<i64> {
-        let mut rows = vec![];
-        for y in rect.y_range() {
-            for x in rect.x_range() {
-                if (include_blanks || self.has_content(Pos { x, y }))
-                    && self
-                        .formats
-                        .wrap
-                        .get((x, y).into())
-                        .is_some_and(|wrap| wrap == CellWrap::Wrap)
-                {
-                    rows.push(y);
-                    break;
-                }
-            }
-        }
-        rows
-    }
-
-    pub fn get_rows_with_wrap_in_selection(
-        &self,
-        selection: &A1Selection,
-        include_blanks: bool,
-        ignore_formatting: bool,
-        a1_context: &A1Context,
-    ) -> Vec<i64> {
-        let mut rows_set = HashSet::<i64>::new();
-        selection.ranges.iter().for_each(|range| {
-            if let Some(rect) = match range {
-                CellRefRange::Sheet { range } => {
-                    Some(self.ref_range_bounds_to_rect(range, ignore_formatting))
-                }
-                CellRefRange::Table { range } => {
-                    self.table_ref_to_rect(range, false, false, a1_context)
-                }
-            } {
-                let rows = self.get_rows_with_wrap_in_rect(&rect, include_blanks);
-                rows_set.extend(rows);
-            }
-        });
-        rows_set.into_iter().collect()
+    /// Returns the rows with wrap formatting in a column.
+    pub fn get_rows_with_wrap_in_column(&self, x: i64, include_blanks: bool) -> Vec<i64> {
+        self.get_rows_with_wrap_in_rect(Rect::new(x, 1, x, UNBOUNDED), include_blanks)
     }
 
     /// Sets a cell value and returns the old cell value. Returns `None` if the cell was deleted
@@ -593,9 +527,7 @@ impl Sheet {
     /// Should only be used for testing (as it will not propagate in multiplayer)
     #[cfg(test)]
     pub fn random_numbers(&mut self, rect: &Rect, a1_context: &A1Context) {
-        use std::str::FromStr;
-
-        use bigdecimal::BigDecimal;
+        use crate::number::decimal_from_str;
         use rand::Rng;
 
         self.columns.clear();
@@ -605,7 +537,7 @@ impl Sheet {
                 let value = rng.random_range(-10000..=10000).to_string();
                 self.set_cell_value(
                     (x, y).into(),
-                    CellValue::Number(BigDecimal::from_str(&value).unwrap()),
+                    CellValue::Number(decimal_from_str(&value).unwrap()),
                 );
             }
         }
@@ -617,16 +549,18 @@ impl Sheet {
 mod test {
     use std::str::FromStr;
 
-    use bigdecimal::BigDecimal;
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 
     use super::*;
     use crate::a1::A1Selection;
     use crate::controller::GridController;
+    use crate::grid::formats::FormatUpdate;
+    use crate::grid::js_types::{CellFormatSummary, CellType};
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };
-    use crate::test_util::print_table_in_rect;
+    use crate::number::decimal_from_str;
+    use crate::test_util::*;
     use crate::{Array, SheetPos, SheetRect, Value};
 
     fn test_setup(selection: &Rect, vals: &[&str]) -> (GridController, SheetId) {
@@ -663,7 +597,7 @@ mod test {
         expected: Option<i16>,
     ) {
         let pos = Pos { x, y };
-        let _ = sheet.set_cell_value(pos, CellValue::Number(BigDecimal::from_str(value).unwrap()));
+        let _ = sheet.set_cell_value(pos, CellValue::Number(decimal_from_str(value).unwrap()));
         assert_eq!(sheet.calculate_decimal_places(pos, kind), expected);
     }
 
@@ -784,7 +718,7 @@ mod test {
 
         sheet.set_cell_value(
             crate::Pos { x: 1, y: 2 },
-            CellValue::Number(BigDecimal::from_str("11.100000000000000000").unwrap()),
+            CellValue::Number(decimal_from_str("11.100000000000000000").unwrap()),
         );
 
         // expect a single decimal place
@@ -795,7 +729,7 @@ mod test {
     }
 
     #[test]
-    fn test_cell_numeric_format_kind() {
+    fn test_cell_format_numeric_kind() {
         let mut sheet = Sheet::test();
 
         sheet.formats.numeric_format.set(
@@ -807,8 +741,42 @@ mod test {
         );
 
         assert_eq!(
-            sheet.cell_numeric_format_kind(pos![A1]),
+            sheet.cell_format_numeric_kind(pos![A1]),
             NumericFormatKind::Percentage
+        );
+    }
+
+    #[test]
+    fn test_cell_format_numeric_kind_data_table() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![a1], 2, 2);
+
+        gc.set_formats(
+            &A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat::percentage())),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_format_numeric_kind(pos![A3]),
+            NumericFormatKind::Percentage
+        );
+
+        gc.set_formats(
+            &A1Selection::test_a1("A4"),
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat::number())),
+                ..Default::default()
+            },
+        );
+
+        assert_eq!(
+            gc.sheet(sheet_id).cell_format_numeric_kind(pos![A4]),
+            NumericFormatKind::Number
         );
     }
 
@@ -818,8 +786,8 @@ mod test {
         let vals = vec!["a", "1", "$1.11"];
         let expected = [
             CellValue::Text("a".into()),
-            CellValue::Number(BigDecimal::from_str("1").unwrap()),
-            CellValue::Number(BigDecimal::from_str("1.11").unwrap()),
+            CellValue::Number(decimal_from_str("1").unwrap()),
+            CellValue::Number(decimal_from_str("1.11").unwrap()),
         ];
         let (grid, sheet_id) = test_setup(&selected, &vals);
 
@@ -876,7 +844,7 @@ mod test {
         let sheet = grid.sheet(sheet_id);
         let value = sheet.display_value((2, 1).into());
 
-        assert_eq!(value, Some(CellValue::Number(BigDecimal::from(1))));
+        assert_eq!(value, Some(CellValue::Number(1.into())));
     }
 
     #[test]
@@ -942,46 +910,19 @@ mod test {
     }
 
     #[test]
-    fn test_check_if_wrap_in_cell() {
-        let mut sheet = Sheet::test();
-        let pos = pos![A1];
-        sheet.set_cell_value(pos, "test");
-        assert!(!sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-        assert!(sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Overflow));
-        assert!(!sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-        assert!(sheet.check_if_wrap_in_cell(pos));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
-        assert!(!sheet.check_if_wrap_in_cell(pos));
-    }
-
-    #[test]
-    fn test_check_if_wrap_in_row() {
-        let mut sheet = Sheet::test();
-        let pos = pos![A1];
-        sheet.set_cell_value(pos, "test");
-        assert!(!sheet.check_if_wrap_in_row(1));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Wrap));
-        assert!(sheet.check_if_wrap_in_row(1));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Overflow));
-        assert!(!sheet.check_if_wrap_in_row(1));
-        sheet.formats.wrap.set(pos, Some(CellWrap::Clip));
-        assert!(!sheet.check_if_wrap_in_row(1));
-    }
-
-    #[test]
     fn test_get_rows_with_wrap_in_column() {
         let mut sheet = Sheet::test();
         sheet.set_cell_value(pos![A1], "test");
         sheet.set_cell_value(pos![A3], "test");
-        assert_eq!(sheet.get_rows_with_wrap_in_column(1), Vec::<i64>::new());
+        assert_eq!(
+            sheet.get_rows_with_wrap_in_column(1, false),
+            Vec::<i64>::new()
+        );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        assert_eq!(sheet.get_rows_with_wrap_in_column(1), vec![1, 3]);
+        assert_eq!(sheet.get_rows_with_wrap_in_column(1, false), vec![1, 3]);
     }
 
     #[test]
@@ -994,34 +935,14 @@ mod test {
             max: pos![A4],
         };
         assert_eq!(
-            sheet.get_rows_with_wrap_in_rect(&rect, false),
+            sheet.get_rows_with_wrap_in_rect(rect, false),
             Vec::<i64>::new()
         );
         sheet
             .formats
             .wrap
             .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        assert_eq!(sheet.get_rows_with_wrap_in_rect(&rect, false), vec![1, 3]);
-    }
-
-    #[test]
-    fn test_get_rows_with_wrap_in_selection() {
-        let mut sheet = Sheet::test();
-        sheet.set_cell_value(pos![A1], "test");
-        sheet.set_cell_value(pos![A3], "test");
-        let selection = A1Selection::test_a1("A1:A4");
-        let a1_context = sheet.expensive_make_a1_context();
-        assert_eq!(
-            sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context),
-            Vec::<i64>::new()
-        );
-        sheet
-            .formats
-            .wrap
-            .set_rect(1, 1, Some(1), Some(5), Some(CellWrap::Wrap));
-        let mut rows = sheet.get_rows_with_wrap_in_selection(&selection, false, false, &a1_context);
-        rows.sort();
-        assert_eq!(rows, vec![1, 3]);
+        assert_eq!(sheet.get_rows_with_wrap_in_rect(rect, false), vec![1, 3]);
     }
 
     #[test]
@@ -1079,8 +1000,15 @@ mod test {
         assert!(sheet.has_content(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content(Pos { x: 3, y: 2 }));
 
-        let mut dt = dt.clone();
-        dt.chart_output = Some((5, 5));
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Single(CellValue::Image("Image".to_string())),
+            false,
+            Some(true),
+            Some(true),
+            Some((5, 5)),
+        );
         let pos2 = Pos { x: 10, y: 10 };
         sheet.data_table_insert_full(&pos2, dt);
         assert!(sheet.has_content(pos2));
@@ -1229,8 +1157,7 @@ mod test {
         for name in valid_names {
             assert!(
                 Sheet::validate_sheet_name(name, SheetId::TEST, &context).is_ok(),
-                "Expected '{}' to be valid",
-                name
+                "Expected '{name}' to be valid"
             );
         }
 
@@ -1281,14 +1208,12 @@ mod test {
             let result = Sheet::validate_sheet_name(name, SheetId::TEST, &context);
             assert!(
                 result.is_err(),
-                "Expected '{}' to be invalid, but it was valid",
-                name
+                "Expected '{name}' to be invalid, but it was valid"
             );
             assert_eq!(
                 result.unwrap_err(),
                 expected_error,
-                "Unexpected error message for '{}'",
-                name
+                "Unexpected error message for '{name}'"
             );
         }
 
@@ -1324,20 +1249,20 @@ mod test {
         sheet.data_table_insert_full(&anchor_pos, dt);
 
         // Test row edges
-        assert!(sheet.is_at_table_edge_row(&pos![B2])); // Table name
-        assert!(!sheet.is_at_table_edge_row(&pos![B3])); // Column header
-        assert!(sheet.is_at_table_edge_row(&pos![B4])); // first line of data
-        assert!(sheet.is_at_table_edge_row(&pos![C7])); // Bottom edge
-        assert!(!sheet.is_at_table_edge_row(&pos![C5])); // Middle row
+        assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
+        assert!(!sheet.is_at_table_edge_row(pos![B3])); // Column header
+        assert!(sheet.is_at_table_edge_row(pos![B4])); // first line of data
+        assert!(sheet.is_at_table_edge_row(pos![C7])); // Bottom edge
+        assert!(!sheet.is_at_table_edge_row(pos![C5])); // Middle row
 
         // Test column edges
-        assert!(sheet.is_at_table_edge_col(&pos![B5])); // Left edge
-        assert!(sheet.is_at_table_edge_col(&pos![D5])); // Right edge
-        assert!(!sheet.is_at_table_edge_col(&pos![C5])); // Middle column
+        assert!(sheet.is_at_table_edge_col(pos![B5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![D5])); // Right edge
+        assert!(!sheet.is_at_table_edge_col(pos![C5])); // Middle column
 
         // Test position outside table
-        assert!(!sheet.is_at_table_edge_row(&pos![E5]));
-        assert!(!sheet.is_at_table_edge_col(&pos![E5]));
+        assert!(!sheet.is_at_table_edge_row(pos![E5]));
+        assert!(!sheet.is_at_table_edge_col(pos![E5]));
 
         // Test with show_ui = false
         let mut dt_no_ui = DataTable::new(
@@ -1353,10 +1278,10 @@ mod test {
         sheet.data_table_insert_full(&pos![E5], dt_no_ui);
 
         // Test edges without UI
-        assert!(sheet.is_at_table_edge_row(&pos![E5])); // Top edge
-        assert!(sheet.is_at_table_edge_row(&pos![E6])); // Bottom edge
-        assert!(sheet.is_at_table_edge_col(&pos![E5])); // Left edge
-        assert!(sheet.is_at_table_edge_col(&pos![F5])); // Right edge
+        assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge
+        assert!(sheet.is_at_table_edge_row(pos![E6])); // Bottom edge
+        assert!(sheet.is_at_table_edge_col(pos![E5])); // Left edge
+        assert!(sheet.is_at_table_edge_col(pos![F5])); // Right edge
     }
 
     #[test]
@@ -1408,11 +1333,18 @@ mod test {
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 13, y: 10 }));
 
         // Chart output should still count as content
-        let mut dt_chart = dt.clone();
-        dt_chart.chart_output = Some((5, 5));
+        let dt = DataTable::new(
+            DataTableKind::CodeRun(CodeRun::default()),
+            "test",
+            Value::Single(CellValue::Html("Html".to_string())),
+            false,
+            Some(true),
+            Some(true),
+            Some((5, 5)),
+        );
         let pos3 = Pos { x: 20, y: 20 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos3, dt_chart);
+        sheet.data_table_insert_full(&pos3, dt);
 
         let a1_context = gc.a1_context().clone();
         gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);

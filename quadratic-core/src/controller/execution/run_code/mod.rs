@@ -92,8 +92,10 @@ impl GridController {
             // chart_output setting since it may have been set by the user.
             // TODO (DF): we should be tracking whether a user set this, and
             // if not, we should use the pixel output.
-            if new_data_table.is_html_or_image() {
-                new_data_table.chart_output = old_data_table.chart_output.to_owned();
+            if let Some((w, h)) = old_data_table.chart_output {
+                if w > 0 && h > 0 {
+                    new_data_table.chart_output = old_data_table.chart_output.to_owned();
+                }
             }
         }
 
@@ -190,15 +192,18 @@ impl GridController {
 
             if (cfg!(target_family = "wasm") || cfg!(test)) && transaction.is_user() {
                 if let Some(sheet) = self.try_sheet(sheet_id) {
-                    let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
-                    if !rows.is_empty() {
-                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                        resize_rows.extend(rows);
+                    let rows_to_resize = sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
+                    if !rows_to_resize.is_empty() {
+                        transaction
+                            .resize_rows
+                            .entry(sheet_id)
+                            .or_default()
+                            .extend(rows_to_resize);
                     }
                 }
             }
 
-            self.add_compute_operations(transaction, &sheet_rect, Some(sheet_pos));
+            self.add_compute_operations(transaction, sheet_rect, Some(sheet_pos));
 
             transaction
                 .forward_operations
@@ -307,7 +312,7 @@ impl GridController {
         };
 
         // ensure the code_cell still exists
-        let Some(code_cell) = sheet.cell_value(pos) else {
+        let Some(code_cell) = sheet.cell_value_ref(pos) else {
             // cell may have been deleted before the async operation completed
             return Ok(());
         };

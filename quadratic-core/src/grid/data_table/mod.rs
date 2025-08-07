@@ -8,6 +8,7 @@ use crate::util::is_false;
 pub mod column;
 pub mod column_header;
 pub mod display_value;
+pub mod fix_names;
 pub mod formats;
 pub mod row;
 pub mod send_render;
@@ -15,7 +16,7 @@ pub mod sort;
 
 use std::num::NonZeroU32;
 
-use crate::a1::A1Context;
+use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::util::unique_name;
@@ -115,19 +116,47 @@ impl Grid {
     }
 }
 
+pub const MAX_TABLE_NAME_LENGTH: usize = 255;
+pub const MAX_COLUMN_NAME_LENGTH: usize = 255;
+
 const A1_REGEX: &str = r#"\b\$?[a-zA-Z]+\$\d+\b"#;
 const R1C1_REGEX: &str = r#"\bR\d+C\d+\b"#;
-const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\\][a-zA-Z0-9_.]*$"#;
-const COLUMN_NAME_VALID_CHARS: &str =
-    r#"^[a-zA-Z0-9_\-]([a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)])?$"#;
+
+// Table name must start with alphabet character, and then can have a mix of
+// alphabet, numbers, and "_ . \". Note \p{L} provides foreign alphabetic
+// characters
+const TABLE_NAME_VALID_CHARS: &str = r#"^[a-zA-Z_\p{L}\\][a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// we split the regex into two parts so we can properly sanitize it
+const TABLE_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z_\p{L}\\]"#;
+const TABLE_NAME_REMAINING_CHARACTERS: &str = r#"^[a-zA-Z\p{L}0-9_.\\]*$"#;
+
+// Column names are more open to other characters
+const COLUMN_NAME_VALID_CHARS: &str = r#"^[a-zA-Z\p{L}0-9_\-_.(){}`'"~!@$%^&*+=<>?/\\|:;,\p{Pd}][a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
+const COLUMN_NAME_FIRST_CHARACTER: &str = r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@$%^&*+=<>?/\\|:;,]$"#;
+const COLUMN_NAME_REMAINING_CHARS: &str =
+    r#"^[a-zA-Z\p{L}0-9_\- .(){}`'"~!@#$%^&*+=<>?/\\|:;,\p{Pd}]*$"#;
+
 lazy_static! {
     static ref A1_REGEX_COMPILED: Regex = Regex::new(A1_REGEX).expect("Failed to compile A1_REGEX");
     static ref R1C1_REGEX_COMPILED: Regex =
         Regex::new(R1C1_REGEX).expect("Failed to compile R1C1_REGEX");
-    static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
+    pub(crate) static ref TABLE_NAME_VALID_CHARS_COMPILED: Regex =
         Regex::new(TABLE_NAME_VALID_CHARS).expect("Failed to compile TABLE_NAME_VALID_CHARS");
-    static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
+    pub(crate) static ref TABLE_NAME_FIRST_CHAR_COMPILED: Regex =
+        Regex::new(TABLE_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile TABLE_NAME_FIRST_CHARACTER");
+    pub(crate) static ref TABLE_NAME_REMAINING_CHARACTERS_COMPILED: Regex =
+        Regex::new(TABLE_NAME_REMAINING_CHARACTERS)
+            .expect("Failed to compile TABLE_NAME_REMAINING_CHARACTERS");
+    pub static ref COLUMN_NAME_VALID_CHARS_COMPILED: Regex =
         Regex::new(COLUMN_NAME_VALID_CHARS).expect("Failed to compile COLUMN_NAME_VALID_CHARS");
+    pub(crate) static ref COLUMN_NAME_FIRST_CHARACTER_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_FIRST_CHARACTER)
+            .expect("Failed to compile COLUMN_NAME_FIRST_CHARACTER");
+    pub(crate) static ref COLUMN_NAME_REMAINING_CHARS_COMPILED: Regex =
+        Regex::new(COLUMN_NAME_REMAINING_CHARS)
+            .expect("Failed to compile COLUMN_NAME_FINAL_CHARACTER");
 }
 
 #[allow(clippy::large_enum_variant)]
@@ -197,7 +226,7 @@ impl From<(Import, Array, &A1Context)> for DataTable {
         DataTable::new(
             DataTableKind::Import(import),
             &name,
-            Value::Array(cell_values),
+            cell_values.into(),
             false,
             None,
             None,
@@ -384,7 +413,7 @@ impl DataTable {
         a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
-        if name.is_empty() || name.len() > 255 {
+        if name.is_empty() || name.len() > MAX_TABLE_NAME_LENGTH {
             return Err("Table name must be between 1 and 255 characters".to_string());
         }
 
@@ -425,7 +454,7 @@ impl DataTable {
         a1_context: &A1Context,
     ) -> std::result::Result<bool, String> {
         // Check length limit
-        if column_name.is_empty() || column_name.len() > 255 {
+        if column_name.is_empty() || column_name.len() > MAX_COLUMN_NAME_LENGTH {
             return Err("Column name must be between 1 and 255 characters".to_string());
         }
 
@@ -584,7 +613,7 @@ impl DataTable {
                     self.value = Value::Single(value);
                 }
                 Value::Array(ref mut a) => {
-                    if let Err(error) = a.set(x, y, value) {
+                    if let Err(error) = a.set(x, y, value, true) {
                         dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
                         return false;
                     }
@@ -604,11 +633,16 @@ impl DataTable {
     ///
     /// Note: this does not take spill_error into account.
     pub fn output_size(&self) -> ArraySize {
-        if let Some((w, h)) = self.chart_output {
-            if w == 0 || h == 0 {
-                ArraySize::_1X1
-            } else {
-                ArraySize::new(w, h + 1).unwrap_or(ArraySize::_1X1)
+        if self.is_html_or_image() {
+            match self.chart_output {
+                Some((w, h)) => {
+                    if w == 0 || h == 0 {
+                        ArraySize::_1X1
+                    } else {
+                        ArraySize::new(w, h + 1).unwrap_or(ArraySize::_1X1)
+                    }
+                }
+                None => ArraySize::_1X1,
             }
         } else {
             match &self.value {
@@ -693,11 +727,19 @@ impl DataTable {
         }
     }
 
+    /// Returns a mutable reference to the value as an array.
     pub fn mut_value_as_array(&mut self) -> Result<&mut Array> {
         match &mut self.value {
             Value::Array(array) => Ok(array),
             _ => bail!("Expected an array"),
         }
+    }
+
+    /// Returns the cells accessed by the data table.
+    pub fn cells_accessed(&self, sheet_id: SheetId) -> Option<Vec<&CellRefRange>> {
+        self.code_run()
+            .and_then(|code_run| code_run.cells_accessed.cells.get(&sheet_id))
+            .map(|ranges| ranges.iter().collect::<Vec<_>>())
     }
 
     /// Returns the y adjustment for the data table to account for the UI
@@ -795,8 +837,9 @@ pub mod test {
     use super::*;
     use crate::{
         Array,
+        a1::CellRefCoord,
         controller::GridController,
-        grid::{Sheet, SheetId},
+        grid::{CellsAccessed, Sheet, SheetId},
         test_util::pretty_print_data_table,
     };
 
@@ -830,11 +873,10 @@ pub mod test {
         let kind = data_table.kind.clone();
         let values = data_table.value.clone().into_array().unwrap();
 
-        let expected_values = Value::Array(values.clone());
         let expected_data_table = DataTable::new(
             kind.clone(),
             "test.csv",
-            expected_values,
+            values.into(),
             false,
             None,
             None,
@@ -906,7 +948,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            Array::new_empty(ArraySize::new(10, 11).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -945,7 +987,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(10, 11).unwrap())),
+            Array::new_empty(ArraySize::new(10, 11).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1003,7 +1045,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run.clone()),
             "Table 1",
-            Value::Array(single_column),
+            single_column.into(),
             false,
             Some(true),
             Some(true),
@@ -1016,7 +1058,7 @@ pub mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(multi_column),
+            multi_column.into(),
             false,
             Some(true),
             Some(true),
@@ -1044,7 +1086,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            Array::new_empty(ArraySize::new(4, 3).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1075,7 +1117,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(4, 3).unwrap())),
+            Array::new_empty(ArraySize::new(4, 3).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1229,6 +1271,31 @@ pub mod test {
             "a",
             "123",
             "1column",
+            "@Column",
+            "Column!",
+            "Column?",
+            "Column*",
+            "Column/",
+            "Column\\",
+            "Column$",
+            "Column%",
+            "Column^",
+            "Column&",
+            "Column+",
+            "Column=",
+            "Column;",
+            "Column,",
+            "Column<",
+            "Column>",
+            "Column{",
+            "Column}",
+            "Column|",
+            "Column`",
+            "Column~",
+            "Column'",
+            "Column\"",
+            "Column.",
+            ".Column",
             "Column-with–en—dash", // Testing various dash characters
             longest_name.as_str(),
         ];
@@ -1236,8 +1303,7 @@ pub mod test {
         for name in valid_names {
             assert!(
                 DataTable::validate_column_name(table_name, 10, name, &context).is_ok(),
-                "Expected '{}' to be valid",
-                name
+                "Expected '{name}' to be valid"
             );
         }
 
@@ -1250,51 +1316,21 @@ pub mod test {
                 "Column name must be between 1 and 255 characters",
             ),
             ("#Invalid", "Column name contains invalid characters"),
-            ("@Column", "Column name contains invalid characters"),
-            ("Column!", "Column name contains invalid characters"),
-            ("Column?", "Column name contains invalid characters"),
-            ("Column*", "Column name contains invalid characters"),
-            ("Column/", "Column name contains invalid characters"),
-            ("Column\\", "Column name contains invalid characters"),
-            ("Column$", "Column name contains invalid characters"),
-            ("Column%", "Column name contains invalid characters"),
-            ("Column^", "Column name contains invalid characters"),
-            ("Column&", "Column name contains invalid characters"),
-            ("Column+", "Column name contains invalid characters"),
-            ("Column=", "Column name contains invalid characters"),
-            ("Column;", "Column name contains invalid characters"),
-            ("Column,", "Column name contains invalid characters"),
-            ("Column<", "Column name contains invalid characters"),
-            ("Column>", "Column name contains invalid characters"),
             ("Column[", "Column name contains invalid characters"),
             ("Column]", "Column name contains invalid characters"),
-            ("Column{", "Column name contains invalid characters"),
-            ("Column}", "Column name contains invalid characters"),
-            ("Column|", "Column name contains invalid characters"),
-            ("Column`", "Column name contains invalid characters"),
-            ("Column~", "Column name contains invalid characters"),
-            ("Column'", "Column name contains invalid characters"),
-            ("Column\"", "Column name contains invalid characters"),
             // Test names ending with invalid characters
-            ("Column ", "Column name contains invalid characters"),
-            ("Column.", "Column name contains invalid characters"),
-            // Test names starting with invalid characters (except underscore and dash)
-            (".Column", "Column name contains invalid characters"),
-            (" Column", "Column name contains invalid characters"),
         ];
 
         for (name, expected_error) in test_cases {
             let result = DataTable::validate_column_name(table_name, 10, name, &context);
             assert!(
                 result.is_err(),
-                "Expected '{}' to be invalid, but it was valid",
-                name
+                "Expected '{name}' to be invalid, but it was valid"
             );
             assert_eq!(
                 result.unwrap_err(),
                 expected_error,
-                "Unexpected error message for '{}'",
-                name
+                "Unexpected error message for '{name}'"
             );
         }
 
@@ -1314,7 +1350,7 @@ pub mod test {
         let mut data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Array(Array::new_empty(ArraySize::new(2, 2).unwrap())),
+            Array::new_empty(ArraySize::new(2, 2).unwrap()).into(),
             false,
             Some(true),
             Some(true),
@@ -1348,5 +1384,39 @@ pub mod test {
         // Test with Image content
         data_table.value = Value::Single(CellValue::Image("test".into()));
         assert_eq!(data_table.ui_rows(pos), vec![2]);
+    }
+
+    #[test]
+    fn test_cells_accessed() {
+        let sheet_id = SheetId::TEST;
+        let mut cells_accessed = CellsAccessed::default();
+        cells_accessed.add_sheet_rect(SheetRect::new(1, 1, 2, 2, sheet_id));
+        let code_run = CodeRun {
+            language: CodeCellLanguage::Python,
+            code: r#"q.cells("B1:B2")"#.into(),
+            std_err: None,
+            std_out: None,
+            error: None,
+            return_type: Some("number".into()),
+            line_number: None,
+            output_type: None,
+            cells_accessed,
+        };
+        let data_table = DataTable::new(
+            DataTableKind::CodeRun(code_run),
+            "test",
+            Value::Array(Array::from(vec![vec!["3"]])),
+            false,
+            Some(false),
+            Some(false),
+            None,
+        );
+        let range = CellRefRange::new_sheet_ref(
+            CellRefCoord::new_rel(1),
+            CellRefCoord::new_rel(1),
+            CellRefCoord::new_rel(2),
+            CellRefCoord::new_rel(2),
+        );
+        assert_eq!(data_table.cells_accessed(sheet_id), Some(vec![&range]));
     }
 }

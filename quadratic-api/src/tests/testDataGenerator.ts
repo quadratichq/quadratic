@@ -222,7 +222,7 @@ export async function upgradeTeamToPro(teamId?: number) {
     data: {
       stripeSubscriptionId: null,
       stripeSubscriptionStatus: 'ACTIVE',
-      stripeCurrentPeriodEnd: null,
+      stripeCurrentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
       stripeSubscriptionLastUpdated: null,
     },
   });

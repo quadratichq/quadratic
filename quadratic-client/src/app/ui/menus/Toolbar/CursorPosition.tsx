@@ -14,13 +14,14 @@ export const CursorPosition = memo(() => {
   return (
     <div className="flex h-full items-center justify-between">
       <Input
+        data-testid="cursor-position"
         value={cursorString}
         onChange={(e) => {}}
         className="h-full flex-grow rounded-none border-none shadow-none focus:bg-accent focus-visible:ring-inset"
         onFocus={(e) => e.target.select()}
       />
       <Popover open={showGoToMenu} onOpenChange={(open) => setShowGoToMenu(open)}>
-        <PopoverTrigger className="group flex h-full w-12 items-center justify-center text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
+        <PopoverTrigger className="group mx-1 flex h-7 w-7 flex-shrink-0 items-center justify-center rounded text-sm hover:bg-accent focus:bg-accent focus:outline-none data-[state=open]:bg-accent">
           <ArrowDropDownIcon className="text-muted-foreground group-hover:text-foreground" />
         </PopoverTrigger>
 

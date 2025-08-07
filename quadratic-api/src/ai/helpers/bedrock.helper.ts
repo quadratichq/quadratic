@@ -18,12 +18,13 @@ import {
   isContentImage,
   isContentPdfFile,
   isContentTextFile,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
-  AIMessagePrompt,
   AIRequestHelperArgs,
   AISource,
   AIUsage,
@@ -32,44 +33,49 @@ import type {
   ParsedAIResponse,
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { v4 } from 'uuid';
 
 function convertContent(content: Content): ContentBlock[] {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const image: ImageBlock = {
-        format: content.mimeType.split('/')[1] as ImageFormat,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { image };
-    } else if (isContentPdfFile(content) || isContentTextFile(content)) {
-      const document: DocumentBlock = {
-        format: content.mimeType.split('/')[1] as DocumentFormat,
-        name: content.fileName,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { document };
-    } else {
-      return {
-        text: content.text,
-      };
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const image: ImageBlock = {
+          format: content.mimeType.split('/')[1] as ImageFormat,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { image };
+      } else if (isContentPdfFile(content) || isContentTextFile(content)) {
+        const document: DocumentBlock = {
+          format: content.mimeType.split('/')[1] as DocumentFormat,
+          name: content.fileName,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { document };
+      } else {
+        return {
+          text: content.text.trim(),
+        };
+      }
+    });
 }
 
 function convertToolResultContent(content: ToolResultContent): ToolResultContentBlock[] {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const image: ImageBlock = {
-        format: content.mimeType.split('/')[1] as ImageFormat,
-        source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
-      };
-      return { image };
-    } else {
-      return {
-        text: content.text,
-      };
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const image: ImageBlock = {
+          format: content.mimeType.split('/')[1] as ImageFormat,
+          source: { bytes: new Uint8Array(Buffer.from(content.data, 'base64')) },
+        };
+        return { image };
+      } else {
+        return {
+          text: content.text.trim(),
+        };
+      }
+    });
 }
 
 export function getBedrockApiArgs(args: AIRequestHelperArgs): {
@@ -81,16 +87,18 @@ export function getBedrockApiArgs(args: AIRequestHelperArgs): {
   const { messages: chatMessages, toolName, source } = args;
 
   const { systemMessages, promptMessages } = getSystemPromptMessages(chatMessages);
-  const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message }));
+  const system: SystemContentBlock[] = systemMessages.map((message) => ({ text: message.trim() }));
   const messages: Message[] = promptMessages.reduce<Message[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const bedrockMessage: Message = {
         role: message.role,
         content: [
           ...message.content
-            .filter((content) => content.text && content.type === 'text')
+            .filter((content) => content.type === 'text' && !!content.text.trim())
             .map((content) => ({
-              text: content.text,
+              text: content.text.trim(),
             })),
           ...message.toolCalls.map((toolCall) => ({
             toolUse: {
@@ -167,14 +175,18 @@ function getBedrockToolChoice(toolName?: AITool): ToolChoice {
 export async function parseBedrockStream(
   chunks: AsyncIterable<ConverseStreamOutput> | never[],
   modelKey: BedrockModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse> {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
@@ -197,7 +209,7 @@ export async function parseBedrockStream(
         // tool use start
         if (chunk.contentBlockStart.start && chunk.contentBlockStart.start.toolUse) {
           const toolCall = {
-            id: chunk.contentBlockStart.start.toolUse.toolUseId ?? '',
+            id: chunk.contentBlockStart.start.toolUse.toolUseId ?? v4(),
             name: chunk.contentBlockStart.start.toolUse.name ?? '',
             arguments: '',
             loading: true,
@@ -215,18 +227,19 @@ export async function parseBedrockStream(
       } else if (chunk.contentBlockDelta) {
         if (chunk.contentBlockDelta.delta) {
           // text delta
-          if ('text' in chunk.contentBlockDelta.delta) {
+          if ('text' in chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.text) {
             const currentContent = {
               ...(responseMessage.content.pop() ?? {
                 type: 'text',
                 text: '',
               }),
             };
-            currentContent.text += chunk.contentBlockDelta.delta.text ?? '';
+            currentContent.text += chunk.contentBlockDelta.delta.text;
             responseMessage.content.push(currentContent);
           }
+
           // tool use delta
-          if ('toolUse' in chunk.contentBlockDelta.delta) {
+          if ('toolUse' in chunk.contentBlockDelta.delta && chunk.contentBlockDelta.delta.toolUse) {
             const toolCall = {
               ...(responseMessage.toolCalls.pop() ?? {
                 id: '',
@@ -235,7 +248,7 @@ export async function parseBedrockStream(
                 loading: true,
               }),
             };
-            toolCall.arguments += chunk.contentBlockDelta.delta.toolUse?.input ?? '';
+            toolCall.arguments += chunk.contentBlockDelta.delta.toolUse.input ?? '';
             responseMessage.toolCalls.push(toolCall);
           }
         }
@@ -274,29 +287,33 @@ export async function parseBedrockStream(
 export function parseBedrockResponse(
   result: ConverseResponse,
   modelKey: BedrockModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): ParsedAIResponse {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   result.output?.message?.content?.forEach((contentBlock) => {
-    if ('text' in contentBlock) {
+    if ('text' in contentBlock && contentBlock.text) {
       responseMessage.content.push({
         type: 'text',
-        text: contentBlock.text ?? '',
+        text: contentBlock.text.trim(),
       });
     }
 
-    if ('toolUse' in contentBlock) {
+    if ('toolUse' in contentBlock && contentBlock.toolUse) {
       responseMessage.toolCalls.push({
-        id: contentBlock.toolUse?.toolUseId ?? '',
-        name: contentBlock.toolUse?.name ?? '',
-        arguments: JSON.stringify(contentBlock.toolUse?.input ?? ''),
+        id: contentBlock.toolUse.toolUseId ?? v4(),
+        name: contentBlock.toolUse.name ?? '',
+        arguments: JSON.stringify(contentBlock.toolUse.input),
         loading: false,
       });
     }

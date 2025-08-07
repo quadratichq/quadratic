@@ -8,7 +8,6 @@ use quadratic_core::a1::CellRefRangeEnd;
 use quadratic_core::a1::JsTableInfo;
 use quadratic_core::a1::RefRangeBounds;
 use quadratic_core::a1::TableRef;
-use quadratic_core::a1::js_selection::JsCoordinate;
 use quadratic_core::color::Rgba;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
 use quadratic_core::controller::execution::run_code::get_cells::JsCellsA1Error;
@@ -25,6 +24,7 @@ use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsColumnWidth;
+use quadratic_core::grid::js_types::JsCoordinate;
 use quadratic_core::grid::js_types::JsDataTableContext;
 use quadratic_core::grid::js_types::JsHashRenderCells;
 use quadratic_core::grid::js_types::JsHashValidationWarnings;
@@ -48,7 +48,6 @@ use quadratic_core::grid::sheet::borders::CellBorderLine;
 use quadratic_core::grid::sheet::borders::JsBorderHorizontal;
 use quadratic_core::grid::sheet::borders::JsBorderVertical;
 use quadratic_core::grid::sheet::borders::JsBordersSheet;
-use quadratic_core::grid::sheet::keyboard::Direction;
 use quadratic_core::grid::sheet::search::SearchOptions;
 use quadratic_core::grid::sheet::validations::rules::ValidationRule;
 use quadratic_core::grid::sheet::validations::rules::validation_date_time::{
@@ -76,7 +75,6 @@ use quadratic_core::grid::{CodeCellLanguage, ConnectionKind};
 use quadratic_core::sheet_offsets::resize_transient::TransientResize;
 use quadratic_core::sheet_offsets::sheet_offsets_wasm::ColumnRow;
 use quadratic_core::small_timestamp::SmallTimestamp;
-use quadratic_core::wasm_bindings::controller::bounds::MinMax;
 use quadratic_core::wasm_bindings::controller::sheet_info::{SheetBounds, SheetInfo};
 use quadratic_core::{
     ArraySize, Axis, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Span,
@@ -107,11 +105,6 @@ fn main() {
         BorderStyle,
         BorderStyleCell,
         BorderStyleTimestamp,
-        JsCellsA1Error,
-        JsCellsA1Response,
-        JsCellsA1Value,
-        JsCellsA1Values,
-        JsCellValueResult,
         CellAlign,
         CellBorderLine,
         CellFormatSummary,
@@ -125,7 +118,6 @@ fn main() {
         ConnectionKind,
         DataTableSort,
         DateTimeRange,
-        Direction,
         Format,
         FormatUpdate,
         GridBounds,
@@ -133,9 +125,14 @@ fn main() {
         JsBorderVertical,
         JsBordersSheet,
         JsCellsAccessed,
+        JsCellsA1Error,
+        JsCellsA1Response,
+        JsCellsA1Value,
+        JsCellsA1Values,
         JsCellValue,
         JsCellValuePos,
         JsCellValuePosContext,
+        JsCellValueResult,
         JsChartContext,
         JsClipboard,
         JsCodeCell,
@@ -168,7 +165,6 @@ fn main() {
         JsTablesContext,
         JsUpdateCodeCell,
         JsValidationWarning,
-        MinMax,
         NumberRange,
         NumericFormat,
         NumericFormatKind,

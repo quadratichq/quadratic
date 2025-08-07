@@ -16,8 +16,8 @@ import { codeEditorBaseStyles } from '@/app/ui/menus/CodeEditor/styles';
 import { DOCUMENTATION_JAVASCRIPT_RETURN_DATA, DOCUMENTATION_URL } from '@/shared/constants/urls';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgoAndNextTimeout } from '@/shared/utils/timeAgo';
-import mixpanel from 'mixpanel-browser';
 import type { JSX, ReactNode } from 'react';
 import { memo, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
@@ -48,9 +48,9 @@ export const ReturnTypeInspector = memo(() => {
   if (consoleOutput?.stdErr) {
     hasError = true;
     message = (
-      <p>
+      <span>
         Returned <ReturnType isError>error</ReturnType>{' '}
-      </p>
+      </span>
     );
     action = (
       <Button
@@ -58,10 +58,11 @@ export const ReturnTypeInspector = memo(() => {
         variant="destructive"
         className="ml-auto"
         onClick={() => {
-          mixpanel.track('[AIAssistant].fixWithAI', {
+          trackEvent('[AIAssistant].fixWithAI', {
             language: codeCellRecoil.language,
           });
           submitPrompt({
+            messageSource: 'FixWithAI',
             content: [{ type: 'text', text: 'Fix the error in the code cell' }],
             messageIndex: 0,
             codeCell: codeCellRecoil,
@@ -75,9 +76,9 @@ export const ReturnTypeInspector = memo(() => {
   } else if (spillError) {
     hasError = true;
     message = (
-      <p>
+      <span>
         Returned <ReturnType isError>error</ReturnType> (spill)
-      </p>
+      </span>
     );
     action = <FixSpillError codeCell={codeCellRecoil} evaluationResult={evaluationResult ?? {}} />;
   } else if (mode === 'Python') {
@@ -184,12 +185,12 @@ export const ReturnTypeInspector = memo(() => {
     >
       <span style={{ transform: 'scaleX(-1)', display: 'inline-block', fontSize: '10px' }}>⮐</span>
 
-      <span className="leading-snug">
+      <span className="leading-tight">
         {message}
         {lastModified && <span> {lastModified}</span>}
       </span>
 
-      {action && <span className="ml-auto font-sans">{action}</span>}
+      {action && <span className="ml-auto flex-shrink-0 font-sans">{action}</span>}
     </div>
   );
 });

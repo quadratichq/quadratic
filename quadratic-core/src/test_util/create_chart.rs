@@ -35,7 +35,6 @@ pub fn test_create_js_chart(gc: &mut GridController, sheet_id: SheetId, pos: Pos
         output_value: Some(JsCellValueResult("image".to_string(), 8)),
         output_array: None,
         output_display_type: None,
-        cancel_compute: None,
         chart_pixel_output: Some((
             (w - 1) as f32 * cell_width as f32,
             (h - 1) as f32 * cell_height as f32,
@@ -74,7 +73,6 @@ pub fn test_create_html_chart(
         output_value: Some(JsCellValueResult("<html></html>".to_string(), 1)),
         output_array: None,
         output_display_type: None,
-        cancel_compute: None,
         chart_pixel_output: Some((
             (w - 1) as f32 * cell_width as f32,
             (h - 1) as f32 * cell_height as f32,

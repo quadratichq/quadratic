@@ -5,33 +5,30 @@ import {
 } from '@/app/atoms/aiAnalystAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { uploadFile } from '@/app/helpers/files';
-import { getTableNameFromPos } from '@/app/quadratic-core/quadratic_core';
 import type { CodeCell } from '@/app/shared/types/codeCell';
+import { AIAnalystSelectContextMenu } from '@/app/ui/menus/AIAnalyst/AIAnalystSelectContextMenu';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
-import { AttachFileIcon, CloseIcon } from '@/shared/components/Icons';
+import { CloseIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/shared/shadcn/ui/hover-card';
-import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import {
   getDataBase64String,
   getFileTypeLabel,
   isSupportedImageMimeType,
 } from 'quadratic-shared/ai/helpers/files.helper';
-import type { Context, FileContent, UserMessagePrompt } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { getUserPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import type { Context, FileContent } from 'quadratic-shared/typesAndSchemasAI';
+import { memo, useCallback, useEffect, useState } from 'react';
 import { useRecoilValue } from 'recoil';
-import { AIAnalystSelectContextMenu } from '../menus/AIAnalyst/AIAnalystSelectContextMenu';
 
 type AIContextProps = {
   initialContext?: Context;
   context: Context;
   setContext?: React.Dispatch<React.SetStateAction<Context>>;
   files: FileContent[];
-  setFiles: React.Dispatch<React.SetStateAction<FileContent[]>>;
-  handleFiles: (files: FileList | File[]) => void;
-  fileTypes: string[];
+  setFiles: (files: FileContent[]) => void;
+  isFileSupported: (mimeType: string) => boolean;
   editing: boolean;
   disabled: boolean;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -43,8 +40,7 @@ export const AIContext = memo(
     setContext,
     files,
     setFiles,
-    handleFiles,
-    fileTypes,
+    isFileSupported,
     editing,
     disabled,
     textareaRef,
@@ -76,11 +72,7 @@ export const AIContext = memo(
     // use last user message context as initial context in the bottom user message form
     useEffect(() => {
       if (!loading && initialContext === undefined && !!setContext && messagesCount > 0) {
-        const lastUserMessage = messages
-          .filter(
-            (message): message is UserMessagePrompt => message.role === 'user' && message.contextType === 'userPrompt'
-          )
-          .at(-1);
+        const lastUserMessage = getUserPromptMessages(messages).at(-1);
         if (lastUserMessage) {
           setContext(lastUserMessage.context ?? defaultAIAnalystContext);
         }
@@ -93,9 +85,9 @@ export const AIContext = memo(
 
     const handleOnClickFileContext = useCallback(
       (file: FileContent) => {
-        setFiles?.((prev) => prev.filter((f) => f !== file));
+        setFiles(files.filter((f) => f !== file));
       },
-      [setFiles]
+      [files, setFiles]
     );
 
     // const handleOnClickSelection = useCallback(() => {
@@ -127,16 +119,16 @@ export const AIContext = memo(
           />
         )}
 
-        <AttachFileButton disabled={disabled} handleFiles={handleFiles} fileTypes={fileTypes} />
-
-        {files.map((file, index) => (
-          <FileContextPill
-            key={`${index}-${file.fileName}`}
-            disabled={disabled || !setFiles}
-            file={file}
-            onClick={() => handleOnClickFileContext(file)}
-          />
-        ))}
+        {files
+          .filter((file) => isFileSupported(file.mimeType))
+          .map((file, index) => (
+            <FileContextPill
+              key={`${index}-${file.fileName}`}
+              disabled={disabled}
+              file={file}
+              onClick={() => handleOnClickFileContext(file)}
+            />
+          ))}
 
         <CodeCellContextPill codeCell={context.codeCell} />
 
@@ -223,51 +215,28 @@ const FileContextPill = memo(({ disabled, file, onClick }: FileContextPillProps)
   );
 });
 
-type AttachFileButtonProps = {
-  disabled: boolean;
-  handleFiles: (files: FileList | File[]) => void;
-  fileTypes: string[];
-};
-const AttachFileButton = memo(({ disabled, handleFiles, fileTypes }: AttachFileButtonProps) => {
-  const handleUploadFiles = useCallback(async () => {
-    const files = await uploadFile(fileTypes);
-    handleFiles(files);
-  }, [handleFiles, fileTypes]);
-
-  const label = useMemo(() => (fileTypes.includes('.pdf') ? 'Attach image or PDF' : 'Attach image'), [fileTypes]);
-
-  return (
-    <TooltipPopover label={label}>
-      <Button
-        size="icon-sm"
-        className="h-5 w-5 shadow-none"
-        variant="outline"
-        onClick={handleUploadFiles}
-        disabled={disabled}
-      >
-        <AttachFileIcon className="!h-5 !w-5 !text-sm" />
-      </Button>
-    </TooltipPopover>
-  );
-});
-
 type CodeCellContextPillProps = {
   codeCell: CodeCell | undefined;
 };
 const CodeCellContextPill = memo(({ codeCell }: CodeCellContextPillProps) => {
   const [tableName, setTableName] = useState<string | undefined>(undefined);
   useEffect(() => {
-    const updateTableName = (a1Context: Uint8Array) => {
+    const updateTableName = () => {
       if (!codeCell?.sheetId) return;
-      const tableName = getTableNameFromPos(a1Context, codeCell.sheetId, codeCell.pos.x, codeCell.pos.y);
+      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
+        codeCell.sheetId,
+        codeCell.pos.x,
+        codeCell.pos.y,
+        sheets.jsA1Context
+      );
       setTableName(tableName);
     };
 
-    updateTableName(sheets.a1Context);
+    updateTableName();
 
-    events.on('a1Context', updateTableName);
+    events.on('a1ContextUpdated', updateTableName);
     return () => {
-      events.off('a1Context', updateTableName);
+      events.off('a1ContextUpdated', updateTableName);
     };
   }, [codeCell?.pos.x, codeCell?.pos.y, codeCell?.sheetId]);
 

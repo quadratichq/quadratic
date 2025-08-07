@@ -1,6 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { Point, Rectangle } from 'pixi.js';
 
@@ -58,27 +59,45 @@ export class HtmlCellResizing {
 
   private changeWidth(x: number) {
     const placement = sheets.sheet.offsets.getXPlacement(x);
-    this.width = placement.position + placement.size - this.screenPos.left;
-    this.htmlCell.setWidth(this.width);
-    this.endX = placement.index + 1;
+    const newWidth = placement.position + placement.size - this.screenPos.left;
+    if (newWidth > 0) {
+      this.width = placement.position + placement.size - this.screenPos.left;
+      this.htmlCell.setWidth(this.width);
+      this.endX = placement.index + 1;
+    }
   }
 
   private changeHeight(y: number) {
     const top = sheets.sheet.offsets.getRowHeight(this.htmlCell.y);
     const placement = sheets.sheet.offsets.getYPlacement(y);
-    this.height = placement.position + placement.size - this.screenPos.top - top;
-    this.htmlCell.setHeight(this.height);
-    this.endY = placement.index;
+    const newHeight = placement.position + placement.size - this.screenPos.top - top;
+    if (newHeight > 0) {
+      this.height = placement.position + placement.size - this.screenPos.top - top;
+      this.htmlCell.setHeight(this.height);
+      this.endY = placement.index;
+    }
   }
 
   completeResizing() {
-    quadraticCore.setChartSize(
-      sheets.current,
-      this.htmlCell.x,
-      this.htmlCell.y,
-      this.endX - this.htmlCell.x,
-      this.endY - this.htmlCell.y
-    );
+    quadraticCore
+      .setChartSize(
+        sheets.current,
+        this.htmlCell.x,
+        this.htmlCell.y,
+        this.endX - this.htmlCell.x,
+        this.endY - this.htmlCell.y
+      )
+      .then((response) => {
+        if (!response || !response.result) {
+          this.cancelResizing();
+        }
+        if (response?.error) {
+          pixiAppSettings.addGlobalSnackbar?.(response.error, { severity: 'error' });
+        }
+        if (response?.result) {
+          this.htmlCell.updateOffsets();
+        }
+      });
   }
 
   cancelResizing() {

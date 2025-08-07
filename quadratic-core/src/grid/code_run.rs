@@ -74,6 +74,10 @@ impl CodeCellLanguage {
     pub fn has_q_cells(&self) -> bool {
         *self == CodeCellLanguage::Python || *self == CodeCellLanguage::Javascript
     }
+
+    pub fn has_handle_bars(&self) -> bool {
+        matches!(self, CodeCellLanguage::Connection { .. })
+    }
 }
 
 #[derive(Serialize, Deserialize, Display, Copy, Debug, Clone, PartialEq, Eq, Hash)]
@@ -84,6 +88,11 @@ pub enum ConnectionKind {
     Mysql,
     Mssql,
     Snowflake,
+    Cockroachdb,
+    Bigquery,
+    Mariadb,
+    Supabase,
+    Neon,
 }
 
 impl wasm_bindgen::describe::WasmDescribe for ConnectionKind {

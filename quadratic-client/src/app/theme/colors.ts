@@ -55,6 +55,11 @@ export const colors = {
   languageMysql: '#00758f',
   languageMssql: '#cfd8dc',
   languageSnowflake: '#249edc',
+  languageCockroachdb: '#336791',
+  languageBigquery: '#4285f4',
+  languageMariadb: '#00758f',
+  languageSupabase: '#249edc',
+  languageNeon: '#336791',
   languageJavascript: '#ca8a04',
   link: '#2463eb',
 

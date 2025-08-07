@@ -1,5 +1,4 @@
 import * as aws from "@pulumi/aws";
-import { isPreviewEnvironment } from "../helpers/isPreviewEnvironment";
 
 // Create a Security Group for the Files EC2 instance
 export const filesEc2SecurityGroup = new aws.ec2.SecurityGroup("files-sg", {
@@ -31,7 +30,7 @@ export const multiplayerNlbSecurityGroup = new aws.ec2.SecurityGroup(
     egress: [
       { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
     ],
-  }
+  },
 );
 
 // Create a Security Group for the Multiplayer EC2 instance
@@ -49,7 +48,7 @@ export const multiplayerEc2SecurityGroup = new aws.ec2.SecurityGroup(
     egress: [
       { protocol: "-1", fromPort: 0, toPort: 0, cidrBlocks: ["0.0.0.0/0"] },
     ],
-  }
+  },
 );
 
 // Redis Security Group
@@ -66,23 +65,3 @@ export const redisSecurityGroup = new aws.ec2.SecurityGroup("redis-sg", {
     },
   ],
 });
-
-// Allow SSH traffic to the Preview Instances
-if (isPreviewEnvironment) {
-  new aws.ec2.SecurityGroupRule(`files-ssh-ingress-rule`, {
-    type: "ingress",
-    fromPort: 22,
-    toPort: 22,
-    protocol: "tcp",
-    cidrBlocks: ["0.0.0.0/0"],
-    securityGroupId: filesEc2SecurityGroup.id,
-  });
-  new aws.ec2.SecurityGroupRule(`multiplayer-ssh-ingress-rule`, {
-    type: "ingress",
-    fromPort: 22,
-    toPort: 22,
-    protocol: "tcp",
-    cidrBlocks: ["0.0.0.0/0"],
-    securityGroupId: multiplayerEc2SecurityGroup.id,
-  });
-}

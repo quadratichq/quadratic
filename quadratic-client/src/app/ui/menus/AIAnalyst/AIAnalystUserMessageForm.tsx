@@ -2,7 +2,6 @@ import { Action } from '@/app/actions/actions';
 import {
   aiAnalystAbortControllerAtom,
   aiAnalystCurrentChatUserMessagesCountAtom,
-  aiAnalystDelaySecondsAtom,
   aiAnalystLoadingAtom,
   aiAnalystWaitingOnMessageIndexAtom,
   showAIAnalystAtom,
@@ -12,7 +11,7 @@ import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/c
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, memo, useCallback, useState } from 'react';
@@ -20,29 +19,24 @@ import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 
 const ANALYST_FILE_TYPES = ['image/*', '.pdf'];
 
-type AIAnalystUserMessageFormProps = AIUserMessageFormWrapperProps & {
-  initialContext?: Context;
-};
-
 export const AIAnalystUserMessageForm = memo(
-  forwardRef<HTMLTextAreaElement, AIAnalystUserMessageFormProps>((props: AIAnalystUserMessageFormProps, ref) => {
+  forwardRef<HTMLTextAreaElement, AIUserMessageFormWrapperProps>((props: AIUserMessageFormWrapperProps, ref) => {
     const { initialContext, ...rest } = props;
     const abortController = useRecoilValue(aiAnalystAbortControllerAtom);
     const [loading, setLoading] = useRecoilState(aiAnalystLoadingAtom);
     const [context, setContext] = useState<Context>(initialContext ?? defaultAIAnalystContext);
     const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
     const waitingOnMessageIndex = useRecoilValue(aiAnalystWaitingOnMessageIndexAtom);
-    const delaySeconds = useRecoilValue(aiAnalystDelaySecondsAtom);
     const { submitPrompt } = useSubmitAIAnalystPrompt();
 
     const handleSubmit = useCallback(
-      ({ content, onSubmit }: SubmitPromptArgs) => {
-        mixpanel.track('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
+      ({ content }: SubmitPromptArgs) => {
+        trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
         submitPrompt({
+          messageSource: 'User',
           content,
           context,
           messageIndex: props.messageIndex,
-          onSubmit,
         });
       },
       [context, props.messageIndex, submitPrompt, userMessagesCount]
@@ -76,7 +70,6 @@ export const AIAnalystUserMessageForm = memo(
           setContext,
         }}
         waitingOnMessageIndex={waitingOnMessageIndex}
-        delaySeconds={delaySeconds}
         maxHeight="275px"
       />
     );

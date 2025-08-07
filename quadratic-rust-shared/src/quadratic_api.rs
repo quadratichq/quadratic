@@ -71,7 +71,7 @@ pub fn get_client(url: &str, jwt: &str) -> RequestBuilder {
     } else {
         reqwest::Client::new()
             .get(url)
-            .header("Authorization", format!("Bearer {}", jwt))
+            .header("Authorization", format!("Bearer {jwt}"))
     }
 }
 
@@ -130,7 +130,7 @@ pub async fn set_file_checkpoint(
 
     let response = reqwest::Client::new()
         .put(url)
-        .header("Authorization", format!("Bearer {}", jwt))
+        .header("Authorization", format!("Bearer {jwt}"))
         .json(&body)
         .send()
         .await?;
@@ -201,8 +201,7 @@ fn handle_response(response: &Response) -> Result<()> {
         StatusCode::UNAUTHORIZED => Err(SharedError::QuadraticApi("Unauthorized".into())),
         StatusCode::NOT_FOUND => Err(SharedError::QuadraticApi("Not found".into())),
         _ => Err(SharedError::QuadraticApi(format!(
-            "Unexpected response: {:?}",
-            response
+            "Unexpected response: {response:?}"
         ))),
     }
 }

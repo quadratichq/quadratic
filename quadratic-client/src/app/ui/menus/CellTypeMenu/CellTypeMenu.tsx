@@ -3,11 +3,13 @@ import {
   editorInteractionStateShowCellTypeMenuAtom,
   editorInteractionStateShowConnectionsMenuAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { CodeCellLanguage } from '@/app/quadratic-core-types';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import '@/app/ui/styles/floating-dialog.css';
 import { SettingsIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
+import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Badge } from '@/shared/shadcn/ui/badge';
 import {
   CommandDialog,
@@ -18,8 +20,8 @@ import {
   CommandList,
   CommandSeparator,
 } from '@/shared/shadcn/ui/command';
-import mixpanel from 'mixpanel-browser';
-import React, { useCallback, useEffect } from 'react';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import { useRecoilState, useSetRecoilState } from 'recoil';
 
 export interface CellTypeOption {
@@ -56,13 +58,15 @@ export default function CellTypeMenu() {
   const [showCellTypeMenu, setShowCellTypeMenu] = useRecoilState(editorInteractionStateShowCellTypeMenuAtom);
   const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
   const setCodeEditorState = useSetRecoilState(codeEditorAtom);
-  const fetcher = useConnectionsFetcher();
-
-  const includeLanguages = showCellTypeMenu !== 'connections';
-  const searchLabel = `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`;
+  const { connections } = useConnectionsFetcher();
+  const {
+    userMakingRequest: { teamPermissions },
+  } = useFileRouteLoaderData();
+  const includeLanguages = useMemo(() => showCellTypeMenu !== 'connections', [showCellTypeMenu]);
+  const searchLabel = useMemo(() => `Choose a ${includeLanguages ? 'cell type' : 'connection'}…`, [includeLanguages]);
 
   useEffect(() => {
-    mixpanel.track('[CellTypeMenu].opened');
+    trackEvent('[CellTypeMenu].opened');
   }, []);
 
   const close = useCallback(() => {
@@ -71,15 +75,26 @@ export default function CellTypeMenu() {
 
   const openEditor = useCallback(
     (language: CodeCellLanguage) => {
-      mixpanel.track('[CellTypeMenu].selected', { language });
+      trackEvent('[CellTypeMenu].selected', { language });
+
       setShowCellTypeMenu(false);
+
+      const sheetId = sheets.current;
+      const { x, y } = sheets.sheet.cursor.position;
+
       setCodeEditorState((prev) => ({
         ...prev,
-        showCodeEditor: true,
-        initialCode: '',
-        codeCell: {
-          ...prev.codeCell,
-          language,
+        diffEditorContent: undefined,
+        waitingForEditorClose: {
+          codeCell: {
+            sheetId,
+            pos: { x, y },
+            language,
+            lastModified: 0,
+          },
+          showCellTypeMenu: false,
+          initialCode: '',
+          inlineEditor: false,
         },
       }));
     },
@@ -111,7 +126,7 @@ export default function CellTypeMenu() {
                   disabled={disabled}
                   icon={icon}
                   name={name}
-                  experimental={experimental}
+                  badge={experimental ? 'Experimental' : ''}
                   onSelect={() => openEditor(mode)}
                 />
               ))}
@@ -120,17 +135,18 @@ export default function CellTypeMenu() {
           </>
         )}
 
-        {fetcher.data?.connections && (
+        {teamPermissions?.includes('TEAM_EDIT') && (
           <CommandGroup heading="Connections">
-            {fetcher.data.connections.map(({ name, type, uuid }) => (
+            {connections.map(({ name, type, uuid }, i) => (
               <CommandItemWrapper
                 key={uuid}
                 name={name}
-                value={name + '--' + uuid}
+                value={`${name}__${i}`}
                 icon={<LanguageIcon language={type} />}
                 onSelect={() => openEditor({ Connection: { kind: type, id: uuid } })}
               />
             ))}
+
             <CommandItemWrapper
               name="Add or manage…"
               icon={<SettingsIcon className="text-muted-foreground opacity-80" />}
@@ -147,18 +163,16 @@ function CommandItemWrapper({
   disabled,
   icon,
   name,
+  badge,
   value,
-  experimental,
   onSelect,
-  uuid,
 }: {
   disabled?: boolean;
   icon: React.ReactNode;
   name: string;
+  badge?: React.ReactNode;
   value?: string;
-  experimental?: boolean;
   onSelect: () => void;
-  uuid?: string;
 }) {
   return (
     <CommandItem
@@ -174,9 +188,9 @@ function CommandItemWrapper({
       <div className="flex flex-col truncate">
         <span className="flex items-center">
           {name}{' '}
-          {experimental && (
-            <Badge variant="secondary" className="ml-2">
-              Experimental
+          {badge && (
+            <Badge variant="outline" className="ml-2">
+              {badge}
             </Badge>
           )}
         </span>

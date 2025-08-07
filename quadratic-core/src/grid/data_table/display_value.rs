@@ -184,22 +184,47 @@ impl DataTable {
             .collect::<Vec<CellValue>>()
     }
 
-    /// Get the display index from the row index.
-    pub fn get_display_index_from_row_index(&self, index: u64) -> u64 {
-        match self.display_buffer {
-            Some(ref display_buffer) => display_buffer
-                .iter()
-                .position(|&i| i == index)
-                .map(|i| i as u64)
-                .unwrap_or(index),
-            None => index,
-        }
-    }
-
     /// Transmute an index from the display buffer to the source index.
     pub fn get_row_index_from_display_index(&self, index: u64) -> u64 {
         match self.display_buffer {
             Some(ref display_buffer) => *display_buffer.get(index as usize).unwrap_or(&index),
+            None => index,
+        }
+    }
+
+    /// Get the reverse lookup display buffer.
+    pub fn get_reverse_display_buffer(&self) -> Option<Vec<u64>> {
+        self.display_buffer.as_ref().and_then(|display_buffer| {
+            let max_row_idx = display_buffer.iter().max().copied().unwrap_or(0);
+            if max_row_idx == 0 {
+                return None;
+            }
+
+            let mut reverse_display_buffer = vec![u64::MAX; (max_row_idx + 1) as usize];
+            for (display_idx, &row_idx) in display_buffer.iter().enumerate() {
+                reverse_display_buffer[row_idx as usize] = display_idx as u64;
+            }
+            Some(reverse_display_buffer)
+        })
+    }
+
+    /// Get the display index from the reverse display buffer.
+    pub fn get_display_index_from_reverse_display_buffer(
+        &self,
+        index: u64,
+        reverse_display_buffer: Option<&Vec<u64>>,
+    ) -> u64 {
+        match reverse_display_buffer {
+            Some(reverse_display_buffer) => {
+                if (index as usize) < reverse_display_buffer.len() {
+                    match reverse_display_buffer[index as usize] {
+                        u64::MAX => index,
+                        display_index => display_index,
+                    }
+                } else {
+                    index
+                }
+            }
             None => index,
         }
     }
@@ -284,7 +309,7 @@ pub mod test {
             column[remove_at].display = false;
             data_table.column_headers = Some(column);
 
-            let title = Some(format!("Remove column {}", remove_at));
+            let title = Some(format!("Remove column {remove_at}"));
             pretty_print_data_table(data_table, title.as_deref(), None);
 
             let expected_output_width = data_table.columns_to_show().len();

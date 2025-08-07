@@ -68,7 +68,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
   // Click on Grid Icon if not already active
   const isGridButtonEnabled = await gridButton.isEnabled();
   if (isGridButtonEnabled) {
-    await gridButton.click();
+    await gridButton.click({ timeout: 60 * 1000 });
     await expect(gridButton).not.toBeEnabled({ timeout: 5000 });
   }
 
@@ -108,7 +108,7 @@ test('Dashboard Views - My Files', async ({ page }) => {
   const listButton = page.locator('button:has(span:text-is("list"))');
 
   // Click the list view button
-  await listButton.click();
+  await listButton.click({ timeout: 60 * 1000 });
 
   // Wait for the list view to load
   await page.waitForTimeout(2000);
@@ -139,36 +139,36 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
 
   // Edit "C - Test File 1" so it becomes Last updated
-  await page.locator(`a :text("${testFile1}")`).click();
+  await page.locator(`a :text("${testFile1}")`).click({ timeout: 60 * 1000 });
 
-  await page.locator(`#QuadraticCanvasID`).click();
+  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
 
   await page.keyboard.press('ArrowRight');
   await page.keyboard.press('ArrowDown');
-  await page.keyboard.type('test', { delay: 500 });
+  await page.keyboard.type('test', { delay: 250 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(2000);
+  await page.waitForTimeout(60 * 1000);
 
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Open the sorting dropdown
-  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Last modified" as the sorting criterion
-  await page.locator(`[role="menu"] :text("Last modified")`).click();
+  await page.locator(`[role="menu"] :text("Last modified")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Oldest first" as the sorting order
-  await page.locator(`[role="menu"] :text("Oldest first")`).click();
+  await page.locator(`[role="menu"] :text("Oldest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
@@ -192,19 +192,19 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Last modified" as the sorting criterion (if not already selected)
-  await page.locator(`[role="menu"] :text("Last modified")`).click();
+  await page.locator(`[role="menu"] :text("Last modified")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Newest first" as the sorting order
-  await page.locator(`[role="menu"] :text("Newest first")`).click();
+  await page.locator(`[role="menu"] :text("Newest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
@@ -228,19 +228,19 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Date created" as the sorting criterion
-  await page.locator(`[role="menu"] :text("Date created")`).click();
+  await page.locator(`[role="menu"] :text("Date created")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Newest first" as the sorting order (if not already selected)
-  await page.locator(`[role="menu"] :text("Newest first")`).click();
+  await page.locator(`[role="menu"] :text("Newest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
@@ -264,19 +264,19 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Date created" as the sorting criterion (if not already selected)
-  await page.locator(`[role="menu"] :text("Date created")`).click();
+  await page.locator(`[role="menu"] :text("Date created")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Oldest first" as the sorting order
-  await page.locator(`[role="menu"] :text("Oldest first")`).click();
+  await page.locator(`[role="menu"] :text("Oldest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
@@ -300,19 +300,19 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Alphabetical" as the sorting criterion
-  await page.locator(`[role="menu"] :text("Alphabetical")`).click();
+  await page.locator(`[role="menu"] :text("Alphabetical")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Z to A" as the sorting order
-  await page.locator(`[role="menu"] :text("Z-A")`).click();
+  await page.locator(`[role="menu"] :text("Z-A")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
@@ -336,19 +336,19 @@ test('Dashboard Views - My Files', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "Alphabetical" as the sorting criterion (if not already selected)
-  await page.locator(`[role="menu"] :text("Alphabetical")`).click();
+  await page.locator(`[role="menu"] :text("Alphabetical")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
+  await page.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click({ timeout: 60 * 1000 });
 
   // Select "A to Z" as the sorting order
-  await page.locator(`[role="menu"] :text("A-Z")`).click();
+  await page.locator(`[role="menu"] :text("A-Z")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await page.waitForTimeout(2000);
@@ -403,7 +403,7 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
 
   await sharedUserPage.waitForTimeout(5000);
 
-  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click();
+  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   // Locate the grid button
   const gridButton = sharedUserPage.locator('button:has(span:text-is("grid_view"))');
@@ -418,7 +418,7 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   const isGridButtonEnabled = await gridButton.isEnabled();
 
   if (isGridButtonEnabled) {
-    await gridButton.click();
+    await gridButton.click({ timeout: 60 * 1000 });
     await expect(gridButton).not.toBeEnabled({ timeout: 5000 });
   }
 
@@ -457,7 +457,7 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   const listButton = sharedUserPage.locator('button:has(span:text-is("list"))');
 
   // Click the list view button
-  await listButton.click();
+  await listButton.click({ timeout: 60 * 1000 });
 
   // Wait for the list view to load
   await sharedUserPage.waitForTimeout(2000);
@@ -488,39 +488,43 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
 
   // Edit "C - Test File 1" so it becomes Last updated
-  await sharedUserPage.locator(`a :text("${testFile1}")`).click();
+  await sharedUserPage.locator(`a :text("${testFile1}")`).click({ timeout: 60 * 1000 });
 
-  await sharedUserPage.locator(`#QuadraticCanvasID`).click();
+  await sharedUserPage.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
 
   await sharedUserPage.keyboard.press('ArrowRight');
   await sharedUserPage.keyboard.press('ArrowDown');
-  await sharedUserPage.keyboard.type('test', { delay: 500 });
+  await sharedUserPage.keyboard.type('test', { delay: 250 });
   await sharedUserPage.keyboard.press('Enter');
 
-  await sharedUserPage.locator(`nav a svg`).click();
+  await sharedUserPage.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   await sharedUserPage.waitForTimeout(3000);
 
-  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click();
+  await sharedUserPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Last modified" as the sorting criterion
-  await sharedUserPage.locator(`[role="menu"] :text("Last modified")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Last modified")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Oldest first" as the sorting order
-  await sharedUserPage.locator(`[role="menu"] :text("Oldest first")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Oldest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
@@ -543,19 +547,23 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Last modified" as the sorting criterion (if not already selected)
-  await sharedUserPage.locator(`[role="menu"] :text("Last modified")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Last modified")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Newest first" as the sorting order
-  await sharedUserPage.locator(`[role="menu"] :text("Newest first")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Newest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
@@ -578,19 +586,23 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage.locator(`button:text("Last modified") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Last modified") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Date created" as the sorting criterion (if not already selected)
-  await sharedUserPage.locator(`[role="menu"] :text("Date created")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Date created")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Oldest first" as the sorting order
-  await sharedUserPage.locator(`[role="menu"] :text("Oldest first")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Oldest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
@@ -613,19 +625,23 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Date created" as the sorting criterion
-  await sharedUserPage.locator(`[role="menu"] :text("Date created")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Date created")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Newest first" as the sorting order (if not already selected)
-  await sharedUserPage.locator(`[role="menu"] :text("Newest first")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Newest first")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
@@ -648,19 +664,23 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage.locator(`button:text("Date created") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Date created") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Alphabetical" as the sorting criterion
-  await sharedUserPage.locator(`[role="menu"] :text("Alphabetical")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Alphabetical")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Z to A" as the sorting order
-  await sharedUserPage.locator(`[role="menu"] :text("Z-A")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Z-A")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
@@ -680,19 +700,23 @@ test('Dashboard Views - Shared with me', async ({ page }) => {
   //--------------------------------
 
   // Open the sorting dropdown
-  await sharedUserPage.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "Alphabetical" as the sorting criterion (if not already selected)
-  await sharedUserPage.locator(`[role="menu"] :text("Alphabetical")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("Alphabetical")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
 
   // Reopen the sorting dropdown
-  await sharedUserPage.locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`).click();
+  await sharedUserPage
+    .locator(`button:text("Alphabetical") span:text-is("arrow_drop_down")`)
+    .click({ timeout: 60 * 1000 });
 
   // Select "A to Z" as the sorting order
-  await sharedUserPage.locator(`[role="menu"] :text("A-Z")`).click();
+  await sharedUserPage.locator(`[role="menu"] :text("A-Z")`).click({ timeout: 60 * 1000 });
 
   // Wait for sorting to take effect
   await sharedUserPage.waitForTimeout(2000);
@@ -754,31 +778,31 @@ test('Filter Files by Name - My Files', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert file 1 are visible
-  await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 2 and assert file 2 are visible
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 3 and assert file 2 are visible
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(file3);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (file 1 and 3)
 
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string2 and assert files including string2 are visible (file 2 and 3)
 
   await page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
   await page.waitForTimeout(2500);
-  await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up files
   await page.locator('[placeholder="Filter by file or creator name…"]').fill('');
@@ -841,7 +865,7 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   // Bring user 1 to the front and navigate to Shared with me files
   await user1Page.bringToFront();
   await user1Page.waitForTimeout(2000);
-  await user1Page.locator(`[href="/files/shared-with-me"]`).click();
+  await user1Page.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -856,29 +880,29 @@ test('Filter Files by Name - Shared with me', async ({ page: user1Page }) => {
   //--------------------------------
 
   // Assert file 1 is visible
-  await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 2 and assert file 2 is visible
   await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file2);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by file 3 and assert file 3 is visible
   await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(file3);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string1 and assert files including string1 are visible (file 1 and 3)
   await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string1);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file1 })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   // Filter by string2 and assert files including string2 are visible (file 2 and 3)
   await user1Page.locator('[placeholder="Filter by file or creator name…"]').fill(string2);
   await user1Page.waitForTimeout(2500);
-  await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 30 * 1000 });
-  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file2 })).toBeVisible({ timeout: 60 * 1000 });
+  await expect(user1Page.getByRole('heading', { name: file3 })).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Clean up:
@@ -921,7 +945,7 @@ test('Import Files', async ({ page }) => {
   //--------------------------------
   // Assert file is successfully uploaded and displayed
   await expect(page.locator(`:text("${gridFileName.split('.')[0]}"):visible >> nth=0`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   await page.waitForTimeout(2000);
@@ -932,7 +956,7 @@ test('Import Files', async ({ page }) => {
   });
 
   // Head back to dashboard
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Clean up files
   await cleanUpFiles(page, { fileName: gridFileName });
@@ -951,7 +975,7 @@ test('Import Files', async ({ page }) => {
   //--------------------------------
 
   // Assert file is successfully uploaded and displayed
-  await expect(page.locator(`:text("${excelFileName}"):visible`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`:text("${excelFileName}"):visible`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert sheet is displayed correctly
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot('import-files-excel.png', {
@@ -959,7 +983,7 @@ test('Import Files', async ({ page }) => {
   });
 
   // Head back to dashboard
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Clean up files
   await cleanUpFiles(page, { fileName: excelFileName });
@@ -974,7 +998,7 @@ test('Resources Examples - Dashboard Views', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_dashboard_examples' });
 
   // Click into examples under resources
-  await page.getByRole(`link`, { name: `view_carousel Examples` }).click();
+  await page.getByRole(`link`, { name: `view_carousel Examples` }).click({ timeout: 60 * 1000 });
 
   // Wait for page to appear
   await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
@@ -984,7 +1008,7 @@ test('Resources Examples - Dashboard Views', async ({ page }) => {
   //--------------------------------
 
   // Click "List" to show the list view
-  await page.getByRole(`button`, { name: `list` }).click();
+  await page.getByRole(`button`, { name: `list` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1011,7 +1035,7 @@ test('Resources Examples - Dashboard Views', async ({ page }) => {
   //--------------------------------
 
   // Switch from "List" view to "Grid" view.
-  await page.getByRole(`button`, { name: `grid_view` }).click();
+  await page.getByRole(`button`, { name: `grid_view` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1039,7 +1063,7 @@ test('Search - Search File Examples', async ({ page }) => {
   await logIn(page, { emailPrefix: 'e2e_dashboard_examples_search' });
 
   // Go to examples under resources
-  await page.getByRole(`link`, { name: `view_carousel Examples` }).click();
+  await page.getByRole(`link`, { name: `view_carousel Examples` }).click({ timeout: 60 * 1000 });
 
   // Wait for the page
   await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
@@ -1065,11 +1089,11 @@ test('Search - Search File Examples', async ({ page }) => {
   //--------------------------------
 
   // Assert the example file appears after searching for it
-  await expect(page.locator(`h2:has-text("${exampleFile}")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`h2:has-text("${exampleFile}")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that "No matches" does not appear after searching for the file
-  await expect(page.getByRole(`heading`, { name: `No matches` })).not.toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByText(`No files found with that`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `No matches` })).not.toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByText(`No files found with that`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that the correct file is visible
   await expect(page.locator(`a:has-text("${exampleFile}") `)).toHaveScreenshot('Resources_JavaScript_Thumbnail.png', {

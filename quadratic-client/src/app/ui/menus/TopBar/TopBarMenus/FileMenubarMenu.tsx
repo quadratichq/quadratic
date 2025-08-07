@@ -10,7 +10,14 @@ import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItemAction } from '@/app/ui/menus/TopBar/TopBarMenus/MenubarItemAction';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
-import { DeleteIcon, DraftIcon, ExternalLinkIcon, FileCopyIcon, FileOpenIcon } from '@/shared/components/Icons';
+import {
+  DeleteIcon,
+  DownloadIcon,
+  DraftIcon,
+  ExternalLinkIcon,
+  FileCopyIcon,
+  FileOpenIcon,
+} from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
@@ -24,7 +31,7 @@ import {
   MenubarTrigger,
 } from '@/shared/shadcn/ui/menubar';
 import type { RecentFile } from '@/shared/utils/updateRecentFiles';
-import { clearRecentFiles, RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
+import { RECENT_FILES_KEY } from '@/shared/utils/updateRecentFiles';
 import { useMemo } from 'react';
 import { useSubmit } from 'react-router';
 import { useRecoilValue } from 'recoil';
@@ -42,37 +49,11 @@ export const FileMenubarMenu = () => {
   const confirmFn = useConfirmDialog('deleteFile', { name });
   const isAvailableArgs = useIsAvailableArgs();
 
-  const [recentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
-  const recentFilesMenuItems = useMemo(() => {
-    if (recentFiles.length <= 1) return null;
-
-    return (
-      <>
-        <MenubarSeparator />
-        <MenubarSub>
-          <MenubarSubTrigger>
-            <FileOpenIcon /> Open recent
-          </MenubarSubTrigger>
-          <MenubarSubContent>
-            {recentFiles
-              .filter((file) => file.uuid !== fileUuid && file.name.trim().length > 0)
-              .map((file) => (
-                <MenubarItem
-                  onClick={() => {
-                    window.location.href = ROUTES.FILE(file.uuid);
-                  }}
-                  key={file.uuid}
-                >
-                  {file.name}
-                </MenubarItem>
-              ))}
-            <MenubarSeparator />
-            <MenubarItem onClick={clearRecentFiles}>Clear</MenubarItem>
-          </MenubarSubContent>
-        </MenubarSub>
-      </>
-    );
-  }, [fileUuid, recentFiles]);
+  const [recentFiles, setRecentFiles] = useLocalStorage<RecentFile[]>(RECENT_FILES_KEY, []);
+  const recentFilesWithoutCurrentFile = useMemo(
+    () => recentFiles.filter((file) => file.uuid !== fileUuid && file.name.trim().length > 0),
+    [recentFiles, fileUuid]
+  );
 
   if (!isAuthenticated) return null;
 
@@ -96,13 +77,46 @@ export const FileMenubarMenu = () => {
         )}
         <MenubarItemAction action={Action.FileVersionHistory} actionArgs={{ uuid: fileUuid }} />
 
-        {recentFilesMenuItems}
+        {recentFilesWithoutCurrentFile.length > 0 && (
+          <>
+            <MenubarSeparator />
+            <MenubarSub>
+              <MenubarSubTrigger>
+                <FileOpenIcon /> Open recent
+              </MenubarSubTrigger>
+              <MenubarSubContent>
+                {recentFilesWithoutCurrentFile.map((file) => (
+                  <MenubarItem
+                    onClick={() => {
+                      window.location.href = ROUTES.FILE({ uuid: file.uuid, searchParams: '' });
+                    }}
+                    key={file.uuid}
+                  >
+                    {file.name}
+                  </MenubarItem>
+                ))}
+                <MenubarSeparator />
+                <MenubarItem onClick={() => setRecentFiles([])}>Clear</MenubarItem>
+              </MenubarSubContent>
+            </MenubarSub>
+          </>
+        )}
 
         <MenubarSeparator />
 
         <MenubarItemAction action={Action.FileShare} actionArgs={undefined} />
         <MenubarItemAction action={Action.FileRename} actionArgs={undefined} />
-        <MenubarItemAction action={Action.FileDownload} actionArgs={{ name, uuid: fileUuid }} />
+        <MenubarSub>
+          <MenubarSubTrigger>
+            <DownloadIcon /> Download
+          </MenubarSubTrigger>
+          <MenubarSubContent>
+            <MenubarItemAction action={Action.FileDownload} actionArgs={{ name, uuid: fileUuid }} />
+            <MenubarItemAction action={Action.FileDownloadExcel} actionArgs={{ name, uuid: fileUuid }} />
+            <MenubarSeparator />
+            <MenubarItemAction action={Action.FileDownloadCsv} actionArgs={{ name, uuid: fileUuid }} />
+          </MenubarSubContent>
+        </MenubarSub>
 
         <MenubarSeparator />
 

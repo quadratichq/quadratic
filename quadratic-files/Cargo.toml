@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-files"
-version = "0.10.1"
+version = "0.15.2"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -48,7 +48,7 @@ tower-http = { version = "0.6.2", features = [
     "validate-request",
 ] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]

@@ -24,7 +24,7 @@ class InlineEditorFormula {
   cellHighlights(location: SheetPosTS, formula: string) {
     let parseResult: JsFormulaParseResult;
     try {
-      parseResult = parseFormula(formula, sheets.a1Context, location.sheetId, location.x, location.y);
+      parseResult = parseFormula(formula, sheets.jsA1Context, location.sheetId, location.x, location.y);
     } catch (e) {
       this.clearDecorations();
       return;
@@ -146,13 +146,13 @@ class InlineEditorFormula {
     const location = inlineEditorHandler.location;
     if (!location) return false;
     const formula = (testFormula ?? inlineEditorMonaco.get()).slice(1);
-    if (!checkFormula(formula, sheets.a1Context, location.sheetId, location.x, location.y)) {
+    if (!checkFormula(formula, sheets.jsA1Context, location.sheetId, location.x, location.y)) {
       if (skipCloseParenthesisCheck) {
         return false;
       }
       const value = this.closeParentheses();
       if (value && value !== testFormula) {
-        return checkFormula(value, sheets.a1Context, location.sheetId, location.x, location.y);
+        return checkFormula(value, sheets.jsA1Context, location.sheetId, location.x, location.y);
       } else {
         return false;
       }

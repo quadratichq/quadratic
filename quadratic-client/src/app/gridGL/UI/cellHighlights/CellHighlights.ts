@@ -1,4 +1,3 @@
-import { bigIntReplacer } from '@/app/bigint';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { DASHED } from '@/app/gridGL/generateTextures';
@@ -8,7 +7,6 @@ import { drawDashedRectangle, drawDashedRectangleMarching } from '@/app/gridGL/U
 import { FILL_SELECTION_ALPHA } from '@/app/gridGL/UI/Cursor';
 import { convertColorStringToTint } from '@/app/helpers/convertColor';
 import type { CellRefRange, JsCellsAccessed, RefRangeBounds } from '@/app/quadratic-core-types';
-import { cellRefRangeToRefRangeBounds } from '@/app/quadratic-core/quadratic_core';
 import { colors } from '@/app/theme/colors';
 import { Container, Graphics } from 'pixi.js';
 
@@ -32,12 +30,12 @@ export class CellHighlights extends Container {
     this.highlights = this.addChild(new Graphics());
     this.marchingHighlight = this.addChild(new Graphics());
     events.on('changeSheet', this.setDirty);
-    events.on('sheetOffsets', this.setDirty);
+    events.on('sheetOffsetsUpdated', this.setDirty);
   }
 
   destroy() {
     events.off('changeSheet', this.setDirty);
-    events.off('sheetOffsets', this.setDirty);
+    events.off('sheetOffsetsUpdated', this.setDirty);
     super.destroy();
   }
 
@@ -61,7 +59,7 @@ export class CellHighlights extends Container {
     isPython: boolean
   ): RefRangeBounds | undefined {
     try {
-      return cellRefRangeToRefRangeBounds(JSON.stringify(cellRefRange, bigIntReplacer), isPython, sheets.a1Context);
+      return sheets.cellRefRangeToRefRangeBounds(cellRefRange, isPython);
     } catch (e) {
       console.log(`Error converting CellRefRange to RefRangeBounds: ${e}`);
     }

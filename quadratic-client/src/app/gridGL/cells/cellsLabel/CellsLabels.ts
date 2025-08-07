@@ -6,7 +6,7 @@
  * geometries sent to the GPU.
  */
 
-import { debugShowCellsHashBoxes, debugShowCellsSheetCulling } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsTextHash } from '@/app/gridGL/cells/cellsLabel/CellsTextHash';
@@ -22,7 +22,8 @@ import type {
 } from '@/app/web-workers/renderWebWorker/renderClientMessages';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { RenderSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
-import { Container, Graphics, Point, Rectangle } from 'pixi.js';
+import type { Point } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 
 export class CellsLabels extends Container {
   private cellsSheet: CellsSheet;
@@ -83,53 +84,9 @@ export class CellsLabels extends Container {
       );
       this.cellsTextHash.set(key, cellsTextHash);
     }
-    cellsTextHash.content.import(message.content as Uint32Array<ArrayBuffer>);
     cellsTextHash.links = message.links;
     cellsTextHash.newDrawRects = message.drawRects;
   }
-
-  // Returns whether the cell has content by checking CellsTextHashContent.
-  hasCell = (column: number, row: number): boolean => {
-    const hashX = Math.floor(column / sheetHashWidth);
-    const hashY = Math.floor(row / sheetHashHeight);
-    const key = `${hashX},${hashY}`;
-    const cellsTextHash = this.cellsTextHash.get(key);
-    if (cellsTextHash) {
-      return cellsTextHash.content.hasContent(column, row);
-    }
-    return false;
-  };
-
-  // Returns whether the rect has content by checking CellsTextHashContent. If
-  // ignore is defined, we ignore content that overlaps any of the rectangles.
-  hasRectangle(rect: Rectangle, ignore?: Rectangle[]): undefined | Point[] {
-    const overlaps: Point[] = [];
-    for (let column = rect.x; column < rect.x + rect.width; column++) {
-      for (let row = rect.y; row < rect.y + rect.height; row++) {
-        if (this.hasCell(column, row)) {
-          if (ignore && ignore.some((r) => intersects.rectangleRectangle(r, new Rectangle(column, row, 1, 1)))) {
-            continue;
-          }
-          overlaps.push(new Point(column, row));
-        }
-      }
-    }
-    if (overlaps.length > 0) {
-      return overlaps;
-    }
-  }
-
-  // Returns whether the rect has content by checking CellsTextHashContent.
-  hasCellInRect = (rect: Rectangle): boolean => {
-    for (let column = rect.x; column < rect.x + rect.width; column++) {
-      for (let row = rect.y; row < rect.y + rect.height; row++) {
-        if (this.hasCell(column, row)) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
 
   // received a new LabelMeshEntry to add to a CellsTextHash
   addLabelMeshEntry(message: RenderClientLabelMeshEntry) {
@@ -174,7 +131,7 @@ export class CellsLabels extends Container {
 
   show(bounds: Rectangle) {
     let count = 0;
-    if (debugShowCellsHashBoxes) {
+    if (debugFlag('debugShowCellsHashBoxes')) {
       this.cellsTextDebug.clear();
       this.cellsTextHashDebug.removeChildren();
     }
@@ -182,7 +139,7 @@ export class CellsLabels extends Container {
       const hashBounds = cellsTextHash.bounds.toRectangle();
       if (hashBounds && intersects.rectangleRectangle(hashBounds, bounds)) {
         cellsTextHash.show();
-        if (debugShowCellsHashBoxes) {
+        if (debugFlag('debugShowCellsHashBoxes')) {
           cellsTextHash.drawDebugBox(this.cellsTextDebug, this.cellsTextHashDebug);
         }
         count++;
@@ -190,7 +147,7 @@ export class CellsLabels extends Container {
         cellsTextHash.hide();
       }
     });
-    if (debugShowCellsSheetCulling) {
+    if (debugFlag('debugShowCellsSheetCulling')) {
       console.log(`[CellsSheet] visible: ${count}/${this.cellsTextHash.size}`);
     }
   }

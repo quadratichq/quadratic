@@ -5,13 +5,13 @@
   "description": "E2E tests for Quadratic",
   "main": "index.js",
   "scripts": {
-    "lint:ts": "tsc --noemit",
+    "lint:ts": "npm install --no-audit --no-fund && tsc --noemit",
     "test": "npm run lint:ts && npx playwright test",
-    "test:ui": "npx playwright test --ui",
-    "test:headed": "npx playwright test --headed",
-    "test:debug": "npx playwright test --debug",
-    "test:report": "npx playwright show-report",
-    "test:update": "npx playwright test --update-snapshots",
+    "test:ui": "npm run lint:ts && npx playwright test --ui",
+    "test:headed": "npm run lint:ts && npx playwright test --headed",
+    "test:debug": "npm run lint:ts && npx playwright test --debug",
+    "test:report": "npm run lint:ts && npx playwright show-report",
+    "test:update": "npm run lint:ts && npx playwright test --update-snapshots",
     "docker:test": "docker compose run --rm playwright npm run test",
     "docker:update": "docker compose run --rm playwright npm run test:update"
   },
@@ -21,9 +21,9 @@
   },
   "type": "module",
   "devDependencies": {
-    "@playwright/test": "1.52.0",
-    "@types/node": "^22.15.29",
+    "@playwright/test": "1.53.1",
+    "@types/node": "^24.1.0",
     "typescript": "^5.8.2",
-    "xlsx": "^0.18.5"
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   }
 }

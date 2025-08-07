@@ -6,7 +6,7 @@
  * directly accessed by its siblings.
  */
 
-import { debugShowCellHashesInfo } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type {
   JsHashesDirty,
   JsHashRenderCells,
@@ -122,7 +122,7 @@ class RenderText {
 
     if (!this.complete && !render) {
       this.complete = true;
-      if (debugShowCellHashesInfo) console.log('[RenderText] Render complete');
+      if (debugFlag('debugShowCellHashesInfo')) console.log('[RenderText] Render complete');
     } else if (this.complete && render) {
       this.complete = false;
     }

@@ -2,12 +2,12 @@
   "name": "quadratic-infra",
   "main": "index.ts",
   "dependencies": {
-    "@pulumi/aws": "^6.13.1",
-    "@pulumi/awsx": "^2.10.0",
-    "@pulumi/command": "^0.9.2",
-    "@pulumi/pulumi": "^3.0.0"
+    "@pulumi/aws": "6.83.0",
+    "@pulumi/awsx": "2.21.1",
+    "@pulumi/command": "1.1.0",
+    "@pulumi/pulumi": "3.178.0"
   },
   "devDependencies": {
-    "@types/node": "^22.15.29"
+    "@types/node": "^24.1.0"
   }
 }

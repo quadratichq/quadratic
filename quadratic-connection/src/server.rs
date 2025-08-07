@@ -24,7 +24,7 @@ use tower_http::{
     sensitive_headers::SetSensitiveHeadersLayer,
     trace::{DefaultMakeSpan, TraceLayer},
 };
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use uuid::Uuid;
 
 use crate::{
@@ -34,6 +34,7 @@ use crate::{
     health::{full_healthcheck, healthcheck},
     proxy::proxy,
     sql::{
+        bigquery::{query as query_bigquery, schema as schema_bigquery, test as test_bigquery},
         mssql::{query as query_mssql, schema as schema_mssql, test as test_mssql},
         mysql::{query as query_mysql, schema as schema_mysql, test as test_mysql},
         postgres::{query as query_postgres, schema as schema_postgres, test as test_postgres},
@@ -104,22 +105,42 @@ pub(crate) fn app(state: State) -> Result<Router> {
     let app = Router::new()
         // protected routes
         //
-        // postgres
+        // postgres and derivitives
         .route("/postgres/test", post(test_postgres))
         .route("/postgres/query", post(query_postgres))
         .route("/postgres/schema/:id", get(schema_postgres))
-        // mysql
+        .route("/cockroachdb/test", post(test_postgres))
+        .route("/cockroachdb/query", post(query_postgres))
+        .route("/cockroachdb/schema/:id", get(schema_postgres))
+        .route("/supabase/test", post(test_postgres))
+        .route("/supabase/query", post(query_postgres))
+        .route("/supabase/schema/:id", get(schema_postgres))
+        .route("/neon/test", post(test_postgres))
+        .route("/neon/query", post(query_postgres))
+        .route("/neon/schema/:id", get(schema_postgres))
+        //
+        // mysql and derivitives
         .route("/mysql/test", post(test_mysql))
         .route("/mysql/query", post(query_mysql))
         .route("/mysql/schema/:id", get(schema_mysql))
+        .route("/mariadb/test", post(test_mysql))
+        .route("/mariadb/query", post(query_mysql))
+        .route("/mariadb/schema/:id", get(schema_mysql))
+        //
         // mssql
         .route("/mssql/test", post(test_mssql))
         .route("/mssql/query", post(query_mssql))
         .route("/mssql/schema/:id", get(schema_mssql))
+        //
         // snowflake
         .route("/snowflake/test", post(test_snowflake))
         .route("/snowflake/query", post(query_snowflake))
         .route("/snowflake/schema/:id", get(schema_snowflake))
+        //
+        // bigquery
+        .route("/bigquery/test", post(test_bigquery))
+        .route("/bigquery/query", post(query_bigquery))
+        .route("/bigquery/schema/:id", get(schema_bigquery))
         //
         // proxy
         .route("/proxy", any(proxy))
@@ -175,12 +196,18 @@ pub(crate) fn app(state: State) -> Result<Router> {
 /// Start the server.  This is the entrypoint for the application.
 #[tracing::instrument(level = "trace")]
 pub(crate) async fn serve() -> Result<()> {
+    let tracing_layer = if config()?.environment.is_production() {
+        tracing_subscriber::fmt::layer().json().boxed()
+    } else {
+        tracing_subscriber::fmt::layer().boxed()
+    };
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| "quadratic_connection=debug,tower_http=debug".into()),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(tracing_layer)
         .init();
 
     let config = config()?;
@@ -235,7 +262,7 @@ pub(crate) async fn static_ips() -> Result<Json<StaticIpsResponse>> {
     Ok(response.into())
 }
 
-pub(crate) async fn test_connection(connection: impl Connection) -> Json<TestResponse> {
+pub(crate) async fn test_connection<'a, T: Connection<'a>>(connection: T) -> Json<TestResponse> {
     let message = match connection.connect().await {
         Ok(_) => None,
         Err(e) => Some(e.to_string()),

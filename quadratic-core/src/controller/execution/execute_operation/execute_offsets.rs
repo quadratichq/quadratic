@@ -27,24 +27,6 @@ impl GridController {
                 return;
             }
 
-            transaction
-                .forward_operations
-                .push(Operation::ResizeColumn {
-                    sheet_id,
-                    column,
-                    new_size,
-                    client_resized,
-                });
-
-            transaction
-                .reverse_operations
-                .push(Operation::ResizeColumn {
-                    sheet_id,
-                    column,
-                    new_size: old_size,
-                    client_resized: false,
-                });
-
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
                     || transaction.is_multiplayer()
@@ -58,21 +40,40 @@ impl GridController {
             }
 
             if transaction.is_user() {
-                let rows = sheet.get_rows_with_wrap_in_column(column);
+                let rows = sheet.get_rows_with_wrap_in_column(column, false);
                 if !rows.is_empty() {
                     let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
                     resize_rows.extend(rows);
                 }
             }
 
-            if !transaction.is_server() {
-                transaction.add_fill_cells(sheet_id);
-                transaction.add_borders(sheet_id);
+            transaction.add_fill_cells(sheet_id);
+            transaction.add_borders(sheet_id);
+
+            if transaction.is_user_undo_redo() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                     x: column,
-                    y: 0,
+                    y: 1,
                     sheet_id,
                 });
+
+                transaction
+                    .forward_operations
+                    .push(Operation::ResizeColumn {
+                        sheet_id,
+                        column,
+                        new_size,
+                        client_resized,
+                    });
+
+                transaction
+                    .reverse_operations
+                    .push(Operation::ResizeColumn {
+                        sheet_id,
+                        column,
+                        new_size: old_size,
+                        client_resized: false,
+                    });
             }
         }
     }
@@ -96,20 +97,6 @@ impl GridController {
                 return;
             }
 
-            transaction.forward_operations.push(Operation::ResizeRow {
-                sheet_id,
-                row,
-                new_size,
-                client_resized,
-            });
-
-            transaction.reverse_operations.push(Operation::ResizeRow {
-                sheet_id,
-                row,
-                new_size: old_size,
-                client_resized: old_client_resize,
-            });
-
             if (cfg!(target_family = "wasm") || cfg!(test))
                 && (transaction.is_undo_redo()
                     || transaction.is_multiplayer()
@@ -122,13 +109,28 @@ impl GridController {
                     .insert((None, Some(row)), new_size);
             }
 
-            if !transaction.is_server() {
-                transaction.add_fill_cells(sheet_id);
-                transaction.add_borders(sheet_id);
+            transaction.add_fill_cells(sheet_id);
+            transaction.add_borders(sheet_id);
+
+            if transaction.is_user_undo_redo() {
                 transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
-                    x: 0,
+                    x: 1,
                     y: row,
                     sheet_id,
+                });
+
+                transaction.forward_operations.push(Operation::ResizeRow {
+                    sheet_id,
+                    row,
+                    new_size,
+                    client_resized,
+                });
+
+                transaction.reverse_operations.push(Operation::ResizeRow {
+                    sheet_id,
+                    row,
+                    new_size: old_size,
+                    client_resized: old_client_resize,
                 });
             }
         }
@@ -167,25 +169,16 @@ impl GridController {
                 return;
             }
 
-            transaction.forward_operations.push(Operation::ResizeRows {
-                sheet_id,
-                row_heights: row_heights.clone(),
-            });
-
-            transaction.reverse_operations.push(Operation::ResizeRows {
-                sheet_id,
-                row_heights: old_row_heights,
-            });
-
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
                 row_heights.iter().for_each(|&JsRowHeight { row, height }| {
                     transaction.offsets_modified(sheet_id, None, Some(row), Some(height));
                 });
             }
 
-            if !transaction.is_server() {
-                transaction.add_fill_cells(sheet_id);
-                transaction.add_borders(sheet_id);
+            transaction.add_fill_cells(sheet_id);
+            transaction.add_borders(sheet_id);
+
+            if transaction.is_user_undo_redo() {
                 row_heights.iter().any(|JsRowHeight { row, .. }| {
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: 0,
@@ -193,6 +186,16 @@ impl GridController {
                         sheet_id,
                     });
                     transaction.generate_thumbnail
+                });
+
+                transaction.forward_operations.push(Operation::ResizeRows {
+                    sheet_id,
+                    row_heights: row_heights.clone(),
+                });
+
+                transaction.reverse_operations.push(Operation::ResizeRows {
+                    sheet_id,
+                    row_heights: old_row_heights,
                 });
             }
         }
@@ -226,20 +229,6 @@ impl GridController {
                 return;
             }
 
-            transaction
-                .forward_operations
-                .push(Operation::ResizeColumns {
-                    sheet_id,
-                    column_widths: column_widths.clone(),
-                });
-
-            transaction
-                .reverse_operations
-                .push(Operation::ResizeColumns {
-                    sheet_id,
-                    column_widths: old_column_widths,
-                });
-
             if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
                 column_widths
                     .iter()
@@ -248,9 +237,20 @@ impl GridController {
                     });
             }
 
-            if !transaction.is_server() {
-                transaction.add_fill_cells(sheet_id);
-                transaction.add_borders(sheet_id);
+            if transaction.is_user() {
+                for JsColumnWidth { column, .. } in column_widths.iter() {
+                    let rows = sheet.get_rows_with_wrap_in_column(*column, false);
+                    if !rows.is_empty() {
+                        let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
+                        resize_rows.extend(rows);
+                    }
+                }
+            }
+
+            transaction.add_fill_cells(sheet_id);
+            transaction.add_borders(sheet_id);
+
+            if transaction.is_user_undo_redo() {
                 column_widths.iter().any(|JsColumnWidth { column, .. }| {
                     transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_pos(SheetPos {
                         x: *column,
@@ -259,6 +259,20 @@ impl GridController {
                     });
                     transaction.generate_thumbnail
                 });
+
+                transaction
+                    .forward_operations
+                    .push(Operation::ResizeColumns {
+                        sheet_id,
+                        column_widths: column_widths.clone(),
+                    });
+
+                transaction
+                    .reverse_operations
+                    .push(Operation::ResizeColumns {
+                        sheet_id,
+                        column_widths: old_column_widths,
+                    });
             }
         }
     }
@@ -269,10 +283,30 @@ impl GridController {
         op: Operation,
     ) {
         unwrap_op!(let DefaultColumnSize { sheet_id, size } = op);
-        transaction.forward_operations.push(op);
 
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-            let existing_offsets = sheet.offsets.clear_widths();
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return;
+        };
+
+        let existing_offsets = sheet.offsets.clear_widths();
+
+        let old_size = sheet.offsets.set_default_width(size);
+
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
+            if let Some(sheet) = self.try_sheet(sheet_id) {
+                transaction.sheet_info.insert(sheet_id);
+                transaction.add_dirty_hashes_from_selections(
+                    sheet,
+                    &self.a1_context,
+                    vec![A1Selection::all(sheet_id)],
+                );
+                transaction.add_fill_cells(sheet_id);
+                transaction.add_borders(sheet_id);
+            }
+        }
+
+        if transaction.is_user_undo_redo() {
+            transaction.forward_operations.push(op);
 
             transaction
                 .reverse_operations
@@ -286,16 +320,30 @@ impl GridController {
                         })
                         .collect(),
                 });
-            let old_size = sheet.offsets.set_default_width(size);
+
             transaction
                 .reverse_operations
                 .push(Operation::DefaultColumnSize {
                     sheet_id,
                     size: old_size,
                 });
-        } else {
-            return;
         }
+    }
+
+    pub fn execute_default_row_size(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        op: Operation,
+    ) {
+        unwrap_op!(let DefaultRowSize { sheet_id, size } = op);
+
+        let Some(sheet) = self.try_sheet_mut(sheet_id) else {
+            return;
+        };
+
+        let existing_offsets = sheet.offsets.clear_heights();
+
+        let old_size = sheet.offsets.set_default_height(size);
 
         if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
             if let Some(sheet) = self.try_sheet(sheet_id) {
@@ -309,18 +357,9 @@ impl GridController {
                 transaction.add_borders(sheet_id);
             }
         }
-    }
 
-    pub fn execute_default_row_size(
-        &mut self,
-        transaction: &mut PendingTransaction,
-        op: Operation,
-    ) {
-        unwrap_op!(let DefaultRowSize { sheet_id, size } = op);
-        transaction.forward_operations.push(op);
-
-        if let Some(sheet) = self.try_sheet_mut(sheet_id) {
-            let existing_offsets = sheet.offsets.clear_heights();
+        if transaction.is_user_undo_redo() {
+            transaction.forward_operations.push(op);
 
             transaction.reverse_operations.push(Operation::ResizeRows {
                 sheet_id,
@@ -332,28 +371,13 @@ impl GridController {
                     })
                     .collect(),
             });
-            let old_size = sheet.offsets.set_default_height(size);
+
             transaction
                 .reverse_operations
                 .push(Operation::DefaultRowSize {
                     sheet_id,
                     size: old_size,
                 });
-        } else {
-            return;
-        }
-
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                transaction.sheet_info.insert(sheet_id);
-                transaction.add_dirty_hashes_from_selections(
-                    sheet,
-                    &self.a1_context,
-                    vec![A1Selection::all(sheet_id)],
-                );
-                transaction.add_fill_cells(sheet_id);
-                transaction.add_borders(sheet_id);
-            }
         }
     }
 }

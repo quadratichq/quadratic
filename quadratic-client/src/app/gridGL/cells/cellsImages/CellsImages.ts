@@ -5,12 +5,12 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsImage } from '@/app/gridGL/cells/cellsImages/CellsImage';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import type { Point, Rectangle } from 'pixi.js';
 import { Container } from 'pixi.js';
-import { isBitmapFontLoaded } from '../../loadAssets';
 
 export class CellsImages extends Container<CellsImage> {
   private cellsSheet: CellsSheet;
@@ -19,12 +19,12 @@ export class CellsImages extends Container<CellsImage> {
     super();
     this.cellsSheet = cellsSheet;
     events.on('updateImage', this.updateImage);
-    events.on('sheetOffsets', this.reposition);
+    events.on('sheetOffsetsUpdated', this.reposition);
   }
 
   destroy() {
     events.off('updateImage', this.updateImage);
-    events.off('sheetOffsets', this.reposition);
+    events.off('sheetOffsetsUpdated', this.reposition);
     super.destroy();
   }
 
@@ -32,7 +32,6 @@ export class CellsImages extends Container<CellsImage> {
     if (this.cellsSheet.sheetId === sheetId) {
       this.children.forEach((sprite) => sprite.reposition());
     }
-    // pixiApp.cellImages.dirtyBorders = true;
   };
 
   cheapCull(bounds: Rectangle) {

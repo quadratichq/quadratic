@@ -2,8 +2,8 @@ import { apiClient } from '@/shared/api/apiClient';
 import { EmptyPage } from '@/shared/components/EmptyPage';
 import { Button } from '@/shared/shadcn/ui/button';
 import { setActiveTeam } from '@/shared/utils/activeTeam';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { ActionFunctionArgs } from 'react-router';
 import { Link, Outlet, redirectDocument, useRouteError } from 'react-router';
@@ -59,7 +59,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'create-team-invite') {
-    mixpanel.track('[Team].[Users].createInvite');
+    trackEvent('[Team].[Users].createInvite');
     try {
       const { email, role } = data;
       await apiClient.teams.invites.create(teamUuid, { email, role });
@@ -70,7 +70,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'delete-team-invite') {
-    mixpanel.track('[Team].[Users].deleteInvite');
+    trackEvent('[Team].[Users].deleteInvite');
     try {
       const { inviteId } = data;
       await apiClient.teams.invites.delete(teamUuid, inviteId);
@@ -81,7 +81,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'update-team-user') {
-    mixpanel.track('[Team].[Users].updateRole');
+    trackEvent('[Team].[Users].updateRole');
     try {
       const { userId, role } = data;
       await apiClient.teams.users.update(teamUuid, userId, { role });
@@ -92,7 +92,7 @@ export const action = async ({ request, params }: ActionFunctionArgs): Promise<T
   }
 
   if (intent === 'delete-team-user') {
-    mixpanel.track('[Team].[Users].delete');
+    trackEvent('[Team].[Users].delete');
     try {
       const { userId } = data;
       const res = await apiClient.teams.users.delete(teamUuid, userId);

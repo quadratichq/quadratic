@@ -108,10 +108,10 @@ mod tests {
     #[test]
     fn test_debug_format() {
         let clear_opt = ClearOption::Some(42);
-        assert_eq!(format!("{:?}", clear_opt), "Some(42)");
+        assert_eq!(format!("{clear_opt:?}"), "Some(42)");
 
         let clear_opt: ClearOption<i32> = ClearOption::Clear;
-        assert_eq!(format!("{:?}", clear_opt), "Clear");
+        assert_eq!(format!("{clear_opt:?}"), "Clear");
     }
 
     #[test]

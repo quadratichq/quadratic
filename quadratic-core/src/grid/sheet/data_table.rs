@@ -37,38 +37,67 @@ impl Sheet {
     }
 
     /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_that_contains(&self, pos: &Pos) -> Option<(Pos, &DataTable)> {
+    pub fn data_table_that_contains(&self, pos: Pos) -> Option<(Pos, &DataTable)> {
         self.data_tables.get_contains(pos)
     }
 
-    /// Returns the (Pos, DataTable) that intersects a position
-    pub fn data_table_mut_that_contains(&mut self, pos: &Pos) -> Option<(Pos, &mut DataTable)> {
-        self.data_tables.get_mut_contains(pos)
+    /// Returns the data table pos if the data table intersects a position
+    pub fn data_table_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
+        self.data_tables.get_pos_contains(pos)
+    }
+
+    /// Returns the data table (import / editable) pos if the data table is an import
+    pub fn data_table_import_pos_that_contains(&self, pos: Pos) -> Option<Pos> {
+        self.data_tables
+            .get_pos_contains(pos)
+            .and_then(|data_table_pos| {
+                self.data_tables.get_at(&data_table_pos).and_then(|dt| {
+                    if matches!(dt.kind, DataTableKind::Import(_)) {
+                        Some(data_table_pos)
+                    } else {
+                        None
+                    }
+                })
+            })
     }
 
     /// Returns the data table pos of the data table that contains a position
-    pub fn data_table_pos_that_contains(&self, pos: &Pos) -> Result<Pos> {
+    pub fn data_table_pos_that_contains_result(&self, pos: Pos) -> Result<Pos> {
         if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
             Ok(data_table_pos)
         } else {
             bail!(
-                "No data tables found within {:?} in data_table_pos_that_contains()",
+                "No data tables found within {:?} in data_table_pos_that_contains_result()",
                 pos
             )
         }
     }
 
-    /// Returns anchor positions of data tables that intersect a rect
-    pub fn data_tables_pos_intersect_rect(&self, rect: Rect) -> impl Iterator<Item = Pos> {
-        self.data_tables.iter_pos_in_rect(rect, false)
+    /// Returns anchor positions of data tables that intersect a rect, sorted by index
+    pub fn data_tables_pos_intersect_rect_sorted(&self, rect: Rect) -> impl Iterator<Item = Pos> {
+        self.data_tables
+            .get_in_rect_sorted(rect, false)
+            .map(|(_, pos, _)| pos)
     }
 
-    /// Returns data tables that intersect a rect
-    pub fn data_tables_intersect_rect(
+    /// Returns data tables that intersect a rect, sorted by index
+    pub fn data_tables_intersect_rect_sorted(
         &self,
         rect: Rect,
     ) -> impl Iterator<Item = (usize, Pos, &DataTable)> {
-        self.data_tables.get_in_rect(rect, false)
+        self.data_tables.get_in_rect_sorted(rect, false)
+    }
+
+    /// Returns data tables that intersect a rect, sorted by index
+    pub fn data_tables_output_rects_intersect_rect(
+        &self,
+        rect: Rect,
+        filter: impl Fn(&Pos, &DataTable) -> bool,
+    ) -> impl Iterator<Item = Rect> {
+        self.data_tables
+            .get_in_rect(rect, false)
+            .filter(move |(_, pos, data_table)| filter(pos, data_table))
+            .map(|(_, data_table_pos, data_table)| data_table.output_rect(data_table_pos, false))
     }
 
     /// Returns true if there is a data table intersecting a rect, excluding a specific position
@@ -162,6 +191,29 @@ impl Sheet {
         dirty_rects
     }
 
+    /// Returns data tables that intersect a rect
+    pub fn iter_data_tables_in_rect(&self, rect: Rect) -> impl Iterator<Item = (Rect, &DataTable)> {
+        self.data_tables_intersect_rect_sorted(rect)
+            .map(|(_, pos, data_table)| {
+                let output_rect = data_table.output_rect(pos, false);
+                (output_rect, data_table)
+            })
+    }
+
+    /// Returns data tables that intersect a rect and their intersection with the rect
+    pub fn iter_data_tables_intersects_rect(
+        &self,
+        rect: Rect,
+    ) -> impl Iterator<Item = (Rect, Rect, &DataTable)> {
+        self.data_tables_intersect_rect_sorted(rect)
+            .filter_map(move |(_, pos, data_table)| {
+                let output_rect = data_table.output_rect(pos, false);
+                output_rect
+                    .intersection(&rect)
+                    .map(|intersection_rect| (output_rect, intersection_rect, data_table))
+            })
+    }
+
     /// Checks whether a chart intersects a position. We ignore the chart if it
     /// includes either exclude_x or exclude_y.
     pub fn chart_intersects(
@@ -171,7 +223,7 @@ impl Sheet {
         exclude_x: Option<i64>,
         exclude_y: Option<i64>,
     ) -> bool {
-        self.data_table_that_contains(&Pos { x, y })
+        self.data_table_that_contains(Pos { x, y })
             .is_some_and(|(data_table_pos, data_table)| {
                 // we only care about html or image tables
                 if !data_table.is_html_or_image() {
@@ -239,16 +291,16 @@ impl Sheet {
 
     pub fn data_tables_and_cell_values_in_rect(
         &self,
-        rect: &Rect,
+        bounds: &Rect,
         cells: &mut CellValues,
-        values: &mut CellValues,
+        values: &mut Option<CellValues>,
         a1_context: &A1Context,
         selection: &A1Selection,
         include_code_table_values: bool,
     ) -> IndexMap<Pos, DataTable> {
         let mut data_tables = IndexMap::new();
 
-        self.iter_code_output_in_rect(rect.to_owned())
+        self.iter_data_tables_in_rect(bounds.to_owned())
             .for_each(|(output_rect, data_table)| {
                 // only change the cells if the CellValue::Code is not in the selection box
                 let data_table_pos = Pos {
@@ -256,47 +308,61 @@ impl Sheet {
                     y: output_rect.min.y,
                 };
 
-                // add the CellValue to cells if the code is not included in the rect
-                let include_in_cells = !rect.contains(data_table_pos);
+                let rect_contains_anchor_pos = bounds.contains(data_table_pos);
+                let code_cell_value = self.cell_value(data_table_pos);
 
                 // if the source cell is included in the rect, add the data_table to data_tables
-                if !include_in_cells {
+                if let (true, Some(value)) = (rect_contains_anchor_pos, code_cell_value) {
+                    // add the source cell to cells
+                    cells.set(
+                        (data_table_pos.x - bounds.min.x) as u32,
+                        (data_table_pos.y - bounds.min.y) as u32,
+                        value,
+                    );
+
+                    // add the data_table to data_tables
                     if matches!(data_table.kind, DataTableKind::Import(_))
                         || include_code_table_values
                     {
+                        // include values for imports
                         data_tables.insert(data_table_pos, data_table.clone());
                     } else {
+                        // don't include values for code tables
                         data_tables.insert(data_table_pos, data_table.clone_without_values());
+                    }
+
+                    if values.is_none() {
+                        return;
                     }
                 }
 
-                if data_table.has_spill() {
-                    return;
-                }
-
-                let x_start = std::cmp::max(output_rect.min.x, rect.min.x);
-                let y_start = std::cmp::max(output_rect.min.y, rect.min.y);
-                let x_end = std::cmp::min(output_rect.max.x, rect.max.x);
-                let y_end = std::cmp::min(output_rect.max.y, rect.max.y);
+                let x_start = std::cmp::max(output_rect.min.x, bounds.min.x);
+                let y_start = std::cmp::max(output_rect.min.y, bounds.min.y);
+                let x_end = std::cmp::min(output_rect.max.x, bounds.max.x);
+                let y_end = std::cmp::min(output_rect.max.y, bounds.max.y);
 
                 // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
-                        if let Some(value) = data_table.cell_value_at(
+                        if let Some(value) = data_table.cell_value_ref_at(
                             (x - data_table_pos.x) as u32,
                             (y - data_table_pos.y) as u32,
                         ) {
                             let pos = Pos {
-                                x: x - rect.min.x,
-                                y: y - rect.min.y,
+                                x: x - bounds.min.x,
+                                y: y - bounds.min.y,
                             };
 
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
-                                if include_in_cells {
+                                // add the CellValue to cells if the code is not included in the rect
+                                if !rect_contains_anchor_pos {
                                     cells.set(pos.x as u32, pos.y as u32, value.clone());
                                 }
 
-                                values.set(pos.x as u32, pos.y as u32, value);
+                                // add the display value to values if values is Some
+                                if let Some(values) = values.as_mut() {
+                                    values.set(pos.x as u32, pos.y as u32, value.clone());
+                                }
                             }
                         }
                     }
@@ -487,7 +553,7 @@ impl Sheet {
     /// You shouldn't be able to create a data table that includes a data table.
     /// Deny the action and give a popup explaining why it was blocked.
     /// Returns true if the data table is not within the rect
-    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> bool {
+    pub fn enforce_no_data_table_within_rect(&self, rect: Rect) -> Result<bool> {
         let contains_data_table = self.contains_data_table_within_rect(rect, None);
 
         #[cfg(any(target_family = "wasm", test))]
@@ -495,9 +561,11 @@ impl Sheet {
             let message = "Tables cannot be created over tables, code, or formulas.";
             let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
             crate::wasm_bindings::js::jsClientMessage(message.into(), severity.to_string());
+
+            return Err(anyhow!(message));
         }
 
-        !contains_data_table
+        Ok(!contains_data_table)
     }
 
     /// Sets or deletes a data table.
@@ -526,11 +594,10 @@ mod test {
             user_actions::import::tests::simple_csv,
         },
         first_sheet_id,
-        grid::{CodeRun, DataTableKind, SheetId, js_types::JsClipboard},
+        grid::{CodeRun, DataTableKind, SheetId},
         test_create_code_table, test_create_data_table, test_create_html_chart,
         test_create_js_chart,
     };
-    use bigdecimal::BigDecimal;
 
     pub fn code_data_table(sheet: &mut Sheet, pos: Pos) -> (DataTable, Option<DataTable>) {
         let code_run = CodeRun {
@@ -548,7 +615,7 @@ mod test {
         let data_table = DataTable::new(
             DataTableKind::CodeRun(code_run),
             "Table 1",
-            Value::Single(CellValue::Number(BigDecimal::from(2))),
+            Value::Single(CellValue::Number(2.into())),
             false,
             None,
             None,
@@ -596,7 +663,7 @@ mod test {
 
         assert_eq!(
             sheet.get_code_cell_value(pos![A1]),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(sheet.data_table_at(&pos![A1]), Some(&data_table));
         assert_eq!(sheet.data_table_at(&pos![B2]), None);
@@ -615,15 +682,14 @@ mod test {
         let selection =
             A1Selection::from_ref_range_bounds(sheet_id, RefRangeBounds::new_relative_pos(pos));
 
-        let JsClipboard { html, .. } = gc
+        let js_clipboard = gc
             .sheet(sheet_id)
-            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, false)
-            .unwrap();
+            .copy_to_clipboard(&selection, gc.a1_context(), ClipboardOperation::Copy, true)
+            .into();
 
         gc.paste_from_clipboard(
             &A1Selection::from_xy(10, 10, sheet_id),
-            None,
-            Some(html),
+            js_clipboard,
             PasteSpecial::None,
             None,
         );
@@ -647,7 +713,7 @@ mod test {
         let _ = code_data_table(sheet, pos![A1]);
 
         // Test position within the data table
-        let result = sheet.data_table_that_contains(&pos![A1]);
+        let result = sheet.data_table_that_contains(pos![A1]);
         assert!(result.is_some());
 
         let (pos, dt) = result.unwrap();
@@ -655,7 +721,7 @@ mod test {
         assert_eq!(dt.name().to_owned(), "Table 1");
 
         // Test position outside the data table
-        assert!(sheet.data_table_that_contains(&pos![D4]).is_none());
+        assert!(sheet.data_table_that_contains(pos![D4]).is_none());
     }
 
     #[test]

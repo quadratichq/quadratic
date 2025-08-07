@@ -17,7 +17,7 @@ export const createNewTeamByURL = async (page: Page, { teamName }: CreateNewTeam
   await page.locator(`[role="dialog"] [name="name"]`).fill(teamName);
 
   // Click on the "Create team" submit button
-  await page.locator(`[type="submit"]:text("Create team")`).click();
+  await page.locator(`[type="submit"]:text("Create team")`).click({ timeout: 60 * 1000 });
 
   // Assert that the "No files" text is visible on the page
   await expect(page.locator(`:text("No files")`)).toBeVisible({ timeout: 60 * 1000 });

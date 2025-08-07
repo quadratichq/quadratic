@@ -35,13 +35,13 @@
 //     this.lines = [];
 //     this.codeCells = new Map();
 //     events.on('renderCodeCells', this.renderCodeCells);
-//     events.on('sheetOffsets', this.sheetOffsets);
+//     events.on('sheetOffsetsUpdated', this.sheetOffsets);
 //     events.on('updateCodeCell', this.updateCodeCell);
 //   }
 
 //   destroy() {
 //     events.off('renderCodeCells', this.renderCodeCells);
-//     events.off('sheetOffsets', this.sheetOffsets);
+//     events.off('sheetOffsetsUpdated', this.sheetOffsets);
 //     events.off('updateCodeCell', this.updateCodeCell);
 //     super.destroy();
 //   }
@@ -87,7 +87,7 @@
 //           const runError = JSON.parse(codeCell.evaluation_result) as RunError;
 //           // track unimplemented errors
 //           if (typeof runError.msg === 'object' && 'Unimplemented' in runError.msg) {
-//             mixpanel.track('[CellsArray].updateCodeCell', {
+//             trackEvent('[CellsArray].updateCodeCell', {
 //               type: codeCell.language,
 //               error: runError.msg,
 //             });

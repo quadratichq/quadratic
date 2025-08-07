@@ -12,27 +12,36 @@ export function GridContextMenuDataTableCell() {
 
   return (
     <ContextMenuBase>
-      <ContextMenuItemAction action={Action.Cut} />
-      <ContextMenuItemAction action={Action.Copy} />
-      <ContextMenuItemAction action={Action.Paste} />
-      <ContextMenuItemAction action={Action.PasteValuesOnly} />
-      <ContextMenuItemAction action={Action.PasteFormattingOnly} />
-      <ContextMenuItemAction action={Action.CopyAsPng} />
-      <ContextMenuItemAction action={Action.DownloadAsCsv} />
+      <ContextMenuItemAction action={Action.Cut} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Copy} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.Paste} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteValuesOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.PasteFormattingOnly} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.CopyAsPng} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.DownloadAsCsv} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.InsertTableColumnLeft} />
-      <ContextMenuItemAction action={Action.InsertTableColumnRight} />
-      <ContextMenuItemAction action={Action.RemoveTableColumn} />
+
+      <ContextMenuItemAction action={Action.InsertTableColumnLeft} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.InsertTableColumnRight} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.RemoveTableColumn} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
-      <ContextMenuItemAction action={Action.InsertTableRowAbove} />
-      <ContextMenuItemAction action={Action.InsertTableRowBelow} />
-      <ContextMenuItemAction action={Action.RemoveTableRow} />
+
+      <ContextMenuItemAction action={Action.InsertTableRowAbove} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.InsertTableRowBelow} actionArgs={undefined} />
+      <ContextMenuItemAction action={Action.RemoveTableRow} actionArgs={undefined} />
+
       <DropdownMenuSeparator />
+
       <ContextMenuItemAction
         action={Action.HideTableColumn}
+        actionArgs={undefined}
         labelOverride={dataTableSpec[Action.HideTableColumn].labelVerbose}
       />
+
       <DropdownMenuSeparator />
+
       <ContextMenuDataTableNested isShowingColumnNames={isShowingColumnNames} />
     </ContextMenuBase>
   );

@@ -11,3 +11,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
   await apiClient.education.refresh();
   return redirect(`/?${SEARCH_PARAMS.DIALOG.KEY}=${SEARCH_PARAMS.DIALOG.VALUES.EDUCATION}`);
 };
+
+export const Component = () => {
+  return null;
+};

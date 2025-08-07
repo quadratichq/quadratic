@@ -1,4 +1,5 @@
 import { ThemePickerMenu } from '@/app/ui/components/ThemePickerMenu';
+import { useIsOnPaidPlan } from '@/app/ui/hooks/useIsOnPaidPlan';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { getActionFileMove } from '@/routes/api.files.$uuid';
@@ -38,11 +39,11 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Link,
   NavLink,
@@ -71,6 +72,13 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
       billing,
     },
   } = useDashboardRouteLoaderData();
+
+  const isOnPaidPlan = useMemo(() => billing.status === 'ACTIVE', [billing.status]);
+
+  const { setIsOnPaidPlan } = useIsOnPaidPlan();
+  useEffect(() => {
+    setIsOnPaidPlan(isOnPaidPlan);
+  }, [isOnPaidPlan, setIsOnPaidPlan]);
 
   const isSettingsPage = useMatch('/teams/:teamId/settings');
   const canEditTeam = teamPermissions.includes('TEAM_EDIT');
@@ -168,7 +176,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
         </div>
       </div>
       <div className="mt-auto flex flex-col gap-1 bg-accent px-3 pb-2">
-        {billing?.status !== 'ACTIVE' && !isSettingsPage && (
+        {!isOnPaidPlan && !isSettingsPage && (
           <div className="mb-2 flex flex-col gap-2 rounded-lg border border-border p-3 text-xs shadow-sm">
             <div className="flex gap-2">
               <RocketIcon className="h-5 w-5 text-primary" />
@@ -182,7 +190,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <Link
                 to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}
                 onClick={() => {
-                  mixpanel.track('[DashboardSidebar].upgradeToProClicked', {
+                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
                     team_uuid: activeTeamUuid,
                   });
                 }}

@@ -53,6 +53,11 @@ impl Sheet {
         self.data_bounds.is_empty() && self.format_bounds.is_empty()
     }
 
+    /// Returns the bounds of the sheet, including borders.
+    pub fn all_bounds(&self) -> GridBounds {
+        GridBounds::merge(self.bounds(false), self.border_bounds())
+    }
+
     /// Returns the bounds of the sheet.
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
@@ -66,8 +71,17 @@ impl Sheet {
         }
     }
 
+    /// Returns the bounds of the formatting.
     pub fn format_bounds(&self) -> GridBounds {
         self.format_bounds
+    }
+
+    /// Returns the bounds of the borders.
+    pub fn border_bounds(&self) -> GridBounds {
+        self.borders
+            .finite_bounds()
+            .map(|rect| rect.into())
+            .unwrap_or(GridBounds::Empty)
     }
 
     /// Returns the lower and upper bounds of a column, or `None` if the column
@@ -381,7 +395,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.data_table_pos_that_contains(&pos).is_ok();
+                    let is_table_cell = self.data_table_pos_that_contains_result(pos).is_ok();
                     if is_table_cell {
                         continue;
                     }

@@ -25,7 +25,7 @@ const commands: CommandGroup = {
     },
     {
       label: 'Manage connections',
-      isAvailable: isAvailableBecauseFileLocationIsAccessibleAndWriteable,
+      isAvailable: ({ teamPermissions }) => !!teamPermissions && teamPermissions.includes('TEAM_EDIT'),
       Component: (props: CommandPaletteListItemDynamicProps) => {
         const setShowConnectionsMenu = useSetRecoilState(editorInteractionStateShowConnectionsMenuAtom);
 

@@ -4,7 +4,6 @@ import type { JsCellsAccessed, JsCoordinate } from '@/app/quadratic-core-types';
 import type { CodeCell } from '@/app/shared/types/codeCell';
 import type { PanelTab } from '@/app/ui/menus/CodeEditor/panels/CodeEditorPanelBottom';
 import type { EvaluationResult } from '@/app/web-workers/pythonWebWorker/pythonTypes';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { atom, DefaultValue, selector } from 'recoil';
 
@@ -155,29 +154,9 @@ export const aiAssistantWaitingOnMessageIndexAtom = selector<number | undefined>
   },
 });
 
-export const aiAssistantDelaySecondsAtom = selector<number>({
-  key: 'aiAssistantDelaySecondsAtom',
-  get: ({ get }) => get(codeEditorAtom).aiAssistant.delaySeconds,
-  set: ({ set }, newValue) => {
-    set(codeEditorAtom, (prev) => {
-      if (newValue instanceof DefaultValue) {
-        return prev;
-      }
-
-      return {
-        ...prev,
-        aiAssistant: {
-          ...prev.aiAssistant,
-          delaySeconds: newValue,
-        },
-      };
-    });
-  },
-});
-
 export const aiAssistantCurrentChatMessagesCountAtom = selector<number>({
   key: 'aiAssistantCurrentChatMessagesCountAtom',
-  get: ({ get }) => getPromptMessages(get(aiAssistantMessagesAtom)).length,
+  get: ({ get }) => get(aiAssistantMessagesAtom).length,
 });
 
 const createCodeEditorSelector = <T extends keyof CodeEditorState>(key: T) =>

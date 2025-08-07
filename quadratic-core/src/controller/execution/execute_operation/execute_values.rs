@@ -37,24 +37,28 @@ impl GridController {
 
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
-                    self.add_compute_operations(transaction, &sheet_rect, None);
+                    self.add_compute_operations(transaction, sheet_rect, None);
                     self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
                     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
                     if transaction.is_user() {
                         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                            let rows = sheet.get_rows_with_wrap_in_rect(&sheet_rect.into(), true);
-                            if !rows.is_empty() {
-                                let resize_rows = transaction
+                            let rows_to_resize =
+                                sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
+                            if !rows_to_resize.is_empty() {
+                                transaction
                                     .resize_rows
                                     .entry(sheet_pos.sheet_id)
-                                    .or_default();
-                                resize_rows.extend(rows);
+                                    .or_default()
+                                    .extend(rows_to_resize);
                             }
                         }
                     }
 
                     if transaction.is_user_undo_redo() {
+                        transaction.generate_thumbnail |=
+                            self.thumbnail_dirty_sheet_rect(sheet_rect);
+
                         transaction
                             .forward_operations
                             .push(Operation::SetCellValues { sheet_pos, values });
@@ -65,9 +69,6 @@ impl GridController {
                                 sheet_pos,
                                 values: old_values,
                             });
-
-                        transaction.generate_thumbnail |=
-                            self.thumbnail_dirty_sheet_rect(sheet_rect);
                     }
                 }
             }
@@ -77,8 +78,6 @@ impl GridController {
 
 #[cfg(test)]
 mod tests {
-    use bigdecimal::BigDecimal;
-
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
     use crate::{CellValue, Pos, SheetPos};
@@ -89,8 +88,8 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
+                x: 1,
+                y: 1,
                 sheet_id,
             },
             "0".to_string(),
@@ -99,14 +98,14 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(0)))
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(0.into()))
         );
 
         gc.set_cell_value(
             SheetPos {
-                x: 1,
-                y: 0,
+                x: 2,
+                y: 1,
                 sheet_id,
             },
             "1".to_string(),
@@ -115,8 +114,8 @@ mod tests {
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
         assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            sheet.display_value(Pos { x: 2, y: 1 }),
+            Some(CellValue::Number(1.into()))
         );
     }
 
@@ -169,7 +168,7 @@ mod tests {
         );
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         gc.set_cell_value(sheet_pos, "".to_string(), None);
         let sheet = gc.sheet(sheet_id);
@@ -188,7 +187,7 @@ mod tests {
         gc.set_cell_value(sheet_pos, "1".to_string(), None);
         assert_eq!(
             gc.sheet(sheet_id).display_value(sheet_pos.into()),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         gc.undo(None);
         assert_eq!(gc.sheet(sheet_id).display_value(sheet_pos.into()), None);

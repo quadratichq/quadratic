@@ -191,8 +191,7 @@ pub(crate) async fn handle_message(
             let room_sequence_num = get_mut_room!(state, file_id)?.increment_sequence_num();
             let decoded_operations = STANDARD.decode(&operations).map_err(|e| {
                 MpError::Serialization(format!(
-                    "Could not decode base64 encoded operations in transaction {id}: {:?}",
-                    e
+                    "Could not decode base64 encoded operations in transaction {id}: {e:?}"
                 ))
             })?;
 
@@ -423,7 +422,7 @@ pub(crate) mod tests {
     use crate::message::response::MinVersion;
     use crate::state::settings::version;
     use crate::state::user::{CellEdit, UserStateUpdate};
-    use crate::test_util::{integration_test_receive, new_user, setup, setup_existing_room};
+    use crate::test_util::{integration_test_receive, new_user, setup};
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,

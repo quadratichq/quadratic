@@ -1,5 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isMobile } from 'react-device-detect';
 import { redirect } from 'react-router';
 
@@ -16,6 +17,7 @@ export const loader = async () => {
 
       // Special case for first-time users
       if (userCreated) {
+        trackEvent('[Auth].signup');
         try {
           // Read UTM cookie if it exists
           const utmCookie = document.cookie.split('; ').find((row) => row.startsWith('quadratic_utm='));

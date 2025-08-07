@@ -7,7 +7,6 @@ use std::str::FromStr;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use futures_util::{StreamExt, TryStreamExt};
@@ -139,7 +138,7 @@ impl MsSqlConnection {
 }
 
 #[async_trait]
-impl Connection for MsSqlConnection {
+impl<'a> Connection<'a> for MsSqlConnection {
     type Conn = Client<Compat<TcpStream>>;
     type Row = Row;
     type Column = Column;
@@ -155,8 +154,8 @@ impl Connection for MsSqlConnection {
     }
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str {
-        col.name()
+    fn column_name(&self, col: &Self::Column, _index: usize) -> String {
+        col.name().to_string()
     }
 
     /// Connect to a SQL Server
@@ -180,17 +179,17 @@ impl Connection for MsSqlConnection {
 
         config.trust_cert();
 
-        let tcp = TcpStream::connect(config.get_addr()).await.map_err(|e| {
-            SharedError::Sql(SqlError::Connect(format!("Failed to connect: {}", e)))
-        })?;
+        let tcp = TcpStream::connect(config.get_addr())
+            .await
+            .map_err(|e| SharedError::Sql(SqlError::Connect(format!("Failed to connect: {e}"))))?;
         tcp.set_nodelay(true).map_err(|e| {
-            SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {}", e)))
+            SharedError::Sql(SqlError::Connect(format!("Failed to set nodelay: {e}")))
         })?;
 
         let client = Client::connect(config, tcp.compat_write())
             .await
             .map_err(|e| {
-                SharedError::Sql(SqlError::Connect(format!("Failed to create client: {}", e)))
+                SharedError::Sql(SqlError::Connect(format!("Failed to create client: {e}")))
             })?;
 
         Ok(client)
@@ -198,7 +197,7 @@ impl Connection for MsSqlConnection {
 
     /// Query rows from a SQL Server
     async fn query(
-        &self,
+        &mut self,
         client: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -234,7 +233,7 @@ impl Connection for MsSqlConnection {
             rows = Self::query_all(client, sql).await?;
         }
 
-        let (bytes, num_records) = Self::to_parquet(rows)?;
+        let (bytes, num_records) = self.to_parquet(rows)?;
 
         Ok((bytes, over_the_limit, num_records))
     }
@@ -304,7 +303,7 @@ ORDER BY
     }
 
     /// Convert a row to an Arrow type
-    fn to_arrow(row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
+    fn to_arrow(&self, row: &tiberius::Row, _: &tiberius::Column, index: usize) -> ArrowType {
         if let Some((_, column_data)) = row.cells().nth(index) {
             match column_data {
                 ColumnData::Bit(_) => {
@@ -318,8 +317,8 @@ ORDER BY
                 ColumnData::F64(_) => convert_mssql_type::<f64, _>(column_data, ArrowType::Float64),
                 ColumnData::Numeric(_) => {
                     convert_mssql_type::<Decimal, _>(column_data, |decimal| {
-                        ArrowType::BigDecimal(
-                            BigDecimal::from_str(&decimal.to_string()).unwrap_or_default(),
+                        ArrowType::Decimal(
+                            Decimal::from_str(&decimal.to_string()).unwrap_or_default(),
                         )
                     })
                 }
@@ -407,6 +406,14 @@ impl UsesSsh for MsSqlConnection {
         self.port = Some(port.to_string());
     }
 
+    fn host(&self) -> String {
+        self.host.clone()
+    }
+
+    fn set_host(&mut self, host: String) {
+        self.host = host;
+    }
+
     fn ssh_host(&self) -> Option<String> {
         self.ssh_host.to_owned()
     }
@@ -423,7 +430,6 @@ mod tests {
 
     use super::*;
     // use std::io::Read;
-    use bigdecimal::BigDecimal;
 
     fn new_mssql_connection() -> MsSqlConnection {
         MsSqlConnection::new(
@@ -456,7 +462,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mssql_query_to_arrow() {
-        let (_, client) = setup().await;
+        let (connection, client) = setup().await;
         let sql = "SELECT TOP 1 * FROM [dbo].[all_native_data_types] ORDER BY id";
         let rows = MsSqlConnection::query_all(&mut client.unwrap(), sql)
             .await
@@ -471,7 +477,7 @@ mod tests {
 
         let row = &rows[0];
         let columns = row.columns();
-        let to_arrow = |index: usize| MsSqlConnection::to_arrow(row, &columns[index], index);
+        let to_arrow = |index: usize| connection.to_arrow(row, &columns[index], index);
 
         assert_eq!(to_arrow(0), ArrowType::Int32(1));
         assert_eq!(to_arrow(1), ArrowType::UInt8(255));
@@ -481,11 +487,11 @@ mod tests {
         assert_eq!(to_arrow(5), ArrowType::Boolean(true));
         assert_eq!(
             to_arrow(6),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap())
         );
         assert_eq!(
             to_arrow(7),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap())
         );
         assert_eq!(to_arrow(8), ArrowType::Float64(922337203685477.6));
         assert_eq!(to_arrow(9), ArrowType::Float64(214748.3647));

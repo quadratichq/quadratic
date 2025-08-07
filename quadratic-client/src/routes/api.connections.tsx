@@ -54,7 +54,7 @@ async function getConnection(teamUuid: string, connectionUuid: string) {
  *
  */
 
-type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction;
+type Action = CreateConnectionAction | UpdateConnectionAction | DeleteConnectionAction | ToggleShowConnectionDemoAction;
 
 export const action = async ({ request, params }: ActionFunctionArgs) => {
   const data: Action = await request.json();
@@ -90,6 +90,14 @@ export const action = async ({ request, params }: ActionFunctionArgs) => {
       console.error(e);
       return { ok: false };
     }
+  }
+
+  if (data.action === 'toggle-show-connection-demo') {
+    const { teamUuid, showConnectionDemo } = data as ToggleShowConnectionDemoAction;
+    await apiClient.teams.update(teamUuid, {
+      settings: { showConnectionDemo },
+    });
+    return { ok: true };
   }
 
   return { ok: false };
@@ -149,4 +157,20 @@ export const getDeleteConnectionAction = (connectionUuid: string, teamUuid: stri
       encType: 'application/json',
     },
   } as const;
+};
+
+export type ToggleShowConnectionDemoAction = ReturnType<typeof getToggleShowConnectionDemoAction>['json'];
+export const getToggleShowConnectionDemoAction = (teamUuid: string, showConnectionDemo: boolean) => {
+  return {
+    json: { action: 'toggle-show-connection-demo', teamUuid, showConnectionDemo },
+    options: {
+      action: ROUTES.API.CONNECTIONS.POST,
+      method: 'POST',
+      encType: 'application/json',
+    },
+  } as const;
+};
+
+export const Component = () => {
+  return null;
 };

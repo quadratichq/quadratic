@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { ANIMATE_STATUS, ANIMATION_INTERVAL, BROKEN, COMPONENTS, DONE, KILLED, NO_LOGS, PERF, SPACE, WATCH, } from "./constants.js";
+import { ANIMATE_STATUS, ANIMATION_INTERVAL, BROKEN, COMPONENTS, DONE, FUNCTION_TIMER, KILLED, NO_LOGS, PERF, SPACE, WATCH, } from "./constants.js";
 import { helpCLI, helpKeyboard } from "./help.js";
 import { logo } from "./logo.js";
 export class UI {
@@ -108,6 +108,9 @@ export class UI {
         }
         if (component === "core" && this.cli.options.perf) {
             this.write(PERF);
+        }
+        if (component === "core" && this.cli.options.functionTimer) {
+            this.write(FUNCTION_TIMER);
         }
         this.write(SPACE);
     }

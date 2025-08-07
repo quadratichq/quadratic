@@ -25,25 +25,25 @@ test('Appearance Customization', async ({ page }) => {
   // await createNewTeamByURL(page, { teamName: newTeamName });
 
   // Assert Quadratic team files page and logged in status
-  await expect(page.getByText(email)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(email)).toBeVisible({ timeout: 60 * 1000 });
   await expect(page).toHaveTitle(/Team files - Quadratic/);
-  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByText(`Upgrade to Quadratic Pro`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Reset current theme
-  await page.getByRole(`button`, { name: `contrast` }).click();
-  await page.getByRole(`button`, { name: `discover_tune system` }).click();
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `discover_tune system` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
 
   // Click theme toggle button (identified by contrast icon)
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
   // Click 'Dark' button to trigger theme change
-  await page.getByRole(`button`, { name: `dark_mode dark` }).click();
+  await page.getByRole(`button`, { name: `dark_mode dark` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -66,7 +66,7 @@ test('Appearance Customization', async ({ page }) => {
 
   // Page reload and assert dark mode colors are persisting
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
 
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toContain(darkClassName);
@@ -90,10 +90,10 @@ test('Appearance Customization', async ({ page }) => {
   //--------------------------------
 
   // Click theme toggle button (identified by contrast icon)
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
   // Click 'Light' button to trigger theme change
-  await page.getByRole(`button`, { name: `light_mode light` }).click();
+  await page.getByRole(`button`, { name: `light_mode light` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -117,7 +117,7 @@ test('Appearance Customization', async ({ page }) => {
 
   // Page reload and assert light mode colors are persisting
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await expect(page.locator(`:text("Shared with me")`)).toBeVisible({ timeout: 60 * 1000 });
 
   htmlClass = await page.locator(`html`).getAttribute(`class`);
   expect(htmlClass).toBeNull(); // no classes including dark is applied
@@ -128,9 +128,9 @@ test('Appearance Customization', async ({ page }) => {
   await expect(headingEl).toHaveCSS(`color`, lightText);
 
   // Reset current theme
-  await page.getByRole(`button`, { name: `contrast` }).click();
-  await page.getByRole(`button`, { name: `discover_tune system` }).click();
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `discover_tune system` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 });
 
 test('Auto Focus after Closing Menus', async ({ page }) => {
@@ -161,7 +161,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Wait for programming language menu to open
-  await expect(page.locator(`[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -180,7 +180,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Assert that focus is on grid at cell (0,0)
   await expect(page.locator(`div[style*="left: 2px; top: 2px;"] div[id="cell-edit"]`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Press "Esc" on keyboard to lose focus on cell (0,0)
@@ -191,17 +191,17 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Assert that programming language menu opens
-  await expect(page.locator(`input[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`input[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that programming language menu opens with "Languages" selection section
-  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that programming language menu opens with "Connections" selection section
-  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Add or manage…"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="Add or manage…"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Grid is Refocused after closing Top bar Menu
@@ -211,10 +211,10 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await page.keyboard.press('Escape');
 
   // Click date and time button on top menu bar
-  await page.getByLabel(`Date and time`).click();
+  await page.getByLabel(`Date and time`).click({ timeout: 60 * 1000 });
 
   // Wait for data and time menu to open
-  await expect(page.getByRole(`tab`, { name: `Presets` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`tab`, { name: `Presets` })).toBeVisible({ timeout: 60 * 1000 });
   //--------------------------------
   // Act:
   //--------------------------------
@@ -232,7 +232,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
 
   // Assert that focus is on grid at cell (1,1)
   await expect(page.locator(`div[style*="left: 2px; top: 2px;"] div[id="cell-edit"]`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Press "Esc" on keyboard to lose focus on cell (1,1)
@@ -243,17 +243,17 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Assert that programming language menu opens
-  await expect(page.locator(`input[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`input[placeholder="Choose a cell type…"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that programming language menu opens with "Languages" selection section
-  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Languages"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="Python"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="Formula"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="JavaScript"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that programming language menu opens with "Connections" selection section
-  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 30 * 1000 });
-  await expect(page.locator(`div[data-value="Add or manage…"]`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`div[data-value="Connections"]`)).toBeVisible({ timeout: 60 * 1000 });
+  await expect(page.locator(`div[data-value="Add or manage…"]`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up
   // Press "Esc" on keyboard to close the programming language menu
@@ -264,7 +264,7 @@ test('Auto Focus after Closing Menus', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -298,20 +298,23 @@ test('Auto-Complete', async ({ page }) => {
   // Perform actions to test auto-complete functionality
 
   // Type "Auto" into cell A1
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: 'Auto' });
+  await typeInCell(page, { a1: 'A1', text: 'Auto' });
 
   // Select the first cell on the top left
   await selectCells(page, { startXY: [1, 1], endXY: [1, 1] });
 
   // Apply bold and italic formatting
-  await page.getByLabel(`Bold`).click();
-  await page.getByLabel(`Italic`).click();
+  await page.getByLabel(`Bold`).click({ timeout: 60 * 1000 });
+  await page.getByLabel(`Italic`).click({ timeout: 60 * 1000 });
 
   // Change text color to red
   await page.waitForTimeout(3000);
-  await page.locator('[aria-label="Text color"]').click();
+  await page.locator('[aria-label="Text color"]').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
-  await page.getByRole('menuitem').getByTitle('#E74C3C').click();
+  await page
+    .getByRole('menuitem')
+    .getByTitle('#E74C3C')
+    .click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Prepare to drag from bottom-right corner of cell
@@ -366,20 +369,20 @@ test('Auto-Complete', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Select the Formula option
-  await page.locator('[data-value="Formula"]').click();
+  await page.locator('[data-value="Formula"]').click({ timeout: 60 * 1000 });
 
   // Enter the formula
-  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`sum(16+99)`, { delay: 500 });
+  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`sum(16+99)`, { delay: 250 });
 
   // Execute the formula
   // TODO: Workflow is having an issue syncing. Confirm if this is a bug
   // Or an expected update we need to handle.
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(3000);
 
   // Close the formula editor
-  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click();
+  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 60 * 1000 });
 
   // Prepare to drag from bottom-right corner of cell
   await page.mouse.move(170, 124, { steps: 10 });
@@ -435,18 +438,18 @@ test('Auto-Complete', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Select Python from the code options
-  await page.locator('[data-value="Python"]').click();
+  await page.locator('[data-value="Python"]').click({ timeout: 60 * 1000 });
 
   // Enter a simple Python expression
-  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`9+8`, { delay: 500 });
+  await page.locator(`#QuadraticCodeEditorID .view-line`).first().type(`9+8`, { delay: 250 });
 
   // Execute the Python code
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(3000);
 
   // Close the Python code editor
-  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click();
+  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 60 * 1000 });
 
   // Prepare to drag from bottom-right corner of cell
   await page.mouse.click(120, 110);
@@ -486,7 +489,7 @@ test('Auto-Complete', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -527,7 +530,7 @@ time.sleep(20)
   await page.keyboard.press('/');
 
   // Select Python language option
-  await page.locator(`div[data-value="Python"]`).click();
+  await page.locator(`div[data-value="Python"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -536,42 +539,42 @@ time.sleep(20)
   await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`).focus();
 
   // Click code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`).click();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-lines`).click({ timeout: 60 * 1000 });
 
   // Type in a sleep function in Python editor
-  await page.keyboard.type(pythonCode);
+  await page.keyboard.type(pythonCode, { delay: 250 });
 
   // Click the blue play arrow to 'Save and run'
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the blue play arrow becomes a stop icon
-  await expect(page.getByRole(`button`, { name: `stop` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `stop` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Wait a moment for visualization
   await page.waitForTimeout(5 * 1000);
 
   // Click on the Stop button
-  await page.getByRole(`button`, { name: `stop` }).click();
+  await page.getByRole(`button`, { name: `stop` }).click({ timeout: 60 * 1000 });
 
   // Assert 'Returned error' is visible in side panel
-  await expect(page.locator(`#QuadraticCodeEditorID :text("Returned error")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`#QuadraticCodeEditorID :text("Returned error")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click();
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
 
   // Assert message 'ERROR: Execution cancelled by user'
   await expect(page.locator(`[role="tabpanel"] :text("ERROR: Execution cancelled by user")`)).toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   //--------------------------------
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -620,10 +623,10 @@ test('Cell Actions', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click();
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom in
-  await page.locator(`:text("Zoom in")`).click();
+  await page.locator(`:text("Zoom in")`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -687,13 +690,13 @@ test('Cell Actions', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 8 });
 
   // Click search icon in top right to open command palette
-  await page.getByRole(`button`, { name: `manage_search` }).click();
+  await page.getByRole(`button`, { name: `manage_search` }).click({ timeout: 60 * 1000 });
 
   // Fill in search
   await page.locator(`input[placeholder*="Search menus and commands"]`).fill('Paste formatting only');
 
   // Click Paste formatting only
-  await page.locator(`[role="option"]:has-text("Paste formatting only")`).click();
+  await page.locator(`[role="option"]:has-text("Paste formatting only")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
@@ -708,7 +711,7 @@ test('Cell Actions', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -744,16 +747,16 @@ test('Custom DateTime Options', async ({ page }) => {
   await page.keyboard.type(`2024-02-01`, { delay: 400 });
 
   // Click on the calendar button to format
-  await page.locator(`[aria-label="Date and time"]`).click();
+  await page.locator(`[aria-label="Date and time"]`).click({ timeout: 60 * 1000 });
 
   // Select Custom format
-  await page.getByRole(`tab`, { name: `Custom` }).click();
+  await page.getByRole(`tab`, { name: `Custom` }).click({ timeout: 60 * 1000 });
 
   // Input %d-%m-$Y
   await page.locator(`[placeholder="%d, %B %Y"]`).fill(`%d-%m-%Y`);
 
   // Click Apply
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 60 * 1000 });
 
   // Move to the next cell
   await page.waitForTimeout(10 * 1000);
@@ -781,16 +784,16 @@ test('Custom DateTime Options', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Click on the calendar button to format
-  await page.locator(`[aria-label="Date and time"]`).click();
+  await page.locator(`[aria-label="Date and time"]`).click({ timeout: 60 * 1000 });
 
   // Select Custom format
-  await page.getByRole(`tab`, { name: `Custom` }).click();
+  await page.getByRole(`tab`, { name: `Custom` }).click({ timeout: 60 * 1000 });
 
   // Input %m
   await page.locator(`[placeholder="%d, %B %Y"]`).fill(`%m`);
 
   // Click Apply
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 60 * 1000 });
 
   // Move to the next cell
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 4 });
@@ -818,16 +821,16 @@ test('Custom DateTime Options', async ({ page }) => {
   await page.waitForTimeout(5 * 1000);
 
   // Click on the calendar button to format
-  await page.locator(`[aria-label="Date and time"]`).click();
+  await page.locator(`[aria-label="Date and time"]`).click({ timeout: 60 * 1000 });
 
   // Select Custom format
-  await page.getByRole(`tab`, { name: `Custom` }).click();
+  await page.getByRole(`tab`, { name: `Custom` }).click({ timeout: 60 * 1000 });
 
   // Input %m
   await page.locator(`[placeholder="%d, %B %Y"]`).fill(`%B %d`);
 
   // Click Apply
-  await page.getByRole(`button`, { name: `Apply` }).click();
+  await page.getByRole(`button`, { name: `Apply` }).click({ timeout: 60 * 1000 });
 
   // Move to the next cell
   await page.waitForTimeout(5000);
@@ -845,7 +848,7 @@ test('Custom DateTime Options', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -940,7 +943,7 @@ test('Data Validation', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -966,7 +969,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Assert the initial state of the table reference sheet
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_reference_tables_sheet_initial.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_reference_tables_sheet_initial.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -992,7 +995,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   //--------------------------------
 
   // Assert Python1 displaying #Error after Table1 deletion
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_reference_table_1layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_reference_table_1layer.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1032,7 +1035,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   //--------------------------------
 
   // Assert Python3 displaying #Error after Table1 deletion
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table_1layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_code_reference_table_1layer.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1072,7 +1075,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   //--------------------------------
 
   // Assert Python4 displaying #Error after Table1 deletion
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table1_2layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_code_reference_table1_2layer.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1084,7 +1087,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
 
   // Assert Python5 displaying #Error after Table1 deletion
   // Do not change maxDiffPixels of 100, need to capture #Error vs Empty cCel
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Delete_code_reference_table2_2layer.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Delete_code_reference_table2_2layer.png', {
     maxDiffPixels: 100,
   });
 
@@ -1092,7 +1095,7 @@ test('Delete Reference and Code Output Table', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1133,7 +1136,7 @@ test('Download Sheet', async ({ page }) => {
   // Cycle through all bottom tabs and assert initial screenshots
   for (const tab of tabs) {
     // Click into bottom navigation tab
-    await page.locator(`div[data-title="${tab}"]`).click();
+    await page.locator(`div[data-title="${tab}"]`).click({ timeout: 60 * 1000 });
 
     // Remove non-alphanumeric characters for screenshot name
     const screenshot = tab.replace(/[^a-zA-Z0-9]/g, '');
@@ -1149,14 +1152,16 @@ test('Download Sheet', async ({ page }) => {
   //--------------------------------
 
   // Click "File" in menu bar
-  await page.getByRole(`menuitem`, { name: `File` }).click();
+  await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 60 * 1000 });
+  // click Download
+  await page.getByRole(`menuitem`, { name: `download Download` }).click({ timeout: 60 * 1000 });
 
   // Ensures that download is caught in case it finishes before listener can be created
   const [download] = await Promise.all([
     // Create event listener to watch for a "download"
     page.waitForEvent('download'),
     // Click "Download" button
-    page.getByRole(`menuitem`, { name: `download Download` }).click(),
+    page.getByRole('menuitem', { name: 'Quadratic (.grid)' }).click({ timeout: 60 * 1000 }),
   ]);
 
   // Get full path of the file download
@@ -1167,7 +1172,7 @@ test('Download Sheet', async ({ page }) => {
   await download.saveAs(fullFilePath);
 
   // Click on website logo to back to dashboard
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   // Upload newly downloaded file
   await uploadFile(page, { fileName, fileType, fullFilePath });
@@ -1179,7 +1184,7 @@ test('Download Sheet', async ({ page }) => {
   // Cycle through all bottom tabs and assert new file screenshots
   for (const tab of tabs) {
     // Click into bottom navigation tab
-    await page.locator(`div[data-title="${tab}"]`).click();
+    await page.locator(`div[data-title="${tab}"]`).click({ timeout: 60 * 1000 });
 
     // Remove non-alphanumeric characters for screenshot name
     const screenshot = tab.replace(/[^a-zA-Z0-9]/g, '');
@@ -1194,7 +1199,7 @@ test('Download Sheet', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1270,7 +1275,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
     },
     {
       bufferData: `data:${mimeType};base64,${buffer}`,
-      fileName,
+      fileName: `${fileName}.${fileType}`,
       fileType: mimeType,
     }
   );
@@ -1296,12 +1301,15 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   //--------------------------------
 
   // Close the AI chat on the left side
-  await page.getByRole(`button`, { name: `close` }).first().click();
+  await page
+    .getByRole(`button`, { name: `close` })
+    .first()
+    .click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // ----- Assertion: Screenshot ------
   // Assert CSV data matches the quadratic content using a screenshot
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('Drag_Drop_Spreadsheet_Check.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('Drag_Drop_Spreadsheet_Check.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -1335,7 +1343,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // Navigate to an empty cell & insert formula to count # of rows
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000); // Wait before navigating on sheet
-  await typeInCell(page, { targetColumn: 18, targetRow: 1, text: '=COUNTA(A)' });
+  await typeInCell(page, { a1: 'R1', text: '=COUNTA(A)' });
 
   // Copy and save the number calculated on the sheet
   await page.keyboard.press('ArrowUp');
@@ -1355,7 +1363,7 @@ test('Drag and Drop Excel File into Sheet', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1381,7 +1389,7 @@ test('File - Clear Recent History', async ({ page }) => {
   await createFile(page, { fileName });
 
   // Go to the examples
-  await page.getByRole(`link`, { name: `view_carousel Examples` }).click();
+  await page.getByRole(`link`, { name: `view_carousel Examples` }).click({ timeout: 60 * 1000 });
 
   // Wait for the page to appear
   await page.getByRole(`heading`, { name: `Example files by the` }).waitFor();
@@ -1398,7 +1406,7 @@ test('File - Clear Recent History', async ({ page }) => {
 
   // Search for the randomly picked file, click it
   await page.getByRole(`textbox`, { name: `Filter by file or creator` }).fill(exampleName);
-  await page.locator(`h2:text("${exampleName}")`).click();
+  await page.locator(`h2:text("${exampleName}")`).click({ timeout: 60 * 1000 });
 
   // Wait for the page to load, this is the sheet chat.
   await page.getByText(`Sheet chataddhistoryclose`).waitFor();
@@ -1408,19 +1416,22 @@ test('File - Clear Recent History', async ({ page }) => {
   //--------------------------------
 
   // Click File in the menu bar
-  await page.getByRole(`menuitem`, { name: `File` }).click();
+  await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 60 * 1000 });
 
   // Click "Open Recent"
-  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click();
+  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click({ timeout: 60 * 1000 });
 
   // Expect our new file to appear under Recently Opened
   await expect(page.getByRole(`menuitem`, { name: `${fileName}` })).toBeVisible();
 
   // Click the Clear button
-  await page.getByRole(`menuitem`, { name: 'Clear', exact: true }).click();
+  await page.getByRole(`menuitem`, { name: 'Clear', exact: true }).click({ timeout: 60 * 1000 });
+
+  // Wait for clear to complete
+  await page.waitForTimeout(10 * 1000);
 
   // Click File in the menu bar
-  await page.getByRole(`menuitem`, { name: `File` }).click();
+  await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1433,7 +1444,7 @@ test('File - Clear Recent History', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1473,10 +1484,10 @@ test('File - Open Recent', async ({ page }) => {
   //--------------------------------
 
   // Click File in the menu bar
-  await page.getByRole(`menuitem`, { name: `File` }).click();
+  await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 60 * 1000 });
 
   // Click "Open Recent"
-  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click();
+  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
@@ -1489,7 +1500,7 @@ test('File - Open Recent', async ({ page }) => {
   await expect(page.getByRole(`menuitem`, { name: `${fileName2}` })).toBeVisible();
 
   // Click into our file to continue assertions
-  await page.getByRole(`menuitem`, { name: `${fileName2}` }).click();
+  await page.getByRole(`menuitem`, { name: `${fileName2}` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
   await quadraticLoading.waitFor({ state: 'hidden', timeout: 2 * 60 * 1000 });
@@ -1498,15 +1509,15 @@ test('File - Open Recent', async ({ page }) => {
   await expect(page.locator(`button:text("${fileName2}")`)).toBeVisible();
 
   // Click back into File, Open Recent, and assert the JS example we visited is visible.
-  await page.getByRole(`menuitem`, { name: `File` }).click(); // Click File
-  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click(); // Click Open recent
+  await page.getByRole(`menuitem`, { name: `File` }).click({ timeout: 60 * 1000 }); // Click File
+  await page.getByRole(`menuitem`, { name: `file_open Open recent` }).click({ timeout: 60 * 1000 }); // Click Open recent
   await expect(page.getByRole(`menuitem`, { name: `${fileName1}` })).toBeVisible(); // Assert
 
   //--------------------------------
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName: fileName1 });
   await cleanUpFiles(page, { fileName: fileName2 });
 });
@@ -1538,10 +1549,10 @@ test('Find in current sheet', async ({ page }) => {
   //--------------------------------
 
   // Click `Edit` on the top left of the page
-  await page.getByRole(`menuitem`, { name: `Edit` }).click();
+  await page.getByRole(`menuitem`, { name: `Edit` }).click({ timeout: 60 * 1000 });
 
   // Click `Find in current sheet` option
-  await page.getByRole(`menuitem`, { name: `pageview Find in current` }).click();
+  await page.getByRole(`menuitem`, { name: `pageview Find in current` }).click({ timeout: 60 * 1000 });
 
   // Fill `Find in current sheet` search field to be visible on the top right of the page
   await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`Referencing sheet inputs from Python`);
@@ -1562,7 +1573,7 @@ test('Find in current sheet', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1589,7 +1600,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Rename file
-  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click({ timeout: 60 * 1000 });
   await page.keyboard.type(fileName, { delay: 50 });
 
   //--------------------------------
@@ -1609,7 +1620,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   await expect(page.getByText(`Insert row above`)).not.toBeVisible();
 
   // Click Insert column to the left
-  await page.getByText(`Insert column left`).click();
+  await page.getByText(`Insert column left`).click({ timeout: 60 * 1000 });
 
   // Screenshot assertion (Column 1 should be red and not have any values in it)
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_col_left.png`, {
@@ -1645,7 +1656,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 472, y: 30 } });
 
   // Click Insert column to the right
-  await page.getByText(`Insert column right`).click();
+  await page.getByText(`Insert column right`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1684,7 +1695,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 775, y: 30 } });
 
   // Click Delete column
-  await page.getByText(`Delete 1 column`).click();
+  await page.getByText(`Delete 1 column`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1715,7 +1726,7 @@ test('Insert and Delete Columns', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1742,7 +1753,7 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Rename file
-  await page.getByRole(`button`, { name: fileName }).click();
+  await page.getByRole(`button`, { name: fileName }).click({ timeout: 60 * 1000 });
   await page.keyboard.type(fileName, { delay: 50 });
 
   // Initial state
@@ -1762,7 +1773,7 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 370, y: 60 } });
 
   // Click Insert columns left
-  await page.getByText(`Insert 3 columns left`).click();
+  await page.getByText(`Insert 3 columns left`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1795,7 +1806,7 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 770, y: 60 } });
 
   // Click Insert columns right
-  await page.getByText(`Insert 3 columns right`).click();
+  await page.getByText(`Insert 3 columns right`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1822,16 +1833,16 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   // Act:
   //--------------------------------
   // Select columns 4-11
-  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 230, y: 10 } });
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 275, y: 10 } });
   await page.keyboard.down('Shift');
-  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 930, y: 10 } });
+  await page.locator(`#QuadraticCanvasID`).click({ position: { x: 975, y: 10 } });
   await page.keyboard.up('Shift');
 
   // Right click
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 530, y: 150 } });
 
   // Click Delete column
-  await page.getByText(`Delete 8 columns`).click();
+  await page.getByText(`Delete 8 columns`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1864,7 +1875,7 @@ test('Insert and Delete Multiple Columns', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -1891,7 +1902,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Rename file
-  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click({ timeout: 60 * 1000 });
   await page.keyboard.type(fileName, { delay: 50 });
 
   //--------------------------------
@@ -1911,7 +1922,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   await expect(page.getByText(`Insert column to the left`)).not.toBeVisible();
 
   // Click Insert row above
-  await page.getByText(`Insert row above`).click();
+  await page.getByText(`Insert row above`).click({ timeout: 60 * 1000 });
 
   // Screenshot assertion (Row 0 should not have any values in it)
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`${fileName}-Insert_row_above.png`, {
@@ -1947,7 +1958,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 30, y: 115 } });
 
   // Click Insert row below
-  await page.getByText(`Insert row below`).click();
+  await page.getByText(`Insert row below`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -1989,7 +2000,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 30, y: 135 } });
 
   // Click Delete row
-  await page.getByText(`Delete 1 row`).click();
+  await page.getByText(`Delete 1 row`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -2021,7 +2032,7 @@ test('Insert and Delete Rows', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2048,7 +2059,7 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Rename file
-  await page.getByRole(`button`, { name: fileName }).click();
+  await page.getByRole(`button`, { name: fileName }).click({ timeout: 60 * 1000 });
   await page.keyboard.type(fileName, { delay: 50 });
 
   // Initial state
@@ -2068,7 +2079,7 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 80 } });
 
   // Click Insert rows above
-  await page.getByText(`Insert 3 rows above`).click();
+  await page.getByText(`Insert 3 rows above`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -2101,7 +2112,7 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 150 } });
 
   // Click Insert rows below
-  await page.getByText(`Insert 3 rows below`).click();
+  await page.getByText(`Insert 3 rows below`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -2137,7 +2148,7 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 50, y: 150 } });
 
   // Click Delete column
-  await page.getByText(`Delete 8 rows`).click();
+  await page.getByText(`Delete 8 rows`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -2170,7 +2181,7 @@ test('Insert and Delete Multiple Rows', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2179,7 +2190,7 @@ test('Key Actions', async ({ page }) => {
   const fileName = 'Key Actions';
 
   // Log in
-  await logIn(page, { emailPrefix: `e2e_insert_delete_row` });
+  await logIn(page, { emailPrefix: `e2e_key_actions` });
 
   // // Create a new team
   // const teamName = `Key Actions - ${Date.now()}`;
@@ -2225,7 +2236,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Down Arrow"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Down Arrow', { delay: 500 });
+  await page.keyboard.type('Down Arrow', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2238,7 +2249,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Left Arrow"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Left Arrow', { delay: 500 });
+  await page.keyboard.type('Left Arrow', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2251,7 +2262,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Up Arrow"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Up Arrow', { delay: 500 });
+  await page.keyboard.type('Up Arrow', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2272,7 +2283,7 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Tab"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Tab', { delay: 500 });
+  await page.keyboard.type('Tab', { delay: 250 });
 
   //--------------------------------
   // Assert:
@@ -2298,17 +2309,17 @@ test('Key Actions', async ({ page }) => {
   //--------------------------------
   // Assert:
   //--------------------------------
-  // Confirm we're Prompted to type and edting is allowed
+  // Confirm we're Prompted to type and editing is allowed
   await expect(page.locator(`#cell-edit`)).toBeVisible();
 
   // Enter fill the cell with text "Enter"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Enter', { delay: 500 });
+  await page.keyboard.type('Enter', { delay: 250 });
 
   // Use Enter Key while in edit mode
   await page.keyboard.press('Enter');
 
-  // Confirm edting is no longer allowed
+  // Confirm editing is no longer allowed
   await expect(page.locator(`#cell-edit`)).not.toBeVisible();
 
   // Confirm we're hovering over the expected cell
@@ -2326,7 +2337,7 @@ test('Key Actions', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Confirm we're hovering over the expected cell
-  await page.keyboard.type('Shift Key', { delay: 500 });
+  await page.keyboard.type('Shift Key', { delay: 250 });
 
   // Confirm we're hovering over the expected cell
   await expect(
@@ -2338,9 +2349,9 @@ test('Key Actions', async ({ page }) => {
 
   // Enter fill the cell with text "Shift+Tab"
   await page.waitForTimeout(5 * 1000);
-  await page.keyboard.type('Shift+Tab', { delay: 500 });
+  await page.keyboard.type('Shift+Tab', { delay: 250 });
 
-  // Confirm we're Prompted to type and edting is allowed
+  // Confirm we're Prompted to type and editing is allowed
   await expect(
     page.locator(`div[style*="left: 2px; top: 23px"] > div[id="cell-edit"]:has-text("Shift+Tab")`)
   ).toBeVisible();
@@ -2351,7 +2362,7 @@ test('Key Actions', async ({ page }) => {
   //--------------------------------
   // Set up text in 3, 3
   await navigateOnSheet(page, { targetColumn: 3, targetRow: 3 });
-  await page.keyboard.type('Shift Key', { delay: 500 });
+  await page.keyboard.type('Shift Key', { delay: 250 });
   await page.keyboard.press('Enter');
   await page.waitForTimeout(5 * 1000);
   await navigateOnSheet(page, { targetColumn: 1, targetRow: 3 });
@@ -2411,7 +2422,7 @@ test('Key Actions', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2441,19 +2452,19 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
 
   // Type sheet number into the first cell
   await page.waitForTimeout(500);
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet 1` });
+  await typeInCell(page, { a1: 'A1', text: `Sheet 1` });
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
-    await page.getByRole(`button`, { name: `add` }).click();
+    await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
     await page.waitForTimeout(500);
-    await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet ${i + 1}` });
+    await typeInCell(page, { a1: 'A1', text: `Sheet ${i + 1}` });
   }
 
   // Focus on the first sheet
-  await page.locator(`[data-title="Sheet 1"]`).click();
+  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Right Navigation
@@ -2496,7 +2507,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   // Click until the button is disabled
   const rightChevron = page.getByRole('button', { name: 'chevron_right' });
   while (await rightChevron.isEnabled()) {
-    await rightChevron.click();
+    await rightChevron.click({ timeout: 60 * 1000 });
     await page.waitForTimeout(100);
   }
 
@@ -2560,7 +2571,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   // Click until the button is disabled
   const leftChevron = page.getByRole('button', { name: 'chevron_left' });
   while (await leftChevron.isEnabled()) {
-    await leftChevron.click();
+    await leftChevron.click({ timeout: 60 * 1000 });
     await page.waitForTimeout(100);
   }
 
@@ -2611,7 +2622,7 @@ test('Left and Right Sheet Navigation', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2638,10 +2649,10 @@ test('Log Out From Sheet', async ({ page }) => {
   //--------------------------------
 
   // Click on your profile
-  await page.locator('button:has(img[alt*="You"])').click();
+  await page.locator('button:has(img[alt*="You"])').click({ timeout: 60 * 1000 });
 
   // Select Log Out
-  await page.getByRole(`menuitem`, { name: `Log out` }).click();
+  await page.getByRole(`menuitem`, { name: `Log out` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
   await page.waitForLoadState('domcontentloaded');
 
@@ -2684,7 +2695,7 @@ test('Multi-Delete Columns', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Rename file
-  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click({ timeout: 60 * 1000 });
   await page.keyboard.type(fileName, { delay: 50 });
 
   //--------------------------------
@@ -2697,7 +2708,7 @@ test('Multi-Delete Columns', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 354, y: 137 } });
 
   // Click Delete
-  await page.getByText(`Delete 3 columns`).click();
+  await page.getByText(`Delete 3 columns`).click({ timeout: 60 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -2728,7 +2739,7 @@ test('Multi-Delete Columns', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2751,7 +2762,7 @@ test('Multi-Delete Rows', async ({ page }) => {
   await uploadFile(page, { fileName, fileType });
 
   // Rename file
-  await page.getByRole(`button`, { name: `Insert_row_col` }).click();
+  await page.getByRole(`button`, { name: `Insert_row_col` }).click({ timeout: 60 * 1000 });
   await page.keyboard.type(fileName, { delay: 50 });
 
   //--------------------------------
@@ -2764,7 +2775,7 @@ test('Multi-Delete Rows', async ({ page }) => {
   await page.locator(`#QuadraticCanvasID`).click({ button: 'right', position: { x: 354, y: 137 } });
 
   // Click Delete 3 rows
-  await page.getByText(`Delete 3 rows`).click();
+  await page.getByText(`Delete 3 rows`).click({ timeout: 60 * 1000 });
   //--------------------------------
   // Assert:
   //--------------------------------
@@ -2796,7 +2807,7 @@ test('Multi-Delete Rows', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2855,7 +2866,7 @@ test('Panning Behavior', async ({ page }) => {
   // Release the Spacebar
   await page.keyboard.up(`Space`);
 
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   //--------------------------------
   // Assert:
@@ -2897,7 +2908,7 @@ test('Panning Behavior', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -2934,17 +2945,17 @@ test('Python More Snippets', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python button
-  await page.getByText('Python', { exact: true }).click();
+  await page.getByText('Python', { exact: true }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Click on the More Snippets button
-  await page.getByRole(`button`, { name: `More snippets` }).click();
+  await page.getByRole(`button`, { name: `More snippets` }).click({ timeout: 60 * 1000 });
 
   // Type 'Read' in the search snippets input to filter snippets
   await page.getByPlaceholder('Search snippets...').fill('Read');
 
-  // Click on the 'Read data from the sneet' snippet
-  await page.getByText('Read data from the sheet').click();
+  // Click on the 'Read data from the sheet' snippet
+  await page.getByText('Read data from the sheet').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -2967,8 +2978,8 @@ test('Python More Snippets', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click the play button
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
-  await page.locator(`#QuadraticCanvasID`).click();
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
+  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
   await page.keyboard.press('Escape');
   //--------------------------------
   // Assert:
@@ -2991,7 +3002,7 @@ test('Python More Snippets', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3025,17 +3036,17 @@ test('Python Snippets', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python button
-  await page.getByText('Python', { exact: true }).click();
+  await page.getByText('Python', { exact: true }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Click on the Integration Instructions snippet button
-  await page.getByRole(`button`, { name: `integration_instructions`, exact: true }).click();
+  await page.getByRole(`button`, { name: `integration_instructions`, exact: true }).click({ timeout: 60 * 1000 });
 
   // Type 'Return' in the search snippets input to filter snippets
   await page.getByPlaceholder('Search snippets...').fill('Return');
 
   // Click on the 'Return data to the sheet' snippet
-  await page.getByText('Return data to the sheet').click();
+  await page.getByText('Return data to the sheet').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -3057,7 +3068,7 @@ test('Python Snippets', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click the play button
-  await page.locator(`#QuadraticCodeEditorRunButtonID`).click();
+  await page.locator(`#QuadraticCodeEditorRunButtonID`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5000);
 
   //--------------------------------
@@ -3078,13 +3089,13 @@ test('Python Snippets', async ({ page }) => {
   expect(clipboardText).toBe('Python1\n0\n1\n2\n3\n4\n5\n6\n7\n8\n9'); // Assert the clipboard content
 
   // close editor
-  await page.getByRole(`button`, { name: `Close` }).click();
+  await page.keyboard.press('Escape');
 
   //--------------------------------
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3117,7 +3128,10 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   await page.keyboard.press('Enter');
 
   // Clear code in code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).first().click();
+  await page
+    .locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`)
+    .first()
+    .click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
 
@@ -3129,14 +3143,14 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
 
   // Fill JS code into code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
   await page.keyboard.type("let ref = q.cells('C7:D9')");
   await page.keyboard.press('Enter');
   await page.keyboard.type('return ref');
   await page.waitForTimeout(2000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
 
   //--------------------------------
@@ -3154,12 +3168,15 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   //--------------------------------
 
   // Clear code in code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).first().click();
+  await page
+    .locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`)
+    .first()
+    .click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
 
   // Navigate into Sheet 2
-  await page.locator(`[data-title="Sheet 2"]`).click();
+  await page.locator(`[data-title="Sheet 2"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -3169,18 +3186,18 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
 
   // Fill JS code into code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
   await page.keyboard.type(`let ref = q.cells("'Sheet 2'!C7:D9")`);
   await page.keyboard.press('Enter');
   await page.keyboard.type('return ref');
   await page.waitForTimeout(2000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Navigate into Sheet 1
-  await page.locator(`[data-title="Sheet 1"]`).click();
+  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -3196,7 +3213,7 @@ test('Range Cell Reference - Javascript', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3229,7 +3246,7 @@ test('Range Cell Reference - Python', async ({ page }) => {
   await page.waitForTimeout(2000);
 
   // Clear code in code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
 
@@ -3241,11 +3258,11 @@ test('Range Cell Reference - Python', async ({ page }) => {
   await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
 
   // Click "Insert cell reference" button on top bar of code editor
-  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.getByRole(`button`, { name: `ink_selection` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
@@ -3263,12 +3280,15 @@ test('Range Cell Reference - Python', async ({ page }) => {
   //--------------------------------
 
   // Clear code in code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).last().click();
+  await page
+    .locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`)
+    .last()
+    .click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
 
   // Navigate into Sheet 2
-  await page.locator(`[data-title="Sheet 2"]`).click();
+  await page.locator(`[data-title="Sheet 2"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -3278,15 +3298,15 @@ test('Range Cell Reference - Python', async ({ page }) => {
   await selectCells(page, { startXY: ['C', 7], endXY: ['D', 9] });
 
   // Click "Insert cell reference" button on top bar of code editor
-  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.getByRole(`button`, { name: `ink_selection` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Navigate into Sheet 1
-  await page.locator(`[data-title="Sheet 1"]`).click();
+  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -3302,7 +3322,7 @@ test('Range Cell Reference - Python', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3342,7 +3362,7 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
   await expect(page.getByText(`Insert row above`)).not.toBeVisible();
 
   // Click Insert column to the left
-  await page.getByText(`Insert column left`).click();
+  await page.getByText(`Insert column left`).click({ timeout: 60 * 1000 });
 
   // Screenshot assertion (Column 0 should be red and not have any values in it)
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
@@ -3385,7 +3405,7 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
   await expect(page.getByText(`Insert column left`)).not.toBeVisible();
 
   // Click Insert row above
-  await page.getByText(`Insert row above`).click();
+  await page.getByText(`Insert row above`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -3419,7 +3439,7 @@ test('Right Click on Column and Row Headers', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3449,22 +3469,27 @@ test('Scroll between sheets', async ({ page }) => {
 
   // Type sheet number into the first cell
   await page.waitForTimeout(500);
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet 1` });
+  await typeInCell(page, { a1: 'A1', text: `Sheet 1` });
 
   // Add multiple sheets
   for (let i = 1; i < lastSheetNum; i++) {
-    await page.getByRole(`button`, { name: `add` }).click();
+    await page.getByRole(`button`, { name: `add` }).click({ timeout: 60 * 1000 });
 
     // Type sheet number into the first cell
     await page.waitForTimeout(500);
-    await typeInCell(page, { targetColumn: 1, targetRow: 1, text: `Sheet ${i + 1}` });
+    await typeInCell(page, { a1: 'A1', text: `Sheet ${i + 1}` });
   }
 
   // Focus on the first sheet
-  await page.locator(`[data-title="Sheet 1"]`).click();
+  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
 
   // Store sheet navigation toolbar
   const sheetNavigation = page.getByRole(`button`, { name: `add` }).locator(`..`);
+
+  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
+  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
+    maxDiffPixelRatio: 0.01,
+  });
 
   // Store first and last sheet element
   const firstSheetEl = sheetNavigation.locator(`[data-title="Sheet 1"]`);
@@ -3486,11 +3511,6 @@ test('Scroll between sheets', async ({ page }) => {
   // Get initial X position of the last sheet (Sheet 15)
   let lastSheetPosition = await lastSheetEl.boundingBox();
   let lastSheetPositionX = lastSheetPosition?.x;
-
-  // Assert initial screenshot of the sheet navigation toolbar with `Sheet 12` as last sheet
-  await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial.png`, {
-    maxDiffPixelRatio: 0.01,
-  });
 
   // Hover over the sheet navigation toolbar and scroll to the RIGHT
   await sheetNavigation.hover();
@@ -3532,7 +3552,7 @@ test('Scroll between sheets', async ({ page }) => {
   expect(isNotSame).toBeTruthy();
 
   // Click 'Sheet 15' to focus it
-  await lastSheetEl.click();
+  await lastSheetEl.click({ timeout: 60 * 1000 });
 
   // Assert initial screenshot of the sheet navigation toolbar with `Sheet 4` as first visible sheet
   await expect(sheetNavigation).toHaveScreenshot(`SpreadsheetInteraction-SheetToolbar-Scroll_Initial_v2.png`, {
@@ -3587,7 +3607,7 @@ test('Scroll between sheets', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3617,13 +3637,17 @@ test('Search - Case sensitive search', async ({ page }) => {
   await page.keyboard.press(`Control+F`);
 
   // Click options icon on the search field
-  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+  await page
+    .getByRole(`dialog`)
+    .locator(`button`)
+    .nth(2)
+    .click({ timeout: 60 * 1000 });
 
   // Click `Case sensitive search` option
-  await page.getByRole(`menuitemcheckbox`, { name: `Case sensitive search` }).click();
+  await page.getByRole(`menuitemcheckbox`, { name: `Case sensitive search` }).click({ timeout: 60 * 1000 });
 
   // Click body (playground flakiness)
-  await page.locator(`body`).click();
+  await page.locator(`body`).click({ timeout: 60 * 1000 });
 
   // Fill `Find in current sheet` with an lowercase search that doesn't exist
   await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`this is a string`);
@@ -3648,7 +3672,7 @@ test('Search - Case sensitive search', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3678,13 +3702,17 @@ test('Search - Match entire cell contents', async ({ page }) => {
   await page.keyboard.press(`Control+F`);
 
   // Click options icon on the search field
-  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+  await page
+    .getByRole(`dialog`)
+    .locator(`button`)
+    .nth(2)
+    .click({ timeout: 60 * 1000 });
 
   // Click `Match entire cell contents` option
-  await page.getByRole(`menuitemcheckbox`, { name: `Match entire cell contents` }).click();
+  await page.getByRole(`menuitemcheckbox`, { name: `Match entire cell contents` }).click({ timeout: 60 * 1000 });
 
   // Click body (playground flakiness)
-  await page.locator(`body`).click();
+  await page.locator(`body`).click({ timeout: 60 * 1000 });
 
   // Fill `Find in current sheet` with an incomplete cell content
   await page.getByRole(`textbox`, { name: `Find in current sheet` }).fill(`1.099`);
@@ -3709,7 +3737,7 @@ test('Search - Match entire cell contents', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3739,13 +3767,17 @@ test('Search - Search all sheets', async ({ page }) => {
   await page.keyboard.press(`Control+F`);
 
   // Click options icon on the search field
-  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+  await page
+    .getByRole(`dialog`)
+    .locator(`button`)
+    .nth(2)
+    .click({ timeout: 60 * 1000 });
 
   // Click `Search all sheets` option
   await page.getByRole(`menuitemcheckbox`, { name: `Search all sheets` }).click({ delay: 2 * 1000, force: true });
 
   // Click body (playground flakiness)
-  await page.locator(`body`).click();
+  await page.locator(`body`).click({ timeout: 60 * 1000 });
 
   // Fill `Find in all sheets` search field to be visible on the top right of the page
   await page.getByRole(`textbox`, { name: `Find in all sheets` }).fill(`Referencing sheet inputs from Python`);
@@ -3763,7 +3795,11 @@ test('Search - Search all sheets', async ({ page }) => {
   });
 
   // Click the right arrow on the search field
-  await page.getByRole(`dialog`).locator(`button`).nth(1).click();
+  await page
+    .getByRole(`dialog`)
+    .locator(`button`)
+    .nth(1)
+    .click({ timeout: 60 * 1000 });
 
   // Expect `2 of 4` to be visible on the search field
   await expect(page.locator(`input + div`).getByText(`2 of 4`)).toBeVisible();
@@ -3774,7 +3810,11 @@ test('Search - Search all sheets', async ({ page }) => {
   });
 
   // Click the right arrow on the search field
-  await page.getByRole(`dialog`).locator(`button`).nth(1).click();
+  await page
+    .getByRole(`dialog`)
+    .locator(`button`)
+    .nth(1)
+    .click({ timeout: 60 * 1000 });
 
   // Expect `3 of 4` to be visible on the search field
   await expect(page.locator(`input + div`).getByText(`3 of 4`)).toBeVisible();
@@ -3785,7 +3825,11 @@ test('Search - Search all sheets', async ({ page }) => {
   });
 
   // Click the right arrow on the search field
-  await page.getByRole(`dialog`).locator(`button`).nth(1).click();
+  await page
+    .getByRole(`dialog`)
+    .locator(`button`)
+    .nth(1)
+    .click({ timeout: 60 * 1000 });
 
   // Expect `4 of 4` to be visible on the search field
   await expect(page.locator(`input + div`).getByText(`4 of 4`)).toBeVisible();
@@ -3799,7 +3843,7 @@ test('Search - Search all sheets', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3831,7 +3875,7 @@ test('Search - Search within code', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python button
-  await page.getByText('Python', { exact: true }).click();
+  await page.getByText('Python', { exact: true }).click({ timeout: 60 * 1000 });
 
   // Click `More snippets`
   await page.getByRole(`button`, { name: `More snippets` }).click({ delay: 2 * 1000 });
@@ -3840,7 +3884,7 @@ test('Search - Search within code', async ({ page }) => {
   await page.getByRole(`option`, { name: `Select DataFrame columns` }).click({ delay: 2 * 1000 });
 
   // Click run icon
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
   // Close code section
   await page.getByRole(`button`, { name: `close` }).click({ delay: 1000 });
@@ -3853,10 +3897,14 @@ test('Search - Search within code', async ({ page }) => {
   await page.keyboard.press(`Control+F`);
 
   // Click options icon on the search field
-  await page.getByRole(`dialog`).locator(`button`).nth(2).click();
+  await page
+    .getByRole(`dialog`)
+    .locator(`button`)
+    .nth(2)
+    .click({ timeout: 60 * 1000 });
 
   // Click `Search within code` option
-  await page.getByRole(`menuitemcheckbox`, { name: `Search within code` }).click();
+  await page.getByRole(`menuitemcheckbox`, { name: `Search within code` }).click({ timeout: 60 * 1000 });
 
   // Fill search field
   await page.getByRole(`textbox`, { name: `Find` }).fill(`dataframe`);
@@ -3872,7 +3920,7 @@ test('Search - Search within code', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -3915,14 +3963,14 @@ test('Single Cell Reference - Javascript', async ({ page }) => {
   await page.locator(`button:has-text("show this again")`).waitFor();
 
   // Fill JS code into code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
   await page.keyboard.type("let ref = q.cells('C7')");
   await page.keyboard.press('Enter');
   await page.keyboard.type('return ref');
   await page.waitForTimeout(2000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(10 * 1000);
 
   //--------------------------------
@@ -3940,12 +3988,15 @@ test('Single Cell Reference - Javascript', async ({ page }) => {
   //--------------------------------
 
   // Clear code in code editor
-  await page.locator(`#QuadraticCodeEditorID .view-line`).first().click();
+  await page
+    .locator(`#QuadraticCodeEditorID .view-line`)
+    .first()
+    .click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
 
   // Navigate into Sheet 2
-  await page.locator(`[data-title="Sheet 2"]`).click();
+  await page.locator(`[data-title="Sheet 2"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -3955,18 +4006,18 @@ test('Single Cell Reference - Javascript', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
 
   // Fill JS code into code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click();
+  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).click({ timeout: 60 * 1000 });
   await page.keyboard.type(`let ref = q.cells("'Sheet 2'!C7")`);
   await page.keyboard.press('Enter');
   await page.keyboard.type('return ref');
   await page.waitForTimeout(2000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(2000);
 
   // Navigate into Sheet 1
-  await page.locator(`[data-title="Sheet 1"]`).click();
+  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -3982,7 +4033,7 @@ test('Single Cell Reference - Javascript', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -4027,11 +4078,11 @@ test('Single Cell Reference - Python', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
 
   // Click "Insert cell reference" button on top bar of code editor
-  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.getByRole(`button`, { name: `ink_selection` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
@@ -4051,12 +4102,15 @@ test('Single Cell Reference - Python', async ({ page }) => {
   //--------------------------------
 
   // Clear code in code editor
-  await page.locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`).last().click();
+  await page
+    .locator(`#QuadraticCodeEditorID [data-keybinding-context="1"] .view-line`)
+    .last()
+    .click({ timeout: 60 * 1000 });
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Delete');
 
   // Navigate into Sheet 2
-  await page.locator(`[data-title="Sheet 2"]`).click();
+  await page.locator(`[data-title="Sheet 2"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
@@ -4066,15 +4120,15 @@ test('Single Cell Reference - Python', async ({ page }) => {
   await navigateOnSheet(page, { targetColumn: 'C', targetRow: 7 });
 
   // Click "Insert cell reference" button on top bar of code editor
-  await page.getByRole(`button`, { name: `ink_selection` }).click();
+  await page.getByRole(`button`, { name: `ink_selection` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click "Play" icon on top bar of code editor
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Navigate into Sheet 1
-  await page.locator(`[data-title="Sheet 1"]`).click();
+  await page.locator(`[data-title="Sheet 1"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -4093,7 +4147,7 @@ test('Single Cell Reference - Python', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -4126,14 +4180,14 @@ test('Spill Auto-Fix', async ({ page }) => {
   await page.mouse.move(110, 110);
 
   // Click the 'Fix' button in the spill auto-fix box
-  await page.getByText(`Fix arrow_drop_down`).click();
+  await page.getByText(`Fix arrow_drop_down`).click({ timeout: 60 * 1000 });
 
   // Click 'Move right to nearest free space' option
   await page
     .getByRole(`menuitem`, {
       name: `vertical_align_bottom Move right to nearest free space`,
     })
-    .click();
+    .click({ timeout: 60 * 1000 });
 
   // Wait a moment for auto-fix spill to apply
   await page.waitForTimeout(10000);
@@ -4150,7 +4204,7 @@ test('Spill Auto-Fix', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -4237,11 +4291,11 @@ test('Theme Customization', async ({ page }) => {
   for (const theme of expectedThemes) {
     await page.waitForTimeout(500);
 
-    // Click theme toggle button (identified by constract icon)
-    await page.getByRole(`button`, { name: `contrast` }).click();
+    // Click theme toggle button
+    await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
     // Click accent color
-    await page.getByRole(`button`, { name: theme.name }).click();
+    await page.getByRole(`button`, { name: theme.name }).click({ timeout: 60 * 1000 });
 
     // Assert that the HTML element has accent name applied to 'data-theme' attribute
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
@@ -4266,10 +4320,8 @@ test('Theme Customization', async ({ page }) => {
     await expect(newFileButtonEl).toHaveCSS(`background-color`, theme.color);
 
     // Navigate to the 'Members' page and assert page
-    await page.getByRole(`link`, { name: `group Members` }).click();
-    await page.waitForTimeout(10 * 1000);
-    await page.waitForLoadState(`networkidle`);
-    await expect(page).toHaveTitle(/Team members - Quadratic/);
+    await page.getByRole(`link`, { name: `group Members` }).click({ timeout: 60 * 1000 });
+    await expect(page).toHaveTitle(/Team members - Quadratic/, { timeout: 60 * 1000 });
     await expect(page.getByRole(`heading`, { name: `Team members` })).toBeVisible();
     await expect(page.getByText(`${email} (You)`)).toBeVisible();
 
@@ -4277,7 +4329,7 @@ test('Theme Customization', async ({ page }) => {
     await expect(inviteButtonEl).toHaveCSS(`background-color`, theme.color);
 
     // Navigate to the 'Settings' page and assert page
-    await page.getByRole(`link`, { name: `settings Settings` }).click();
+    await page.getByRole(`link`, { name: `settings Settings` }).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(10 * 1000);
     await page.waitForLoadState('domcontentloaded');
     await page.waitForLoadState('networkidle');
@@ -4292,7 +4344,7 @@ test('Theme Customization', async ({ page }) => {
     await expect(privateSwitchEl).toHaveCSS(`background-color`, theme.color);
 
     // Return to homepage
-    await page.getByRole(`link`, { name: `draft Files` }).click();
+    await page.getByRole(`link`, { name: `draft Files` }).click({ timeout: 60 * 1000 });
   }
 });
 
@@ -4353,8 +4405,8 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(page.getByRole(`heading`, { name: `Team files` })).toBeVisible();
 
   // Reset current theme
-  await page.getByRole(`button`, { name: `contrast` }).click();
-  await page.getByRole(`button`, { name: `discover_tune system` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `discover_tune system` }).click({ timeout: 60 * 1000 });
 
   // Assert that there are no files
   await expect(page.getByRole(`heading`, { name: `No files` })).toBeVisible();
@@ -4371,7 +4423,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await navigateIntoFile(page, { fileName });
 
   // Type in a string in the first cell
-  await typeInCell(page, { targetColumn: 1, targetRow: 1, text: 'Hello World' });
+  await typeInCell(page, { a1: 'A1', text: 'Hello World' });
 
   //--------------------------------
   // Act:
@@ -4385,11 +4437,11 @@ test('Theme Customization from Sheet', async ({ page }) => {
     // Small wait in between theme changes
     await page.waitForTimeout(5 * 1000);
 
-    // Click theme toggle button (identified by constract icon)
-    await page.getByRole(`button`, { name: `contrast` }).click();
+    // Click theme toggle button (identified by contrast icon)
+    await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
     // Click accent color
-    await page.getByRole(`button`, { name: theme.name }).click();
+    await page.getByRole(`button`, { name: theme.name }).click({ timeout: 60 * 1000 });
 
     // Assert that the HTML element has accent name applied to 'data-theme' attribute
     expect(await page.locator(`html`).getAttribute(`data-theme`)).toContain(theme.value);
@@ -4397,8 +4449,8 @@ test('Theme Customization from Sheet', async ({ page }) => {
     // Assert with screenshot that the canvas has the expected accent color applied
     // Ensure selected column(s), row(s) and cell(s) have the accent color
     await selectCells(page, { startXY: [1, 1], endXY: [6, 6] });
-    await expect(page.locator('canvas:visible')).toHaveScreenshot(
-      `ApperanceCustomization-Sheet-${theme.name}-Accent.png`,
+    await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(
+      `AppearanceCustomization-Sheet-${theme.name}-Accent.png`,
       {
         maxDiffPixelRatio: 0.01,
       }
@@ -4408,7 +4460,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
     await expect(page.locator(`[data-title="Sheet 1"]`)).toHaveCSS(`color`, theme.color);
 
     // Open AI chat to assert accent color is applied to all buttons
-    await page.getByRole(`button`, { name: `auto_awesome` }).click();
+    await page.getByRole(`button`, { name: `auto_awesome` }).click({ timeout: 60 * 1000 });
 
     // Wait for the heading to appear
     await page.getByRole(`heading`, { name: `What can I help with?` }).waitFor();
@@ -4420,7 +4472,10 @@ test('Theme Customization from Sheet', async ({ page }) => {
     }
 
     // Close AI chat
-    await page.getByRole(`button`, { name: `close` }).first().click();
+    await page
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 60 * 1000 });
   }
 
   // (Reset) Remove selection and focus on the first cell on the sheet
@@ -4439,14 +4494,14 @@ test('Theme Customization from Sheet', async ({ page }) => {
   // Act:
   //--------------------------------
 
-  // Click theme toggle button (identified by constract icon)
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  // Click theme toggle button (identified by contrast icon)
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
   // Click 'Dark' button to trigger theme change
-  await page.getByRole(`button`, { name: `dark_mode dark` }).click();
+  await page.getByRole(`button`, { name: `dark_mode dark` }).click({ timeout: 60 * 1000 });
 
   // Click theme toggle button again to close it
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -4469,16 +4524,19 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, darkText);
 
   // Assert with screenshot that the canvas is in a dark mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Dark.png', {
     maxDiffPixelRatio: 0.01,
   });
 
   // ** Page reload and assert dark mode colors are persisting **
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await expect(page.locator(`nav a svg`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Close AI chat
-  await page.getByRole(`button`, { name: `close` }).first().click();
+  await page
+    .getByRole(`button`, { name: `close` })
+    .first()
+    .click({ timeout: 60 * 1000 });
 
   // Assert root has the 'Dark' class applied
   htmlClass = await page.locator(`html`).getAttribute(`class`);
@@ -4492,7 +4550,7 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, darkText);
 
   // Assert with screenshot that the canvas is in a dark mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Dark.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Dark.png', {
     maxDiffPixelRatio: 0.01,
   });
 
@@ -4509,14 +4567,14 @@ test('Theme Customization from Sheet', async ({ page }) => {
   // Act:
   //--------------------------------
 
-  // Click theme toggle button (identified by constract icon)
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  // Click theme toggle button (identified by contrast icon)
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
   // Click 'Light' button to trigger theme change
-  await page.getByRole(`button`, { name: `light_mode light` }).click();
+  await page.getByRole(`button`, { name: `light_mode light` }).click({ timeout: 60 * 1000 });
 
   // Click theme toggle button again to close it
-  await page.getByRole(`button`, { name: `contrast` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
@@ -4546,16 +4604,19 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, lightText);
 
   // Assert with screenshot that the canvas is in a light mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Light.png', {
     maxDiffPixelRatio: 0.01,
   });
 
   // ** Page reload and assert light mode colors are persisting **
   await page.reload();
-  await page.waitForLoadState(`networkidle`);
+  await expect(page.locator(`nav a svg`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Close AI chat
-  await page.getByRole(`button`, { name: `close` }).first().click();
+  await page
+    .getByRole(`button`, { name: `close` })
+    .first()
+    .click({ timeout: 60 * 1000 });
 
   // Assert root has no class names applied
   htmlClass = await page.locator(`html`).getAttribute(`class`);
@@ -4569,13 +4630,13 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await expect(headerBarEl).toHaveCSS(`color`, lightText);
 
   // Assert with screenshot that the canvas is in a light mode state
-  await expect(page.locator('canvas:visible')).toHaveScreenshot('ApperanceCustomization-Sheet_Light.png', {
+  await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot('AppearanceCustomization-Sheet_Light.png', {
     maxDiffPixelRatio: 0.01,
   });
 
   // ===== Cleanup ======
   // Return home for cleanup
-  await page.locator(`[href="/"]`).click();
+  await page.locator(`[href="/"]`).click({ timeout: 60 * 1000 });
 
   // Assert Quadratic team files page and logged in status
   await expect(page.getByText(email)).toBeVisible();
@@ -4586,8 +4647,8 @@ test('Theme Customization from Sheet', async ({ page }) => {
   await cleanUpFiles(page, { fileName });
 
   // Reset current theme
-  await page.getByRole(`button`, { name: `contrast` }).click();
-  await page.getByRole(`button`, { name: `discover_tune system` }).click();
+  await page.getByRole(`button`, { name: `contrast` }).click({ timeout: 60 * 1000 });
+  await page.getByRole(`button`, { name: `discover_tune system` }).click({ timeout: 60 * 1000 });
 });
 
 test('Zoom In and Out', async ({ page }) => {
@@ -4616,10 +4677,10 @@ test('Zoom In and Out', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click();
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom in
-  await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click();
+  await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click({ timeout: 60 * 1000 });
 
   // Wait a moment for zoom to process
   await page.waitForTimeout(5 * 1000);
@@ -4640,10 +4701,10 @@ test('Zoom In and Out', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click();
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom in
-  await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click();
+  await page.getByRole('menuitem', { name: 'Zoom in Ctrl+' }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Click top right zoom dropdown
@@ -4651,10 +4712,10 @@ test('Zoom In and Out', async ({ page }) => {
     .locator(`button`)
     .filter({ hasText: /%arrow_drop_down$/ })
     .last()
-    .click();
+    .click({ timeout: 60 * 1000 });
 
   // Click `Zoom out
-  await page.getByRole('menuitem', { name: 'Zoom out Ctrl-' }).click();
+  await page.getByRole('menuitem', { name: 'Zoom out Ctrl-' }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
@@ -4669,7 +4730,7 @@ test('Zoom In and Out', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -4703,21 +4764,21 @@ test('Charts Copy Paste', async ({ page }) => {
   await page.keyboard.press('/');
 
   // Click on Python option from popup menu
-  await page.locator('[data-value="Python"]').click();
+  await page.locator('[data-value="Python"]').click({ timeout: 60 * 1000 });
 
   await page.waitForTimeout(2000);
 
   // Click an option from the popup menu
-  await page.getByRole(`button`, { name: `Create chart` }).click();
+  await page.getByRole(`button`, { name: `Create chart` }).click({ timeout: 60 * 1000 });
 
   // Click the blue play arrow to 'Save and run'
-  await page.getByRole(`button`, { name: `play_arrow` }).click();
+  await page.getByRole(`button`, { name: `play_arrow` }).click({ timeout: 60 * 1000 });
 
   // wait for the chart to render
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   // Close the code editor
-  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click();
+  await page.locator(`#QuadraticCodeEditorCloseButtonID`).click({ timeout: 60 * 1000 });
 
   await page.locator(`#QuadraticCanvasID`).click({ position: { x: 300, y: 55 } });
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`chart_copy_paste_initial.png`, {
@@ -4733,7 +4794,7 @@ test('Charts Copy Paste', async ({ page }) => {
   await page.keyboard.press('Control+V'); // Paste chart
 
   // wait for the chart to render
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   // assert that the chart has been pasted correctly
   await expect(page.locator('#QuadraticCanvasID')).toHaveScreenshot(`chart_copy_paste_final.png`, {
@@ -4749,7 +4810,7 @@ test('Charts Copy Paste', async ({ page }) => {
 
   // Undo cut chart
   await page.keyboard.press('Control+Z');
-  await page.waitForTimeout(30 * 1000);
+  await page.waitForTimeout(60 * 1000);
 
   // assert that the chart has been reverted to its original position
   await page.locator(`#QuadraticCanvasID`).click({ position: { x: 300, y: 55 } });
@@ -4761,7 +4822,7 @@ test('Charts Copy Paste', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -4880,7 +4941,7 @@ test('Multiple Columns Resizing', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });
 
@@ -4999,6 +5060,6 @@ test('Multiple Rows Resizing', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName });
 });

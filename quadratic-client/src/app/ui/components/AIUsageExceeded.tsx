@@ -1,17 +1,16 @@
 import { Button } from '@/shared/shadcn/ui/button';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo } from 'react';
 
 type AIUsageExceededProps = {
   show: boolean;
-  delaySeconds?: number;
 };
 
 const divClassName =
   'mx-2 my-2 rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-xs font-medium dark:border-yellow-800 dark:bg-yellow-950/50';
 
-export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProps) => {
-  if (!show || !delaySeconds) {
+export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
+  if (!show) {
     return null;
   }
 
@@ -22,7 +21,7 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
         <Button
           variant="outline"
           onClick={() => {
-            mixpanel.track('[AI].UsageExceeded.clickLearnMore', {
+            trackEvent('[AI].UsageExceeded.clickLearnMore', {
               ab_test: 'variant',
             });
             // go to the team settings page in a new tab
@@ -34,7 +33,7 @@ export const AIUsageExceeded = memo(({ show, delaySeconds }: AIUsageExceededProp
         </Button>
         <Button
           onClick={() => {
-            mixpanel.track('[AI].UsageExceeded.clickUpgrade', {
+            trackEvent('[AI].UsageExceeded.clickUpgrade', {
               ab_test: 'variant',
             });
             // navigate to the team settings page

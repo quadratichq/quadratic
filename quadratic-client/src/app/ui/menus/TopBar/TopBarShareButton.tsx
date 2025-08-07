@@ -2,7 +2,7 @@ import { editorInteractionStateShowShareFileMenuAtom } from '@/app/atoms/editorI
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { ROUTES } from '@/shared/constants/routes';
 import { Button } from '@/shared/shadcn/ui/button';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { Link } from 'react-router';
 import { useSetRecoilState } from 'recoil';
 
@@ -18,7 +18,7 @@ export const TopBarShareButton = () => {
           size="sm"
           onClick={() => {
             setShowShareFileMenu((prev) => !prev);
-            mixpanel.track('[FileSharing].menu.open', { context: 'app' });
+            trackEvent('[FileSharing].menu.open', { context: 'app' });
           }}
           className="self-center"
         >

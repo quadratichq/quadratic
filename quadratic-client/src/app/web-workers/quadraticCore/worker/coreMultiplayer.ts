@@ -1,4 +1,4 @@
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type {
   CoreMultiplayerMessage,
   MultiplayerCoreMessage,
@@ -14,11 +14,11 @@ declare var self: WorkerGlobalScope &
 class CoreMultiplayer {
   private coreMessagePort?: MessagePort;
 
-  init(coreMessagePort: MessagePort) {
+  async init(coreMessagePort: MessagePort) {
     this.coreMessagePort = coreMessagePort;
     this.coreMessagePort.onmessage = this.handleMessage;
 
-    if (debugWebWorkers) console.log('[coreMultiplayer] initialized');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[coreMultiplayer] initialized');
   }
 
   private send(message: CoreMultiplayerMessage, transfer?: Transferable[]) {
@@ -30,12 +30,12 @@ class CoreMultiplayer {
     }
   }
 
-  private handleMessage = (e: MessageEvent<MultiplayerCoreMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[coreMultiplayer] message: ${e.data.type}`);
+  private handleMessage = async (e: MessageEvent<MultiplayerCoreMessage>) => {
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[coreMultiplayer] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'multiplayerCoreReceiveTransaction':
-        core.receiveTransaction(e.data);
+        await core.receiveTransaction(e.data);
         break;
 
       case 'multiplayerCoreReceiveCurrentTransaction':
@@ -43,11 +43,11 @@ class CoreMultiplayer {
         break;
 
       case 'multiplayerCoreReceiveTransactions':
-        core.receiveTransactions(e.data);
+        await core.receiveTransactions(e.data);
         break;
 
       case 'multiplayerCoreReceiveTransactionAck':
-        core.receiveTransactionAck(e.data.transactionId, e.data.sequenceNum);
+        await core.receiveTransactionAck(e.data.transactionId, e.data.sequenceNum);
         break;
 
       default:

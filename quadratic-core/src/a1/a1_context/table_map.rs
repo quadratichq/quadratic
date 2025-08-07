@@ -5,17 +5,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Pos, SheetPos,
-    grid::{DataTable, SheetId},
+    grid::{CodeCellLanguage, DataTable, SheetId},
     util::case_fold_ascii,
 };
 
-use super::TableMapEntry;
+use super::{JsTableInfo, TableMapEntry};
 
 #[derive(Default, Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct TableMap {
     tables: IndexMap<String, TableMapEntry>,
 
-    #[serde(with = "crate::util::hashmap_serde")]
     sheet_pos_to_table: HashMap<SheetPos, String>,
 }
 
@@ -36,27 +35,20 @@ impl TableMap {
         self.insert(table_map_entry);
     }
 
-    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
-        let table_name_folded = case_fold_ascii(table_name);
-        if let Some(table) = self.tables.shift_remove(&table_name_folded) {
-            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
-            self.sheet_pos_to_table.remove(&sheet_pos);
-            Some(table)
-        } else {
-            None
+    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
+        if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.to_sheet_pos(sheet_id)) {
+            if let Some(table) = self.tables.get(&table_name) {
+                if table.sheet_id == sheet_id && table.bounds.min == pos {
+                    self.tables.swap_remove(&table_name);
+                }
+            }
         }
     }
 
-    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
-        self.sheet_pos_to_table
-            .remove(&pos.to_sheet_pos(sheet_id))
-            .and_then(|table_name| self.tables.shift_remove(&table_name));
-    }
-
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
-        self.sheet_pos_to_table.retain(|sheet_pos, table| {
+        self.sheet_pos_to_table.retain(|sheet_pos, name| {
             if sheet_pos.sheet_id == sheet_id {
-                self.tables.shift_remove(table);
+                self.tables.swap_remove(name);
                 false
             } else {
                 true
@@ -128,28 +120,13 @@ impl TableMap {
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        self.tables.values().find(|table| {
-            table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
-        })
-    }
-
-    /// Returns the table name if the given position is in the table's name or column headers.
-    pub fn table_in_name_or_column(&self, sheet_id: SheetId, x: u32, y: u32) -> Option<String> {
-        self.tables.values().find_map(|table| {
-            if table.sheet_id == sheet_id
-                && table.bounds.contains(Pos {
-                    x: x as i64,
-                    y: y as i64,
-                })
-                && y < (table.bounds.min.y as u32)
-                    + (if table.show_name { 1 } else { 0 } + if table.show_columns { 1 } else { 0 })
-                        as u32
-            {
-                return Some(table.table_name.clone());
-            }
-
-            None
-        })
+        if let Some(table_name) = self.sheet_pos_to_table.get(&sheet_pos) {
+            self.tables.get(table_name)
+        } else {
+            self.tables.values().find(|table| {
+                table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
+            })
+        }
     }
 
     pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
@@ -177,6 +154,31 @@ impl TableMap {
         }
     }
 
+    /// Returns JsTableInfo for all non-formula tables.
+    pub fn expensive_table_info(&self) -> Vec<JsTableInfo> {
+        self.iter_table_values()
+            .filter_map(|table| {
+                if table.language != CodeCellLanguage::Formula && table.bounds.len() > 1 {
+                    Some(JsTableInfo {
+                        name: table.table_name.clone(),
+                        sheet_id: table.sheet_id.to_string(),
+                        chart: table.is_html_image,
+                        language: table.language.clone(),
+                    })
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    /// Finds a table by position.
+    pub fn table_at(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
+        self.sheet_pos_to_table
+            .get(&sheet_pos)
+            .and_then(|table_name| self.tables.get(table_name))
+    }
+
     /// Inserts a test table into the table map.
     ///
     /// if all_columns is None, then it uses visible_columns.
@@ -196,6 +198,19 @@ impl TableMap {
             bounds,
             language,
         ));
+    }
+
+    // shift_remove is expensive, so we should only use it for testing
+    #[cfg(test)]
+    pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
+        let table_name_folded = case_fold_ascii(table_name);
+        if let Some(table) = self.tables.shift_remove(&table_name_folded) {
+            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
+            self.sheet_pos_to_table.remove(&sheet_pos);
+            Some(table)
+        } else {
+            None
+        }
     }
 }
 
@@ -390,72 +405,6 @@ mod tests {
     }
 
     #[test]
-    fn test_table_in_name_or_column() {
-        let mut map = TableMap::default();
-
-        let sheet_id_1 = SheetId::new();
-        let sheet_id_2 = SheetId::new();
-
-        // Create a table with both name and columns shown
-        map.insert(TableMapEntry {
-            sheet_id: sheet_id_1,
-            table_name: "Test Table".to_string(),
-            visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            all_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            bounds: Rect::new(0, 0, 2, 3),
-            show_name: true,
-            show_columns: true,
-            is_html_image: false,
-            header_is_first_row: false,
-            language: CodeCellLanguage::Import,
-        });
-
-        // Test position in table name row (y=0)
-        assert_eq!(
-            map.table_in_name_or_column(sheet_id_1, 0, 0),
-            Some("Test Table".to_string())
-        );
-
-        // Test position in column headers row (y=1)
-        assert_eq!(
-            map.table_in_name_or_column(sheet_id_1, 0, 1),
-            Some("Test Table".to_string())
-        );
-
-        // Test position in data area (y=2)
-        assert_eq!(map.table_in_name_or_column(sheet_id_1, 0, 2), None);
-
-        // Test position outside table
-        assert_eq!(map.table_in_name_or_column(sheet_id_1, 5, 0), None);
-
-        // Test with different sheet_id
-        assert_eq!(map.table_in_name_or_column(sheet_id_2, 0, 0), None);
-
-        // Create a table with only columns shown (no name)
-        map.insert(TableMapEntry {
-            sheet_id: sheet_id_1,
-            table_name: "Table 2".to_string(),
-            visible_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            all_columns: vec!["Col1".to_string(), "Col2".to_string()],
-            bounds: Rect::new(5, 5, 7, 8),
-            show_name: false,
-            show_columns: true,
-            is_html_image: false,
-            header_is_first_row: false,
-            language: CodeCellLanguage::Import,
-        });
-
-        // Test position in column headers row (y=5)
-        assert_eq!(
-            map.table_in_name_or_column(sheet_id_1, 5, 5),
-            Some("Table 2".to_string())
-        );
-
-        // Test position in data area (y=6)
-        assert_eq!(map.table_in_name_or_column(sheet_id_1, 5, 6), None);
-    }
-
-    #[test]
     fn test_table_has_column() {
         let mut map = TableMap::default();
 
@@ -502,5 +451,52 @@ mod tests {
         assert!(map.table_has_column("test_table", "VISIBLE1", 1));
         // table_has_column is false when the index is the same as the existing column index
         assert!(!map.table_has_column("test_table", "VISIBLE1", 0));
+    }
+
+    #[test]
+    fn test_table_info() {
+        let mut map = TableMap::default();
+
+        // Insert tables with different languages
+        map.test_insert(
+            "table1",
+            &["A", "B"],
+            None,
+            Rect::new(1, 1, 2, 3),
+            CodeCellLanguage::Python,
+        );
+
+        map.test_insert(
+            "table2",
+            &["C", "D"],
+            None,
+            Rect::new(4, 1, 2, 3),
+            CodeCellLanguage::Formula, // This should be excluded
+        );
+
+        map.test_insert(
+            "table3",
+            &["E", "F"],
+            None,
+            Rect::new(7, 1, 2, 3),
+            CodeCellLanguage::Import,
+        );
+
+        let info = map.expensive_table_info();
+        assert_eq!(info.len(), 2); // Only non-formula tables should be included
+
+        // Verify table1 info
+        let table1_info = info.iter().find(|t| t.name == "table1").unwrap();
+        assert_eq!(table1_info.name, "table1");
+        assert_eq!(table1_info.sheet_id, SheetId::TEST.to_string());
+        assert!(!table1_info.chart);
+        assert_eq!(table1_info.language, CodeCellLanguage::Python);
+
+        // Verify table3 info
+        let table3_info = info.iter().find(|t| t.name == "table3").unwrap();
+        assert_eq!(table3_info.name, "table3");
+        assert_eq!(table3_info.sheet_id, SheetId::TEST.to_string());
+        assert!(!table3_info.chart);
+        assert_eq!(table3_info.language, CodeCellLanguage::Import);
     }
 }

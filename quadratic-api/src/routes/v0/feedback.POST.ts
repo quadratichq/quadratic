@@ -6,6 +6,7 @@ import { NODE_ENV, SLACK_FEEDBACK_URL } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
 import { validateAccessToken } from '../../middleware/validateAccessToken';
 import type { RequestWithUser } from '../../types/Request';
+import logger from '../../utils/logger';
 
 const RequestBodySchema = z.object({
   feedback: z.string(),
@@ -48,7 +49,7 @@ async function handler(req: RequestWithUser, res: express.Response) {
 
   // Post to Slack
   // SLACK_FEEDBACK_URL is the Quadratic product feedback slack app webhook URL
-   // We filter out spammy feedback by requiring at least 15 characters
+  // We filter out spammy feedback by requiring at least 15 characters
   if (SLACK_FEEDBACK_URL && feedback.length >= 15) {
     const payload = {
       text: [
@@ -58,8 +59,8 @@ async function handler(req: RequestWithUser, res: express.Response) {
         feedback,
       ].join('\n\n'),
     };
-    axios.post(SLACK_FEEDBACK_URL, payload).catch((e: Error) => {
-      console.log('Failed to post feedback to Slack', e);
+    axios.post(SLACK_FEEDBACK_URL, payload).catch((error: Error) => {
+      logger.warn('Failed to post feedback to Slack', error);
     });
   }
 

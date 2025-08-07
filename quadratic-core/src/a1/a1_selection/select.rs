@@ -270,7 +270,7 @@ impl A1Selection {
                 self.cursor.x = range.start.col();
             }
             range.end = CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_rel(row),
             };
         } else {

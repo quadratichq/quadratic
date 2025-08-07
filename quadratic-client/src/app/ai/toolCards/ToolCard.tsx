@@ -16,14 +16,14 @@ export const ToolCard = memo(
     label?: string | React.ReactNode;
     description?: string | React.ReactNode;
     hasError?: boolean;
-    className?: string;
+    className: string;
     actions?: React.ReactNode;
     isLoading?: boolean;
   }) => {
     return (
       <div
         className={cn(
-          'flex h-12 min-w-0 items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow-sm',
+          'flex h-12 min-w-0 select-none items-center justify-between gap-2 rounded border border-border bg-background p-2 text-sm shadow-sm',
           className
         )}
       >

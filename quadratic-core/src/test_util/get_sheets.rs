@@ -18,20 +18,29 @@ pub fn first_sheet(gc: &GridController) -> &Sheet {
 #[cfg(test)]
 pub fn sheet(gc: &GridController, id: SheetId) -> &Sheet {
     gc.try_sheet(id)
-        .unwrap_or_else(|| panic!("Sheet with id {} not found", id))
+        .unwrap_or_else(|| panic!("Sheet with id {id} not found"))
 }
 
 /// Gets a sheet from a grid controller by id
 #[cfg(test)]
 pub fn sheet_mut(gc: &mut GridController, id: SheetId) -> &mut Sheet {
     gc.try_sheet_mut(id)
-        .unwrap_or_else(|| panic!("Sheet with id {} not found", id))
+        .unwrap_or_else(|| panic!("Sheet with id {id} not found"))
 }
 
 /// Gets the first sheet id from a grid controller
 #[cfg(test)]
 pub fn first_sheet_id(gc: &GridController) -> SheetId {
     gc.sheet_ids()[0]
+}
+
+#[cfg(test)]
+pub fn test_export_and_import(gc: &GridController) -> GridController {
+    use crate::grid::file::{export, import};
+
+    let exported = export(gc.grid().clone()).unwrap();
+    let grid = import(exported).unwrap();
+    GridController::from_grid(grid, 0)
 }
 
 #[cfg(test)]

@@ -6,10 +6,10 @@ use std::collections::BTreeMap;
 
 use arrow::datatypes::Date32Type;
 use async_trait::async_trait;
-use bigdecimal::BigDecimal;
 use bytes::Bytes;
 use chrono::{DateTime, Local, NaiveDate, NaiveDateTime, NaiveTime};
 use futures_util::StreamExt;
+use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -115,7 +115,7 @@ impl MySqlConnection {
     }
 
     /// Query all rows from a MySQL database
-    async fn query_all(pool: &mut SqlxMySqlConnection, sql: &str) -> Result<Vec<MySqlRow>> {
+    pub async fn query_all(pool: &mut SqlxMySqlConnection, sql: &str) -> Result<Vec<MySqlRow>> {
         let rows = sqlx::query(sql)
             .fetch_all(pool)
             .await
@@ -126,7 +126,7 @@ impl MySqlConnection {
 }
 
 #[async_trait]
-impl Connection for MySqlConnection {
+impl<'a> Connection<'a> for MySqlConnection {
     type Conn = SqlxMySqlConnection;
     type Row = MySqlRow;
     type Column = MySqlColumn;
@@ -142,8 +142,8 @@ impl Connection for MySqlConnection {
     }
 
     /// Get the name of a column
-    fn column_name(col: &Self::Column) -> &str {
-        col.name()
+    fn column_name(&self, col: &Self::Column, _index: usize) -> String {
+        col.name().to_string()
     }
 
     /// Connect to a MySQL database
@@ -173,7 +173,7 @@ impl Connection for MySqlConnection {
 
     /// Query rows from a MySQL database
     async fn query(
-        &self,
+        &mut self,
         pool: &mut Self::Conn,
         sql: &str,
         max_bytes: Option<u64>,
@@ -200,7 +200,7 @@ impl Connection for MySqlConnection {
             rows = MySqlConnection::query_all(pool, sql).await?;
         }
 
-        let (bytes, num_records) = Self::to_parquet(rows)?;
+        let (bytes, num_records) = self.to_parquet(rows)?;
 
         Ok((bytes, over_the_limit, num_records))
     }
@@ -250,10 +250,10 @@ impl Connection for MySqlConnection {
     }
 
     /// Convert a row to an Arrow type
-    fn to_arrow(row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
-        // println!("Column: {} ({})", column.name(), column.type_info().name());
+    fn to_arrow(&self, row: &Self::Row, column: &Self::Column, index: usize) -> ArrowType {
+        println!("Column: {} ({})", column.name(), column.type_info().name());
         match column.type_info().name() {
-            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" => {
+            "TEXT" | "VARCHAR" | "CHAR" | "ENUM" | "LONGTEXT" => {
                 to_arrow_type!(ArrowType::Utf8, String, row, index)
             }
             "TINYINT" => to_arrow_type!(ArrowType::Int8, i8, row, index),
@@ -269,7 +269,7 @@ impl Connection for MySqlConnection {
             "BOOL" | "BOOLEAN" => to_arrow_type!(ArrowType::Boolean, bool, row, index),
             "FLOAT" => to_arrow_type!(ArrowType::Float32, f32, row, index),
             "DOUBLE" => to_arrow_type!(ArrowType::Float64, f64, row, index),
-            "DECIMAL" => to_arrow_type!(ArrowType::BigDecimal, BigDecimal, row, index),
+            "DECIMAL" => to_arrow_type!(ArrowType::Decimal, Decimal, row, index),
             "TIMESTAMP" => to_arrow_type!(ArrowType::TimestampTz, DateTime<Local>, row, index),
             "DATETIME" => to_arrow_type!(ArrowType::Timestamp, NaiveDateTime, row, index),
             "DATE" => match convert_sqlx_type!(NaiveDate, row, index) {
@@ -278,7 +278,7 @@ impl Connection for MySqlConnection {
             },
             "TIME" => to_arrow_type!(ArrowType::Time32, NaiveTime, row, index),
             "YEAR" => to_arrow_type!(ArrowType::UInt16, u16, row, index),
-            "JSON" => to_arrow_type!(ArrowType::Json, Value, row, index),
+            "JSON" | "BLOB" => to_arrow_type!(ArrowType::Json, Value, row, index),
             "UUID" => to_arrow_type!(ArrowType::Uuid, Uuid, row, index),
             "NULL" => ArrowType::Void,
             // try to convert others to a string
@@ -300,6 +300,14 @@ impl UsesSsh for MySqlConnection {
         self.port = Some(port.to_string());
     }
 
+    fn host(&self) -> String {
+        self.host.clone()
+    }
+
+    fn set_host(&mut self, host: String) {
+        self.host = host;
+    }
+
     fn ssh_host(&self) -> Option<String> {
         self.ssh_host.to_owned()
     }
@@ -316,7 +324,6 @@ mod tests {
 
     use super::*;
     // use std::io::Read;
-    use bigdecimal::BigDecimal;
     use serde_json::json;
 
     fn new_mysql_connection() -> MySqlConnection {
@@ -350,7 +357,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mysql_query_to_arrow() {
-        let (_, pool) = setup().await;
+        let (connection, pool) = setup().await;
         let mut pool = pool.unwrap();
         let sql = "select * from all_native_data_types order by id limit 1";
         let rows = MySqlConnection::query_all(&mut pool, sql).await.unwrap();
@@ -364,7 +371,7 @@ mod tests {
 
         let row = &rows[0];
         let columns = row.columns();
-        let to_arrow = |index: usize| MySqlConnection::to_arrow(row, &columns[index], index);
+        let to_arrow = |index: usize| connection.to_arrow(row, &columns[index], index);
 
         assert_eq!(to_arrow(0), ArrowType::Int32(1));
         assert_eq!(to_arrow(1), ArrowType::Int8(127));
@@ -374,7 +381,7 @@ mod tests {
         assert_eq!(to_arrow(5), ArrowType::Int64(9223372036854775807));
         assert_eq!(
             to_arrow(6),
-            ArrowType::BigDecimal(BigDecimal::from_str("12345.67").unwrap())
+            ArrowType::Decimal(Decimal::from_str("12345.67").unwrap())
         );
         assert_eq!(to_arrow(7), ArrowType::Float32(123.45));
         assert_eq!(to_arrow(8), ArrowType::Float64(123456789.123456));
@@ -383,10 +390,10 @@ mod tests {
         assert_eq!(to_arrow(11), ArrowType::Utf8("varchar_data".into()));
         assert_eq!(to_arrow(12), ArrowType::Unsupported);
         assert_eq!(to_arrow(13), ArrowType::Unsupported);
-        assert_eq!(to_arrow(14), ArrowType::Unsupported);
-        assert_eq!(to_arrow(15), ArrowType::Unsupported);
-        assert_eq!(to_arrow(16), ArrowType::Unsupported);
-        assert_eq!(to_arrow(17), ArrowType::Unsupported);
+        assert_eq!(to_arrow(14), ArrowType::Null);
+        assert_eq!(to_arrow(15), ArrowType::Null);
+        assert_eq!(to_arrow(16), ArrowType::Null);
+        assert_eq!(to_arrow(17), ArrowType::Null);
         assert_eq!(to_arrow(18), ArrowType::Utf8("tinytext_data".into()));
         assert_eq!(to_arrow(19), ArrowType::Utf8("text_data".into()));
         assert_eq!(to_arrow(20), ArrowType::Utf8("mediumtext_data".into()));

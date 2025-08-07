@@ -157,6 +157,7 @@ impl State {
 
     /// Updates a user's permissions in a room
     #[tracing::instrument(level = "trace")]
+    #[cfg(test)]
     pub(crate) async fn update_user_permissions(
         &self,
         file_id: Uuid,

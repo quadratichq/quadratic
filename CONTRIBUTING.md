@@ -83,3 +83,33 @@ calls yet).`
 the `name` function was called a specific number of times. If it matches it will
 clear the `TEST_ARRAY` of those functions. If `clear` = true then it will also
 clear the entire `TEST_ARRAY` (for the same reason as above).
+
+## How to add environment variables
+
+When possible, you can provide sensible fallbacks to environment variables so that if they're not present in the environment the app still functions.
+
+But if you are adding a critical env variables that the app absolutely depends on, follow the instructions below.
+
+### Local
+
+1. Add it to your local `.env` file, e.g.
+    - `FOO=some-value` in `quadratic-client/.env`
+1. Add it to the repo `.env.*` files as relevant, e.g.
+    - `FOO=xxx` in `quadratic-client/.env.example`
+    - `FOO=xxx` in `quadratic-api/.env.test`
+
+### Preview branches
+
+
+1. Add it to the AWS parameter store
+    - Ask someone with access to AWS to add this, e.g. `/quadratic-development/FOO`
+2. Add the env variable to Cloudformation
+    - Fetch from parameter store by adding it in `infra/aws-cloudformation/quadratic-preview.yml`
+3. Add the env variable in [quadratic-selfhost](https://github.com/quadratichq/quadratic-selfhost)
+    - Create a PR to add it in `docker-compose.yml`
+4. Redeploy the app.
+    - env variables are fetched once from the AWS parameter store when the stack is created (on PR open or reopen)
+
+### Production
+
+1. Ask David K.

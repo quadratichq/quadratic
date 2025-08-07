@@ -21,8 +21,7 @@ pub async fn download_object(client: &Client, bucket: &str, key: &str) -> Result
         .await
         .map_err(|error| {
             SharedError::Aws(AwsError::S3(format!(
-                "Error retrieving file {} from bucket {}: {:?}.",
-                key, bucket, error
+                "Error retrieving file {key} from bucket {bucket}: {error:?}."
             )))
         })
 }
@@ -45,8 +44,7 @@ pub async fn upload_object(
         .await
         .map_err(|error| {
             SharedError::Aws(AwsError::S3(format!(
-                "Error uploading file {key} to bucket {bucket}: {:?}.",
-                error
+                "Error uploading file {key} to bucket {bucket}: {error:?}."
             )))
         })
 }

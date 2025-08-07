@@ -1,9 +1,8 @@
-import * as AlertDialogPrimitive from '@radix-ui/react-alert-dialog';
-import { type VariantProps } from 'class-variance-authority';
-import * as React from 'react';
-
 import { buttonVariants } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { type VariantProps } from 'class-variance-authority';
+import { AlertDialog as AlertDialogPrimitive } from 'radix-ui';
+import * as React from 'react';
 
 const AlertDialog = AlertDialogPrimitive.Root;
 
@@ -72,9 +71,15 @@ AlertDialogDescription.displayName = AlertDialogPrimitive.Description.displayNam
 
 const AlertDialogAction = React.forwardRef<
   React.ElementRef<typeof AlertDialogPrimitive.Action>,
-  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action> & { variant?: VariantProps<typeof buttonVariants>['variant'] }
+  React.ComponentPropsWithoutRef<typeof AlertDialogPrimitive.Action> & {
+    variant?: VariantProps<typeof buttonVariants>['variant'];
+  }
 >(({ className, variant, ...props }, ref) => (
-  <AlertDialogPrimitive.Action ref={ref} className={cn(buttonVariants({ variant: variant ?? 'default' }), className)} {...props} />
+  <AlertDialogPrimitive.Action
+    ref={ref}
+    className={cn(buttonVariants({ variant: variant ?? 'default' }), className)}
+    {...props}
+  />
 ));
 AlertDialogAction.displayName = AlertDialogPrimitive.Action.displayName;
 
@@ -101,6 +106,5 @@ export {
   AlertDialogOverlay,
   AlertDialogPortal,
   AlertDialogTitle,
-  AlertDialogTrigger
+  AlertDialogTrigger,
 };
-

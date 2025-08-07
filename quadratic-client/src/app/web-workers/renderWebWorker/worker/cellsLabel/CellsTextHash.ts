@@ -9,7 +9,7 @@
  * webGL buffers do not exceed the maximum size.
  */
 
-import { debugShowHashUpdates, debugShowLoadingHashes } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import type { JsCoordinate, JsRenderCell } from '@/app/quadratic-core-types';
@@ -17,7 +17,6 @@ import type { Link } from '@/app/shared/types/links';
 import type { DrawRects } from '@/app/shared/types/size';
 import { CellLabel } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import type { CellsLabels } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsLabels';
-import { CellsTextHashContent } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashContent';
 import { CellsTextHashSpecial } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellsTextHashSpecial';
 import { LabelMeshes } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/LabelMeshes';
 import { renderClient } from '@/app/web-workers/renderWebWorker/worker/renderClient';
@@ -70,8 +69,6 @@ export class CellsTextHash {
   private columnsMaxCache?: Map<number, number>;
   private rowsMaxCache?: Map<number, number>;
 
-  private content: CellsTextHashContent;
-
   renderCellsReceivedTime = 0;
 
   get loaded(): boolean {
@@ -114,7 +111,6 @@ export class CellsTextHash {
     this.hashX = hashX;
     this.hashY = hashY;
     this.special = new CellsTextHashSpecial();
-    this.content = new CellsTextHashContent();
   }
 
   // key used to find individual cell labels
@@ -143,7 +139,6 @@ export class CellsTextHash {
     } else if (cell.special === 'List') {
       this.special.addDropdown(Number(cell.x), Number(cell.y), rectangle.right, rectangle.top);
     }
-    this.content.add(cell.x, cell.y);
   }
 
   private createLabels = (cells: JsRenderCell[]) => {
@@ -154,11 +149,10 @@ export class CellsTextHash {
 
   unload = () => {
     if (this.loaded) {
-      if (debugShowLoadingHashes) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
+      if (debugFlag('debugShowLoadingHashes')) console.log(`[CellsTextHash] Unloading ${this.hashX}, ${this.hashY}`);
       this.loaded = false;
       this.labels.clear();
       this.special.clear();
-      this.content.clear();
       this.labelMeshes.clear();
       this.links = [];
       this.drawRects = [];
@@ -180,7 +174,6 @@ export class CellsTextHash {
       this.hashY,
       this.viewRectangle,
       this.overflowGridLines,
-      this.content.export(),
       this.links,
       this.drawRects
     );
@@ -232,7 +225,7 @@ export class CellsTextHash {
         cells = false;
       }
 
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
+      if (debugFlag('debugShowHashUpdates')) console.log(`[CellsTextHash] updating ${this.hashX}, ${this.hashY}`);
 
       if (cells) {
         this.createLabels(cells);
@@ -243,7 +236,8 @@ export class CellsTextHash {
 
       return true;
     } else if (this.dirtyText || this.dirtyBuffers) {
-      if (debugShowHashUpdates) console.log(`[CellsTextHash] updating text and buffers ${this.hashX}, ${this.hashY}`);
+      if (debugFlag('debugShowHashUpdates'))
+        console.log(`[CellsTextHash] updating text and buffers ${this.hashX}, ${this.hashY}`);
 
       this.updateText();
       this.updateBuffers();
@@ -483,7 +477,7 @@ export class CellsTextHash {
 
     changed = changed || specialsChanged;
 
-    if (changed && debugShowHashUpdates) {
+    if (changed && debugFlag('debugShowHashUpdates')) {
       console.log(
         `[CellsTextHash] adjustHeadings for ${this.hashX}, ${this.hashY} because of changes in column: ${column}, row: ${row}`
       );

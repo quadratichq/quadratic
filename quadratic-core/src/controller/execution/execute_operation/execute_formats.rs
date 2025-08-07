@@ -10,8 +10,6 @@ impl GridController {
     ) {
         unwrap_op!(let SetCellFormatsA1 { sheet_id, formats } = op);
 
-        transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
-
         let Some(sheet) = self.try_sheet_mut(sheet_id) else {
             return; // sheet may have been deleted
         };
@@ -31,8 +29,11 @@ impl GridController {
             }
 
             if !rows.is_empty() && transaction.is_user() {
-                let resize_rows = transaction.resize_rows.entry(sheet_id).or_default();
-                resize_rows.extend(rows);
+                transaction
+                    .resize_rows
+                    .entry(sheet_id)
+                    .or_default()
+                    .extend(rows);
             }
 
             if fills_changed {
@@ -40,13 +41,17 @@ impl GridController {
             }
         }
 
-        transaction
-            .forward_operations
-            .push(Operation::SetCellFormatsA1 { sheet_id, formats });
+        if transaction.is_user_undo_redo() {
+            transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
 
-        transaction
-            .reverse_operations
-            .extend(reverse_operations.iter().cloned());
+            transaction
+                .forward_operations
+                .push(Operation::SetCellFormatsA1 { sheet_id, formats });
+
+            transaction
+                .reverse_operations
+                .extend(reverse_operations.iter().cloned());
+        }
     }
 }
 

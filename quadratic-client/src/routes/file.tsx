@@ -2,11 +2,11 @@ import { EmptyPage } from '@/shared/components/EmptyPage';
 import { CONTACT_URL, DOCUMENTATION_BROWSER_COMPATIBILITY_URL } from '@/shared/constants/urls';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import { Button } from '@/shared/shadcn/ui/button';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
 import * as Sentry from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
 import { useEffect, useState } from 'react';
 import { engineName, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
@@ -19,7 +19,7 @@ export function Component() {
 
   useEffect(() => {
     if (!isWASMSupported || !isWebGLSupported()) {
-      mixpanel.track('[BrowserCompatibilityLayoutRoute].browserNotSupported', {
+      trackEvent('[BrowserCompatibilityLayoutRoute].browserNotSupported', {
         isWASMSupported,
         isWebGLSupported,
       });
@@ -58,7 +58,7 @@ export function Component() {
             </Button>
             <Button
               onClick={() => {
-                mixpanel.track('[BrowserCompatibilityLayoutRoute].userContinuedAnyway');
+                trackEvent('[BrowserCompatibilityLayoutRoute].userContinuedAnyway');
                 setOverrideNonBlinkMsg(true);
                 setShowNonBlinkMsg(false);
               }}

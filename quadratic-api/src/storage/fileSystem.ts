@@ -6,6 +6,7 @@ import stream from 'node:stream';
 import { QUADRATIC_FILE_URI, QUADRATIC_FILE_URI_PUBLIC } from '../env-vars';
 import type { UploadFile } from '../types/Request';
 import { encryptFromEnv } from '../utils/crypto';
+import logger from '../utils/logger';
 import type { UploadFileResponse } from './storage';
 
 const generateUrl = (key: string, isPublic: boolean): string => {
@@ -45,8 +46,8 @@ export const upload = async (key: string, contents: string | Uint8Array, jwt: st
       .then((res) => res.data);
 
     return response;
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    logger.error('Error in upload to file service', error);
     throw new Error(`Failed to upload file to ${url}`);
   }
 };
