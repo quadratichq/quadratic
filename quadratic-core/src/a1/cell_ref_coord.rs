@@ -105,18 +105,6 @@ impl CellRefCoord {
         write!(f, "{}", self.coord)
     }
 
-    /// Returns the number as a string for use in RC-style notation.
-    ///
-    /// - If the coordinate is relative, returns a string containing the number
-    ///   surrounded by square brackets.
-    /// - If the coordinate is absolute, returns a string containing the number.
-    pub(crate) fn to_rc_string(self, base_coord: i64) -> String {
-        match self.is_absolute {
-            true => format!("{{{}}}", self.coord),
-            false => format!("[{}]", self.coord.saturating_sub(base_coord)), // when changing to `u64`, this MUST stay `i64`
-        }
-    }
-
     pub fn new_rel(coord: i64) -> Self {
         let is_absolute = false;
         Self { coord, is_absolute }

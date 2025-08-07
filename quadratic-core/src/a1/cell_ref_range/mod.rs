@@ -54,14 +54,6 @@ impl CellRefRange {
         }
     }
 
-    /// Converts the reference to a string, preferring RC notation.
-    pub fn to_rc_string(&self, base_pos: Pos) -> String {
-        match self {
-            CellRefRange::Sheet { range } => range.to_rc_string(base_pos),
-            CellRefRange::Table { range } => range.to_string(),
-        }
-    }
-
     pub fn new_sheet_ref(
         x1: CellRefCoord,
         y1: CellRefCoord,

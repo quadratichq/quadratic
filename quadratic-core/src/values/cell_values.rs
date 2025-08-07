@@ -169,13 +169,6 @@ impl CellValues {
         Self { columns, w, h }
     }
 
-    pub fn into_iter(&self) -> impl Iterator<Item = (u32, u32, &CellValue)> {
-        self.columns.iter().enumerate().flat_map(|(x, col)| {
-            col.iter()
-                .map(move |(y, value)| (x as u32, *y as u32, value))
-        })
-    }
-
     pub fn into_owned_iter(self) -> impl Iterator<Item = (u32, u32, CellValue)> {
         self.columns.into_iter().enumerate().flat_map(|(x, col)| {
             col.into_iter()
@@ -415,11 +408,11 @@ mod test {
     #[test]
     fn into_iter() {
         let cell_values = CellValues::from(vec![vec!["a", "b"], vec!["c", "d"]]);
-        let mut iter = cell_values.into_iter();
-        assert_eq!(iter.next(), Some((0, 0, &CellValue::from("a"))));
-        assert_eq!(iter.next(), Some((0, 1, &CellValue::from("b"))));
-        assert_eq!(iter.next(), Some((1, 0, &CellValue::from("c"))));
-        assert_eq!(iter.next(), Some((1, 1, &CellValue::from("d"))));
+        let mut iter = cell_values.into_owned_iter();
+        assert_eq!(iter.next(), Some((0, 0, CellValue::from("a"))));
+        assert_eq!(iter.next(), Some((0, 1, CellValue::from("b"))));
+        assert_eq!(iter.next(), Some((1, 0, CellValue::from("c"))));
+        assert_eq!(iter.next(), Some((1, 1, CellValue::from("d"))));
         assert_eq!(iter.next(), None);
     }
 

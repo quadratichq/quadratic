@@ -133,59 +133,11 @@ impl RefRangeBounds {
             end: self.end.to_bounded_end(rect.max),
         }
     }
-
-    /// Returns an R[1]C[1]-style reference relative to the given position.
-    pub fn to_rc_string(&self, base_pos: Pos) -> String {
-        let start_col = self.start.col.to_rc_string(base_pos.x);
-        let start_row = self.start.row.to_rc_string(base_pos.y);
-        let end_col = self.end.col.to_rc_string(base_pos.x);
-        let end_row = self.end.row.to_rc_string(base_pos.y);
-        if *self == Self::ALL {
-            "*".to_string()
-        } else if self.is_col_range() {
-            if self.start.col == self.end.col {
-                format!("C{start_col}")
-            } else {
-                format!("C{start_col}:C{end_col}")
-            }
-        } else if self.is_row_range() {
-            // handle special case of An: (show as An: instead of n:)
-            if self.end.col.is_unbounded()
-                && self.end.row.is_unbounded()
-                && self.start.col.coord == 1
-            {
-                format!("R{start_row}:")
-            } else {
-                format!("R{start_row}:R{end_row}")
-            }
-        } else if self.start == self.end {
-            format!("R{start_row}C{start_col}")
-        } else {
-            format!("R{start_row}C{start_col}:R{end_row}C{end_col}")
-        }
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use proptest::prelude::*;
-
-    proptest! {
-        #[test]
-        fn proptest_cell_ref_range_parsing(ref_range_bounds: RefRangeBounds) {
-            let base_pos = Pos::new(10, 15);
-
-            // We skip tests where start = end since we remove the end when parsing
-            if ref_range_bounds.end != ref_range_bounds.start {
-                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), None).unwrap());
-                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), Some(base_pos)).unwrap());
-            }
-
-            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_rc_string(base_pos), Some(base_pos)).unwrap());
-        }
-    }
 
     #[test]
     fn test_new_relative() {

@@ -5,7 +5,9 @@ use regex::Regex;
 
 use crate::{
     CellValue, Pos, Rect, RefError, Spanned,
-    a1::{A1Context, CellRefRange, SheetCellRefRange},
+    a1::{
+        A1Context, CellRefCoord, CellRefRange, RefRangeBounds, SheetCellRefRange, quote_sheet_name,
+    },
     formulas::find_cell_references,
     grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds, SheetId},
 };
@@ -111,8 +113,9 @@ fn migration_convert_a1_to_rc(
     sheet_id: SheetId,
     base_pos: Pos,
 ) -> String {
-    let replace_fn =
-        |range_ref: SheetCellRefRange| Ok(range_ref.to_rc_string(Some(sheet_id), ctx, base_pos));
+    let replace_fn = |range_ref: SheetCellRefRange| {
+        Ok(range_ref.migration_to_rc_string(Some(sheet_id), ctx, base_pos))
+    };
     migration_replace_cell_range_references(source, ctx, sheet_id, base_pos, replace_fn)
 }
 
@@ -150,6 +153,86 @@ fn migration_replace_cell_range_references(
         });
 
     replaced
+}
+
+impl SheetCellRefRange {
+    /// Returns an RC-style string describing the range. The sheet name is
+    /// included in the output only if `default_sheet_id` is `None` or differs
+    /// from the ID of the sheet containing the range.
+    fn migration_to_rc_string(
+        &self,
+        default_sheet_id: Option<SheetId>,
+        a1_context: &A1Context,
+        base_pos: Pos,
+    ) -> String {
+        if self.needs_sheet_name(default_sheet_id) {
+            if let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
+                return format!(
+                    "{}!{}",
+                    quote_sheet_name(sheet_name),
+                    self.cells.migration_to_rc_string(base_pos),
+                );
+            }
+        }
+        self.cells.migration_to_rc_string(base_pos)
+    }
+}
+
+impl CellRefRange {
+    /// Converts the reference to a string, preferring RC notation.
+    fn migration_to_rc_string(&self, base_pos: Pos) -> String {
+        match self {
+            CellRefRange::Sheet { range } => range.migration_to_rc_string(base_pos),
+            CellRefRange::Table { range } => range.to_string(),
+        }
+    }
+}
+
+impl RefRangeBounds {
+    /// Returns an R[1]C[1]-style reference relative to the given position.
+    fn migration_to_rc_string(&self, base_pos: Pos) -> String {
+        let start_col = self.start.col.migration_to_rc_string(base_pos.x);
+        let start_row = self.start.row.migration_to_rc_string(base_pos.y);
+        let end_col = self.end.col.migration_to_rc_string(base_pos.x);
+        let end_row = self.end.row.migration_to_rc_string(base_pos.y);
+        if *self == Self::ALL {
+            "*".to_string()
+        } else if self.is_col_range() {
+            if self.start.col == self.end.col {
+                format!("C{start_col}")
+            } else {
+                format!("C{start_col}:C{end_col}")
+            }
+        } else if self.is_row_range() {
+            // handle special case of An: (show as An: instead of n:)
+            if self.end.col.is_unbounded()
+                && self.end.row.is_unbounded()
+                && self.start.col.coord == 1
+            {
+                format!("R{start_row}:")
+            } else {
+                format!("R{start_row}:R{end_row}")
+            }
+        } else if self.start == self.end {
+            format!("R{start_row}C{start_col}")
+        } else {
+            format!("R{start_row}C{start_col}:R{end_row}C{end_col}")
+        }
+    }
+}
+
+impl CellRefCoord {
+    /// Returns the number as a string for use in RC-style notation.
+    ///
+    /// - If the coordinate is relative, returns a string containing the number
+    ///   surrounded by square brackets.
+    /// - If the coordinate is absolute, returns a string containing the number.
+    fn migration_to_rc_string(self, base_coord: i64) -> String {
+        match self.is_absolute {
+            true => format!("{{{}}}", self.coord),
+            false => format!("[{}]", self.coord.saturating_sub(base_coord)), // when changing to `u64`, this MUST stay `i64`
+        }
+    }
 }
 
 pub fn migrate_code_cell_references(
@@ -635,6 +718,8 @@ fn migrate_python_javascript_pos(code_cell: &mut CodeCellValue) {
 
 #[cfg(test)]
 mod test {
+    use proptest::prelude::*;
+
     use std::collections::HashMap;
 
     use super::*;
@@ -643,6 +728,38 @@ mod test {
         CodeCellValue {
             language,
             code: code.to_string(),
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn proptest_ref_range_bounds_parsing(ref_range_bounds: RefRangeBounds) {
+            let base_pos = Pos::new(10, 15);
+
+            // We skip tests where start = end since we remove the end when parsing
+            if ref_range_bounds.end != ref_range_bounds.start {
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), None).unwrap());
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), Some(base_pos)).unwrap());
+            }
+
+            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.migration_to_rc_string(base_pos), Some(base_pos)).unwrap());
+        }
+
+          #[test]
+        fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
+            if matches!(cell_ref_range, CellRefRange::Table { .. }) {
+                return Ok(());
+            }
+            let context = A1Context::default();
+
+            let base_pos = Pos::new(10, 15);
+            let a1_string = cell_ref_range.to_string();
+            let rc_string = cell_ref_range.migration_to_rc_string(base_pos);
+            let expected = (cell_ref_range, None);
+
+            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, None).unwrap());
+            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, Some(base_pos)).unwrap());
+            assert_eq!(expected, CellRefRange::parse(&rc_string, &context, Some(base_pos)).unwrap());
         }
     }
 

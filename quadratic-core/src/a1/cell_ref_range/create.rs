@@ -92,27 +92,6 @@ impl CellRefRange {
 mod tests {
     use super::*;
 
-    use proptest::prelude::*;
-
-    proptest! {
-        #[test]
-        fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
-            if matches!(cell_ref_range, CellRefRange::Table { .. }) {
-                return Ok(());
-            }
-            let context = A1Context::default();
-
-            let base_pos = Pos::new(10, 15);
-            let a1_string = cell_ref_range.to_string();
-            let rc_string = cell_ref_range.to_rc_string(base_pos);
-            let expected = (cell_ref_range, None);
-
-            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, None).unwrap());
-            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, Some(base_pos)).unwrap());
-            assert_eq!(expected, CellRefRange::parse(&rc_string, &context, Some(base_pos)).unwrap());
-        }
-    }
-
     #[test]
     fn test_table_different_sheet() {
         let sheet1_id = SheetId::TEST;
