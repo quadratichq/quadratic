@@ -39,6 +39,7 @@ const OpenAIModelSchema = z.enum([
   'gpt-4.1-mini-2025-04-14',
   'o4-mini-2025-04-16',
   'o3-2025-04-16',
+  'gpt-5-2025-08-07',
 ]);
 const AzureOpenAIModelSchema = z.enum(['gpt-4.1', 'gpt-4.1-mini']);
 const XAIModelSchema = z.enum(['grok-4-0709']);
@@ -119,6 +120,7 @@ const OpenAIModelKeySchema = z.enum([
   'openai:gpt-4.1-mini-2025-04-14',
   'openai:o4-mini-2025-04-16',
   'openai:o3-2025-04-16',
+  'openai:gpt-5-2025-08-07',
 ]);
 export type OpenAIModelKey = z.infer<typeof OpenAIModelKeySchema>;
 
