@@ -1,5 +1,5 @@
 import { Button } from '@/shared/shadcn/ui/button';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo } from 'react';
 
 type AIUsageExceededProps = {
@@ -21,7 +21,7 @@ export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
         <Button
           variant="outline"
           onClick={() => {
-            mixpanel.track('[AI].UsageExceeded.clickLearnMore', {
+            trackEvent('[AI].UsageExceeded.clickLearnMore', {
               ab_test: 'variant',
             });
             // go to the team settings page in a new tab
@@ -33,7 +33,7 @@ export const AIUsageExceeded = memo(({ show }: AIUsageExceededProps) => {
         </Button>
         <Button
           onClick={() => {
-            mixpanel.track('[AI].UsageExceeded.clickUpgrade', {
+            trackEvent('[AI].UsageExceeded.clickUpgrade', {
               ab_test: 'variant',
             });
             // navigate to the team settings page

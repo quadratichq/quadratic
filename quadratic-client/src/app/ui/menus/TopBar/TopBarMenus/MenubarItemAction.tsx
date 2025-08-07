@@ -4,7 +4,7 @@ import { defaultActionSpec } from '@/app/actions/defaultActionsSpec';
 import { keyboardShortcutEnumToDisplay } from '@/app/helpers/keyboardShortcutsDisplay';
 import { useIsAvailableArgs } from '@/app/ui/hooks/useIsAvailableArgs';
 import { MenubarItem, MenubarShortcut } from '@/shared/shadcn/ui/menubar';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 export const MenubarItemAction = <T extends Action>({
   action,
@@ -32,7 +32,7 @@ export const MenubarItemAction = <T extends Action>({
     <MenubarItem
       disabled={isDisabled ? isDisabled() : false}
       onClick={() => {
-        mixpanel.track('[FileMenu].selected', { label });
+        trackEvent('[FileMenu].selected', { label });
         actionSpec.run(actionArgs);
       }}
     >

@@ -14,7 +14,7 @@ export const createFileForFineTuning = (
   const copyArgs = { ...args };
   const copyResponse = { ...parsedResponse.responseMessage };
   copyArgs.messages.push({ ...copyResponse });
-  const { messages, tools } = getOpenAIApiArgs(args, true, true);
+  const { messages, tools } = getOpenAIApiArgs(copyArgs, true, true);
   const fineTuningInput = {
     messages,
     ...(tools ? { tools } : {}),
@@ -25,5 +25,10 @@ export const createFileForFineTuning = (
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
-  fs.writeFileSync(path.join(dirPath, `${model}_${Date.now()}.json`), JSON.stringify(fineTuningInput, null, 2));
+  // Sanitize model name to prevent path issues with forward slashes
+  const sanitizedModel = model.replace(/\//g, '_');
+  fs.writeFileSync(
+    path.join(dirPath, `${sanitizedModel}_${Date.now()}.json`),
+    JSON.stringify(fineTuningInput, null, 2)
+  );
 };

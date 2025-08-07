@@ -3,8 +3,8 @@ import { getPrompt } from '@/dashboard/onboarding/getPrompt';
 import { OnboardingResponseV1Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import * as Sentry from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
 import { useEffect } from 'react';
 import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { RecoilRoot } from 'recoil';
@@ -58,7 +58,7 @@ export const Component = () => {
   useRemoveInitialLoadingUI();
 
   useEffect(() => {
-    mixpanel.track('[Onboarding].loaded');
+    trackEvent('[Onboarding].loaded');
   }, []);
 
   return (
@@ -108,7 +108,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     try {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
       const uploadToMixpanelPromise = new Promise((resolve, reject) => {
-        mixpanel.track('[Onboarding].submit', result.data, () => {
+        trackEvent('[Onboarding].submit', result.data, () => {
           resolve(true);
         });
       });

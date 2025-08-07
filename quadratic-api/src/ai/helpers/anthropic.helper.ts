@@ -304,7 +304,7 @@ export async function parseAnthropicStream(
             if (chunk.delta.text) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'text') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {
@@ -334,7 +334,7 @@ export async function parseAnthropicStream(
             if (chunk.delta.thinking) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'anthropic_thinking') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {
@@ -351,7 +351,7 @@ export async function parseAnthropicStream(
             if (chunk.delta.signature) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'anthropic_thinking') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {

@@ -1,5 +1,5 @@
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useLayoutEffect } from 'react';
 
 export function useRemoveInitialLoadingUI() {
@@ -22,7 +22,7 @@ export function useRemoveInitialLoadingUI() {
       console.log(`Loading time: ${loadTimeMs}ms`);
     }
     const route = window.location.pathname + window.location.search;
-    mixpanel.track('[Loading].complete', {
+    trackEvent('[Loading].complete', {
       route,
       loadTimeMs,
     });

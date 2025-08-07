@@ -8,9 +8,9 @@ import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
-import mixpanel from 'mixpanel-browser';
 import { useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { useSetRecoilState } from 'recoil';
@@ -60,7 +60,7 @@ export function useFileImport() {
         setFilesImportProgressListState(() => ({ show: true }));
       }
 
-      mixpanel.track('[ImportData].useFileImport', {
+      trackEvent('[ImportData].useFileImport', {
         files: files.map((file) => ({
           type: getFileType(file),
           size: file.size,
