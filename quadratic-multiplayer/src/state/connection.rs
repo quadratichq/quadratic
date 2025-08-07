@@ -18,6 +18,16 @@ impl PreConnection {
             m2m_token,
         }
     }
+
+    /// Get the m2m token if it exists.
+    pub(crate) fn get_m2m_token(&self) -> Option<String> {
+        self.m2m_token.clone()
+    }
+
+    /// Check if the connection is an m2m connection.
+    pub(crate) fn is_m2m(&self) -> bool {
+        self.m2m_token.is_some()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

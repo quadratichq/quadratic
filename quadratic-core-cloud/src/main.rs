@@ -5,9 +5,12 @@
 
 mod auth;
 mod config;
+mod core;
 mod error;
 mod health;
+mod multiplayer;
 mod proto;
+mod python;
 mod scheduled_tasks;
 mod server;
 mod state;

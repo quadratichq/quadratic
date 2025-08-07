@@ -17,17 +17,26 @@ pub(crate) type Result<T> = std::result::Result<T, CoreCloudError>;
 
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum CoreCloudError {
+    #[error("Async error: {0}")]
+    Async(String),
+
     #[error("Authentication error: {0}")]
     Authentication(String),
 
     #[error("Background service error: {0}")]
     BackgroundService(String),
 
+    #[error("Channel error: {0}")]
+    Channel(String),
+
     #[error("Internal server error: {0}")]
     Config(String),
 
     #[error("Connection error: {0}")]
     Connection(String),
+
+    #[error("Core error: {0}")]
+    Core(String),
 
     #[error("Unable to export file {0}: {1}")]
     ExportFile(String, String),
@@ -49,6 +58,12 @@ pub enum CoreCloudError {
 
     #[error("QuadraticApi error: {0}")]
     QuadraticApi(String),
+
+    #[error("Python error: {0}")]
+    Python(String),
+
+    #[error("Python timeout")]
+    PythonTimeout,
 
     #[error("Error requesting data: {0}")]
     Request(String),
@@ -135,5 +150,23 @@ impl From<jsonwebtoken::errors::Error> for CoreCloudError {
 impl From<prost::DecodeError> for CoreCloudError {
     fn from(error: prost::DecodeError) -> Self {
         CoreCloudError::Serialization(error.to_string())
+    }
+}
+
+impl From<pyo3::PyErr> for CoreCloudError {
+    fn from(error: pyo3::PyErr) -> Self {
+        CoreCloudError::Python(error.to_string())
+    }
+}
+
+impl<T> From<std::sync::PoisonError<std::sync::MutexGuard<'_, T>>> for CoreCloudError {
+    fn from(error: std::sync::PoisonError<std::sync::MutexGuard<'_, T>>) -> Self {
+        CoreCloudError::Async(error.to_string())
+    }
+}
+
+impl<T> From<tokio::sync::mpsc::error::SendError<T>> for CoreCloudError {
+    fn from(error: tokio::sync::mpsc::error::SendError<T>) -> Self {
+        CoreCloudError::Channel(error.to_string())
     }
 }

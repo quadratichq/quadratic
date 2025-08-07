@@ -22,6 +22,7 @@ openssl = { version = "0.10.72", features = ["vendored"] }
 prost = "0.13.5"
 prost-reflect = "0.15.2"
 prost-types = "0.13.5"
+pyo3 = { version = "0.25.1", features = ["auto-initialize"] }
 quadratic-core = { path = "../quadratic-core", default-features = false, features = [
     "console_error_panic_hook",
     "js",
@@ -29,6 +30,7 @@ quadratic-core = { path = "../quadratic-core", default-features = false, feature
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [ 
     "auth",
     "environment",
+    "net",
     "protobuf",
     "pubsub",
     "quadratic-api",

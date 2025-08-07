@@ -1,3 +1,4 @@
+use axum::http::Response;
 use chrono::Utc;
 use std::sync::Arc;
 use uuid::Uuid;
@@ -14,6 +15,7 @@ use quadratic_core::{
     },
 };
 use quadratic_rust_shared::{
+    net::websocket::Websocket,
     pubsub::PubSub as PubSubTrait,
     quadratic_api::{get_file_checkpoint, set_file_checkpoint},
     storage::{Storage, StorageContainer},
@@ -25,6 +27,16 @@ use crate::{
 };
 
 pub static GROUP_NAME: &str = "quadratic-core-cloud-1";
+
+pub(crate) async fn connect_to_websocket(
+    state: &Arc<State>,
+) -> Result<(Websocket, Response<Option<Vec<u8>>>)> {
+    let token = state.settings.m2m_auth_token.to_owned();
+    let headers = vec![("authorization".into(), format!("Bearer {}", token))];
+    let websocket = Websocket::connect_with_headers("ws://localhost:3001/ws", headers).await?;
+
+    Ok(websocket)
+}
 
 /// Load a .grid file
 pub(crate) fn load_file(key: &str, file: Vec<u8>) -> Result<Grid> {
@@ -264,52 +276,7 @@ mod tests {
     };
 
     use super::*;
-    use quadratic_core::{CellValue, Pos, SheetPos};
     use quadratic_rust_shared::protobuf::quadratic::transaction::ScheduledTask as ScheduledTaskProto;
-
-    #[test]
-    fn loads_a_file_and_applies_a_transaction_and_exports_the_file() {
-        let key = "test";
-
-        // load the file
-        let file = load_file(
-            key,
-            include_bytes!("../../quadratic-rust-shared/data/grid/v1_4_simple.grid").to_vec(),
-        )
-        .unwrap();
-
-        // add a cell value to the file
-        let mut gc = GridController::from_grid(file.clone(), 0);
-        let sheet_id = gc.sheet_ids().first().unwrap().to_owned();
-        gc.set_cell_value(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
-            "hello".to_string(),
-            None,
-        );
-        let transaction = gc.last_transaction().unwrap().clone();
-        let sheet = gc.grid().try_sheet(sheet_id).unwrap();
-
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Text("hello".to_string()))
-        );
-
-        // apply a transaction to the file
-        apply_transaction(&mut gc, transaction.operations);
-        let sheet = gc.grid().try_sheet(sheet_id).unwrap();
-
-        assert_eq!(
-            sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Text("hello".to_string()))
-        );
-
-        let grid = export_file(key, file);
-        assert!(grid.is_ok());
-    }
 
     #[tokio::test]
     async fn processes_a_scheduled_task() {

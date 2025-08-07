@@ -11,23 +11,29 @@ impl GridController {
         sheet_pos: SheetPos,
         code: String,
     ) {
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            crate::wasm_bindings::js::jsRunPython(
-                transaction.id.to_string(),
-                sheet_pos.x as i32,
-                sheet_pos.y as i32,
-                sheet_pos.sheet_id.to_string(),
-                code.clone(),
-            );
-        }
+        println!("running python");
+
         // stop the computation cycle until async returns
         transaction.current_sheet_pos = Some(sheet_pos);
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Python,
-            code,
+            code: code.clone(),
         };
         transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
+
+        if !transaction.is_server() {
+            self.run_python_callback.as_mut().map(|f| {
+                println!("running python callback");
+                f(
+                    transaction.id.to_string(),
+                    sheet_pos.x as i32,
+                    sheet_pos.y as i32,
+                    sheet_pos.sheet_id.to_string(),
+                    code,
+                )
+            });
+        }
     }
 }
 

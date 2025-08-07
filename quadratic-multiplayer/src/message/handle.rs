@@ -227,8 +227,10 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
+            println!("BinaryTransaction");
             validate_user_can_edit_file(Arc::clone(&state), file_id, session_id).await?;
 
+            println!("validate_user_can_edit_file");
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
