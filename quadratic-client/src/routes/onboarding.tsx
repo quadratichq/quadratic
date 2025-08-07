@@ -109,12 +109,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
       const uploadToMixpanelPromise = new Promise((resolve, reject) => {
         trackEvent('[Onboarding].submit', result.data);
-        // Wait 1s for event analytics to be sent. If they drop, not mission critical.
+        // Wait just a ad for event analytics to be sent. If they drop, not mission critical.
         // Also not a huge degradataion in user experience, as it gives a semblance
         // of progress beyond the onboarding form to the next thing (new file).
         setTimeout(() => {
           resolve(true);
-        }, 1000);
+        }, 500);
       });
       const [serverResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
 
@@ -139,7 +139,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       sentryPromises.push(Sentry.flush(2000));
     }
   } else {
-    console.error(result.error);
     // This should never happen in prod. If it does, that's a bug and we'll send to Sentry
     Sentry.captureException({
       message: 'Invalid onboarding payload. This is a developer bug.',
