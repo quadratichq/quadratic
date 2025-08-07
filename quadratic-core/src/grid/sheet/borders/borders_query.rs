@@ -58,34 +58,30 @@ impl Borders {
     /// Returns true if the borders update is already applied to the sheet.
     pub fn is_toggle_borders(&self, border_update: &BordersUpdates) -> bool {
         // First check if update borders match current borders
-        if let Some(update_left) = border_update.left.as_ref() {
-            if self.left.zip_any(update_left, |border, update| {
+        if let Some(update_left) = border_update.left.as_ref()
+            && self.left.zip_any(update_left, |border, update| {
                 !Borders::same_border_and_update(border, update)
             }) {
                 return false;
             }
-        }
-        if let Some(update_right) = border_update.right.as_ref() {
-            if self.right.zip_any(update_right, |border, update| {
+        if let Some(update_right) = border_update.right.as_ref()
+            && self.right.zip_any(update_right, |border, update| {
                 !Borders::same_border_and_update(border, update)
             }) {
                 return false;
             }
-        }
-        if let Some(update_top) = border_update.top.as_ref() {
-            if self.top.zip_any(update_top, |border, update| {
+        if let Some(update_top) = border_update.top.as_ref()
+            && self.top.zip_any(update_top, |border, update| {
                 !Borders::same_border_and_update(border, update)
             }) {
                 return false;
             }
-        }
-        if let Some(update_bottom) = border_update.bottom.as_ref() {
-            if self.bottom.zip_any(update_bottom, |border, update| {
+        if let Some(update_bottom) = border_update.bottom.as_ref()
+            && self.bottom.zip_any(update_bottom, |border, update| {
                 !Borders::same_border_and_update(border, update)
             }) {
                 return false;
             }
-        }
 
         true
     }

@@ -218,11 +218,10 @@ impl CellRefRangeEnd {
             return Err(A1Error::SpuriousDollarSign(s.to_owned()));
         }
 
-        if col.is_some_and(|c| c != UNBOUNDED && c > OUT_OF_BOUNDS) {
-            if let Some(c) = col {
+        if col.is_some_and(|c| c != UNBOUNDED && c > OUT_OF_BOUNDS)
+            && let Some(c) = col {
                 return Err(A1Error::InvalidColumn(column_name(c)));
             }
-        }
         if row.is_some_and(|r| r != UNBOUNDED && r > OUT_OF_BOUNDS) {
             return Err(A1Error::InvalidRow(row.unwrap_or(1).to_string()));
         }
