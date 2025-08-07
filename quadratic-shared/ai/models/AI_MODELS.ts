@@ -462,6 +462,23 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 0.125,
     rate_per_million_cache_write_tokens: 0,
   },
+  'openai:gpt-5-mini-2025-08-07': {
+    model: 'gpt-5-mini-2025-08-07',
+    displayName: 'gpt-5 mini',
+    temperature: 0,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 0.25,
+    rate_per_million_output_tokens: 0.025,
+    rate_per_million_cache_read_tokens: 2,
+    rate_per_million_cache_write_tokens: 0,
+  },
   'openai:gpt-4.1-mini-2025-04-14': {
     model: 'gpt-4.1-mini-2025-04-14',
     displayName: 'gpt 4.1 mini',
