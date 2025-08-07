@@ -10,6 +10,7 @@ import {
   DEFAULT_BACKUP_MODEL,
   DEFAULT_MODEL_FREE,
   DEFAULT_MODEL_FREE_WITH_IMAGE,
+  DEFAULT_MODEL_PRO,
   DEFAULT_MODEL_ROUTER_MODEL,
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
@@ -28,10 +29,10 @@ export const getModelKey = async (
       return modelKey;
     }
 
-    // // if the user is on a paid plan and the model is the default pro model, return the default pro model
-    // if (isOnPaidPlan && modelKey === DEFAULT_MODEL_PRO) {
-    //   return DEFAULT_MODEL_PRO;
-    // }
+    // if the user is on a paid plan and the model is the default pro model, return the default pro model
+    if (isOnPaidPlan && modelKey === DEFAULT_MODEL_PRO) {
+      return DEFAULT_MODEL_PRO;
+    }
 
     const messages = inputArgs.messages;
     if (messages.length === 0) {
