@@ -1,4 +1,4 @@
-import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, CloseIcon, RefreshIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
@@ -8,10 +8,11 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
 export const ConnectionSchemaBrowser = ({
@@ -30,6 +31,7 @@ export const ConnectionSchemaBrowser = ({
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
   const [filterQuery, setFilterQuery] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredTablesWithIndex = useMemo(() => {
     if (!data) return [] as Array<{ table: Table; index: number }>;
@@ -60,38 +62,58 @@ export const ConnectionSchemaBrowser = ({
     <div
       className={cn('h-full overflow-auto text-sm', selfContained && 'h-96 overflow-auto rounded border border-border')}
     >
-      <div className={cn('sticky top-0 z-10 flex items-center justify-between bg-background px-2 py-1.5')}>
-        <div className="flex items-center gap-1 truncate">
-          {data && data.type ? (
-            <div className="flex h-6 w-6 flex-shrink-0 items-center">
-              <LanguageIcon language={data.type} />
-            </div>
-          ) : null}
-          <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
+      <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 truncate">
+            {data && data.type ? (
+              <>
+                <div className="flex h-6 w-6 flex-shrink-0 items-center">
+                  <LanguageIcon language={data.type} />
+                </div>
+                <h3 className="truncate font-medium tracking-tight">{data.name}</h3>
+              </>
+            ) : (
+              <Skeleton className="h-4 w-24" />
+            )}
+          </div>
+          <div className="flex flex-row-reverse items-center gap-1">
+            <TableQueryAction
+              query={
+                !isLoading && data && data.tables[selectedTableIndex]
+                  ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type })
+                  : ''
+              }
+            />
+            <TooltipPopover label="Reload schema">
+              <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
+                <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+              </Button>
+            </TooltipPopover>
+          </div>
         </div>
-        <div className="flex flex-row-reverse items-center gap-1">
-          <TableQueryAction
-            query={
-              !isLoading && data && data.tables[selectedTableIndex]
-                ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type })
-                : ''
-            }
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            placeholder="Filter tables"
+            className="h-8"
+            disabled={isLoading || data === undefined}
           />
-          <TooltipPopover label="Reload schema">
-            <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
-              <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+          {filterQuery && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-0 top-0 h-8 w-8 !bg-transparent text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setFilterQuery('');
+                inputRef.current?.focus();
+              }}
+            >
+              <CloseIcon />
             </Button>
-          </TooltipPopover>
+          )}
         </div>
-      </div>
-
-      <div className="sticky top-9 z-10 bg-background px-2 pb-2">
-        <Input
-          value={filterQuery}
-          onChange={(e) => setFilterQuery(e.target.value)}
-          placeholder="Filter tables"
-          className="h-8"
-        />
       </div>
 
       {isLoading && data === undefined && (
