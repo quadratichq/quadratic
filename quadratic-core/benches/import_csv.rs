@@ -33,8 +33,17 @@ const SINGLE_TEST: bool = true;
 fn execute(file: &[u8], file_name: &str) {
     let mut gc = GridController::from_grid(Grid::new(), 0);
     let sheet_id = gc.sheet_ids()[0];
-    gc.import_csv(sheet_id, file, file_name, Pos::new(1, 1), None, None, None)
-        .unwrap();
+    gc.import_csv(
+        sheet_id,
+        file,
+        file_name,
+        Pos::new(1, 1),
+        None,
+        None,
+        None,
+        false,
+    )
+    .unwrap();
     let file = file::export(gc.into_grid()).unwrap();
     dbgjs(format!("file size: {}", file.len()));
 

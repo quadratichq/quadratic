@@ -87,6 +87,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -115,6 +116,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -143,6 +145,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -171,6 +174,7 @@ mod tests {
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);

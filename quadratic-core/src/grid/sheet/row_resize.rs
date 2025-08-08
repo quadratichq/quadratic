@@ -219,7 +219,7 @@ mod tests {
             old_size,
             new_size,
         };
-        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        gc.commit_offsets_resize(sheet_id, transient_resize, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.column_width(0), new_size);
         assert_eq!(Resize::Auto, sheet.get_row_resize(0));
@@ -232,7 +232,7 @@ mod tests {
             old_size,
             new_size,
         };
-        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        gc.commit_offsets_resize(sheet_id, transient_resize, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(0), new_size);
         assert_eq!(Resize::Manual, sheet.get_row_resize(0));
@@ -253,14 +253,14 @@ mod tests {
             old_size,
             new_size,
         };
-        gc.commit_offsets_resize(sheet_id, transient_resize, None);
+        gc.commit_offsets_resize(sheet_id, transient_resize, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(0), 200f64);
         assert_eq!(Resize::Manual, sheet.get_row_resize(0));
         assert_eq!(Resize::Auto, sheet.get_row_resize(1));
 
         // resize column, should change row resize to Auto
-        gc.commit_single_resize(sheet_id, None, Some(0), 300f64, None);
+        gc.commit_single_resize(sheet_id, None, Some(0), 300f64, None, false);
         let sheet = gc.sheet(sheet_id);
         assert_eq!(sheet.offsets.row_height(0), 300f64);
         assert_eq!(Resize::Auto, sheet.get_row_resize(0));

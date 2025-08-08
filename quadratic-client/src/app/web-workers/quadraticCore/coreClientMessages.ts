@@ -251,17 +251,19 @@ export interface ClientCoreSetCellValue {
   x: number;
   y: number;
   value: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellValues {
   type: 'clientCoreSetCellValues';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
   values: string[][];
-  cursor?: string;
-  id: number;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientSetCellValues {
@@ -273,115 +275,131 @@ export interface ClientCoreSetCellBold {
   type: 'clientCoreSetCellBold';
   selection: string;
   bold?: boolean;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellItalic {
   type: 'clientCoreSetCellItalic';
   selection: string;
   italic?: boolean;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellFillColor {
   type: 'clientCoreSetCellFillColor';
   selection: string;
   fillColor?: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellTextColor {
   type: 'clientCoreSetCellTextColor';
   selection: string;
   color?: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellUnderline {
   type: 'clientCoreSetCellUnderline';
   selection: string;
   underline?: boolean;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellStrikeThrough {
   type: 'clientCoreSetCellStrikeThrough';
   selection: string;
   strikeThrough?: boolean;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellAlign {
   type: 'clientCoreSetCellAlign';
   selection: string;
   align: CellAlign;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellVerticalAlign {
   type: 'clientCoreSetCellVerticalAlign';
   selection: string;
   verticalAlign: CellVerticalAlign;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCellWrap {
   type: 'clientCoreSetCellWrap';
   selection: string;
   wrap: CellWrap;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCurrency {
   type: 'clientCoreSetCurrency';
   selection: string;
   symbol: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetPercentage {
   type: 'clientCoreSetPercentage';
   selection: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetExponential {
   type: 'clientCoreSetExponential';
   selection: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreRemoveCellNumericFormat {
   type: 'clientCoreRemoveCellNumericFormat';
   selection: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreChangeDecimals {
   type: 'clientCoreChangeDecimals';
   selection: string;
   delta: number;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreClearFormatting {
   type: 'clientCoreClearFormatting';
   selection: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreSetCommas {
   type: 'clientCoreSetCommas';
   selection: string;
   commas?: boolean;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreUpgradeGridFile {
   type: 'clientCoreUpgradeGridFile';
+  id: number;
   grid: ArrayBuffer;
   sequenceNumber: number;
-  id: number;
 }
 
 export interface CoreClientUpgradeFile {
@@ -394,15 +412,16 @@ export interface CoreClientUpgradeFile {
 
 export interface ClientCoreImportFile {
   type: 'clientCoreImportFile';
+  id: number;
   file: ArrayBufferLike;
   fileName: string;
   fileType: 'csv' | 'parquet' | 'excel';
   sheetId?: string;
   location?: JsCoordinate;
   cursor?: string;
-  id: number;
   csvDelimiter?: number;
   hasHeading?: boolean;
+  isAi: boolean;
 }
 
 export interface CoreClientImportFile {
@@ -415,9 +434,10 @@ export interface CoreClientImportFile {
 
 export interface ClientCoreDeleteCellValues {
   type: 'clientCoreDeleteCellValues';
-  selection: string;
-  cursor?: string;
   id: number;
+  selection: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDeleteCellValues {
@@ -428,14 +448,15 @@ export interface CoreClientDeleteCellValues {
 
 export interface ClientCoreSetCodeCellValue {
   type: 'clientCoreSetCodeCellValue';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
   language: CodeCellLanguage;
   codeString: string;
-  cursor?: string;
-  id: number;
+  cursor: string;
   codeCellName?: string;
+  isAi: boolean;
 }
 
 export interface CoreClientSetCodeCellValue {
@@ -462,6 +483,7 @@ export interface ClientCoreRerunCodeCells {
   sheetId?: string;
   selection?: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientRerunCodeCells {
@@ -477,6 +499,7 @@ export interface ClientCoreSetBorders {
   borderSelection: BorderSelection;
   style?: BorderStyle;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientSetBorders {
@@ -487,13 +510,14 @@ export interface CoreClientSetBorders {
 
 export interface ClientCoreSetCellRenderResize {
   type: 'clientCoreSetCellRenderResize';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
   width: number;
   height: number;
   cursor: string;
-  id: number;
+  isAi: boolean;
 }
 
 export interface CoreClientSetCellRenderResize {
@@ -514,6 +538,7 @@ export interface ClientCoreAutocomplete {
   fullX2: number;
   fullY2: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreUpdateValidation {
@@ -521,6 +546,7 @@ export interface ClientCoreUpdateValidation {
   id: number;
   validation: ValidationUpdate;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientUpdateValidation {
@@ -534,20 +560,22 @@ export interface ClientCoreRemoveValidation {
   sheetId: string;
   validationId: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreRemoveValidations {
   type: 'clientCoreRemoveValidations';
   sheetId: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreGetValidationFromPos {
   type: 'clientCoreGetValidationFromPos';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
-  id: number;
 }
 
 //#endregion
@@ -569,7 +597,8 @@ export interface ClientCoreAddSheet {
   id: number;
   sheetName?: string;
   insertBeforeSheetName?: string;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientAddSheetResponse {
@@ -590,6 +619,7 @@ export interface ClientCoreDuplicateSheet {
   sheetId: string;
   nameOfNewSheet?: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDuplicateSheetResponse {
@@ -603,6 +633,7 @@ export interface ClientCoreDeleteSheet {
   id: number;
   sheetId: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDeleteSheetResponse {
@@ -623,6 +654,7 @@ export interface ClientCoreMoveSheet {
   sheetId: string;
   previous?: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientMoveSheetResponse {
@@ -642,6 +674,7 @@ export interface ClientCoreSetSheetName {
   sheetId: string;
   name: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientSetSheetNameResponse {
@@ -656,6 +689,7 @@ export interface ClientCoreSetSheetColor {
   sheetId: string;
   color: string | undefined;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientSetSheetColorResponse {
@@ -669,6 +703,7 @@ export interface ClientCoreSetSheetsColor {
   id: number;
   sheetNameToColor: JsSheetNameToColor[];
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientSetSheetsColorResponse {
@@ -739,6 +774,7 @@ export interface ClientCoreCutToClipboard {
   id: number;
   selection: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientCutToClipboard {
@@ -753,6 +789,7 @@ export interface ClientCorePasteFromClipboard {
   jsClipboard: Uint8Array;
   special: string;
   cursor: string;
+  isAi: boolean;
 }
 
 //#endregion
@@ -770,6 +807,7 @@ export interface ClientCoreCommitTransientResize {
   sheetId: string;
   transientResize: string /*TransientResize*/;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreCommitSingleResize {
@@ -779,13 +817,14 @@ export interface ClientCoreCommitSingleResize {
   row: number | undefined;
   size: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreHasCellData {
   type: 'clientCoreHasCellData';
+  id: number;
   sheetId: string;
   selection: string;
-  id: number;
 }
 
 export interface CoreClientHasCellData {
@@ -854,6 +893,7 @@ export interface ClientCoreMoveCells {
   columns: boolean;
   rows: boolean;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientMoveCells {
@@ -863,36 +903,38 @@ export interface CoreClientMoveCells {
 
 export interface ClientCoreMoveCodeCellVertically {
   type: 'clientCoreMoveCodeCellVertically';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
   sheetEnd: boolean;
   reverse: boolean;
   cursor: string;
-  id: number;
+  isAi: boolean;
 }
 
 export interface CoreClientMoveCodeCellVertically {
   type: 'coreClientMoveCodeCellVertically';
-  pos: Pos | undefined;
   id: number;
+  pos: Pos | undefined;
 }
 
 export interface ClientCoreMoveCodeCellHorizontally {
   type: 'clientCoreMoveCodeCellHorizontally';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
   sheetEnd: boolean;
   reverse: boolean;
   cursor: string;
-  id: number;
+  isAi: boolean;
 }
 
 export interface CoreClientMoveCodeCellHorizontally {
   type: 'coreClientMoveCodeCellHorizontally';
-  pos: Pos | undefined;
   id: number;
+  pos: Pos | undefined;
 }
 
 //#endregion
@@ -975,6 +1017,7 @@ export interface ClientCoreSetDateTimeFormat {
   selection: string;
   format: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreValidateInput {
@@ -1053,6 +1096,7 @@ export interface ClientCoreDeleteColumns {
   sheetId: string;
   columns: number[];
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDeleteColumns {
@@ -1067,6 +1111,7 @@ export interface ClientCoreDeleteRows {
   sheetId: string;
   rows: number[];
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDeleteRows {
@@ -1083,6 +1128,7 @@ export interface ClientCoreInsertColumns {
   count: number;
   right: boolean;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientInsertColumns {
@@ -1099,6 +1145,7 @@ export interface ClientCoreInsertRows {
   count: number;
   below: boolean;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientInsertRows {
@@ -1113,6 +1160,7 @@ export interface ClientCoreFlattenDataTable {
   x: number;
   y: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreCodeDataTableToDataTable {
@@ -1121,6 +1169,7 @@ export interface ClientCoreCodeDataTableToDataTable {
   x: number;
   y: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreGridToDataTable {
@@ -1130,6 +1179,7 @@ export interface ClientCoreGridToDataTable {
   tableName?: string;
   firstRowIsHeader: boolean;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientGridToDataTable {
@@ -1150,6 +1200,7 @@ export interface ClientCoreDataTableMeta {
   showName?: boolean;
   showColumns?: boolean;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDataTableMeta {
@@ -1171,7 +1222,8 @@ export interface ClientCoreDataTableMutations {
   rows_to_remove?: number[];
   flatten_on_delete?: boolean;
   swallow_on_insert?: boolean;
-  cursor?: string;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDataTableMutations {
@@ -1187,6 +1239,7 @@ export interface ClientCoreSortDataTable {
   y: number;
   sort?: DataTableSort[];
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreDataTableFirstRowAsHeader {
@@ -1197,6 +1250,7 @@ export interface ClientCoreDataTableFirstRowAsHeader {
   y: number;
   firstRowAsHeader: boolean;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDataTableFirstRowAsHeader {
@@ -1226,6 +1280,7 @@ export interface ClientCoreAddDataTable {
   values: string[][];
   firstRowIsHeader: boolean;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientAddDataTable {
@@ -1240,6 +1295,7 @@ export interface ClientCoreMoveColumns {
   colEnd: number;
   to: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreMoveRows {
@@ -1249,6 +1305,7 @@ export interface ClientCoreMoveRows {
   rowEnd: number;
   to: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientCoreError {
@@ -1273,10 +1330,12 @@ export interface CoreClientGetAICells {
 
 export interface ClientCoreSetFormats {
   type: 'clientCoreSetFormats';
+  id: number;
   sheetId: string;
   selection: string;
   formats: FormatUpdate;
-  id: number;
+  cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientSetFormats {
@@ -1305,6 +1364,7 @@ export interface ClientCoreResizeColumns {
   sheetId: string;
   columns: ColumnRowResize[];
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientResizeColumns {
@@ -1319,6 +1379,7 @@ export interface ClientCoreResizeRows {
   sheetId: string;
   rows: ColumnRowResize[];
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientResizeRows {
@@ -1332,6 +1393,7 @@ export interface ClientCoreResizeAllColumns {
   sheetId: string;
   size: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface ClientCoreResizeAllRows {
@@ -1339,6 +1401,7 @@ export interface ClientCoreResizeAllRows {
   sheetId: string;
   size: number;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientDataTablesCache {
@@ -1371,12 +1434,18 @@ export interface ClientCoreRemoveValidationSelection {
   sheetId: string;
   selection: string;
   cursor: string;
+  isAi: boolean;
 }
 
 export interface CoreClientRemoveValidationSelection {
   type: 'coreClientRemoveValidationSelection';
   id: number;
   response: JsResponse | undefined;
+}
+
+export interface CoreClientAIUpdates {
+  type: 'coreClientAIUpdates';
+  update: Uint8Array;
 }
 
 export type ClientCoreMessage =
@@ -1552,6 +1621,7 @@ export type CoreClientMessage =
   | CoreClientContentCache
   | CoreClientSetCellRenderResize
   | CoreClientGetFormatSelection
+  | CoreClientHasCellData
   | CoreClientAddSheetResponse
   | CoreClientDeleteSheetResponse
   | CoreClientMoveSheetResponse
@@ -1559,7 +1629,6 @@ export type CoreClientMessage =
   | CoreClientSetSheetColorResponse
   | CoreClientSetSheetsColorResponse
   | CoreClientDuplicateSheetResponse
-  | CoreClientHasCellData
   | CoreClientRerunCodeCells
   | CoreClientResizeColumns
   | CoreClientResizeRows
@@ -1571,4 +1640,5 @@ export type CoreClientMessage =
   | CoreClientDataTableFirstRowAsHeader
   | CoreClientDataTableMeta
   | CoreClientUpdateValidation
-  | CoreClientRemoveValidationSelection;
+  | CoreClientRemoveValidationSelection
+  | CoreClientAIUpdates;

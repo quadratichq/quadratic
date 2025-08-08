@@ -20,15 +20,15 @@ export const cancelExecution = () => {
 
 export const executeCode = () => {
   const selection = sheets.sheet.cursor.a1String();
-  quadraticCore.rerunCodeCells(sheets.current, selection);
+  quadraticCore.rerunCodeCells(sheets.current, selection, false);
 };
 
 export const rerunSheetCode = () => {
-  quadraticCore.rerunCodeCells(sheets.current, undefined);
+  quadraticCore.rerunCodeCells(sheets.current, undefined, false);
 };
 
 export const rerunAllCode = () => {
-  quadraticCore.rerunCodeCells(undefined, undefined);
+  quadraticCore.rerunCodeCells(undefined, undefined, false);
 };
 
 export const codeActionsSpec: CodeActionSpec = {

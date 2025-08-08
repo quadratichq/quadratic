@@ -4,9 +4,15 @@ use crate::{
 };
 
 impl GridController {
-    pub fn set_sheet_name(&mut self, sheet_id: SheetId, name: String, cursor: Option<String>) {
+    pub fn set_sheet_name(
+        &mut self,
+        sheet_id: SheetId,
+        name: String,
+        cursor: Option<String>,
+        is_ai: bool,
+    ) {
         let ops = self.set_sheet_name_operations(sheet_id, name);
-        self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetSheetMetadata, is_ai);
     }
 
     pub fn server_set_sheet_name(&mut self, sheet_id: SheetId, name: String) {
@@ -19,18 +25,20 @@ impl GridController {
         sheet_id: SheetId,
         color: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.set_sheet_color_operations(sheet_id, color);
-        self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetSheetMetadata, is_ai);
     }
 
     pub fn set_sheets_color(
         &mut self,
         sheet_names_to_color: Vec<JsSheetNameToColor>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.set_sheets_color_operations(sheet_names_to_color);
-        self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetSheetMetadata, is_ai);
     }
 
     pub fn add_sheet(
@@ -38,14 +46,15 @@ impl GridController {
         name: Option<String>,
         insert_before_sheet_name: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.add_sheet_operations(name, insert_before_sheet_name);
-        self.start_user_transaction(ops, cursor, TransactionName::SheetAdd);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SheetAdd, is_ai);
     }
 
-    pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>) {
+    pub fn add_sheet_with_name(&mut self, name: String, cursor: Option<String>, is_ai: bool) {
         let ops = self.add_sheet_operations(Some(name), None);
-        self.start_user_transaction(ops, cursor, TransactionName::SheetAdd);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SheetAdd, is_ai);
     }
 
     pub fn server_add_sheet_with_name(&mut self, name: String) {
@@ -53,27 +62,29 @@ impl GridController {
         self.server_apply_transaction(ops, None);
     }
 
-    pub fn delete_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>) {
+    pub fn delete_sheet(&mut self, sheet_id: SheetId, cursor: Option<String>, is_ai: bool) {
         let ops = self.delete_sheet_operations(sheet_id);
-        self.start_user_transaction(ops, cursor, TransactionName::SheetDelete);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SheetDelete, is_ai);
     }
     pub fn move_sheet(
         &mut self,
         sheet_id: SheetId,
         to_before: Option<SheetId>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.move_sheet_operations(sheet_id, to_before);
-        self.start_user_transaction(ops, cursor, TransactionName::SetSheetMetadata);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SetSheetMetadata, is_ai);
     }
     pub fn duplicate_sheet(
         &mut self,
         sheet_id: SheetId,
         name_of_new_sheet: Option<String>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.duplicate_sheet_operations(sheet_id, name_of_new_sheet);
-        self.start_user_transaction(ops, cursor, TransactionName::DuplicateSheet);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::DuplicateSheet, is_ai);
     }
 }
 
@@ -101,7 +112,7 @@ mod test {
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
-        g.set_sheet_name(s1, String::from("Nice Name"), None);
+        g.set_sheet_name(s1, String::from("Nice Name"), None, false);
         let sheet = g.sheet(s1);
         assert_eq!(sheet.name, "Nice Name");
 
@@ -113,7 +124,12 @@ mod test {
         let sheet = g.sheet(s1);
         assert_eq!(sheet.name, "Nice Name");
 
-        g.set_sheet_name(SheetId::new(), String::from("Should not do anything"), None);
+        g.set_sheet_name(
+            SheetId::new(),
+            String::from("Should not do anything"),
+            None,
+            false,
+        );
         let sheet = g.sheet(s1);
         assert_eq!(sheet.name, "Nice Name");
     }
@@ -124,7 +140,7 @@ mod test {
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
-        g.set_sheet_color(s1, Some(String::from("red")), None);
+        g.set_sheet_color(s1, Some(String::from("red")), None, false);
         let sheet = g.sheet(s1);
         assert_eq!(sheet.color, Some(String::from("red")));
 
@@ -140,6 +156,7 @@ mod test {
             SheetId::new(),
             Some(String::from("Should not do anything")),
             None,
+            false,
         );
         let sheet = g.sheet(s1);
         assert_eq!(sheet.color, Some(String::from("red")));
@@ -148,6 +165,7 @@ mod test {
             SheetId::new(),
             Some(String::from("Should not do anything")),
             None,
+            false,
         );
         let sheet = g.sheet(s1);
         assert_eq!(sheet.color, Some(String::from("red")));
@@ -160,12 +178,12 @@ mod test {
         let s1 = old_sheet_ids[0];
 
         // Add a second sheet for testing multiple colors
-        g.add_sheet_with_name("Sheet2".into(), None);
+        g.add_sheet_with_name("Sheet2".into(), None, false);
         let s2 = g.sheet_ids()[1];
 
         // Set initial colors
-        g.set_sheet_color(s1, Some(String::from("blue")), None);
-        g.set_sheet_color(s2, Some(String::from("green")), None);
+        g.set_sheet_color(s1, Some(String::from("blue")), None, false);
+        g.set_sheet_color(s2, Some(String::from("green")), None, false);
 
         // Test setting multiple sheet colors at once
         let sheet_names_to_color = vec![
@@ -178,7 +196,7 @@ mod test {
                 color: String::from("yellow"),
             },
         ];
-        g.set_sheets_color(sheet_names_to_color, None);
+        g.set_sheets_color(sheet_names_to_color, None, false);
 
         // Verify colors were set correctly
         assert_eq!(g.sheet(s1).color, Some(String::from("red")));
@@ -205,7 +223,7 @@ mod test {
                 color: String::from("orange"),
             },
         ];
-        g.set_sheets_color(invalid_sheet_name_to_color, None);
+        g.set_sheets_color(invalid_sheet_name_to_color, None, false);
 
         // Only the existing sheet should be affected
         assert_eq!(g.sheet(s1).color, Some(String::from("orange")));
@@ -213,7 +231,7 @@ mod test {
 
         // Test setting empty HashMap (should not change anything)
         let empty_sheet_name_to_color = vec![];
-        g.set_sheets_color(empty_sheet_name_to_color, None);
+        g.set_sheets_color(empty_sheet_name_to_color, None, false);
 
         // Colors should remain unchanged
         assert_eq!(g.sheet(s1).color, Some(String::from("orange")));
@@ -226,7 +244,7 @@ mod test {
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
 
-        g.delete_sheet(s1, None);
+        g.delete_sheet(s1, None, false);
         assert_eq!(g.sheet_ids().len(), 1);
         assert_ne!(g.sheet_ids()[0], s1);
 
@@ -237,7 +255,7 @@ mod test {
         assert_eq!(g.sheet_ids().len(), 1);
         assert_ne!(g.sheet_ids()[0], s1);
 
-        g.delete_sheet(SheetId::new(), None);
+        g.delete_sheet(SheetId::new(), None, false);
         assert_eq!(g.sheet_ids().len(), 1);
         assert_ne!(g.sheet_ids()[0], s1);
     }
@@ -245,15 +263,15 @@ mod test {
     #[test]
     fn test_move_sheet_sheet_does_not_exist() {
         let mut g = GridController::test();
-        g.add_sheet(None, None, None);
-        g.move_sheet(SheetId::new(), None, None);
+        g.add_sheet(None, None, None, false);
+        g.move_sheet(SheetId::new(), None, None, false);
     }
 
     #[test]
     fn test_add_delete_reorder_sheets() {
         let mut g = GridController::test();
-        g.add_sheet(None, None, None);
-        g.add_sheet_with_name("test".into(), None);
+        g.add_sheet(None, None, None, false);
+        g.add_sheet_with_name("test".into(), None, false);
         let old_sheet_ids = g.sheet_ids();
         let s1 = old_sheet_ids[0];
         let s2 = old_sheet_ids[1];
@@ -266,7 +284,7 @@ mod test {
             expected: [SheetId; 3],
             old_sheet_ids: &Vec<SheetId>,
         ) {
-            g.move_sheet(a, b, None);
+            g.move_sheet(a, b, None, false);
             assert_eq!(expected.to_vec(), g.sheet_ids());
             g.undo(None);
             assert_eq!(*old_sheet_ids, g.sheet_ids());
@@ -288,7 +306,7 @@ mod test {
             expected: [SheetId; 2],
             old_sheet_ids: &Vec<SheetId>,
         ) {
-            g.delete_sheet(a, None);
+            g.delete_sheet(a, None, false);
             assert_eq!(expected.to_vec(), g.sheet_ids());
             g.undo(None);
             assert_eq!(*old_sheet_ids, g.sheet_ids());
@@ -305,7 +323,7 @@ mod test {
         let sheet_ids = g.sheet_ids();
         let first_sheet_id = sheet_ids[0];
 
-        g.delete_sheet(first_sheet_id, None);
+        g.delete_sheet(first_sheet_id, None, false);
         let new_sheet_ids = g.sheet_ids();
         assert_eq!(new_sheet_ids.len(), 1);
         assert_ne!(new_sheet_ids[0], sheet_ids[0]);
@@ -324,7 +342,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_sheet_name(sheet_id, "Nice Name".into(), None);
+        gc.set_sheet_name(sheet_id, "Nice Name".into(), None, false);
         gc.set_code_cell(
             SheetPos {
                 sheet_id,
@@ -335,20 +353,27 @@ mod test {
             "10 + 10".to_string(),
             None,
             None,
+            false,
         );
-        gc.set_fill_color(&A1Selection::test_a1("A1"), Some("red".to_string()), None)
-            .unwrap();
+        gc.set_fill_color(
+            &A1Selection::test_a1("A1"),
+            Some("red".to_string()),
+            None,
+            false,
+        )
+        .unwrap();
 
         gc.set_borders(
             A1Selection::test_a1("B2"),
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         clear_js_calls();
 
-        gc.duplicate_sheet(sheet_id, None, None);
+        gc.duplicate_sheet(sheet_id, None, None, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy");
 
@@ -407,7 +432,7 @@ mod test {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None, None);
+        gc.duplicate_sheet(sheet_id, None, None, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         let duplicated_sheet_id2 = gc.grid.sheets()[1].id;
         let sheet_info = SheetInfo::from(gc.sheet(duplicated_sheet_id2));
@@ -417,7 +442,7 @@ mod test {
             true,
         );
 
-        gc.duplicate_sheet(sheet_id, None, None);
+        gc.duplicate_sheet(sheet_id, None, None, false);
         assert_eq!(gc.grid.sheets().len(), 3);
         assert_eq!(gc.grid.sheets()[1].name, "Nice Name Copy (1)");
         assert_eq!(gc.grid.sheets()[2].name, "Nice Name Copy");
@@ -464,6 +489,7 @@ mod test {
             },
             vec![vec!["1".to_string()]],
             None,
+            false,
         );
         gc.set_cell_values(
             SheetPos {
@@ -473,6 +499,7 @@ mod test {
             },
             vec![vec!["1".to_string()]],
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -484,13 +511,14 @@ mod test {
             "A1 + A2".to_string(),
             None,
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
             Some(CellValue::Number(2.into()))
         );
 
-        gc.duplicate_sheet(sheet_id, None, None);
+        gc.duplicate_sheet(sheet_id, None, None, false);
         assert_eq!(gc.grid.sheets().len(), 2);
         assert_eq!(gc.grid.sheets()[1].name, SHEET_NAME.to_owned() + "1 Copy");
         let duplicated_sheet_id = gc.grid.sheets()[1].id;
@@ -511,6 +539,7 @@ mod test {
             },
             vec![vec!["2".to_string()]],
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),
@@ -532,6 +561,7 @@ mod test {
             },
             vec![vec!["3".to_string()]],
             None,
+            false,
         );
         assert_eq!(
             gc.sheet(sheet_id).get_code_cell_value((2, 1).into()),

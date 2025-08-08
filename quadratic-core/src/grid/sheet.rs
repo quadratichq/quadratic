@@ -540,7 +540,7 @@ mod test {
         for y in selection.y_range() {
             for x in selection.x_range() {
                 let sheet_pos = SheetPos { x, y, sheet_id };
-                grid_controller.set_cell_value(sheet_pos, vals[count].to_string(), None);
+                grid_controller.set_cell_value(sheet_pos, vals[count].to_string(), None, false);
                 count += 1;
             }
         }
@@ -728,6 +728,8 @@ mod test {
                 numeric_format: Some(Some(NumericFormat::percentage())),
                 ..Default::default()
             },
+            None,
+            false,
         );
 
         assert_eq!(
@@ -741,6 +743,8 @@ mod test {
                 numeric_format: Some(Some(NumericFormat::number())),
                 ..Default::default()
             },
+            None,
+            false,
         );
 
         assert_eq!(
@@ -780,7 +784,7 @@ mod test {
 
         let rect = SheetRect::from_numbers(0, 0, 2, 2, sheet_id);
         let selection = A1Selection::from_rect(rect);
-        gc.delete_cells(&selection, None);
+        gc.delete_cells(&selection, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
@@ -801,7 +805,7 @@ mod test {
                 language: CodeCellLanguage::Formula,
             }),
         );
-        gc.delete_cells(&A1Selection::from_xy(0, 0, sheet_id), None);
+        gc.delete_cells(&A1Selection::from_xy(0, 0, sheet_id), None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.cell_value(Pos { x: 0, y: 0 }).is_none());
