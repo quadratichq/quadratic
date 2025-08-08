@@ -40,6 +40,10 @@ export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
       <Link to={ROUTES.CREATE_FILE(teamUuid, { private: isPrivate })} reloadDocument>
         <Button variant="default">New file</Button>
       </Link>
+      {/* TODO: Handle whether it's private or public */}
+      <Button asChild>
+        <Link to={ROUTES.TEAM_CHAT(teamUuid, isPrivate)}>New chat</Link>
+      </Button>
       <input
         ref={fileInputRef}
         type="file"
