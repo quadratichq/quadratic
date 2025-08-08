@@ -2,7 +2,7 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 24;
+export const DEFAULT_MODEL_VERSION = 25;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
@@ -213,13 +213,13 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-2025-08-07': {
     model: 'gpt-5-2025-08-07',
-    backupModelKey: 'openai:gpt-5-2025-08-07',
+    backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
     displayName: 'gpt-5',
     temperature: 1,
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'max',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -231,7 +231,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-mini-2025-08-07': {
     model: 'gpt-5-mini-2025-08-07',
-    backupModelKey: 'openai:gpt-5-mini-2025-08-07',
+    backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
     displayName: 'gpt-5 mini',
     temperature: 1,
     max_tokens: 128000,
@@ -283,6 +283,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-4.1-mini-2025-04-14': {
     model: 'gpt-4.1-mini-2025-04-14',
+    backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
     displayName: 'gpt 4.1 mini',
     temperature: 0,
     max_tokens: 32768,
@@ -340,7 +341,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 128000,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'max',
+    mode: 'disabled',
     provider: 'azure-openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
@@ -370,6 +371,7 @@ export const MODELS_CONFIGURATION: {
   },
   'azure-openai:gpt-4.1': {
     model: 'gpt-4.1',
+    backupModelKey: 'openai:gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
     temperature: 0,
     max_tokens: 32768,
@@ -387,6 +389,7 @@ export const MODELS_CONFIGURATION: {
   },
   'azure-openai:gpt-4.1-mini': {
     model: 'gpt-4.1-mini',
+    backupModelKey: 'openai:gpt-4.1-mini-2025-04-14',
     displayName: 'gpt 4.1 mini',
     temperature: 0,
     max_tokens: 32768,
