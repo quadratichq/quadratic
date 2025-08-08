@@ -5,12 +5,13 @@ import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router';
 
 export const ConnectionSchemaBrowser = ({
@@ -28,6 +29,29 @@ export const ConnectionSchemaBrowser = ({
 }) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
+  const [filterQuery, setFilterQuery] = useState<string>('');
+
+  const filteredTablesWithIndex = useMemo(() => {
+    if (!data) return [] as Array<{ table: Table; index: number }>;
+    const query = filterQuery.trim().toLowerCase();
+    const withIndex = data.tables.map((t, i) => ({ table: t, index: i }));
+    if (!query) return withIndex;
+    return withIndex.filter(
+      ({ table }) => table.name.toLowerCase().includes(query) || table.schema.toLowerCase().includes(query)
+    );
+  }, [data, filterQuery]);
+
+  useEffect(() => {
+    if (!data) return;
+    if (filteredTablesWithIndex.length === 0) {
+      setSelectedTableIndex(-1);
+      return;
+    }
+    const selectedStillVisible = filteredTablesWithIndex.some(({ index }) => index === selectedTableIndex);
+    if (!selectedStillVisible) {
+      setSelectedTableIndex(filteredTablesWithIndex[0].index);
+    }
+  }, [data, filteredTablesWithIndex, selectedTableIndex]);
 
   if (type === undefined || uuid === undefined) return null;
 
@@ -46,7 +70,6 @@ export const ConnectionSchemaBrowser = ({
           <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
         </div>
         <div className="flex flex-row-reverse items-center gap-1">
-          {data && !data.tables[selectedTableIndex] && <div className="text-center">No tables in this connection</div>}
           <TableQueryAction
             query={
               !isLoading && data && data.tables[selectedTableIndex]
@@ -61,6 +84,16 @@ export const ConnectionSchemaBrowser = ({
           </TooltipPopover>
         </div>
       </div>
+
+      <div className="sticky top-9 z-10 bg-background px-2 pb-2">
+        <Input
+          value={filterQuery}
+          onChange={(e) => setFilterQuery(e.target.value)}
+          placeholder="Filter tables"
+          className="h-8"
+        />
+      </div>
+
       {isLoading && data === undefined && (
         <div className="mb-4 flex min-h-16 items-center justify-center text-muted-foreground">Loading…</div>
       )}
@@ -74,8 +107,8 @@ export const ConnectionSchemaBrowser = ({
           }}
           className="block"
         >
-          {data.tables.map((table, i) => (
-            <TableListItem index={i} selfContained={selfContained} data={table} key={i} />
+          {filteredTablesWithIndex.map(({ table, index }) => (
+            <TableListItem index={index} selfContained={selfContained} data={table} key={index} />
           ))}
         </RadioGroup>
       )}
