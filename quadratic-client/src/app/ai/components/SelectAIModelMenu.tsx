@@ -4,10 +4,8 @@ import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { apiClient } from '@/shared/api/apiClient';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
-import { ROUTES } from '@/shared/constants/routes';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import { Button } from '@/shared/shadcn/ui/button';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,18 +20,17 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
-import { DEFAULT_MODEL_FREE, DEFAULT_MODEL_PRO, MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
+import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo } from 'react';
-import { Link } from 'react-router';
 import { useRecoilValue } from 'recoil';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
   { label: string; description: string }
 > = {
-  basic: { label: 'Fast', description: 'Good for everyday tasks' },
-  pro: { label: 'Max', description: 'Very slow, but most capable' },
+  fast: { label: 'Fast', description: 'Good for everyday tasks' },
+  max: { label: 'Max', description: 'Very slow, but most capable' },
 };
 
 interface SelectAIModelMenuProps {
@@ -44,7 +41,6 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   const { debug } = useDebugFlags();
 
   const {
-    isOnPaidPlan,
     modelKey: selectedModel,
     setModelKey: setSelectedModel,
     modelConfig: selectedModelConfig,
@@ -95,7 +91,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
   );
 
   const selectedModelMode = useMemo(
-    () => (selectedModelConfig.mode === 'disabled' ? 'pro' : selectedModelConfig.mode),
+    () => (selectedModelConfig.mode === 'disabled' ? 'max' : selectedModelConfig.mode),
     [selectedModelConfig.mode]
   );
   const setModelMode = useCallback(
@@ -116,16 +112,6 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     () => MODEL_MODES_LABELS_DESCRIPTIONS[selectedModelMode].label,
     [selectedModelMode]
   );
-
-  useEffect(() => {
-    if (debug || isOnPaidPlan) {
-      return;
-    }
-
-    if (selectedModelMode === 'pro') {
-      setModelMode('basic');
-    }
-  }, [debug, isOnPaidPlan, selectedModelMode, setModelMode]);
 
   // "Did you know?" popover for the model picker
   // 1. Get the initial state from the server
@@ -215,7 +201,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
-      ) : DEFAULT_MODEL_FREE !== DEFAULT_MODEL_PRO ? (
+      ) : (
         <DidYouKnowPopover
           open={isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
@@ -254,25 +240,17 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
                       key={mode}
                       onPointerDown={() => setModelMode(mode as ModelMode)}
                     >
-                      <RadioGroupItem value={mode} className="mr-2" disabled={!isOnPaidPlan} />
+                      <RadioGroupItem value={mode} className="mr-2" />
                       <strong className="font-bold">{label}</strong>
                       <span className="ml-auto font-normal">{description}</span>
                     </Label>
                   ))}
                 </RadioGroup>
               </form>
-
-              {!isOnPaidPlan && (
-                <Button variant="link" asChild>
-                  <Link to={ROUTES.ACTIVE_TEAM_SETTINGS} target="_blank">
-                    Upgrade now for access to Pro
-                  </Link>
-                </Button>
-              )}
             </PopoverContent>
           </Popover>
         </DidYouKnowPopover>
-      ) : null}
+      )}
     </>
   );
 });
