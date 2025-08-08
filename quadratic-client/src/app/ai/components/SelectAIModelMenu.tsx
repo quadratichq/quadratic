@@ -33,7 +33,7 @@ const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   { label: string; description: string }
 > = {
   basic: { label: 'Fast', description: 'Good for everyday tasks' },
-  pro: { label: 'Max', description: 'Smartest and most capable' },
+  pro: { label: 'Max', description: 'Very slow, but most capable' },
 };
 
 interface SelectAIModelMenuProps {
@@ -220,7 +220,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
           open={isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
           title="AI model choices"
-          description="Fast is our fastest model available. Max is slower but offers the most intelligence."
+          description="Fast is our fastest model available. Max is much slower but offers the most intelligence."
         >
           <Popover>
             {/* Needs a min-width or it shifts as the popover closes */}
