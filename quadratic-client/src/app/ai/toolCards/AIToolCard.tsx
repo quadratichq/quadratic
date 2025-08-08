@@ -14,6 +14,7 @@ import { DeleteRows } from '@/app/ai/toolCards/DeleteRows';
 import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
 import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
+import { GetDatabaseSchemas } from '@/app/ai/toolCards/GetDatabaseSchemas';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { GetValidations } from '@/app/ai/toolCards/GetValidations';
 import { HasCellData } from '@/app/ai/toolCards/HasCellData';
@@ -31,6 +32,7 @@ import { SetBorders } from '@/app/ai/toolCards/SetBorders';
 import { SetCellValues } from '@/app/ai/toolCards/SetCellValues';
 import { SetCodeCellValue } from '@/app/ai/toolCards/SetCodeCellValue';
 import { SetFormulaCellValue } from '@/app/ai/toolCards/SetFormulaCellValue';
+import { SetSQLCodeCellValue } from '@/app/ai/toolCards/SetSQLCodeCellValue';
 import { SetTextFormats } from '@/app/ai/toolCards/SetTextFormats';
 import { TableColumnSettings } from '@/app/ai/toolCards/TableColumnSettings';
 import { TableMeta } from '@/app/ai/toolCards/TableMeta';
@@ -60,6 +62,10 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <SetCellValues toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCodeCellValue:
       return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.GetDatabaseSchemas:
+      return <GetDatabaseSchemas toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.SetSQLCodeCellValue:
+      return <SetSQLCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetFormulaCellValue:
       return <SetFormulaCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.MoveCells:

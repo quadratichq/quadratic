@@ -1,15 +1,20 @@
 use axum::{Extension, Json, http::HeaderMap, response::IntoResponse};
-use quadratic_rust_shared::sql::{Connection, schema::SchemaTable};
+use quadratic_rust_shared::{
+    net::ssh::SshConfig,
+    sql::{Connection, schema::SchemaTable},
+};
 use serde::Serialize;
 use tokio::time::Instant;
 use uuid::Uuid;
 
 use crate::{
-    error::Result,
+    error::{ConnectionError, Result},
     header::{number_header, time_header},
     server::SqlQuery,
+    ssh::{UsesSsh, open_ssh_tunnel_for_connection},
     state::State,
 };
+use quadratic_rust_shared::quadratic_api::Connection as ApiConnection;
 
 pub(crate) mod bigquery;
 pub(crate) mod mssql;
@@ -17,7 +22,7 @@ pub(crate) mod mysql;
 pub(crate) mod postgres;
 pub(crate) mod snowflake;
 
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Serialize, PartialEq, Clone)]
 pub struct Schema {
     id: Uuid,
     name: String,
@@ -54,4 +59,58 @@ pub(crate) async fn query_generic<'a, T: Connection<'a>>(
     headers.insert("ELAPSED-TOTAL-MS", time_header(start));
 
     Ok((headers, parquet))
+}
+
+pub(crate) async fn schema_generic<'a, C>(
+    api_connection: ApiConnection<C>,
+    state: Extension<State>,
+) -> Result<Json<Schema>>
+where
+    C: Connection<'a> + 'a,
+{
+    // first check if the schema is in the cache
+    let schema = state.cache.get_schema(api_connection.uuid).await;
+
+    if let Some(schema) = schema {
+        println!("schema found in cache: {:?}", schema.id);
+        return Ok(Json(schema));
+    }
+
+    // if not, get the schema from the database
+    let mut pool = api_connection.type_details.connect().await?;
+    let database_schema = api_connection.type_details.schema(&mut pool).await?;
+    let schema = Schema {
+        id: api_connection.uuid,
+        name: api_connection.name,
+        r#type: api_connection.r#type,
+        database: database_schema.database,
+        tables: database_schema.tables.into_values().collect(),
+    };
+
+    // add a copy of the schema to the cache
+    state
+        .cache
+        .add_schema(api_connection.uuid, schema.clone())
+        .await;
+
+    Ok(Json(schema))
+}
+
+pub(crate) async fn schema_generic_with_ssh<'a, C>(
+    mut api_connection: ApiConnection<C>,
+    state: Extension<State>,
+) -> Result<Json<Schema>>
+where
+    C: Connection<'a> + Clone + UsesSsh + 'a,
+    C: TryInto<SshConfig>,
+    <C as TryInto<SshConfig>>::Error: Into<ConnectionError>,
+{
+    let tunnel = open_ssh_tunnel_for_connection(&mut api_connection.type_details).await?;
+    let schema = schema_generic(api_connection, state).await?;
+
+    if let Some(mut tunnel) = tunnel {
+        tunnel.close().await?;
+    }
+
+    Ok(schema)
 }

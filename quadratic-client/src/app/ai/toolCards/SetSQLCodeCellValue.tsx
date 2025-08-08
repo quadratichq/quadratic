@@ -14,12 +14,12 @@ import { memo, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback } from 'recoil';
 import type { z } from 'zod';
 
-type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
+type SetSQLCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetSQLCodeCellValue]['responseSchema']>;
 
-export const SetCodeCellValue = memo(
+export const SetSQLCodeCellValue = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
     const [toolArgs, setToolArgs] =
-      useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
+      useState<z.SafeParseReturnType<SetSQLCodeCellValueResponse, SetSQLCodeCellValueResponse>>();
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
     useEffect(() => {
@@ -28,14 +28,14 @@ export const SetCodeCellValue = memo(
         return;
       }
 
-      const fullJson = parseFullJson<SetCodeCellValueResponse>(args);
+      const fullJson = parseFullJson<SetSQLCodeCellValueResponse>(args);
       if (!fullJson) {
         setToolArgs(undefined);
         setCodeCellPos(undefined);
         return;
       }
 
-      const toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
+      const toolArgs = aiToolsSpec[AITool.SetSQLCodeCellValue].responseSchema.safeParse(fullJson);
       setToolArgs(toolArgs);
 
       if (toolArgs.success) {
@@ -48,7 +48,7 @@ export const SetCodeCellValue = memo(
           selection.free();
           setCodeCellPos({ x, y });
         } catch (e) {
-          console.warn('[SetCodeCellValue] Failed to set code cell position: ', e);
+          console.warn('[SetSQLCodeCellValue] Failed to set code cell position: ', e);
           setCodeCellPos(undefined);
         }
       }
@@ -56,19 +56,24 @@ export const SetCodeCellValue = memo(
 
     const openDiffInEditor = useRecoilCallback(
       ({ set }) =>
-        (toolArgs: SetCodeCellValueResponse) => {
+        (toolArgs: SetSQLCodeCellValueResponse) => {
           if (!codeCellPos) {
             return;
           }
 
           set(codeEditorAtom, (prev) => ({
             ...prev,
-            diffEditorContent: { editorContent: toolArgs.code_string, isApplied: false },
+            diffEditorContent: { editorContent: toolArgs.sql_code_string, isApplied: false },
             waitingForEditorClose: {
               codeCell: {
                 sheetId: sheets.current,
                 pos: codeCellPos,
-                language: toolArgs.code_cell_language,
+                language: {
+                  Connection: {
+                    kind: toolArgs.connection_kind,
+                    id: toolArgs.connection_id,
+                  },
+                },
                 lastModified: 0,
               },
               showCellTypeMenu: false,
@@ -81,7 +86,7 @@ export const SetCodeCellValue = memo(
     );
 
     const saveAndRun = useRecoilCallback(
-      () => (toolArgs: SetCodeCellValueResponse) => {
+      () => (toolArgs: SetSQLCodeCellValueResponse) => {
         if (!codeCellPos) {
           return;
         }
@@ -90,8 +95,13 @@ export const SetCodeCellValue = memo(
           sheetId: sheets.current,
           x: codeCellPos.x,
           y: codeCellPos.y,
-          codeString: toolArgs.code_string,
-          language: toolArgs.code_cell_language,
+          codeString: toolArgs.sql_code_string,
+          language: {
+            Connection: {
+              kind: toolArgs.connection_kind,
+              id: toolArgs.connection_id,
+            },
+          },
         });
       },
       [codeCellPos]
@@ -99,20 +109,20 @@ export const SetCodeCellValue = memo(
 
     const estimatedNumberOfLines = useMemo(() => {
       if (toolArgs?.data) {
-        return toolArgs.data.code_string.split('\n').length;
+        return toolArgs.data.sql_code_string.split('\n').length;
       } else {
         return args.split('\\n').length;
       }
     }, [toolArgs, args]);
 
     if (loading && estimatedNumberOfLines) {
-      const partialJson = parsePartialJson<SetCodeCellValueResponse>(args);
-      if (partialJson && 'code_cell_language' in partialJson) {
-        const { code_cell_language: language, code_cell_position: position } = partialJson;
+      const partialJson = parsePartialJson<SetSQLCodeCellValueResponse>(args);
+      if (partialJson && 'connection_kind' in partialJson) {
+        const { connection_kind, code_cell_position: position } = partialJson;
         return (
           <ToolCard
-            icon={<LanguageIcon language={language ?? ''} />}
-            label={language}
+            icon={<LanguageIcon language={connection_kind ?? ''} />}
+            label={connection_kind}
             description={
               `${estimatedNumberOfLines} line` +
               (estimatedNumberOfLines === 1 ? '' : 's') +
@@ -131,11 +141,11 @@ export const SetCodeCellValue = memo(
       return <ToolCard isLoading className={className} />;
     }
 
-    const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
+    const { code_cell_name, connection_kind, code_cell_position } = toolArgs.data;
     return (
       <ToolCard
-        icon={<LanguageIcon language={code_cell_language} />}
-        label={code_cell_name || code_cell_language}
+        icon={<LanguageIcon language={connection_kind} />}
+        label={code_cell_name || connection_kind}
         description={
           `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
         }
