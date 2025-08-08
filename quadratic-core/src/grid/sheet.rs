@@ -16,6 +16,7 @@ use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
+use crate::grid::js_types::JsCellValueDescription;
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -239,28 +240,22 @@ impl Sheet {
         })
     }
 
-    /// Returns the JsCellValuePos in a rect
-    pub fn js_cell_value_pos_in_rect(
+    /// Returns the description of cell values in a rect for ai context.
+    pub fn js_cell_value_description(
         &self,
         rect: Rect,
         max_rows: Option<usize>,
-    ) -> Vec<Vec<JsCellValuePos>> {
-        let mut rect_values = Vec::new();
-        for y in rect
-            .y_range()
-            .take(max_rows.unwrap_or(rect.height() as usize))
-        {
-            let mut row_values = Vec::new();
-            for x in rect.x_range() {
-                if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
-                    row_values.push(cell_value_pos);
-                }
-            }
-            if !row_values.is_empty() {
-                rect_values.push(row_values);
-            }
-        }
-        rect_values
+    ) -> JsCellValueDescription {
+        let rect = Rect::new(
+            rect.min.x,
+            rect.min.y,
+            rect.max.x,
+            rect.min.y
+                + max_rows
+                    .unwrap_or(rect.height() as usize)
+                    .min(rect.height() as usize) as i64,
+        );
+        self.cells_as_string(rect)
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does
@@ -1003,7 +998,7 @@ mod test {
 
         let max_rows = 3;
 
-        let js_cell_value_pos_in_rect = sheet.js_cell_value_pos_in_rect(
+        let js_cell_value_pos_in_rect = sheet.js_cell_value_description(
             Rect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 1000 },

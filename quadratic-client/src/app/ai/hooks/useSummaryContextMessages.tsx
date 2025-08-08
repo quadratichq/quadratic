@@ -85,20 +85,25 @@ export function useSummaryContextMessages() {
       const sheetCount = allSheets.length;
       const dataSheetCount = (hasCurrentSheetData ? 1 : 0) + otherSheetsWithData.length; // only count current if it has data
 
-      let summary = `Summary: File has ${sheetCount} sheet${sheetCount !== 1 ? 's' : ''}`;
+      let summary = `# File Summary
+File has ${sheetCount} sheet${sheetCount !== 1 ? 's' : ''}`;
 
       if (dataSheetCount > 1) {
         summary += ` (${dataSheetCount} with data)`;
       }
 
+      summary += `
+## User's current sheet
+User has the sheet '${currentSheetName}' open`;
       if (hasCurrentSheetData) {
-        summary += `. Current sheet: '${currentSheetName}'`;
+        summary += ` with data.`;
       } else {
-        summary += `. Current sheet: '${currentSheetName}' is empty`;
+        summary += ` is empty.`;
       }
 
       if (!hasCurrentSheetData && otherSheetsWithData.length === 0) {
-        summary += `. No data in any sheets.`;
+        summary += `
+There is no data in any sheets.`;
       } else {
         if (hasCurrentSheetData) {
           const tableInfo = [];
@@ -156,7 +161,7 @@ export function useSummaryContextMessages() {
       if (flatDataWithRanges.length > 0) {
         summary += `\nAvailable flat data: ${flatDataWithRanges.join(', ')}.`;
       }
-
+      console.log(summary);
       return [
         {
           role: 'user',

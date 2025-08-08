@@ -15,6 +15,7 @@ use crate::{
     Rect,
     a1::{A1Error, A1Selection},
     controller::GridController,
+    grid::js_types::JsCellValueDescription,
 };
 
 use super::GridBounds;
@@ -55,7 +56,7 @@ impl GridController {
     pub fn get_ai_cells(&self, selection: A1Selection, mut page: u32) -> Result<String, A1Error> {
         let mut count = 0;
         let mut in_page = 0;
-        let mut cells = Vec::new();
+        let mut values = Vec::new();
 
         // we skip pages without content
         let mut has_content = false;
@@ -74,8 +75,8 @@ impl GridController {
                             count = new_count;
                             for rect in rects {
                                 if page == in_page {
-                                    if let Some(rect_cells) = sheet.cells_as_string(rect) {
-                                        cells.extend(rect_cells);
+                                    if sheet.has_content_in_rect(rect) {
+                                        values.push(sheet.cells_as_string(rect));
                                         has_content = true;
                                     } else {
                                         page += 1;
@@ -124,7 +125,7 @@ impl GridController {
                 selection.to_string(None, self.a1_context())
             ));
         }
-        result.push_str(&cells.join(", "));
+        result.push_str(&values.join(", "));
         Ok(result)
     }
 

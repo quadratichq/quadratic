@@ -6,7 +6,7 @@ use crate::{
     grid::{
         CodeCellLanguage,
         js_types::{
-            JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
+            JsCellValueDescription, JsChartContext, JsChartSummaryContext, JsCodeCell,
             JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
             JsTableType, JsTablesContext,
         },
@@ -47,20 +47,13 @@ impl Sheet {
         max_rects: Option<usize>,
         max_rows: Option<usize>,
         a1_context: &A1Context,
-    ) -> Vec<JsCellValuePosContext> {
+    ) -> Vec<JsCellValueDescription> {
         let mut data_rects = Vec::new();
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
-            let cell_value_pos = JsCellValuePosContext {
-                sheet_name: self.name.clone(),
-                rect_origin: tabular_data_rect.min.a1_string(),
-                rect_width: tabular_data_rect.width(),
-                rect_height: tabular_data_rect.height(),
-                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, max_rows),
-            };
-            data_rects.push(cell_value_pos);
+            data_rects.push(self.js_cell_value_description(tabular_data_rect, max_rows));
         }
         data_rects
     }
@@ -110,6 +103,7 @@ impl Sheet {
                 }
 
                 let mut connection_name = None;
+                let mut connection_id = None;
                 let table_type = match self.cell_value_ref(pos.to_owned()) {
                     Some(CellValue::Code(code)) => match &code.language {
                         CodeCellLanguage::Python => JsTableType::Python,
@@ -117,6 +111,7 @@ impl Sheet {
                         CodeCellLanguage::Formula => JsTableType::Formula,
                         CodeCellLanguage::Connection { id, kind } => {
                             connection_name = Some(kind.to_string());
+                            connection_id = Some(id.clone());
                             JsTableType::Connection
                         }
                         CodeCellLanguage::Import => JsTableType::DataTable,
@@ -131,6 +126,7 @@ impl Sheet {
                     table_type,
                     bounds: table.output_rect(pos, false).a1_string(),
                     connection_name,
+                    connection_id,
                 });
             }
         }
@@ -166,7 +162,7 @@ impl Sheet {
     }
 
     /// Returns JsTablesContext for all tables (data, code, charts) in the sheet
-    pub fn get_ai_tables_context(&self) -> Option<JsTablesContext> {
+    pub fn get_ai_tables_context(&self, sample_rows: usize) -> Option<JsTablesContext> {
         let mut tables_context = JsTablesContext {
             sheet_name: self.name.clone(),
             data_tables: Vec::new(),
@@ -205,21 +201,28 @@ impl Sheet {
                 bounds.min.x,
                 bounds.min.y + table.y_adjustment(false),
                 bounds.width() as i64,
-                1,
+                sample_rows as i64,
             );
-            let first_row_visible_values = self
-                .js_cell_value_pos_in_rect(first_row_rect, Some(1))
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>();
+            let first_rows_visible_values =
+                self.js_cell_value_description(first_row_rect, Some(sample_rows));
 
-            let last_row_rect =
-                Rect::from_numbers(bounds.min.x, bounds.max.y, bounds.width() as i64, 1);
-            let last_row_visible_values = self
-                .js_cell_value_pos_in_rect(last_row_rect, Some(1))
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>();
+            let mut starting_last_row = bounds.max.y - sample_rows as i64 + 1;
+            if starting_last_row < first_row_rect.max.y {
+                starting_last_row = first_row_rect.max.y + 1;
+            }
+            let last_rows_rect = if starting_last_row > bounds.max.y {
+                None
+            } else {
+                Some(Rect::from_numbers(
+                    bounds.min.x,
+                    starting_last_row,
+                    bounds.width() as i64,
+                    bounds.max.y - starting_last_row + 1,
+                ))
+            };
+
+            let last_rows_visible_values =
+                last_rows_rect.map(|rect| self.js_cell_value_description(rect, Some(sample_rows)));
 
             if let CellValue::Code(code_cell_value) = cell_value {
                 let Some(code_run) = table.code_run() else {
@@ -231,8 +234,8 @@ impl Sheet {
                     code_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
-                    first_row_visible_values,
-                    last_row_visible_values,
+                    first_rows_visible_values,
+                    last_rows_visible_values,
                     bounds: bounds.a1_string(),
                     intended_bounds: intended_bounds.a1_string(),
                     show_name: table.get_show_name(),
@@ -249,8 +252,8 @@ impl Sheet {
                     data_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
-                    first_row_visible_values,
-                    last_row_visible_values,
+                    first_rows_visible_values,
+                    last_rows_visible_values,
                     bounds: bounds.a1_string(),
                     intended_bounds: intended_bounds.a1_string(),
                     show_name: table.get_show_name(),
@@ -279,7 +282,7 @@ mod tests {
         a1::A1Selection,
         grid::{
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            js_types::{JsCellValuePosContext, JsCodeCell, JsReturnInfo},
+            js_types::{JsCodeCell, JsReturnInfo},
         },
     };
 
@@ -345,7 +348,7 @@ mod tests {
                 rect_origin: Pos { x: 1, y: 1 }.a1_string(),
                 rect_width: 10,
                 rect_height: 100,
-                starting_rect_values: sheet.js_cell_value_pos_in_rect(
+                starting_rect_values: sheet.js_cell_value_description(
                     Rect {
                         min: Pos { x: 1, y: 1 },
                         max: Pos { x: 10, y: 100 },
@@ -358,7 +361,7 @@ mod tests {
                 rect_origin: Pos { x: 31, y: 101 }.a1_string(),
                 rect_width: 10,
                 rect_height: 100,
-                starting_rect_values: sheet.js_cell_value_pos_in_rect(
+                starting_rect_values: sheet.js_cell_value_description(
                     Rect {
                         min: Pos { x: 31, y: 101 },
                         max: Pos { x: 40, y: 200 },

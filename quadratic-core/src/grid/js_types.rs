@@ -72,20 +72,20 @@ pub struct JsCellValuePos {
 #[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsSelectionContext {
     pub sheet_name: String,
-    pub data_rects: Vec<JsCellValuePosContext>,
+    pub data_rects: Vec<JsCellValueDescription>,
     pub errored_code_cells: Option<Vec<JsCodeCell>>,
     pub tables_summary: Option<Vec<JsTableSummaryContext>>,
     pub charts_summary: Option<Vec<JsChartSummaryContext>>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
-pub struct JsCellValuePosContext {
-    pub sheet_name: String,
-    pub rect_origin: String,
-    pub rect_width: u32,
-    pub rect_height: u32,
-    pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
-}
+// #[derive(Serialize, Debug, PartialEq, Eq, TS)]
+// pub struct JsCellValuePosContext {
+//     pub sheet_name: String,
+//     pub rect_origin: String,
+//     pub rect_width: u32,
+//     pub rect_height: u32,
+//     pub starting_rect_values: Option<>,
+// }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsTableSummaryContext {
@@ -94,6 +94,7 @@ pub struct JsTableSummaryContext {
     pub table_type: JsTableType,
     pub bounds: String,
     pub connection_name: Option<String>,
+    pub connection_id: Option<String>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
@@ -127,8 +128,8 @@ pub struct JsDataTableContext {
     pub data_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_row_visible_values: Vec<JsCellValuePos>,
-    pub last_row_visible_values: Vec<JsCellValuePos>,
+    pub first_rows_visible_values: JsCellValueDescription,
+    pub last_rows_visible_values: Option<JsCellValueDescription>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -142,8 +143,8 @@ pub struct JsCodeTableContext {
     pub code_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_row_visible_values: Vec<JsCellValuePos>,
-    pub last_row_visible_values: Vec<JsCellValuePos>,
+    pub first_rows_visible_values: JsCellValueDescription,
+    pub last_rows_visible_values: Option<JsCellValueDescription>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -561,4 +562,10 @@ pub struct JsSheetPosText {
     pub x: i64,
     pub y: i64,
     pub text: Option<String>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsCellValueDescription {
+    pub range: String,
+    pub values: Vec<Vec<JsCellValue>>,
 }

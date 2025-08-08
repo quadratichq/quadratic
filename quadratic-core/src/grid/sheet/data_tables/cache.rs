@@ -163,6 +163,10 @@ impl SheetDataTablesCache {
                     .map(|(rect, _)| rect),
             )
     }
+
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content(rect)
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
@@ -352,6 +356,10 @@ impl MultiCellTablesCache {
     /// Returns true if the cell has an empty value
     pub fn has_empty_value(&self, pos: Pos) -> bool {
         self.multi_cell_tables_empty.get(pos).is_some()
+    }
+
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.multi_cell_tables.intersects(rect)
     }
 }
 
