@@ -124,6 +124,30 @@ const booleanSchema = z.preprocess((val) => {
   return val === 'true';
 }, z.boolean());
 
+const booleanNullableOptionalSchema = z.preprocess((val) => {
+  if (val === null || val === undefined) {
+    return val;
+  }
+  if (typeof val === 'boolean') {
+    return val;
+  }
+  return val === 'true';
+}, z.boolean().nullable().optional());
+
+const stringSchema = z.preprocess((val) => {
+  if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint' || typeof val === 'symbol') {
+    return String(val);
+  }
+  return val;
+}, z.string());
+
+const stringNullableOptionalSchema = z.preprocess((val) => {
+  if (typeof val === 'number' || typeof val === 'boolean' || typeof val === 'bigint' || typeof val === 'symbol') {
+    return String(val);
+  }
+  return val;
+}, z.string().nullable().optional());
+
 const array2DSchema = z
   .array(
     z.array(
@@ -185,61 +209,61 @@ export const AIToolsArgsSchema = {
       .pipe(z.enum(['claude', '4.1'])),
   }),
   [AITool.SetChatName]: z.object({
-    chat_name: z.string(),
+    chat_name: stringSchema,
   }),
   [AITool.AddDataTable]: z.object({
-    sheet_name: z.string(),
-    top_left_position: z.string(),
-    table_name: z.string(),
+    sheet_name: stringSchema,
+    top_left_position: stringSchema,
+    table_name: stringSchema,
     table_data: array2DSchema,
   }),
   [AITool.SetCodeCellValue]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    code_cell_name: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    code_cell_name: stringSchema,
     code_cell_language: cellLanguageSchema,
-    code_cell_position: z.string(),
-    code_string: z.string(),
+    code_cell_position: stringSchema,
+    code_string: stringSchema,
   }),
   [AITool.SetFormulaCellValue]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    code_cell_position: z.string(),
-    formula_string: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    code_cell_position: stringSchema,
+    formula_string: stringSchema,
   }),
   [AITool.SetCellValues]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    top_left_position: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    top_left_position: stringSchema,
     cell_values: array2DSchema,
   }),
   [AITool.MoveCells]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    source_selection_rect: z.string(),
-    target_top_left_position: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    source_selection_rect: stringSchema,
+    target_top_left_position: stringSchema,
   }),
   [AITool.DeleteCells]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
   }),
   [AITool.UpdateCodeCell]: z.object({
-    code_string: z.string(),
+    code_string: stringSchema,
   }),
   [AITool.CodeEditorCompletions]: z.object({
-    text_delta_at_cursor: z.string(),
+    text_delta_at_cursor: stringSchema,
   }),
   [AITool.UserPromptSuggestions]: z.object({
     prompt_suggestions: z.array(
       z.object({
-        label: z.string(),
-        prompt: z.string(),
+        label: stringSchema,
+        prompt: stringSchema,
       })
     ),
   }),
   [AITool.PDFImport]: z.object({
-    file_name: z.string(),
-    prompt: z.string(),
+    file_name: stringSchema,
+    prompt: stringSchema,
   }),
   [AITool.GetCellData]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
     page: numberSchema,
   }),
   [AITool.HasCellData]: z.object({
@@ -247,38 +271,38 @@ export const AIToolsArgsSchema = {
     selection: z.string(),
   }),
   [AITool.SetTextFormats]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
-    bold: booleanSchema.nullable().optional(),
-    italic: booleanSchema.nullable().optional(),
-    underline: booleanSchema.nullable().optional(),
-    strike_through: booleanSchema.nullable().optional(),
-    text_color: z.string().nullable().optional(),
-    fill_color: z.string().nullable().optional(),
-    align: z.string().nullable().optional(),
-    vertical_align: z.string().nullable().optional(),
-    wrap: z.string().nullable().optional(),
-    numeric_commas: booleanSchema.nullable().optional(),
-    number_type: z.string().nullable().optional(),
-    currency_symbol: z.string().nullable().optional(),
-    date_time: z.string().nullable().optional(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    bold: booleanNullableOptionalSchema,
+    italic: booleanNullableOptionalSchema,
+    underline: booleanNullableOptionalSchema,
+    strike_through: booleanNullableOptionalSchema,
+    text_color: stringNullableOptionalSchema,
+    fill_color: stringNullableOptionalSchema,
+    align: stringNullableOptionalSchema,
+    vertical_align: stringNullableOptionalSchema,
+    wrap: stringNullableOptionalSchema,
+    numeric_commas: booleanNullableOptionalSchema,
+    number_type: stringNullableOptionalSchema,
+    currency_symbol: stringNullableOptionalSchema,
+    date_time: stringNullableOptionalSchema,
   }),
   [AITool.GetTextFormats]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
     page: numberSchema,
   }),
   [AITool.ConvertToTable]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    selection: z.string(),
-    table_name: z.string(),
+    sheet_name: stringNullableOptionalSchema,
+    selection: stringSchema,
+    table_name: stringSchema,
     first_row_is_column_names: booleanSchema,
   }),
   [AITool.WebSearch]: z.object({
-    query: z.string(),
+    query: stringSchema,
   }),
   [AITool.WebSearchInternal]: z.object({
-    query: z.string(),
+    query: stringSchema,
   }),
   [AITool.AddSheet]: z.object({
     sheet_name: z.string(),
@@ -508,7 +532,7 @@ const validationMessageErrorPrompt: Record<string, AIToolArgsPrimitive> = {
 export const aiToolsSpec: AIToolSpecRecord = {
   [AITool.SetAIModel]: {
     sources: ['ModelRouter'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the AI Model to use for this user prompt.\n
 Choose the AI model for this user prompt based on the following instructions, always respond with only one the model options matching it exactly.\n
@@ -530,7 +554,7 @@ Choose the AI model for this user prompt based on the following instructions, al
   },
   [AITool.SetChatName]: {
     sources: ['GetChatName'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Set the name of the user chat with AI assistant, this is the name of the chat in the chat history\n
 You should use the set_chat_name function to set the name of the user chat with AI assistant, this is the name of the chat in the chat history.\n
@@ -554,7 +578,7 @@ This name should be from user's perspective, not the assistant's.\n
   },
   [AITool.GetCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
@@ -604,7 +628,7 @@ IMPORTANT: If the results include page information:\n
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n
 `,
@@ -630,7 +654,7 @@ The string representation (in a1 notation) of the selection of cells to check fo
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
 Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
@@ -686,7 +710,7 @@ Don't attempt to add formulas or code to data tables.\n`,
   },
   [AITool.SetCellValues]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
@@ -741,7 +765,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
@@ -806,7 +830,7 @@ Code cell (Python and Javascript) placement instructions:\n
   },
   [AITool.SetFormulaCellValue]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the value of a formula cell and runs it in the current open sheet, requires the cell position (in a1 notation) and formula string.\n
 You should use the set_formula_cell_value function to set this formula cell value. Use set_formula_cell_value function instead of responding with formulas.\n
@@ -865,7 +889,7 @@ Examples:
   },
   [AITool.MoveCells]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
@@ -905,7 +929,7 @@ Target position is the top left corner of the target position on the current ope
   },
   [AITool.DeleteCells]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
@@ -936,7 +960,7 @@ delete_cells functions requires the current sheet name provided in the context, 
   },
   [AITool.UpdateCodeCell]: {
     sources: ['AIAssistant'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool updates the code in the code cell you are currently editing, requires the code string to update the code cell with. Provide the full code string, don't provide partial code. This will replace the existing code in the code cell.\n
 The code cell editor will switch to diff editor mode and will show the changes you made to the code cell, user can accept or reject the changes.\n
@@ -969,7 +993,7 @@ When using this tool, make sure the code cell is the only cell being edited.\n
   },
   [AITool.GetTextFormats]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the text formatting information of a selection of cells on a specified sheet, requires the sheet name, the selection of cells to get the formats of.\n
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
@@ -1010,7 +1034,7 @@ CRITICALLY IMPORTANT: If too large, the results will include page information:\n
   },
   [AITool.SetTextFormats]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool sets the text formats of a selection of cells on a specified sheet.\n
 There must be at least one non-null format to set.\n
@@ -1121,7 +1145,7 @@ You MAY want to use the get_text_formats function if you need to check the curre
   },
   [AITool.CodeEditorCompletions]: {
     sources: ['CodeEditorCompletions'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool provides inline completions for the code in the code cell you are currently editing, requires the completion for the code in the code cell.\n
 You are provided with the prefix and suffix of the cursor position in the code cell.\n
@@ -1147,7 +1171,7 @@ Completion is the delta that will be inserted at the cursor position in the code
   },
   [AITool.UserPromptSuggestions]: {
     sources: ['AIAnalyst', 'GetUserPromptSuggestions'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool provides prompt suggestions for the user, requires an array of three prompt suggestions.\n
 Each prompt suggestion is an object with a label and a prompt.\n
@@ -1195,7 +1219,7 @@ IMPORTANT: This tool should always be called after you have provided the respons
   },
   [AITool.PDFImport]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool extracts data from the attached PDF files and converts it into a structured format i.e. as Data Tables on the sheet.\n
 This tool requires the file_name of the PDF and a clear and explicit prompt to extract data from that PDF file.\n
@@ -1236,7 +1260,7 @@ Do not use multiple tools at the same time when dealing with PDF files. pdf_impo
   },
   [AITool.ConvertToTable]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool converts a selection of cells on a specified sheet into a data table.\n
 IMPORTANT: the selection can NOT contain any code cells or data tables.\n
@@ -1281,7 +1305,7 @@ The data table will include a table name as the first row, which will push down 
   },
   [AITool.WebSearch]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool searches the web for information based on the query.\n
 Use this tool when the user asks for information that is not already available in the context.\n
@@ -1312,7 +1336,7 @@ It requires the query to search for.\n
   // This is tool internal to AI model and is called by `WebSearch` tool.
   [AITool.WebSearchInternal]: {
     sources: ['WebSearch'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool searches the web for information based on the query.\n
 It requires the query to search for.\n
@@ -1336,7 +1360,7 @@ It requires the query to search for.\n
   },
   [AITool.AddSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
@@ -1365,7 +1389,7 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
   },
   [AITool.DuplicateSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
@@ -1393,7 +1417,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
   },
   [AITool.RenameSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool renames a sheet in the file.\n
 It requires the name of the sheet to rename and the new name. This must be a unique name.\n
@@ -1421,7 +1445,7 @@ It requires the name of the sheet to rename and the new name. This must be a uni
   },
   [AITool.DeleteSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool deletes a sheet in the file.\n
 It requires the name of the sheet to delete.\n
@@ -1445,7 +1469,7 @@ It requires the name of the sheet to delete.\n
   },
   [AITool.MoveSheet]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool moves a sheet within the sheet list.\n
 It requires the name of the sheet to move and an optional name of a sheet to insert the sheet before. If no sheet name is provided, the sheet will be added to the end of the sheet list.\n
@@ -1474,7 +1498,7 @@ It requires the name of the sheet to move and an optional name of a sheet to ins
   },
   [AITool.ColorSheets]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool colors the sheet tabs in the file.\n
 It requires a array of objects with sheet names and new colors.\n
@@ -1512,7 +1536,7 @@ It requires a array of objects with sheet names and new colors.\n
   },
   [AITool.TextSearch]: {
     sources: ['AIAnalyst', 'AIAssistant'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool searches for text in cells within a specific sheet or the entire file.\n
 `,
@@ -1551,7 +1575,7 @@ This tool searches for text in cells within a specific sheet or the entire file.
   },
   [AITool.RerunCode]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool reruns the code in code cells. This may also be known as "refresh the data" or "update the data".\n
 You can optionally provide a sheet name and/or a selection (in A1 notation) to rerun specific code cells.\n
@@ -1586,7 +1610,7 @@ If you provide neither a sheet name nor a selection, then all code cells in the 
   },
   [AITool.ResizeColumns]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool resizes columns in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of columns to resize, and the size to resize to.\n
@@ -1624,7 +1648,7 @@ The size is either "default" or "auto". Auto will resize the column to the width
   },
   [AITool.ResizeRows]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool resizes rows in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of rows to resize, and the size to resize to.\n
@@ -1662,7 +1686,7 @@ The size is either "default" or "auto". Auto will resize the row to the height o
   },
   [AITool.SetBorders]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool sets the borders in a sheet.\n
 It requires the sheet name, a selection (in A1 notation) of cells to set the borders on, and the color, line type, and border_selection of the borders.\n
@@ -1727,7 +1751,7 @@ The border_selection must be one of: all, inner, outer, horizontal, vertical, le
   },
   [AITool.InsertColumns]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool inserts columns in a sheet, adjusted columns to the right of the insertion. The new columns will share the formatting of the column provided.\n
 It requires the sheet name, the column to insert the columns at, whether to insert to the right or left of the column, and the number of columns to insert.\n
@@ -1764,7 +1788,7 @@ It requires the sheet name, the column to insert the columns at, whether to inse
   },
   [AITool.InsertRows]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool inserts rows in a sheet, adjusted rows below the insertion.\n
 It requires the sheet name, the row to insert the rows at, whether to insert below or above the row, and the number of rows to insert. The new rows will share the formatting of the row provided.\n
@@ -1801,7 +1825,7 @@ It requires the sheet name, the row to insert the rows at, whether to insert bel
   },
   [AITool.DeleteColumns]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool deletes columns in a sheet, adjusting columns to the right of the deletion.\n
 It requires the sheet name and an array of sheet columns to delete.\n
@@ -1831,7 +1855,7 @@ It requires the sheet name and an array of sheet columns to delete.\n`,
   },
   [AITool.DeleteRows]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool deletes rows in a sheet, adjusting rows below the deletion.\n
 It requires the sheet name and an array of sheet rows to delete.\n
@@ -1861,7 +1885,7 @@ It requires the sheet name and an array of sheet rows to delete.\n`,
   },
   [AITool.TableMeta]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool sets the meta data for a table. One or more options can be changed on the table at once.\n
 `,
@@ -1919,7 +1943,7 @@ This tool sets the meta data for a table. One or more options can be changed on 
   },
   [AITool.TableColumnSettings]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
@@ -1968,7 +1992,7 @@ In the parameters, include only columns that you want to change. The remaining c
   },
   [AITool.GetValidations]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool gets the validations in a sheet.\n
 It requires the sheet name.\n
@@ -1992,7 +2016,7 @@ It requires the sheet name.\n
   },
   [AITool.AddMessage]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool adds a message to a sheet using validations.\n`,
     parameters: {
@@ -2025,7 +2049,7 @@ This tool adds a message to a sheet using validations.\n`,
   },
   [AITool.AddLogicalValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool adds a logical validation to a sheet. This also can display a checkbox in a cell to allow the user to toggle the cell between true and false.\n`,
     parameters: {
@@ -2066,7 +2090,7 @@ This tool adds a logical validation to a sheet. This also can display a checkbox
   },
   [AITool.AddListValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool adds a list validation to a sheet. This can be used to limit the values that can be entered into a cell to a list of values.\n
 The list should have either a list_source_list or a list_source_selection, but not both.\n`,
@@ -2119,7 +2143,7 @@ This tool adds a text validation to a sheet. This can be used to limit the value
   },
   [AITool.AddTextValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool adds a text validation to a sheet. This validates a text string to ensure it meets certain criteria.\n`,
     parameters: {
@@ -2200,7 +2224,7 @@ This tool adds a text validation to a sheet. This validates a text string to ens
   },
   [AITool.AddNumberValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool adds a number validation to a sheet. This validates a number to ensure it meets certain criteria.\n`,
     parameters: {
@@ -2253,7 +2277,7 @@ This tool adds a number validation to a sheet. This validates a number to ensure
   },
   [AITool.AddDateTimeValidation]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool adds a date time validation to a sheet. This validates a date time to ensure it meets certain criteria.\n`,
     parameters: {
@@ -2344,7 +2368,7 @@ This tool adds a date time validation to a sheet. This validates a date time to 
   },
   [AITool.RemoveValidations]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool removes all validations in a sheet from a range.\n`,
     parameters: {

@@ -39,9 +39,9 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { RocketIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import {
@@ -190,7 +190,7 @@ export function DashboardSidebar({ isLoading }: { isLoading: boolean }) {
               <Link
                 to={ROUTES.TEAM_SETTINGS(activeTeamUuid)}
                 onClick={() => {
-                  mixpanel.track('[DashboardSidebar].upgradeToProClicked', {
+                  trackEvent('[DashboardSidebar].upgradeToProClicked', {
                     team_uuid: activeTeamUuid,
                   });
                 }}

@@ -141,22 +141,23 @@ export function getAnthropicApiArgs(
                 (!!thinking || content.type === 'text')
             )
             .map((content) => {
-              if (content.type === 'anthropic_thinking') {
-                return {
-                  type: 'thinking' as const,
-                  thinking: content.text,
-                  signature: content.signature,
-                };
-              } else if (content.type === 'anthropic_redacted_thinking') {
-                return {
-                  type: 'redacted_thinking' as const,
-                  data: content.text,
-                };
-              } else {
-                return {
-                  type: 'text' as const,
-                  text: content.text.trim(),
-                };
+              switch (content.type) {
+                case 'anthropic_thinking':
+                  return {
+                    type: 'thinking' as const,
+                    thinking: content.text,
+                    signature: content.signature,
+                  };
+                case 'anthropic_redacted_thinking':
+                  return {
+                    type: 'redacted_thinking' as const,
+                    data: content.text,
+                  };
+                default:
+                  return {
+                    type: 'text' as const,
+                    text: content.text.trim(),
+                  };
               }
             }),
           ...message.toolCalls.map((toolCall) => ({
@@ -304,12 +305,13 @@ export async function parseAnthropicStream(
             }
           }
           break;
+
         case 'content_block_delta':
           if (chunk.delta.type === 'text_delta') {
             if (chunk.delta.text) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'text') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {
@@ -339,7 +341,7 @@ export async function parseAnthropicStream(
             if (chunk.delta.thinking) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'anthropic_thinking') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {
@@ -356,7 +358,7 @@ export async function parseAnthropicStream(
             if (chunk.delta.signature) {
               let currentContent = responseMessage.content.pop();
               if (currentContent?.type !== 'anthropic_thinking') {
-                if (currentContent?.text.trim()) {
+                if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
                 currentContent = {
@@ -373,6 +375,7 @@ export async function parseAnthropicStream(
             }
           }
           break;
+
         case 'content_block_stop':
           {
             const toolCall = responseMessage.toolCalls.pop();
@@ -381,6 +384,7 @@ export async function parseAnthropicStream(
             }
           }
           break;
+
         case 'message_start':
           if (chunk.message.usage) {
             usage.inputTokens = Math.max(usage.inputTokens, chunk.message.usage.input_tokens);
@@ -392,6 +396,7 @@ export async function parseAnthropicStream(
             );
           }
           break;
+
         case 'message_delta':
           if (chunk.usage) {
             usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.output_tokens);
@@ -457,6 +462,7 @@ export function parseAnthropicResponse(
           });
         }
         break;
+
       case 'tool_use':
         responseMessage.toolCalls.push({
           id: message.id,
@@ -465,6 +471,7 @@ export function parseAnthropicResponse(
           loading: false,
         });
         break;
+
       case 'thinking':
         if (message.thinking) {
           responseMessage.content.push({
@@ -474,6 +481,7 @@ export function parseAnthropicResponse(
           });
         }
         break;
+
       case 'redacted_thinking':
         if (message.data) {
           responseMessage.content.push({

@@ -173,8 +173,8 @@ pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
     });
 
     for i in 0..possible_text_series.len() {
-        if let Some(entry) = &possible_text_series[i].clone() {
-            if !entry.is_empty() {
+        if let Some(entry) = &possible_text_series[i].clone()
+            && !entry.is_empty() {
                 let current = if !negative {
                     entry[entry.len() - 1].to_owned()
                 } else {
@@ -200,7 +200,6 @@ pub fn find_string_series(options: &SeriesOptions) -> Option<Vec<CellValue>> {
 
                 return Some(results);
             }
-        }
     }
 
     if !results.is_empty() {

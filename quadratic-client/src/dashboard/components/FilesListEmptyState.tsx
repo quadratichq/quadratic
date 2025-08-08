@@ -1,8 +1,8 @@
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
 import { EmptyState } from '@/shared/components/EmptyState';
 import { ROUTES } from '@/shared/constants/routes';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { FileIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import { Link } from 'react-router';
 
 export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean }) => {
@@ -25,7 +25,7 @@ export const FilesListEmptyState = ({ isPrivate = false }: { isPrivate?: boolean
               reloadDocument
               className="underline hover:text-primary"
               onClick={() => {
-                mixpanel.track('[FilesEmptyState].clickCreateBlankFile');
+                trackEvent('[FilesEmptyState].clickCreateBlankFile');
               }}
             >
               Create a new file

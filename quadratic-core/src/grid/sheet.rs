@@ -123,11 +123,10 @@ impl Sheet {
         }
 
         // Check if sheet name already exists
-        if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name) {
-            if existing_sheet_id != sheet_id {
+        if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name)
+            && existing_sheet_id != sheet_id {
                 return Err("Sheet name must be unique".to_string());
             }
-        }
 
         Ok(())
     }
@@ -205,14 +204,13 @@ impl Sheet {
     /// for it).
     pub fn display_value(&self, pos: Pos) -> Option<CellValue> {
         // if CellValue::Code or CellValue::Import, then we need to get the value from data_tables
-        if let Some(cell_value) = self.cell_value_ref(pos) {
-            if !matches!(
+        if let Some(cell_value) = self.cell_value_ref(pos)
+            && !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
             ) {
                 return Some(cell_value.clone());
             }
-        }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
         self.get_code_cell_value(pos)
@@ -319,17 +317,15 @@ impl Sheet {
     pub fn cell_format(&self, pos: Pos) -> Format {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
-        if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos) {
-            if let Some(data_table) = self.data_table_at(&data_table_pos) {
-                if !data_table.has_spill() && !data_table.has_error() {
+        if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos)
+            && let Some(data_table) = self.data_table_at(&data_table_pos)
+                && !data_table.has_spill() && !data_table.has_error() {
                     // pos relative to data table pos (top left pos)
                     let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
                     let table_format = data_table.get_format(format_pos);
                     let combined_format = table_format.combine(&sheet_format);
                     return combined_format;
                 }
-            }
-        }
 
         sheet_format
     }
@@ -361,16 +357,14 @@ impl Sheet {
             if format.strike_through.is_some_and(|s| s) {
                 values.push("strike through".to_string());
             }
-            if let Some(text_color) = format.text_color {
-                if !text_color.is_empty() {
+            if let Some(text_color) = format.text_color
+                && !text_color.is_empty() {
                     values.push(format!("text color is {}", text_color.clone()));
                 }
-            }
-            if let Some(fill_color) = format.fill_color {
-                if !fill_color.is_empty() {
+            if let Some(fill_color) = format.fill_color
+                && !fill_color.is_empty() {
                     values.push(format!("fill color is {}", fill_color.clone()));
                 }
-            }
             if let Some(align) = format.align {
                 values.push(format!("horizontal align is {}", align.clone()));
             }
