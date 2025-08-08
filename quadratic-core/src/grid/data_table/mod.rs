@@ -447,10 +447,10 @@ impl DataTable {
         }
 
         // Check if table name already exists
-        if let Some(table) = a1_context.table_map.try_table(name) {
-            if table.multi_pos != sheet_pos.into() {
-                return Err("Table name must be unique".to_string());
-            }
+        if let Some(table) = a1_context.table_map.try_table(name)
+            && table.multi_pos != sheet_pos.into()
+        {
+            return Err("Table name must be unique".to_string());
         }
 
         std::result::Result::Ok(true)

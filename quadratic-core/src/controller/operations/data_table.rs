@@ -151,8 +151,8 @@ impl GridController {
     ) -> Vec<Operation> {
         let mut ops = vec![];
 
-        if let Some(columns_to_add) = columns_to_add {
-            if !columns_to_add.is_empty() {
+        if let Some(columns_to_add) = columns_to_add
+            && !columns_to_add.is_empty() {
                 ops.push(Operation::InsertDataTableColumns {
                     sheet_pos,
                     columns: columns_to_add
@@ -165,10 +165,9 @@ impl GridController {
                     copy_formats: None,
                 });
             }
-        }
 
-        if let Some(columns_to_remove) = columns_to_remove {
-            if !columns_to_remove.is_empty() {
+        if let Some(columns_to_remove) = columns_to_remove
+            && !columns_to_remove.is_empty() {
                 ops.push(Operation::DeleteDataTableColumns {
                     sheet_pos,
                     columns: columns_to_remove,
@@ -176,10 +175,9 @@ impl GridController {
                     select_table,
                 });
             }
-        }
 
-        if let Some(rows_to_add) = rows_to_add {
-            if !rows_to_add.is_empty() {
+        if let Some(rows_to_add) = rows_to_add
+            && !rows_to_add.is_empty() {
                 ops.push(Operation::InsertDataTableRows {
                     sheet_pos,
                     rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
@@ -189,10 +187,9 @@ impl GridController {
                     copy_formats: None,
                 });
             }
-        }
 
-        if let Some(rows_to_remove) = rows_to_remove {
-            if !rows_to_remove.is_empty() {
+        if let Some(rows_to_remove) = rows_to_remove
+            && !rows_to_remove.is_empty() {
                 ops.push(Operation::DeleteDataTableRows {
                     sheet_pos,
                     rows: rows_to_remove,
@@ -200,7 +197,6 @@ impl GridController {
                     select_table,
                 });
             }
-        }
 
         ops
     }

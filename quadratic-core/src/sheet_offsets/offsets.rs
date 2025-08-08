@@ -152,11 +152,10 @@ impl Offsets {
                     sizes.insert(*k + 1, *size);
 
                     // if the key is the index, set the size
-                    if *k == index {
-                        if let Some(source_width) = source_width {
+                    if *k == index
+                        && let Some(source_width) = source_width {
                             sizes.insert(*k, source_width);
                         }
-                    }
                 } else {
                     sizes.insert(*k, *size);
                 }

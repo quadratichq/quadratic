@@ -63,15 +63,15 @@ pub fn replace_formula_a1_references_to_rc(grid: &mut Grid) {
                     continue;
                 }
                 for y in bounds.y_range() {
-                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
-                        if code_cell.language == CodeCellLanguage::Formula {
-                            code_cell.code = migration_convert_a1_to_rc(
-                                &code_cell.code,
-                                &a1_context,
-                                *sheet_id,
-                                (x + 1, y).into(),
-                            );
-                        }
+                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
+                        && code_cell.language == CodeCellLanguage::Formula
+                    {
+                        code_cell.code = migration_convert_a1_to_rc(
+                            &code_cell.code,
+                            &a1_context,
+                            *sheet_id,
+                            (x + 1, y).into(),
+                        );
                     }
                 }
             }

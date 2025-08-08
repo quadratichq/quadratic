@@ -9,7 +9,7 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { FileRenameIcon, HistoryIcon, PersonAddIcon } from '@/shared/components/Icons';
 import { ROUTES } from '@/shared/constants/routes';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 type FileActionSpec = Pick<
   ActionSpecRecord,
@@ -53,7 +53,7 @@ export const fileActionsSpec: FileActionSpec = {
     isAvailable: isAvailableBecauseLoggedIn,
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownload]) => {
       if (!pixiAppSettings.setEditorInteractionState) return;
-      mixpanel.track('[Files].downloadFile', { id: uuid });
+      trackEvent('[Files].downloadFile', { id: uuid });
       pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: true }));
       const data = await quadraticCore.export();
       downloadQuadraticFile(name, data);
@@ -68,7 +68,7 @@ export const fileActionsSpec: FileActionSpec = {
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownloadExcel]) => {
       try {
         if (!pixiAppSettings.setEditorInteractionState) return;
-        mixpanel.track('[Files].exportExcel', { id: uuid });
+        trackEvent('[Files].exportExcel', { id: uuid });
         pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: true }));
         const data = await quadraticCore.exportExcel();
         downloadExcelFile(name, data);
@@ -89,7 +89,7 @@ export const fileActionsSpec: FileActionSpec = {
     run: async ({ name, uuid }: FileActionArgs[Action.FileDownloadCsv]) => {
       try {
         if (!pixiAppSettings.setEditorInteractionState) return;
-        mixpanel.track('[Files].exportCsv', { id: uuid });
+        trackEvent('[Files].exportCsv', { id: uuid });
         pixiAppSettings.setEditorInteractionState((prev) => ({ ...prev, isRunningAsyncAction: true }));
         const sheetBounds = sheets.sheet.boundsWithoutFormatting;
 

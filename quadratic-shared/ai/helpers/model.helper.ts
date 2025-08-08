@@ -8,6 +8,7 @@ import type {
   BasetenModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
+  FireworksModelKey,
   GeminiAIModelKey,
   ModelMode,
   OpenAIModelKey,
@@ -51,6 +52,10 @@ export function isBasetenModel(modelKey: AIModelKey): modelKey is BasetenModelKe
   return MODELS_CONFIGURATION[modelKey].provider === 'baseten';
 }
 
+export function isFireworksModel(modelKey: AIModelKey): modelKey is FireworksModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'fireworks';
+}
+
 export function isOpenRouterModel(modelKey: AIModelKey): modelKey is OpenRouterModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'open-router';
 }
@@ -84,6 +89,10 @@ export const getModelOptions = (
   strictParams: boolean;
   imageSupport: boolean;
   aiModelMode: ModelMode;
+  top_p?: number;
+  top_k?: number;
+  min_p?: number;
+  repetition_penalty?: number;
 } => {
   const config = MODELS_CONFIGURATION[modelKey];
   const { canStream, canStreamWithToolCalls } = config;
@@ -106,5 +115,9 @@ export const getModelOptions = (
     strictParams: !!config.strictParams,
     imageSupport: config.imageSupport,
     aiModelMode: config.mode,
+    top_p: config.top_p,
+    top_k: config.top_k,
+    min_p: config.min_p,
+    repetition_penalty: config.repetition_penalty,
   };
 };

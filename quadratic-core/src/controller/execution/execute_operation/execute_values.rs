@@ -41,17 +41,17 @@ impl GridController {
                     self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
                     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
-                    if transaction.is_user_ai() {
-                        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
-                            let rows_to_resize =
-                                sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
-                            if !rows_to_resize.is_empty() {
-                                transaction
-                                    .resize_rows
-                                    .entry(sheet_pos.sheet_id)
-                                    .or_default()
-                                    .extend(rows_to_resize);
-                            }
+                    if transaction.is_user_ai()
+                        && let Some(sheet) = self.try_sheet(sheet_pos.sheet_id)
+                    {
+                        let rows_to_resize =
+                            sheet.get_rows_with_wrap_in_rect(sheet_rect.into(), true);
+                        if !rows_to_resize.is_empty() {
+                            transaction
+                                .resize_rows
+                                .entry(sheet_pos.sheet_id)
+                                .or_default()
+                                .extend(rows_to_resize);
                         }
                     }
 

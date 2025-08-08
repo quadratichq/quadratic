@@ -159,10 +159,10 @@ impl Sheet {
 
         let code_cells = self.all_render_code_cells();
 
-        if !code_cells.is_empty() {
-            if let Ok(render_code_cells) = serde_json::to_vec(&code_cells) {
-                crate::wasm_bindings::js::jsSheetCodeCells(self.id.to_string(), render_code_cells);
-            }
+        if !code_cells.is_empty()
+            && let Ok(render_code_cells) = serde_json::to_vec(&code_cells)
+        {
+            crate::wasm_bindings::js::jsSheetCodeCells(self.id.to_string(), render_code_cells);
         }
     }
 
@@ -199,19 +199,19 @@ impl Sheet {
         }
 
         let mut sent = false;
-        if let Some(table) = self.data_table_at(&pos) {
-            if let Some(CellValue::Image(image)) = table.display_value_at((0, 0).into()) {
-                let output_size = table.chart_output;
-                crate::wasm_bindings::js::jsSendImage(
-                    self.id.to_string(),
-                    pos.x as i32,
-                    pos.y as i32,
-                    output_size.map(|(w, _)| w as i32).unwrap_or(0),
-                    output_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
-                    Some(image),
-                );
-                sent = true;
-            }
+        if let Some(table) = self.data_table_at(&pos)
+            && let Some(CellValue::Image(image)) = table.display_value_at((0, 0).into())
+        {
+            let output_size = table.chart_output;
+            crate::wasm_bindings::js::jsSendImage(
+                self.id.to_string(),
+                pos.x as i32,
+                pos.y as i32,
+                output_size.map(|(w, _)| w as i32).unwrap_or(0),
+                output_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
+                Some(image),
+            );
+            sent = true;
         }
         if !sent {
             crate::wasm_bindings::js::jsSendImage(

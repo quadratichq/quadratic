@@ -32,12 +32,11 @@ impl TableMap {
     }
 
     pub fn remove_at(&mut self, multi_pos: MultiPos) {
-        if let Some(table_name) = self.multi_pos_to_table.remove(&multi_pos) {
-            if let Some(table) = self.tables.get(&table_name) {
-                if table.multi_pos == multi_pos {
-                    self.tables.swap_remove(&table_name);
-                }
-            }
+        if let Some(table_name) = self.multi_pos_to_table.remove(&multi_pos)
+            && let Some(table) = self.tables.get(&table_name)
+            && table.multi_pos == multi_pos
+        {
+            self.tables.swap_remove(&table_name);
         }
     }
 
@@ -126,14 +125,13 @@ impl TableMap {
     }
 
     pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
-        if let Some(table) = self.try_table_mut(table_name) {
-            if let Some(index) = table
+        if let Some(table) = self.try_table_mut(table_name)
+            && let Some(index) = table
                 .visible_columns
                 .iter()
                 .position(|col| col == column_name)
-            {
-                table.visible_columns.remove(index);
-            }
+        {
+            table.visible_columns.remove(index);
         }
     }
 

@@ -8,10 +8,9 @@ import {
 import { isQuadraticModel } from 'quadratic-shared/ai/helpers/model.helper';
 import {
   DEFAULT_BACKUP_MODEL,
-  DEFAULT_MODEL_FREE,
-  DEFAULT_MODEL_FREE_WITH_IMAGE,
-  DEFAULT_MODEL_PRO,
   DEFAULT_MODEL_ROUTER_MODEL,
+  DEFAULT_MODEL_WITH_IMAGE,
+  MODELS_CONFIGURATION,
 } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec, MODELS_ROUTER_CONFIGURATION } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AIRequestHelperArgs } from 'quadratic-shared/typesAndSchemasAI';
@@ -29,11 +28,6 @@ export const getModelKey = async (
       return modelKey;
     }
 
-    // if the user is on a paid plan and the model is the default pro model, return the default pro model
-    if (isOnPaidPlan && modelKey === DEFAULT_MODEL_PRO) {
-      return DEFAULT_MODEL_PRO;
-    }
-
     const messages = inputArgs.messages;
     if (messages.length === 0) {
       throw new Error('Messages are empty');
@@ -48,17 +42,12 @@ export const getModelKey = async (
     }
 
     // if the model is the default free model, check if the user prompt contains an image file
-    if (modelKey === DEFAULT_MODEL_FREE) {
+    if (!isQuadraticModel(modelKey) && !MODELS_CONFIGURATION[modelKey].imageSupport) {
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
         message.content.some(isContentImage)
       );
 
-      return hasImageFile ? DEFAULT_MODEL_FREE_WITH_IMAGE : DEFAULT_MODEL_FREE;
-    }
-
-    // if the user is not on a paid plan, return the default free model
-    if (!isOnPaidPlan) {
-      return DEFAULT_MODEL_FREE;
+      return hasImageFile ? DEFAULT_MODEL_WITH_IMAGE : modelKey;
     }
 
     // if the model is not the model router model, return the model key

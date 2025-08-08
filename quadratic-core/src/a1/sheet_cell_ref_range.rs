@@ -67,14 +67,14 @@ impl SheetCellRefRange {
         default_sheet_id: Option<SheetId>,
         a1_context: &A1Context,
     ) -> String {
-        if self.needs_sheet_name(default_sheet_id) {
-            if let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
-                return format!(
-                    "{}!{}",
-                    super::quote_sheet_name(sheet_name),
-                    self.cells.to_a1_string(),
-                );
-            }
+        if self.needs_sheet_name(default_sheet_id)
+            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id)
+        {
+            return format!(
+                "{}!{}",
+                super::quote_sheet_name(sheet_name),
+                self.cells.to_a1_string(),
+            );
         }
         format!("{}", self.cells)
     }

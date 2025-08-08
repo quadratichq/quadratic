@@ -25,8 +25,8 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Separator } from '@/shared/shadcn/ui/separator';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { timeAgo } from '@/shared/utils/timeAgo';
-import mixpanel from 'mixpanel-browser';
 import { useEffect, useRef, useState } from 'react';
 import type { SubmitOptions } from 'react-router';
 import { Link, useFetcher, useMatch, useSubmit } from 'react-router';
@@ -138,13 +138,13 @@ export function FilesListItemUserFile({
   };
 
   const handleDownload = () => {
-    mixpanel.track('[Files].downloadFile', { id: uuid });
+    trackEvent('[Files].downloadFile', { id: uuid });
     const data = getActionFileDownload();
     fetcherDownload.submit(data, fetcherSubmitOpts);
   };
 
   const handleDuplicate = () => {
-    mixpanel.track('[Files].duplicateFile', { id: uuid });
+    trackEvent('[Files].duplicateFile', { id: uuid });
     const data = getActionFileDuplicate({
       redirect: false,
       isPrivate: isTeamPrivateFilesRoute ? true : false,
@@ -155,7 +155,7 @@ export function FilesListItemUserFile({
 
   const handleShare = () => {
     setActiveShareMenuFileId(uuid);
-    mixpanel.track('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
+    trackEvent('[FileSharing].menu.open', { context: 'dashboard', pathname: window.location.pathname });
   };
 
   const displayName = fetcherRename.json ? (fetcherRename.json as FileAction['request.rename']).name : name;

@@ -36,16 +36,14 @@ impl ValidationNumber {
                     self.ranges.iter().any(|range| match range {
                         NumberRange::Equal(equal) => equal.contains(&n),
                         NumberRange::Range(min, max) => {
-                            if let Some(min) = min.as_ref() {
-                                if n < *min {
+                            if let Some(min) = min.as_ref()
+                                && n < *min {
                                     return false;
                                 }
-                            }
-                            if let Some(max) = max.as_ref() {
-                                if n > *max {
+                            if let Some(max) = max.as_ref()
+                                && n > *max {
                                     return false;
                                 }
-                            }
                             true
                         }
                         NumberRange::NotEqual(not_equal) => not_equal.iter().all(|v| n != *v),

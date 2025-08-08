@@ -198,8 +198,8 @@ impl Sheet {
                         .iter()
                         .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
                         .count();
-                    if count > 0 {
-                        if let Some((width, height)) = dt.chart_output {
+                    if count > 0
+                        && let Some((width, height)) = dt.chart_output {
                             let min = (width - count as u32).max(1);
                             if min != width {
                                 dt.chart_output = Some((min, height));
@@ -210,7 +210,6 @@ impl Sheet {
                                 );
                             }
                         }
-                    }
                 }
 
                 Ok(())

@@ -24,8 +24,8 @@ impl A1Selection {
         let last = self.ranges.last().cloned();
         if shift_key {
             if let Some(CellRefRange::Table { range: table_ref }) = last {
-                if let Some(col) = &col {
-                    if table_ref.table_name == table_name {
+                if let Some(col) = &col
+                    && table_ref.table_name == table_name {
                         match &table_ref.col_range {
                             ColRange::ColRange(start, end) => {
                                 // if we already have a range, then we change the end to the new col
@@ -112,7 +112,6 @@ impl A1Selection {
                             }
                         }
                     }
-                }
             } else if let Some(CellRefRange::Sheet { range }) = last {
                 // if the range is current a sheet, then select to the heading
                 if let Some(col) = &col {
@@ -162,9 +161,9 @@ impl A1Selection {
 
         let mut headers = false;
         let mut data = true;
-        if !shift_key && !ctrl_key && self.ranges.len() == 1 {
-            if let Some(CellRefRange::Table { range }) = self.ranges.last() {
-                if range.table_name == table_name && range.col_range == col_range {
+        if !shift_key && !ctrl_key && self.ranges.len() == 1
+            && let Some(CellRefRange::Table { range }) = self.ranges.last()
+                && range.table_name == table_name && range.col_range == col_range {
                     // handle toggle for single column selection
                     if matches!(col_range, ColRange::Col(_)) {
                         if !range.headers && range.data {
@@ -180,9 +179,7 @@ impl A1Selection {
                         headers = table.show_columns && !range.headers;
                         self.ranges.pop();
                     }
-                }
-            }
-        };
+                };
 
         if !shift_key && !ctrl_key {
             self.ranges.clear();
@@ -199,9 +196,9 @@ impl A1Selection {
         let table_ref = CellRefRange::Table { range: table_ref };
 
         // toggle selection with ctrl/meta key
-        if ctrl_key {
-            if let Some(last) = self.ranges.last() {
-                if last == &table_ref {
+        if ctrl_key
+            && let Some(last) = self.ranges.last()
+                && last == &table_ref {
                     self.ranges.pop();
                     if self.ranges.is_empty() {
                         self.ranges
@@ -210,8 +207,6 @@ impl A1Selection {
                     self.update_cursor(a1_context);
                     return;
                 }
-            }
-        }
 
         self.ranges.push(table_ref);
         self.cursor = Pos { x, y };

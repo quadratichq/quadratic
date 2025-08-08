@@ -132,11 +132,9 @@ impl SheetDataTablesCache {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
                             context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                        {
-                            if table.language != CodeCellLanguage::Import {
+                            && table.language != CodeCellLanguage::Import {
                                 return true;
                             }
-                        }
                     }
                 }
 

@@ -473,11 +473,10 @@ impl A1Selection {
     /// Tries to convert the selection to a single position. This works only if
     /// there is one range, and the range is a single cell.
     pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
-        if self.ranges.len() == 1 {
-            if let Some(range) = self.ranges.first() {
+        if self.ranges.len() == 1
+            && let Some(range) = self.ranges.first() {
                 return range.try_to_pos(a1_context);
             }
-        }
         None
     }
 
@@ -693,11 +692,10 @@ impl A1Selection {
         if self.ranges.len() != 1 {
             return None;
         }
-        if let Some(CellRefRange::Table { range }) = self.ranges.first() {
-            if range.data && range.col_range == ColRange::All {
+        if let Some(CellRefRange::Table { range }) = self.ranges.first()
+            && range.data && range.col_range == ColRange::All {
                 return Some(range.table_name.clone());
             }
-        }
         None
     }
 

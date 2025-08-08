@@ -25,8 +25,8 @@ impl Sheet {
                 let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the height
                 if dt.is_html_or_image() {
-                    if let Some((width, height)) = dt.chart_output {
-                        if row >= pos.y && row < pos.y + output_rect.height() as i64 {
+                    if let Some((width, height)) = dt.chart_output
+                        && row >= pos.y && row < pos.y + output_rect.height() as i64 {
                             dt.chart_output = Some((width, height + 1));
                             transaction.add_from_code_run(
                                 pos.to_multi_pos(sheet_id),
@@ -34,7 +34,6 @@ impl Sheet {
                                 dt.is_html(),
                             );
                         }
-                    }
                 } else {
                     // Adds rows to data tables if the row is inserted inside the
                     // table. Code is not impacted by this change.
@@ -43,8 +42,7 @@ impl Sheet {
                         && (row < pos.y + output_rect.height() as i64
                             || (CopyFormats::Before == copy_formats
                                 && row < pos.y + output_rect.height() as i64 + 1))
-                    {
-                        if let Ok(display_row_index) = usize::try_from(row - pos.y) {
+                        && let Ok(display_row_index) = usize::try_from(row - pos.y) {
                             dt.insert_row(display_row_index, None)?;
 
                             if dt.sort.is_some() {
@@ -70,7 +68,6 @@ impl Sheet {
                                 transaction.add_borders(sheet_id);
                             }
                         }
-                    }
                 }
 
                 Ok(())

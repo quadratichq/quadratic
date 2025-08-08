@@ -84,17 +84,17 @@ impl GridController {
     }
 
     pub fn remove_validations(&mut self, sheet_id: SheetId, cursor: Option<String>, is_ai: bool) {
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            if let Some(validations) = sheet.validations.validations() {
-                let ops = validations
-                    .iter()
-                    .map(|v| Operation::RemoveValidation {
-                        sheet_id,
-                        validation_id: v.id,
-                    })
-                    .collect();
-                self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
-            }
+        if let Some(sheet) = self.try_sheet(sheet_id)
+            && let Some(validations) = sheet.validations.validations()
+        {
+            let ops = validations
+                .iter()
+                .map(|v| Operation::RemoveValidation {
+                    sheet_id,
+                    validation_id: v.id,
+                })
+                .collect();
+            self.start_user_ai_transaction(ops, cursor, TransactionName::Validation, is_ai);
         }
     }
 

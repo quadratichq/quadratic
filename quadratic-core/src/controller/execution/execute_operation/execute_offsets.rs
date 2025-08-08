@@ -292,8 +292,8 @@ impl GridController {
 
         let old_size = sheet.offsets.set_default_width(size);
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server()
+            && let Some(sheet) = self.try_sheet(sheet_id) {
                 transaction.sheet_info.insert(sheet_id);
                 transaction.add_dirty_hashes_from_selections(
                     sheet,
@@ -303,7 +303,6 @@ impl GridController {
                 transaction.add_fill_cells(sheet_id);
                 transaction.add_borders(sheet_id);
             }
-        }
 
         if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);
@@ -345,8 +344,8 @@ impl GridController {
 
         let old_size = sheet.offsets.set_default_height(size);
 
-        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server() {
-            if let Some(sheet) = self.try_sheet(sheet_id) {
+        if (cfg!(target_family = "wasm") || cfg!(test)) && !transaction.is_server()
+            && let Some(sheet) = self.try_sheet(sheet_id) {
                 transaction.sheet_info.insert(sheet_id);
                 transaction.add_dirty_hashes_from_selections(
                     sheet,
@@ -356,7 +355,6 @@ impl GridController {
                 transaction.add_fill_cells(sheet_id);
                 transaction.add_borders(sheet_id);
             }
-        }
 
         if transaction.is_user_ai_undo_redo() {
             transaction.forward_operations.push(op);

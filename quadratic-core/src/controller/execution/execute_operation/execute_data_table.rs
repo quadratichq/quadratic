@@ -996,29 +996,29 @@ impl GridController {
             let mut old_show_name = None;
             let mut old_show_columns = None;
 
-            if let Some(name) = name.as_mut() {
-                if old_name != *name {
-                    // sanitize table name
-                    let table_name = sanitize_table_name(name.to_string());
+            if let Some(name) = name.as_mut()
+                && old_name != *name
+            {
+                // sanitize table name
+                let table_name = sanitize_table_name(name.to_string());
 
-                    *name = unique_data_table_name(
-                        &table_name,
-                        false,
-                        Some(data_table_multi_pos),
-                        &self.a1_context,
-                    );
+                *name = unique_data_table_name(
+                    &table_name,
+                    false,
+                    Some(data_table_multi_pos),
+                    &self.a1_context,
+                );
 
-                    self.grid.update_data_table_name(
-                        data_table_multi_pos,
-                        &old_name,
-                        name,
-                        &self.a1_context,
-                        false,
-                    )?;
+                self.grid.update_data_table_name(
+                    data_table_multi_pos,
+                    &old_name,
+                    name,
+                    &self.a1_context,
+                    false,
+                )?;
 
-                    // mark code cells dirty to update meta data
-                    transaction.add_code_cell(data_table_multi_pos);
-                }
+                // mark code cells dirty to update meta data
+                transaction.add_code_cell(data_table_multi_pos);
             }
 
             // update column names that have changed in code cells
@@ -1082,11 +1082,11 @@ impl GridController {
                     }
 
                     // if the header is first row, update the column names in the data table value
-                    if dt.header_is_first_row {
-                        if let Some(columns) = columns.as_ref() {
-                            for (index, column) in columns.iter().enumerate() {
-                                dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
-                            }
+                    if dt.header_is_first_row
+                        && let Some(columns) = columns.as_ref()
+                    {
+                        for (index, column) in columns.iter().enumerate() {
+                            dt.set_cell_value_at(index as u32, 0, column.name.to_owned());
                         }
                     }
 
@@ -1355,12 +1355,13 @@ impl GridController {
 
                 let sheet = self.try_sheet_mut_result(sheet_id)?;
                 let (_, dirty_rects) = sheet.modify_data_table_at_pos(&data_table_pos, |dt| {
-                    if dt.header_is_first_row && column_header.is_none() {
-                        if let Some(values) = &values {
-                            let first_value = values[0].to_owned();
-                            if !matches!(first_value, CellValue::Blank) {
-                                column_header = Some(first_value.to_string());
-                            }
+                    if dt.header_is_first_row
+                        && column_header.is_none()
+                        && let Some(values) = &values
+                    {
+                        let first_value = values[0].to_owned();
+                        if !matches!(first_value, CellValue::Blank) {
+                            column_header = Some(first_value.to_string());
                         }
                     }
 
@@ -1512,18 +1513,12 @@ impl GridController {
                         }
                     }
 
-                    if show_columns {
-                        if let Some(column_header) = &old_column_header {
-                            if let (Ok(value_x), Ok(value_y)) =
-                                (u32::try_from(display_index - 1), u32::try_from(0))
-                            {
-                                sheet_cell_values.set(
-                                    value_x,
-                                    value_y,
-                                    column_header.to_owned().into(),
-                                );
-                            }
-                        }
+                    if show_columns
+                        && let Some(column_header) = &old_column_header
+                        && let (Ok(value_x), Ok(value_y)) =
+                            (u32::try_from(display_index - 1), u32::try_from(0))
+                    {
+                        sheet_cell_values.set(value_x, value_y, column_header.to_owned().into());
                     }
 
                     // collect formats to flatten

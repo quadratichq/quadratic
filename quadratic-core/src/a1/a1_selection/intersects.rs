@@ -24,15 +24,14 @@ impl A1Selection {
                             }
                         }
                         CellRefRange::Table { range: other_range } => {
-                            if let Some(rect) = other_range.to_largest_rect(a1_context) {
-                                if let Some(intersection) =
+                            if let Some(rect) = other_range.to_largest_rect(a1_context)
+                                && let Some(intersection) =
                                     RefRangeBounds::new_relative_rect(rect).intersection(range)
                                 {
                                     ranges.push(CellRefRange::Sheet {
                                         range: intersection,
                                     });
                                 }
-                            }
                         }
                     });
             }

@@ -87,14 +87,13 @@ impl Sheet {
                                 for y in intersection.y_range() {
                                     if let Some(entry) = data_table
                                         .display_value_ref_at((x - pos.x, y - pos.y).into())
+                                        && !matches!(entry, &CellValue::Blank)
                                     {
-                                        if !matches!(entry, &CellValue::Blank) {
-                                            count += 1;
-                                            if count >= max_count {
-                                                return None;
-                                            }
-                                            cells.insert(Pos { x, y }, entry);
+                                        count += 1;
+                                        if count >= max_count {
+                                            return None;
                                         }
+                                        cells.insert(Pos { x, y }, entry);
                                     }
                                 }
                             }

@@ -9,7 +9,7 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useRecoilCallback } from 'recoil';
 
 export const useSaveAndRunCell = () => {
@@ -70,7 +70,7 @@ export const useSaveAndRunCell = () => {
             ]);
           }
         }
-        mixpanel.track('[CodeEditor].cellRun', {
+        trackEvent('[CodeEditor].cellRun', {
           type: getLanguage(codeCell.language),
           language: codeCell.language,
         });

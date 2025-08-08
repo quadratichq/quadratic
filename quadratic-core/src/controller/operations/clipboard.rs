@@ -217,8 +217,8 @@ impl From<Clipboard> for JsClipboard {
                         style.push_str("style=\"");
                     }
 
-                    if let Some(format) = format {
-                        if !format.is_default() {
+                    if let Some(format) = format
+                        && !format.is_default() {
                             if let Some(align) = format.align {
                                 style.push_str(align.as_css_string());
                             }
@@ -234,21 +234,19 @@ impl From<Clipboard> for JsClipboard {
                             if format.italic == Some(true) {
                                 style.push_str("font-style:italic;");
                             }
-                            if let Some(text_color) = format.text_color {
-                                if let Ok(text_color) = Rgba::try_from(text_color.as_str()) {
+                            if let Some(text_color) = format.text_color
+                                && let Ok(text_color) = Rgba::try_from(text_color.as_str()) {
                                     style.push_str(
                                         format!("color:{};", text_color.as_rgb_hex()).as_str(),
                                     );
                                 }
-                            }
-                            if let Some(fill_color) = format.fill_color {
-                                if let Ok(fill_color) = Rgba::try_from(fill_color.as_str()) {
+                            if let Some(fill_color) = format.fill_color
+                                && let Ok(fill_color) = Rgba::try_from(fill_color.as_str()) {
                                     style.push_str(
                                         format!("background-color:{};", fill_color.as_rgb_hex())
                                             .as_str(),
                                     );
                                 }
-                            }
                             if format.underline == Some(true) && format.strike_through != Some(true)
                             {
                                 style.push_str("text-decoration:underline;");
@@ -262,7 +260,6 @@ impl From<Clipboard> for JsClipboard {
                                 style.push_str("text-decoration:underline line-through;");
                             }
                         }
-                    }
 
                     if !border.is_empty() {
                         if border.left.is_some() {
@@ -572,14 +569,13 @@ impl GridController {
                     sheet_format_updates,
                 );
 
-                if let Some(table_format_updates) = table_format_updates {
-                    if !table_format_updates.is_default() {
+                if let Some(table_format_updates) = table_format_updates
+                    && !table_format_updates.is_default() {
                         ops.push(Operation::DataTableFormats {
                             sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
                             formats: table_format_updates,
                         });
                     }
-                }
             }
         }
 
@@ -958,8 +954,8 @@ impl GridController {
                                 );
                             }
                             // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
-                            else if should_expand_data_table {
-                                if let Some(sheet) = sheet {
+                            else if should_expand_data_table
+                                && let Some(sheet) = sheet {
                                     let new_x = tile_start_x + cols_x as i64;
                                     let new_y = tile_start_y + cols_y as i64;
                                     let current_pos = Pos::new(new_x, new_y);
@@ -980,7 +976,6 @@ impl GridController {
                                         );
                                     }
                                 }
-                            }
                         }
                     }
                 }

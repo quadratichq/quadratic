@@ -16,7 +16,7 @@ import { AddIcon, CloseIcon, FastForwardIcon, HistoryIcon } from '@/shared/compo
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { aiToolsSpec, type AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { memo, useMemo } from 'react';
 import { useRecoilCallback, useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -109,7 +109,7 @@ export const AIAnalystHeader = memo(({ textareaRef }: AIAnalystHeaderProps) => {
               className="text-muted-foreground hover:text-foreground"
               disabled={loading || (currentUserMessagesCount === 0 && !showChatHistory)}
               onClick={() => {
-                mixpanel.track('[AIAnalyst].startNewChat', { messageCount: currentUserMessagesCount });
+                trackEvent('[AIAnalyst].startNewChat', { messageCount: currentUserMessagesCount });
                 setCurrentChat({
                   id: '',
                   name: '',

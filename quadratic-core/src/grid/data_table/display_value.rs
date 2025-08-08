@@ -136,12 +136,12 @@ impl DataTable {
         let header_y = if show_name { 1 } else { 0 };
 
         // if the position is the first cell and the header is shown, return the header
-        if pos.y == header_y && show_columns {
-            if let std::result::Result::Ok(display_x) = u32::try_from(pos.x) {
-                if let Some(header) = self.display_header_at(display_x) {
-                    return Some(header.name.as_ref());
-                }
-            }
+        if pos.y == header_y
+            && show_columns
+            && let std::result::Result::Ok(display_x) = u32::try_from(pos.x)
+            && let Some(header) = self.display_header_at(display_x)
+        {
+            return Some(header.name.as_ref());
         }
 
         pos.y -= self.y_adjustment(true);

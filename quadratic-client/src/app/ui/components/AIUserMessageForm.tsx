@@ -252,7 +252,7 @@ export const AIUserMessageForm = memo(
     return (
       <form
         className={cn(
-          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[:focus]:border-primary',
+          'group relative h-min rounded-lg border border-accent bg-accent pt-1.5 has-[textarea:focus]:border-primary',
           editingOrDebugEditing ? '' : 'select-none'
         )}
         onSubmit={(e) => e.preventDefault()}

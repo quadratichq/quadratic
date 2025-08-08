@@ -35,8 +35,8 @@ impl Sheet {
                 let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
-                    if let Some((width, height)) = dt.chart_output {
-                        if column >= pos.x && column < pos.x + output_rect.width() as i64 {
+                    if let Some((width, height)) = dt.chart_output
+                        && column >= pos.x && column < pos.x + output_rect.width() as i64 {
                             dt.chart_output = Some((width + 1, height));
                             transaction.add_from_code_run(
                                 pos.to_multi_pos(sheet_id),
@@ -44,7 +44,6 @@ impl Sheet {
                                 dt.is_html(),
                             );
                         }
-                    }
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
                     // table. Code is not impacted by this change.
@@ -53,8 +52,7 @@ impl Sheet {
                         && (column < pos.x + output_rect.width() as i64
                             || (CopyFormats::Before == copy_formats
                                 && column < pos.x + output_rect.width() as i64 + 1))
-                    {
-                        if let Ok(display_column_index) = u32::try_from(column - pos.x) {
+                        && let Ok(display_column_index) = u32::try_from(column - pos.x) {
                             let column_index =
                                 dt.get_column_index_from_display_index(display_column_index, true);
                             let _ = dt.insert_column_sorted(column_index as usize, None, None);
@@ -78,7 +76,6 @@ impl Sheet {
                                 transaction.add_borders(sheet_id);
                             }
                         }
-                    }
                 }
 
                 Ok(())
