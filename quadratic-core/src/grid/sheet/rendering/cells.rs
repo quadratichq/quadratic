@@ -277,27 +277,25 @@ impl Sheet {
                         .for_each(|validations_range| {
                             if let Some(validation_rect) =
                                 validations_range.to_rect_unbounded(a1_context)
-                            {
-                                if let Some(validation_intersect) =
+                                && let Some(validation_intersect) =
                                     validation_rect.intersection(&rect)
-                                {
-                                    validation_intersect
-                                        .iter()
-                                        .filter(|pos| rect.contains(*pos))
-                                        .for_each(|pos| {
-                                            if !render_cells
-                                                .iter()
-                                                .any(|cell| cell.x == pos.x && cell.y == pos.y)
-                                            {
-                                                render_cells.push(JsRenderCell {
-                                                    x: pos.x,
-                                                    y: pos.y,
-                                                    special: Some(special.clone()),
-                                                    ..Default::default()
-                                                });
-                                            }
-                                        });
-                                }
+                            {
+                                validation_intersect
+                                    .iter()
+                                    .filter(|pos| rect.contains(*pos))
+                                    .for_each(|pos| {
+                                        if !render_cells
+                                            .iter()
+                                            .any(|cell| cell.x == pos.x && cell.y == pos.y)
+                                        {
+                                            render_cells.push(JsRenderCell {
+                                                x: pos.x,
+                                                y: pos.y,
+                                                special: Some(special.clone()),
+                                                ..Default::default()
+                                            });
+                                        }
+                                    });
                             }
                         });
                 }
