@@ -149,8 +149,8 @@ impl GridController {
                         let mut is_formula_output = false;
 
                         // data table output
-                        if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos) {
-                            if let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
+                        if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos)
+                            && let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
                                 let is_formula =
                                     code_cell_value.language == CodeCellLanguage::Formula;
 
@@ -187,7 +187,6 @@ impl GridController {
                                     }
                                 }
                             }
-                        }
 
                         // flatten all non-formula data
                         if !is_formula_output {
@@ -269,18 +268,16 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
         format = format.set_font_strikethrough();
     }
 
-    if let Some(text_color) = cell_format.text_color {
-        if let Ok(color) = Rgba::try_from(text_color.as_str()) {
+    if let Some(text_color) = cell_format.text_color
+        && let Ok(color) = Rgba::try_from(text_color.as_str()) {
             format = format.set_font_color(color.as_rgb_hex().as_str());
         }
-    }
 
-    if let Some(fill_color) = cell_format.fill_color {
-        if let Ok(color) = Rgba::try_from(fill_color.as_str()) {
+    if let Some(fill_color) = cell_format.fill_color
+        && let Ok(color) = Rgba::try_from(fill_color.as_str()) {
             format = format.set_pattern(FormatPattern::Solid);
             format = format.set_background_color(color.as_rgb_hex().as_str());
         }
-    }
 
     if let Some(align) = cell_format.align {
         let align = match align {
@@ -316,11 +313,10 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
     }
 
     // this needs to be before the numeric decimals
-    if let Some(numeric_commas) = cell_format.numeric_commas {
-        if numeric_commas {
+    if let Some(numeric_commas) = cell_format.numeric_commas
+        && numeric_commas {
             num_format = "#,##0".to_string();
         }
-    }
 
     if let Some(numeric_decimals) = cell_format.numeric_decimals {
         num_format = format!("{num_format}.{}", "0".repeat(numeric_decimals as usize));
@@ -398,15 +394,13 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
 fn adjust_cell_value_for_excel(mut v: CellValue, pos: Pos, sheet: &Sheet) {
     let cell_format = sheet.cell_format(pos);
 
-    if let Some(numeric_format) = cell_format.numeric_format {
-        if numeric_format.kind == NumericFormatKind::Percentage {
-            if let CellValue::Number(n) = &mut v {
+    if let Some(numeric_format) = cell_format.numeric_format
+        && numeric_format.kind == NumericFormatKind::Percentage
+            && let CellValue::Number(n) = &mut v {
                 *n = n
                     .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
                     .unwrap_or(Decimal::ZERO);
             }
-        }
-    }
 }
 
 /// Converts a chrono format to an excel format.

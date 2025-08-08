@@ -2,7 +2,7 @@ import { codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms
 import { getCodeCell } from '@/app/helpers/codeCellLanguage';
 import { codeEditorBaseStyles, codeEditorCommentStyles } from '@/app/ui/menus/CodeEditor/styles';
 import useLocalStorage from '@/shared/hooks/useLocalStorage';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -45,7 +45,7 @@ export function CodeEditorPlaceholder() {
         className={`pointer-events-auto italic underline`}
         onClick={() => {
           setShowPlaceholder(false);
-          mixpanel.track('[CodeEditorPlaceholder].dismissed');
+          trackEvent('[CodeEditorPlaceholder].dismissed');
         }}
       >
         don’t show this again

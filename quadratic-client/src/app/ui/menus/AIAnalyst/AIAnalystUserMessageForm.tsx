@@ -11,7 +11,7 @@ import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/c
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType, isSupportedPdfMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { Context } from 'quadratic-shared/typesAndSchemasAI';
 import { forwardRef, memo, useCallback, useState } from 'react';
@@ -31,7 +31,7 @@ export const AIAnalystUserMessageForm = memo(
 
     const handleSubmit = useCallback(
       ({ content }: SubmitPromptArgs) => {
-        mixpanel.track('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
+        trackEvent('[AIAnalyst].submitPrompt', { userMessageCountUponSubmit: userMessagesCount });
         submitPrompt({
           messageSource: 'User',
           content,

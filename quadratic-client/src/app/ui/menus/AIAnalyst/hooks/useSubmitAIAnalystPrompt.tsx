@@ -28,7 +28,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   getLastAIPromptMessageIndex,
   getMessagesForAI,
@@ -190,7 +190,7 @@ export function useSubmitAIAnalystPrompt() {
 
           set(aiAnalystWaitingOnMessageIndexAtom, messageIndex);
 
-          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+          trackEvent('[Billing].ai.exceededBillingLimit', {
             exceededBillingLimit: exceededBillingLimit,
             location: 'AIAnalyst',
           });

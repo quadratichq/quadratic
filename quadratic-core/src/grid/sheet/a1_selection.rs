@@ -87,15 +87,13 @@ impl Sheet {
                                 for y in intersection.y_range() {
                                     if let Some(entry) = data_table
                                         .cell_value_ref_at((x - pos.x) as u32, (y - pos.y) as u32)
-                                    {
-                                        if !matches!(entry, &CellValue::Blank) {
+                                        && !matches!(entry, &CellValue::Blank) {
                                             count += 1;
                                             if count >= max_count {
                                                 return None;
                                             }
                                             cells.insert(Pos { x, y }, entry);
                                         }
-                                    }
                                 }
                             }
                         }

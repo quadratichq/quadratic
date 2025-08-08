@@ -57,8 +57,8 @@ impl GridController {
 
             sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.x = min_column;
 
@@ -80,7 +80,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -122,8 +121,8 @@ impl GridController {
 
             sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.y = min_row;
 
@@ -145,7 +144,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
         Ok(())
     }
@@ -204,8 +202,8 @@ impl GridController {
                 return;
             }
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.x = column + 1;
 
@@ -220,7 +218,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -240,8 +237,8 @@ impl GridController {
                 return;
             }
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.y = row + 1;
 
@@ -257,7 +254,6 @@ impl GridController {
                         self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 

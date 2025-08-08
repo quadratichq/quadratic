@@ -78,8 +78,8 @@ impl GridController {
     }
 
     pub fn remove_validations(&mut self, sheet_id: SheetId, cursor: Option<String>) {
-        if let Some(sheet) = self.try_sheet(sheet_id) {
-            if let Some(validations) = sheet.validations.validations() {
+        if let Some(sheet) = self.try_sheet(sheet_id)
+            && let Some(validations) = sheet.validations.validations() {
                 let ops = validations
                     .iter()
                     .map(|v| Operation::RemoveValidation {
@@ -89,7 +89,6 @@ impl GridController {
                     .collect();
                 self.start_user_transaction(ops, cursor, TransactionName::Validation);
             }
-        }
     }
 
     pub fn remove_validation_selection(
