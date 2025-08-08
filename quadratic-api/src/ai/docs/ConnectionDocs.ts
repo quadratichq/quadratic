@@ -1,6 +1,6 @@
 export const ConnectionDocs = `# Connections Docs
 
-Use SQL to create connections from spreadsheets to databases and data warehouses. 
+Use SQL to create connections from spreadsheets to databases and data warehouses.
 
 You can read from databases in Quadratic. The data read from a SQL cell is directly written to the sheet as a code table.
 
@@ -10,7 +10,7 @@ You cannot do two queries at once in SQL in Quadratic. For example, you can not 
 
 ## SQL syntax
 
-There are some slight differences between SQL syntax across databases to keep in mind: 
+There are some slight differences between SQL syntax across databases to keep in mind:
 * In Postgres it is best practice use quotes around table names and column names.
 * In MySQL it is best practice to use backticks around table names and column names.
 * In MS SQL Server it is best practice to use double quotes around table names and column names.
@@ -18,15 +18,15 @@ There are some slight differences between SQL syntax across databases to keep in
 * COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES
 * MARIADB has the same syntax as MySQL
 
-## SQL references 
+## SQL references
 
-You can create parametrized SQL queries that reference sheet data by using {{}} notation. 
+You can create parametrized SQL queries that reference sheet data by using {{}} notation.
 
-### Example 
+### Example
 
-Parametrized queries in SQL can only read single cells from the sheet. They can only be read using A1 notation. 
+Parametrized queries in SQL can only read single cells from the file. They can only be read using A1 notation.
 
 \`\`\`sql
-SELECT * FROM {{A1}} WHERE {{column_name}} = {{B7}}
+SELECT * FROM {{A1}} WHERE {{column_name}} = {{Sheet2!B7}}
 \`\`\`
 `;

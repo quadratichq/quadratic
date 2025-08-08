@@ -93,13 +93,17 @@ pub struct JsTableSummaryContext {
     pub table_name: String,
     pub table_type: JsTableType,
     pub bounds: String,
+    pub connection_name: Option<String>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
 #[serde(rename_all = "camelCase")]
 pub enum JsTableType {
     DataTable,
-    CodeTable,
+    Formula,
+    Python,
+    Javascript,
+    Connection,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]

@@ -3,10 +3,13 @@ use std::collections::HashSet;
 use crate::{
     CellValue, Rect,
     a1::{A1Context, A1Selection},
-    grid::js_types::{
-        JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
-        JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
-        JsTableType, JsTablesContext,
+    grid::{
+        CodeCellLanguage,
+        js_types::{
+            JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
+            JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
+            JsTableType, JsTablesContext,
+        },
     },
 };
 
@@ -106,8 +109,18 @@ impl Sheet {
                     continue;
                 }
 
+                let mut connection_name = None;
                 let table_type = match self.cell_value_ref(pos.to_owned()) {
-                    Some(CellValue::Code(_)) => JsTableType::CodeTable,
+                    Some(CellValue::Code(code)) => match &code.language {
+                        CodeCellLanguage::Python => JsTableType::Python,
+                        CodeCellLanguage::Javascript => JsTableType::Javascript,
+                        CodeCellLanguage::Formula => JsTableType::Formula,
+                        CodeCellLanguage::Connection { id, kind } => {
+                            connection_name = Some(kind.to_string());
+                            JsTableType::Connection
+                        }
+                        CodeCellLanguage::Import => JsTableType::DataTable,
+                    },
                     Some(CellValue::Import(_)) => JsTableType::DataTable,
                     _ => continue,
                 };
@@ -117,6 +130,7 @@ impl Sheet {
                     table_name: table.name().to_string(),
                     table_type,
                     bounds: table.output_rect(pos, false).a1_string(),
+                    connection_name,
                 });
             }
         }
