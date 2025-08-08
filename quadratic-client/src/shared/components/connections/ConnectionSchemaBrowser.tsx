@@ -33,27 +33,23 @@ export const ConnectionSchemaBrowser = ({
   const [filterQuery, setFilterQuery] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const filteredTablesWithIndex = useMemo(() => {
+  const disabled = isLoading || data === undefined;
+  const filteredTables = useMemo(() => {
     if (!data) return [];
     const query = filterQuery.trim().toLowerCase();
-    const withIndex = data.tables.map((t, i) => ({ table: t, index: i }));
-    if (!query) return withIndex;
-    return withIndex.filter(
-      ({ table }) => table.name.toLowerCase().includes(query) || table.schema.toLowerCase().includes(query)
+    if (!query) return data.tables;
+    return data.tables.filter(
+      (table) => table.name.toLowerCase().includes(query) || table.schema.toLowerCase().includes(query)
     );
   }, [data, filterQuery]);
 
   useEffect(() => {
     if (!data) return;
-    if (filteredTablesWithIndex.length === 0) {
+    if (filteredTables.length === 0) {
       setSelectedTableIndex(-1);
       return;
     }
-    const selectedStillVisible = filteredTablesWithIndex.some(({ index }) => index === selectedTableIndex);
-    if (!selectedStillVisible) {
-      setSelectedTableIndex(filteredTablesWithIndex[0].index);
-    }
-  }, [data, filteredTablesWithIndex, selectedTableIndex]);
+  }, [data, filteredTables]);
 
   if (type === undefined || uuid === undefined) return null;
 
@@ -79,8 +75,8 @@ export const ConnectionSchemaBrowser = ({
           <div className="flex flex-row-reverse items-center gap-1">
             <TableQueryAction
               query={
-                !isLoading && data && data.tables[selectedTableIndex]
-                  ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type })
+                !isLoading && data && filteredTables[selectedTableIndex]
+                  ? getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: data.type })
                   : ''
               }
             />
@@ -95,18 +91,23 @@ export const ConnectionSchemaBrowser = ({
           <Input
             ref={inputRef}
             value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
+            onChange={(e) => {
+              setFilterQuery(e.target.value);
+              setSelectedTableIndex(0);
+            }}
             placeholder="Filter tables"
             className="h-8"
-            disabled={isLoading || data === undefined}
+            disabled={disabled}
           />
           {filterQuery && (
             <Button
+              disabled={disabled}
               variant="ghost"
               size="icon-sm"
               className="absolute right-0 top-0 h-8 w-8 !bg-transparent text-muted-foreground hover:text-foreground"
               onClick={() => {
                 setFilterQuery('');
+                setSelectedTableIndex(0);
                 inputRef.current?.focus();
               }}
             >
@@ -129,7 +130,7 @@ export const ConnectionSchemaBrowser = ({
           }}
           className="block"
         >
-          {filteredTablesWithIndex.map(({ table, index }) => (
+          {filteredTables.map((table, index) => (
             <TableListItem index={index} selfContained={selfContained} data={table} key={index} />
           ))}
         </RadioGroup>
