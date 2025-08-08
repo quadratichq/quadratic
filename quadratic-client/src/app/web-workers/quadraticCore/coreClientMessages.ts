@@ -450,8 +450,8 @@ export interface ClientCoreSetCodeCellValue {
   type: 'clientCoreSetCodeCellValue';
   id: number;
   sheetId: string;
-  x: number;
-  y: number;
+  pos: JsCoordinate;
+  tablePos: JsCoordinate | undefined;
   language: CodeCellLanguage;
   codeString: string;
   cursor: string;

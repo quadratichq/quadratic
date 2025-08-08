@@ -20,7 +20,11 @@ impl DataTable {
         sheet: &Sheet,
         data_table_pos: Pos,
     ) -> Result<()> {
-        transaction.add_from_code_run(sheet.id, data_table_pos, self.is_image(), self.is_html());
+        transaction.add_from_code_run(
+            data_table_pos.to_multi_pos(sheet.id),
+            self.is_image(),
+            self.is_html(),
+        );
 
         if !(cfg!(target_family = "wasm") || cfg!(test)) || transaction.is_server() {
             return Ok(());
@@ -107,7 +111,7 @@ impl DataTable {
 
                         let check_value = include_blanks
                             || rect.x_range().any(|x| {
-                                self.cell_value_at((x - 1) as u32, (y - 1) as u32)
+                                self.display_value_ref_at((x - 1, y - 1).into())
                                     .is_some_and(|cell_value| {
                                         !cell_value.is_blank_or_empty_string()
                                     })
@@ -331,9 +335,10 @@ impl DataTable {
                         let check_value = include_blanks
                             || rect.x_range().any(|x| {
                                 u32::try_from(x - 1).ok().is_some_and(|x_u32| {
-                                    self.cell_value_at(x_u32, y_u32).is_some_and(|cell_value| {
-                                        !cell_value.is_blank_or_empty_string()
-                                    })
+                                    self.display_value_ref_at((x_u32, y_u32).into())
+                                        .is_some_and(|cell_value| {
+                                            !cell_value.is_blank_or_empty_string()
+                                        })
                                 })
                             });
 

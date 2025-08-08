@@ -250,7 +250,7 @@ mod tests {
         .unwrap();
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(true);
                 dt.show_columns = Some(true);
                 Ok(())
@@ -318,7 +318,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(false);
                 dt.show_columns = Some(false);
                 Ok(())
@@ -333,7 +333,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(true);
                 dt.show_columns = Some(true);
                 Ok(())
@@ -347,7 +347,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_name = Some(false);
                 Ok(())
             })
@@ -360,7 +360,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_columns = Some(false);
                 Ok(())
             })
@@ -373,7 +373,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.header_is_first_row = true;
                 Ok(())
             })
@@ -386,7 +386,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&Pos { x: 5, y: 2 }, |dt| {
+            .modify_data_table_at_pos(&Pos { x: 5, y: 2 }, |dt| {
                 dt.show_columns = Some(true);
                 Ok(())
             })
@@ -419,11 +419,11 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
-            data_table.cell_value_at(0, 2),
+            data_table.display_value_at((0, 2).into()),
             Some(CellValue::Text("Southborough".to_string()))
         );
         assert_eq!(
-            data_table.cell_value_at(0, 4),
+            data_table.display_value_at((0, 4).into()),
             Some(CellValue::Text("Westborough".to_string()))
         );
         let fills = sheet.get_all_render_fills();
@@ -434,7 +434,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         let data_table = sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(0, SortDirection::Descending).unwrap();
                 Ok(())
             })
@@ -443,7 +443,7 @@ mod tests {
         let data_table = data_table.clone();
         let sheet: &mut Sheet = gc.sheet_mut(sheet_id);
         assert_eq!(
-            data_table.cell_value_at(0, 8),
+            data_table.display_value_at((0, 8).into()),
             Some(CellValue::Text("Southborough".to_string()))
         );
         let fills = sheet.get_all_render_fills();
@@ -475,7 +475,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
-            data_table.cell_value_at(0, 2),
+            data_table.display_value_at((0, 2).into()),
             Some(CellValue::Text("Southborough".to_string()))
         );
         let fills = sheet.get_all_render_fills();
@@ -497,7 +497,7 @@ mod tests {
         let sheet = gc.sheet(sheet_id);
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(
-            data_table.cell_value_at(0, 2),
+            data_table.display_value_at((0, 2).into()),
             Some(CellValue::Text("MA".to_string()))
         );
         let fills = sheet.get_all_render_fills();

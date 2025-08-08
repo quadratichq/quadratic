@@ -1,7 +1,7 @@
 use serde::Serialize;
-use ts_rs::TS;
 
-#[derive(Debug, Serialize, Clone, PartialEq, TS)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum TransactionName {
     Unknown,
     ResizeColumn,

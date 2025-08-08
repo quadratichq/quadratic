@@ -37,7 +37,7 @@ impl GridController {
 
                     self.check_deleted_data_tables(transaction, &sheet_rect);
                     self.update_spills_in_sheet_rect(transaction, &sheet_rect);
-                    self.add_compute_operations(transaction, sheet_rect, None);
+                    self.add_compute_operations(transaction, &sheet_rect, None);
                     self.send_updated_bounds(transaction, sheet_rect.sheet_id);
 
                     transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
@@ -80,6 +80,7 @@ impl GridController {
 mod tests {
     use crate::controller::GridController;
     use crate::grid::{CodeCellLanguage, SheetId};
+    use crate::test_util::*;
     use crate::{CellValue, Pos, SheetPos};
 
     #[test]
@@ -200,34 +201,31 @@ mod tests {
 
     #[test]
     fn dependencies_properly_trigger_on_set_cell_values() {
-        let mut gc = GridController::test();
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
         gc.set_cell_value(
             SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id: gc.sheet_ids()[0],
+                x: 2,
+                y: 1,
+                sheet_id,
             },
             "1".to_string(),
             None,
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 0,
-                sheet_id: gc.sheet_ids()[0],
-            },
+            SheetPos::new(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
-            "A0 + 5".to_string(),
+            "B1 + 5".to_string(),
             None,
             None,
             false,
         );
         gc.set_cell_value(
             SheetPos {
-                x: -1,
-                y: 0,
-                sheet_id: gc.sheet_ids()[0],
+                x: 1,
+                y: 1,
+                sheet_id,
             },
             "2".to_string(),
             None,

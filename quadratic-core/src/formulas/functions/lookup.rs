@@ -21,9 +21,9 @@ fn get_functions() -> Vec<FormulaFunction> {
             #[examples("INDIRECT(\"Cn7\")", "INDIRECT(\"F\" & B0)")]
             fn INDIRECT(ctx: Ctx, cellref_string: (Spanned<String>)) {
                 let span = cellref_string.span;
-                let cell_ref = SheetCellRefRange::parse_at(
+                let cell_ref = SheetCellRefRange::parse_a1(
                     &cellref_string.inner,
-                    ctx.sheet_pos,
+                    ctx.sheet_pos.sheet_id,
                     ctx.grid_controller.a1_context(),
                 )
                 .map_err(|_| RunErrorMsg::BadCellReference.with_span(span))?;
@@ -676,8 +676,7 @@ mod tests {
         let mut g = GridController::new();
         let ctx: &crate::a1::A1Context = g.a1_context();
         let sheet_id = g.sheet_ids()[0];
-        let pos = pos![B2].to_sheet_pos(sheet_id);
-        let form = parse_formula("INDIRECT(\"D5\")", ctx, pos).unwrap();
+        let form = parse_formula("INDIRECT(\"D5\")", ctx, sheet_id).unwrap();
 
         let sheet = g.sheet_mut(sheet_id);
         let _ = sheet.set_cell_value(pos![D5], 35);

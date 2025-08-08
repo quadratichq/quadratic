@@ -409,7 +409,7 @@ impl A1Selection {
                     }
                     if let Some(mut range_converted) = range
                         .clone()
-                        .convert_to_ref_range_bounds(false, a1_context, false, false)
+                        .convert_to_ref_range_bounds(false, a1_context, false, false, None)
                     {
                         // if cursor is at the end of the table, then reverse the selection
                         if self.cursor.x == range_converted.end.col()
@@ -458,7 +458,7 @@ impl A1Selection {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
                 if let Some(range) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false, None)
                 {
                     range
                 } else {
@@ -485,7 +485,7 @@ impl A1Selection {
             CellRefRange::Sheet { range } => *range,
             CellRefRange::Table { range } => {
                 if let Some(range) =
-                    range.convert_to_ref_range_bounds(false, a1_context, false, false)
+                    range.convert_to_ref_range_bounds(false, a1_context, false, false, None)
                 {
                     range
                 } else {

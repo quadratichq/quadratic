@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 /*
   Blank = 0,
@@ -17,10 +16,12 @@ use ts_rs::TS;
   Import = 12,
 */
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone, TS)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellValueResult(pub String, pub u8);
 
-#[derive(Default, Debug, Serialize, Deserialize, TS)]
+#[derive(Default, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCodeResult {
     pub transaction_id: String,
     pub success: bool,
@@ -34,7 +35,8 @@ pub struct JsCodeResult {
     pub has_headers: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, TS)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsConnectionResult {
     pub transaction_id: String,
     pub data: Vec<u8>,

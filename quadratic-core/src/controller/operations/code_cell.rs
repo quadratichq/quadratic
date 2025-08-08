@@ -2,16 +2,15 @@ use std::collections::HashSet;
 
 use super::operation::Operation;
 use crate::{
-    CellValue, SheetPos,
+    CellValue, MultiPos, SheetPos,
     a1::A1Selection,
     cell_values::CellValues,
     controller::GridController,
-    formulas::convert_rc_to_a1,
     grid::{CodeCellLanguage, CodeCellValue, SheetId},
 };
 
 impl GridController {
-    /// Adds operations to compute a CellValue::Code at the sheet_pos.
+    /// Adds operations to compute a CellValue::Code.
     pub fn set_code_cell_operations(
         &self,
         sheet_pos: SheetPos,
@@ -19,23 +18,28 @@ impl GridController {
         code: String,
         code_cell_name: Option<String>,
     ) -> Vec<Operation> {
-        let parse_ctx = self.a1_context();
-        let code = match language {
-            CodeCellLanguage::Formula => convert_rc_to_a1(&code, parse_ctx, sheet_pos),
-            _ => code,
+        let mut ops = vec![];
+
+        let Some(sheet) = self.grid.try_sheet(sheet_pos.sheet_id) else {
+            return ops;
         };
 
-        let mut ops = vec![
-            Operation::SetCellValues {
-                sheet_pos,
-                values: CellValues::from(CellValue::Code(CodeCellValue { language, code })),
-            },
-            Operation::ComputeCode { sheet_pos },
-        ];
+        let multi_pos = sheet.convert_to_multi_pos(sheet_pos.into());
 
-        // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name
-            && self.data_table_at(sheet_pos).is_none() {
+        let values = CellValues::from(CellValue::Code(CodeCellValue { language, code }));
+
+        if multi_pos.is_table_pos() {
+            ops.push(Operation::SetDataTableAt { sheet_pos, values });
+            ops.push(Operation::ComputeCodeMultiPos { multi_pos });
+        } else {
+            ops.push(Operation::SetCellValues { sheet_pos, values });
+            ops.push(Operation::ComputeCodeMultiPos { multi_pos });
+
+            // change the code cell name if it is provided and the code cell doesn't
+            // already have a name. Note: this is only for non-table code cells.
+            if let (Some(code_cell_name), true) =
+                (code_cell_name, self.data_table_at(multi_pos).is_none())
+            {
                 ops.push(Operation::DataTableOptionMeta {
                     sheet_pos,
                     name: Some(code_cell_name),
@@ -45,6 +49,7 @@ impl GridController {
                     show_columns: None,
                 });
             }
+        }
 
         ops
     }
@@ -55,15 +60,14 @@ impl GridController {
 
         let sheet_id = selection.sheet_id;
         if let Some(sheet) = self.try_sheet(sheet_id) {
-            let rects = sheet.selection_to_rects(&selection, false, false, true, self.a1_context());
+            let rects =
+                sheet.selection_to_rects(&selection, false, false, true, self.a1_context(), None);
             rects.iter().for_each(|rect| {
                 sheet
                     .data_tables
-                    .get_code_runs_in_rect(*rect, false)
-                    .for_each(|(_, pos, _)| {
-                        ops.push(Operation::ComputeCode {
-                            sheet_pos: pos.to_sheet_pos(sheet_id),
-                        });
+                    .get_code_runs_in_rect(*rect, sheet_id, false, true, None)
+                    .for_each(|(_, multi_pos, _)| {
+                        ops.push(Operation::ComputeCodeMultiPos { multi_pos });
                     });
             });
         }
@@ -79,8 +83,8 @@ impl GridController {
     pub fn rerun_all_code_cells_operations(&self) -> Vec<Operation> {
         let mut code_cell_positions = Vec::new();
         for (sheet_id, sheet) in self.grid().sheets() {
-            for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-                code_cell_positions.push(pos.to_sheet_pos(*sheet_id));
+            for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs(*sheet_id) {
+                code_cell_positions.push(multi_pos);
             }
         }
 
@@ -93,8 +97,8 @@ impl GridController {
             return vec![];
         };
         let mut code_cell_positions = Vec::new();
-        for (pos, _) in sheet.data_tables.expensive_iter_code_runs() {
-            code_cell_positions.push(pos.to_sheet_pos(sheet_id));
+        for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs(sheet_id) {
+            code_cell_positions.push(multi_pos);
         }
 
         self.get_code_run_ops_from_positions(code_cell_positions)
@@ -102,17 +106,17 @@ impl GridController {
 
     fn get_code_run_ops_from_positions(
         &self,
-        code_cell_positions: Vec<SheetPos>,
+        code_cell_positions: Vec<MultiPos>,
     ) -> Vec<Operation> {
         let code_cell_positions = self.order_code_cells(code_cell_positions);
         code_cell_positions
             .into_iter()
-            .map(|sheet_pos| Operation::ComputeCode { sheet_pos })
+            .map(|multi_pos| Operation::ComputeCodeMultiPos { multi_pos })
             .collect()
     }
 
     /// Orders code cells to ensure earlier computes do not depend on later computes.
-    fn order_code_cells(&self, code_cell_positions: Vec<SheetPos>) -> Vec<SheetPos> {
+    fn order_code_cells(&self, code_cell_positions: Vec<MultiPos>) -> Vec<MultiPos> {
         let mut ordered_positions = vec![];
 
         let nodes = code_cell_positions.iter().collect::<HashSet<_>>();
@@ -130,14 +134,14 @@ impl GridController {
 
     fn get_upstream_dependents(
         &self,
-        sheet_pos: &SheetPos,
-        seen: &mut HashSet<SheetPos>,
-    ) -> Vec<SheetPos> {
-        if !seen.insert(*sheet_pos) {
+        multi_pos: &MultiPos,
+        seen: &mut HashSet<MultiPos>,
+    ) -> Vec<MultiPos> {
+        if !seen.insert(*multi_pos) {
             return vec![];
         }
 
-        let Some(code_run) = self.code_run_at(sheet_pos) else {
+        let Some(code_run) = self.code_run_at(*multi_pos) else {
             return vec![];
         };
 
@@ -147,10 +151,12 @@ impl GridController {
             .iter_rects_unbounded(&self.a1_context)
         {
             if let Some(sheet) = self.try_sheet(sheet_id) {
-                for (_, pos, _) in sheet.data_tables.get_code_runs_in_sorted(rect, false) {
-                    let sheet_pos = pos.to_sheet_pos(sheet_id);
-                    if !seen.contains(&sheet_pos) {
-                        parent_nodes.push(sheet_pos);
+                for (_, multi_pos, _) in sheet
+                    .data_tables
+                    .get_code_runs_in_sorted(rect, sheet_id, false, true)
+                {
+                    if !seen.contains(&multi_pos) {
+                        parent_nodes.push(multi_pos);
                     }
                 }
             }
@@ -160,7 +166,7 @@ impl GridController {
         for node in parent_nodes.into_iter() {
             upstream.extend(self.get_upstream_dependents(&node, seen));
         }
-        upstream.push(*sheet_pos);
+        upstream.push(*multi_pos);
         upstream
     }
 }
@@ -197,8 +203,8 @@ mod test {
         );
         assert_eq!(
             operations[1],
-            Operation::ComputeCode {
-                sheet_pos: pos.to_sheet_pos(sheet_id),
+            Operation::ComputeCodeMultiPos {
+                multi_pos: pos.to_multi_pos(sheet_id),
             }
         );
     }
@@ -212,11 +218,7 @@ mod test {
         let first = |gc: &mut GridController| {
             let sheet_id = gc.sheet_ids()[0];
             gc.set_code_cell(
-                SheetPos {
-                    x: 1,
-                    y: 1,
-                    sheet_id,
-                },
+                SheetPos::new(sheet_id, 1, 1),
                 CodeCellLanguage::Formula,
                 "1 + 1".to_string(),
                 None,
@@ -229,11 +231,7 @@ mod test {
         let second = |gc: &mut GridController| {
             let sheet_id = gc.sheet_ids()[0];
             gc.set_code_cell(
-                SheetPos {
-                    x: 2,
-                    y: 2,
-                    sheet_id,
-                },
+                SheetPos::new(sheet_id, 2, 2),
                 CodeCellLanguage::Formula,
                 "A1".to_string(),
                 None,
@@ -246,11 +244,7 @@ mod test {
         let third = |gc: &mut GridController| {
             let sheet_id_2 = gc.sheet_ids()[1];
             gc.set_code_cell(
-                SheetPos {
-                    x: 1,
-                    y: 1,
-                    sheet_id: sheet_id_2,
-                },
+                SheetPos::new(sheet_id_2, 1, 1),
                 CodeCellLanguage::Formula,
                 format!("'{}1'!A1", SHEET_NAME.to_owned()),
                 None,
@@ -266,32 +260,20 @@ mod test {
             assert_eq!(operations.len(), 3);
             assert_eq!(
                 operations[0],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!A1].into(),
                 }
             );
             assert_eq!(
                 operations[1],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 2,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!B2].into(),
                 }
             );
             assert_eq!(
                 operations[2],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id: sheet_id_2,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id_2!A1].into(),
                 }
             );
         };
@@ -360,22 +342,14 @@ mod test {
             assert_eq!(operations.len(), 2);
             assert_eq!(
                 operations[0],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 1,
-                        y: 1,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!A1].into(),
                 }
             );
             assert_eq!(
                 operations[1],
-                Operation::ComputeCode {
-                    sheet_pos: SheetPos {
-                        x: 2,
-                        y: 2,
-                        sheet_id,
-                    },
+                Operation::ComputeCodeMultiPos {
+                    multi_pos: pos![sheet_id!B2].into(),
                 }
             );
         };

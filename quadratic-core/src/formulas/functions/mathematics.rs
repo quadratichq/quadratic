@@ -432,7 +432,7 @@ mod tests {
                 func_name: "SUM".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("SUM()", &parse_ctx, pos)
+            parse_formula("SUM()", &parse_ctx, pos.sheet_id)
                 .unwrap()
                 .eval(&mut eval_ctx)
                 .unwrap_err()
@@ -542,7 +542,7 @@ mod tests {
                 func_name: "PRODUCT".into(),
                 arg_name: "numbers".into()
             },
-            parse_formula("PRODUCT()", &parse_ctx, pos)
+            parse_formula("PRODUCT()", &parse_ctx, pos.sheet_id)
                 .unwrap()
                 .eval(&mut eval_ctx)
                 .unwrap_err()
@@ -583,7 +583,7 @@ mod tests {
                 func_name: "ABS".into(),
                 arg_name: "number".into(),
             },
-            parse_formula("ABS()", &parse_ctx, pos)
+            parse_formula("ABS()", &parse_ctx, pos.sheet_id)
                 .unwrap()
                 .eval(&mut eval_ctx)
                 .unwrap_err()
@@ -594,7 +594,7 @@ mod tests {
                 func_name: "ABS".into(),
                 max_arg_count: 1,
             },
-            parse_formula("ABS(16, 17)", &parse_ctx, pos)
+            parse_formula("ABS(16, 17)", &parse_ctx, pos.sheet_id)
                 .unwrap()
                 .eval(&mut eval_ctx)
                 .unwrap_err()

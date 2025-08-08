@@ -41,6 +41,7 @@ fn parse_segment_contents(chars: &mut Peekable<Chars<'_>>) -> Result<TableRefTok
             ret.push(c);
         }
     }
+
     Ok(match is_special {
         true => TableRefToken::Special(ret),
         false => TableRefToken::Column(ret),
@@ -113,6 +114,7 @@ impl SyntaxRule for TableReference {
                     let mut headers = false;
                     let mut totals = false;
                     let mut col_range = None;
+                    let mut this_row = false;
 
                     let mut chars = brackets_inner_str.chars().peekable();
                     let mut special_segments = vec![];
@@ -120,9 +122,13 @@ impl SyntaxRule for TableReference {
                         let mut tokens = std::iter::from_fn(|| parse_token(&mut chars)).peekable();
                         while let Some(token) = tokens.next() {
                             match token? {
-                                TableRefToken::Column(start_col) => {
+                                TableRefToken::Column(mut start_col) => {
                                     if col_range.is_some() {
                                         return Err(RunErrorMsg::BadCellReference);
+                                    }
+                                    if start_col.starts_with('@') {
+                                        start_col = start_col.chars().skip(1).collect();
+                                        this_row = true;
                                     }
                                     if tokens.next_if_eq(&Ok(TableRefToken::Colon)).is_some() {
                                         match tokens
@@ -152,7 +158,13 @@ impl SyntaxRule for TableReference {
                     } else {
                         // single segment
                         match parse_segment_contents(&mut chars)? {
-                            TableRefToken::Column(c) => col_range = Some(ColRange::Col(c)),
+                            TableRefToken::Column(mut c) => {
+                                if c.starts_with('@') {
+                                    this_row = true;
+                                    c = c.chars().skip(1).collect();
+                                }
+                                col_range = Some(ColRange::Col(c));
+                            }
                             TableRefToken::Special(s) => special_segments.push(s),
                             TableRefToken::Comma | TableRefToken::Colon => {
                                 return Err(RunErrorMsg::BadCellReference);
@@ -171,16 +183,23 @@ impl SyntaxRule for TableReference {
                                 data = true;
                                 headers = true;
                             }
+                            "#this row" => {
+                                this_row = true;
+                            }
                             _ => return Err(RunErrorMsg::BadCellReference),
                         }
                     }
-
                     Ok(TableRef {
                         table_name: table_name.to_owned(),
-                        data: data || (!headers && !totals),
+                        data: if this_row {
+                            false
+                        } else {
+                            data || (!headers && !totals)
+                        },
                         headers,
                         totals,
                         col_range: col_range.unwrap_or(ColRange::All),
+                        this_row,
                     })
                 })()
             }
@@ -207,7 +226,7 @@ impl SyntaxRule for SheetTableReference {
                     .ctx
                     .try_table(&table_ref.table_name)
                     .ok_or(RunErrorMsg::BadCellReference)?
-                    .sheet_id,
+                    .sheet_id(),
                 cells: CellRefRange::Table { range: table_ref },
                 explicit_sheet_name: false,
             })

@@ -265,11 +265,7 @@ mod tests {
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 3,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "1 + 1".into(),
             None,
@@ -277,11 +273,7 @@ mod tests {
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{1, 2, 3}".into(),
             None,

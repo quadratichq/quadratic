@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::operation::Operation;
+use crate::MultiPos;
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::compression::CompressionFormat;
@@ -470,8 +471,8 @@ impl GridController {
                         data_table.name = new_name.into();
                     }
 
-                    ops.push(Operation::SetDataTable {
-                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                    ops.push(Operation::SetDataTableMultiPos {
+                        multi_pos: MultiPos::new_sheet_pos(start_pos.sheet_id, target_pos),
                         data_table: Some(data_table),
                         index: usize::MAX,
                     });
@@ -484,8 +485,8 @@ impl GridController {
                     self.clipboard_code_operations_should_rerun(clipboard, source_pos, start_pos);
 
                 if should_rerun {
-                    ops.push(Operation::ComputeCode {
-                        sheet_pos: target_pos.to_sheet_pos(start_pos.sheet_id),
+                    ops.push(Operation::ComputeCodeMultiPos {
+                        multi_pos: MultiPos::new_sheet_pos(start_pos.sheet_id, target_pos),
                     });
                 }
             }
@@ -796,8 +797,8 @@ impl GridController {
                 }
 
                 if is_code {
-                    compute_code_ops.push(Operation::ComputeCode {
-                        sheet_pos: pos.to_sheet_pos(start_pos.sheet_id),
+                    compute_code_ops.push(Operation::ComputeCodeMultiPos {
+                        multi_pos: pos.to_sheet_pos(start_pos.sheet_id).into(),
                     });
                 }
             });
@@ -945,16 +946,10 @@ impl GridController {
                     for (cols_x, col) in clipboard.cells.columns.iter_mut().enumerate() {
                         for (&cols_y, cell) in col {
                             if let CellValue::Code(code_cell) = cell {
-                                let original_pos = SheetPos {
-                                    x: clipboard.origin.x + cols_x as i64,
-                                    y: clipboard.origin.y + cols_y as i64,
-                                    sheet_id: clipboard.origin.sheet_id,
-                                };
-
                                 code_cell.adjust_references(
                                     sheet_id,
                                     self.a1_context(),
-                                    original_pos,
+                                    clipboard.origin.sheet_id,
                                     adjust,
                                 );
                             }
@@ -1334,11 +1329,7 @@ mod test {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 4,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 4),
             CodeCellLanguage::Formula,
             "SUM(B1:B3)".to_string(),
             None,
@@ -1556,6 +1547,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::Col("city".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
@@ -1590,6 +1582,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::ColRange("city".to_string(), "region".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));
@@ -1624,6 +1617,7 @@ mod test {
             headers: false,
             totals: false,
             col_range: ColRange::ColRange("country".to_string(), "population".to_string()),
+            this_row: false,
         };
         let (selection, context) =
             simple_csv_selection(sheet_id, table_ref, Rect::test_a1("A1:D11"));

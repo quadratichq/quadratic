@@ -161,7 +161,7 @@ mod tests {
         let sheet_id = gc.sheet_ids()[0];
 
         gc.set_code_cell(
-            SheetPos::new(sheet_id, 1, 1),
+            pos![sheet_id!A1],
             CodeCellLanguage::Formula,
             "1".to_string(),
             None,
@@ -208,7 +208,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            SheetPos::new(sheet_id, 2, 2),
+            pos![sheet_id!B2],
             CodeCellLanguage::Formula,
             "5".to_string(),
             None,

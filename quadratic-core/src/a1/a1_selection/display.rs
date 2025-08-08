@@ -150,7 +150,7 @@ mod tests {
     #[test]
     fn test_extra_comma() {
         let sheet_id = SheetId::TEST;
-        let selection = A1Selection::parse_a1("1,", sheet_id, &A1Context::default()).unwrap();
+        let selection = A1Selection::parse("1,", sheet_id, &A1Context::default()).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &A1Context::default()),
             "1:1",
@@ -160,7 +160,7 @@ mod tests {
     #[test]
     fn test_multiple_one_sized_rects() {
         let sheet_id = SheetId::TEST;
-        let selection = A1Selection::parse_a1("A1,B1,C1", sheet_id, &A1Context::default()).unwrap();
+        let selection = A1Selection::parse("A1,B1,C1", sheet_id, &A1Context::default()).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &A1Context::default()),
             "A1,B1,C1",
@@ -173,7 +173,7 @@ mod tests {
         let sheet_second = SheetId::new();
         let context = A1Context::test(&[("First", sheet_id), ("Second", sheet_second)], &[]);
         let selection =
-            A1Selection::parse_a1("second!A1,second!B1,second!C1", sheet_id, &context).unwrap();
+            A1Selection::parse("second!A1,second!B1,second!C1", sheet_id, &context).unwrap();
         assert_eq!(
             selection.to_string(Some(sheet_id), &context),
             "Second!A1,Second!B1,Second!C1",

@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Pos, SheetPos,
+    MultiPos, Pos, SheetPos,
     grid::{CodeCellLanguage, DataTable, SheetId},
     util::case_fold_ascii,
 };
@@ -15,37 +15,34 @@ use super::{JsTableInfo, TableMapEntry};
 pub struct TableMap {
     tables: IndexMap<String, TableMapEntry>,
 
-    sheet_pos_to_table: HashMap<SheetPos, String>,
+    multi_pos_to_table: HashMap<MultiPos, String>,
 }
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
         let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
-        let sheet_pos = table_map_entry
-            .bounds
-            .min
-            .to_sheet_pos(table_map_entry.sheet_id);
-        self.sheet_pos_to_table
-            .insert(sheet_pos, table_name_folded.clone());
+        self.multi_pos_to_table
+            .insert(table_map_entry.multi_pos, table_name_folded.clone());
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
-    pub fn insert_table(&mut self, sheet_id: SheetId, pos: Pos, table: &DataTable) {
-        let table_map_entry = TableMapEntry::from_table(sheet_id, pos, table);
+    pub fn insert_table(&mut self, multi_pos: MultiPos, translated_pos: Pos, table: &DataTable) {
+        let table_map_entry = TableMapEntry::from_table(multi_pos, translated_pos, table);
         self.insert(table_map_entry);
     }
 
-    pub fn remove_at(&mut self, sheet_id: SheetId, pos: Pos) {
-        if let Some(table_name) = self.sheet_pos_to_table.remove(&pos.to_sheet_pos(sheet_id))
+    pub fn remove_at(&mut self, multi_pos: MultiPos) {
+        if let Some(table_name) = self.multi_pos_to_table.remove(&multi_pos)
             && let Some(table) = self.tables.get(&table_name)
-                && table.sheet_id == sheet_id && table.bounds.min == pos {
-                    self.tables.swap_remove(&table_name);
-                }
+            && table.multi_pos == multi_pos
+        {
+            self.tables.swap_remove(&table_name);
+        }
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
-        self.sheet_pos_to_table.retain(|sheet_pos, name| {
-            if sheet_pos.sheet_id == sheet_id {
+        self.multi_pos_to_table.retain(|sheet_pos, name| {
+            if sheet_pos.sheet_id() == sheet_id {
                 self.tables.swap_remove(name);
                 false
             } else {
@@ -105,9 +102,9 @@ impl TableMap {
         &self,
         sheet_id: SheetId,
     ) -> impl Iterator<Item = &TableMapEntry> {
-        self.sheet_pos_to_table
+        self.multi_pos_to_table
             .iter()
-            .filter(move |(sheet_pos, _)| sheet_pos.sheet_id == sheet_id)
+            .filter(move |(sheet_pos, _)| sheet_pos.sheet_id() == sheet_id)
             .flat_map(|(_, table_name)| self.tables.get(table_name))
     }
 
@@ -118,11 +115,11 @@ impl TableMap {
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        if let Some(table_name) = self.sheet_pos_to_table.get(&sheet_pos) {
+        if let Some(table_name) = self.multi_pos_to_table.get(&sheet_pos.into()) {
             self.tables.get(table_name)
         } else {
             self.tables.values().find(|table| {
-                table.sheet_id == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
+                table.sheet_id() == sheet_pos.sheet_id && table.bounds.contains(sheet_pos.into())
             })
         }
     }
@@ -133,16 +130,16 @@ impl TableMap {
                 .visible_columns
                 .iter()
                 .position(|col| col == column_name)
-            {
-                table.visible_columns.remove(index);
-            }
+        {
+            table.visible_columns.remove(index);
+        }
     }
 
-    pub fn contains_name(&self, table_name: &str, skip_sheet_pos: Option<SheetPos>) -> bool {
+    pub fn contains_name(&self, table_name: &str, skip_multi_pos: Option<MultiPos>) -> bool {
         let table = self.try_table(table_name);
         if let Some(table) = table {
-            if let Some(sheet_pos) = skip_sheet_pos {
-                table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()
+            if let Some(multi_pos) = skip_multi_pos {
+                table.multi_pos != multi_pos
             } else {
                 true
             }
@@ -158,7 +155,7 @@ impl TableMap {
                 if table.language != CodeCellLanguage::Formula && table.bounds.len() > 1 {
                     Some(JsTableInfo {
                         name: table.table_name.clone(),
-                        sheet_id: table.sheet_id.to_string(),
+                        sheet_id: table.sheet_id().to_string(),
                         chart: table.is_html_image,
                         language: table.language.clone(),
                     })
@@ -170,9 +167,9 @@ impl TableMap {
     }
 
     /// Finds a table by position.
-    pub fn table_at(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        self.sheet_pos_to_table
-            .get(&sheet_pos)
+    pub fn table_at(&self, multi_pos: MultiPos) -> Option<&TableMapEntry> {
+        self.multi_pos_to_table
+            .get(&multi_pos)
             .and_then(|table_name| self.tables.get(table_name))
     }
 
@@ -202,8 +199,7 @@ impl TableMap {
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
         if let Some(table) = self.tables.shift_remove(&table_name_folded) {
-            let sheet_pos = table.bounds.min.to_sheet_pos(table.sheet_id);
-            self.sheet_pos_to_table.remove(&sheet_pos);
+            self.multi_pos_to_table.remove(&table.multi_pos);
             Some(table)
         } else {
             None

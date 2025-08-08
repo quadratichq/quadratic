@@ -11,6 +11,7 @@ pub(crate) enum Token {
     Column(String),
     ColumnRange(String, String),
     ColumnToEnd(String),
+    ThisRow,
 }
 
 impl TableRef {
@@ -124,6 +125,9 @@ impl TableRef {
                 "#DATA" => tokens.push(Token::Data),
                 "#TOTALS" => tokens.push(Token::Totals),
                 "#ALL" => tokens.push(Token::All),
+
+                // we strip spaces, so we check for "THISROW" instead of "THIS ROW"
+                "#THISROW" => tokens.push(Token::ThisRow),
                 ":" => return Err(A1Error::InvalidTableRef("Unexpected colon".into())),
                 _ => {
                     let s = entry.as_str();

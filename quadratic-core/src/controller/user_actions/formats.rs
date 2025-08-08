@@ -2,6 +2,7 @@
 //! Grid. These functions use the newer Operation::SetCellFormatsSelection,
 //! which provide formats for a user-defined selection.
 
+#[cfg(feature = "js")]
 use wasm_bindgen::JsValue;
 
 use crate::a1::{A1Selection, CellRefRange};
@@ -85,9 +86,13 @@ impl GridController {
 
                     let y_adjustment = data_table.y_adjustment(true);
 
-                    if let Some(sheet_range) =
-                        range.convert_to_ref_range_bounds(true, self.a1_context(), false, true)
-                    {
+                    if let Some(sheet_range) = range.convert_to_ref_range_bounds(
+                        true,
+                        self.a1_context(),
+                        false,
+                        true,
+                        None,
+                    ) {
                         let table_range = sheet_range.translate_unchecked(
                             1 - data_table_pos.x,
                             1 - data_table_pos.y - y_adjustment,
@@ -943,7 +948,7 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         let formats =
-            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A1:"), format_update);
+            SheetFormatUpdates::from_selection(&A1Selection::test_a1("A0:"), format_update);
 
         assert_eq!(
             ops[0],

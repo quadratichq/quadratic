@@ -1,5 +1,5 @@
 use crate::{
-    CopyFormats,
+    CopyFormats, SheetPos,
     a1::A1Context,
     cell_values::CellValues,
     controller::{
@@ -30,7 +30,7 @@ impl Sheet {
                     }
                 }
                 reverse_operations.push(Operation::SetCellValues {
-                    sheet_pos: crate::SheetPos::new(self.id, column, min),
+                    sheet_pos: SheetPos::new(self.id, column, min),
                     values,
                 });
                 current_min = current_max + 1;

@@ -1,13 +1,15 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Range};
 
 use lazy_static::lazy_static;
 use regex::Regex;
 
 use crate::{
-    CellValue, Pos, Rect,
-    a1::CellRefRange,
-    formulas::convert_a1_to_rc,
-    grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds},
+    CellValue, Pos, Rect, RefError, Spanned,
+    a1::{
+        A1Context, CellRefCoord, CellRefRange, RefRangeBounds, SheetCellRefRange, quote_sheet_name,
+    },
+    formulas::find_cell_references,
+    grid::{CodeCellLanguage, CodeCellValue, Grid, GridBounds, SheetId},
 };
 
 const PYTHON_C_CELL_GETCELL_REGEX: &str = r#"\b(?:c|cell|getCell)\s*\(\s*(-?\d+)\s*,\s*(-?\d+)\s*(?:,\s*(?:sheet\s*=\s*)?['"`]([^'"`]+)['"`]\s*)?\)"#;
@@ -49,7 +51,35 @@ lazy_static! {
         Regex::new(POS_REGEX).expect("Failed to compile POS_REGEX");
 }
 
-pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
+pub fn replace_formula_a1_references_to_rc(grid: &mut Grid) {
+    let a1_context = grid.expensive_make_a1_context();
+    for (sheet_id, sheet) in grid.sheets.iter_mut() {
+        sheet.migration_recalculate_bounds(&a1_context);
+        sheet.columns.migration_regenerate_has_cell_value();
+
+        if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            for x in bounds.x_range() {
+                if sheet.get_column(x).is_none() {
+                    continue;
+                }
+                for y in bounds.y_range() {
+                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
+                        && code_cell.language == CodeCellLanguage::Formula
+                    {
+                        code_cell.code = migration_convert_a1_to_rc(
+                            &code_cell.code,
+                            &a1_context,
+                            *sheet_id,
+                            (x + 1, y).into(),
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
+pub fn replace_formula_rc_references_to_a1(grid: &mut Grid) {
     let a1_context = grid.expensive_make_a1_context();
     for (sheet_id, sheet) in grid.sheets.iter_mut() {
         sheet.migration_recalculate_bounds(&a1_context);
@@ -63,14 +93,143 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                 for y in bounds.y_range() {
                     if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
                         && code_cell.language == CodeCellLanguage::Formula {
-                            code_cell.code = convert_a1_to_rc(
+                            code_cell.code = migration_convert_rc_to_a1(
                                 &code_cell.code,
                                 &a1_context,
-                                crate::SheetPos::new(*sheet_id, x + 1, y),
+                                *sheet_id,
+                                (x, y).into(),
                             );
                         }
                 }
             }
+        }
+    }
+}
+
+fn migration_convert_a1_to_rc(
+    source: &str,
+    ctx: &A1Context,
+    sheet_id: SheetId,
+    base_pos: Pos,
+) -> String {
+    let replace_fn = |range_ref: SheetCellRefRange| {
+        Ok(range_ref.migration_to_rc_string(Some(sheet_id), ctx, base_pos))
+    };
+    migration_replace_cell_range_references(source, ctx, sheet_id, base_pos, replace_fn)
+}
+
+fn migration_convert_rc_to_a1(
+    source: &str,
+    ctx: &A1Context,
+    sheet_id: SheetId,
+    base_pos: Pos,
+) -> String {
+    let replace_fn = |range_ref: SheetCellRefRange| Ok(range_ref.to_a1_string(Some(sheet_id), ctx));
+    migration_replace_cell_range_references(source, ctx, sheet_id, base_pos, replace_fn)
+}
+
+fn migration_replace_cell_range_references(
+    source: &str,
+    ctx: &A1Context,
+    sheet_id: SheetId,
+    base_pos: Pos,
+    replace_fn: impl Fn(SheetCellRefRange) -> Result<String, RefError>,
+) -> String {
+    let spans = find_cell_references(source, ctx, sheet_id, Some(base_pos));
+    let mut replaced = source.to_string();
+
+    // replace in reverse order to preserve previous span indexes into string
+    spans
+        .into_iter()
+        .rev()
+        .for_each(|spanned: Spanned<Result<SheetCellRefRange, RefError>>| {
+            let Spanned { span, inner } = spanned;
+            let new_str = match inner.and_then(&replace_fn) {
+                Ok(new_ref) => new_ref,
+                Err(RefError) => RefError.to_string(),
+            };
+            replaced.replace_range::<Range<usize>>(span.into(), &new_str);
+        });
+
+    replaced
+}
+
+impl SheetCellRefRange {
+    /// Returns an RC-style string describing the range. The sheet name is
+    /// included in the output only if `default_sheet_id` is `None` or differs
+    /// from the ID of the sheet containing the range.
+    fn migration_to_rc_string(
+        &self,
+        default_sheet_id: Option<SheetId>,
+        a1_context: &A1Context,
+        base_pos: Pos,
+    ) -> String {
+        if self.needs_sheet_name(default_sheet_id)
+            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id)
+        {
+            return format!(
+                "{}!{}",
+                quote_sheet_name(sheet_name),
+                self.cells.migration_to_rc_string(base_pos),
+            );
+        }
+        self.cells.migration_to_rc_string(base_pos)
+    }
+}
+
+impl CellRefRange {
+    /// Converts the reference to a string, preferring RC notation.
+    fn migration_to_rc_string(&self, base_pos: Pos) -> String {
+        match self {
+            CellRefRange::Sheet { range } => range.migration_to_rc_string(base_pos),
+            CellRefRange::Table { range } => range.to_string(),
+        }
+    }
+}
+
+impl RefRangeBounds {
+    /// Returns an R[1]C[1]-style reference relative to the given position.
+    fn migration_to_rc_string(&self, base_pos: Pos) -> String {
+        let start_col = self.start.col.migration_to_rc_string(base_pos.x);
+        let start_row = self.start.row.migration_to_rc_string(base_pos.y);
+        let end_col = self.end.col.migration_to_rc_string(base_pos.x);
+        let end_row = self.end.row.migration_to_rc_string(base_pos.y);
+        if *self == Self::ALL {
+            "*".to_string()
+        } else if self.is_col_range() {
+            if self.start.col == self.end.col {
+                format!("C{start_col}")
+            } else {
+                format!("C{start_col}:C{end_col}")
+            }
+        } else if self.is_row_range() {
+            // handle special case of An: (show as An: instead of n:)
+            if self.end.col.is_unbounded()
+                && self.end.row.is_unbounded()
+                && self.start.col.coord == 1
+            {
+                format!("R{start_row}:")
+            } else {
+                format!("R{start_row}:R{end_row}")
+            }
+        } else if self.start == self.end {
+            format!("R{start_row}C{start_col}")
+        } else {
+            format!("R{start_row}C{start_col}:R{end_row}C{end_col}")
+        }
+    }
+}
+
+impl CellRefCoord {
+    /// Returns the number as a string for use in RC-style notation.
+    ///
+    /// - If the coordinate is relative, returns a string containing the number
+    ///   surrounded by square brackets.
+    /// - If the coordinate is absolute, returns a string containing the number.
+    fn migration_to_rc_string(self, base_coord: i64) -> String {
+        match self.is_absolute {
+            true => format!("{{{}}}", self.coord),
+            false => format!("[{}]", self.coord.saturating_sub(base_coord)), // when changing to `u64`, this MUST stay `i64`
         }
     }
 }
@@ -558,6 +717,8 @@ fn migrate_python_javascript_pos(code_cell: &mut CodeCellValue) {
 
 #[cfg(test)]
 mod test {
+    use proptest::prelude::*;
+
     use std::collections::HashMap;
 
     use super::*;
@@ -567,6 +728,62 @@ mod test {
             language,
             code: code.to_string(),
         }
+    }
+
+    proptest! {
+        #[test]
+        fn proptest_ref_range_bounds_parsing(ref_range_bounds: RefRangeBounds) {
+            let base_pos = Pos::new(10, 15);
+
+            // We skip tests where start = end since we remove the end when parsing
+            if ref_range_bounds.end != ref_range_bounds.start {
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), None).unwrap());
+                assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.to_string(), Some(base_pos)).unwrap());
+            }
+
+            assert_eq!(ref_range_bounds, RefRangeBounds::from_str(&ref_range_bounds.migration_to_rc_string(base_pos), Some(base_pos)).unwrap());
+        }
+
+          #[test]
+        fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
+            if matches!(cell_ref_range, CellRefRange::Table { .. }) {
+                return Ok(());
+            }
+            let context = A1Context::default();
+
+            let base_pos = Pos::new(10, 15);
+            let a1_string = cell_ref_range.to_string();
+            let rc_string = cell_ref_range.migration_to_rc_string(base_pos);
+            let expected = (cell_ref_range, None);
+
+            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, None).unwrap());
+            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, Some(base_pos)).unwrap());
+            assert_eq!(expected, CellRefRange::parse(&rc_string, &context, Some(base_pos)).unwrap());
+        }
+    }
+
+    #[test]
+    fn test_convert_rc_to_a1() {
+        let ctx = A1Context::test(&[], &[]);
+        let src = "SUM(R[1]C[2])
+        + SUM(R[2]C[4])";
+        let expected = "SUM(C2)
+        + SUM(E3)";
+
+        let replaced = migration_convert_rc_to_a1(src, &ctx, SheetId::TEST, pos![A1]);
+        assert_eq!(replaced, expected);
+    }
+
+    #[test]
+    fn test_convert_a1_to_rc() {
+        let ctx = A1Context::test(&[], &[]);
+        let src = "SUM(A$1)
+        + SUM($B3)";
+        let expected = "SUM(R{1}C[0])
+        + SUM(R[2]C{2})";
+
+        let replaced = migration_convert_a1_to_rc(src, &ctx, SheetId::TEST, pos![A1]);
+        assert_eq!(expected, replaced);
     }
 
     #[test]

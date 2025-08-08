@@ -60,7 +60,7 @@ impl GridController {
                     );
                 }
             }
-            Err(e) => dbgjs!(e),
+            Err(e) => dbgjs!(format!("[set_cell_values] Error: {e:?}")),
         }
     }
 
@@ -381,7 +381,7 @@ mod test {
         };
 
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.header_is_first_row = false;
                 Ok(())
             })
@@ -437,7 +437,7 @@ mod test {
 
         // show name
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.show_name = Some(false);
                 Ok(())
             })
@@ -483,7 +483,7 @@ mod test {
 
         // show columns
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.show_columns = Some(false);
                 Ok(())
             })
@@ -528,7 +528,7 @@ mod test {
         );
 
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.header_is_first_row = true;
                 Ok(())
             })
@@ -565,7 +565,7 @@ mod test {
 
         // hide first column
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[0].display = false;
                 Ok(())
@@ -598,7 +598,7 @@ mod test {
 
         // show first column
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[0].display = true;
                 Ok(())
@@ -638,7 +638,7 @@ mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })
@@ -671,7 +671,7 @@ mod test {
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::None).unwrap();
                 Ok(())
             })
@@ -722,7 +722,7 @@ mod test {
         let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 8, 13));
         assert_eq!(
-            data_table.cell_value_at(3, 2),
+            data_table.display_value_at((3, 2).into()),
             Some(CellValue::Text("test1".into()))
         );
 
@@ -763,7 +763,7 @@ mod test {
         let data_table = sheet.data_table_at(&pos).unwrap();
         assert_eq!(data_table.output_rect(pos, false), Rect::new(5, 2, 7, 14));
         assert_eq!(
-            data_table.cell_value_at(1, 12),
+            data_table.display_value_at((1, 12).into()),
             Some(CellValue::Text("test3".into()))
         );
 

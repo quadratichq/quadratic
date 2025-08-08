@@ -42,7 +42,8 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsCellValuePosContext> {
         let mut data_rects = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
+        let selection_rects =
+            self.selection_to_rects(selection, false, false, true, a1_context, None);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
@@ -65,7 +66,8 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsCodeCell> {
         let mut code_cells = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
+        let selection_rects =
+            self.selection_to_rects(selection, false, false, true, a1_context, None);
         for selection_rect in selection_rects {
             for x in selection_rect.x_range() {
                 if let Some(column) = self.get_column(x) {
@@ -79,9 +81,7 @@ impl Sheet {
                                 .unwrap_or(false)
                             {
                                 // if there is an error, then add the code cell to the vec
-                                if let Some(code_cell) =
-                                    self.edit_code_value((x, y).into(), a1_context)
-                                {
+                                if let Some(code_cell) = self.edit_code_value((x, y).into()) {
                                     code_cells.push(code_cell);
                                 }
                             }
@@ -99,7 +99,8 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsTableSummaryContext> {
         let mut tables_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
+        let selection_rects =
+            self.selection_to_rects(selection, false, false, true, a1_context, None);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let tables_summary_in_rect = self
@@ -137,7 +138,8 @@ impl Sheet {
         a1_context: &A1Context,
     ) -> Vec<JsChartSummaryContext> {
         let mut charts_summary = Vec::new();
-        let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
+        let selection_rects =
+            self.selection_to_rects(selection, false, false, true, a1_context, None);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
             let charts_summary_in_rect = self

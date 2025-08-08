@@ -1,7 +1,6 @@
 use std::fmt;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::{Pos, Rect};
 
@@ -17,7 +16,8 @@ mod mutate;
 mod query;
 mod to_table_ref;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 #[serde(untagged)]
 pub enum CellRefRange {
@@ -50,14 +50,6 @@ impl CellRefRange {
     pub fn to_a1_string(&self) -> String {
         match self {
             CellRefRange::Sheet { range } => range.to_string(),
-            CellRefRange::Table { range } => range.to_string(),
-        }
-    }
-
-    /// Converts the reference to a string, preferring RC notation.
-    pub fn to_rc_string(&self, base_pos: Pos) -> String {
-        match self {
-            CellRefRange::Sheet { range } => range.to_rc_string(base_pos),
             CellRefRange::Table { range } => range.to_string(),
         }
     }

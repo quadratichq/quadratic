@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::{Pos, grid::SheetId};
 
@@ -19,7 +18,8 @@ mod select_table;
 /// Maximum number of columns that can be parsed in a column name.
 pub const MAX_COLUMNS: i64 = 5000000;
 
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
 pub struct A1Selection {
     /// Current sheet.

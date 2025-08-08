@@ -193,7 +193,7 @@ pub mod test {
 
         // Denver should no longer be at (0, 2)
         assert_eq!(
-            data_table.cell_value_at(0, 2),
+            data_table.display_value_at((0, 2).into()),
             Some(CellValue::Text("Southborough".to_string()))
         );
     }

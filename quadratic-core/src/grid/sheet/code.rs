@@ -2,12 +2,10 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    CellValue, Pos, Rect, Value,
-    a1::A1Context,
+    CellValue, MultiPos, Pos, Rect, Value,
     cell_values::CellValues,
-    formulas::convert_rc_to_a1,
     grid::{
-        CodeCellLanguage, DataTableKind,
+        CodeCellValue, DataTableKind,
         data_table::DataTable,
         js_types::{JsCodeCell, JsReturnInfo},
     },
@@ -94,9 +92,9 @@ impl Sheet {
         self.data_table_that_contains(pos)
             .is_some_and(|(code_cell_pos, data_table)| {
                 data_table
-                        .cell_value_ref_at(
-                            (pos.x - code_cell_pos.x) as u32,
-                            (pos.y - code_cell_pos.y) as u32,
+                        .display_value_ref_at(
+                            (pos.x - code_cell_pos.x,
+                            pos.y - code_cell_pos.y).into(),
                         )
                         .is_some_and(|cell_value| {
                             !cell_value.is_blank_or_empty_string()
@@ -113,10 +111,33 @@ impl Sheet {
     /// TODO(ddimaria): move to DataTable code
     pub fn get_code_cell_value(&self, pos: Pos) -> Option<CellValue> {
         let (data_table_pos, data_table) = self.data_table_that_contains(pos)?;
-        data_table.cell_value_at(
-            (pos.x - data_table_pos.x) as u32,
-            (pos.y - data_table_pos.y) as u32,
-        )
+
+        let cell_value = data_table
+            .display_value_ref_at((pos.x - data_table_pos.x, pos.y - data_table_pos.y).into())?;
+
+        // cell_value is a code cell (sub table)
+        if cell_value.is_code() {
+            let pos_relative_to_data_table = Pos::new(
+                pos.x - data_table_pos.x,
+                pos.y - data_table_pos.y - data_table.y_adjustment(true),
+            );
+
+            let column_index = data_table.get_column_index_from_display_index(
+                u32::try_from(pos_relative_to_data_table.x).ok()?,
+                true,
+            );
+            let row_index = data_table.get_row_index_from_display_index(
+                u64::try_from(pos_relative_to_data_table.y).ok()?,
+            );
+
+            let sub_data_table = data_table.tables.as_ref().and_then(|tables| {
+                tables.get_at(&(column_index as i64, row_index as i64).into())
+            })?;
+
+            sub_data_table.display_value_at((0, 0).into())
+        } else {
+            Some(cell_value.to_owned())
+        }
     }
 
     /// TODO(ddimaria): move to DataTable code
@@ -130,9 +151,9 @@ impl Sheet {
                         rect.x_range()
                             .map(|x| {
                                 data_table
-                                    .cell_value_at(
-                                        (x - data_table_rect.min.x) as u32,
-                                        (y - data_table_rect.min.y) as u32,
+                                    .display_value_at(
+                                        (x - data_table_rect.min.x, y - data_table_rect.min.y)
+                                            .into(),
                                     )
                                     .unwrap_or(CellValue::Blank)
                             })
@@ -147,104 +168,122 @@ impl Sheet {
 
     /// Returns the code cell at a Pos; also returns the code cell if the Pos is part of a code run.
     /// Used for double clicking a cell on the grid.
-    pub fn edit_code_value(&self, pos: Pos, a1_context: &A1Context) -> Option<JsCodeCell> {
-        let mut code_pos = pos;
-        let cell_value = if let Some(cell_value) = self.cell_value_ref(pos) {
-            Some(cell_value)
-        } else {
-            match self.data_table_pos_that_contains_result(pos) {
-                Ok(data_table_pos) => {
-                    if let Some(code_value) = self.cell_value_ref(data_table_pos) {
-                        code_pos = data_table_pos;
-                        Some(code_value)
-                    } else {
-                        None
-                    }
-                }
-                Err(_) => None,
+    pub fn edit_code_value(&self, pos: Pos) -> Option<JsCodeCell> {
+        let (code_multi_pos,  code_cell_value) =
+            // check for code cell on the sheet
+            if let Some(cell_value) = self.cell_value_ref(pos) {
+                (pos.to_multi_pos(self.id), cell_value.code_cell_value()?)
             }
-        };
+            // check for code cell within a table
+            else if let Some((table_pos, Some(code_cell_value))) =
+                self.display_pos_to_table_pos(pos).map(|table_pos| {
+                    (
+                        MultiPos::TablePos(table_pos),
+                        self.table_pos_code_value(table_pos)
+                            .map(|code_cell_value| code_cell_value.to_owned()),
+                    )
+                })
+            {
+                (table_pos, code_cell_value)
+            }
+            // return the code table that contains the pos
+            else {
+                let data_table_pos = self.data_table_pos_that_contains(pos)?;
+                (
+                    data_table_pos.to_multi_pos(self.id),
+                    self.cell_value_ref(data_table_pos)
+                        .and_then(|cell_value| cell_value.code_cell_value())?,
+                )
+            };
 
-        match cell_value?.code_cell_value() {
-            Some(mut code_cell_value) => {
-                // replace internal cell references with a1 notation
-                if matches!(code_cell_value.language, CodeCellLanguage::Formula) {
-                    let replaced = convert_rc_to_a1(
-                        &code_cell_value.code,
-                        a1_context,
-                        code_pos.to_sheet_pos(self.id),
-                    );
-                    code_cell_value.code = replaced;
-                }
+        let code_pos = code_multi_pos.to_sheet_pos(self).unwrap();
 
-                if let Some(data_table) = self.data_table_at(&code_pos) {
-                    let evaluation_result =
-                        serde_json::to_string(&data_table.value).unwrap_or("".into());
-                    let spill_error = if data_table.has_spill() {
-                        Some(self.find_spill_error_reasons(
-                            &data_table.output_rect(code_pos, true),
-                            code_pos,
-                        ))
+        if let Some(data_table) = self.data_table_multi_pos(&code_multi_pos) {
+            let evaluation_result = serde_json::to_string(&data_table.value).unwrap_or("".into());
+            let spill_error = if data_table.has_spill() {
+                Some(self.find_spill_error_reasons(
+                    &data_table.output_rect(code_pos.into(), true),
+                    code_pos.into(),
+                ))
+            } else {
+                None
+            };
+
+            match &data_table.kind {
+                DataTableKind::CodeRun(code_run) => {
+                    let evaluation_result = if let Some(error) = &code_run.error {
+                        Some(serde_json::to_string(error).unwrap_or("".into()))
                     } else {
-                        None
+                        Some(evaluation_result)
                     };
 
-                    match &data_table.kind {
-                        DataTableKind::CodeRun(code_run) => {
-                            let evaluation_result = if let Some(error) = &code_run.error {
-                                Some(serde_json::to_string(error).unwrap_or("".into()))
-                            } else {
-                                Some(evaluation_result)
-                            };
-
-                            Some(JsCodeCell {
-                                x: code_pos.x,
-                                y: code_pos.y,
-                                code_string: code_cell_value.code,
-                                language: code_cell_value.language,
-                                std_err: code_run.std_err.clone(),
-                                std_out: code_run.std_out.clone(),
-                                evaluation_result,
-                                spill_error,
-                                return_info: Some(JsReturnInfo {
-                                    line_number: code_run.line_number,
-                                    output_type: code_run.output_type.clone(),
-                                }),
-                                cells_accessed: Some(code_run.cells_accessed.clone().into()),
-                                last_modified: data_table.last_modified.timestamp_millis(),
-                            })
-                        }
-                        DataTableKind::Import(_) => Some(JsCodeCell {
-                            x: code_pos.x,
-                            y: code_pos.y,
-                            code_string: code_cell_value.code,
-                            language: code_cell_value.language,
-                            std_err: None,
-                            std_out: None,
-                            evaluation_result: Some(evaluation_result),
-                            spill_error,
-                            return_info: None,
-                            cells_accessed: None,
-                            last_modified: 0,
-                        }),
-                    }
-                } else {
                     Some(JsCodeCell {
                         x: code_pos.x,
                         y: code_pos.y,
                         code_string: code_cell_value.code,
                         language: code_cell_value.language,
-                        std_err: None,
-                        std_out: None,
-                        evaluation_result: None,
-                        spill_error: None,
-                        return_info: None,
-                        cells_accessed: None,
-                        last_modified: 0,
+                        std_err: code_run.std_err.clone(),
+                        std_out: code_run.std_out.clone(),
+                        evaluation_result,
+                        spill_error,
+                        return_info: Some(JsReturnInfo {
+                            line_number: code_run.line_number,
+                            output_type: code_run.output_type.clone(),
+                        }),
+                        cells_accessed: Some(code_run.cells_accessed.clone().into()),
+                        last_modified: data_table.last_modified.timestamp_millis(),
                     })
                 }
+                DataTableKind::Import(_) => Some(JsCodeCell {
+                    x: code_pos.x,
+                    y: code_pos.y,
+                    code_string: code_cell_value.code,
+                    language: code_cell_value.language,
+                    std_err: None,
+                    std_out: None,
+                    evaluation_result: Some(evaluation_result),
+                    spill_error,
+                    return_info: None,
+                    cells_accessed: None,
+                    last_modified: 0,
+                }),
             }
-            _ => None,
+        } else {
+            Some(JsCodeCell {
+                x: code_pos.x,
+                y: code_pos.y,
+                code_string: code_cell_value.code,
+                language: code_cell_value.language,
+                std_err: None,
+                std_out: None,
+                evaluation_result: None,
+                spill_error: None,
+                return_info: None,
+                cells_accessed: None,
+                last_modified: 0,
+            })
+        }
+    }
+
+    /// Returns the code cell value at the MultiPos.
+    pub fn code_value(&self, multi_pos: MultiPos) -> Option<&CodeCellValue> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => match self.cell_value_ref(sheet_pos.into()) {
+                Some(CellValue::Code(code)) => Some(code),
+                _ => None,
+            },
+            MultiPos::TablePos(table_pos) => self.table_pos_code_value(table_pos),
+        }
+    }
+
+    /// Converts a Pos to a MultiPos, checking whether the Pos is a sheet pos or
+    /// a table pos. Will return a MultiPos::SheetPos for all code tables and
+    /// DataTable anchor cells.
+    pub fn convert_to_multi_pos(&self, display_pos: Pos) -> MultiPos {
+        if let Some(table_pos) = self.display_pos_to_table_pos(display_pos) {
+            MultiPos::TablePos(table_pos)
+        } else {
+            MultiPos::SheetPos(display_pos.to_sheet_pos(self.id))
         }
     }
 }
@@ -256,6 +295,7 @@ mod test {
         Array, SheetPos, Value,
         controller::GridController,
         grid::{CodeCellLanguage, CodeCellValue, CodeRun, js_types::JsRenderCellSpecial},
+        test_util::*,
     };
     use std::vec;
 
@@ -293,7 +333,7 @@ mod test {
         );
         sheet.set_data_table(Pos { x: 1, y: 1 }, Some(data_table.clone()));
         let sheet = gc.sheet(sheet_id);
-        let edit_code_value = sheet.edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context());
+        let edit_code_value = sheet.edit_code_value(Pos { x: 1, y: 1 });
         let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
             edit_code_value,
@@ -311,7 +351,7 @@ mod test {
                 last_modified,
             })
         );
-        let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 }, gc.a1_context());
+        let edit_code_value = sheet.edit_code_value(Pos { x: 2, y: 1 });
         let last_modified = edit_code_value.as_ref().unwrap().last_modified;
         assert_eq!(
             edit_code_value,
@@ -329,10 +369,7 @@ mod test {
                 last_modified,
             })
         );
-        assert_eq!(
-            sheet.edit_code_value(Pos { x: 3, y: 3 }, gc.a1_context()),
-            None
-        );
+        assert_eq!(sheet.edit_code_value(Pos { x: 3, y: 3 }), None);
     }
 
     #[test]
@@ -350,11 +387,7 @@ mod test {
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "{1, 2, 3}".to_string(),
             None,
@@ -368,9 +401,7 @@ mod test {
         );
         let render = sheet.get_render_cells(Rect::from_numbers(1, 1, 1, 1), gc.a1_context());
         assert_eq!(render[0].special, Some(JsRenderCellSpecial::SpillError));
-        let code = sheet
-            .edit_code_value(Pos { x: 1, y: 1 }, gc.a1_context())
-            .unwrap();
+        let code = sheet.edit_code_value(Pos { x: 1, y: 1 }).unwrap();
         assert_eq!(code.spill_error, Some(vec![Pos { x: 2, y: 1 }]));
     }
 
@@ -478,5 +509,42 @@ mod test {
 
         assert_eq!(sheet.chart_at(pos), Some((pos, &dt)));
         assert_eq!(sheet.chart_at(Pos { x: 2, y: 2 }), Some((pos, &dt)));
+    }
+
+    #[test]
+    fn test_convert_to_multi_pos() {
+        let (mut gc, sheet_id) = test_grid();
+
+        test_create_data_table(&mut gc, sheet_id, Pos { x: 2, y: 2 }, 3, 3);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![A1]),
+            MultiPos::new_sheet_pos(sheet_id, (1, 1).into())
+        );
+
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![B4]),
+            MultiPos::new_table_pos(sheet_id, &pos![2, 2], pos![0, 0])
+        );
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![D6]),
+            MultiPos::new_table_pos(sheet_id, &pos![2, 2], pos![2, 2])
+        );
+
+        // anchor cell of data table
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![B2]),
+            MultiPos::new_sheet_pos(sheet_id, (2, 2).into())
+        );
+
+        // code table
+        test_create_code_table(&mut gc, sheet_id, pos![E2], 2, 2);
+
+        let sheet = gc.sheet(sheet_id);
+        assert_eq!(
+            sheet.convert_to_multi_pos(pos![F3]),
+            MultiPos::new_sheet_pos(sheet_id, (6, 3).into())
+        );
     }
 }

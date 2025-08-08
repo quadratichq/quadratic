@@ -2,11 +2,11 @@ use std::collections::HashSet;
 
 use super::Sheet;
 use crate::{
-    Pos, Rect, SheetPos,
+    MultiPos, Pos, Rect, SheetPos,
     a1::{A1Context, A1Selection},
     cell_values::CellValues,
     grid::{
-        CodeCellLanguage, CodeCellValue, DataTableKind,
+        CodeCellLanguage, CodeCellValue, DataTableKind, SheetId,
         data_table::DataTable,
         formats::{FormatUpdate, SheetFormatUpdates},
     },
@@ -16,22 +16,27 @@ use anyhow::{Result, anyhow, bail};
 use indexmap::IndexMap;
 
 impl Sheet {
+    /// Returns a DataTable at a MultiPos
+    pub fn data_table_multi_pos(&self, multi_pos: &MultiPos) -> Option<&DataTable> {
+        self.data_tables.get_multi_pos(multi_pos)
+    }
+
     /// Returns a DataTable at a Pos
     pub fn data_table_at(&self, pos: &Pos) -> Option<&DataTable> {
         self.data_tables.get_at(pos)
     }
 
     /// Gets the index of the data table
-    pub fn data_table_index(&self, pos: Pos) -> Option<usize> {
-        self.data_tables.get_index_of(&pos)
+    pub fn data_table_index(&self, multi_pos: MultiPos) -> Option<usize> {
+        self.data_tables.get_multi_pos_index_of(&multi_pos)
     }
 
     /// Returns the index of the data table as a result.
-    pub fn data_table_index_result(&self, pos: Pos) -> Result<usize> {
-        self.data_table_index(pos).ok_or_else(|| {
+    pub fn data_table_index_result(&self, multi_pos: MultiPos) -> Result<usize> {
+        self.data_table_index(multi_pos).ok_or_else(|| {
             anyhow!(
                 "Data table not found at {:?} in data_table_index_result()",
-                pos
+                multi_pos
             )
         })
     }
@@ -107,6 +112,16 @@ impl Sheet {
             .any(|pos| skip != Some(&pos))
     }
 
+    /// Returns a DataTable at a MultiPos as a result
+    pub fn data_table_multi_pos_result(&self, multi_pos: &MultiPos) -> Result<&DataTable> {
+        self.data_table_multi_pos(multi_pos).ok_or_else(|| {
+            anyhow!(
+                "Data table not found at {:?} in data_table_result()",
+                multi_pos
+            )
+        })
+    }
+
     /// Returns a DataTable at a Pos as a result
     pub fn data_table_result(&self, pos: &Pos) -> Result<&DataTable> {
         self.data_table_at(pos)
@@ -123,13 +138,29 @@ impl Sheet {
         nondefault_rects.any(|(rect, _)| rect != root_cell_rect)
     }
 
-    /// Returns a mutable DataTable at a Pos
-    pub fn modify_data_table_at(
+    /// Modifies a data table at a position (only works for SheetPos, not TablePos, tables).
+    pub fn modify_data_table_at_pos(
         &mut self,
         pos: &Pos,
         f: impl FnOnce(&mut DataTable) -> Result<()>,
     ) -> Result<(&DataTable, HashSet<Rect>)> {
         self.data_tables.modify_data_table_at(pos, f)
+    }
+
+    /// Returns a mutable DataTable at a Pos
+    pub fn modify_data_table_at(
+        &mut self,
+        multi_pos: MultiPos,
+        f: impl FnOnce(&mut DataTable) -> Result<()>,
+    ) -> Result<(&DataTable, HashSet<Rect>)> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                self.data_tables.modify_data_table_at(&sheet_pos.into(), f)
+            }
+            MultiPos::TablePos(table_pos) => {
+                self.data_tables.modify_data_sub_table_at(table_pos, f)
+            }
+        }
     }
 
     pub fn data_table_insert_full(
@@ -144,27 +175,51 @@ impl Sheet {
     pub fn data_table_insert_before(
         &mut self,
         index: usize,
-        pos: &Pos,
+        multi_pos: MultiPos,
         mut data_table: DataTable,
-    ) -> (usize, Option<DataTable>, HashSet<Rect>) {
-        data_table.spill_value = self.check_spills_due_to_column_values(pos, &data_table);
-        self.data_tables.insert_before(index, pos, data_table)
+    ) -> Result<(usize, Option<DataTable>, HashSet<Rect>)> {
+        match multi_pos {
+            MultiPos::SheetPos(sheet_pos) => {
+                let pos = sheet_pos.into();
+                data_table.spill_value = self.check_spills_due_to_column_values(&pos, &data_table);
+                Ok(self.data_tables.insert_before(index, &pos, data_table))
+            }
+            MultiPos::TablePos(table_pos) => {
+                let mut result = None;
+
+                self.data_tables
+                    .modify_data_table_at(&table_pos.table_sheet_pos.into(), |dt| {
+                        result = Some(dt.tables.get_or_insert_default().insert_before(
+                            index,
+                            &table_pos.pos,
+                            data_table,
+                        ));
+
+                        Ok(())
+                    })?;
+
+                result.ok_or_else(|| anyhow!("Failed to insert data table into sub-table"))
+            }
+        }
     }
 
-    pub fn data_table_shift_remove_full(
+    pub fn data_table_shift_remove_pos(
         &mut self,
         pos: &Pos,
     ) -> Option<(usize, Pos, DataTable, HashSet<Rect>)> {
-        self.data_tables.shift_remove_full(pos)
+        self.data_tables.shift_remove_full_pos(pos)
     }
 
-    pub fn data_table_shift_remove(&mut self, pos: &Pos) -> Option<(DataTable, HashSet<Rect>)> {
-        self.data_tables.shift_remove(pos)
+    /// Removes a data table at a MultiPos
+    pub fn data_table_shift_remove(
+        &mut self,
+        multi_pos: &MultiPos,
+    ) -> Option<(usize, MultiPos, DataTable, HashSet<Rect>)> {
+        self.data_tables.shift_remove_full(multi_pos)
     }
 
-    pub fn delete_data_table(&mut self, pos: Pos) -> Result<(DataTable, HashSet<Rect>)> {
-        self.data_table_shift_remove(&pos)
-            .ok_or_else(|| anyhow!("Data table not found at {:?} in delete_data_table()", pos))
+    pub fn delete_data_table(&mut self, multi_pos: MultiPos) -> Option<(DataTable, HashSet<Rect>)> {
+        self.data_tables.shift_remove(&multi_pos)
     }
 
     pub fn data_tables_update_spill(&mut self, rect: Rect) -> HashSet<Rect> {
@@ -179,8 +234,8 @@ impl Sheet {
 
         let mut dirty_rects = HashSet::new();
 
-        for (pos, new_spill) in data_tables_to_modify {
-            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&pos, |dt| {
+        for (multi_pos, new_spill) in data_tables_to_modify {
+            if let Ok((_, dirty_rect)) = self.data_tables.modify_data_table_at(&multi_pos, |dt| {
                 dt.spill_value = new_spill;
                 Ok(())
             }) {
@@ -231,19 +286,23 @@ impl Sheet {
                 }
                 let output_rect = data_table.output_rect(data_table_pos, false);
                 if let Some(exclude_x) = exclude_x
-                    && exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
-                        return false;
-                    }
+                    && exclude_x >= output_rect.min.x
+                    && exclude_x <= output_rect.max.x
+                {
+                    return false;
+                }
                 if let Some(exclude_y) = exclude_y
-                    && exclude_y >= output_rect.min.y && exclude_y <= output_rect.max.y {
-                        return false;
-                    }
+                    && exclude_y >= output_rect.min.y
+                    && exclude_y <= output_rect.max.y
+                {
+                    return false;
+                }
                 true
             })
     }
 
     /// Calls a function to mutate all code cells.
-    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetPos)) {
+    pub fn update_code_cells(&mut self, func: impl Fn(&mut CodeCellValue, SheetId)) {
         let positions = self
             .data_tables
             .expensive_iter()
@@ -252,9 +311,10 @@ impl Sheet {
         let sheet_id = self.id;
         for pos in positions.into_iter() {
             if let Some(cell_value) = self.cell_value_mut(pos)
-                && let Some(code_cell_value) = cell_value.code_cell_value_mut() {
-                    func(code_cell_value, pos.to_sheet_pos(sheet_id));
-                }
+                && let Some(code_cell_value) = cell_value.code_cell_value_mut()
+            {
+                func(code_cell_value, sheet_id);
+            }
         }
     }
 
@@ -265,9 +325,9 @@ impl Sheet {
         new_name: &str,
         a1_context: &A1Context,
     ) {
-        self.update_code_cells(|code_cell_value, pos| {
+        self.update_code_cells(|code_cell_value, sheet_id| {
             code_cell_value
-                .replace_table_name_in_cell_references(a1_context, pos, old_name, new_name);
+                .replace_table_name_in_cell_references(a1_context, sheet_id, old_name, new_name);
         });
     }
 
@@ -279,9 +339,9 @@ impl Sheet {
         new_name: &str,
         a1_context: &A1Context,
     ) {
-        self.update_code_cells(|code_cell_value, pos| {
+        self.update_code_cells(|code_cell_value, sheet_id| {
             code_cell_value.replace_column_name_in_cell_references(
-                a1_context, pos, table_name, old_name, new_name,
+                a1_context, sheet_id, table_name, old_name, new_name,
             );
         });
     }
@@ -341,9 +401,8 @@ impl Sheet {
                 // add the code_run output to cells and values
                 for y in y_start..=y_end {
                     for x in x_start..=x_end {
-                        if let Some(value) = data_table.cell_value_ref_at(
-                            (x - data_table_pos.x) as u32,
-                            (y - data_table_pos.y) as u32,
+                        if let Some(value) = data_table.display_value_ref_at(
+                            (x - data_table_pos.x, y - data_table_pos.y).into(),
                         ) {
                             let pos = Pos {
                                 x: x - bounds.min.x,
@@ -353,12 +412,12 @@ impl Sheet {
                             if selection.might_contain_pos(Pos { x, y }, a1_context) {
                                 // add the CellValue to cells if the code is not included in the rect
                                 if !rect_contains_anchor_pos {
-                                    cells.set(pos.x as u32, pos.y as u32, value.clone());
+                                    cells.set(pos.x as u32, pos.y as u32, value.to_owned());
                                 }
 
                                 // add the display value to values if values is Some
                                 if let Some(values) = values.as_mut() {
-                                    values.set(pos.x as u32, pos.y as u32, value.clone());
+                                    values.set(pos.x as u32, pos.y as u32, value.to_owned());
                                 }
                             }
                         }
@@ -573,8 +632,8 @@ impl Sheet {
         if let Some(data_table) = data_table {
             self.data_table_insert_full(&pos, data_table).1
         } else {
-            self.data_table_shift_remove(&pos)
-                .map(|(data_table, _)| data_table)
+            self.data_table_shift_remove_pos(&pos)
+                .map(|(_, _, data_table, _)| data_table)
         }
     }
 }
@@ -670,7 +729,7 @@ mod test {
     fn test_copy_data_table_to_clipboard() {
         let (mut gc, sheet_id, pos, _) = simple_csv();
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(pos.to_multi_pos(sheet_id), |dt| {
                 dt.chart_pixel_output = Some((100.0, 100.0));
                 Ok(())
             })
@@ -760,13 +819,22 @@ mod test {
         let sheet = gc.sheet(sheet_id);
 
         // Test that the data table index is 0 for the first data table
-        assert_eq!(sheet.data_table_index(pos![A1]), Some(0));
+        assert_eq!(
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, (1, 1).into())),
+            Some(0)
+        );
 
         // Test that a non-existent data table returns None
-        assert_eq!(sheet.data_table_index(pos![B2]), None);
+        assert_eq!(
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, (2, 2).into())),
+            None
+        );
 
         // The second data table should have index 1
-        assert_eq!(sheet.data_table_index(pos![E2]), Some(1));
+        assert_eq!(
+            sheet.data_table_index(MultiPos::new_sheet_pos(sheet_id, (5, 2).into())),
+            Some(1)
+        );
     }
 
     #[test]

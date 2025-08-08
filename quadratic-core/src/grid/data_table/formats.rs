@@ -555,7 +555,7 @@ pub mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(pos.to_multi_pos(sheet_id), |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })
@@ -625,7 +625,7 @@ pub mod test {
         // remove sort
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at_pos(&pos, |dt| {
                 dt.sort_column(3, SortDirection::None).unwrap();
                 Ok(())
             })

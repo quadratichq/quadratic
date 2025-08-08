@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::grid::{GridBounds, Sheet};
 
-#[derive(Serialize, Deserialize, TS)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetInfo {
     pub sheet_id: String,
     pub name: String,
@@ -31,7 +31,8 @@ impl From<&Sheet> for SheetInfo {
     }
 }
 
-#[derive(Serialize, Deserialize, TS)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct SheetBounds {
     pub sheet_id: String,
     pub bounds: GridBounds,

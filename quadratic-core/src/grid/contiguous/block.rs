@@ -28,7 +28,7 @@ impl<T> Block<T> {
     /// Return a block that covers the entire space
     pub fn new_total(value: T) -> Self {
         Self {
-            start: 1,
+            start: 0,
             end: u64::MAX,
             value,
         }
@@ -134,16 +134,16 @@ impl<T: Clone + PartialEq> Block<T> {
         .if_nonempty()
     }
     /// Offsets a block by the given negative delta. Truncates the block if it
-    /// goes below 1.
+    /// goes below 0.
     ///
     /// Returns `None` if the block becomes empty.
     pub fn subtract_offset(self, delta: u64) -> Option<Self> {
         Block {
-            start: self.start.saturating_sub(delta).max(1),
+            start: self.start.saturating_sub(delta),
             end: if self.end == u64::MAX {
                 u64::MAX
             } else {
-                self.end.saturating_sub(delta).max(1)
+                self.end.saturating_sub(delta)
             },
             value: self.value,
         }

@@ -225,20 +225,18 @@ class CoreClient {
         return;
 
       case 'clientCoreSetCodeCellValue':
-        const transactionId = core.setCodeCellValue(
-          e.data.sheetId,
-          e.data.x,
-          e.data.y,
-          e.data.language,
-          e.data.codeString,
-          e.data.codeCellName,
-          e.data.cursor,
-          e.data.isAi
-        );
         this.send({
           type: 'coreClientSetCodeCellValue',
           id: e.data.id,
-          transactionId,
+          transactionId: core.setCodeCellValue(
+            e.data.sheetId,
+            e.data.pos,
+            e.data.language,
+            e.data.codeString,
+            e.data.codeCellName,
+            e.data.cursor,
+            e.data.isAi
+          ),
         });
         return;
 

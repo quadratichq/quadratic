@@ -74,15 +74,15 @@ pub fn test_create_code_table_with_values(
         None,
     );
 
-    let op = Operation::AddDataTable {
-        sheet_pos: pos.to_sheet_pos(sheet_id),
+    let op = Operation::AddDataTableMultiPos {
+        multi_pos: pos.to_multi_pos(sheet_id),
         data_table,
         cell_value,
         index: None,
     };
     gc.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
 
-    gc.data_table_at(pos.to_sheet_pos(sheet_id))
+    gc.data_table_at(pos.to_sheet_pos(sheet_id).into())
         .unwrap()
         .clone()
 }
@@ -101,7 +101,7 @@ pub fn test_create_formula(
         None,
         false,
     );
-    gc.data_table_at(sheet_pos).unwrap().clone()
+    gc.data_table_at(sheet_pos.into()).unwrap().clone()
 }
 
 #[cfg(test)]

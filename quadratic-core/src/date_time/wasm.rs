@@ -1,6 +1,8 @@
 //! WASM functions for date and time conversions.
 
 use super::date_time_convert::*;
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 #[allow(non_snake_case)]

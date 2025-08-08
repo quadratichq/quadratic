@@ -234,6 +234,7 @@ impl GridController {
         ]
     }
 
+    /// Adds a data table to the sheet.
     pub fn add_data_table_operations(
         &self,
         sheet_pos: SheetPos,
@@ -287,7 +288,7 @@ impl GridController {
         }
 
         let import = Import::new(name.to_owned());
-        let name = unique_data_table_name(&name, false, Some(sheet_pos), self.a1_context());
+        let name = unique_data_table_name(&name, false, Some(sheet_pos.into()), self.a1_context());
         let mut data_table = DataTable::new(
             DataTableKind::Import(import.to_owned()),
             &name,
@@ -303,8 +304,8 @@ impl GridController {
             .apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
 
-        ops.push(Operation::AddDataTable {
-            sheet_pos,
+        ops.push(Operation::AddDataTableMultiPos {
+            multi_pos: sheet_pos.into(),
             data_table,
             cell_value: CellValue::Import(import),
             index: None,
@@ -440,7 +441,7 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         match &ops[0] {
-            Operation::AddDataTable {
+            Operation::AddDataTableMultiPos {
                 data_table,
                 cell_value,
                 ..
@@ -497,7 +498,7 @@ mod test {
                     Some(true)
                 );
             }
-            _ => panic!("Expected AddDataTable operation"),
+            _ => panic!("Expected AddDataTableMultiPos operation"),
         }
     }
 

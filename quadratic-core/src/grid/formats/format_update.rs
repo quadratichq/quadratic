@@ -1,13 +1,13 @@
 //! This is used to update a format. Only the fields that are Some(_) will be updated.
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use super::format::Format;
 use crate::grid::{CellAlign, CellVerticalAlign, CellWrap, NumericFormat, formatting::RenderSize};
 
 /// Used to store changes from a Format to another Format.
-#[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq, TS)]
+#[derive(Deserialize, Serialize, Default, Debug, Clone, Eq, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct FormatUpdate {
     #[serde(
         default,

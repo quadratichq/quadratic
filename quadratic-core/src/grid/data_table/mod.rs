@@ -1,9 +1,11 @@
-//! CodeRun is the output of a CellValue::Code or CellValue::Import type
+//! DataTable is the output of a CellValue::Code or CellValue::Import type
 //!
 //! This lives in sheet.data_tables. CodeRun is optional within sheet.data_tables for
 //! any given CellValue::Code type (ie, if it doesn't exist then a run hasn't been
 //! performed yet).
-use crate::util::is_false;
+
+use crate::grid::sheet::data_tables::SheetDataTables;
+use crate::util::{is_false, unique_name};
 
 pub mod column;
 pub mod column_header;
@@ -19,9 +21,9 @@ use std::num::NonZeroU32;
 use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
-use crate::util::unique_name;
 use crate::{
-    Array, ArraySize, CellValue, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect, Value,
+    Array, ArraySize, CellValue, MultiPos, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect,
+    Value,
 };
 use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
@@ -40,13 +42,13 @@ use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
 pub fn unique_data_table_name(
     name: &str,
     require_number: bool,
-    sheet_pos: Option<SheetPos>,
+    multi_pos: Option<MultiPos>,
     a1_context: &A1Context,
 ) -> String {
     // replace spaces with underscores
     let name = name.replace(' ', "_");
 
-    let check_name = |name: &str| !a1_context.table_map.contains_name(name, sheet_pos);
+    let check_name = |name: &str| !a1_context.table_map.contains_name(name, multi_pos);
     let iter_names = a1_context.table_map.iter_rev_table_names();
     unique_name(&name, require_number, check_name, iter_names)
 }
@@ -60,22 +62,22 @@ impl Grid {
     /// Updates the name of a data table and replaces the old name in all code cells that reference it.
     pub fn update_data_table_name(
         &mut self,
-        sheet_pos: SheetPos,
+        multi_pos: MultiPos,
         old_name: &str,
         new_name: &str,
         a1_context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
         let unique_name =
-            unique_data_table_name(new_name, require_number, Some(sheet_pos), a1_context);
+            unique_data_table_name(new_name, require_number, Some(multi_pos), a1_context);
 
         self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
 
         let sheet = self
-            .try_sheet_mut(sheet_pos.sheet_id)
-            .ok_or_else(|| anyhow!("Sheet {} not found", sheet_pos.sheet_id))?;
+            .try_sheet_mut(multi_pos.sheet_id())
+            .ok_or_else(|| anyhow!("Sheet {} not found", multi_pos.sheet_id()))?;
 
-        sheet.modify_data_table_at(&sheet_pos.into(), |dt| {
+        sheet.modify_data_table_at(multi_pos, |dt| {
             dt.update_table_name(&unique_name);
             Ok(())
         })?;
@@ -217,6 +219,9 @@ pub struct DataTable {
 
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub chart_output: Option<(u32, u32)>,
+
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub tables: Option<SheetDataTables>,
 }
 
 impl From<(Import, Array, &A1Context)> for DataTable {
@@ -268,6 +273,7 @@ impl DataTable {
             show_columns,
             chart_pixel_output: None,
             chart_output,
+            tables: None,
         };
 
         if header_is_first_row {
@@ -299,6 +305,7 @@ impl DataTable {
             show_columns: self.show_columns,
             chart_pixel_output: self.chart_pixel_output,
             chart_output: self.chart_output,
+            tables: None,
         }
     }
 
@@ -319,6 +326,13 @@ impl DataTable {
     pub fn with_column_headers(mut self, column_headers: Vec<DataTableColumnHeader>) -> Self {
         self.column_headers = Some(column_headers);
         self
+    }
+
+    pub fn is_data_table(&self) -> bool {
+        match &self.kind {
+            DataTableKind::CodeRun(_) => false,
+            DataTableKind::Import(_) => true,
+        }
     }
 
     pub fn is_code(&self) -> bool {
@@ -434,9 +448,10 @@ impl DataTable {
 
         // Check if table name already exists
         if let Some(table) = a1_context.table_map.try_table(name)
-            && (table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()) {
-                return Err("Table name must be unique".to_string());
-            }
+            && table.multi_pos != sheet_pos.into()
+        {
+            return Err("Table name must be unique".to_string());
+        }
 
         std::result::Result::Ok(true)
     }
@@ -561,26 +576,6 @@ impl DataTable {
             .and_then(|code_run| code_run.error.to_owned())
     }
 
-    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns [`CellValue::Blank`]. Note: this assumes a [`CellValue::Code`] exists at the location.
-    pub fn cell_value_at(&self, x: u32, y: u32) -> Option<CellValue> {
-        if self.has_spill() || self.has_error() {
-            Some(CellValue::Blank)
-        } else {
-            self.display_value_at((x, y).into()).ok().cloned()
-        }
-    }
-
-    /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).
-    /// A spill or error returns `None`. Note: this assumes a [`CellValue::Code`] exists at the location.
-    pub fn cell_value_ref_at(&self, x: u32, y: u32) -> Option<&CellValue> {
-        if self.has_spill() || self.has_error() {
-            None
-        } else {
-            self.display_value_at((x, y).into()).ok()
-        }
-    }
-
     /// Returns the cell value at a relative location (0-indexed) into the code
     /// run output, for use when a formula references a cell.
     pub fn get_cell_for_formula(&self, x: u32, y: u32) -> CellValue {
@@ -593,7 +588,17 @@ impl DataTable {
                     CellValue::Html(_) => CellValue::Blank,
                     _ => v.clone(),
                 },
-                Value::Array(a) => a.get(x, y).cloned().unwrap_or(CellValue::Blank),
+                Value::Array(a) => match a.get(x, y).ok() {
+                    Some(CellValue::Code(_)) => self
+                        .tables
+                        .as_ref()
+                        .and_then(|tables| tables.get_at(&(x as i64, y as i64).into()))
+                        .and_then(|table| table.value.get(0, 0).ok())
+                        .unwrap_or(&CellValue::Blank)
+                        .to_owned(),
+                    Some(v) => v.to_owned(),
+                    None => CellValue::Blank,
+                },
                 Value::Tuple(_) => CellValue::Error(Box::new(
                     // should never happen
                     RunErrorMsg::InternalError("tuple saved as code run result".into())
@@ -606,24 +611,24 @@ impl DataTable {
     /// Sets the cell value at a relative location (0-indexed) into the code.
     /// Returns `false` if the value cannot be set.
     pub fn set_cell_value_at(&mut self, x: u32, y: u32, value: CellValue) -> bool {
-        if !self.has_spill() && !self.has_error() {
-            match self.value {
-                Value::Single(_) => {
-                    self.value = Value::Single(value);
-                }
-                Value::Array(ref mut a) => {
-                    if let Err(error) = a.set(x, y, value, true) {
-                        dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
-                        return false;
-                    }
-                }
-                Value::Tuple(_) => {}
-            }
-
-            return true;
+        if self.has_spill() || self.has_error() {
+            return false;
         }
 
-        false
+        match self.value {
+            Value::Single(_) => {
+                self.value = Value::Single(value);
+            }
+            Value::Array(ref mut a) => {
+                if let Err(error) = a.set(x, y, value, true) {
+                    dbgjs!(format!("Unable to set cell value at ({x}, {y}): {error}"));
+                    return false;
+                }
+            }
+            Value::Tuple(_) => {}
+        }
+
+        true
     }
 
     /// Returns the size of the output array, or defaults to `_1X1` (since
@@ -827,6 +832,16 @@ impl DataTable {
         }
 
         rows
+    }
+
+    /// Returns a mutable reference to the cell value at Pos. This should be
+    /// used carefully, as it allows the cell value to be modified in place.
+    pub fn get_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
+        match &mut self.value {
+            Value::Array(a) => a.get_mut(&pos),
+            Value::Single(v) => Some(v),
+            Value::Tuple(_) => None,
+        }
     }
 }
 

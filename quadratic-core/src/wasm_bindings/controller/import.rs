@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
-use wasm_bindgen::JsValue;
-use wasm_bindgen::prelude::wasm_bindgen;
+#[cfg(feature = "js")]
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::Pos;
 use crate::controller::GridController;
