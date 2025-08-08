@@ -32,6 +32,11 @@ async function handler(
   // Merge the new data with the old
   const existingClientDataKv = await getUserClientDataKv(userId);
   const mergedClientDataKv = { ...existingClientDataKv, ...newClientDataKv };
+  const checkMergedClientDataKv = UserClientDataKvSchema.safeParse(mergedClientDataKv);
+  if (!checkMergedClientDataKv.success) {
+    throw new ApiError(400, 'Client data KV corrupted', checkMergedClientDataKv.error);
+  }
+
   const updatedUser = await dbClient.user.update({
     where: { id: userId },
     data: { clientDataKv: mergedClientDataKv },

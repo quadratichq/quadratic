@@ -1,6 +1,6 @@
 import type { ResponseError } from '@sendgrid/mail';
 import type { Response } from 'express';
-import { type ApiTypes } from 'quadratic-shared/typesAndSchemas';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import dbClient from '../../dbClient';
 import { licenseClient } from '../../licenseClient';

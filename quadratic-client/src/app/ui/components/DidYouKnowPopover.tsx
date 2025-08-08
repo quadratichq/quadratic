@@ -1,20 +1,16 @@
 import { ArrowSouthIcon, CloseIcon, LightedBulbIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Popover, PopoverAnchor, PopoverContent } from '@/shared/shadcn/ui/popover';
+import { memo } from 'react';
 
-export function DidYouKnowPopover({
-  children,
-  description,
-  open,
-  setOpen,
-  title,
-}: {
+interface DidYouKnowPopoverProps {
   children: React.ReactNode;
   description: string;
   open: boolean;
   setOpen: (open: boolean) => void;
   title: string;
-}) {
+}
+export const DidYouKnowPopover = memo(({ children, description, open, setOpen, title }: DidYouKnowPopoverProps) => {
   // TODO: as we begin to use this component elsewhere, we'll likely need a
   // a prop to indicate on which side we want to show the arrow.
   return (
@@ -32,4 +28,4 @@ export function DidYouKnowPopover({
       </PopoverContent>
     </Popover>
   );
-}
+});

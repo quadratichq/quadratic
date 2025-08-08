@@ -1,11 +1,9 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
+import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
 import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
 import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
-import { apiClient } from '@/shared/api/apiClient';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
-import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
-import useLocalStorage from '@/shared/hooks/useLocalStorage';
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -22,7 +20,7 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
-import { memo, useCallback, useEffect, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import { useRecoilValue } from 'recoil';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
@@ -113,31 +111,14 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [selectedModelMode]
   );
 
-  // "Did you know?" popover for the model picker
-  // 1. Get the initial state from the server
-  // 2. Save the initial state in local storage
-  // 3. If the state changes from false to true, update localstorage and the server
-  // We do it this way because the client state is not being synced with the
-  // server state through the router.
-  // So we keep track of it ourselves and then if the page is ever reloaded,
-  // we'll get the freshest state.
-  const {
-    userMakingRequest: { clientDataKv },
-  } = useFileRouteLoaderData();
-  const initialKnowsAboutModelPicker = Boolean(clientDataKv?.knowsAboutModelPicker);
-  const [knowsAboutModelPicker, setKnowsAboutModelPicker] = useLocalStorage(
-    'knowsAboutModelPicker',
-    initialKnowsAboutModelPicker
-  );
-  useEffect(() => {
-    if (initialKnowsAboutModelPicker === false && knowsAboutModelPicker) {
-      apiClient.user.clientDataKv.update({ knowsAboutModelPicker: true });
-    }
-  }, [initialKnowsAboutModelPicker, knowsAboutModelPicker]);
+  const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
   const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
   // If they've already seen the popover, don't show it.
   // Otherwise, only show it to them when they've used the AI a bit.
-  const isOpenDidYouKnowDialog = knowsAboutModelPicker ? false : userMessagesCount > 4;
+  const isOpenDidYouKnowDialog = useMemo(
+    () => (knowsAboutModelPicker ? false : userMessagesCount > 4),
+    [knowsAboutModelPicker, userMessagesCount]
+  );
 
   return (
     <>
@@ -203,7 +184,7 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
         </DropdownMenu>
       ) : (
         <DidYouKnowPopover
-          open={isOpenDidYouKnowDialog}
+          open={!loading && isOpenDidYouKnowDialog}
           setOpen={() => setKnowsAboutModelPicker(true)}
           title="AI model choices"
           description="Fast is our fastest model available. Max is much slower but offers the most intelligence."
