@@ -67,31 +67,27 @@ impl ValidationDateTime {
                 DateTimeRange::DateEqual(equal) => equal.contains(&date),
                 DateTimeRange::DateNotEqual(not_equal) => not_equal.iter().all(|v| date != *v),
                 DateTimeRange::DateRange(min, max) => {
-                    if let Some(min) = min.as_ref() {
-                        if date < *min {
+                    if let Some(min) = min.as_ref()
+                        && date < *min {
                             return false;
                         }
-                    }
-                    if let Some(max) = max.as_ref() {
-                        if date > *max {
+                    if let Some(max) = max.as_ref()
+                        && date > *max {
                             return false;
                         }
-                    }
                     true
                 }
 
                 DateTimeRange::TimeEqual(equal) => equal.contains(&time),
                 DateTimeRange::TimeRange(min, max) => {
-                    if let Some(min) = min.as_ref() {
-                        if time < *min {
+                    if let Some(min) = min.as_ref()
+                        && time < *min {
                             return false;
                         }
-                    }
-                    if let Some(max) = max.as_ref() {
-                        if time > *max {
+                    if let Some(max) = max.as_ref()
+                        && time > *max {
                             return false;
                         }
-                    }
                     true
                 }
                 DateTimeRange::TimeNotEqual(not_equal) => not_equal.iter().all(|v| time != *v),

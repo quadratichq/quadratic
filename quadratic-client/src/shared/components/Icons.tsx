@@ -707,6 +707,18 @@ export const ArrowDoubleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_down</Icon>;
 };
 
+export const ArrowSouthIcon: IconComponent = (props) => {
+  return <Icon {...props}>south</Icon>;
+};
+
+export const LightedBulbIcon: IconComponent = (props) => {
+  return (
+    <Icon {...props} className={cn(props.className, 'rotate-180')}>
+      wb_incandescent
+    </Icon>
+  );
+};
+
 export const SheetComeFromIcon: IconComponent = (props) => {
   return <Icon {...props}>step_out</Icon>;
 };

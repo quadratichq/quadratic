@@ -433,11 +433,10 @@ impl DataTable {
         }
 
         // Check if table name already exists
-        if let Some(table) = a1_context.table_map.try_table(name) {
-            if table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into() {
+        if let Some(table) = a1_context.table_map.try_table(name)
+            && (table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()) {
                 return Err("Table name must be unique".to_string());
             }
-        }
 
         std::result::Result::Ok(true)
     }

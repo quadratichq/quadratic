@@ -18,7 +18,7 @@ import type { JsUpdateCodeCell } from '@/app/quadratic-core-types';
 import { useUpdateCodeEditor } from '@/app/ui/menus/CodeEditor/hooks/useUpdateCodeEditor';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { memo, useEffect, useMemo } from 'react';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
@@ -103,7 +103,7 @@ export const CodeEditorEffects = memo(() => {
   }, [setCodeEditorState, setShowCellTypeMenu, setShowSaveChangesAlert, unsavedChanges, waitingForEditorClose]);
 
   useEffect(() => {
-    mixpanel.track('[CodeEditor].opened', { type: language });
+    trackEvent('[CodeEditor].opened', { type: language });
     multiplayer.sendCellEdit({ text: '', cursor: 0, codeEditor: true, inlineCodeEditor: false });
   }, [language]);
 

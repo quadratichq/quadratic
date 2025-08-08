@@ -3,7 +3,7 @@ import path from 'node:path';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
-import { getOpenAIApiArgs } from '../helpers/openai.helper';
+import { getOpenAIChatCompletionsApiArgs } from './openai.chatCompletions.helper';
 
 export const createFileForFineTuning = (
   modelKey: AIModelKey,
@@ -16,7 +16,7 @@ export const createFileForFineTuning = (
   const copyResponse = { ...parsedResponse.responseMessage };
   copyArgs.messages.push({ ...copyResponse });
   const aiModelMode = MODELS_CONFIGURATION[modelKey].mode;
-  const { messages, tools } = getOpenAIApiArgs(copyArgs, aiModelMode, true, true);
+  const { messages, tools } = getOpenAIChatCompletionsApiArgs(copyArgs, aiModelMode, true, true);
   const fineTuningInput = {
     messages,
     ...(tools ? { tools } : {}),

@@ -34,8 +34,8 @@ impl GridController {
         ];
 
         // change the code cell name if it is provided and the code cell doesn't already have a name
-        if let Some(code_cell_name) = code_cell_name {
-            if self.data_table_at(sheet_pos).is_none() {
+        if let Some(code_cell_name) = code_cell_name
+            && self.data_table_at(sheet_pos).is_none() {
                 ops.push(Operation::DataTableOptionMeta {
                     sheet_pos,
                     name: Some(code_cell_name),
@@ -45,7 +45,6 @@ impl GridController {
                     show_columns: None,
                 });
             }
-        }
 
         ops
     }

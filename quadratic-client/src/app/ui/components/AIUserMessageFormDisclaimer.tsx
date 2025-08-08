@@ -11,7 +11,7 @@ export const AIUserMessageFormDisclaimer = memo(() => {
   const teamUuid = useRecoilValue(editorInteractionStateTeamUuidAtom);
   const teamSettings = useRecoilValue(editorInteractionStateSettingsAtom);
   return (
-    <p className="py-0.5 text-center text-xs text-muted-foreground">
+    <p className="select-none py-0.5 text-center text-xs text-muted-foreground">
       {teamSettings.analyticsAi
         ? 'Your data can be used to improve Quadratic. '
         : 'Some sheet data is sent to the AI model. '}

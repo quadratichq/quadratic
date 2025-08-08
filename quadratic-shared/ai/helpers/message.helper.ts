@@ -2,12 +2,14 @@ import type {
   AIMessagePrompt,
   AIModelKey,
   AIResponseContent,
+  AIResponseThinkingContent,
   ChatMessage,
   Content,
   GoogleSearchContent,
   GoogleSearchGroundingMetadata,
   ImageContent,
   InternalMessage,
+  OpenAIReasoningContent,
   PdfFileContent,
   SystemMessage,
   TextContent,
@@ -145,6 +147,20 @@ export const isInternalMessage = (message: ChatMessage): message is InternalMess
 
 export const isContentText = (content: Content[number] | AIResponseContent[number]): content is TextContent => {
   return content.type === 'text';
+};
+
+export const isContentThinking = (
+  content: Content[number] | AIResponseContent[number]
+): content is AIResponseThinkingContent => {
+  return ['anthropic_thinking', 'google_thinking', 'openai_reasoning_summary', 'openai_reasoning_content'].includes(
+    content.type
+  );
+};
+
+export const isContentOpenAIReasoning = (
+  content: Content[number] | AIResponseContent[number]
+): content is OpenAIReasoningContent => {
+  return ['openai_reasoning_summary', 'openai_reasoning_content'].includes(content.type);
 };
 
 export const isContentImage = (content: Content[number] | AIResponseContent[number]): content is ImageContent => {

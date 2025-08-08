@@ -2,8 +2,8 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { updateRecentFiles } from '@/shared/utils/updateRecentFiles';
-import mixpanel from 'mixpanel-browser';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router';
 import { useSetRecoilState } from 'recoil';
@@ -41,7 +41,7 @@ export const FileProvider = ({ children }: { children: React.ReactElement }) => 
 
   const renameFile: FileContextType['renameFile'] = useCallback(
     (newName) => {
-      mixpanel.track('[Files].renameCurrentFile', { newFilename: newName });
+      trackEvent('[Files].renameCurrentFile', { newFilename: newName });
       setName(newName);
     },
     [setName]

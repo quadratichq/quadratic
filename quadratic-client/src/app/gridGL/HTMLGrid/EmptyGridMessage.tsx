@@ -11,7 +11,7 @@ import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { Button } from '@/shared/shadcn/ui/button';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback, useEffect, useState } from 'react';
 import { isMobile } from 'react-device-detect';
 import { useSetRecoilState } from 'recoil';
@@ -42,12 +42,12 @@ export function EmptyGridMessage() {
   }, [open]);
 
   const handleImportFile = useCallback(() => {
-    mixpanel.track('[EmptyGridMessage].importFile');
+    trackEvent('[EmptyGridMessage].importFile');
     insertActionsSpec[Action.InsertFile].run();
   }, []);
 
   const handleShowConnection = useCallback(() => {
-    mixpanel.track('[EmptyGridMessage].showConnection');
+    trackEvent('[EmptyGridMessage].showConnection');
     const { x, y } = sheets.sheet.cursor.position;
     setCodeEditorCodeCell((prev) => ({
       ...prev,
@@ -58,7 +58,7 @@ export function EmptyGridMessage() {
   }, [setCodeEditorCodeCell, setShowConnectionsMenu]);
 
   const handleUseConnection = useCallback(() => {
-    mixpanel.track('[EmptyGridMessage].useConnection');
+    trackEvent('[EmptyGridMessage].useConnection');
     const { x, y } = sheets.sheet.cursor.position;
     setCodeEditorCodeCell((prev) => ({
       ...prev,

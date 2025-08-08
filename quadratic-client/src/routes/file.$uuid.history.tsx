@@ -11,8 +11,8 @@ import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadin
 import { Button } from '@/shared/shadcn/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { useCallback, useMemo, useState } from 'react';
 import {
@@ -78,7 +78,7 @@ export const Component = () => {
   const handleDuplicateVersion = useCallback(() => {
     if (!activeCheckpoint || !teamUuid) return;
 
-    mixpanel.track('[FileVersionHistory].duplicateVersion', {
+    trackEvent('[FileVersionHistory].duplicateVersion', {
       uuid,
       checkpointId: activeCheckpoint.id,
     });
@@ -97,7 +97,7 @@ export const Component = () => {
   const handleDownload = useCallback(() => {
     if (!activeCheckpoint) return;
 
-    mixpanel.track('[FileVersionHistory].downloadVersion', {
+    trackEvent('[FileVersionHistory].downloadVersion', {
       uuid,
       checkpointId: activeCheckpoint.id,
     });

@@ -7,7 +7,7 @@ import type {
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient } from '@/auth/auth';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 class JavascriptWebWorker {
   state: LanguageState = 'loading';
@@ -59,7 +59,7 @@ class JavascriptWebWorker {
   }
 
   cancelExecution = () => {
-    mixpanel.track('[JavascriptWebWorker].restartFromUser');
+    trackEvent('[JavascriptWebWorker].restartFromUser');
     this.initWorker();
     quadraticCore.sendCancelExecution('Javascript');
     events.emit('javascriptState', 'ready');
