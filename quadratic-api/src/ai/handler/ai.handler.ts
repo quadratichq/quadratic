@@ -180,13 +180,13 @@ export const handleAIRequest = async (
     if (ENVIRONMENT === 'production' && ['AIAnalyst', 'AIAssistant'].includes(args.source)) {
       const options = getModelOptions(modelKey, args);
 
-      const backupModel = options.thinking
+      const backupModelKey = options.thinking
         ? DEFAULT_BACKUP_MODEL_THINKING
-        : (MODELS_CONFIGURATION[modelKey].backupModel ?? DEFAULT_BACKUP_MODEL);
+        : (MODELS_CONFIGURATION[modelKey].backupModelKey ?? DEFAULT_BACKUP_MODEL);
 
       // thinking backup model
-      if (modelKey !== backupModel) {
-        return handleAIRequest(backupModel, args, isOnPaidPlan, exceededBillingLimit, response);
+      if (modelKey !== backupModelKey) {
+        return handleAIRequest(backupModelKey, args, isOnPaidPlan, exceededBillingLimit, response);
       }
     }
 

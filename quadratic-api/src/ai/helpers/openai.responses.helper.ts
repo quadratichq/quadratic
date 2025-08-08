@@ -86,7 +86,7 @@ export function getOpenAIResponsesApiArgs(
     if (isInternalMessage(message)) {
       return acc;
     } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
-      let reasoningItems: ResponseReasoningItem[] = [];
+      const reasoningItems: ResponseReasoningItem[] = [];
       const openaiMessages: ResponseOutputItem[] = [
         {
           role: message.role,
