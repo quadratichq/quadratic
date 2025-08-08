@@ -65,6 +65,8 @@ export const defaultAIAnalystState: AIAnalystState = {
   delaySeconds: 0,
 };
 
+export let aiAnalystInitialized = false;
+
 export const aiAnalystAtom = atom<AIAnalystState>({
   key: 'aiAnalystAtom',
   default: defaultAIAnalystState,
@@ -80,21 +82,32 @@ export const aiAnalystAtom = atom<AIAnalystState>({
         const user = getLoadable(editorInteractionStateUserAtom).getValue();
         const fileUuid = getLoadable(editorInteractionStateFileUuidAtom).getValue();
         if (!!user?.email && fileUuid) {
-          try {
-            aiAnalystOfflineChats.init(user.email, fileUuid).then(() => {
+          aiAnalystOfflineChats
+            .init(user.email, fileUuid)
+            .then(() =>
               aiAnalystOfflineChats.loadChats().then((chats) => {
                 setSelf({
                   ...defaultAIAnalystState,
                   showAIAnalyst,
                   chats,
                 });
-              });
+              })
+            )
+            .then(() => {
+              aiAnalystInitialized = true;
+              events.emit('aiAnalystInitialized');
+            })
+            .catch((error) => {
+              console.error('[AIAnalystOfflineChats]: ', error);
+            })
+            .finally(() => {
+              aiAnalystInitialized = true;
+              events.emit('aiAnalystInitialized');
             });
-          } catch (error) {
-            console.error('[AIAnalystOfflineChats]: ', error);
-          }
+        } else {
+          aiAnalystInitialized = true;
+          events.emit('aiAnalystInitialized');
         }
-        events.emit('aiAnalystInitialized');
       }
     },
     ({ onSet }) => {
