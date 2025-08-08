@@ -68,8 +68,7 @@ impl GridController {
                 if let Some(code_cell_value) = sheet
                     .cell_value_multi_mut(*multi_pos)
                     .and_then(|cv| cv.code_cell_value_mut())
-                {
-                    if let Some(sheet_pos) = sheet_pos {
+                    && let Some(sheet_pos) = sheet_pos {
                         code_cell_value.replace_table_name_in_cell_references(
                             &context,
                             sheet_pos.sheet_id,
@@ -77,7 +76,6 @@ impl GridController {
                             &unique_name,
                         );
                     }
-                }
             }
         }
 

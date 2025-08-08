@@ -424,21 +424,20 @@ impl SheetDataTables {
                     }
 
                     // Add code runs from sub-tables if enabled
-                    if include_child_code_runs {
-                        if let Some(sub_tables) = data_table.tables.as_ref() {
-                            sub_tables
-                                .get_code_runs_in_rect(
-                                    rect.translate(-data_table_pos.x, -data_table_pos.y),
-                                    sheet_id,
-                                    ignore_spill_error,
-                                    include_child_code_runs,
-                                    Some(data_table_pos),
-                                )
-                                .for_each(|(sub_index, sub_table_pos, sub_code_run)| {
-                                    results.push((sub_index, sub_table_pos, sub_code_run));
-                                });
-                        };
-                    }
+                    if include_child_code_runs && let Some(sub_tables) = data_table.tables.as_ref()
+                    {
+                        sub_tables
+                            .get_code_runs_in_rect(
+                                rect.translate(-data_table_pos.x, -data_table_pos.y),
+                                sheet_id,
+                                ignore_spill_error,
+                                include_child_code_runs,
+                                Some(data_table_pos),
+                            )
+                            .for_each(|(sub_index, sub_table_pos, sub_code_run)| {
+                                results.push((sub_index, sub_table_pos, sub_code_run));
+                            });
+                    };
                 }
 
                 results.into_iter()

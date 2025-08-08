@@ -132,17 +132,18 @@ impl SheetDataTablesCache {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
                             context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                            && table.language != CodeCellLanguage::Import {
-                                return true;
-                            }
+                            && table.language != CodeCellLanguage::Import
+                        {
+                            return true;
+                        }
                     }
                 }
 
                 // check in-table code tables
-                if let Some(tables) = &self.in_table_code {
-                    if tables.has_code_in_rect(rect) {
-                        return true;
-                    }
+                if let Some(tables) = &self.in_table_code
+                    && tables.has_code_in_rect(rect)
+                {
+                    return true;
                 }
             }
         }

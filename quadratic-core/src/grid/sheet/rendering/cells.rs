@@ -152,16 +152,15 @@ impl Sheet {
 
                         if let Some(mut value) = value {
                             // converts inner code values to display values
-                            if value.is_code() {
-                                if let Some(inner_value) = self
+                            if value.is_code()
+                                && let Some(inner_value) = self
                                     .display_pos_to_table_pos((x, y).into())
                                     .and_then(|table_pos| {
                                         self.data_table_multi_pos(&MultiPos::TablePos(table_pos))
                                     })
                                     .and_then(|sub_table| sub_table.display_value_at((0, 0).into()))
-                                {
-                                    value = inner_value.clone();
-                                }
+                            {
+                                value = inner_value.clone();
                             }
 
                             let mut format = if is_header {

@@ -134,16 +134,18 @@ impl Sheet {
                     render_code_cells.push(code_cell);
                 }
 
-                if data_table.is_data_table() {
-                    if let Some(tables) = &data_table.tables {
-                        tables.expensive_iter().for_each(|(sub_table_pos, _)| {
-                            if let Some(code_cell) = self.get_render_code_cell(
-                                MultiPos::new_table_pos(self.id, data_table_pos, *sub_table_pos),
-                            ) {
-                                render_code_cells.push(code_cell);
-                            }
-                        });
-                    }
+                if data_table.is_data_table()
+                    && let Some(tables) = &data_table.tables
+                {
+                    tables.expensive_iter().for_each(|(sub_table_pos, _)| {
+                        if let Some(code_cell) = self.get_render_code_cell(MultiPos::new_table_pos(
+                            self.id,
+                            data_table_pos,
+                            *sub_table_pos,
+                        )) {
+                            render_code_cells.push(code_cell);
+                        }
+                    });
                 }
 
                 render_code_cells

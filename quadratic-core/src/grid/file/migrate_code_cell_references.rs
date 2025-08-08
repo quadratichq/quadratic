@@ -91,8 +91,8 @@ pub fn replace_formula_rc_references_to_a1(grid: &mut Grid) {
                     continue;
                 }
                 for y in bounds.y_range() {
-                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
-                        if code_cell.language == CodeCellLanguage::Formula {
+                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
+                        && code_cell.language == CodeCellLanguage::Formula {
                             code_cell.code = migration_convert_rc_to_a1(
                                 &code_cell.code,
                                 &a1_context,
@@ -100,7 +100,6 @@ pub fn replace_formula_rc_references_to_a1(grid: &mut Grid) {
                                 (x, y).into(),
                             );
                         }
-                    }
                 }
             }
         }
@@ -165,14 +164,14 @@ impl SheetCellRefRange {
         a1_context: &A1Context,
         base_pos: Pos,
     ) -> String {
-        if self.needs_sheet_name(default_sheet_id) {
-            if let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
-                return format!(
-                    "{}!{}",
-                    quote_sheet_name(sheet_name),
-                    self.cells.migration_to_rc_string(base_pos),
-                );
-            }
+        if self.needs_sheet_name(default_sheet_id)
+            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id)
+        {
+            return format!(
+                "{}!{}",
+                quote_sheet_name(sheet_name),
+                self.cells.migration_to_rc_string(base_pos),
+            );
         }
         self.cells.migration_to_rc_string(base_pos)
     }
