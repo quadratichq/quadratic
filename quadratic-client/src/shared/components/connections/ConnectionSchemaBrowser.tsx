@@ -34,7 +34,7 @@ export const ConnectionSchemaBrowser = ({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredTablesWithIndex = useMemo(() => {
-    if (!data) return [] as Array<{ table: Table; index: number }>;
+    if (!data) return [];
     const query = filterQuery.trim().toLowerCase();
     const withIndex = data.tables.map((t, i) => ({ table: t, index: i }));
     if (!query) return withIndex;
