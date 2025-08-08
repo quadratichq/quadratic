@@ -43,7 +43,8 @@ import {
 import { handleAnthropicRequest } from './anthropic.handler';
 import { handleBedrockRequest } from './bedrock.handler';
 import { handleGenAIRequest } from './genai.handler';
-import { handleOpenAIRequest } from './openai.handler';
+import { handleOpenAIChatCompletionsRequest } from './openai.chatCompletions.handler';
+import { handleOpenAIResponsesRequest } from './openai.responses.handler';
 
 export const handleAIRequest = async (
   modelKey: AIModelKey,
@@ -83,9 +84,16 @@ export const handleAIRequest = async (
         response
       );
     } else if (isOpenAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, openai, response);
+      parsedResponse = await handleOpenAIResponsesRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        openai,
+        response
+      );
     } else if (isAzureOpenAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest(
         modelKey,
         args,
         isOnPaidPlan,
@@ -94,11 +102,25 @@ export const handleAIRequest = async (
         response
       );
     } else if (isXAIModel(modelKey)) {
-      parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, xai, response);
+      parsedResponse = await handleOpenAIChatCompletionsRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        xai,
+        response
+      );
     } else if (isBasetenModel(modelKey)) {
-      parsedResponse = await handleOpenAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, baseten, response);
+      parsedResponse = await handleOpenAIChatCompletionsRequest(
+        modelKey,
+        args,
+        isOnPaidPlan,
+        exceededBillingLimit,
+        baseten,
+        response
+      );
     } else if (isFireworksModel(modelKey)) {
-      parsedResponse = await handleOpenAIRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest(
         modelKey,
         args,
         isOnPaidPlan,
@@ -107,7 +129,7 @@ export const handleAIRequest = async (
         response
       );
     } else if (isOpenRouterModel(modelKey)) {
-      parsedResponse = await handleOpenAIRequest(
+      parsedResponse = await handleOpenAIChatCompletionsRequest(
         modelKey,
         args,
         isOnPaidPlan,
@@ -170,7 +192,20 @@ export const handleAIRequest = async (
 
     const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
       role: 'assistant',
-      content: [{ type: 'text', text: JSON.stringify(error) }],
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify(
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack,
+                }
+              : error
+          ),
+        },
+      ],
       contextType: 'userPrompt',
       toolCalls: [],
       modelKey,

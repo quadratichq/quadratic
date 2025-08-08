@@ -32,6 +32,7 @@ import {
   getLastAIPromptMessageIndex,
   getUserPromptMessages,
   isContentGoogleSearchInternal,
+  isContentThinking,
   isInternalMessage,
   isToolResultMessage,
   isUserPromptMessage,
@@ -238,7 +239,7 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' || item.type === 'google_thinking' ? (
+                  isContentThinking(item) ? (
                     <ThinkingBlock
                       key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}

@@ -344,28 +344,44 @@ const AIMessageInternalSchema = z.object({
   contextType: InternalContextTypeSchema,
 });
 
-const AIResponseContentSchema = z.array(
-  TextContentSchema.or(
+const OpenAIReasoningContentSchema = z
+  .object({
+    type: z.literal('openai_reasoning_summary'),
+    text: z.string().transform((val) => val.trim()),
+    id: z.string(),
+  })
+  .or(
     z.object({
-      type: z.literal('anthropic_thinking'),
+      type: z.literal('openai_reasoning_content'),
       text: z.string().transform((val) => val.trim()),
-      signature: z.string(),
+      id: z.string(),
+    })
+  );
+export type OpenAIReasoningContent = z.infer<typeof OpenAIReasoningContentSchema>;
+
+const AIResponseThinkingContentSchema = z
+  .object({
+    type: z.literal('anthropic_thinking'),
+    text: z.string().transform((val) => val.trim()),
+    signature: z.string(),
+  })
+  .or(
+    z.object({
+      type: z.literal('anthropic_redacted_thinking'),
+      text: z.string().transform((val) => val.trim()),
     })
   )
-    .or(
-      z.object({
-        type: z.literal('anthropic_redacted_thinking'),
-        text: z.string().transform((val) => val.trim()),
-      })
-    )
-    .or(GoogleSearchGroundingMetadataSchema)
-    .or(
-      z.object({
-        type: z.literal('google_thinking'),
-        text: z.string().transform((val) => val.trim()),
-      })
-    )
-);
+  .or(GoogleSearchGroundingMetadataSchema)
+  .or(
+    z.object({
+      type: z.literal('google_thinking'),
+      text: z.string().transform((val) => val.trim()),
+    })
+  )
+  .or(OpenAIReasoningContentSchema);
+export type AIResponseThinkingContent = z.infer<typeof AIResponseThinkingContentSchema>;
+
+const AIResponseContentSchema = z.array(TextContentSchema.or(AIResponseThinkingContentSchema));
 export type AIResponseContent = z.infer<typeof AIResponseContentSchema>;
 
 const AIToolCallSchema = z.object({
@@ -392,6 +408,7 @@ export const AIMessagePromptSchema = z.preprocess(
     contextType: UserPromptContextTypeSchema,
     toolCalls: z.array(AIToolCallSchema),
     modelKey: z.string(),
+    id: z.string().optional(),
   })
 );
 export type AIMessagePrompt = z.infer<typeof AIMessagePromptSchema>;
