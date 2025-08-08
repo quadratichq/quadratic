@@ -852,7 +852,7 @@ Code cell (Python and Javascript) placement instructions:\n
   },
   [AITool.GetDatabaseSchemas]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Retrieves detailed database table schemas including column names, data types, and constraints.\n
 Use this tool when you need detailed column information beyond the table names already available in context.\n
@@ -891,7 +891,7 @@ The tool returns comprehensive schema information including column names, data t
   },
   [AITool.SetSQLCodeCellValue]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'basic', 'pro'],
+    aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
 Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
