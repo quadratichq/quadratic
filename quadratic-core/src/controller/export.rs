@@ -149,42 +149,38 @@ impl GridController {
                         let mut is_formula_output = false;
 
                         // data table output
-                        if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos) {
-                            if let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos) {
-                                let is_formula =
-                                    code_cell_value.language == CodeCellLanguage::Formula;
+                        if let Some((_pos, data_table)) = sheet.data_tables.get_contains(pos)
+                            && let Some(CellValue::Code(code_cell_value)) = sheet.cell_value(pos)
+                        {
+                            let is_formula = code_cell_value.language == CodeCellLanguage::Formula;
 
-                                is_formula_output =
-                                    data_table.get_language() == CodeCellLanguage::Formula;
+                            is_formula_output =
+                                data_table.get_language() == CodeCellLanguage::Formula;
 
-                                // we currently only care about formulas
-                                // skip spill and error formulas
-                                if is_formula && !data_table.has_spill() && !data_table.has_error()
-                                {
-                                    let code = code_cell_value.code.as_str();
-                                    let display_value = data_table.display_value(false)?;
+                            // we currently only care about formulas
+                            // skip spill and error formulas
+                            if is_formula && !data_table.has_spill() && !data_table.has_error() {
+                                let code = code_cell_value.code.as_str();
+                                let display_value = data_table.display_value(false)?;
 
-                                    match display_value {
-                                        Value::Single(value) => {
-                                            worksheet
-                                                .write_formula(row, col, code)
-                                                .map_err(error)?
-                                                .set_formula_result(row, col, value.to_string());
-                                        }
-                                        Value::Array(array) => {
-                                            let size = array.size();
-                                            let last_row = row + size.h.get() - 1;
-                                            let last_col = col + size.w.get() as u16 - 1;
-
-                                            worksheet
-                                                .write_array_formula(
-                                                    row, col, last_row, last_col, code,
-                                                )
-                                                .map_err(error)?;
-                                        }
-                                        // we don't expect tuples
-                                        _ => bail!("Unexpected value type"),
+                                match display_value {
+                                    Value::Single(value) => {
+                                        worksheet
+                                            .write_formula(row, col, code)
+                                            .map_err(error)?
+                                            .set_formula_result(row, col, value.to_string());
                                     }
+                                    Value::Array(array) => {
+                                        let size = array.size();
+                                        let last_row = row + size.h.get() - 1;
+                                        let last_col = col + size.w.get() as u16 - 1;
+
+                                        worksheet
+                                            .write_array_formula(row, col, last_row, last_col, code)
+                                            .map_err(error)?;
+                                    }
+                                    // we don't expect tuples
+                                    _ => bail!("Unexpected value type"),
                                 }
                             }
                         }
@@ -269,17 +265,17 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
         format = format.set_font_strikethrough();
     }
 
-    if let Some(text_color) = cell_format.text_color {
-        if let Ok(color) = Rgba::try_from(text_color.as_str()) {
-            format = format.set_font_color(color.as_rgb_hex().as_str());
-        }
+    if let Some(text_color) = cell_format.text_color
+        && let Ok(color) = Rgba::try_from(text_color.as_str())
+    {
+        format = format.set_font_color(color.as_rgb_hex().as_str());
     }
 
-    if let Some(fill_color) = cell_format.fill_color {
-        if let Ok(color) = Rgba::try_from(fill_color.as_str()) {
-            format = format.set_pattern(FormatPattern::Solid);
-            format = format.set_background_color(color.as_rgb_hex().as_str());
-        }
+    if let Some(fill_color) = cell_format.fill_color
+        && let Ok(color) = Rgba::try_from(fill_color.as_str())
+    {
+        format = format.set_pattern(FormatPattern::Solid);
+        format = format.set_background_color(color.as_rgb_hex().as_str());
     }
 
     if let Some(align) = cell_format.align {
@@ -316,10 +312,10 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
     }
 
     // this needs to be before the numeric decimals
-    if let Some(numeric_commas) = cell_format.numeric_commas {
-        if numeric_commas {
-            num_format = "#,##0".to_string();
-        }
+    if let Some(numeric_commas) = cell_format.numeric_commas
+        && numeric_commas
+    {
+        num_format = "#,##0".to_string();
     }
 
     if let Some(numeric_decimals) = cell_format.numeric_decimals {
@@ -398,14 +394,13 @@ fn get_excel_formats(v: Option<&CellValue>, pos: Pos, sheet: &Sheet) -> Format {
 fn adjust_cell_value_for_excel(mut v: CellValue, pos: Pos, sheet: &Sheet) {
     let cell_format = sheet.cell_format(pos);
 
-    if let Some(numeric_format) = cell_format.numeric_format {
-        if numeric_format.kind == NumericFormatKind::Percentage {
-            if let CellValue::Number(n) = &mut v {
-                *n = n
-                    .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
-                    .unwrap_or(Decimal::ZERO);
-            }
-        }
+    if let Some(numeric_format) = cell_format.numeric_format
+        && numeric_format.kind == NumericFormatKind::Percentage
+        && let CellValue::Number(n) = &mut v
+    {
+        *n = n
+            .checked_div(Decimal::try_from(100.0_f64).unwrap_or(Decimal::ZERO))
+            .unwrap_or(Decimal::ZERO);
     }
 }
 
@@ -570,6 +565,7 @@ mod tests {
             pos.to_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
+            false,
         );
         assert_eq!(
             gc_1.sheet(sheet_id_1).cell_value(pos),
@@ -585,6 +581,7 @@ mod tests {
                 line: CellBorderLine::Line2,
             }),
             None,
+            false,
         );
 
         // Test that export succeeds
@@ -594,7 +591,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Check that the cell value is the same
@@ -621,6 +619,7 @@ mod tests {
             pos.to_sheet_pos(sheet_id_1),
             "Border Test".to_string(),
             None,
+            false,
         );
         assert_eq!(
             gc_1.sheet(sheet_id_1).cell_value(pos),
@@ -638,6 +637,7 @@ mod tests {
                         line: CellBorderLine::Line1,
                     }),
                     None,
+                    false,
                 );
             }
         }
@@ -649,7 +649,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Check that the cell value is the same
@@ -670,7 +671,8 @@ mod tests {
         let file = include_bytes!("../../test-files/styles.xlsx");
 
         let mut gc_1 = GridController::new_blank();
-        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_1 = gc_1.sheet_ids()[0];
 
         // Test that export succeeds
@@ -680,7 +682,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Check that the columns are the same
@@ -701,7 +704,8 @@ mod tests {
         let file = include_bytes!("../../test-files/borders.xlsx");
 
         let mut gc_1 = GridController::new_blank();
-        gc_1.import_excel(file.as_ref(), "test.xlsx", None).unwrap();
+        gc_1.import_excel(file.as_ref(), "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_1 = gc_1.sheet_ids()[0];
 
         // Test that export succeeds
@@ -711,7 +715,8 @@ mod tests {
 
         // Import the excel file into a new grid
         let mut gc_2 = GridController::new_blank();
-        gc_2.import_excel(&excel_data, "test.xlsx", None).unwrap();
+        gc_2.import_excel(&excel_data, "test.xlsx", None, false)
+            .unwrap();
         let sheet_id_2 = gc_2.sheet_ids()[0];
 
         // Compare the borders of the two sheets

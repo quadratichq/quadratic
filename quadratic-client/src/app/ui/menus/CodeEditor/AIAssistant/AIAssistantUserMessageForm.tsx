@@ -7,7 +7,7 @@ import {
 import type { AIUserMessageFormWrapperProps, SubmitPromptArgs } from '@/app/ui/components/AIUserMessageForm';
 import { AIUserMessageForm } from '@/app/ui/components/AIUserMessageForm';
 import { useSubmitAIAssistantPrompt } from '@/app/ui/menus/CodeEditor/hooks/useSubmitAIAssistantPrompt';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import { forwardRef, memo, useCallback } from 'react';
 import { useRecoilState, useRecoilValue } from 'recoil';
@@ -24,7 +24,7 @@ export const AIAssistantUserMessageForm = memo(
 
     const handleSubmit = useCallback(
       ({ content }: SubmitPromptArgs) => {
-        mixpanel.track('[AIAssistant].submitPrompt');
+        trackEvent('[AIAssistant].submitPrompt');
         submitPrompt({
           messageSource: 'User',
           content,

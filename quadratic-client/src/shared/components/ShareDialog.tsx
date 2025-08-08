@@ -20,6 +20,7 @@ import {
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import {
   Cross2Icon,
@@ -29,7 +30,6 @@ import {
   LockClosedIcon,
   PersonIcon,
 } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import type {
   ApiTypes,
   PublicLinkAccess,
@@ -460,7 +460,7 @@ function CopyLinkButton({
         disabled={disabled}
         className="flex-shrink-0"
         onClick={() => {
-          mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+          trackEvent('[FileSharing].publicLinkAccess.clickCopyLink');
           navigator.clipboard
             .writeText(url + getShareUrlParams())
             .then(() => {
@@ -478,7 +478,7 @@ function CopyLinkButton({
         disabled={disabled}
         className="flex-shrink-0"
         onClick={() => {
-          mixpanel.track('[FileSharing].publicLinkAccess.clickCopyLink');
+          trackEvent('[FileSharing].publicLinkAccess.clickCopyLink');
 
           // Copy the base file URL (which DOES NOT include the current sheet ID)
           // Can't copy the current location because this can be used on the dashboard

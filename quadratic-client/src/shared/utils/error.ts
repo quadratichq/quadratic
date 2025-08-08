@@ -1,5 +1,5 @@
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureException } from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
 
 export const sendAnalyticsError = (origin: string, from: string, error: Error | unknown, description?: string) => {
   console.error(error);
@@ -14,7 +14,7 @@ export const sendAnalyticsError = (origin: string, from: string, error: Error | 
           }
         : error
     );
-    mixpanel.track(`[${origin}].error`, {
+    trackEvent(`[${origin}].error`, {
       title: from,
       description,
       error: errorString,

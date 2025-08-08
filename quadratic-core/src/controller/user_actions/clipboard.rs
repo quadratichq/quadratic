@@ -40,8 +40,8 @@ impl GridController {
         let end_pos = rect.max;
 
         // first try html
-        if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html) {
-            if let Ok((ops, data_table_ops)) =
+        if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html)
+            && let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at, end_pos, selection, clipboard, special)
             {
                 self.start_user_ai_transaction(
@@ -62,7 +62,6 @@ impl GridController {
 
                 return;
             }
-        }
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(

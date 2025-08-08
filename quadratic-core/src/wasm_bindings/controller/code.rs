@@ -71,19 +71,18 @@ impl GridController {
         cursor: Option<String>,
         is_ai: bool,
     ) -> Option<String> {
-        if let Ok(pos) = serde_json::from_str::<Pos>(&pos) {
-            if let Ok(sheet_id) = SheetId::from_str(&sheet_id) {
-                if let Ok(language) = serde_wasm_bindgen::from_value(language) {
-                    return Some(self.set_code_cell(
-                        pos.to_sheet_pos(sheet_id),
-                        language,
-                        code_string,
-                        code_cell_name,
-                        cursor,
-                        is_ai,
-                    ));
-                }
-            }
+        if let Ok(pos) = serde_json::from_str::<Pos>(&pos)
+            && let Ok(sheet_id) = SheetId::from_str(&sheet_id)
+            && let Ok(language) = serde_wasm_bindgen::from_value(language)
+        {
+            return Some(self.set_code_cell(
+                pos.to_sheet_pos(sheet_id),
+                language,
+                code_string,
+                code_cell_name,
+                cursor,
+                is_ai,
+            ));
         }
         None
     }

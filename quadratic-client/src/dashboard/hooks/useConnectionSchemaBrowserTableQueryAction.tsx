@@ -2,7 +2,7 @@ import ConditionalWrapper from '@/app/ui/components/ConditionalWrapper';
 import { useSaveAndRunCell } from '@/app/ui/menus/CodeEditor/hooks/useSaveAndRunCell';
 import { newNewFileFromStateConnection } from '@/shared/hooks/useNewFileFromState';
 import { Button } from '@/shared/shadcn/ui/button';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type * as monaco from 'monaco-editor';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { Link } from 'react-router';
@@ -33,7 +33,7 @@ export const useConnectionSchemaBrowserTableQueryActionNewFile = ({
               to={to}
               reloadDocument
               onClick={() => {
-                mixpanel.track('[Connections].schemaViewer.newFileFromTable');
+                trackEvent('[Connections].schemaViewer.newFileFromTable');
               }}
             >
               {children}
@@ -64,7 +64,7 @@ export const useConnectionSchemaBrowserTableQueryActionInsertQuery = ({
           size="sm"
           disabled={query.length === 0}
           onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-            mixpanel.track('[Connections].schemaViewer.insertQuery');
+            trackEvent('[Connections].schemaViewer.insertQuery');
 
             if (editorInst) {
               const model = editorInst.getModel();

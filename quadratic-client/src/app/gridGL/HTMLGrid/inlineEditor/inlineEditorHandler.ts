@@ -20,8 +20,8 @@ import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer'
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { OPEN_SANS_FIX } from '@/app/web-workers/renderWebWorker/worker/cellsLabel/CellLabel';
 import { googleAnalyticsAvailable } from '@/shared/utils/analytics';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import BigNumber from 'bignumber.js';
-import mixpanel from 'mixpanel-browser';
 import { Rectangle } from 'pixi.js';
 
 class InlineEditorHandler {
@@ -518,7 +518,7 @@ class InlineEditorHandler {
           codeString: value.slice(1),
           isAi: false,
         });
-        mixpanel.track('[CodeEditor].cellRun', {
+        trackEvent('[CodeEditor].cellRun', {
           type: 'Formula',
           inline: true,
         });
