@@ -9,7 +9,7 @@ export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash
 
 // AI Analyst and AI Assistant chat models
 export const DEFAULT_MODEL: AIModelKey = 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct';
-export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'openai:gpt-5-mini-2025-08-07';
+export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct';
