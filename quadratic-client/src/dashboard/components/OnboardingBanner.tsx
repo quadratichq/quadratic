@@ -189,7 +189,7 @@ export function OnboardingBanner() {
       completed: users.length > 1 || invites.length > 0,
       content: (
         <>
-          <p>Invite a collaborator to Quadratic — it’s free.</p>
+          <p>Invite a collaborator to Quadratic.</p>
 
           <InviteForm teamUuid={teamUuid} />
           <p className="text-muted-foreground">
