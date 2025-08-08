@@ -1,5 +1,8 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
+import { useUserDataKv } from '@/app/ai/hooks/useUserDataKv';
+import { aiAnalystCurrentChatUserMessagesCountAtom } from '@/app/atoms/aiAnalystAtom';
 import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { DidYouKnowPopover } from '@/app/ui/components/DidYouKnowPopover';
 import { AIIcon, ArrowDropDownIcon, LightbulbIcon } from '@/shared/components/Icons';
 import {
   DropdownMenu,
@@ -18,13 +21,14 @@ import { CaretDownIcon } from '@radix-ui/react-icons';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import type { AIModelConfig, AIModelKey, ModelMode } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useMemo } from 'react';
+import { useRecoilValue } from 'recoil';
 
 const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   Exclude<ModelMode, 'disabled'>,
   { label: string; description: string }
 > = {
-  fast: { label: 'Fast', description: 'good for everyday tasks' },
-  max: { label: 'Max', description: 'smartest and most capable' },
+  fast: { label: 'Fast', description: 'Good for everyday tasks' },
+  max: { label: 'Max', description: 'Very slow, but most capable' },
 };
 
 interface SelectAIModelMenuProps {
@@ -107,6 +111,15 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
     [selectedModelMode]
   );
 
+  const { knowsAboutModelPicker, setKnowsAboutModelPicker } = useUserDataKv();
+  const userMessagesCount = useRecoilValue(aiAnalystCurrentChatUserMessagesCountAtom);
+  // If they've already seen the popover, don't show it.
+  // Otherwise, only show it to them when they've used the AI a bit.
+  const isOpenDidYouKnowDialog = useMemo(
+    () => (knowsAboutModelPicker ? false : userMessagesCount > 4),
+    [knowsAboutModelPicker, userMessagesCount]
+  );
+
   return (
     <>
       {canToggleThinking ? (
@@ -170,41 +183,54 @@ export const SelectAIModelMenu = memo(({ loading, textareaRef }: SelectAIModelMe
           </DropdownMenuContent>
         </DropdownMenu>
       ) : (
-        <Popover>
-          {/* Needs a min-width or it shifts as the popover closes */}
-          <PopoverTrigger className="group mr-1.5 flex min-w-24 items-center justify-end gap-0 text-right">
-            Model: {selectedModelLabel}
-            <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
-          </PopoverTrigger>
+        <DidYouKnowPopover
+          open={!loading && isOpenDidYouKnowDialog}
+          setOpen={() => setKnowsAboutModelPicker(true)}
+          title="AI model choices"
+          description="Fast is our fastest model available. Max is much slower but offers the most intelligence."
+        >
+          <Popover>
+            {/* Needs a min-width or it shifts as the popover closes */}
+            <PopoverTrigger
+              className="group mr-1.5 flex h-7 min-w-24 items-center justify-end gap-0 rounded-full text-right hover:text-foreground focus-visible:outline focus-visible:outline-primary"
+              onClick={() => {
+                setKnowsAboutModelPicker(true);
+              }}
+            >
+              Model: {selectedModelLabel}
+              <ArrowDropDownIcon className="group-[[aria-expanded=true]]:rotate-180" />
+            </PopoverTrigger>
 
-          <PopoverContent className="flex w-80 flex-col gap-2">
-            <div className="mt-2 flex flex-col items-center">
-              <AIIcon className="mb-2 text-primary" size="lg" />
+            <PopoverContent className="flex w-80 flex-col gap-2">
+              <div className="mt-2 flex flex-col items-center">
+                <AIIcon className="mb-2 text-primary" size="lg" />
 
-              <h4 className="text-lg font-semibold">AI models</h4>
+                <h4 className="text-lg font-semibold">AI models</h4>
 
-              <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
-            </div>
+                <p className="text-sm text-muted-foreground">Choose the best fit for your needs.</p>
+              </div>
 
-            <form className="flex flex-col gap-1 rounded border border-border text-sm">
-              <RadioGroup value={selectedModelMode} className="flex flex-col gap-0">
-                {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
-                  <Label
-                    className={cn(
-                      'cursor-pointer px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
-                      i !== 0 && 'border-t border-border'
-                    )}
-                    key={mode}
-                    onPointerDown={() => setModelMode(mode as ModelMode)}
-                  >
-                    <strong className="font-bold">{label}</strong>: <span className="font-normal">{description}</span>
-                    <RadioGroupItem value={mode} className="float-right ml-auto" />
-                  </Label>
-                ))}
-              </RadioGroup>
-            </form>
-          </PopoverContent>
-        </Popover>
+              <form className="flex flex-col gap-1 rounded border border-border text-sm">
+                <RadioGroup value={selectedModelMode} className="flex flex-col gap-0">
+                  {Object.entries(MODEL_MODES_LABELS_DESCRIPTIONS).map(([mode, { label, description }], i) => (
+                    <Label
+                      className={cn(
+                        'flex cursor-pointer items-center px-4 py-3 has-[:disabled]:cursor-not-allowed has-[[aria-checked=true]]:bg-accent has-[:disabled]:text-muted-foreground',
+                        i !== 0 && 'border-t border-border'
+                      )}
+                      key={mode}
+                      onPointerDown={() => setModelMode(mode as ModelMode)}
+                    >
+                      <RadioGroupItem value={mode} className="mr-2" />
+                      <strong className="font-bold">{label}</strong>
+                      <span className="ml-auto font-normal">{description}</span>
+                    </Label>
+                  ))}
+                </RadioGroup>
+              </form>
+            </PopoverContent>
+          </Popover>
+        </DidYouKnowPopover>
       )}
     </>
   );
