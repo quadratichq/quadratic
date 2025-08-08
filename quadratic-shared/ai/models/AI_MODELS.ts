@@ -213,7 +213,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-2025-08-07': {
     model: 'gpt-5-2025-08-07',
-    backupModelKey: 'openai:gpt-5-2025-08-07', // todo - add azure
+    backupModelKey: 'openai:gpt-5-2025-08-07',
     displayName: 'gpt-5',
     temperature: 1,
     max_tokens: 128000,
@@ -231,6 +231,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-mini-2025-08-07': {
     model: 'gpt-5-mini-2025-08-07',
+    backupModelKey: 'openai:gpt-5-mini-2025-08-07',
     displayName: 'gpt-5 mini',
     temperature: 1,
     max_tokens: 128000,
