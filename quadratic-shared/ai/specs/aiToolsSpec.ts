@@ -797,7 +797,17 @@ Provide a name for the output of the code cell. The name cannot contain spaces o
 Note: only name the code cell if it is new.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
-This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n\n
+
+Code cell (Python and Javascript) placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- Leave one extra column gap between the code cell being placed and the nearest content if placing horizontally. If placing vertically, leave one extra row gap between the code cell and the nearest content.
+- Pick a location that makes sense relative to the existing contents of the sheet. Line up placements with existing content. E.g. if placing next to a table at A1:C19, place the code cell at E1 (keeping in mind the extra column gap since placing horizontally).
+- In case there is not enough empty space near the existing contents of the sheet, choose a distant empty cell.\n
+- Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is supposed to be placed. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
 `,
     parameters: {
       type: 'object',
@@ -830,8 +840,8 @@ This tool is for Python and Javascript code only. For formulas, use set_formula_
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
+Use set_code_cell_value instead of responding with code.\n
 set_code_cell_value tool is used to add Python or Javascript code cell to the sheet.\n
-You should use the set_cell_values or add_data_table tool call to add values on the sheet. Use set_cell_values or add_data_table instead of responding with code for adding data to the sheet.\n
 Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
@@ -840,14 +850,15 @@ This tool is for Python and Javascript code only. For formulas, use set_formula_
 
 Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
-- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
-- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
-- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21.\n
-- In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
-- If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
+- Leave one extra column gap between the code cell being placed and the nearest content if placing horizontally. If placing vertically, leave one extra row gap between the code cell and the nearest content.\n
+- Pick a location that makes sense relative to the existing contents of the sheet. Line up placements with existing content. E.g. if placing next to a table at A1:C19, place the code cell at E1 (keeping in mind the extra column gap since placing horizontally).\n
+- In case there is not enough empty space near the existing contents of the sheet, choose a distant empty cell.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
-- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is supposed to be placed. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
+
+Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
 `,
   },
   [AITool.GetDatabaseSchemas]: {
@@ -855,8 +866,7 @@ Code cell (Python and Javascript) placement instructions:\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Retrieves detailed database table schemas including column names, data types, and constraints.\n
-Use this tool when you need detailed column information beyond the table names already available in context.\n
-Essential for writing accurate SQL queries that reference specific columns and their data types.\n
+Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
 If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
 `,
     parameters: {
@@ -876,29 +886,34 @@ If connection_ids is an empty array, it will return detailed schemas for all ava
     },
     responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
     prompt: `
-Use this tool to retrieve detailed database table schemas when you need column-level information for SQL queries.\n
-You already have table names in context - use this tool when you need:\n
-- Column names and their data types\n
-- Constraints and nullable information\n
-- Detailed schema structure for writing accurate SQL queries\n
-Call this tool when:\n
-- User asks for specific column information or data types\n
-- You need to write SQL queries that reference specific columns\n
-- User wants detailed database schema information\n
-- You need to understand column relationships and constraints\n
-The tool returns comprehensive schema information including column names, data types, constraints, and nullable flags.\n
+Retrieves detailed database table schemas including column names, data types, and constraints.\n
+Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
+If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
+This tool should always be called before writing SQL. If you don't have the table schema, you cannot write accurate SQL queries.\n
 `,
   },
   [AITool.SetSQLCodeCellValue]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
-Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
-SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
+
+For SQL Connection code cells:\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- The Connection ID must be from an available database connection in the team.\n
+- Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
+- Write SQL queries that reference the database tables and schemas provided in context.\n
+
+SQL code cell placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
+- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
 `,
     parameters: {
       type: 'object',
@@ -944,26 +959,26 @@ This tool is for SQL Connection code only. For Python and Javascript use set_cod
     },
     responseSchema: AIToolsArgsSchema[AITool.SetSQLCodeCellValue],
     prompt: `
-Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
-Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
-SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
 For SQL Connection code cells:\n
-- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON\n
-- The Connection ID must be from an available database connection in the team\n
-- Use the GetDatabaseSchemas tool to get the database schemas for the connection\n
-- Write SQL queries that reference the database tables and schemas provided in context\n
-- Follow database-specific syntax rules (quotes for POSTGRES, backticks for MYSQL, Schema scoping in BIGQUERY, etc.)\n
-- POSTGRES uses advanced features like arrays, JSON operations, and custom data types with the most SQL standard compliance\n
-- MYSQL employs backticks for identifier quoting and has unique storage engine syntax (MyISAM, InnoDB) with more relaxed SQL standards\n
-- MSSQL uses square brackets for identifiers and T-SQL extensions like TOP clause, OUTPUT clause, and proprietary functions\n
-- SNOWFLAKE features cloud-native syntax with VARIANT data type for semi-structured data and unique clustering/warehouse scaling commands\n
-- BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
-- COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES\n
-- MARIADB has the same syntax as MySQL\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- The Connection ID must be from an available database connection in the team.\n
+- Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
+- Write SQL queries that reference the database tables and schemas provided in context.\n
+
+SQL code cell placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
+- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
+
+Think carefully about the placement rules and examples. For SQL code cells, ensure the code cell is placed all the way right of the last column of existing data in the sheet to avoid creating spill errors.
 `,
   },
 
@@ -1524,6 +1539,7 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
     prompt: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
+This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
 `,
   },
   [AITool.DuplicateSheet]: {
@@ -1552,6 +1568,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
     prompt: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
+This tool should be used primarily when users explicitly ask to create a new sheet from the existing content or ask directly to copy or duplicate a sheet.\n
 `,
   },
   [AITool.RenameSheet]: {

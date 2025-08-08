@@ -13,10 +13,12 @@ use crate::{
 use super::Sheet;
 
 impl Sheet {
+    #[allow(clippy::too_many_arguments)]
     pub fn get_ai_selection_context(
         &self,
         selection: A1Selection,
         max_rects: Option<usize>,
+        max_rows: Option<usize>,
         include_errored_code_cells: bool,
         include_tables_summary: bool,
         include_charts_summary: bool,
@@ -24,7 +26,8 @@ impl Sheet {
     ) -> JsSelectionContext {
         JsSelectionContext {
             sheet_name: self.name.clone(),
-            data_rects: self.get_data_rects_in_selection(&selection, max_rects, a1_context),
+            data_rects: self
+                .get_data_rects_in_selection(&selection, max_rects, max_rows, a1_context),
             errored_code_cells: include_errored_code_cells
                 .then(|| self.get_errored_code_cells_in_selection(&selection, a1_context)),
             tables_summary: include_tables_summary
@@ -39,6 +42,7 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         max_rects: Option<usize>,
+        max_rows: Option<usize>,
         a1_context: &A1Context,
     ) -> Vec<JsCellValuePosContext> {
         let mut data_rects = Vec::new();
@@ -51,7 +55,7 @@ impl Sheet {
                 rect_origin: tabular_data_rect.min.a1_string(),
                 rect_width: tabular_data_rect.width(),
                 rect_height: tabular_data_rect.height(),
-                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, Some(3)),
+                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, max_rows),
             };
             data_rects.push(cell_value_pos);
         }
@@ -64,33 +68,24 @@ impl Sheet {
         selection: &A1Selection,
         a1_context: &A1Context,
     ) -> Vec<JsCodeCell> {
-        let mut code_cells = Vec::new();
+        let mut errored_code_cells = Vec::new();
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
-        for selection_rect in selection_rects {
-            for x in selection_rect.x_range() {
-                if let Some(column) = self.get_column(x) {
-                    for y in selection_rect.y_range() {
-                        // check if there is a code cell
-                        if let Some(CellValue::Code(_)) = column.values.get(&y) {
-                            // if there is a code cell, then check if it has an error
-                            if self
-                                .data_table_at(&(x, y).into())
-                                .map(|code_run| code_run.has_error())
-                                .unwrap_or(false)
-                            {
-                                // if there is an error, then add the code cell to the vec
-                                if let Some(code_cell) =
-                                    self.edit_code_value((x, y).into(), a1_context)
-                                {
-                                    code_cells.push(code_cell);
-                                }
-                            }
-                        }
+        let mut seen_tables = HashSet::new();
+        for rect in selection_rects {
+            for (_, pos, table) in self.data_tables.get_in_rect(rect, false) {
+                if !seen_tables.insert(pos) {
+                    continue;
+                }
+
+                if table.has_error() {
+                    // if there is an error, then add the code cell to the vec
+                    if let Some(code_cell) = self.edit_code_value(pos, a1_context) {
+                        errored_code_cells.push(code_cell);
                     }
                 }
             }
         }
-        code_cells
+        errored_code_cells
     }
 
     fn get_tables_summary_in_selection(
@@ -102,31 +97,28 @@ impl Sheet {
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
-            let tables_summary_in_rect = self
-                .data_tables
-                .get_in_rect(rect, false)
-                .filter_map(|(_, pos, table)| {
-                    if !seen_tables.insert(pos) {
-                        return None;
-                    }
+            for (_, pos, table) in self.data_tables.get_in_rect(rect, false) {
+                if !seen_tables.insert(pos) {
+                    continue;
+                }
 
-                    if table.is_html_or_image() || table.is_single_value() {
-                        return None;
-                    }
+                if table.is_html_or_image() || table.is_formula_table() || table.is_single_value() {
+                    continue;
+                }
 
-                    Some(JsTableSummaryContext {
-                        sheet_name: self.name.clone(),
-                        table_name: table.name().to_string(),
-                        table_type: match self.cell_value_ref(pos.to_owned()) {
-                            Some(CellValue::Code(_)) => JsTableType::CodeTable,
-                            Some(CellValue::Import(_)) => JsTableType::DataTable,
-                            _ => return None,
-                        },
-                        bounds: table.output_rect(pos, false).a1_string(),
-                    })
-                })
-                .collect::<Vec<JsTableSummaryContext>>();
-            tables_summary.extend(tables_summary_in_rect);
+                let table_type = match self.cell_value_ref(pos.to_owned()) {
+                    Some(CellValue::Code(_)) => JsTableType::CodeTable,
+                    Some(CellValue::Import(_)) => JsTableType::DataTable,
+                    _ => continue,
+                };
+
+                tables_summary.push(JsTableSummaryContext {
+                    sheet_name: self.name.clone(),
+                    table_name: table.name().to_string(),
+                    table_type,
+                    bounds: table.output_rect(pos, false).a1_string(),
+                });
+            }
         }
         tables_summary
     }
@@ -140,26 +132,21 @@ impl Sheet {
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
-            let charts_summary_in_rect = self
-                .data_tables
-                .get_in_rect(rect, false)
-                .filter_map(|(_, pos, table)| {
-                    if !seen_tables.insert(pos) {
-                        return None;
-                    }
+            for (_, pos, table) in self.data_tables.get_in_rect(rect, false) {
+                if !seen_tables.insert(pos) {
+                    continue;
+                }
 
-                    if !table.is_html_or_image() || table.has_spill() {
-                        return None;
-                    }
+                if !table.is_html_or_image() || table.has_spill() {
+                    continue;
+                }
 
-                    Some(JsChartSummaryContext {
-                        sheet_name: self.name.clone(),
-                        chart_name: table.name().to_string(),
-                        bounds: table.output_rect(pos, false).a1_string(),
-                    })
-                })
-                .collect::<Vec<JsChartSummaryContext>>();
-            charts_summary.extend(charts_summary_in_rect);
+                charts_summary.push(JsChartSummaryContext {
+                    sheet_name: self.name.clone(),
+                    chart_name: table.name().to_string(),
+                    bounds: table.output_rect(pos, false).a1_string(),
+                });
+            }
         }
         charts_summary
     }
@@ -334,7 +321,7 @@ mod tests {
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 300, sheet.id));
         let a1_context = sheet.expensive_make_a1_context();
         let data_rects_in_selection =
-            sheet.get_data_rects_in_selection(&selection, None, &a1_context);
+            sheet.get_data_rects_in_selection(&selection, None, Some(3), &a1_context);
 
         let max_rows = 3;
 

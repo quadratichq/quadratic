@@ -22,7 +22,7 @@ Note: This is an internal message for context. Do not quote it in your response.
 
 ${
   imageFiles.length === 0 && pdfFiles.length === 0
-    ? `No files are attached. Don't use pdf import tool, also do not assume or make any assumptions that files are attached when responding to users. If asked to do anything with an attached files, ask for the file first.`
+    ? `No files are attached. Don't use pdf import tool. Also do not assume or make any assumptions that files are attached when responding to users. If asked to do anything with attached files, ask for the file first since there are currently no files in context.`
     : ''
 }
 
@@ -39,9 +39,9 @@ Images: ${imageFiles.map((file) => file.fileName).join(', ')}
 ${
   pdfFiles.length > 0
     ? `
-Also I have the following pdf files available which you can use for extracting data. Use pdf_import tool for extracting data from these pdfs.\n
+Also, I have the following pdf files available which you can use for extracting data. Use pdf_import tool for extracting data from these PDFs.\n
 PDFs: ${pdfFiles.map((file) => file.fileName).join(', ')}\n
-Use pdf files only when prompted by calling the pdf_import for extracting data.\n
+Use pdf files when prompted by calling the pdf_import for extracting data. Any related mention to the file should result in calling the pdf_import tool.\n
 `
     : ''
 }\n
@@ -61,7 +61,7 @@ Use these attached files as context to answer my questions.
 I understand the files context,
 ${imageFiles.length > 0 ? `I will use the attached images as context to answer your questions.` : ''}\n
 ${pdfFiles.length > 0 ? `When prompted, I will use pdf_import tool to extract data from the attached pdf files.` : ''}\n
-I will reference it to answer following messages.\n
+I will reference it to answer the following messages.\n
 How can I help you?`,
             },
           ],

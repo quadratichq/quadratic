@@ -65,15 +65,30 @@ export function useSqlContextMessages() {
             return [];
           }
 
+          let contextText = `
+# Database Connections
+`;
+
           // format as lightweight context message
-          const contextText = validConnections
-            .map((conn) => {
-              const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
+          validConnections.forEach((conn) => {
+            const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
 
-              return `Connection: ${conn.connectionName} (${conn.connectionType}), id: ${conn.connectionId}\nDatabase: ${conn.database}\nTables: ${tablesText}`;
-            })
-            .join('\n\n');
+            contextText += `
+## Connection
+${conn.connectionName}
 
+### Information
+type: ${conn.connectionType}
+id: ${conn.connectionId}
+
+### Database
+${conn.database}
+
+#### Tables
+${tablesText}
+
+`;
+          });
           return [
             {
               role: 'user',
@@ -83,6 +98,16 @@ export function useSqlContextMessages() {
                   text: `Available Database Connections and Tables:
 ${contextText}
 Note: This shows only table names. Use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing.`,
+                },
+              ],
+              contextType: 'sqlSchemas',
+            },
+            {
+              role: 'assistant',
+              content: [
+                {
+                  type: 'text',
+                  text: `I understand the available database connections and tables. I will use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing. How can I help you?`,
                 },
               ],
               contextType: 'sqlSchemas',

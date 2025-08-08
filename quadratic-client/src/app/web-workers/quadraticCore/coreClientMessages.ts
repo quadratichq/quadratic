@@ -1011,6 +1011,7 @@ export interface ClientCoreGetAISelectionContexts {
   id: number;
   selections: string[];
   maxRects: number | undefined;
+  maxRows: number | undefined;
   includeErroredCodeCells: boolean;
   includeTablesSummary: boolean;
   includeChartsSummary: boolean;
