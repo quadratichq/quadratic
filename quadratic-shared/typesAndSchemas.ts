@@ -103,6 +103,18 @@ const TeamUserMakingRequestSchema = z.object({
 
 export const TeamClientDataKvSchema = z.record(z.any());
 
+// Use this to store client-specific data that will be validated whenever it
+// is delivered to or received from the client. When the client no longer needs
+// pieces of this data, they can be removed from the schema and they'll be
+// removed from the stored data as the user continues to use the app and the
+// data is validated as it goes and comes over the network.
+export const UserClientDataKvSchema = z
+  .object({
+    knowsAboutModelPicker: z.boolean().optional(),
+  })
+  .strip();
+export type UserClientDataKv = z.infer<typeof UserClientDataKvSchema>;
+
 const TeamSettingsSchema = z.object({
   analyticsAi: z.boolean(),
 });
@@ -171,6 +183,7 @@ export const ApiSchemas = {
       sshPublicKey: z.string(),
     }),
     userMakingRequest: z.object({
+      clientDataKv: UserClientDataKvSchema.optional(),
       id: BaseUserSchema.shape.id.optional(),
       filePermissions: z.array(FilePermissionSchema),
       fileTeamPrivacy: z.enum(['PRIVATE_TO_ME', 'PRIVATE_TO_SOMEONE_ELSE', 'PUBLIC_TO_TEAM']).optional(),
@@ -456,6 +469,8 @@ export const ApiSchemas = {
       .catchall(z.any()),
   }),
   '/v0/user.POST.response': z.object({ message: z.string() }),
+  '/v0/user/client-data-kv.POST.request': UserClientDataKvSchema,
+  '/v0/user/client-data-kv.POST.response': UserClientDataKvSchema,
 
   /**
    *

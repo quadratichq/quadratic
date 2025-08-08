@@ -20,6 +20,10 @@ model User {
     UserFileRole        UserFileRole[]
     AnalyticsAIChat     AnalyticsAIChat[]
 
+    // JSON value used for key/value data storage about the user
+    // We keep track of the shape of this object in typescript on the server & client
+    clientDataKv Json @default("{}") @map("client_data_kv")
+
     @@index([auth0Id])
 }
 

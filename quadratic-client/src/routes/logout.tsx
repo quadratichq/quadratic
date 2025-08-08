@@ -11,7 +11,7 @@ export const action = logout;
 
 async function logout() {
   localStorage.clear();
-  await authClient.logout();
   resetEventAnalytics();
+  await authClient.logout();
   return redirect('/');
 }
