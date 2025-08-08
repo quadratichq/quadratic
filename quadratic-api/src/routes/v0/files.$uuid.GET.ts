@@ -13,6 +13,7 @@ import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
 import { getIsOnPaidPlan } from '../../utils/billing';
 import { getDecryptedTeam } from '../../utils/teams';
+import { getUserClientDataKv } from '../../utils/userClientData';
 
 export default [
   validateRequestSchema(
@@ -81,6 +82,8 @@ async function handler(
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
+  const clientDataKv = await getUserClientDataKv(userId);
+
   const data: ApiTypes['/v0/files/:uuid.GET.response'] = {
     file: {
       uuid,
@@ -104,6 +107,7 @@ async function handler(
       sshPublicKey: decryptedTeam.sshPublicKey,
     },
     userMakingRequest: {
+      clientDataKv,
       id: userId,
       filePermissions,
       fileRole,
