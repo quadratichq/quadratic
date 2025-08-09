@@ -116,10 +116,9 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          components: clippy, llvm-tools-preview
+          components: clippy, rustfmt, llvm-tools-preview
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
