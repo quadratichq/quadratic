@@ -87,9 +87,9 @@ The user can see the following data in the viewport. Note, the data may be limit
 
         for (const dataRect of context.data_rects) {
           text += `
-- Data rectangle starting at ${dataRect.rect_origin} with ${dataRect.rect_width}x${dataRect.rect_height} cells. Here is some of values in this rectangle: `;
-          if (dataRect.starting_rect_values) {
-            text += dataRect.starting_rect_values.join(', ');
+- Data rectangle starting at ${dataRect.range} with ${dataRect.values.length}x${dataRect.values[0].length} cells. Here is some of values in this rectangle: `;
+          if (dataRect.values) {
+            text += dataRect.values.map((row) => row.map((cell) => cell.value).join(', ')).join('\n');
           }
         }
 

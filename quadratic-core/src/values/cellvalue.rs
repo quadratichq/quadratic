@@ -353,7 +353,7 @@ impl CellValue {
     pub fn to_cell_value_pos(self, pos: Pos) -> JsCellValuePos {
         JsCellValuePos {
             value: self.to_string(),
-            kind: self.type_name().to_string(),
+            kind: self.into(),
             pos: pos.a1_string(),
         }
     }

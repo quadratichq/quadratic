@@ -3,7 +3,7 @@ use crate::{
     a1::A1Context,
     cell_values::CellValues,
     controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::js_types::{JsCellValue, JsCellValueDescription, JsValidationWarning},
+    grid::js_types::{JsCellValue, JsCellValueDescription, JsCellValueKind, JsValidationWarning},
 };
 
 use super::Sheet;
@@ -98,32 +98,27 @@ impl Sheet {
 
     /// Returns the rendered value of the cells in a given rect.
     pub fn cells_as_string(&self, rect: Rect) -> JsCellValueDescription {
-        let mut has_content = false;
         let mut values = Vec::new();
         for y in rect.min.y..=rect.max.y {
             let mut row = Vec::new();
             for x in rect.min.x..=rect.max.x {
                 let value = if let Some(value) = self.rendered_value(Pos { x, y }) {
-                    has_content = true;
                     value
                 } else {
                     "".to_string()
                 };
-                let type_name = if let Some(value) = self.display_value(Pos { x, y }) {
-                    value.type_name().to_string()
+                let kind = if let Some(value) = self.display_value(Pos { x, y }) {
+                    value.into()
                 } else {
-                    "blank".to_string()
+                    JsCellValueKind::Blank
                 };
-                row.push(JsCellValue {
-                    value,
-                    kind: type_name,
-                });
+                row.push(JsCellValue { value, kind });
             }
             values.push(row);
         }
         JsCellValueDescription {
             range: rect.a1_string(),
-            values: if has_content { Some(values) } else { None },
+            values,
         }
     }
 

@@ -21,12 +21,15 @@ use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
+use quadratic_core::grid::js_types::JsCellValueDescription;
+use quadratic_core::grid::js_types::JsCellValueKind;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsChartSummaryContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsColumnWidth;
 use quadratic_core::grid::js_types::JsCoordinate;
 use quadratic_core::grid::js_types::JsDataTableContext;
+use quadratic_core::grid::js_types::JsGetAICellResult;
 use quadratic_core::grid::js_types::JsHashRenderCells;
 use quadratic_core::grid::js_types::JsHashValidationWarnings;
 use quadratic_core::grid::js_types::JsHashesDirty;
@@ -134,6 +137,8 @@ fn main() {
         JsCellsA1Value,
         JsCellsA1Values,
         JsCellValue,
+        JsCellValueDescription,
+        JsCellValueKind,
         JsCellValuePos,
         JsCellValueResult,
         JsChartContext,
@@ -147,6 +152,7 @@ fn main() {
         JsDataTableColumnHeader,
         JsDataTableContext,
         JsFormulaParseResult,
+        JsGetAICellResult,
         JsHashesDirty,
         JsHashRenderCells,
         JsHashValidationWarnings,

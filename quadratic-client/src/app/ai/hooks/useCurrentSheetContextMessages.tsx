@@ -25,7 +25,7 @@ export function useCurrentSheetContextMessages() {
       const cursorPos = sheets.sheet.cursor.position;
       const cursorValue = await quadraticCore.getCellValue(sheet.id, cursorPos.x, cursorPos.y);
       const cursorValueText = cursorValue
-        ? cursorValue.kind === 'number'
+        ? cursorValue.kind === 'Number'
           ? cursorValue.value
           : `"${cursorValue.value}"`
         : 'empty';
@@ -97,7 +97,7 @@ WARNING: This is ONLY a subset of the data. Use the get_cell_data function to ge
 There are following data in the currently open sheet:
 \`\`\`
 ${toMarkdown(
-  currentSheetContext[0].data_rects.map(({ sheet_name, ...dataRect }) => dataRect),
+  currentSheetContext[0].data_rects.map(({ range, values }) => ({ range, values })),
   'data_rects'
 )}
 \`\`\`

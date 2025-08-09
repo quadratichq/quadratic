@@ -15,6 +15,7 @@ use crate::{
     Rect,
     a1::{A1Error, A1Selection},
     controller::GridController,
+    grid::js_types::JsGetAICellResult,
 };
 
 use super::GridBounds;
@@ -52,78 +53,81 @@ impl GridController {
     }
 
     /// Returns the rendered values of the cells in a given rect.
-    pub fn get_ai_cells(&self, selection: A1Selection, mut page: u32) -> Result<String, A1Error> {
+    pub fn get_ai_cells(
+        &self,
+        selection: A1Selection,
+        mut page: u32,
+    ) -> Result<JsGetAICellResult, A1Error> {
         let mut count = 0;
         let mut in_page = 0;
-        let mut value = None;
+        let mut values = vec![];
 
         for range in &selection.ranges {
-            if let Some(sheet) = self.try_sheet(selection.sheet_id) {
-                // we use the bounds to limit the number of cells we need to check
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                    if let Some(rect) = range.to_rect(self.a1_context()) {
-                        if let Some(rect) = rect.intersection(&bounds) {
-                            let (rects, new_count) = Self::breakup_rect_into_pages(
-                                rect,
-                                count,
-                                MAX_POTENTIAL_CELLS_PER_PAGE,
-                            );
-                            count = new_count;
-                            for rect in rects {
-                                if page == in_page {
-                                    if sheet.has_content_in_rect(rect) {
-                                        value = Some(sheet.cells_as_string(rect));
-                                    } else {
-                                        page += 1;
-                                    }
-                                }
-                                count += rect.width() * rect.height();
-                                if count >= MAX_POTENTIAL_CELLS_PER_PAGE {
-                                    in_page += 1;
-                                    count = 0;
-                                }
-                            }
+            if let Some(sheet) = self.try_sheet(selection.sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
+                && let Some(rect) = range.to_rect(self.a1_context())
+                && let Some(rect) = rect.intersection(&bounds)
+            {
+                let (rects, new_count) =
+                    Self::breakup_rect_into_pages(rect, count, MAX_POTENTIAL_CELLS_PER_PAGE);
+                count = new_count;
+                for rect in rects {
+                    if page == in_page {
+                        if sheet.has_content_in_rect(rect) {
+                            values.push(sheet.cells_as_string(rect));
+                        } else {
+                            page += 1;
                         }
+                    }
+                    count += rect.width() * rect.height();
+                    if count >= MAX_POTENTIAL_CELLS_PER_PAGE {
+                        in_page += 1;
+                        count = 0;
                     }
                 }
             }
         }
 
-        let mut result = String::new();
-        if let Some(value) = value {
-            if in_page > MAXIMUM_PAGES {
-                result.push_str(&format!("IMPORTANT: There are {} pages in this result. Let the user know that there is a lot of data and it will take quite a while to process all the pages of data. Suggest ways they can work around this using Python or some other method. You can still get additional pages by passing page = {} to this tool. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
-                in_page + 1,
-                page + 1,
-            ));
-            } else if in_page != page {
-                result.push_str(&format!(
-                "IMPORTANT: There are {} pages in this result. Use this tool again with page = {} for the next page. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
-                in_page + 1,
-                page + 1,
-            ));
-            }
-            if in_page != page || page != 0 {
-                result.push_str(&format!(
-                    "The selection {} for page = {} has: ",
-                    selection.to_string(None, self.a1_context()),
-                    page
-                ));
-            } else {
-                result.push_str(&format!(
-                    "The selection {} has: ",
-                    selection.to_string(None, self.a1_context())
-                ));
-            }
-            result.push_str(&value);
-        } else {
-            result.push_str(&format!(
-                "The selection {} has no content.",
-                selection.to_string(None, self.a1_context())
-            ));
-        };
+        // let mut result = String::new();
+        // if let Some(value) = value {
+        //     if in_page > MAXIMUM_PAGES {
+        //         result.push_str(&format!("IMPORTANT: There are {} pages in this result. Let the user know that there is a lot of data and it will take quite a while to process all the pages of data. Suggest ways they can work around this using Python or some other method. You can still get additional pages by passing page = {} to this tool. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
+        //         in_page + 1,
+        //         page + 1,
+        //     ));
+        //     } else if in_page != page {
+        //         result.push_str(&format!(
+        //         "IMPORTANT: There are {} pages in this result. Use this tool again with page = {} for the next page. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
+        //         in_page + 1,
+        //         page + 1,
+        //     ));
+        //     }
+        //     if in_page != page || page != 0 {
+        //         result.push_str(&format!(
+        //             "The selection {} for page = {} has: ",
+        //             selection.to_string(None, self.a1_context()),
+        //             page
+        //         ));
+        //     } else {
+        //         result.push_str(&format!(
+        //             "The selection {} has: ",
+        //             selection.to_string(None, self.a1_context())
+        //         ));
+        //     }
+        //     result.push_str(&value);
+        // } else {
+        //     result.push_str(&format!(
+        //         "The selection {} has no content.",
+        //         selection.to_string(None, self.a1_context())
+        //     ));
+        // };
 
-        Ok(result)
+        Ok(JsGetAICellResult {
+            selection: selection.to_string(None, self.a1_context()),
+            page: page as i32,
+            total_pages: in_page as i32,
+            values,
+        })
     }
 
     /// Returns the rendered formats of the cells in a given rect.

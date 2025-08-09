@@ -13,7 +13,7 @@ use super::formats::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat, SheetId};
-use crate::Pos;
+use crate::{CellValue, Pos};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub enum JsRenderCellSpecial {
@@ -57,15 +57,54 @@ impl From<&Format> for JsNumber {
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+pub enum JsCellValueKind {
+    #[default]
+    Blank,
+    Text,
+    Number,
+    Logical,
+    DateTime,
+    Date,
+    Time,
+    Duration,
+    Error,
+    Html,
+    Code,
+    Image,
+    Import,
+}
+
+impl From<CellValue> for JsCellValueKind {
+    fn from(value: CellValue) -> Self {
+        match value {
+            CellValue::Blank => JsCellValueKind::Blank,
+            CellValue::Instant(_) => JsCellValueKind::DateTime, // deprecated
+            CellValue::Number(_) => JsCellValueKind::Number,
+            CellValue::Text(_) => JsCellValueKind::Text,
+            CellValue::Logical(_) => JsCellValueKind::Logical,
+            CellValue::DateTime(_) => JsCellValueKind::DateTime,
+            CellValue::Date(_) => JsCellValueKind::Date,
+            CellValue::Time(_) => JsCellValueKind::Time,
+            CellValue::Duration(_) => JsCellValueKind::Duration,
+            CellValue::Error(_) => JsCellValueKind::Error,
+            CellValue::Html(_) => JsCellValueKind::Html,
+            CellValue::Code(_) => JsCellValueKind::Code,
+            CellValue::Image(_) => JsCellValueKind::Image,
+            CellValue::Import(_) => JsCellValueKind::Import,
+        }
+    }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsCellValue {
     pub value: String,
-    pub kind: String,
+    pub kind: JsCellValueKind,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
 pub struct JsCellValuePos {
     pub value: String,
-    pub kind: String,
+    pub kind: JsCellValueKind,
     pub pos: String,
 }
 
@@ -567,5 +606,13 @@ pub struct JsSheetPosText {
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsCellValueDescription {
     pub range: String,
-    pub values: Option<Vec<Vec<JsCellValue>>>,
+    pub values: Vec<Vec<JsCellValue>>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsGetAICellResult {
+    pub selection: String,
+    pub page: i32,
+    pub total_pages: i32,
+    pub values: Vec<JsCellValueDescription>,
 }

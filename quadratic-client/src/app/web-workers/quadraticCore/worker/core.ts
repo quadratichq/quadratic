@@ -5,6 +5,7 @@
  * directly accessed by its siblings.
  */
 
+import { maxRows } from '@/app/ai/constants/context';
 import { bigIntReplacer } from '@/app/bigint';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -1095,7 +1096,7 @@ class Core {
   getAITablesContext(): JsTablesContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.getAITablesContext();
+      return this.gridController.getAITablesContext(maxRows);
     } catch (e) {
       this.handleCoreError('getAITablesContext', e);
       return undefined;

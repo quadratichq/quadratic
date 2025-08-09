@@ -1,8 +1,10 @@
 import { maxRects, maxRows } from '@/app/ai/constants/context';
+import { AICellsToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
+import type { JsCellValueDescription } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
@@ -43,7 +45,7 @@ export function useSummaryContextMessages() {
       const hasCurrentSheetData = currentSheetBounds?.type === 'nonEmpty';
 
       // Get flat data rectangles for current sheet
-      let flatDataRects: any[] = [];
+      let flatDataRects: JsCellValueDescription[] = [];
       if (hasCurrentSheetData && currentSheet) {
         const selection = getAllSelection(currentSheet.id);
         if (selection) {
@@ -83,7 +85,7 @@ export function useSummaryContextMessages() {
 
       // Build summary text
       const sheetCount = allSheets.length;
-      const dataSheetCount = (hasCurrentSheetData ? 1 : 0) + otherSheetsWithData.length; // only count current if it has data
+      // const dataSheetCount = (hasCurrentSheetData ? 1 : 0) + otherSheetsWithData.length; // only count current if it has data
 
       let summary = `# File Summary
 
@@ -151,16 +153,21 @@ There is no data in any sheets.`;
         summary += `\nAvailable code tables: ${allCodeTablesWithRanges.join(', ')}.`;
       }
 
-      // Add flat data rectangles with ranges
-      const flatDataWithRanges = flatDataRects.map((rect) => {
-        const endCol = String.fromCharCode(rect.rect_origin.charCodeAt(0) + rect.rect_width - 1);
-        const endRow = parseInt(rect.rect_origin.slice(1)) + rect.rect_height - 1;
-        const range = `${rect.rect_origin}:${endCol}${endRow}`;
-        return `${range} on '${rect.sheet_name}'`;
+      flatDataRects.forEach((description) => {
+        summary += `\n${AICellsToMarkdown(description)}`;
       });
-      if (flatDataWithRanges.length > 0) {
-        summary += `\nAvailable flat data: ${flatDataWithRanges.join(', ')}.`;
-      }
+
+      // Add flat data rectangles with ranges
+      // const flatDataWithRanges = flatDataRects.map((rect) => {
+      //   const endCol = String.fromCharCode(rect.rect_origin.charCodeAt(0) + rect.rect_width - 1);
+      //   const endRow = parseInt(rect.rect_origin.slice(1)) + rect.rect_height - 1;
+      //   const range = `${rect.rect_origin}:${endCol}${endRow}`;
+      //   return `${range} on '${rect.sheet_name}'`;
+      // });
+      // if (flatDataWithRanges.length > 0) {
+      //   summary += `\nAvailable flat data: ${flatDataWithRanges.join(', ')}.`;
+      // }
+
       console.log(summary);
       return [
         {

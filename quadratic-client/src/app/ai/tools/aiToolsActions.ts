@@ -9,6 +9,7 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
+import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
@@ -23,6 +24,8 @@ import type {
   CellWrap,
   FormatUpdate,
   JsDataTableColumnHeader,
+  JsGetAICellResult,
+  JsResponse,
   JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
@@ -642,10 +645,15 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { selection, sheet_name, page } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const response = await quadraticCore.getAICells(selection, sheetId, page);
-      if (typeof response === 'string') {
-        return [createTextContent(response)];
+      if ((response as JsResponse)?.error) {
+        return [
+          createTextContent(`There was an error executing the get cells tool ${(response as JsResponse)?.error}`),
+        ];
+      } else if (typeof response === 'object') {
+        return [createTextContent(AICellResultToMarkdown(response as any as JsGetAICellResult))];
       } else {
-        return [createTextContent(`There was an error executing the get cells tool ${response?.error}`)];
+        // should not be reached
+        return [createTextContent('There was an error executing the get cells tool')];
       }
     } catch (e) {
       return [createTextContent(`Error executing get cell data tool: ${e}`)];
