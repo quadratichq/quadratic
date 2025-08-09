@@ -10,7 +10,7 @@ log() { printf '[update-rust-toolchain] %(%Y-%m-%dT%H:%M:%S%z)T %s\n' -1 "$*"; }
 
 version="${1:-}"
 if [[ -z "$version" ]]; then
-  echo "Usage: $0 <version>   e.g. $0 1.89.9" >&2
+  echo "Usage: $0 <version>   e.g. $0 1.89.0" >&2
   exit 1
 fi
 
