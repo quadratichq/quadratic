@@ -567,5 +567,5 @@ pub struct JsSheetPosText {
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsCellValueDescription {
     pub range: String,
-    pub values: Vec<Vec<JsCellValue>>,
+    pub values: Option<Vec<Vec<JsCellValue>>>,
 }

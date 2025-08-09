@@ -98,11 +98,13 @@ impl Sheet {
 
     /// Returns the rendered value of the cells in a given rect.
     pub fn cells_as_string(&self, rect: Rect) -> JsCellValueDescription {
+        let mut has_content = false;
         let mut values = Vec::new();
         for y in rect.min.y..=rect.max.y {
             let mut row = Vec::new();
             for x in rect.min.x..=rect.max.x {
                 let value = if let Some(value) = self.rendered_value(Pos { x, y }) {
+                    has_content = true;
                     value
                 } else {
                     "".to_string()
@@ -121,7 +123,7 @@ impl Sheet {
         }
         JsCellValueDescription {
             range: rect.a1_string(),
-            values,
+            values: if has_content { Some(values) } else { None },
         }
     }
 

@@ -86,19 +86,19 @@ export function useSummaryContextMessages() {
       const dataSheetCount = (hasCurrentSheetData ? 1 : 0) + otherSheetsWithData.length; // only count current if it has data
 
       let summary = `# File Summary
-File has ${sheetCount} sheet${sheetCount !== 1 ? 's' : ''}`;
 
-      if (dataSheetCount > 1) {
-        summary += ` (${dataSheetCount} with data)`;
-      }
+## Sheets
+
+File has ${sheetCount} sheet${sheetCount !== 1 ? 's' : ''}, named: ${allSheets.map((sheet) => `'${sheet.name}'`).join(', ')}.`;
 
       summary += `
 ## User's current sheet
+
 User has the sheet '${currentSheetName}' open`;
       if (hasCurrentSheetData) {
         summary += ` with data.`;
       } else {
-        summary += ` is empty.`;
+        summary += ` and it is empty.`;
       }
 
       if (!hasCurrentSheetData && otherSheetsWithData.length === 0) {
