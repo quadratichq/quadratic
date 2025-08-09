@@ -50,7 +50,6 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           components: clippy, llvm-tools-preview
           override: true
 
@@ -175,7 +174,6 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           target: wasm32-unknown-unknown
           override: true
 
@@ -260,7 +258,6 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           components: clippy
           override: true
 
@@ -294,7 +291,6 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
           components: clippy
           target: wasm32-unknown-unknown
           override: true
