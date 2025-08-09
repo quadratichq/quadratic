@@ -48,11 +48,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy, llvm-tools-preview
-          override: true
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -120,11 +116,9 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          components: clippy, llvm-tools-preview
-          override: true
+          components: clippy, rustfmt, llvm-tools-preview
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -173,11 +167,7 @@ jobs:
           cache: "pip"
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -258,11 +248,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy
-          override: true
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -292,12 +278,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy
-          target: wasm32-unknown-unknown
-          override: true
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
