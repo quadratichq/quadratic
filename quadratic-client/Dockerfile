@@ -83,7 +83,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 
 # Set up Rust environment
 ENV PATH="/root/.cargo/bin:${PATH}"
-ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
+ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
 
