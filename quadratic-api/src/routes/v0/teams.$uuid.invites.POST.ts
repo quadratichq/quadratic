@@ -3,7 +3,7 @@ import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
-import { getUsers, getUsersByEmail } from '../../auth/auth';
+import { getUsers, getUsersByEmail } from '../../auth/providers/auth';
 import dbClient from '../../dbClient';
 import { sendEmail } from '../../email/sendEmail';
 import { templates } from '../../email/templates';

@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from 'express';
-import { getUsers } from '../auth/auth';
+import { getUsers } from '../auth/providers/auth';
 import dbClient from '../dbClient';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import type { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
@@ -94,12 +94,13 @@ export const userOptionalMiddleware = async (req: Request, res: Response, next: 
   const { auth } = req as RequestWithOptionalAuth;
 
   if (auth && auth.sub) {
-    const { user } = await getOrCreateUser(auth.sub);
+    const { user, userCreated } = await getOrCreateUser(auth.sub);
     if (!user) {
       return res.status(500).json({ error: { message: 'Unable to get authenticated user' } });
     }
 
     (req as RequestWithUser).user = user;
+    (req as RequestWithUser).userCreated = userCreated === true;
   }
 
   next();

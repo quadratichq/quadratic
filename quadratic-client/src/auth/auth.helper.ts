@@ -13,7 +13,7 @@
  * We only use this when we _want_ to pause everything and wait to redirect
  */
 export function waitForAuthClientToRedirect() {
-  return new Promise((resolve) => setTimeout(resolve, 10000));
+  return new Promise((resolve) => setTimeout(resolve, 30 * 1000));
 }
 
 /**

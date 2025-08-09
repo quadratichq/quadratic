@@ -9,7 +9,6 @@ import { ThemeAccentColorEffects } from '@/shared/hooks/useThemeAccentColor';
 import { ThemeAppearanceModeEffects } from '@/shared/hooks/useThemeAppearanceMode';
 import { initializeAnalytics } from '@/shared/utils/analytics';
 import { ExclamationTriangleIcon } from '@radix-ui/react-icons';
-import type { LoaderFunctionArgs } from 'react-router';
 import { Outlet, useRouteError, useRouteLoaderData } from 'react-router';
 
 export type RootLoaderData = {
@@ -19,11 +18,10 @@ export type RootLoaderData = {
 
 export const useRootRouteLoaderData = () => useRouteLoaderData(ROUTE_LOADER_IDS.ROOT) as RootLoaderData;
 
-export const loader = async ({ request, params }: LoaderFunctionArgs): Promise<RootLoaderData | Response> => {
-  const [isAuthenticated, user] = await Promise.all([authClient.isAuthenticated(), authClient.user()]);
+export const loader = async (): Promise<RootLoaderData | Response> => {
+  const user = await authClient.user();
   initializeAnalytics(user);
-
-  return { isAuthenticated, loggedInUser: user };
+  return { isAuthenticated: !!user, loggedInUser: user };
 };
 
 export const Component = () => {

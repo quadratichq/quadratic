@@ -37,7 +37,7 @@ class PythonWebWorker {
         break;
 
       case 'pythonClientGetJwt':
-        authClient.getTokenOrRedirect().then((jwt) => {
+        authClient.getTokenOrRedirect(true).then((jwt) => {
           const data = message.data as PythonClientGetJwt;
           this.send({ type: 'clientPythonGetJwt', id: data.id, jwt });
         });

@@ -2,7 +2,7 @@ import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { ApiError, fetchFromApi } from '@/shared/api/fetchFromApi';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 import { Buffer } from 'buffer';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
@@ -211,7 +211,7 @@ export const apiClient = {
           await apiClient.files.thumbnail.update(newFileUuid, blob);
         } catch (err) {
           // Not a huge deal if it failed, just tell Sentry and move on
-          Sentry.captureEvent({
+          captureEvent({
             message: 'Failed to duplicate the thumbnail image when duplicating a file',
             level: 'info',
           });
@@ -448,7 +448,7 @@ export const apiClient = {
     const url = import.meta.env.VITE_QUADRATIC_API_URL;
     if (!url) {
       const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
-      Sentry.captureEvent({
+      captureEvent({
         message,
         level: 'fatal',
       });
@@ -456,6 +456,77 @@ export const apiClient = {
     }
 
     return url;
+  },
+
+  auth: {
+    getApiHostname() {
+      const quadraticApiUrl = import.meta.env.VITE_QUADRATIC_API_URL;
+      if (!quadraticApiUrl) {
+        const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
+        captureEvent({
+          message,
+          level: 'fatal',
+        });
+        throw new Error(message);
+      }
+      return quadraticApiUrl.replace('https://', '').replace('http://', '');
+    },
+    loginWithPassword(args: ApiTypes['/auth/loginWithPassword.POST.request']) {
+      return fetchFromApi(
+        `/auth/loginWithPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/loginWithPassword.POST.response']
+      );
+    },
+    signupWithPassword(args: ApiTypes['/auth/signupWithPassword.POST.request']) {
+      return fetchFromApi(
+        `/auth/signupWithPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/signupWithPassword.POST.response']
+      );
+    },
+    authenticateWithCode(args: ApiTypes['/auth/authenticateWithCode.POST.request']) {
+      return fetchFromApi(
+        `/auth/authenticateWithCode`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/authenticateWithCode.POST.response']
+      );
+    },
+    verifyEmail(args: ApiTypes['/auth/verifyEmail.POST.request']) {
+      return fetchFromApi(
+        `/auth/verifyEmail`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/verifyEmail.POST.response']
+      );
+    },
+    sendResetPassword(args: ApiTypes['/auth/sendResetPassword.POST.request']) {
+      return fetchFromApi(
+        `/auth/sendResetPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/sendResetPassword.POST.response']
+      );
+    },
+    resetPassword(args: ApiTypes['/auth/resetPassword.POST.request']) {
+      return fetchFromApi(
+        `/auth/resetPassword`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/resetPassword.POST.response']
+      );
+    },
+    sendMagicAuthCode(args: ApiTypes['/auth/sendMagicAuthCode.POST.request']) {
+      return fetchFromApi(
+        `/auth/sendMagicAuthCode`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/sendMagicAuthCode.POST.response']
+      );
+    },
+    authenticateWithMagicCode(args: ApiTypes['/auth/authenticateWithMagicCode.POST.request']) {
+      return fetchFromApi(
+        `/auth/authenticateWithMagicCode`,
+        { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
+        ApiSchemas['/auth/authenticateWithMagicCode.POST.response']
+      );
+    },
   },
 
   // Someday: figure out how to fit in the calls for the AI chat
