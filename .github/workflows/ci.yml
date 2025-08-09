@@ -50,8 +50,8 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          components: clippy, llvm-tools-preview
-          override: true
+          components: clippy, rustfmt, llvm-tools-preview
+          target: wasm32-unknown-unknown
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -174,8 +174,8 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
+          components: clippy, rustfmt, llvm-tools-preview
           target: wasm32-unknown-unknown
-          override: true
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -258,8 +258,8 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          components: clippy
-          override: true
+          components: clippy, rustfmt, llvm-tools-preview
+          target: wasm32-unknown-unknown
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -291,9 +291,8 @@ jobs:
       - name: Set up Rust
         uses: actions-rs/toolchain@v1
         with:
-          components: clippy
+          components: clippy, rustfmt, llvm-tools-preview
           target: wasm32-unknown-unknown
-          override: true
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
