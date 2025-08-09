@@ -130,7 +130,7 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
             roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
           />
           {billing?.status === 'ACTIVE' && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-1 text-sm text-muted-foreground">
               Each user is billed at the per-seat rate set for your team.
             </p>
           )}
