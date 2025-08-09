@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Usage:
 #   ./update-rust-toolchain.sh 1.89.0
-# Sets channel="<arg>" in every rust-toolchain found under repo root.
+# Sets channel="<arg>" in every rust-toolchain.toml found under repo root.
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 log() { printf '[update-rust-toolchain] %(%Y-%m-%dT%H:%M:%S%z)T %s\n' -1 "$*"; }
@@ -17,12 +17,12 @@ fi
 log "Start. Root: ${ROOT_DIR}"
 log "Target channel version: ${version}"
 
-log "Locating rust-toolchain files..."
-mapfile -d '' files < <(find "$ROOT_DIR" -type f -name "rust-toolchain" -print0)
+log "Locating rust-toolchain.toml files..."
+mapfile -d '' files < <(find "$ROOT_DIR" -type f -name "rust-toolchain.toml" -print0)
 count="${#files[@]}"
 log "Found ${count} file(s)."
 if (( count == 0 )); then
-  log "WARNING: no rust-toolchain files found. Nothing to update."
+  log "WARNING: no rust-toolchain.toml files found. Nothing to update."
   exit 0
 fi
 for f in "${files[@]}"; do log " - $f"; done
