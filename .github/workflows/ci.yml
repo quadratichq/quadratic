@@ -48,7 +48,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt, llvm-tools-preview
           target: wasm32-unknown-unknown
@@ -119,11 +119,10 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: nightly
           components: clippy, llvm-tools-preview
-          override: true
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -172,7 +171,7 @@ jobs:
           cache: "pip"
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt, llvm-tools-preview
           target: wasm32-unknown-unknown
@@ -256,7 +255,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt, llvm-tools-preview
           target: wasm32-unknown-unknown
@@ -289,7 +288,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt, llvm-tools-preview
           target: wasm32-unknown-unknown
