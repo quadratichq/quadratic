@@ -94,12 +94,12 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
   const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
 
   if (args.useToolsPrompt) {
-    const toolUseContext = getToolUseContext(args.source);
+    const toolUseContext = getToolUseContext(args.source, modelKey);
     args.messages = [...toolUseContext, ...args.messages];
   }
 
   if (args.useQuadraticContext) {
-    const quadraticContext = getQuadraticContext(args.language);
+    const quadraticContext = getQuadraticContext(args.source, args.language);
     args.messages = [...quadraticContext, ...args.messages];
   }
 

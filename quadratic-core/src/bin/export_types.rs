@@ -31,6 +31,8 @@ use quadratic_core::grid::js_types::JsHashValidationWarnings;
 use quadratic_core::grid::js_types::JsHashesDirty;
 use quadratic_core::grid::js_types::JsResponse;
 use quadratic_core::grid::js_types::JsSelectionContext;
+use quadratic_core::grid::js_types::JsSheetNameToColor;
+use quadratic_core::grid::js_types::JsSheetPosText;
 use quadratic_core::grid::js_types::JsTablesContext;
 use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
@@ -63,6 +65,7 @@ use quadratic_core::grid::sheet::validations::rules::validation_number::{
 use quadratic_core::grid::sheet::validations::rules::validation_text::{
     TextCase, TextMatch, ValidationText,
 };
+use quadratic_core::grid::sheet::validations::validation::ValidationUpdate;
 use quadratic_core::grid::sheet::validations::validation::{
     Validation, ValidationError, ValidationMessage, ValidationStyle,
 };
@@ -159,6 +162,8 @@ fn main() {
         JsRowHeight,
         JsSelectionContext,
         JsSheetFill,
+        JsSheetNameToColor,
+        JsSheetPosText,
         JsSnackbarSeverity,
         JsSummarizeSelectionResult,
         JsTableInfo,
@@ -199,7 +204,8 @@ fn main() {
         ValidationNumber,
         ValidationRule,
         ValidationStyle,
-        ValidationText
+        ValidationText,
+        ValidationUpdate,
     );
 
     if create_dir_all("../quadratic-client/src/app/quadratic-core-types").is_ok() {

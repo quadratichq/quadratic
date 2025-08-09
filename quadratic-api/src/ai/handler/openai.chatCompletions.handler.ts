@@ -27,9 +27,9 @@ export const handleOpenAIChatCompletionsRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-
   const { messages, tools, tool_choice } = getOpenAIChatCompletionsApiArgs(
     args,
+    options.aiModelMode,
     options.strictParams,
     options.imageSupport
   );

@@ -8,13 +8,16 @@ type GotoCellsOptions = {
   a1: string;
 };
 export const gotoCells = async (page: Page, { a1 }: GotoCellsOptions) => {
-  await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
+  // Only click if QuadraticCanvas or its descendants don't have focus
+  const canvasHasFocus = (await page.locator('#QuadraticCanvasID:focus-within').count()) > 0;
+  if (!canvasHasFocus) {
+    await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
+  }
   await page.waitForTimeout(2 * 1000);
   await page.keyboard.press('Control+G');
   await page.waitForSelector('[data-testid="goto-menu"]', { timeout: 2 * 1000 });
   await page.keyboard.type(a1);
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(5 * 1000);
   await assertSelection(page, { a1 });
 };
 
@@ -25,7 +28,7 @@ type AssertSelectionOptions = {
   a1: string;
 };
 export const assertSelection = async (page: Page, { a1 }: AssertSelectionOptions) => {
-  await expect(page.locator(`[data-testid="cursor-position"]`)).toHaveValue(a1);
+  await expect(page.locator(`[data-testid="cursor-position"]`)).toHaveValue(a1, { timeout: 10 * 1000 });
 };
 
 /**
@@ -38,8 +41,7 @@ type AssertCellValueOptions = {
 export const assertCellValue = async (page: Page, { a1, value }: AssertCellValueOptions) => {
   await gotoCells(page, { a1 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(5 * 1000);
-  await expect(page.locator('#cell-edit')).toHaveAttribute('data-test-value', value);
+  await expect(page.locator('#cell-edit')).toHaveAttribute('data-test-value', value, { timeout: 10 * 1000 });
   await page.keyboard.press('Escape');
   await page.waitForTimeout(5 * 1000);
 };
@@ -58,5 +60,27 @@ export const sheetRefreshPage = async (page: Page) => {
     await page.getByRole(`button`, { name: `close` }).first().click({ timeout: 5000 });
   } catch (e) {
     console.error(e);
+  }
+};
+
+// If message is an array, it can contain either of the messages
+type AssertValidationMessageOptions = {
+  a1: string;
+  title?: string;
+  message?: string;
+};
+export const assertValidationMessage = async (page: Page, { a1, title, message }: AssertValidationMessageOptions) => {
+  await gotoCells(page, { a1 });
+  const validationPanel = page.locator('[data-testid="validation-message"]');
+  await validationPanel.waitFor({ state: 'visible', timeout: 10 * 1000 });
+  if (title) {
+    await expect(validationPanel.locator('[data-testid="validation-message-title"]')).toContainText(title, {
+      timeout: 10 * 1000,
+    });
+  }
+  if (message) {
+    await expect(validationPanel.locator('[data-testid="validation-message-message"]')).toContainText(message, {
+      timeout: 10 * 1000,
+    });
   }
 };

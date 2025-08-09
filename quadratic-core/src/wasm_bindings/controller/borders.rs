@@ -10,23 +10,25 @@ impl GridController {
         border_selection: String,
         style: Option<String>,
         cursor: Option<String>,
-    ) -> Result<(), String> {
-        let selection =
-            serde_json::from_str(&selection).map_err(|_| "Invalid selection".to_string())?;
+    ) -> JsValue {
+        capture_core_error(|| {
+            let selection =
+                serde_json::from_str(&selection).map_err(|e| format!("Invalid selection: {e}"))?;
 
-        let border_selection = serde_json::from_str(&border_selection)
-            .map_err(|_| "Invalid border selection".to_string())?;
+            let border_selection = serde_json::from_str(&border_selection)
+                .map_err(|e| format!("Invalid border selection: {e}"))?;
 
-        let style = match style {
-            Some(style_str) => {
-                let style =
-                    serde_json::from_str(&style_str).map_err(|_| "Invalid style".to_string())?;
-                Some(style)
-            }
-            None => None,
-        };
+            let style = match style {
+                Some(style_str) => {
+                    let style = serde_json::from_str(&style_str)
+                        .map_err(|e| format!("Invalid style: {e}"))?;
+                    Some(style)
+                }
+                None => None,
+            };
 
-        self.set_borders(selection, border_selection, style, cursor);
-        Ok(())
+            self.set_borders(selection, border_selection, style, cursor);
+            Ok(None)
+        })
     }
 }

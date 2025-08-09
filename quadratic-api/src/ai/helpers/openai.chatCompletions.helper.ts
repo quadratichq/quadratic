@@ -28,6 +28,7 @@ import type {
   Content,
   FireworksModelKey,
   ImageContent,
+  ModelMode,
   OpenRouterModelKey,
   ParsedAIResponse,
   TextContent,
@@ -69,6 +70,7 @@ function convertToolResultContent(content: ToolResultContent): Array<ChatComplet
 
 export function getOpenAIChatCompletionsApiArgs(
   args: AIRequestHelperArgs,
+  aiModelMode: ModelMode,
   strictParams: boolean,
   imageSupport: boolean
 ): {
@@ -131,7 +133,7 @@ export function getOpenAIChatCompletionsApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -139,10 +141,14 @@ export function getOpenAIChatCompletionsApiArgs(
 
 function getOpenAITools(
   source: AISource,
+  aiModelMode: ModelMode,
   toolName: AITool | undefined,
   strictParams: boolean
 ): ChatCompletionTool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }
