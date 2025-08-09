@@ -152,7 +152,7 @@ ${AICellsToMarkdown(table.last_rows_visible_values)}`;
           summary += `
 ### '${currentSheetName}' Code tables
 
-This is code on the sheet:
+These are the code tables on the sheet:
 `;
 
           currentSheetCodeTables.forEach((table) => {
@@ -173,27 +173,25 @@ ${AICellsToMarkdown(table.last_rows_visible_values)}`;
 
         if (currentSheetCharts.length > 0) {
           summary += `
-
 ### '${currentSheetName}' Charts
 
-This is a chart on the sheet:
+These are the charts on the sheet:
 `;
 
           currentSheetCharts.forEach((chart) => {
             summary += `
 #### ${chart.chart_name}
 
-'${chart.chart_name}' is a code cell of type ${chart.language} creating a chart with bounds of (${chart.bounds}).
+'${chart.chart_name}' is a code cell of type ${chart.language} creating a chart with bounds of ${chart.bounds}.
 `;
           });
         }
 
         if (flatDataRects.length > 0) {
           summary += `
-
 ### '${currentSheetName}' Flat data
 
-This is flat data on the sheet (limited to ${maxRows} rows each):
+This is the flat data on the sheet (limited to ${maxRows} rows each):
 `;
 
           flatDataRects.forEach((description) => {

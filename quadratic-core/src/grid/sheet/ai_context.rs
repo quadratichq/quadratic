@@ -197,11 +197,11 @@ impl Sheet {
                 continue;
             }
 
-            let first_row_rect = Rect::from_numbers(
+            let first_row_rect = Rect::new(
                 bounds.min.x,
                 bounds.min.y + table.y_adjustment(false),
-                bounds.width() as i64,
-                sample_rows as i64,
+                bounds.max.x,
+                bounds.min.y + (bounds.height() as i64).min(sample_rows as i64) - 1,
             );
             let first_rows_visible_values =
                 self.js_cell_value_description(first_row_rect, Some(sample_rows));
@@ -213,11 +213,11 @@ impl Sheet {
             let last_rows_rect = if starting_last_row > bounds.max.y {
                 None
             } else {
-                Some(Rect::from_numbers(
+                Some(Rect::new(
                     bounds.min.x,
                     starting_last_row,
-                    bounds.width() as i64,
-                    bounds.max.y - starting_last_row + 1,
+                    bounds.max.x,
+                    bounds.max.y,
                 ))
             };
 
