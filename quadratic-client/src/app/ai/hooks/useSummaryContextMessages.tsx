@@ -4,8 +4,10 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
+import { pluralize } from '@/app/helpers/pluralize';
 import type { JsCellValueDescription } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { joinListWith } from '@/shared/components/JointListWith';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -91,45 +93,32 @@ export function useSummaryContextMessages() {
 
 ## Sheets
 
-File has ${sheetCount} sheet${sheetCount !== 1 ? 's' : ''}, named ${allSheets.map((sheet) => `'${sheet.name}'`).join(', ')}.`;
+File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({ arr: allSheets.map((sheet) => `'${sheet.name}'`), conjunction: 'and' })}.`;
 
       summary += `
 
 ## '${currentSheetName}'
 
-This is the user's current sheet.
+- user's current sheet
+- ${sheets.getAISheetBounds(currentSheetName)}`;
 
-`;
-
-      if (!hasCurrentSheetData && otherSheetsWithData.length === 0) {
-        summary += `
-There is no data in any sheets.`;
-      } else {
-        summary += `The sheet has `;
-        if (hasCurrentSheetData) {
-          const tableInfo = [];
-          if (currentSheetTables.length > 0) {
-            tableInfo.push(`${currentSheetTables.length} data table${currentSheetTables.length !== 1 ? 's' : ''}`);
-          }
-          if (currentSheetCodeTables.length > 0) {
-            tableInfo.push(
-              `${currentSheetCodeTables.length} code table${currentSheetCodeTables.length !== 1 ? 's' : ''}`
-            );
-          }
-          if (currentSheetCharts.length > 0) {
-            tableInfo.push(`${currentSheetCharts.length} chart${currentSheetCharts.length !== 1 ? 's' : ''}`);
-          }
-
-          if (tableInfo.length > 0) {
-            summary += `${tableInfo.length > 2 ? tableInfo.slice(0, -1).join(', ') + ', and ' + tableInfo.slice(-1) : tableInfo.join(' and ')}.`;
-          } else {
-            summary += `only data.`;
-          }
+      if (hasCurrentSheetData) {
+        if (currentSheetTables.length > 0) {
+          summary += `
+- ${currentSheetTables.length} data ${pluralize('table', currentSheetTables.length)}`;
         }
+        if (currentSheetCodeTables.length > 0) {
+          summary += `
+- ${currentSheetCodeTables.length} code ${pluralize('table', currentSheetCodeTables.length)}`;
+        }
+        if (currentSheetCharts.length > 0) {
+          summary += `
+- ${currentSheetCharts.length} ${pluralize('chart', currentSheetCharts.length)}`;
+        }
+        summary += '\n';
 
         if (currentSheetTables.length > 0) {
           summary += `
-
 ### '${currentSheetName}' Data tables:
 `;
         }
@@ -182,7 +171,7 @@ These are the charts on the sheet:
             summary += `
 #### ${chart.chart_name}
 
-'${chart.chart_name}' is a code cell of type ${chart.language} creating a chart with bounds of ${chart.bounds}.
+'${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}.
 `;
           });
         }
@@ -200,37 +189,42 @@ ${AICellsToMarkdown(description)}`;
           });
         }
 
-        if (otherSheetsWithData.length > 0 || otherEmptySheets.length > 0) {
+        const sheetList = [...otherSheetsWithData, ...otherEmptySheets];
+
+        if (sheetList.length > 0) {
           summary += `
-## Other Sheets
+## Other sheets
+
+Use get_cell_data tool to get more information about the data in these sheets.
 `;
         }
-        if (otherSheetsWithData.length > 0) {
-          summary += `
-Sheets with data: ${otherSheetsWithData.map((name) => `'${name}'`).join(', ')}.`;
-        }
 
-        if (otherEmptySheets.length > 0) {
+        for (const sheet of sheetList) {
+          if (sheet === currentSheetName) {
+            continue;
+          }
           summary += `
-Empty sheets: ${otherEmptySheets.map((name) => `'${name}'`).join(', ')}.`;
+### ${sheet}
+
+- ${sheets.getAISheetBounds(sheet)}`;
+          const sheetDataTables = dataTables.filter((table) => table.sheet_name === sheet);
+          const sheetCodeTables = codeTables.filter((table) => table.sheet_name === sheet);
+          const sheetCharts = charts.filter((chart) => chart.sheet_name === sheet);
+          if (sheetDataTables.length > 0) {
+            summary += `
+- ${sheetDataTables.length} data ${pluralize('table', sheetDataTables.length)}, named ${joinListWith({ arr: sheetDataTables.map((table) => `'${table.data_table_name}'`), conjunction: 'and' })}`;
+          }
+          if (sheetCodeTables.length > 0) {
+            summary += `
+- ${sheetCodeTables.length} code ${pluralize('table', sheetCodeTables.length)}, named ${joinListWith({ arr: sheetCodeTables.map((table) => `'${table.code_table_name}'`), conjunction: 'and' })}`;
+          }
+          if (sheetCharts.length > 0) {
+            summary += `
+- ${sheetCharts.length} ${pluralize('chart', sheetCharts.length)}, named ${joinListWith({ arr: sheetCharts.map((chart) => `'${chart.chart_name}'`), conjunction: 'and' })}`;
+          }
+          summary += `\n`;
         }
       }
-
-      // // Add table names with ranges for easy reference
-      // const allDataTablesWithRanges = dataTables.map(
-      //   (table) => `${table.data_table_name} (${table.bounds}) on '${table.sheet_name}'`
-      // );
-      // if (allDataTablesWithRanges.length > 0) {
-      //   summary += `\nAvailable data tables: ${allDataTablesWithRanges.join(', ')}.`;
-      // }
-
-      // // Add code table names with ranges
-      // const allCodeTablesWithRanges = codeTables.map(
-      //   (table) => `${table.code_table_name || 'Unnamed'} (${table.bounds}) on '${table.sheet_name}'`
-      // );
-      // if (allCodeTablesWithRanges.length > 0) {
-      //   summary += `\nAvailable code tables: ${allCodeTablesWithRanges.join(', ')}.`;
-      // }
 
       console.log(summary);
       return [
