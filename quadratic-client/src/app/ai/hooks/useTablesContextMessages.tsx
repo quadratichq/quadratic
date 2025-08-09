@@ -34,14 +34,15 @@ export function useTablesContextMessages() {
         spill: table.spill,
       };
 
-      // If we have too many formula tables, exclude first_row_visible_values and error to reduce context size
-      if (filteredFormulaTables.length <= 500) {
-        return {
-          ...baseTable,
-          first_row_visible_values: table.first_row_visible_values.map((item) => item.value),
-          error: table.error,
-        };
-      }
+      // TODO!!!
+      // // If we have too many formula tables, exclude first_row_visible_values and error to reduce context size
+      // if (filteredFormulaTables.length <= 500) {
+      //   return {
+      //     ...baseTable,
+      //     first_row_visible_values: table.first_row_visible_values.map((item) => item.value),
+      //     error: table.error,
+      //   };
+      // }
 
       return baseTable;
     });

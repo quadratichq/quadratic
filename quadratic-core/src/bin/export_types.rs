@@ -22,6 +22,7 @@ use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::js_types::JsChartContext;
+use quadratic_core::grid::js_types::JsChartSummaryContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsColumnWidth;
 use quadratic_core::grid::js_types::JsCoordinate;
@@ -36,7 +37,7 @@ use quadratic_core::grid::js_types::JsSheetPosText;
 use quadratic_core::grid::js_types::JsTablesContext;
 use quadratic_core::grid::js_types::JsUpdateCodeCell;
 use quadratic_core::grid::js_types::{
-    CellFormatSummary, JsCellValue, JsCellValuePos, JsCellValuePosContext, JsClipboard, JsCodeCell,
+    CellFormatSummary, JsCellValue, JsCellValuePos, JsClipboard, JsCodeCell,
     JsDataTableColumnHeader, JsHtmlOutput, JsNumber, JsOffset, JsRenderCell, JsRenderCellSpecial,
     JsRenderCodeCell, JsRenderCodeCellState, JsRenderFill, JsReturnInfo, JsRowHeight, JsSheetFill,
     JsSnackbarSeverity, JsSummarizeSelectionResult, JsValidationWarning,
@@ -134,7 +135,6 @@ fn main() {
         JsCellsA1Values,
         JsCellValue,
         JsCellValuePos,
-        JsCellValuePosContext,
         JsCellValueResult,
         JsChartContext,
         JsClipboard,
@@ -143,6 +143,7 @@ fn main() {
         JsCodeTableContext,
         JsColumnWidth,
         JsCoordinate,
+        JsChartSummaryContext,
         JsDataTableColumnHeader,
         JsDataTableContext,
         JsFormulaParseResult,

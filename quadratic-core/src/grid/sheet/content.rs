@@ -1,5 +1,5 @@
 use crate::{
-    Pos,
+    Pos, Rect,
     a1::{A1Context, A1Selection},
     grid::Sheet,
 };
@@ -16,6 +16,10 @@ impl Sheet {
             return true;
         }
         self.has_table_content(pos, false)
+    }
+
+    pub fn has_content_in_rect(&self, rect: Rect) -> bool {
+        self.columns.has_content(rect) || self.data_tables.has_content(rect)
     }
 
     /// Returns true if the cell at Pos has content (ie, not blank). Ignores

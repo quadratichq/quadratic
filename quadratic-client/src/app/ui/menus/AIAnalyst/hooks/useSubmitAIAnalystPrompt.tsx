@@ -127,7 +127,7 @@ export function useSubmitAIAnalystPrompt() {
           ...summaryContext,
           ...getPromptAndInternalMessages(chatMessages),
         ];
-
+        console.log(((visibleContext[0] as any).content[0] as any).text);
         return messagesWithContext;
       },
     [

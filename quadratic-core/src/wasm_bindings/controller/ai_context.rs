@@ -53,10 +53,10 @@ impl GridController {
     /// gets all tables (data, code, charts) in the grid, single cell (data, code) tables are not included
     /// returns an array of JsTablesContext for all tables in the grid
     #[wasm_bindgen(js_name = "getAITablesContext")]
-    pub fn js_get_ai_tables_context(&self) -> Result<JsValue, JsValue> {
+    pub fn js_get_ai_tables_context(&self, sample_rows: usize) -> Result<JsValue, JsValue> {
         let mut tables: Vec<JsTablesContext> = Vec::new();
         for sheet in self.grid().sheets().values() {
-            if let Some(tables_in_sheet) = sheet.get_ai_tables_context() {
+            if let Some(tables_in_sheet) = sheet.get_ai_tables_context(sample_rows) {
                 tables.push(tables_in_sheet);
             }
         }
