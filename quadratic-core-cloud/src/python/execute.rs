@@ -8,7 +8,6 @@ use crate::python::utils::{analyze_code, c_string, process_imports};
 
 static PROCESS_OUTPUT_CODE: &str = include_str!("py_code/process_output.py");
 static QUADRATIC: &str = include_str!("py_code/quadratic.py");
-static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
 
 pub(crate) fn execute(
     code: &str,

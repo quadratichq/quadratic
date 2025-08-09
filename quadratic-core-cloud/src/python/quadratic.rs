@@ -9,13 +9,13 @@ use std::ffi::CString;
 
 use crate::error::Result;
 
+static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
+
 /// Rust function to handle q.pos() calls from Python  
 #[pyfunction]
 pub(crate) fn pos() -> PyResult<(i32, i32)> {
     Ok((0, 0))
 }
-
-static CONVERT_CELL_VALUE: &str = include_str!("py_code/convert_cell_value.py");
 
 // Convert JsCellsA1Response to either a single value or a pandas DataFrame directly in Python
 fn convert_cells_response(
@@ -23,7 +23,6 @@ fn convert_cells_response(
     result: JsCellsA1Response,
     first_row_header: bool,
 ) -> PyResult<PyObject> {
-    // Handle error case
     if let Some(error) = &result.error {
         return Err(PyErr::new::<PyException, _>(format!(
             "{}",
@@ -31,12 +30,13 @@ fn convert_cells_response(
         )));
     }
 
-    // Handle None case
+    // handle the None case
     let values = match &result.values {
         Some(v) => v,
         None => return Ok(py.None()),
     };
 
+    // create a dictionary to store the values used in the Python code
     let locals = PyDict::new(py);
     locals.set_item("w", values.w)?;
     locals.set_item("h", values.h)?;
@@ -45,7 +45,7 @@ fn convert_cells_response(
     locals.set_item("first_row_header", first_row_header)?;
     locals.set_item("has_headers", values.has_headers)?;
 
-    // Convert cells to Python objects
+    // convert cells to Python objects
     let cells_list = pyo3::types::PyList::empty(py);
     for cell in &values.cells {
         let cell_dict = pyo3::types::PyDict::new(py);
@@ -57,9 +57,8 @@ fn convert_cells_response(
     }
     locals.set_item("cells_data", cells_list)?;
 
-    // Create the conversion directly in Python - this is simpler and more reliable than trying
+    // create the conversion directly in Python - this is simpler and more reliable than trying
     // to convert through Rust types which have version-specific APIs
-    // Execute the Python code
     let c_code = CString::new(CONVERT_CELL_VALUE)?;
     py.run(c_code.as_c_str(), None, Some(&locals))?;
     let result =
@@ -119,7 +118,6 @@ pub(crate) fn create_get_cells_function(
 #[cfg(test)]
 
 mod tests {
-    use std::time::Instant;
 
     use quadratic_core::controller::execution::run_code::get_cells::{
         JsCellsA1Value, JsCellsA1Values,
@@ -127,8 +125,7 @@ mod tests {
 
     use super::*;
 
-    fn test_get_cells(a1: String) -> Result<JsCellsA1Response> {
-        println!("get_cells: {:?}", a1);
+    fn test_get_cells(_a1: String) -> Result<JsCellsA1Response> {
         Ok(JsCellsA1Response {
             values: None,
             error: None,
@@ -138,7 +135,7 @@ mod tests {
     #[test]
     fn test_convert_cells_response() {
         Python::with_gil(|py| {
-            // Test single cell conversion
+            // test single cell conversion
             let single_cell_response = JsCellsA1Response {
                 values: Some(JsCellsA1Values {
                     cells: vec![JsCellsA1Value {
@@ -160,9 +157,8 @@ mod tests {
 
             let result = convert_cells_response(py, single_cell_response, false);
             assert!(result.is_ok());
-            println!("Single cell conversion successful");
 
-            // Test multiple cells conversion (should create DataFrame)
+            // test multiple cells conversion (should create DataFrame)
             let multi_cell_response = JsCellsA1Response {
                 values: Some(JsCellsA1Values {
                     cells: vec![
@@ -170,25 +166,25 @@ mod tests {
                             x: 0,
                             y: 0,
                             v: "Name".to_string(),
-                            t: 1, // Text type
+                            t: 1, // text type
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 0,
                             v: "Age".to_string(),
-                            t: 1, // Text type
+                            t: 1, // text type
                         },
                         JsCellsA1Value {
                             x: 0,
                             y: 1,
                             v: "Alice".to_string(),
-                            t: 1, // Text type
+                            t: 1, // text type
                         },
                         JsCellsA1Value {
                             x: 1,
                             y: 1,
                             v: "25".to_string(),
-                            t: 2, // Number type
+                            t: 2, // number type
                         },
                     ],
                     x: 0,
@@ -204,9 +200,8 @@ mod tests {
 
             let result = convert_cells_response(py, multi_cell_response, true);
             assert!(result.is_ok());
-            println!("Multi cell conversion with headers successful");
 
-            // Test error case
+            // test error case
             let error_response = JsCellsA1Response {
                 values: None,
                 error: Some(JsCellsA1Error {
@@ -216,7 +211,6 @@ mod tests {
 
             let result = convert_cells_response(py, error_response, false);
             assert!(result.is_err());
-            println!("Error handling test successful");
         });
     }
 }

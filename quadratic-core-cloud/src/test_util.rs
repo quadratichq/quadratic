@@ -17,8 +17,6 @@ use tower::util::ServiceExt;
 use uuid::Uuid;
 
 use crate::config::{Config, config};
-use crate::proto::request::encode_scheduled_task;
-use crate::proto::response::decode_scheduled_task;
 use crate::server::app;
 use crate::state::State;
 use crate::state::pubsub::ScheduledTask;

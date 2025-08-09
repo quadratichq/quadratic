@@ -9,7 +9,10 @@ use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
 };
-use quadratic_rust_shared::{SharedError, clean_errors, storage::error::Storage as StorageError};
+use quadratic_rust_shared::{
+    ErrorLevel, SharedError, clean_errors, net::websocket_server::error::WebsocketServerError,
+    storage::error::Storage as StorageError,
+};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -50,6 +53,9 @@ pub enum CoreCloudError {
     #[error("Unable to load file {0}: {1}")]
     LoadFile(String, String),
 
+    #[error("Multiplayer error: {0}")]
+    Multiplayer(String),
+
     #[error("Not Found: {0}")]
     NotFound(String),
 
@@ -65,6 +71,9 @@ pub enum CoreCloudError {
     #[error("Python timeout")]
     PythonTimeout,
 
+    #[error("Receiving message error: {0}")]
+    ReceivingMessage(String),
+
     #[error("Error requesting data: {0}")]
     Request(String),
 
@@ -77,11 +86,11 @@ pub enum CoreCloudError {
     #[error("Storage error: {0}")]
     Storage(String),
 
-    #[error("Transaction queue error: {0}")]
-    TransactionQueue(String),
-
     #[error("unknown error: {0}")]
     Unknown(String),
+
+    #[error("Worker not found: {0}")]
+    WorkerNotFound(String),
 }
 
 // Convert CoreCloudErrors into readable responses with appropriate status codes.
@@ -168,5 +177,24 @@ impl<T> From<std::sync::PoisonError<std::sync::MutexGuard<'_, T>>> for CoreCloud
 impl<T> From<tokio::sync::mpsc::error::SendError<T>> for CoreCloudError {
     fn from(error: tokio::sync::mpsc::error::SendError<T>) -> Self {
         CoreCloudError::Channel(error.to_string())
+    }
+}
+
+impl From<&CoreCloudError> for ErrorLevel {
+    fn from(error: &CoreCloudError) -> Self {
+        match error {
+            CoreCloudError::Authentication(_) => ErrorLevel::Error,
+            _ => ErrorLevel::Warning,
+        }
+    }
+}
+
+impl From<WebsocketServerError> for CoreCloudError {
+    fn from(error: WebsocketServerError) -> Self {
+        match error {
+            WebsocketServerError::Authentication(msg) => CoreCloudError::Authentication(msg),
+            WebsocketServerError::SendingMessage(msg) => CoreCloudError::InternalServer(msg),
+            _ => CoreCloudError::InternalServer(error.to_string()),
+        }
     }
 }

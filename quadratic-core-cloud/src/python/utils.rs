@@ -45,7 +45,4 @@ pub(crate) fn analyze_code(
 
 #[cfg(test)]
 
-mod tests {
-
-    use super::*;
-}
+mod tests {}

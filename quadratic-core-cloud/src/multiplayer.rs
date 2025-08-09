@@ -5,17 +5,20 @@ use uuid::Uuid;
 
 use quadratic_core::controller::{operations::operation::Operation, transaction::Transaction};
 use quadratic_rust_shared::{
-    net::websocket::{WebSocketSender, Websocket, get_enter_room_message},
+    net::websocket_client::{WebSocketSender, WebsocketClient, get_enter_room_message},
     protobuf::quadratic::transaction::BinaryTransaction as BinaryTransactionProto,
 };
 
 use crate::{error::Result, state::State};
 
 /// Connect to the Multiplayer server
-pub(crate) async fn connect(state: &Arc<State>) -> Result<(Websocket, Response<Option<Vec<u8>>>)> {
+pub(crate) async fn connect(
+    state: &Arc<State>,
+) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
     let token = state.settings.m2m_auth_token.to_owned();
     let headers = vec![("authorization".into(), format!("Bearer {}", token))];
-    let websocket = Websocket::connect_with_headers("ws://localhost:3001/ws", headers).await?;
+    let websocket =
+        WebsocketClient::connect_with_headers("ws://localhost:3001/ws", headers).await?;
 
     Ok(websocket)
 }
@@ -34,7 +37,8 @@ pub(crate) async fn enter_room(
     Ok(())
 }
 
-/// Send a transaction to the Multiplayer server
+/// Send a transaction to the Multiplayer server.
+/// Returns the id of the transaction.
 pub(crate) async fn send_transaction(
     websocket: &mut WebSocketSender,
     file_id: Uuid,

@@ -6,11 +6,13 @@
 //! to all users in a room.
 
 use base64::{Engine, engine::general_purpose::STANDARD};
+use quadratic_rust_shared::ErrorLevel;
+use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::quadratic_api::{ADMIN_PERMS, get_file_perms};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::error::{ErrorLevel, MpError, Result};
+use crate::error::{MpError, Result};
 use crate::get_mut_room;
 use crate::message::response::{BinaryTransaction, Transaction};
 use crate::message::{
@@ -23,7 +25,6 @@ use crate::permissions::{
 use crate::state::user::UserSocket;
 use crate::state::{
     State,
-    connection::PreConnection,
     pubsub::GROUP_NAME,
     user::{User, UserState},
 };
@@ -416,6 +417,7 @@ pub(crate) mod tests {
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction as CoreTransaction;
     use quadratic_core::grid::SheetId;
+    use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
     use tokio::net::TcpStream;
     use tokio::sync::Mutex;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};

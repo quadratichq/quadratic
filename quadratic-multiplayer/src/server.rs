@@ -16,8 +16,11 @@ use axum::{
 use axum_extra::TypedHeader;
 use futures::stream::StreamExt;
 use futures_util::SinkExt;
-use quadratic_rust_shared::auth::jwt::{authorize, get_jwks};
-use serde::{Deserialize, Serialize};
+use quadratic_rust_shared::{
+    ErrorLevel,
+    auth::jwt::get_jwks,
+    net::websocket_server::{pre_connection::PreConnection, server::WebsocketServer},
+};
 use std::{net::SocketAddr, sync::Arc};
 use std::{ops::ControlFlow, time::Duration};
 use tokio::{sync::Mutex, time};
@@ -27,7 +30,7 @@ use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 use crate::{
     background_worker,
     config::config,
-    error::{ErrorLevel, MpError, Result},
+    error::{MpError, Result},
     health::{full_healthcheck, healthcheck},
     message::{
         broadcast,
@@ -36,16 +39,10 @@ use crate::{
         request::MessageRequest,
         response::MessageResponse,
     },
-    state::{State, connection::PreConnection, user::UserSocket},
+    state::{State, user::UserSocket},
 };
 
 const STATS_INTERVAL_S: u64 = 60;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Claims {
-    sub: String,
-    exp: usize,
-}
 
 /// Construct the application router.  This is separated out so that it can be
 /// integration tested.
@@ -162,70 +159,28 @@ async fn ws_handler(
     cookie: Option<TypedHeader<headers::Cookie>>,
     headers: HeaderMap,
 ) -> impl IntoResponse {
-    let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
-        user_agent.to_string()
-    });
-    let addr = addr.to_string();
+    let pre_connection = WebsocketServer::authenticate(
+        user_agent,
+        addr,
+        cookie,
+        headers,
+        state.settings.authenticate_jwt,
+        state.settings.jwks.clone().unwrap(),
+    );
 
-    #[allow(unused)]
-    let mut jwt = None;
-
-    #[cfg(test)]
-    {
-        jwt = Some(crate::test_util::TOKEN.to_string());
-    }
-
-    if state.settings.authenticate_jwt {
-        let auth_error = |error: &str| MpError::Authentication(error.to_string());
-
-        // validate the JWT or ignore for anonymous users if it doesn't exist
-        let result = async {
-            let cookie = cookie.ok_or_else(|| auth_error("No cookie found"))?;
-            if let Some(token) = cookie.get("jwt") {
-                let jwks: jsonwebtoken::jwk::JwkSet = state
-                    .settings
-                    .jwks
-                    .clone()
-                    .ok_or_else(|| auth_error("No JWKS found"))?;
-
-                authorize::<Claims>(&jwks, token, false, true)?;
-
-                jwt = Some(token.to_owned());
-
-                Ok::<_, MpError>(())
-            } else {
-                // this is for anonymous users
-                Ok::<_, MpError>(())
-            }
+    match pre_connection {
+        Ok(pre_connection) => {
+            // upgrade the connection
+            let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
+            ws.on_upgrade(move |socket| {
+                handle_socket(socket, state, addr.to_string(), pre_connection)
+            })
         }
-        .await;
-
-        if let Err(error) = result {
+        Err(error) => {
             tracing::warn!("Error authorizing user: {:?}", error);
             return (StatusCode::BAD_REQUEST, "Invalid token").into_response();
         }
     }
-
-    // check if the connection is m2m service connection
-    // strip "Bearer " from the token
-    let m2m_token = headers.get("authorization").map_or(None, |authorization| {
-        authorization
-            .to_str()
-            .ok()
-            .map(|s| s.to_string().replace("Bearer ", ""))
-    });
-
-    let pre_connection = PreConnection::new(jwt, m2m_token);
-
-    tracing::info!(
-        "New connection {}, `{user_agent}` at {addr}, is_m2m={}",
-        pre_connection.id,
-        pre_connection.m2m_token.is_some()
-    );
-
-    // upgrade the connection
-    let ws = ws.max_message_size(1024 * 1024 * 1000); // 1GB
-    ws.on_upgrade(move |socket| handle_socket(socket, state, addr, pre_connection))
 }
 
 // After websocket is established, delegate incoming messages as they arrive.
@@ -367,32 +322,18 @@ async fn process_message(
     Ok(ControlFlow::Continue(()))
 }
 
-pub(crate) async fn send_text(sender: UserSocket, message: MessageResponse) -> Result<()> {
-    let text = serde_json::to_string(&message)?;
-
-    (*sender.lock().await)
-        .send(Message::Text(text.into()))
-        .await
-        .map_err(|e| MpError::SendingMessage(e.to_string()))
-}
-
-pub(crate) async fn send_binary(sender: UserSocket, message: MessageResponse) -> Result<()> {
-    let binary = encode_message(message)?;
-
-    (*sender.lock().await)
-        .send(Message::Binary(binary.into()))
-        .await
-        .map_err(|e| MpError::SendingMessage(e.to_string()))
-}
-
 pub(crate) async fn send_response(
     sender: UserSocket,
     message: Option<MessageResponse>,
 ) -> Result<()> {
     if let Some(message) = message {
         return match message.is_binary() {
-            true => send_binary(sender, message).await,
-            false => send_text(sender, message).await,
+            true => WebsocketServer::send_binary(sender, encode_message(message)?.into())
+                .await
+                .map_err(MpError::from),
+            false => WebsocketServer::send_text(sender, message)
+                .await
+                .map_err(MpError::from),
         };
     }
 

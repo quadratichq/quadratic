@@ -1,4 +1,3 @@
-use chrono::Utc;
 use quadratic_core::controller::transaction::{Transaction, TransactionServer};
 use quadratic_rust_shared::pubsub::{
     Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection,

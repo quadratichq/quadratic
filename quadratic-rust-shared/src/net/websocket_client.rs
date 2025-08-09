@@ -22,7 +22,7 @@ use crate::net::error::Net;
 
 pub type WebSocketTcpStream = WebSocketStream<MaybeTlsStream<TcpStream>>;
 
-pub struct Websocket {
+pub struct WebsocketClient {
     url: String,
     ws_stream: WebSocketTcpStream,
 }
@@ -35,9 +35,9 @@ pub struct WebSocketReceiver {
     stream: SplitStream<WebSocketTcpStream>,
 }
 
-impl Websocket {
+impl WebsocketClient {
     /// Connect to a websocket server
-    pub async fn connect(url: &str) -> Result<(Websocket, Response<Option<Vec<u8>>>)> {
+    pub async fn connect(url: &str) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
         Self::connect_with_headers(url, vec![]).await
     }
 
@@ -45,7 +45,7 @@ impl Websocket {
     pub async fn connect_with_headers(
         url: &str,
         headers: Vec<(String, String)>,
-    ) -> Result<(Websocket, Response<Option<Vec<u8>>>)> {
+    ) -> Result<(WebsocketClient, Response<Option<Vec<u8>>>)> {
         let mut request = url.into_client_request().map_err(Self::error)?;
 
         for (key, value) in headers {
@@ -58,7 +58,7 @@ impl Websocket {
         let (ws_stream, response) = connect_async(request).await.map_err(Self::error)?;
 
         Ok((
-            Websocket {
+            WebsocketClient {
                 url: url.into(),
                 ws_stream,
             },
@@ -115,7 +115,7 @@ impl Websocket {
 
     /// Error helper
     fn error(e: impl ToString) -> SharedError {
-        SharedError::Net(Net::Websocket(e.to_string()))
+        SharedError::Net(Net::WebsocketClient(e.to_string()))
     }
 }
 
@@ -125,10 +125,13 @@ impl WebSocketSender {
         let message = match message {
             Message::Text(text) => Message::text(text),
             Message::Binary(binary) => Message::binary(binary),
-            _ => return Err(Websocket::error("Unsupported message type")),
+            _ => return Err(WebsocketClient::error("Unsupported message type")),
         };
 
-        self.sink.send(message).await.map_err(Websocket::error)?;
+        self.sink
+            .send(message)
+            .await
+            .map_err(WebsocketClient::error)?;
 
         Ok(())
     }
@@ -138,7 +141,7 @@ impl WebSocketSender {
         self.sink
             .send(Message::text(message))
             .await
-            .map_err(Websocket::error)?;
+            .map_err(WebsocketClient::error)?;
         Ok(())
     }
 
@@ -147,7 +150,7 @@ impl WebSocketSender {
         self.sink
             .send(Message::binary(message.to_vec()))
             .await
-            .map_err(Websocket::error)?;
+            .map_err(WebsocketClient::error)?;
         Ok(())
     }
 }
@@ -159,7 +162,7 @@ impl WebSocketReceiver {
             Some(Ok(Message::Text(text))) => Ok(Some(text.to_string())),
             Some(Ok(Message::Close(_))) => Ok(None),
             Some(Ok(_)) => Ok(None), // Ignore binary, ping, pong messages
-            Some(Err(e)) => Err(Websocket::error(e)),
+            Some(Err(e)) => Err(WebsocketClient::error(e)),
             None => Ok(None), // Stream ended
         }
     }
@@ -235,11 +238,13 @@ mod tests {
     async fn test_websocket_send_and_receive() {
         let url = "ws://127.0.0.1:3001/ws";
         let headers = vec![("Authorization".to_string(), get_authorization_header())];
-        let (mut websocket, response) =
-            Websocket::connect_with_headers(url, headers).await.unwrap();
+        let (mut websocket, response) = WebsocketClient::connect_with_headers(url, headers)
+            .await
+            .unwrap();
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);
 
         let message = get_enter_room_message(
+            Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap(),
             Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap(),
             Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap(),
         );
@@ -260,7 +265,7 @@ mod tests {
     #[tokio::test]
     async fn test_websocket_connection_error() {
         let invalid_url = "ws://invalid-url-that-does-not-exist:12345/ws";
-        let result = Websocket::connect(invalid_url).await;
+        let result = WebsocketClient::connect(invalid_url).await;
         assert!(result.is_err(), "Connection to invalid URL should fail");
     }
 
@@ -272,7 +277,9 @@ mod tests {
             ("X-Custom-Header".to_string(), "test-value".to_string()),
         ];
 
-        let (result, response) = Websocket::connect_with_headers(url, headers).await.unwrap();
+        let (result, response) = WebsocketClient::connect_with_headers(url, headers)
+            .await
+            .unwrap();
         let get_header = |header: &str| response.headers().get(header).unwrap().to_str().unwrap();
         assert_eq!(result.url(), url);
         assert_eq!(response.status(), StatusCode::SWITCHING_PROTOCOLS);

@@ -7,15 +7,17 @@ mod auth;
 mod config;
 mod core;
 mod error;
+mod file;
 mod health;
+mod message;
 mod multiplayer;
-mod proto;
-pub(crate) mod python;
+mod python;
 mod scheduled_tasks;
 mod server;
 mod state;
 #[cfg(test)]
 mod test_util;
+mod worker;
 
 use error::Result;
 

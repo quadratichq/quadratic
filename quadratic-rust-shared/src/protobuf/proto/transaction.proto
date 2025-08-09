@@ -22,7 +22,42 @@ package quadratic;
 
 import "google/protobuf/timestamp.proto";
 
+service CoreCloud {
+  rpc Startup(StartupCoreCloud) returns (StartupCoreCloudAck);
+  rpc Transaction(SendTransaction) returns (TransactionAck);
+  rpc Shutdown(ShutdownCoreCloud) returns (ShutdownCoreCloudAck);
+}
+
+message StartupCoreCloud {
+  string type = 1;
+  string file_id = 2;
+}
+
+message StartupCoreCloudAck {
+  string type = 1;
+  string file_id = 2;
+}
+
+message ShutdownCoreCloud {
+  string type = 1;
+  string file_id = 2;
+}
+
+message ShutdownCoreCloudAck {
+  string type = 1;
+  string file_id = 2;
+}
+
+
 message SendTransaction {
+  string type = 1;
+  string id = 2;
+  string session_id = 3;
+  string file_id = 4;
+  bytes operations = 5;
+}
+
+message TransactionAck {
   string type = 1;
   string id = 2;
   string session_id = 3;
@@ -73,4 +108,10 @@ message ScheduledTask {
   google.protobuf.Timestamp start_datetime = 5;
   optional google.protobuf.Timestamp end_datetime = 6;
   uint64 frequency_minutes = 7;
+}
+
+message Error {
+  string type = 1;
+  string error = 2;
+  string error_level = 3;
 }

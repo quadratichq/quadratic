@@ -1,18 +1,15 @@
 use chrono::{DateTime, Utc};
-use quadratic_core::{
-    compression::{decompress_and_deserialize, remove_header},
-    controller::transaction::{Transaction, TransactionHeader, TransactionVersion},
-};
+use prost::Message;
+use prost_types::Timestamp;
+use quadratic_rust_shared::protobuf::quadratic::transaction::ScheduledTask as ScheduledTaskProto;
 use quadratic_rust_shared::pubsub::{
     Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection,
 };
 use uuid::Uuid;
 
-use crate::{
-    error::{CoreCloudError, Result},
-    proto::request::encode_scheduled_task,
-    state::State,
-};
+use crate::{error::Result, state::State};
+
+pub static GROUP_NAME: &str = "quadratic-core-cloud-1";
 
 #[derive(Debug, Clone)]
 pub(crate) struct ScheduledTask {
@@ -71,7 +68,8 @@ impl PubSub {
         let key = scheduled_task.start_datetime.timestamp_millis().to_string();
 
         // turn BinaryTransaction into Protobuf
-        let encoded = encode_scheduled_task(scheduled_task.into())?;
+        let proto_task: ScheduledTaskProto = scheduled_task.into();
+        let encoded = proto_task.encode_to_vec();
 
         // TODO(ddimaria): add header to the message
         // // add header to the message
@@ -112,6 +110,26 @@ impl State {
             .await
             .push_scheduled_task(channel, scheduled_task)
             .await
+    }
+}
+
+impl From<ScheduledTask> for ScheduledTaskProto {
+    fn from(task: ScheduledTask) -> Self {
+        ScheduledTaskProto {
+            r#type: "ScheduledTask".to_string(),
+            id: task.id.to_string(),
+            file_id: task.file_id.to_string(),
+            operations: task.operations,
+            start_datetime: Some(Timestamp {
+                seconds: task.start_datetime.timestamp(),
+                nanos: task.start_datetime.timestamp_subsec_nanos() as i32,
+            }),
+            end_datetime: task.end_datetime.map(|dt| Timestamp {
+                seconds: dt.timestamp(),
+                nanos: dt.timestamp_subsec_nanos() as i32,
+            }),
+            frequency_minutes: task.frequency_minutes,
+        }
     }
 }
 

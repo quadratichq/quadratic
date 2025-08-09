@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::quadratic_api::get_file_checkpoint;
 use serde::Serialize;
 use uuid::Uuid;
@@ -7,7 +8,7 @@ use crate::error::{MpError, Result};
 use crate::state::{State, user::User};
 use crate::{get_mut_room, get_room};
 
-use super::connection::{Connection, PreConnection};
+use super::connection::Connection;
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct Room {

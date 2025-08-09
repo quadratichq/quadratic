@@ -7,8 +7,10 @@ authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 [dependencies]
 axum = { version = "0.8.1", features = ["macros"] }
 axum-extra = { version = "0.10.0", features = ["typed-header"] }
+axum-macros = "0.5.0"
 bytes = "1.6.1"
 chrono = { version = "=0.4.39", features = ["serde"] }
+dashmap = "6.1.0"
 dotenv = "0.15.0"
 envy = "0.4.2"
 futures = "0.3.29"
@@ -44,7 +46,9 @@ strum = "0.27.1"
 strum_macros = "0.27.1"
 thiserror = "2.0.12"
 tokio = { version = "1.44.2", features = ["full"] }
+tokio-tungstenite = "0.26"
 tokio-util = "0.7.11"
+tonic = { version = "0.12", features = [] }
 tower = { version = "0.5.2", features = ["util"] }
 tower-http = { version = "0.6.2", features = [
     "cors",

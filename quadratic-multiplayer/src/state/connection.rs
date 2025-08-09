@@ -4,33 +4,6 @@ use crate::error::{MpError, Result};
 use crate::state::State;
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct PreConnection {
-    pub(crate) id: Uuid,
-    pub(crate) jwt: Option<String>,
-    pub(crate) m2m_token: Option<String>,
-}
-
-impl PreConnection {
-    pub(crate) fn new(jwt: Option<String>, m2m_token: Option<String>) -> Self {
-        Self {
-            id: Uuid::new_v4(),
-            jwt,
-            m2m_token,
-        }
-    }
-
-    /// Get the m2m token if it exists.
-    pub(crate) fn get_m2m_token(&self) -> Option<String> {
-        self.m2m_token.clone()
-    }
-
-    /// Check if the connection is an m2m connection.
-    pub(crate) fn is_m2m(&self) -> bool {
-        self.m2m_token.is_some()
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Connection {
     pub(crate) id: Uuid,
     pub(crate) session_id: Uuid,

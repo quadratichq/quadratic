@@ -6,6 +6,8 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
+use crate::net::websocket_server::error::WebsocketServerError;
+
 #[derive(Error, Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum Net {
     #[error("SSH error: {0}")]
@@ -15,5 +17,8 @@ pub enum Net {
     SshTunnel(String),
 
     #[error("Websocket error: {0}")]
-    Websocket(String),
+    WebsocketClient(String),
+
+    #[error("Websocket server error: {0}")]
+    WebsocketServer(WebsocketServerError),
 }
