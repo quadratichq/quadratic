@@ -131,7 +131,8 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
           />
           {billing?.status === 'ACTIVE' && (
             <p className="mt-1 text-sm text-muted-foreground">
-              Each user is billed at the per-seat rate set for your team.
+              Each user is billed at the per-seat rate set for your team. You currently have {users.length} billable
+              seat{users.length !== 1 ? 's' : ''}.
             </p>
           )}
         </>
