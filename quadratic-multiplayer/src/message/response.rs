@@ -2,12 +2,13 @@
 //!
 //! A central place for websocket messages responses.
 
-use crate::error::{ErrorLevel, MpError};
+use crate::error::MpError;
 use crate::state::user::{User, UserStateUpdate};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use dashmap::DashMap;
 use quadratic_core::controller::transaction::TransactionServer;
+use quadratic_rust_shared::ErrorLevel;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

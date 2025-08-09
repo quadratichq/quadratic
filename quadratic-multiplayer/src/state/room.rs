@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::quadratic_api::get_file_checkpoint;
 use serde::Serialize;
 use uuid::Uuid;
@@ -7,7 +8,7 @@ use crate::error::{MpError, Result};
 use crate::state::{State, user::User};
 use crate::{get_mut_room, get_room};
 
-use super::connection::{Connection, PreConnection};
+use super::connection::Connection;
 
 #[derive(Serialize, Debug, Clone)]
 pub(crate) struct Room {
@@ -223,8 +224,8 @@ mod tests {
         let file_id = Uuid::new_v4();
         let mut user = new_user();
         let mut user2 = new_user();
-        let connection = PreConnection::new(None);
-        let connection2 = PreConnection::new(None);
+        let connection = PreConnection::new(None, None);
+        let connection2 = PreConnection::new(None, None);
 
         let is_new = state
             .enter_room(file_id, &mut user, connection, 0)
@@ -272,10 +273,10 @@ mod tests {
         let mut user = new_user();
         let mut user2 = new_user();
         let mut user3 = new_user();
-        let connection = PreConnection::new(None);
-        let connection2 = PreConnection::new(None);
-        let connection3 = PreConnection::new(None);
-        let connection4 = PreConnection::new(None);
+        let connection = PreConnection::new(None, None);
+        let connection2 = PreConnection::new(None, None);
+        let connection3 = PreConnection::new(None, None);
+        let connection4 = PreConnection::new(None, None);
 
         state
             .enter_room(file_id, &mut user, connection, 0)

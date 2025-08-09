@@ -6,11 +6,13 @@
 //! to all users in a room.
 
 use base64::{Engine, engine::general_purpose::STANDARD};
-use quadratic_rust_shared::quadratic_api::{FilePermRole, get_file_perms};
+use quadratic_rust_shared::ErrorLevel;
+use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
+use quadratic_rust_shared::quadratic_api::{ADMIN_PERMS, get_file_perms};
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::error::{ErrorLevel, MpError, Result};
+use crate::error::{MpError, Result};
 use crate::get_mut_room;
 use crate::message::response::{BinaryTransaction, Transaction};
 use crate::message::{
@@ -23,7 +25,6 @@ use crate::permissions::{
 use crate::state::user::UserSocket;
 use crate::state::{
     State,
-    connection::PreConnection,
     pubsub::GROUP_NAME,
     user::{User, UserState},
 };
@@ -62,11 +63,12 @@ pub(crate) async fn handle_message(
 
             // default to all roles for tests
             let (permissions, sequence_num) = if cfg!(test) {
-                (vec![FilePermRole::FileView, FilePermRole::FileEdit], 0)
+                (ADMIN_PERMS.to_vec(), 0)
             } else {
                 // get permission and sequence_num from the quadratic api
                 let (permissions, mut sequence_num) =
-                    get_file_perms(base_url, jwt, file_id).await?;
+                    get_file_perms(base_url, jwt, file_id, pre_connection.m2m_token.as_deref())
+                        .await?;
 
                 tracing::trace!("permissions: {:?}", permissions);
 
@@ -226,8 +228,10 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
+            println!("BinaryTransaction");
             validate_user_can_edit_file(Arc::clone(&state), file_id, session_id).await?;
 
+            println!("validate_user_can_edit_file");
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
@@ -413,6 +417,7 @@ pub(crate) mod tests {
     use quadratic_core::controller::operations::operation::Operation;
     use quadratic_core::controller::transaction::Transaction as CoreTransaction;
     use quadratic_core::grid::SheetId;
+    use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
     use tokio::net::TcpStream;
     use tokio::sync::Mutex;
     use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
@@ -440,9 +445,14 @@ pub(crate) mod tests {
             .socket
             .unwrap();
 
-        let handled = handle_message(request, state.clone(), stream, PreConnection::new(None))
-            .await
-            .unwrap();
+        let handled = handle_message(
+            request,
+            state.clone(),
+            stream,
+            PreConnection::new(None, None),
+        )
+        .await
+        .unwrap();
         assert_eq!(handled, response);
 
         if let Some(broadcast_response) = broadcast_response {
