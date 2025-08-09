@@ -46,7 +46,7 @@ import { v4 } from 'uuid';
 import type { z } from 'zod';
 
 const USE_STREAM = true;
-const MAX_TOOL_CALL_ITERATIONS = 25;
+const MAX_TOOL_CALL_ITERATIONS = 35;
 
 export type SubmitAIAnalystPromptArgs = {
   chatId?: string;
@@ -127,7 +127,9 @@ export function useSubmitAIAnalystPrompt() {
           ...summaryContext,
           ...getPromptAndInternalMessages(chatMessages),
         ];
-        console.log(((visibleContext[0] as any).content[0] as any).text);
+
+        // console.log(((visibleContext[0] as any).content[0] as any).text);
+
         return messagesWithContext;
       },
     [

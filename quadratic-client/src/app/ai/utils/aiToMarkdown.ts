@@ -37,7 +37,6 @@ const convertJsCellValue = (cell: JsCellValue): string => {
 /// Converts a jsGetAICellResult to markdown
 export const AICellsToMarkdown = (description: JsCellValueDescription): string => {
   return `
-The following data is available in the selection "${description.range}" organized by rows and columns:
 \`\`\`json
 {
   "range": "${description.range}",

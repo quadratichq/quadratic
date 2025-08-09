@@ -253,7 +253,8 @@ impl Sheet {
             rect.min.y
                 + max_rows
                     .unwrap_or(rect.height() as usize)
-                    .min(rect.height() as usize) as i64,
+                    .min(rect.height() as usize) as i64
+                - 1,
         );
         self.cells_as_string(rect)
     }
