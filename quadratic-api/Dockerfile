@@ -1,7 +1,18 @@
 ###########################################################################################
 # Builder - Install dependencies
 ###########################################################################################
-FROM node:24 AS builder
+FROM ubuntu:24.04 AS builder
+
+# Install Node.js 24 and dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  gnupg \
+  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+  && apt-get install -y --no-install-recommends \
+  nodejs \
+  && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /quadratic
 
 # copy package.json for npm install
@@ -24,13 +35,21 @@ RUN npm run build --workspace=quadratic-api
 ###########################################################################################
 # Runner
 ###########################################################################################
-FROM node:24-slim AS runtime
-WORKDIR /quadratic
+FROM ubuntu:24.04 AS runtime
 
-# Install openssl for ssh key generation
-RUN apt update && \
-  apt install -y openssl && \
-  apt install -y openssh-client
+# Install Node.js 24 and runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  gnupg \
+  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+  && apt-get install -y --no-install-recommends \
+  nodejs \
+  openssl \
+  openssh-client \
+  && rm -rf /var/lib/apt/list
+
+WORKDIR /quadratic
 
 RUN npm i -g prisma
 
