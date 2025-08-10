@@ -21,6 +21,7 @@ use quadratic_core::formulas::parse_formula::JsFormulaParseResult;
 use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
+use quadratic_core::grid::js_types::JsCellValueCode;
 use quadratic_core::grid::js_types::JsCellValueDescription;
 use quadratic_core::grid::js_types::JsCellValueKind;
 use quadratic_core::grid::js_types::JsChartContext;
@@ -137,6 +138,7 @@ fn main() {
         JsCellsA1Value,
         JsCellsA1Values,
         JsCellValue,
+        JsCellValueCode,
         JsCellValueDescription,
         JsCellValueKind,
         JsCellValuePos,

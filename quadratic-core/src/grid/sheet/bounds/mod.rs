@@ -406,8 +406,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.data_table_pos_that_contains_result(pos).is_ok();
-                    if is_table_cell {
+                    if self.is_in_non_single_code_cell_code_table(pos) {
                         continue;
                     }
 
@@ -1071,7 +1070,7 @@ mod test {
     }
 
     #[test]
-    fn test_find_tabular_data_rects_with_single_cell() {
+    fn test_find_tabular_data_rects_with_single_cell_code_tables() {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
@@ -1087,7 +1086,7 @@ mod test {
         gc.set_code_cell(
             pos![sheet_id!A11],
             CodeCellLanguage::Formula,
-            "[1,2,3]".to_string(),
+            "{1,2,3}".to_string(),
             None,
             None,
         );
@@ -1096,6 +1095,6 @@ mod test {
         let tabular_data_rects =
             sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)], None);
         assert_eq!(tabular_data_rects.len(), 1);
-        assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 10, 10));
+        assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 1, 10));
     }
 }

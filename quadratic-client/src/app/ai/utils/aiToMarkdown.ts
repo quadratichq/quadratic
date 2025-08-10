@@ -1,7 +1,10 @@
-import type { JsCellValue, JsCellValueDescription, JsGetAICellResult } from '@/app/quadratic-core-types';
+import type { JsCellValueCode, JsCellValueDescription, JsGetAICellResult } from '@/app/quadratic-core-types';
 import BigNumber from 'bignumber.js';
 
-const convertJsCellValue = (cell: JsCellValue): string => {
+const convertJsCellValue = (cell: JsCellValueCode, showLanguage: boolean): string => {
+  if (showLanguage && cell.language && typeof cell.language !== 'object') {
+    return `{"language": "${cell.language}", result: ${convertJsCellValue(cell, false)}}`;
+  }
   if (cell.kind === 'Number') {
     return new BigNumber(cell.value).toString();
   } else if (cell.kind === 'Text') {
@@ -35,13 +38,14 @@ const convertJsCellValue = (cell: JsCellValue): string => {
 };
 
 /// Converts a jsGetAICellResult to markdown
-export const AICellsToMarkdown = (description: JsCellValueDescription): string => {
+export const AICellsToMarkdown = (description: JsCellValueDescription, showLanguage: boolean): string => {
   return `
 \`\`\`json
 {
-  "range": "${description.range}",
+  "total_range": "${description.total_range}",
+  "shown_range": "${description.range}",
   "values": [
-${description.values.map((row) => `      [${row.map((cell) => convertJsCellValue(cell)).join(', ')}]`).join(',\n')}
+${description.values.map((row) => `      [${row.map((cell) => convertJsCellValue(cell, showLanguage)).join(', ')}]`).join(',\n')}
   ]
 }
 \`\`\`
@@ -60,7 +64,7 @@ IMPORTANT: There are ${result.total_pages} pages in this result. Use this tool a
       output += `
 The selection ${result.selection} for page = ${result.page + 1} (out of ${result.total_pages + 1}) has: `;
     }
-    output += result.values.map((value) => AICellsToMarkdown(value)).join('\n\n');
+    output += result.values.map((value) => AICellsToMarkdown(value, true)).join('\n\n');
     return output;
   }
 };

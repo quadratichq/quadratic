@@ -246,7 +246,7 @@ impl Sheet {
         rect: Rect,
         max_rows: Option<usize>,
     ) -> JsCellValueDescription {
-        let rect = Rect::new(
+        let limited_rect = Rect::new(
             rect.min.x,
             rect.min.y,
             rect.max.x,
@@ -256,7 +256,7 @@ impl Sheet {
                     .min(rect.height() as usize) as i64
                 - 1,
         );
-        self.cells_as_string(rect)
+        self.cells_as_string(limited_rect, rect)
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does

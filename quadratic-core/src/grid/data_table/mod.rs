@@ -767,7 +767,6 @@ impl DataTable {
         if self.is_html_or_image() {
             return false;
         }
-
         match &self.value {
             Value::Single(_) => true,
             Value::Array(a) => a.width() * a.height() < 2,

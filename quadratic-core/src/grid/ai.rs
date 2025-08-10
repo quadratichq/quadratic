@@ -74,7 +74,7 @@ impl GridController {
                 for rect in rects {
                     if page == in_page {
                         if sheet.has_content_in_rect(rect) {
-                            values.push(sheet.cells_as_string(rect));
+                            values.push(sheet.cells_as_string(rect, rect));
                         } else {
                             page += 1;
                         }
@@ -87,40 +87,6 @@ impl GridController {
                 }
             }
         }
-
-        // let mut result = String::new();
-        // if let Some(value) = value {
-        //     if in_page > MAXIMUM_PAGES {
-        //         result.push_str(&format!("IMPORTANT: There are {} pages in this result. Let the user know that there is a lot of data and it will take quite a while to process all the pages of data. Suggest ways they can work around this using Python or some other method. You can still get additional pages by passing page = {} to this tool. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
-        //         in_page + 1,
-        //         page + 1,
-        //     ));
-        //     } else if in_page != page {
-        //         result.push_str(&format!(
-        //         "IMPORTANT: There are {} pages in this result. Use this tool again with page = {} for the next page. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n",
-        //         in_page + 1,
-        //         page + 1,
-        //     ));
-        //     }
-        //     if in_page != page || page != 0 {
-        //         result.push_str(&format!(
-        //             "The selection {} for page = {} has: ",
-        //             selection.to_string(None, self.a1_context()),
-        //             page
-        //         ));
-        //     } else {
-        //         result.push_str(&format!(
-        //             "The selection {} has: ",
-        //             selection.to_string(None, self.a1_context())
-        //         ));
-        //     }
-        //     result.push_str(&value);
-        // } else {
-        //     result.push_str(&format!(
-        //         "The selection {} has no content.",
-        //         selection.to_string(None, self.a1_context())
-        //     ));
-        // };
 
         Ok(JsGetAICellResult {
             selection: selection.to_string(None, self.a1_context()),

@@ -612,6 +612,7 @@ pub struct JsCellValueCode {
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsCellValueDescription {
+    pub total_range: String,
     pub range: String,
     pub values: Vec<Vec<JsCellValueCode>>,
 }

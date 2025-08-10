@@ -144,11 +144,11 @@ File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({
 '${table.data_table_name}' has bounds of (${table.bounds}).
 
 First rows of '${table.data_table_name}' (limited to ${maxRows} rows):
-${AICellsToMarkdown(table.first_rows_visible_values)}`;
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
           if (table.last_rows_visible_values) {
             summary += `
 Last rows of '${table.data_table_name}' (limited to ${maxRows} rows):
-${AICellsToMarkdown(table.last_rows_visible_values)}`;
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
           }
         });
 
@@ -156,7 +156,7 @@ ${AICellsToMarkdown(table.last_rows_visible_values)}`;
           summary += `
 ### '${currentSheetName}' Code tables
 
-These are the code tables on the sheet:
+These are the code tables that output more than one cell on the sheet:
 `;
 
           currentSheetCodeTables.forEach((table) => {
@@ -166,11 +166,11 @@ These are the code tables on the sheet:
 '${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}.
 
 First rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-${AICellsToMarkdown(table.first_rows_visible_values)}`;
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
             if (table.last_rows_visible_values) {
               summary += `
 Last rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-${AICellsToMarkdown(table.last_rows_visible_values)}`;
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
             }
           });
         }
@@ -190,11 +190,11 @@ These are the connection tables on the sheet:
 '${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}.
 
 First rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-${AICellsToMarkdown(table.first_rows_visible_values)}`;
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
             if (table.last_rows_visible_values) {
               summary += `
 Last rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-${AICellsToMarkdown(table.last_rows_visible_values)}`;
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
             }
           });
         }
@@ -224,7 +224,7 @@ This is the flat data on the sheet (limited to ${maxRows} rows each):
 
           flatDataRects.forEach((description) => {
             summary += `
-${AICellsToMarkdown(description)}`;
+${AICellsToMarkdown(description, true)}`;
           });
         }
 
