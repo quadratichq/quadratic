@@ -528,7 +528,7 @@ mod test {
     use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
-    use crate::grid::js_types::{CellFormatSummary, CellType};
+    use crate::grid::js_types::{CellFormatSummary, CellType, JsCellValueKind};
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };
@@ -927,7 +927,7 @@ mod test {
             js_cell_value,
             Some(JsCellValue {
                 value: "test".to_string(),
-                kind: "text".to_string()
+                kind: JsCellValueKind::Text
             })
         );
     }
@@ -942,7 +942,7 @@ mod test {
             js_cell_value_pos,
             Some(JsCellValuePos {
                 value: "test".to_string(),
-                kind: "text".to_string(),
+                kind: JsCellValueKind::Text,
                 pos: pos.a1_string(),
             })
         );
@@ -954,7 +954,7 @@ mod test {
             js_cell_value_pos,
             Some(JsCellValuePos {
                 value: "Javascript chart code cell anchor".to_string(),
-                kind: "image".to_string(),
+                kind: JsCellValueKind::Image,
                 pos: pos.a1_string(),
             })
         );
@@ -966,7 +966,7 @@ mod test {
             js_cell_value_pos,
             Some(JsCellValuePos {
                 value: "Python chart code cell anchor".to_string(),
-                kind: "html".to_string(),
+                kind: JsCellValueKind::Html,
                 pos: pos.a1_string(),
             })
         );
@@ -997,52 +997,53 @@ mod test {
             ),
         );
 
-        let max_rows = 3;
+        // let max_rows = 3;
 
-        let js_cell_value_pos_in_rect = sheet.js_cell_value_description(
-            Rect {
-                min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
-            },
-            Some(max_rows),
-        );
+        // let js_cell_value_pos_in_rect = sheet.js_cell_value_description(
+        //     Rect {
+        //         min: Pos { x: 1, y: 1 },
+        //         max: Pos { x: 10, y: 1000 },
+        //     },
+        //     Some(max_rows),
+        // );
 
-        assert_eq!(js_cell_value_pos_in_rect.len(), max_rows);
+        // assert_eq!(js_cell_value_pos_in_rect.len(), 2);
 
-        let expected_js_cell_value_pos_in_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
-            .map(|row| {
-                (1..=10)
-                    .map(|col| {
-                        if row == 1 {
-                            JsCellValuePos {
-                                value: "heading".to_string(),
-                                kind: "text".to_string(),
-                                pos: Pos {
-                                    x: col,
-                                    y: row as i64,
-                                }
-                                .a1_string(),
-                            }
-                        } else {
-                            JsCellValuePos {
-                                value: "value".to_string(),
-                                kind: "text".to_string(),
-                                pos: Pos {
-                                    x: col,
-                                    y: row as i64,
-                                }
-                                .a1_string(),
-                            }
-                        }
-                    })
-                    .collect::<Vec<JsCellValuePos>>()
-            })
-            .collect::<Vec<Vec<JsCellValuePos>>>();
+        todo!();
+        // let expected_js_cell_value_pos_in_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
+        //     .map(|row| {
+        //         (1..=10)
+        //             .map(|col| {
+        //                 if row == 1 {
+        //                     JsCellValuePos {
+        //                         value: "heading".to_string(),
+        //                         kind: JsCellValueKind::Text,
+        //                         pos: Pos {
+        //                             x: col,
+        //                             y: row as i64,
+        //                         }
+        //                         .a1_string(),
+        //                     }
+        //                 } else {
+        //                     JsCellValuePos {
+        //                         value: "value".to_string(),
+        //                         kind: JsCellValueKind::Text,
+        //                         pos: Pos {
+        //                             x: col,
+        //                             y: row as i64,
+        //                         }
+        //                         .a1_string(),
+        //                     }
+        //                 }
+        //             })
+        //             .collect::<Vec<JsCellValuePos>>()
+        //     })
+        //     .collect::<Vec<Vec<JsCellValuePos>>>();
 
-        assert_eq!(
-            js_cell_value_pos_in_rect,
-            expected_js_cell_value_pos_in_rect
-        );
+        // assert_eq!(
+        //     js_cell_value_pos_in_rect,
+        //     expected_js_cell_value_pos_in_rect
+        // );
     }
 
     #[test]

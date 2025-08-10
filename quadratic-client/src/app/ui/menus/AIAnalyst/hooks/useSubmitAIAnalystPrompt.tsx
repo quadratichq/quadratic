@@ -1,10 +1,10 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDateTimeContextMessages';
-import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+// import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
-import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
 import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
 import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
@@ -80,11 +80,11 @@ export function useSubmitAIAnalystPrompt() {
   const aiModel = useAIModel();
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
-  const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  // const { getOtherSheetsContext } = useOtherSheetsContextMessages();
   const { getSheetInfoContext } = useSheetInfoMessages();
   const { getSummaryContext } = useSummaryContextMessages();
   const { getTablesContext } = useTablesContextMessages();
-  const { getCurrentSheetContext } = useCurrentSheetContextMessages();
+  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
@@ -99,18 +99,18 @@ export function useSubmitAIAnalystPrompt() {
           sqlContext,
           filesContext,
           sheetInfoContext,
-          otherSheetsContext,
+          // otherSheetsContext,
           tablesContext,
-          currentSheetContext,
+          // currentSheetContext,
           visibleContext,
           summaryContext,
         ] = await Promise.all([
           getSqlContext(),
           getFilesContext({ chatMessages }),
           getSheetInfoContext({ sheets: sheets.sheets }),
-          getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+          // getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
           getTablesContext(),
-          getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+          // getCurrentSheetContext({ currentSheetName: context.currentSheet }),
           getVisibleContext(),
           getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
         ]);
@@ -119,25 +119,23 @@ export function useSubmitAIAnalystPrompt() {
           ...sqlContext,
           ...filesContext,
           ...sheetInfoContext,
-          ...otherSheetsContext,
+          // ...otherSheetsContext,
           ...tablesContext,
           ...getCurrentDateTimeContext(),
-          ...currentSheetContext,
+          // ...currentSheetContext,
           ...visibleContext,
           ...summaryContext,
           ...getPromptAndInternalMessages(chatMessages),
         ];
 
-        // console.log(((visibleContext[0] as any).content[0] as any).text);
-
         return messagesWithContext;
       },
     [
       getCurrentDateTimeContext,
-      getOtherSheetsContext,
+      // getOtherSheetsContext,
       getSummaryContext,
       getTablesContext,
-      getCurrentSheetContext,
+      // getCurrentSheetContext,
       getVisibleContext,
       getFilesContext,
       getSheetInfoContext,

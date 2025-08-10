@@ -1,6 +1,6 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
-import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
-import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+// import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -18,9 +18,9 @@ type PDFImportResponse = z.infer<(typeof aiToolsSpec)[AITool.PDFImport]['respons
 
 export const useAnalystPDFImport = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  // const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getTablesContext } = useTablesContextMessages();
-  const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
 
   const importPDF = useRecoilCallback(
@@ -42,10 +42,10 @@ export const useAnalystPDFImport = () => {
             return [{ type: 'text', text: `File with name ${file_name} not found` }];
           }
 
-          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext] = await Promise.all([
-            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+          const [otherSheetsContext, tablesContext /*, currentSheetContext, visibleContext*/] = await Promise.all([
+            // getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             getTablesContext(),
-            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+            // getCurrentSheetContext({ currentSheetName: context.currentSheet }),
             getVisibleContext(),
           ]);
 
@@ -86,8 +86,8 @@ How can I help you?`,
             },
             ...otherSheetsContext,
             ...tablesContext,
-            ...currentSheetContext,
-            ...visibleContext,
+            // ...currentSheetContext,
+            // ...visibleContext,
             {
               role: 'user',
               content: [
@@ -151,7 +151,7 @@ How can I help you?`,
         }
         return [{ type: 'text', text: importPDFResult }];
       },
-    [handleAIRequestToAPI, getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext]
+    [handleAIRequestToAPI, getTablesContext, getVisibleContext /* getCurrentSheetContext, getOtherSheetsContext, */]
   );
 
   return { importPDF };

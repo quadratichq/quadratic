@@ -26,12 +26,13 @@ export function useVisibleContextMessages() {
           includeErroredCodeCells: true,
           includeTablesSummary: true,
           includeChartsSummary: true,
+          includeDataRectsSummary: true,
         });
 
     let text = `
 # What the user can see
 
-- they are in sheet '${sheetName}'
+- the user is in sheet '${sheetName}'
 - they see cells in ${visibleA1String}
 - their cursor is located at ${sheets.sheet.cursor.a1String()}
 - their selection is ${sheets.getA1String(sheets.current)}`;

@@ -25,12 +25,16 @@ impl Sheet {
         include_errored_code_cells: bool,
         include_tables_summary: bool,
         include_charts_summary: bool,
+        include_data_rects_summary: bool,
         a1_context: &A1Context,
     ) -> JsSelectionContext {
         JsSelectionContext {
             sheet_name: self.name.clone(),
-            data_rects: self
-                .get_data_rects_in_selection(&selection, max_rects, max_rows, a1_context),
+            data_rects: if include_data_rects_summary {
+                self.get_data_rects_in_selection(&selection, max_rects, max_rows, a1_context)
+            } else {
+                vec![]
+            },
             errored_code_cells: include_errored_code_cells
                 .then(|| self.get_errored_code_cells_in_selection(&selection, a1_context)),
             tables_summary: include_tables_summary
@@ -343,32 +347,20 @@ mod tests {
         let max_rows = 3;
 
         let expected_data_rects_in_selection = vec![
-            JsCellValuePosContext {
-                sheet_name: sheet.name.clone(),
-                rect_origin: Pos { x: 1, y: 1 }.a1_string(),
-                rect_width: 10,
-                rect_height: 100,
-                starting_rect_values: sheet.js_cell_value_description(
-                    Rect {
-                        min: Pos { x: 1, y: 1 },
-                        max: Pos { x: 10, y: 100 },
-                    },
-                    Some(max_rows),
-                ),
-            },
-            JsCellValuePosContext {
-                sheet_name: sheet.name.clone(),
-                rect_origin: Pos { x: 31, y: 101 }.a1_string(),
-                rect_width: 10,
-                rect_height: 100,
-                starting_rect_values: sheet.js_cell_value_description(
-                    Rect {
-                        min: Pos { x: 31, y: 101 },
-                        max: Pos { x: 40, y: 200 },
-                    },
-                    Some(max_rows),
-                ),
-            },
+            sheet.js_cell_value_description(
+                Rect {
+                    min: Pos { x: 1, y: 1 },
+                    max: Pos { x: 10, y: 100 },
+                },
+                Some(max_rows),
+            ),
+            sheet.js_cell_value_description(
+                Rect {
+                    min: Pos { x: 31, y: 101 },
+                    max: Pos { x: 40, y: 200 },
+                },
+                Some(max_rows),
+            ),
         ];
 
         assert_eq!(data_rects_in_selection, expected_data_rects_in_selection);

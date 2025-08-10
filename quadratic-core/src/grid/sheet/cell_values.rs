@@ -3,7 +3,9 @@ use crate::{
     a1::A1Context,
     cell_values::CellValues,
     controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::js_types::{JsCellValue, JsCellValueDescription, JsCellValueKind, JsValidationWarning},
+    grid::js_types::{
+        JsCellValueCode, JsCellValueDescription, JsCellValueKind, JsValidationWarning,
+    },
 };
 
 use super::Sheet;
@@ -112,7 +114,17 @@ impl Sheet {
                 } else {
                     JsCellValueKind::Blank
                 };
-                row.push(JsCellValue { value, kind });
+                let language =
+                    if let Some(CellValue::Code(code)) = self.cell_value_ref(Pos { x, y }) {
+                        Some(code.language.clone())
+                    } else {
+                        None
+                    };
+                row.push(JsCellValueCode {
+                    value,
+                    kind,
+                    language,
+                });
             }
             values.push(row);
         }

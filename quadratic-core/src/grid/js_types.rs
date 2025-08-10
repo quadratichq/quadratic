@@ -604,9 +604,16 @@ pub struct JsSheetPosText {
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsCellValueCode {
+    pub value: String,
+    pub kind: JsCellValueKind,
+    pub language: Option<CodeCellLanguage>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsCellValueDescription {
     pub range: String,
-    pub values: Vec<Vec<JsCellValue>>,
+    pub values: Vec<Vec<JsCellValueCode>>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]

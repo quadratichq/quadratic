@@ -374,11 +374,22 @@ impl Sheet {
 
         let is_non_data_cell = |pos: Pos| match self.cell_value_ref(pos) {
             Some(value) => {
-                value.is_blank_or_empty_string()
+                if value.is_blank_or_empty_string()
                     || value.is_image()
                     || value.is_html()
-                    || value.is_code()
                     || value.is_import()
+                {
+                    true
+                } else if matches!(value, CellValue::Code(_)) {
+                    // include code cells that are single values in data rects
+                    if let Some(output) = self.data_table_at(&pos) {
+                        !output.is_single_value()
+                    } else {
+                        true
+                    }
+                } else {
+                    false
+                }
             }
             None => true,
         };
@@ -464,6 +475,7 @@ mod test {
                 },
             },
         },
+        test_util::*,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -999,7 +1011,7 @@ mod test {
     }
 
     #[test]
-    fn find_tabular_data_rects_in_selection_rects() {
+    fn test_find_tabular_data_rects_in_selection_rects() {
         let (mut gc, sheet_id, _, _) = simple_csv_at(pos![B2]);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1056,5 +1068,34 @@ mod test {
             Rect::from_numbers(31, 101, 5, 203),
         ];
         assert_eq!(tabular_data_rects, expected_rects);
+    }
+
+    #[test]
+    fn test_find_tabular_data_rects_with_single_cell() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        for y in 1..=10 {
+            gc.set_code_cell(
+                SheetPos { x: 1, y, sheet_id },
+                CodeCellLanguage::Formula,
+                "15".to_string(),
+                None,
+                None,
+            );
+        }
+        gc.set_code_cell(
+            pos![sheet_id!A11],
+            CodeCellLanguage::Formula,
+            "[1,2,3]".to_string(),
+            None,
+            None,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let tabular_data_rects =
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)], None);
+        assert_eq!(tabular_data_rects.len(), 1);
+        assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 10, 10));
     }
 }

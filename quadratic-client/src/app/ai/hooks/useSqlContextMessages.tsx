@@ -67,6 +67,10 @@ export function useSqlContextMessages() {
 
           let contextText = `
 # Database Connections
+
+This is the available Database Connections. This shows only table names within each connection.
+
+Use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing.
 `;
 
           // format as lightweight context message
@@ -89,15 +93,15 @@ ${tablesText}
 
 `;
           });
+
+          console.log(contextText);
           return [
             {
               role: 'user',
               content: [
                 {
                   type: 'text',
-                  text: `Available Database Connections and Tables:
-${contextText}
-Note: This shows only table names. Use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing.`,
+                  text: contextText,
                 },
               ],
               contextType: 'sqlSchemas',

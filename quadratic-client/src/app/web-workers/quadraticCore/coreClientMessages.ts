@@ -1015,6 +1015,7 @@ export interface ClientCoreGetAISelectionContexts {
   includeErroredCodeCells: boolean;
   includeTablesSummary: boolean;
   includeChartsSummary: boolean;
+  includeDataRectsSummary: boolean;
 }
 
 export interface CoreClientGetAISelectionContexts {

@@ -242,14 +242,18 @@ mod tests {
         // Test empty selection
         let selection = A1Selection::test_a1("A1:B2");
         let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
-        assert!(result.contains("has no content"));
-        assert!(result.contains("A1:B2"));
+        assert_eq!(result.values.len(), 0);
+        assert_eq!(result.page, 0);
+        assert_eq!(result.total_pages, 0);
+        assert_eq!(result.selection, "A1:B2".to_string());
 
         // Even large empty selections should return the empty message
         let large_selection = A1Selection::test_a1("A1:Z1000");
         let result = gc.get_ai_cells(large_selection, 0).unwrap();
-        assert!(result.contains("has no content"));
-        assert!(result.contains("A1:Z1000"));
+        assert_eq!(result.page, 0);
+        assert_eq!(result.total_pages, 0);
+        assert_eq!(result.values.len(), 0);
+        assert_eq!(result.selection, "A1:Z1000".to_string());
     }
 
     #[test]
@@ -260,12 +264,16 @@ mod tests {
 
         let selection = A1Selection::test_a1("A1:J190");
         let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
-        assert!(result.contains("IMPORTANT: There are 2 pages"));
-        assert!(result.contains("A1:J190 for page = 0"));
-        assert!(result.contains("page = 1"));
+        assert_eq!(result.page, 0);
+        assert_eq!(result.total_pages, 1);
+        assert_eq!(result.values.len(), 1900);
+        assert_eq!(result.selection, "A1:J190".to_string());
 
         let result = gc.get_ai_cells(selection, 1).unwrap();
-        assert!(result.contains("A1:J190 for page = 1"));
+        assert_eq!(result.page, 1);
+        assert_eq!(result.total_pages, 1);
+        assert_eq!(result.values.len(), 1900);
+        assert_eq!(result.selection, "A1:J190".to_string());
     }
 
     #[test]
@@ -278,7 +286,10 @@ mod tests {
         let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
 
         // ensure we message AI that there are too many pages
-        assert!(result.contains("IMPORTANT: There are 11 pages in this result. Let the user know"));
+        assert_eq!(result.page, 0);
+        assert_eq!(result.total_pages, 11);
+        assert_eq!(result.values.len(), 10000);
+        assert_eq!(result.selection, "A1:J1000".to_string());
     }
 
     #[test]

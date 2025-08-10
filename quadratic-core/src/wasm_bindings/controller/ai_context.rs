@@ -17,6 +17,7 @@ impl GridController {
         include_errored_code_cells: bool,
         include_tables_summary: bool,
         include_charts_summary: bool,
+        include_data_rects_summary: bool,
     ) -> Result<JsValue, JsValue> {
         let selections = selections
             .iter()
@@ -37,6 +38,7 @@ impl GridController {
                 include_errored_code_cells,
                 include_tables_summary,
                 include_charts_summary,
+                include_data_rects_summary,
                 self.a1_context(),
             );
             selection_contexts.push(selection_context);

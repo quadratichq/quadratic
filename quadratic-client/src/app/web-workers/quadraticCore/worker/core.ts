@@ -1076,6 +1076,7 @@ class Core {
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
+    includeDataRectsSummary: boolean;
   }): JsSelectionContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -1085,7 +1086,8 @@ class Core {
         args.maxRows,
         args.includeErroredCodeCells,
         args.includeTablesSummary,
-        args.includeChartsSummary
+        args.includeChartsSummary,
+        args.includeDataRectsSummary
       );
     } catch (e) {
       this.handleCoreError('getAISelectionContexts', e);

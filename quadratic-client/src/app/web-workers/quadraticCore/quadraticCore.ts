@@ -430,6 +430,7 @@ class QuadraticCore {
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
+    includeDataRectsSummary: boolean;
   }): Promise<JsSelectionContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -445,6 +446,7 @@ class QuadraticCore {
         includeErroredCodeCells: args.includeErroredCodeCells,
         includeTablesSummary: args.includeTablesSummary,
         includeChartsSummary: args.includeChartsSummary,
+        includeDataRectsSummary: args.includeDataRectsSummary,
       });
     });
   }
