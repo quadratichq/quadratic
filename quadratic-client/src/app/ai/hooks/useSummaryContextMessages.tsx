@@ -62,7 +62,6 @@ export function useSummaryContextMessages() {
             includeChartsSummary: false,
             includeDataRectsSummary: includeData,
           });
-          console.log(sheetContext);
           flatDataRects = sheetContext?.[0]?.data_rects || [];
         }
       }

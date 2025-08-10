@@ -777,6 +777,7 @@ This tool is for Python and Javascript code only. For formulas, use set_formula_
 
 Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- By default, charts will output 7 wide * 23 tall cells. If the code cell is placed in a location that is not empty, it will result in spill error.
 - Leave one extra column gap between the code cell being placed and the nearest content if placing horizontally. If placing vertically, leave one extra row gap between the code cell and the nearest content.
 - Pick a location that makes sense relative to the existing contents of the sheet. Line up placements with existing content. E.g. if placing next to a table at A1:C19, place the code cell at E1 (keeping in mind the extra column gap since placing horizontally).
 - In case there is not enough empty space near the existing contents of the sheet, choose a distant empty cell.\n
