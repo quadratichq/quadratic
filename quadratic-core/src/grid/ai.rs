@@ -208,18 +208,18 @@ mod tests {
         // Test empty selection
         let selection = A1Selection::test_a1("A1:B2");
         let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
-        assert_eq!(result.values.len(), 0);
+        assert!(result.values.is_empty());
         assert_eq!(result.page, 0);
         assert_eq!(result.total_pages, 0);
-        assert_eq!(result.selection, "A1:B2".to_string());
+        assert_eq!(result.selection, "'Sheet 1'!A1:B2".to_string());
 
         // Even large empty selections should return the empty message
         let large_selection = A1Selection::test_a1("A1:Z1000");
         let result = gc.get_ai_cells(large_selection, 0).unwrap();
         assert_eq!(result.page, 0);
         assert_eq!(result.total_pages, 0);
-        assert_eq!(result.values.len(), 0);
-        assert_eq!(result.selection, "A1:Z1000".to_string());
+        assert!(result.values.is_empty());
+        assert_eq!(result.selection, "'Sheet 1'!A1:Z1000".to_string());
     }
 
     #[test]
@@ -232,14 +232,16 @@ mod tests {
         let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
         assert_eq!(result.page, 0);
         assert_eq!(result.total_pages, 1);
-        assert_eq!(result.values.len(), 1900);
-        assert_eq!(result.selection, "A1:J190".to_string());
+        assert_eq!(result.values[0].range, "A1:J100");
+        assert_eq!(result.values[0].values.iter().flatten().count(), 1000);
+        assert_eq!(result.selection, "'Sheet 1'!A1:J190".to_string());
 
         let result = gc.get_ai_cells(selection, 1).unwrap();
         assert_eq!(result.page, 1);
         assert_eq!(result.total_pages, 1);
-        assert_eq!(result.values.len(), 1900);
-        assert_eq!(result.selection, "A1:J190".to_string());
+        assert_eq!(result.values[0].range, "A101:J190");
+        assert_eq!(result.values[0].values.iter().flatten().count(), 900);
+        assert_eq!(result.selection, "'Sheet 1'!A1:J190".to_string());
     }
 
     #[test]
