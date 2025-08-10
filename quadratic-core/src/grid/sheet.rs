@@ -978,10 +978,10 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
+                max: Pos { x: 10, y: 100 },
             },
             Array::from(
-                (1..=1000)
+                (1..=100)
                     .map(|row| {
                         (1..=10)
                             .map(|_| {
@@ -997,53 +997,19 @@ mod test {
             ),
         );
 
-        // let max_rows = 3;
+        let max_rows = 3;
 
-        // let js_cell_value_pos_in_rect = sheet.js_cell_value_description(
-        //     Rect {
-        //         min: Pos { x: 1, y: 1 },
-        //         max: Pos { x: 10, y: 1000 },
-        //     },
-        //     Some(max_rows),
-        // );
+        let result = sheet.js_cell_value_description(
+            Rect {
+                min: Pos { x: 1, y: 1 },
+                max: Pos { x: 10, y: 1000 },
+            },
+            Some(max_rows),
+        );
 
-        // assert_eq!(js_cell_value_pos_in_rect.len(), 2);
-
-        todo!();
-        // let expected_js_cell_value_pos_in_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
-        //     .map(|row| {
-        //         (1..=10)
-        //             .map(|col| {
-        //                 if row == 1 {
-        //                     JsCellValuePos {
-        //                         value: "heading".to_string(),
-        //                         kind: JsCellValueKind::Text,
-        //                         pos: Pos {
-        //                             x: col,
-        //                             y: row as i64,
-        //                         }
-        //                         .a1_string(),
-        //                     }
-        //                 } else {
-        //                     JsCellValuePos {
-        //                         value: "value".to_string(),
-        //                         kind: JsCellValueKind::Text,
-        //                         pos: Pos {
-        //                             x: col,
-        //                             y: row as i64,
-        //                         }
-        //                         .a1_string(),
-        //                     }
-        //                 }
-        //             })
-        //             .collect::<Vec<JsCellValuePos>>()
-        //     })
-        //     .collect::<Vec<Vec<JsCellValuePos>>>();
-
-        // assert_eq!(
-        //     js_cell_value_pos_in_rect,
-        //     expected_js_cell_value_pos_in_rect
-        // );
+        assert_eq!(result.total_range, "A1:J1000");
+        assert_eq!(result.range, "A1:J3");
+        assert_eq!(result.values.iter().flatten().count(), 10 * max_rows);
     }
 
     #[test]

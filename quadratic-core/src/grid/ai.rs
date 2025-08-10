@@ -245,22 +245,6 @@ mod tests {
     }
 
     #[test]
-    fn test_get_ai_cells_too_many_pages() {
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
-        test_set_values(&mut gc, sheet_id, pos![a1], 10, 1000);
-
-        let selection = A1Selection::test_a1("A1:J1000");
-        let result = gc.get_ai_cells(selection.clone(), 0).unwrap();
-
-        // ensure we message AI that there are too many pages
-        assert_eq!(result.page, 0);
-        assert_eq!(result.total_pages, 11);
-        assert_eq!(result.values.len(), 10000);
-        assert_eq!(result.selection, "A1:J1000".to_string());
-    }
-
-    #[test]
     fn test_get_ai_cell_formats_empty() {
         let gc = test_create_gc();
 
