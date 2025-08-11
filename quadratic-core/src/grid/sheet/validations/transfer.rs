@@ -13,8 +13,8 @@ impl Validations {
         let mut reverse_operations = Vec::new();
 
         for validation in self.validations.iter_mut() {
-            if validation.selection.has_table_refs() {
-                if let Some(new_selection) = validation
+            if validation.selection.has_table_refs()
+                && let Some(new_selection) = validation
                     .selection
                     .replace_table_refs_table(table_name, context)
                 {
@@ -26,7 +26,6 @@ impl Validations {
                         ..validation.clone()
                     };
                 }
-            }
         }
 
         reverse_operations

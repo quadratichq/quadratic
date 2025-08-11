@@ -107,11 +107,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     prompt = getPrompt(result.data);
     try {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
-      const uploadToMixpanelPromise = new Promise((resolve, reject) => {
-        trackEvent('[Onboarding].submit', result.data, () => {
-          resolve(true);
-        });
-      });
+      const uploadToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
       const [serverResult, mixpanelResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
 
       if (serverResult.status === 'rejected') {

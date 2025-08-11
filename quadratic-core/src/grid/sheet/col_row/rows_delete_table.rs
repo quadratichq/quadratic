@@ -106,8 +106,8 @@ impl Sheet {
                 }
 
                 Ok(())
-            }) {
-                if let Some(old_dt) = old_dt {
+            })
+                && let Some(old_dt) = old_dt {
                     transaction.add_from_code_run(
                         self.id,
                         pos,
@@ -126,7 +126,6 @@ impl Sheet {
                             index,
                         });
                 }
-            }
         }
     }
 
@@ -136,23 +135,21 @@ impl Sheet {
 
         let min_row = rows.iter().min().unwrap_or(&1);
         for (_, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
-            if let Some(dt) = self.data_table_at(&pos) {
-                if !dt.has_spill() && dt.is_html_or_image() {
+            if let Some(dt) = self.data_table_at(&pos)
+                && !dt.has_spill() && dt.is_html_or_image() {
                     let output_rect = dt.output_rect(pos, false);
                     let count = rows
                         .iter()
                         .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
                         .count();
-                    if count > 0 {
-                        if let Some((width, height)) = dt.chart_output {
+                    if count > 0
+                        && let Some((width, height)) = dt.chart_output {
                             let min = (height - count as u32).max(1);
                             if min != height {
                                 dt_to_update.push((pos, Some((width, min))));
                             }
                         }
-                    }
                 }
-            }
         }
 
         for (pos, chart_output) in dt_to_update.into_iter() {

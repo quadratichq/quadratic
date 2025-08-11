@@ -42,14 +42,23 @@ if (isMixpanelEnabled) {
  *
  */
 
-export function trackEvent(event: string, properties?: Record<string, any>, callback?: () => void) {
+export async function trackEvent(event: string, properties?: Record<string, any>) {
   // Only run SDKs that are enabled
 
-  if (isMixpanelEnabled) {
-    mixpanel.track(event, properties, callback);
-  }
+  return new Promise((resolve, reject) => {
+    if (isMixpanelEnabled) {
+      mixpanel.track(event, properties, () => {
+        resolve(true);
+      });
+    } else {
+      resolve(true);
+    }
 
-  // if (isPosthogEnabled) {…}
+    // Note: if/when we implement other providers, we will want to ensure that
+    // we only call the `resolve` once for all providers
+
+    // if (isPosthogEnabled) {…}
+  });
 }
 
 export function resetEventAnalytics() {
