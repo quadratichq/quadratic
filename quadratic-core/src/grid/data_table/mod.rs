@@ -555,11 +555,57 @@ impl DataTable {
         }
     }
 
+    /// Helper function to determine if the DataTable's CodeRun has an error.
+    /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
+    pub fn has_error_include_single_formula_error(&self) -> bool {
+        match self.kind {
+            DataTableKind::CodeRun(ref code_run) => {
+                if code_run.error.is_some() {
+                    true
+                } else {
+                    // also need to check if the formula has an error
+                    if self.get_language() == CodeCellLanguage::Formula {
+                        match &self.value {
+                            Value::Array(_) => false,
+                            Value::Tuple(_) => false,
+                            Value::Single(v) => {
+                                if let CellValue::Error(_) = v {
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                }
+            }
+            _ => false,
+        }
+    }
+
     /// Helper function to get the error in the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun or if there is no error.
     pub fn get_error(&self) -> Option<RunError> {
         self.code_run()
             .and_then(|code_run| code_run.error.to_owned())
+    }
+
+    /// Helper function to get the error in the CodeRun from the DataTable.
+    /// Returns `None` if the DataTableKind is not CodeRun or if there is no error.
+    pub fn get_error_include_single_formula_error(&self) -> Option<RunError> {
+        if let Some(code_run) = self.code_run() {
+            code_run.error.to_owned()
+        } else {
+            if self.is_single_value()
+                && let Some(CellValue::Error(error)) = self.cell_value_at(0, 0)
+            {
+                Some(*error)
+            } else {
+                None
+            }
+        }
     }
 
     /// Returns the output value of a code run at the relative location (ie, (0,0) is the top of the code run result).

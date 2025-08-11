@@ -1401,6 +1401,15 @@ class Core {
       this.handleCoreError('removeValidationSelection', e);
     }
   }
+
+  getAICodeErrors(maxErrors: number) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.getAICodeErrors(maxErrors);
+    } catch (e) {
+      this.handleCoreError('getAICodeErrors', e);
+    }
+  }
 }
 
 export const core = new Core();

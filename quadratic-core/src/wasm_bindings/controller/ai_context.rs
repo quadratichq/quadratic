@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 use crate::a1::A1Selection;
@@ -52,8 +54,9 @@ impl GridController {
         })
     }
 
-    /// gets all tables (data, code, charts) in the grid, single cell (data, code) tables are not included
-    /// returns an array of JsTablesContext for all tables in the grid
+    /// gets all tables (data, code, charts) in the grid, single cell (data,
+    /// code) tables are not included returns an array of JsTablesContext for
+    /// all tables in the grid
     #[wasm_bindgen(js_name = "getAITablesContext")]
     pub fn js_get_ai_tables_context(&self, sample_rows: usize) -> Result<JsValue, JsValue> {
         let mut tables: Vec<JsTablesContext> = Vec::new();
@@ -69,5 +72,30 @@ impl GridController {
             ));
             JsValue::UNDEFINED
         })
+    }
+
+    /// Returns all code cells with errors or spills in all sheets. Returns
+    /// undefined if there are no errors or spills in the file.
+    #[wasm_bindgen(js_name = "getAICodeErrors")]
+    pub fn js_get_ai_code_errors(&self, max_errors: usize) -> Result<JsValue, JsValue> {
+        let mut errors = HashMap::new();
+
+        for sheet in self.grid().sheets().values() {
+            let sheet_errors = sheet.get_ai_code_errors(max_errors);
+            if !sheet_errors.is_empty() {
+                errors.insert(sheet.name.clone(), sheet_errors);
+            }
+        }
+        if errors.is_empty() {
+            Ok(JsValue::UNDEFINED)
+        } else {
+            serde_wasm_bindgen::to_value(&errors).map_err(|e| {
+                dbgjs!(format!(
+                    "[ai_context.rs] error occurred while serializing code errors: {:?}",
+                    e
+                ));
+                JsValue::UNDEFINED
+            })
+        }
     }
 }

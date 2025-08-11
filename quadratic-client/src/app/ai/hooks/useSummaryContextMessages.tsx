@@ -66,23 +66,6 @@ export function useSummaryContextMessages() {
         }
       }
 
-      // // Get other sheets with data and empty sheets
-      // const otherSheetsWithData = allSheets
-      //   .filter((sheet) => sheet.name !== currentSheetName)
-      //   .filter((sheet) => {
-      //     const sheetObj = sheets.getSheetByName(sheet.name);
-      //     return sheetObj?.boundsWithoutFormatting?.type === 'nonEmpty';
-      //   })
-      //   .map((sheet) => sheet.name);
-
-      // const otherEmptySheets = allSheets
-      //   .filter((sheet) => sheet.name !== currentSheetName)
-      //   .filter((sheet) => {
-      //     const sheetObj = sheets.getSheetByName(sheet.name);
-      //     return sheetObj?.boundsWithoutFormatting?.type !== 'nonEmpty';
-      //   })
-      //   .map((sheet) => sheet.name);
-
       // Categorize tables by sheet
       const currentSheetTables = dataTables.filter((table) => table.sheet_name === currentSheetName);
       const currentSheetCodeTables = codeTables.filter(

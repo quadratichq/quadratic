@@ -23,6 +23,7 @@ import type {
   JsCellValue,
   JsClipboard,
   JsCodeCell,
+  JsCodeErrorContext,
   JsDataTableColumnHeader,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -71,6 +72,7 @@ import type {
   CoreClientExportCsvSelection,
   CoreClientExportExcel,
   CoreClientGetAICells,
+  CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
   CoreClientGetAITablesContext,
@@ -1666,6 +1668,20 @@ class QuadraticCore {
         sheetId,
         selection,
         id,
+      });
+    });
+  }
+
+  getAICodeErrors(maxErrors: number): Promise<Map<string, JsCodeErrorContext[]> | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAICodeErrors) => {
+        resolve(message.errors);
+      };
+      this.send({
+        type: 'clientCoreGetAICodeErrors',
+        id,
+        maxErrors,
       });
     });
   }

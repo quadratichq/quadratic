@@ -7,8 +7,8 @@ use crate::{
         CodeCellLanguage,
         js_types::{
             JsCellValueDescription, JsChartContext, JsChartSummaryContext, JsCodeCell,
-            JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
-            JsTableType, JsTablesContext,
+            JsCodeErrorContext, JsCodeTableContext, JsDataTableContext, JsSelectionContext,
+            JsTableSummaryContext, JsTableType, JsTablesContext,
         },
     },
 };
@@ -276,6 +276,50 @@ impl Sheet {
             Some(tables_context)
         }
     }
+
+    /// Returns all code cells with errors or spills in all sheets.
+    pub fn get_ai_code_errors(&self, max_errors: usize) -> Vec<JsCodeErrorContext> {
+        let mut errors = vec![];
+
+        for (pos, table) in self.data_tables.expensive_iter() {
+            if (table.has_spill() || table.has_error_include_single_formula_error())
+                && let Some(code_run) = table.code_run()
+            {
+                if table.has_error_include_single_formula_error() {
+                    let error = if let Some(error) = table.get_error() {
+                        error.to_string()
+                    } else if let Ok(CellValue::Error(error)) = &table.value.as_cell_value() {
+                        error.to_string()
+                    } else {
+                        "Unknown error".to_string()
+                    };
+                    errors.push(JsCodeErrorContext {
+                        sheet_name: self.name.clone(),
+                        pos: pos.a1_string(),
+                        name: table.name().to_string(),
+                        language: code_run.language.clone(),
+                        error: Some(error),
+                        is_spill: false,
+                        expected_bounds: None,
+                    });
+                } else if table.has_spill() {
+                    errors.push(JsCodeErrorContext {
+                        sheet_name: self.name.clone(),
+                        pos: pos.a1_string(),
+                        name: table.name().to_string(),
+                        language: code_run.language.clone(),
+                        error: None,
+                        is_spill: true,
+                        expected_bounds: Some(table.output_rect(pos.to_owned(), true).a1_string()),
+                    });
+                }
+                if errors.len() >= max_errors {
+                    break;
+                }
+            }
+        }
+        errors
+    }
 }
 
 #[cfg(test)]
@@ -288,6 +332,7 @@ mod tests {
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
             js_types::{JsCodeCell, JsReturnInfo},
         },
+        test_util::*,
     };
 
     use super::Sheet;
@@ -523,5 +568,32 @@ mod tests {
         ];
 
         assert_eq!(js_errored_code_cells, expected_js_errored_code_cells);
+    }
+
+    #[test]
+    fn test_get_ai_code_errors() {
+        let mut gc = test_create_gc();
+        let sheet1_id = first_sheet_id(&gc);
+
+        // Create a formula with division by zero error on first sheet
+        test_create_formula(&mut gc, pos![sheet1_id!A1], "1/0");
+
+        // add a spill target
+        test_set_values(&mut gc, sheet1_id, pos![B2], 3, 3);
+
+        // spill a formula
+        test_create_formula(&mut gc, pos![sheet1_id!B1], "{1;2;3}");
+
+        let sheet1 = gc.sheet(sheet1_id);
+        let errors = sheet1.get_ai_code_errors(10);
+
+        assert_eq!(errors.len(), 2);
+        assert_eq!(errors[0].name, "Formula1");
+        assert!(errors[0].error.is_some());
+        assert!(!errors[0].is_spill);
+        assert_eq!(errors[1].name, "Formula2");
+        assert!(errors[1].error.is_none());
+        assert!(errors[1].is_spill);
+        assert_eq!(errors[1].expected_bounds, Some("B1:B3".to_string()));
     }
 }

@@ -80,6 +80,7 @@ export type JsChartContext = { sheet_name: string, chart_name: string, bounds: s
 export type JsClipboard = { plainText: string, html: string, };
 export type JsCodeCell = { x: bigint, y: bigint, code_string: string, language: CodeCellLanguage, std_out: string | null, std_err: string | null, evaluation_result: string | null, spill_error: Array<Pos> | null, return_info: JsReturnInfo | null, cells_accessed: Array<JsCellsAccessed> | null, last_modified: bigint, };
 export type JsCodeResult = { transaction_id: string, success: boolean, std_out: string | null, std_err: string | null, line_number: number | null, output_value: JsCellValueResult | null, output_array: Array<Array<JsCellValueResult>> | null, output_display_type: string | null, chart_pixel_output: [number, number] | null, has_headers: boolean, };
+export type JsCodeErrorContext = { sheet_name: string, pos: string, name: string, language: CodeCellLanguage, error: string | null, is_spill: boolean, expected_bounds: string | null, };
 export type JsCodeTableContext = { sheet_name: string, code_table_name: string, all_columns: Array<string>, visible_columns: Array<string>, first_rows_visible_values: JsCellValueDescription, last_rows_visible_values: JsCellValueDescription | null, bounds: string, intended_bounds: string, show_name: boolean, show_columns: boolean, language: CodeCellLanguage, code_string: string, std_err: string | null, error: boolean, spill: boolean, };
 export type JsColumnWidth = { column: bigint, width: number, };
 export type JsCoordinate = { x: number, y: number, };

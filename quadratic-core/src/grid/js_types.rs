@@ -154,6 +154,17 @@ pub struct JsChartSummaryContext {
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsCodeErrorContext {
+    pub sheet_name: String,
+    pub pos: String,
+    pub name: String,
+    pub language: CodeCellLanguage,
+    pub error: Option<String>,
+    pub is_spill: bool,
+    pub expected_bounds: Option<String>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsTablesContext {
     pub sheet_name: String,
     pub data_tables: Vec<JsDataTableContext>,

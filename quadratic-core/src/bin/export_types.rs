@@ -26,6 +26,7 @@ use quadratic_core::grid::js_types::JsCellValueDescription;
 use quadratic_core::grid::js_types::JsCellValueKind;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsChartSummaryContext;
+use quadratic_core::grid::js_types::JsCodeErrorContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
 use quadratic_core::grid::js_types::JsColumnWidth;
 use quadratic_core::grid::js_types::JsCoordinate;
@@ -147,6 +148,7 @@ fn main() {
         JsClipboard,
         JsCodeCell,
         JsCodeResult,
+        JsCodeErrorContext,
         JsCodeTableContext,
         JsColumnWidth,
         JsCoordinate,

@@ -12,6 +12,7 @@ import type {
   FormatUpdate,
   JsCellValue,
   JsCodeCell,
+  JsCodeErrorContext,
   JsCoordinate,
   JsDataTableColumnHeader,
   JsRenderCell,
@@ -1381,6 +1382,18 @@ export interface CoreClientRemoveValidationSelection {
   response: JsResponse | undefined;
 }
 
+export interface ClientCoreGetAICodeErrors {
+  type: 'clientCoreGetAICodeErrors';
+  id: number;
+  maxErrors: number;
+}
+
+export interface CoreClientGetAICodeErrors {
+  type: 'coreClientGetAICodeErrors';
+  id: number;
+  errors: Map<string, JsCodeErrorContext[]> | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1479,7 +1492,8 @@ export type ClientCoreMessage =
   | ClientCoreResizeAllRows
   | ClientCoreGetFormatSelection
   | ClientCoreHasCellData
-  | ClientCoreRemoveValidationSelection;
+  | ClientCoreRemoveValidationSelection
+  | ClientCoreGetAICodeErrors;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1573,4 +1587,5 @@ export type CoreClientMessage =
   | CoreClientDataTableFirstRowAsHeader
   | CoreClientDataTableMeta
   | CoreClientUpdateValidation
-  | CoreClientRemoveValidationSelection;
+  | CoreClientRemoveValidationSelection
+  | CoreClientGetAICodeErrors;
