@@ -9,6 +9,8 @@ use crate::worker::Worker;
 
 impl State {
     /// Retrieves a copy of a worker.
+    /// This is a cheap clone since the websocket sender and receiver are
+    /// Arc'd.
     pub(crate) async fn get_worker(&self, file_id: &Uuid) -> Result<Worker> {
         let worker = get_worker!(self, file_id)?.clone();
 
@@ -25,6 +27,7 @@ impl State {
         if workers.contains_key(&file_id) {
             return Ok(false);
         }
+
         let worker = Worker::new(file_id, sequence_num, &self.settings.storage).await?;
         workers.insert(file_id, worker);
 
@@ -58,6 +61,11 @@ impl State {
         Ok(num_workers)
     }
 
+    /// Get the number of workers in state.
+    pub(crate) async fn num_workers(&self) -> Result<usize> {
+        Ok(self.workers.lock().await.len())
+    }
+
     /// Get a worker's current sequence number.
     pub(crate) async fn get_sequence_num(&self, file_id: &Uuid) -> Result<u64> {
         Ok(get_worker!(self, file_id)?.sequence_num)
@@ -74,23 +82,23 @@ impl State {
         let sequence_num: u64 = match get_worker!(self, file_id) {
             Ok(worker) => worker.sequence_num.max(sequence_num),
             Err(_) => {
-                if cfg!(test) {
-                    0
-                } else {
-                    let url = &self.settings.quadratic_api_uri;
-                    let jwt = &self.settings.m2m_auth_token;
-                    let response = get_file_checkpoint(url, jwt, &file_id)
-                        .await?
-                        .sequence_number
-                        .max(sequence_num);
+                // if cfg!(test) {
+                //     0
+                // } else {
+                let url = &self.settings.quadratic_api_uri;
+                let jwt = &self.settings.m2m_auth_token;
+                let response = get_file_checkpoint(url, jwt, &file_id)
+                    .await?
+                    .sequence_number
+                    .max(sequence_num);
 
-                    tracing::info!(
-                        "Retrieved sequence number {} for worker {}",
-                        response,
-                        file_id
-                    );
-                    response
-                }
+                tracing::info!(
+                    "Retrieved sequence number {} for worker {}",
+                    response,
+                    file_id
+                );
+                response
+                // }
             }
         };
 

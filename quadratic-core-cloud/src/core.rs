@@ -1,5 +1,9 @@
-use std::sync::{Arc, Mutex};
-use tokio::{runtime::Handle, sync::mpsc, task::JoinHandle};
+use std::sync::Arc;
+use tokio::{
+    runtime::Handle,
+    sync::{Mutex, mpsc},
+    task::JoinHandle,
+};
 
 use quadratic_core::controller::{
     GridController, active_transactions::transaction_name::TransactionName,
@@ -25,11 +29,11 @@ use crate::{
 /// This function will start a transaction and wait for the result.
 /// If the transaction times out, it will return an error.
 pub(crate) async fn process_transaction(
-    mut grid: GridController,
+    grid: Arc<Mutex<GridController>>,
     operations: Vec<Operation>,
     cursor: Option<String>,
     transaction_name: TransactionName,
-) -> Result<GridController> {
+) -> Result<()> {
     // get_cells request channel
     let (tx_get_cells_request, mut rx_get_cells_request) = mpsc::channel::<String>(32);
     let tx_get_cells_request = Arc::new(Mutex::new(tx_get_cells_request));
@@ -39,23 +43,23 @@ pub(crate) async fn process_transaction(
     let rx_get_cells_response = Arc::new(Mutex::new(rx_get_cells_response));
 
     // kick off the transaction
-    let transaction_id = grid.start_user_transaction(operations, cursor, transaction_name);
+    let transaction_id =
+        grid.lock()
+            .await
+            .start_user_transaction(operations, cursor, transaction_name);
     let transaction_uuid = Uuid::parse_str(&transaction_id)?;
-
-    // wrap the grid in an Arc and Mutex so that we can send it to the async thread
-    let grid_shared = Arc::new(Mutex::new(grid));
 
     // in a separate thread, listen for get_cells calls
     let transaction_id_clone = transaction_id.clone();
-    let grid_shared_clone = grid_shared.clone();
+    let grid_clone = grid.clone();
     let task_handle: JoinHandle<Result<()>> = tokio::spawn(async move {
         while let Some(a1) = rx_get_cells_request.recv().await {
             // lock the grid and get the cells
-            let cells = grid_shared_clone
-                .lock()?
+            let cells = grid_clone
+                .clone()
+                .lock()
+                .await
                 .calculation_get_cells_a1(transaction_id_clone.clone(), a1);
-
-            println!("sending get_cells response: {:?}", cells);
 
             // send the get_cells response
             tx_get_cells_response.send(cells).await?;
@@ -68,20 +72,27 @@ pub(crate) async fn process_transaction(
     let get_cells = move |a1: String| {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
+                println!("sending get_cells request: {:?}", a1);
                 // send the request
-                tx_get_cells_request.lock()?.send(a1).await?;
+                tx_get_cells_request.lock().await.send(a1).await?;
 
                 // receive and return the response
-                rx_get_cells_response.lock()?.recv().await.ok_or_else(|| {
-                    CoreCloudError::Python(format!("Error receiving get_cells response"))
-                })
+                rx_get_cells_response
+                    .lock()
+                    .await
+                    .recv()
+                    .await
+                    .ok_or_else(|| {
+                        CoreCloudError::Python(format!("Error receiving get_cells response"))
+                    })
             })
         })
     };
 
     // get the async transaction
-    let async_transaction = grid_shared
-        .lock()?
+    let async_transaction = grid
+        .lock()
+        .await
         .active_transactions()
         .get_async_transaction(transaction_uuid);
 
@@ -96,9 +107,8 @@ pub(crate) async fn process_transaction(
             .map_err(|e| CoreCloudError::Python(e.to_string()))?;
 
             // complete the transaction
-            println!("js_code_result: {js_code_result:?}");
-            grid_shared
-                .lock()?
+            grid.lock()
+                .await
                 .calculation_complete(js_code_result)
                 .map_err(|e| CoreCloudError::Core(e.to_string()))?;
 
@@ -111,18 +121,20 @@ pub(crate) async fn process_transaction(
                     return Err(CoreCloudError::Core(e.to_string()));
                 }
             }
-
-            // Return the grid
-            return match Arc::try_unwrap(grid_shared) {
-                Ok(mutex) => Ok(mutex.into_inner().unwrap()),
-                Err(_) => Err(CoreCloudError::Python(
-                    "Unable to return the grid because of strong_count of the Arc".to_string(),
-                )),
-            };
         }
     }
 
-    Err(CoreCloudError::PythonTimeout)
+    // // Return the grid
+    // let strong_count = Arc::strong_count(&grid_shared);
+    // return match Arc::try_unwrap(grid_shared) {
+    //     Ok(mutex) => Ok(mutex.into_inner().unwrap()),
+    //     Err(_) => Err(CoreCloudError::Python(format!(
+    //         "Unable to return the grid because of strong_count of the Arc: {:?}",
+    //         strong_count
+    //     ))),
+    // };
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -139,9 +151,10 @@ mod tests {
 
     #[tokio::test(flavor = "multi_thread")]
     async fn test_core() {
-        let mut grid = GridController::test();
-        let sheet_id = grid.sheet_ids()[0];
-        let sheet = grid.try_sheet_mut(sheet_id).unwrap();
+        let grid = Arc::new(Mutex::new(GridController::test()));
+        let sheet_id = grid.lock().await.sheet_ids()[0];
+        let mut grid_lock = grid.lock().await;
+        let sheet = grid_lock.try_sheet_mut(sheet_id).unwrap();
         let to_number = |s: &str| CellValue::Number(decimal_from_str(s).unwrap());
         let to_code =
             |s: &str| CellValue::Code(CodeCellValue::new(CodeCellLanguage::Python, s.to_string()));
@@ -159,12 +172,18 @@ mod tests {
         };
 
         // process the transaction
-        let updated_grid =
-            process_transaction(grid, vec![operation], None, TransactionName::Unknown)
-                .await
-                .unwrap();
+        process_transaction(
+            grid.clone(),
+            vec![operation],
+            None,
+            TransactionName::Unknown,
+        )
+        .await
+        .unwrap();
 
-        let value = updated_grid
+        let value = grid
+            .lock()
+            .await
             .try_sheet(sheet_id)
             .unwrap()
             .display_value(pos![A2]);

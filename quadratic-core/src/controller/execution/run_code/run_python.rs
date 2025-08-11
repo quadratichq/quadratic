@@ -21,8 +21,13 @@ impl GridController {
         };
         transaction.waiting_for_async = Some(code_cell);
         self.transactions.add_async_transaction(transaction);
-
+        println!("transaction: {:?}", transaction);
+        println!("transaction.is_server(): {:?}", transaction.is_server());
         if !transaction.is_server() {
+            println!(
+                "running python callback: {:?}",
+                self.run_python_callback.is_some()
+            );
             self.run_python_callback.as_mut().map(|f| {
                 println!("running python callback");
                 f(

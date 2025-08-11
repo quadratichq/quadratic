@@ -82,12 +82,12 @@ tiberius = { version = "0.12.3", default-features = false, features = [
 tokio = { version = "1.44.2", features = ["full"], optional = true }
 tokio-util = { version = "0.7.11", features = ["compat"], optional = true }
 tokio-tungstenite = { version = "0.26", optional = true }
-tracing = { version = "0.1.40", optional = true }
+tracing = { version = "0.1.40" }
 url = { version = "2", optional = true }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [features]
-default = ["tracing"]
+default = []
 arrow = ["dep:arrow", "arrow-array", "parquet"]
 auth = ["jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
@@ -106,7 +106,6 @@ net = [
   "tokio",
   "tokio-tungstenite",
   "tokio-util",
-  "tracing",
   "url",
 ]
 protobuf = ["prost", "prost/derive", "prost-reflect"]
@@ -125,7 +124,6 @@ sql = [
   "tiberius",
   "tokio",
   "tokio-util",
-  "tracing",
 ]
 storage = ["aws", "crypto", "tokio"]
 benchmark = ["criterion", "tabled"]

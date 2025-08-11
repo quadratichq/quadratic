@@ -167,24 +167,24 @@ impl GridController {
         Ok(serde_wasm_bindgen::to_value(&self.redo(cursor))?)
     }
 
-    /// Checks for pending callbacks without blocking.
-    /// Returns the callback if available, or None if no callbacks are pending.
-    #[cfg(target_family = "wasm")]
-    pub fn try_receive_callback(&self) {
-        println!("trying to receive callback");
-        if let Ok(callback) = self.receive_callback() {
-            match callback {
-                Callback::RunPython(python_callback) => {
-                    let PythonCallback {
-                        transaction_id,
-                        x,
-                        y,
-                        sheet_id,
-                        code,
-                    } = python_callback;
-                    crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
-                }
-            }
-        }
-    }
+    // /// Checks for pending callbacks without blocking.
+    // /// Returns the callback if available, or None if no callbacks are pending.
+    // #[cfg(target_family = "wasm")]
+    // pub fn try_receive_callback(&self) {
+    //     println!("trying to receive callback");
+    //     if let Ok(callback) = self.receive_callback() {
+    //         match callback {
+    //             Callback::RunPython(python_callback) => {
+    //                 let PythonCallback {
+    //                     transaction_id,
+    //                     x,
+    //                     y,
+    //                     sheet_id,
+    //                     code,
+    //                 } = python_callback;
+    //                 crate::wasm_bindings::js::jsRunPython(transaction_id, x, y, sheet_id, code);
+    //             }
+    //         }
+    //     }
+    // }
 }

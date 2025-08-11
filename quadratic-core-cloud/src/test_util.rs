@@ -16,7 +16,7 @@ use serde_json::json;
 use tower::util::ServiceExt;
 use uuid::Uuid;
 
-use crate::config::{Config, config};
+use crate::config::{Config, config, config_with_file};
 use crate::server::app;
 use crate::state::State;
 use crate::state::pubsub::ScheduledTask;
@@ -49,7 +49,7 @@ pub(crate) async fn new_arc_state() -> Arc<State> {
 }
 
 pub(crate) async fn setup() -> (Config, Arc<State>, Uuid) {
-    let config = config().unwrap();
+    let config = config_with_file(".env").unwrap();
     let state = new_arc_state().await;
     let channel = Uuid::new_v4();
     let scheduled_task = ScheduledTask {

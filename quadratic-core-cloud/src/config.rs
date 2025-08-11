@@ -53,6 +53,10 @@ pub(crate) struct Config {
 pub(crate) fn config() -> Result<Config> {
     let filename = if cfg!(test) { ".env.test" } else { ".env" };
 
+    config_with_file(filename)
+}
+
+pub(crate) fn config_with_file(filename: &str) -> Result<Config> {
     dotenv::from_filename(filename).ok();
     dotenv().ok();
 
