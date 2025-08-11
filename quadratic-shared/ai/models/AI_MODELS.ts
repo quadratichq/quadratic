@@ -225,9 +225,9 @@ export const MODELS_CONFIGURATION: {
     strictParams: true,
     imageSupport: true,
     serviceTier: 'priority',
-    rate_per_million_input_tokens: 1.25,
-    rate_per_million_output_tokens: 10,
-    rate_per_million_cache_read_tokens: 0.125,
+    rate_per_million_input_tokens: 2.5,
+    rate_per_million_output_tokens: 20,
+    rate_per_million_cache_read_tokens: 0.25,
     rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-5-mini-2025-08-07': {
