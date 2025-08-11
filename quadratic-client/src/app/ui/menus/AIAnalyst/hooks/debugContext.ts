@@ -21,7 +21,7 @@ export const debugAIContext = (messagesForAI: ChatMessage[]) => {
         } else if ('mimeType' in content) {
           output += content.mimeType;
         }
-        output += '\n';
+        output += '\n\n';
       }
     }
   }

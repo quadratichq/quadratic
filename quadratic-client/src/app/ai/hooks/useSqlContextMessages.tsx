@@ -65,8 +65,7 @@ export function useSqlContextMessages() {
             return [];
           }
 
-          let contextText = `
-# Database Connections
+          let contextText = `# Database Connections
 
 This is the available Database Connections. This shows only table names within each connection.
 

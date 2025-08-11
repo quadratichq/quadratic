@@ -101,7 +101,7 @@ There are no errors or spills in the file.`;
         content: [
           {
             type: 'text',
-            text: `I understand the code errors in code cells in the sheets, I will reference it to answer following messages. How can I help you?`,
+            text: `I understand the code errors in code cells in the sheets, I will reference it to answer messages related to fixing code errors or spill errors.`,
           },
         ],
         contextType: 'codeErrors',
