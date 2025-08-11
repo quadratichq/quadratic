@@ -249,7 +249,6 @@ Use get_cell_data tool to get more information about the data in these sheets.
         }
       }
 
-      console.log(summary);
       return [
         {
           role: 'user',

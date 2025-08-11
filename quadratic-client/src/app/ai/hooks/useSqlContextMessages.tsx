@@ -94,7 +94,6 @@ ${tablesText}
 `;
           });
 
-          console.log(contextText);
           return [
             {
               role: 'user',

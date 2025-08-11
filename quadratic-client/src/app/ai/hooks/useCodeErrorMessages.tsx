@@ -85,7 +85,6 @@ There are no errors or spills in the file.`;
       }
     }
 
-    console.log(errorText);
     return [
       {
         role: 'user',
