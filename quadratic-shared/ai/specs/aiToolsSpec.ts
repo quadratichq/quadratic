@@ -628,7 +628,7 @@ IMPORTANT: If the results include page information:\n
     sources: ['AIAnalyst'],
     aiModelModes: [],
     description: `
-This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n
+This tool checks if the cells in the chosen selection have any data. This tool is useful to use before creating or moving tables, code, connections, or cells to avoid moving cells over existing data.\n
 `,
     parameters: {
       type: 'object',
@@ -773,6 +773,7 @@ Provide a name for the output of the code cell. The name cannot contain spaces o
 Note: only name the code cell if it is new.\n
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -824,6 +825,7 @@ Set code cell value tool should be used for relatively complex tasks. Tasks like
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -878,6 +880,7 @@ Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet
 Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
 
 For SQL Connection code cells:\n
@@ -1000,6 +1003,7 @@ Never use set_formula_cell_value function to set the value of a cell to a value 
 set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
 Don't prefix formulas with \`=\` in formula cells.\n
 
 Formulas placement instructions:\n
