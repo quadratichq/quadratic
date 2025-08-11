@@ -224,6 +224,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    serviceTier: 'priority',
     rate_per_million_input_tokens: 1.25,
     rate_per_million_output_tokens: 10,
     rate_per_million_cache_read_tokens: 0.125,
@@ -346,6 +347,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    serviceTier: 'priority',
     rate_per_million_input_tokens: 1.25,
     rate_per_million_output_tokens: 10,
     rate_per_million_cache_read_tokens: 0.125,
