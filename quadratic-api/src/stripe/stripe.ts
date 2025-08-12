@@ -1,6 +1,8 @@
 import type { Team } from '@prisma/client';
 import { SubscriptionStatus } from '@prisma/client';
+import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import Stripe from 'stripe';
+import { trackEvent } from '../analytics';
 import dbClient from '../dbClient';
 import { STRIPE_SECRET_KEY } from '../env-vars';
 import logger from '../utils/logger';
@@ -157,17 +159,73 @@ const updateTeamStatus = async (
       return;
   }
 
-  // Associate the subscription with the team and update the status
-  await dbClient.team.update({
-    where: { stripeCustomerId: customerId },
-    data: {
-      // activated: true, // activate the team
-      stripeSubscriptionId,
-      stripeSubscriptionStatus,
-      stripeCurrentPeriodEnd: endDate,
-      stripeSubscriptionLastUpdated: new Date(),
-    },
+  // Use a transaction to get old data and update atomically
+  const { oldTeam, updatedTeam, teamOwner } = await dbClient.$transaction(async (tx) => {
+    // Get the team before updating
+    const oldTeam = await tx.team.findUnique({
+      where: { stripeCustomerId: customerId },
+      select: {
+        stripeSubscriptionStatus: true,
+        id: true,
+      },
+    });
+
+    if (!oldTeam) {
+      logger.error('Team not found', { customerId });
+      return;
+    }
+
+    // Get the teams first owner
+    // TODO: this is a hack to get the team owner.
+    // Once we store email on the user, we can use that instead because it's also stored in stripe.
+    const userTeamRole = await tx.userTeamRole.findFirst({
+      where: {
+        teamId: oldTeam.id,
+        role: UserTeamRoleSchema.enum.OWNER,
+      },
+      select: {
+        user: {
+          select: {
+            auth0Id: true,
+          },
+        },
+      },
+    });
+    const teamOwner = userTeamRole?.user;
+
+    if (!teamOwner) {
+      logger.error('First owner not found', { teamId: oldTeam.id });
+      return;
+    }
+
+    // Update the team
+    const updatedTeam = await tx.team.update({
+      where: { stripeCustomerId: customerId },
+      data: {
+        // activated: true, // activate the team
+        stripeSubscriptionId,
+        stripeSubscriptionStatus,
+        stripeCurrentPeriodEnd: endDate,
+        stripeSubscriptionLastUpdated: new Date(),
+      },
+    });
+
+    return { oldTeam, updatedTeam, teamOwner };
   });
+
+  // Now you can compare the statuses
+  const statusChanged = oldTeam?.stripeSubscriptionStatus !== updatedTeam.stripeSubscriptionStatus;
+
+  // If the status changed, track the event
+  if (statusChanged && updatedTeam.stripeSubscriptionStatus !== null) {
+    // track the event
+    trackEvent('[Stripe].statusChangedTo.' + updatedTeam.stripeSubscriptionStatus.toLowerCase(), {
+      distinctId: teamOwner.auth0Id,
+      teamId: updatedTeam.id,
+      oldStatus: oldTeam?.stripeSubscriptionStatus?.toLowerCase(),
+      newStatus: updatedTeam.stripeSubscriptionStatus?.toLowerCase(),
+    });
+  }
 };
 
 export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription) => {
