@@ -6,6 +6,7 @@ import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages'
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
+import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -87,21 +88,31 @@ export function useSubmitAIAnalystPrompt() {
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
   const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
+  const { getSqlContext } = useSqlContextMessages();
 
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [filesContext, sheetInfoContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
-          await Promise.all([
-            getFilesContext({ chatMessages }),
-            getSheetInfoContext({ sheets: sheets.sheets }),
-            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-            getTablesContext(),
-            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
-            getVisibleContext(),
-          ]);
+        const [
+          sqlContext,
+          filesContext,
+          sheetInfoContext,
+          otherSheetsContext,
+          tablesContext,
+          currentSheetContext,
+          visibleContext,
+        ] = await Promise.all([
+          getSqlContext(),
+          getFilesContext({ chatMessages }),
+          getSheetInfoContext({ sheets: sheets.sheets }),
+          getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+          getTablesContext(),
+          getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+          getVisibleContext(),
+        ]);
 
         const messagesWithContext: ChatMessage[] = [
+          ...sqlContext,
           ...filesContext,
           ...sheetInfoContext,
           ...otherSheetsContext,
@@ -122,6 +133,7 @@ export function useSubmitAIAnalystPrompt() {
       getVisibleContext,
       getFilesContext,
       getSheetInfoContext,
+      getSqlContext,
     ]
   );
 
