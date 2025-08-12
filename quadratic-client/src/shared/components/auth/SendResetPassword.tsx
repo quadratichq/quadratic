@@ -11,7 +11,7 @@ import type z from 'zod';
 export const SendResetPassword = memo(() => {
   const [resetSent, setResetSent] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const formSchema = useMemo(() => ApiSchemas['/auth/sendResetPassword.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/v0/auth/send-reset-password.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

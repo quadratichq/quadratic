@@ -4,23 +4,23 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { Request } from '../../types/Request';
-import { authenticateWithMagicCode, clearCookies } from '../providers/auth';
+import { authenticateWithCode, clearCookies } from '../providers/auth';
 
 const schema = z.object({
-  body: ApiSchemas['/auth/authenticateWithMagicCode.POST.request'],
+  body: ApiSchemas['/v0/auth/authenticate-with-code.POST.request'],
 });
 
-const authenticateWithMagicCodeRouter = express.Router();
+const authenticateWithCodeRouter = express.Router();
 
-authenticateWithMagicCodeRouter.post(
-  '/authenticateWithMagicCode',
-  async (req: Request, res: Response<ApiTypes['/auth/authenticateWithMagicCode.POST.response']>) => {
+authenticateWithCodeRouter.post(
+  '/',
+  async (req: Request, res: Response<ApiTypes['/v0/auth/authenticate-with-code.POST.response']>) => {
     try {
       const {
-        body: { email, code },
+        body: { code },
       } = parseRequest(req, schema);
 
-      const { pendingAuthenticationToken } = await authenticateWithMagicCode({ email, code, res });
+      const { pendingAuthenticationToken } = await authenticateWithCode({ code, res });
 
       return res.status(200).json({ message: 'Authentication successful', pendingAuthenticationToken });
     } catch {
@@ -31,4 +31,4 @@ authenticateWithMagicCodeRouter.post(
   }
 );
 
-export default authenticateWithMagicCodeRouter;
+export default authenticateWithCodeRouter;

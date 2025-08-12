@@ -8,15 +8,15 @@ import { auth_signup_rate_limiter } from '../middleware/authRateLimiter';
 import { clearCookies, sendMagicAuthCode } from '../providers/auth';
 
 const schema = z.object({
-  body: ApiSchemas['/auth/sendMagicAuthCode.POST.request'],
+  body: ApiSchemas['/v0/auth/send-magic-auth-code.POST.request'],
 });
 
 const resetPasswordRouter = express.Router();
 
 resetPasswordRouter.post(
-  '/sendMagicAuthCode',
+  '/',
   auth_signup_rate_limiter,
-  async (req: Request, res: Response<ApiTypes['/auth/sendMagicAuthCode.POST.response']>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/auth/send-magic-auth-code.POST.response']>) => {
     try {
       const {
         body: { email },

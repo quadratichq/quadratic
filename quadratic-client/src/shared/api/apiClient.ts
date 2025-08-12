@@ -471,60 +471,60 @@ export const apiClient = {
       }
       return quadraticApiUrl.replace('https://', '').replace('http://', '');
     },
-    loginWithPassword(args: ApiTypes['/auth/loginWithPassword.POST.request']) {
+    loginWithPassword(args: ApiTypes['/v0/auth/login-with-password.POST.request']) {
       return fetchFromApi(
-        `/auth/loginWithPassword`,
+        `/v0/auth/login-with-password`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/loginWithPassword.POST.response']
+        ApiSchemas['/v0/auth/login-with-password.POST.response']
       );
     },
-    signupWithPassword(args: ApiTypes['/auth/signupWithPassword.POST.request']) {
+    signupWithPassword(args: ApiTypes['/v0/auth/signup-with-password.POST.request']) {
       return fetchFromApi(
-        `/auth/signupWithPassword`,
+        `/v0/auth/signup-with-password`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/signupWithPassword.POST.response']
+        ApiSchemas['/v0/auth/signup-with-password.POST.response']
       );
     },
-    authenticateWithCode(args: ApiTypes['/auth/authenticateWithCode.POST.request']) {
+    authenticateWithCode(args: ApiTypes['/v0/auth/authenticate-with-code.POST.request']) {
       return fetchFromApi(
-        `/auth/authenticateWithCode`,
+        `/v0/auth/authenticate-with-code`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/authenticateWithCode.POST.response']
+        ApiSchemas['/v0/auth/authenticate-with-code.POST.response']
       );
     },
-    verifyEmail(args: ApiTypes['/auth/verifyEmail.POST.request']) {
+    verifyEmail(args: ApiTypes['/v0/auth/verify-email.POST.request']) {
       return fetchFromApi(
-        `/auth/verifyEmail`,
+        `/v0/auth/verify-email`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/verifyEmail.POST.response']
+        ApiSchemas['/v0/auth/verify-email.POST.response']
       );
     },
-    sendResetPassword(args: ApiTypes['/auth/sendResetPassword.POST.request']) {
+    sendResetPassword(args: ApiTypes['/v0/auth/send-reset-password.POST.request']) {
       return fetchFromApi(
-        `/auth/sendResetPassword`,
+        `/v0/auth/send-reset-password`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/sendResetPassword.POST.response']
+        ApiSchemas['/v0/auth/send-reset-password.POST.response']
       );
     },
-    resetPassword(args: ApiTypes['/auth/resetPassword.POST.request']) {
+    resetPassword(args: ApiTypes['/v0/auth/reset-password.POST.request']) {
       return fetchFromApi(
-        `/auth/resetPassword`,
+        `/v0/auth/reset-password`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/resetPassword.POST.response']
+        ApiSchemas['/v0/auth/reset-password.POST.response']
       );
     },
-    sendMagicAuthCode(args: ApiTypes['/auth/sendMagicAuthCode.POST.request']) {
+    sendMagicAuthCode(args: ApiTypes['/v0/auth/send-magic-auth-code.POST.request']) {
       return fetchFromApi(
-        `/auth/sendMagicAuthCode`,
+        `/v0/auth/send-magic-auth-code`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/sendMagicAuthCode.POST.response']
+        ApiSchemas['/v0/auth/send-magic-auth-code.POST.response']
       );
     },
-    authenticateWithMagicCode(args: ApiTypes['/auth/authenticateWithMagicCode.POST.request']) {
+    authenticateWithMagicCode(args: ApiTypes['/v0/auth/authenticate-with-magic-code.POST.request']) {
       return fetchFromApi(
-        `/auth/authenticateWithMagicCode`,
+        `/v0/auth/authenticate-with-magic-code`,
         { method: 'POST', body: JSON.stringify(args), credentials: 'include' },
-        ApiSchemas['/auth/authenticateWithMagicCode.POST.response']
+        ApiSchemas['/v0/auth/authenticate-with-magic-code.POST.response']
       );
     },
   },

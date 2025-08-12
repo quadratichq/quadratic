@@ -7,14 +7,14 @@ import type { Request } from '../../types/Request';
 import { clearCookies, loginWithPassword } from '../providers/auth';
 
 const schema = z.object({
-  body: ApiSchemas['/auth/loginWithPassword.POST.request'],
+  body: ApiSchemas['/v0/auth/login-with-password.POST.request'],
 });
 
 const loginWithPasswordRouter = express.Router();
 
 loginWithPasswordRouter.post(
-  '/loginWithPassword',
-  async (req: Request, res: Response<ApiTypes['/auth/loginWithPassword.POST.response']>) => {
+  '/',
+  async (req: Request, res: Response<ApiTypes['/v0/auth/login-with-password.POST.response']>) => {
     try {
       const {
         body: { email, password },

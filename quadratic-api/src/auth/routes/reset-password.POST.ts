@@ -8,15 +8,15 @@ import { auth_signup_rate_limiter } from '../middleware/authRateLimiter';
 import { clearCookies, resetPassword } from '../providers/auth';
 
 const schema = z.object({
-  body: ApiSchemas['/auth/resetPassword.POST.request'],
+  body: ApiSchemas['/v0/auth/reset-password.POST.request'],
 });
 
 const resetPasswordRouter = express.Router();
 
 resetPasswordRouter.post(
-  '/resetPassword',
+  '/',
   auth_signup_rate_limiter,
-  async (req: Request, res: Response<ApiTypes['/auth/resetPassword.POST.response']>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/auth/reset-password.POST.response']>) => {
     try {
       const {
         body: { token, password },

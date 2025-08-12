@@ -16,7 +16,7 @@ export const SignupForm = memo(() => {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const formSchema = useMemo(() => ApiSchemas['/auth/signupWithPassword.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/v0/auth/signup-with-password.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

@@ -24,7 +24,7 @@ export const Component = () => {
   const { pendingAuthenticationToken } = useLoaderData<typeof loader>();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const formSchema = useMemo(() => ApiSchemas['/auth/verifyEmail.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/v0/auth/verify-email.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

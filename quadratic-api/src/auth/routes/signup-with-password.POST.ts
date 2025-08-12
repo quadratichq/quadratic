@@ -8,15 +8,15 @@ import { auth_signup_rate_limiter } from '../middleware/authRateLimiter';
 import { clearCookies, signupWithPassword } from '../providers/auth';
 
 const schema = z.object({
-  body: ApiSchemas['/auth/signupWithPassword.POST.request'],
+  body: ApiSchemas['/v0/auth/signup-with-password.POST.request'],
 });
 
 const signupWithPasswordRouter = express.Router();
 
 signupWithPasswordRouter.post(
-  '/signupWithPassword',
+  '/',
   auth_signup_rate_limiter,
-  async (req: Request, res: Response<ApiTypes['/auth/signupWithPassword.POST.response']>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/auth/signup-with-password.POST.response']>) => {
     try {
       const {
         body: { email, password, firstName, lastName },

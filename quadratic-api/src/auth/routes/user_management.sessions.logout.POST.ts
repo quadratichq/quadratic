@@ -13,7 +13,7 @@ const schema = z.object({
 
 const logoutRouter = express.Router();
 
-logoutRouter.get('/sessions/logout', async (req: Request, res: Response) => {
+logoutRouter.get('/', async (req: Request, res: Response) => {
   try {
     const { query } = parseRequest(req, schema);
     const { session_id } = query;

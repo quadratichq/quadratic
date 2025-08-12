@@ -13,7 +13,7 @@ import type z from 'zod';
 export const SendMagicAuthCode = memo(() => {
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const formSchema = useMemo(() => ApiSchemas['/auth/sendMagicAuthCode.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/v0/auth/send-magic-auth-code.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

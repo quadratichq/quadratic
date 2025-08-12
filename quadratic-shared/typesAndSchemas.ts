@@ -521,71 +521,71 @@ export const ApiSchemas = {
     currentPeriodUsage: z.number().optional(),
   }),
 
-  '/auth/loginWithPassword.POST.request': z.object({
+  '/v0/auth/login-with-password.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
     password: z.string(),
   }),
-  '/auth/loginWithPassword.POST.response': z.object({
+  '/v0/auth/login-with-password.POST.response': z.object({
     message: z.string(),
     pendingAuthenticationToken: z.string().optional(),
   }),
 
-  '/auth/signupWithPassword.POST.request': z.object({
+  '/v0/auth/signup-with-password.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
     password: passwordSchema,
     firstName: z.string().min(1, { message: 'Must be at least 1 character.' }),
     lastName: z.string().min(1, { message: 'Must be at least 1 character.' }),
   }),
-  '/auth/signupWithPassword.POST.response': z.object({
+  '/v0/auth/signup-with-password.POST.response': z.object({
     message: z.string(),
     pendingAuthenticationToken: z.string().optional(),
   }),
 
-  '/auth/authenticateWithCode.POST.request': z.object({
+  '/v0/auth/authenticate-with-code.POST.request': z.object({
     code: z.string(),
   }),
-  '/auth/authenticateWithCode.POST.response': z.object({
+  '/v0/auth/authenticate-with-code.POST.response': z.object({
     message: z.string(),
     pendingAuthenticationToken: z.string().optional(),
   }),
 
-  '/auth/sendResetPassword.POST.request': z.object({
+  '/v0/auth/send-reset-password.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
   }),
-  '/auth/sendResetPassword.POST.response': z.object({
+  '/v0/auth/send-reset-password.POST.response': z.object({
     message: z.string(),
   }),
 
-  '/auth/verifyEmail.POST.request': z.object({
+  '/v0/auth/verify-email.POST.request': z.object({
     pendingAuthenticationToken: z.string(),
     code: z.string(),
   }),
-  '/auth/verifyEmail.POST.response': z.object({
+  '/v0/auth/verify-email.POST.response': z.object({
     message: z.string(),
   }),
 
-  '/auth/resetPassword.POST.request': z.object({
+  '/v0/auth/reset-password.POST.request': z.object({
     token: z.string(),
     password: passwordSchema,
   }),
-  '/auth/resetPassword.POST.response': z.object({
+  '/v0/auth/reset-password.POST.response': z.object({
     message: z.string(),
   }),
 
-  '/auth/sendMagicAuthCode.POST.request': z.object({
+  '/v0/auth/send-magic-auth-code.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
   }),
-  '/auth/sendMagicAuthCode.POST.response': z.object({
+  '/v0/auth/send-magic-auth-code.POST.response': z.object({
     message: z.string(),
     email: z.string().email('Must be a valid email address.').optional(),
     pendingAuthenticationToken: z.string().optional(),
   }),
 
-  '/auth/authenticateWithMagicCode.POST.request': z.object({
+  '/v0/auth/authenticate-with-magic-code.POST.request': z.object({
     email: z.string().email('Must be a valid email address.'),
     code: z.string(),
   }),
-  '/auth/authenticateWithMagicCode.POST.response': z.object({
+  '/v0/auth/authenticate-with-magic-code.POST.response': z.object({
     message: z.string(),
     pendingAuthenticationToken: z.string().optional(),
   }),

@@ -8,15 +8,15 @@ import { auth_signup_rate_limiter } from '../middleware/authRateLimiter';
 import { clearCookies, verifyEmail } from '../providers/auth';
 
 const schema = z.object({
-  body: ApiSchemas['/auth/verifyEmail.POST.request'],
+  body: ApiSchemas['/v0/auth/verify-email.POST.request'],
 });
 
 const verifyEmailRouter = express.Router();
 
 verifyEmailRouter.post(
-  '/verifyEmail',
+  '/',
   auth_signup_rate_limiter,
-  async (req: Request, res: Response<ApiTypes['/auth/verifyEmail.POST.response']>) => {
+  async (req: Request, res: Response<ApiTypes['/v0/auth/verify-email.POST.response']>) => {
     try {
       const {
         body: { pendingAuthenticationToken, code },

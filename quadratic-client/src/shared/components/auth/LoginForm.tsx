@@ -16,7 +16,7 @@ export const LoginForm = memo(() => {
 
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const formSchema = useMemo(() => ApiSchemas['/auth/loginWithPassword.POST.request'], []);
+  const formSchema = useMemo(() => ApiSchemas['/v0/auth/login-with-password.POST.request'], []);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {

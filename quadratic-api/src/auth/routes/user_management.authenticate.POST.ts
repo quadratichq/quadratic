@@ -5,7 +5,7 @@ import { authenticateWithRefreshToken, clearCookies } from '../providers/auth';
 
 const authenticateRouter = express.Router();
 
-authenticateRouter.post('/authenticate', async (req: Request, res: Response) => {
+authenticateRouter.post('/', async (req: Request, res: Response) => {
   try {
     const response = await authenticateWithRefreshToken({ req, res });
 
