@@ -131,11 +131,10 @@ impl DataTable {
         let header_y = if show_name { 1 } else { 0 };
 
         // if the position is the first cell and the header is shown, return the header
-        if pos.y == header_y && show_columns {
-            if let Some(header) = self.display_header_at(pos.x as u32) {
+        if pos.y == header_y && show_columns
+            && let Some(header) = self.display_header_at(pos.x as u32) {
                 return Ok(header.name.as_ref());
             }
-        }
 
         pos.y -= self.y_adjustment(true);
 

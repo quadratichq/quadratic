@@ -61,7 +61,8 @@ export const connectionClient = {
         | 'neon'
         | 'NEON',
       connectionId: string,
-      teamUuid: string
+      teamUuid: string,
+      forceCacheRefresh: boolean = false
     ): Promise<SqlSchemaResponse | null> => {
       // This might get called on a public file (where the user might not be
       // logged in but can still access the file). If they're not logged in,
@@ -75,7 +76,8 @@ export const connectionClient = {
       const headers = new Headers(await jwtHeader());
       headers.set('X-Team-Id', teamUuid);
 
-      const res = await fetch(`${API_URL}/${connectionType.toLowerCase()}/schema/${connectionId}`, {
+      const url = `${API_URL}/${connectionType.toLowerCase()}/schema/${connectionId}?force_cache_refresh=${forceCacheRefresh}`;
+      const res = await fetch(url, {
         method: 'GET',
         headers,
       });

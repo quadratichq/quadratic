@@ -13,7 +13,7 @@ import {
   DropdownMenuShortcut,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback, useEffect, useState } from 'react';
 
 export const ZoomMenu = () => {
@@ -103,7 +103,7 @@ function DropdownMenuItemFromAction<T extends Action>({
   return (
     <DropdownMenuItem
       onClick={() => {
-        mixpanel.track(mixpanelEvent);
+        trackEvent(mixpanelEvent);
         actionSpec.run(actionArgs);
       }}
     >

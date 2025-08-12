@@ -21,7 +21,7 @@ import {
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   getLastAIPromptMessageIndex,
   getMessagesForAI,
@@ -110,7 +110,7 @@ export function useSubmitAIAssistantPrompt() {
 
           set(aiAssistantWaitingOnMessageIndexAtom, messageIndex);
 
-          mixpanel.track('[Billing].ai.exceededBillingLimit', {
+          trackEvent('[Billing].ai.exceededBillingLimit', {
             exceededBillingLimit: exceededBillingLimit,
             location: 'AIAssistant',
           });

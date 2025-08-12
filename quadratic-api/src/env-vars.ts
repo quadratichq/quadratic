@@ -34,6 +34,7 @@ export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'GCP_PROJECT_ID';
 export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL || 'GCP_CLIENT_EMAIL';
 export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY || 'GCP_PRIVATE_KEY';
 export const GCP_GEMINI_API_KEY = process.env.GCP_GEMINI_API_KEY || 'GCP_GEMINI_API_KEY';
+export const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || undefined;
 
 // Optional Billing
 export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
@@ -56,9 +57,9 @@ export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
 export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
 export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || 'AZURE_OPENAI_ENDPOINT';
 export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || 'AZURE_OPENAI_API_KEY';
-export const XAI_API_KEY = process.env.XAI_API_KEY || '';
-export const BASETEN_API_KEY = process.env.BASETEN_API_KEY || '';
-export const FIREWORKS_API_KEY = process.env.FIREWORKS_API_KEY || '';
+export const XAI_API_KEY = process.env.XAI_API_KEY || 'XAI_API_KEY';
+export const BASETEN_API_KEY = process.env.BASETEN_API_KEY || 'BASETEN_API_KEY';
+export const FIREWORKS_API_KEY = process.env.FIREWORKS_API_KEY || 'FIREWORKS_API_KEY';
 export const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY || 'OPEN_ROUTER_API_KEY';
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';

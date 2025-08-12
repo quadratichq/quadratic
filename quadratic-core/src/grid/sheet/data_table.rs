@@ -255,16 +255,14 @@ impl Sheet {
                     return false;
                 }
                 let output_rect = data_table.output_rect(data_table_pos, false);
-                if let Some(exclude_x) = exclude_x {
-                    if exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
+                if let Some(exclude_x) = exclude_x
+                    && exclude_x >= output_rect.min.x && exclude_x <= output_rect.max.x {
                         return false;
                     }
-                }
-                if let Some(exclude_y) = exclude_y {
-                    if exclude_y >= output_rect.min.y && exclude_y <= output_rect.max.y {
+                if let Some(exclude_y) = exclude_y
+                    && exclude_y >= output_rect.min.y && exclude_y <= output_rect.max.y {
                         return false;
                     }
-                }
                 true
             })
     }
@@ -278,11 +276,10 @@ impl Sheet {
             .collect::<Vec<_>>();
         let sheet_id = self.id;
         for pos in positions.into_iter() {
-            if let Some(cell_value) = self.cell_value_mut(pos) {
-                if let Some(code_cell_value) = cell_value.code_cell_value_mut() {
+            if let Some(cell_value) = self.cell_value_mut(pos)
+                && let Some(code_cell_value) = cell_value.code_cell_value_mut() {
                     func(code_cell_value, pos.to_sheet_pos(sheet_id));
                 }
-            }
         }
     }
 

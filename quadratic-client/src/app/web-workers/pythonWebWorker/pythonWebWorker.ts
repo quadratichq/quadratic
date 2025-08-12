@@ -7,7 +7,7 @@ import type {
 } from '@/app/web-workers/pythonWebWorker/pythonClientMessages';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { authClient } from '@/auth/auth';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 class PythonWebWorker {
   state: LanguageState = 'loading';
@@ -59,7 +59,7 @@ class PythonWebWorker {
   }
 
   cancelExecution = () => {
-    mixpanel.track('[PythonWebWorker].restartFromUser');
+    trackEvent('[PythonWebWorker].restartFromUser');
     this.initWorker();
     quadraticCore.sendCancelExecution('Python');
     events.emit('pythonState', 'loading');

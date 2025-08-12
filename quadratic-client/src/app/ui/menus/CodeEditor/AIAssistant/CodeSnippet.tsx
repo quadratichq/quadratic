@@ -9,9 +9,9 @@ import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CopyIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import Editor from '@monaco-editor/react';
 import { ChevronDownIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilCallback, useRecoilValue } from 'recoil';
 
@@ -138,7 +138,7 @@ const CodeSnippetRunButton = memo(
     const handleSaveAndRun = useRecoilCallback(
       ({ snapshot, set }) =>
         async () => {
-          mixpanel.track('[AI].code.run', { language });
+          trackEvent('[AI].code.run', { language });
 
           const editorContent = await snapshot.getPromise(codeEditorEditorContentAtom);
           if (editorContent === text) {
@@ -190,7 +190,7 @@ const CodeSnippetCopyButton = memo(
     const handleCopy = useCallback(
       (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
-        mixpanel.track('[AI].code.copy', { language });
+        trackEvent('[AI].code.copy', { language });
         navigator.clipboard.writeText(text);
         setTooltipMsg('Copied!');
         setTimeout(() => {

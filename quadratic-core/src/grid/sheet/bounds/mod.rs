@@ -27,14 +27,13 @@ impl Sheet {
         };
 
         for validation in self.validations.validations.iter() {
-            if validation.render_special().is_some() {
-                if let Some(rect) =
+            if validation.render_special().is_some()
+                && let Some(rect) =
                     self.selection_bounds(&validation.selection, false, false, true, a1_context)
                 {
                     self.data_bounds.add(rect.min);
                     self.data_bounds.add(rect.max);
                 }
-            }
         }
         for (&pos, _) in self.validations.warnings.iter() {
             self.data_bounds.add(pos);
@@ -299,8 +298,7 @@ impl Sheet {
                     let rect_range = rect_start_x..(rect_start_x + rect.width() as i64);
                     for x in rect_range {
                         if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
-                        {
-                            if (next_row_with_content - row) < rect.height() as i64 {
+                            && (next_row_with_content - row) < rect.height() as i64 {
                                 rect_start_x = if !reverse {
                                     x + 1
                                 } else {
@@ -309,7 +307,6 @@ impl Sheet {
                                 is_valid = false;
                                 break;
                             }
-                        }
                     }
                     if is_valid {
                         return rect_start_x;
@@ -344,8 +341,7 @@ impl Sheet {
                     for y in rect_range {
                         if let Some(next_column_with_content) =
                             self.find_next_column(column, y, false, true)
-                        {
-                            if (next_column_with_content - column) < rect.width() as i64 {
+                            && (next_column_with_content - column) < rect.width() as i64 {
                                 rect_start_y = if !reverse {
                                     y + 1
                                 } else {
@@ -354,7 +350,6 @@ impl Sheet {
                                 is_valid = false;
                                 break;
                             }
-                        }
                     }
                     if is_valid {
                         return rect_start_y;
