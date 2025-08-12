@@ -5,6 +5,7 @@
  * directly accessed by its siblings.
  */
 
+import { maxRows } from '@/app/ai/constants/context';
 import { bigIntReplacer } from '@/app/bigint';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -1116,18 +1117,22 @@ class Core {
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
+    maxRows?: number;
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
+    includeDataRectsSummary: boolean;
   }): JsSelectionContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       return this.gridController.getAISelectionContexts(
         args.selections,
         args.maxRects,
+        args.maxRows,
         args.includeErroredCodeCells,
         args.includeTablesSummary,
-        args.includeChartsSummary
+        args.includeChartsSummary,
+        args.includeDataRectsSummary
       );
     } catch (e) {
       this.handleCoreError('getAISelectionContexts', e);
@@ -1138,7 +1143,7 @@ class Core {
   getAITablesContext(): JsTablesContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.getAITablesContext();
+      return this.gridController.getAITablesContext(maxRows);
     } catch (e) {
       this.handleCoreError('getAITablesContext', e);
       return undefined;
@@ -1458,6 +1463,15 @@ class Core {
     } catch (e) {
       this.handleCoreError('hasCellData', e);
       return false;
+    }
+  }
+
+  getAICodeErrors(maxErrors: number) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.getAICodeErrors(maxErrors);
+    } catch (e) {
+      this.handleCoreError('getAICodeErrors', e);
     }
   }
 }

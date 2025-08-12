@@ -21,6 +21,8 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { isQuadraticModel } from './model.helper';
 
+export const CLEAN_UP_TOOL_CALLS_AFTER = 3;
+
 const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
     (message): message is SystemMessage =>
@@ -213,7 +215,6 @@ export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessa
 export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessage[] => {
   const CLEAN_UP_MESSAGE =
     'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST use Python.';
-  const CLEAN_UP_AFTER = 3;
 
   const getToolIds = new Set();
   messages.forEach((message) => {
@@ -234,7 +235,7 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
         ...message,
         content: message.content.map((toolResult) => {
           if (getToolIds.has(toolResult.id)) {
-            if (i < messages.length - CLEAN_UP_AFTER) {
+            if (i < messages.length - CLEAN_UP_TOOL_CALLS_AFTER) {
               return {
                 id: toolResult.id,
                 content: [

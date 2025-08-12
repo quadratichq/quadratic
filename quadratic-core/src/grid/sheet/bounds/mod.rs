@@ -30,10 +30,10 @@ impl Sheet {
             if validation.render_special().is_some()
                 && let Some(rect) =
                     self.selection_bounds(&validation.selection, false, false, true, a1_context)
-                {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
+            {
+                self.data_bounds.add(rect.min);
+                self.data_bounds.add(rect.max);
+            }
         }
         for (&pos, _) in self.validations.warnings.iter() {
             self.data_bounds.add(pos);
@@ -298,15 +298,16 @@ impl Sheet {
                     let rect_range = rect_start_x..(rect_start_x + rect.width() as i64);
                     for x in rect_range {
                         if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
-                            && (next_row_with_content - row) < rect.height() as i64 {
-                                rect_start_x = if !reverse {
-                                    x + 1
-                                } else {
-                                    x - rect.width() as i64
-                                };
-                                is_valid = false;
-                                break;
-                            }
+                            && (next_row_with_content - row) < rect.height() as i64
+                        {
+                            rect_start_x = if !reverse {
+                                x + 1
+                            } else {
+                                x - rect.width() as i64
+                            };
+                            is_valid = false;
+                            break;
+                        }
                     }
                     if is_valid {
                         return rect_start_x;
@@ -341,15 +342,16 @@ impl Sheet {
                     for y in rect_range {
                         if let Some(next_column_with_content) =
                             self.find_next_column(column, y, false, true)
-                            && (next_column_with_content - column) < rect.width() as i64 {
-                                rect_start_y = if !reverse {
-                                    y + 1
-                                } else {
-                                    y - rect.height() as i64
-                                };
-                                is_valid = false;
-                                break;
-                            }
+                            && (next_column_with_content - column) < rect.width() as i64
+                        {
+                            rect_start_y = if !reverse {
+                                y + 1
+                            } else {
+                                y - rect.height() as i64
+                            };
+                            is_valid = false;
+                            break;
+                        }
                     }
                     if is_valid {
                         return rect_start_y;
@@ -369,11 +371,22 @@ impl Sheet {
 
         let is_non_data_cell = |pos: Pos| match self.cell_value_ref(pos) {
             Some(value) => {
-                value.is_blank_or_empty_string()
+                if value.is_blank_or_empty_string()
                     || value.is_image()
                     || value.is_html()
-                    || value.is_code()
                     || value.is_import()
+                {
+                    true
+                } else if matches!(value, CellValue::Code(_)) {
+                    // include code cells that are single values in data rects
+                    if let Some(output) = self.data_table_at(&pos) {
+                        !output.is_single_value()
+                    } else {
+                        true
+                    }
+                } else {
+                    false
+                }
             }
             None => true,
         };
@@ -390,8 +403,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.data_table_pos_that_contains_result(pos).is_ok();
-                    if is_table_cell {
+                    if self.is_in_non_single_code_cell_code_table(pos) {
                         continue;
                     }
 
@@ -459,6 +471,7 @@ mod test {
                 },
             },
         },
+        test_util::*,
     };
     use proptest::proptest;
     use std::collections::HashMap;
@@ -1002,7 +1015,7 @@ mod test {
     }
 
     #[test]
-    fn find_tabular_data_rects_in_selection_rects() {
+    fn test_find_tabular_data_rects_in_selection_rects() {
         let (mut gc, sheet_id, _, _) = simple_csv_at(pos![B2]);
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -1059,5 +1072,36 @@ mod test {
             Rect::from_numbers(31, 101, 5, 203),
         ];
         assert_eq!(tabular_data_rects, expected_rects);
+    }
+
+    #[test]
+    fn test_find_tabular_data_rects_with_single_cell_code_tables() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        for y in 1..=10 {
+            gc.set_code_cell(
+                SheetPos { x: 1, y, sheet_id },
+                CodeCellLanguage::Formula,
+                "15".to_string(),
+                None,
+                None,
+                false,
+            );
+        }
+        gc.set_code_cell(
+            pos![sheet_id!A11],
+            CodeCellLanguage::Formula,
+            "{1,2,3}".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let tabular_data_rects =
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)], None);
+        assert_eq!(tabular_data_rects.len(), 1);
+        assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 1, 10));
     }
 }

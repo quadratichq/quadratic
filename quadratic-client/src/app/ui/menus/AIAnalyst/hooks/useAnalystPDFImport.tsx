@@ -1,10 +1,12 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
-import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
-import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
+import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
+// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+// import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+// import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
+import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
@@ -18,10 +20,11 @@ type PDFImportResponse = z.infer<(typeof aiToolsSpec)[AITool.PDFImport]['respons
 
 export const useAnalystPDFImport = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getOtherSheetsContext } = useOtherSheetsContextMessages();
-  const { getTablesContext } = useTablesContextMessages();
-  const { getCurrentSheetContext } = useCurrentSheetContextMessages();
+  // const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
+  // const { getTablesContext } = useTablesContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
+  const { getSummaryContext } = useSummaryContextMessages();
 
   const importPDF = useRecoilCallback(
     ({ set }) =>
@@ -42,10 +45,11 @@ export const useAnalystPDFImport = () => {
             return [{ type: 'text', text: `File with name ${file_name} not found` }];
           }
 
-          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext] = await Promise.all([
-            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-            getTablesContext(),
-            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+          const [visibleContext, summaryContext] = await Promise.all([
+            // getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+            // getTablesContext(),
+            // getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+            getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
             getVisibleContext(),
           ]);
 
@@ -84,10 +88,11 @@ How can I help you?`,
               ],
               contextType: 'files',
             },
-            ...otherSheetsContext,
-            ...tablesContext,
-            ...currentSheetContext,
+            // ...otherSheetsContext,
             ...visibleContext,
+            ...summaryContext,
+            // ...tablesContext,
+            // ...currentSheetContext,
             {
               role: 'user',
               content: [
@@ -151,7 +156,11 @@ How can I help you?`,
         }
         return [{ type: 'text', text: importPDFResult }];
       },
-    [handleAIRequestToAPI, getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext]
+    [
+      handleAIRequestToAPI,
+      getVisibleContext,
+      getSummaryContext /* getTablesContext, getCurrentSheetContext, getOtherSheetsContext, */,
+    ]
   );
 
   return { importPDF };
