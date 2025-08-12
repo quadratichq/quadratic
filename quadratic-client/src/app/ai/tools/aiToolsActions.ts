@@ -10,6 +10,7 @@ import {
 } from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
 import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
+import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
@@ -23,6 +24,7 @@ import type {
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsGetAICellResult,
   JsResponse,
@@ -31,7 +33,14 @@ import type {
   NumericFormatKind,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { columnNameToIndex, stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
+import {
+  columnNameToIndex,
+  convertTableToSheetPos,
+  selectionToSheetRect,
+  stringToSelection,
+  xyToA1,
+  type JsSelection,
+} from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -1276,6 +1285,46 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(text)];
     } catch (e) {
       return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+  },
+  [AITool.GetCodeCellValue]: async (args) => {
+    let sheetId: string | undefined;
+    let codePos: JsCoordinate | undefined;
+    if (args.sheet_name) {
+      sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    }
+    if (!sheetId) {
+      sheetId = sheets.current;
+    }
+    if (args.code_cell_name) {
+      try {
+        const tableSheetPos = convertTableToSheetPos(args.code_cell_name, sheets.jsA1Context);
+        if (tableSheetPos) {
+          codePos = { x: tableSheetPos.x, y: tableSheetPos.y };
+          sheetId = tableSheetPos.sheetId.id;
+        }
+      } catch (e) {}
+    }
+    if (!codePos && args.code_cell_position) {
+      try {
+        const sheetRect = selectionToSheetRect(sheetId ?? sheets.current, args.code_cell_position, sheets.jsA1Context);
+        codePos = { x: sheetRect.min.x, y: sheetRect.min.y };
+        sheetId = sheetRect.sheetId.id;
+      } catch (e) {}
+    }
+
+    if (!codePos || !sheetId) {
+      return [
+        createTextContent(
+          `Error executing get code cell value tool. Invalid code cell position: ${args.code_cell_position} or table name: ${args.code_cell_name}.`
+        ),
+      ];
+    }
+    try {
+      const text = await codeCellToMarkdown(sheetId, codePos.x, codePos.y);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing get code cell value tool: ${e}`)];
     }
   },
 } as const;

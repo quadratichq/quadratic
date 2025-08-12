@@ -16,6 +16,7 @@ export enum AITool {
   SetChatName = 'set_chat_name',
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
+  GetCodeCellValue = 'get_code_cell_value',
   SetCodeCellValue = 'set_code_cell_value',
   GetDatabaseSchemas = 'get_database_schemas',
   SetSQLCodeCellValue = 'set_sql_code_cell_value',
@@ -66,6 +67,7 @@ export const AIToolSchema = z.enum([
   AITool.AddDataTable,
   AITool.SetCellValues,
   AITool.SetCodeCellValue,
+  AITool.GetCodeCellValue,
   AITool.GetDatabaseSchemas,
   AITool.SetSQLCodeCellValue,
   AITool.SetFormulaCellValue,
@@ -207,6 +209,11 @@ export const AIToolsArgsSchema = {
     code_cell_language: cellLanguageSchema,
     code_cell_position: z.string(),
     code_string: z.string(),
+  }),
+  [AITool.GetCodeCellValue]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    code_cell_name: z.string().nullable().optional(),
+    code_cell_position: z.string().nullable().optional(),
   }),
   [AITool.GetDatabaseSchemas]: z.object({
     connection_ids: z
@@ -2540,5 +2547,35 @@ This tool removes all validations in a sheet from a range.\n`,
     responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
     prompt: `
 This tool removes all validations in a sheet from a range.\n`,
+  },
+  [AITool.GetCodeCellValue]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'basic', 'pro'],
+    description: `
+This tool gets the code for a Python, JavaScript, Formula, or connection cell.
+Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_name: {
+          type: 'string',
+          description: 'The name of the code cell to get the value of',
+        },
+        code_cell_position: {
+          type: 'string',
+          description: 'The position of the code cell to get the value of, in a1 notation',
+        },
+      },
+      required: ['sheet_name', 'code_cell_name', 'code_cell_position'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetCodeCellValue],
+    prompt: `
+This tool gets the code for a Python, JavaScript, Formula, or connection cell.
+Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
   },
 } as const;

@@ -14,6 +14,7 @@ import { DeleteRows } from '@/app/ai/toolCards/DeleteRows';
 import { DeleteSheet } from '@/app/ai/toolCards/DeleteSheet';
 import { DuplicateSheet } from '@/app/ai/toolCards/DuplicateSheet';
 import { GetCellData } from '@/app/ai/toolCards/GetCellData';
+import { GetCodeCellValue } from '@/app/ai/toolCards/GetCodeCellValue';
 import { GetDatabaseSchemas } from '@/app/ai/toolCards/GetDatabaseSchemas';
 import { GetTextFormats } from '@/app/ai/toolCards/GetTextFormats';
 import { GetValidations } from '@/app/ai/toolCards/GetValidations';
@@ -140,6 +141,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RemoveValidations:
       return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.GetCodeCellValue:
+      return <GetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;

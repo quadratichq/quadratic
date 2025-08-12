@@ -134,6 +134,20 @@ pub fn convert_table_to_range(
         .map_err(|e| e.to_string())
 }
 
+/// Converts a table reference to a position.
+#[wasm_bindgen(js_name = "convertTableToSheetPos")]
+pub fn convert_table_to_sheet_pos(
+    table_name: &str,
+    context: &JsA1Context,
+) -> Result<JsValue, String> {
+    if let Some(table) = context.get_context().try_table(table_name) {
+        serde_wasm_bindgen::to_value(&(table.bounds.min.to_sheet_pos(table.sheet_id)))
+            .map_err(|e| e.to_string())
+    } else {
+        Err("Table not found".to_string())
+    }
+}
+
 #[wasm_bindgen(js_name = "columnNameToIndex")]
 pub fn column_name_to_index(column: &str) -> Option<i64> {
     column_from_name(column)
