@@ -73,7 +73,6 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
     invites,
     team: { uuid },
     license,
-    billing,
   } = data;
   const action = useMemo(() => ROUTES.TEAM(uuid), [uuid]);
   const numberOfOwners = useMemo(() => users.filter((user) => user.role === 'OWNER').length, [users]);
@@ -117,25 +116,17 @@ export function ShareTeamDialog({ data }: { data: ApiTypes['/v0/teams/:uuid.GET.
   return (
     <DialogBody>
       {userMakingRequest.teamPermissions.includes('TEAM_EDIT') && (
-        <>
-          <InviteForm
-            action={action}
-            intent="create-team-invite"
-            disallowedEmails={existingTeamEmails}
-            roles={[
-              ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
-              UserTeamRoleSchema.enum.EDITOR,
-              UserTeamRoleSchema.enum.VIEWER,
-            ]}
-            roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
-          />
-          {billing?.status === 'ACTIVE' && (
-            <p className="mt-1 text-sm text-muted-foreground">
-              Each user is billed at the per-seat rate set for your team. You currently have {users.length} billable
-              seat{users.length !== 1 ? 's' : ''}.
-            </p>
-          )}
-        </>
+        <InviteForm
+          action={action}
+          intent="create-team-invite"
+          disallowedEmails={existingTeamEmails}
+          roles={[
+            ...(userMakingRequest.teamRole === UserTeamRoleSchema.enum.OWNER ? [UserTeamRoleSchema.enum.OWNER] : []),
+            UserTeamRoleSchema.enum.EDITOR,
+            UserTeamRoleSchema.enum.VIEWER,
+          ]}
+          roleDefaultValue={UserTeamRoleSchema.enum.EDITOR}
+        />
       )}
 
       {license.status === 'exceeded' && (
