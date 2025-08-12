@@ -235,7 +235,7 @@ export const verifyEmailWorkos = async ({
 export const logoutSessionWorkos = async ({ sessionId, res }: { sessionId: string; res: Response }) => {
   clearCookiesWorkos({ res });
 
-  return await getWorkos().userManagement.revokeSession({
+  await getWorkos().userManagement.revokeSession({
     sessionId,
   });
 };
