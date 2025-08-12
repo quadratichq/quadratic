@@ -3,7 +3,7 @@ import { GenericServerException, WorkOS, type UserResponse } from '@workos-inc/n
 import type { Request, Response } from 'express';
 import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
-import { WORKOS_API_KEY, WORKOS_CLIENT_ID, WORKOS_JWKS_URI } from '../../env-vars';
+import { JWKS_URI, WORKOS_API_KEY, WORKOS_CLIENT_ID } from '../../env-vars';
 import logger from '../../utils/logger';
 import type { ByEmailUser, User } from './auth';
 
@@ -78,7 +78,7 @@ export const jwtConfigWorkos = {
     cache: true,
     rateLimit: true,
     jwksRequestsPerMinute: 5,
-    jwksUri: WORKOS_JWKS_URI,
+    jwksUri: JWKS_URI,
   }) as GetVerificationKey,
   algorithms: ['RS256'] as Algorithm[],
 };

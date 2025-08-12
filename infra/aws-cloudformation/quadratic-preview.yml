@@ -131,7 +131,7 @@ Resources:
           # workos
           WORKOS_CLIENT_ID=$(aws ssm get-parameter --name "/quadratic-development/WORKOS_CLIENT_ID" --with-decryption --query "Parameter.Value" --output text)
           WORKOS_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/WORKOS_API_KEY" --with-decryption --query "Parameter.Value" --output text)
-          JWKS_URI=$(aws ssm get-parameter --name "/quadratic-development/WORKOS_JWKS_URI" --with-decryption --query "Parameter.Value" --output text)
+          JWKS_URI=$(aws ssm get-parameter --name "/quadratic-development/JWKS_URI" --with-decryption --query "Parameter.Value" --output text)
 
           # auth0
           JWKS_URI=$(aws ssm get-parameter --name "/quadratic-development/AUTH0_JWKS_URI" --with-decryption --query "Parameter.Value" --output text)
