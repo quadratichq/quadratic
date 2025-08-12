@@ -14,23 +14,23 @@ import verifyEmail from '../routes/verify-email.POST';
 
 const authRouter = express.Router();
 
-const checkClientHostname = (req: Request, res: Response, next: NextFunction) => {
-  const clientHostname = new URL(AUTH_CORS).hostname;
-  if (req.hostname !== clientHostname) {
+const checkClientOrigin = (req: Request, res: Response, next: NextFunction) => {
+  const clientOrigin = new URL(AUTH_CORS).origin;
+  if (req.headers.origin !== clientOrigin) {
     return res.status(403).json({ message: 'Forbidden' });
   }
   next();
 };
 
-authRouter.use('/user_management/authenticate', checkClientHostname, authenticate);
-authRouter.use('/user_management/sessions/logout', checkClientHostname, logout);
-authRouter.use('/v0/auth/login-with-password', checkClientHostname, loginWithPassword);
-authRouter.use('/v0/auth/signup-with-password', checkClientHostname, signupWithPassword);
-authRouter.use('/v0/auth/authenticate-with-code', checkClientHostname, authenticateWithCode);
-authRouter.use('/v0/auth/verify-email', checkClientHostname, verifyEmail);
-authRouter.use('/v0/auth/send-reset-password', checkClientHostname, sendResetPassword);
-authRouter.use('/v0/auth/reset-password', checkClientHostname, resetPassword);
-authRouter.use('/v0/auth/send-magic-auth-code', checkClientHostname, sendMagicAuthCode);
-authRouter.use('/v0/auth/authenticate-with-magic-code', checkClientHostname, authenticateWithMagicCode);
+authRouter.use('/user_management/authenticate', checkClientOrigin, authenticate);
+authRouter.use('/user_management/sessions/logout', checkClientOrigin, logout);
+authRouter.use('/v0/auth/login-with-password', checkClientOrigin, loginWithPassword);
+authRouter.use('/v0/auth/signup-with-password', checkClientOrigin, signupWithPassword);
+authRouter.use('/v0/auth/authenticate-with-code', checkClientOrigin, authenticateWithCode);
+authRouter.use('/v0/auth/verify-email', checkClientOrigin, verifyEmail);
+authRouter.use('/v0/auth/send-reset-password', checkClientOrigin, sendResetPassword);
+authRouter.use('/v0/auth/reset-password', checkClientOrigin, resetPassword);
+authRouter.use('/v0/auth/send-magic-auth-code', checkClientOrigin, sendMagicAuthCode);
+authRouter.use('/v0/auth/authenticate-with-magic-code', checkClientOrigin, authenticateWithMagicCode);
 
 export default authRouter;
