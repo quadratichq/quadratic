@@ -88,7 +88,7 @@ pub fn assert_data_table_size(
     use crate::CellValue;
 
     let sheet = gc.sheet(sheet_id);
-    let Some(data_table) = sheet.data_table_at(&pos) else {
+    let Some(data_table) = sheet.data_table_at(&pos.into()) else {
         panic!("Data table at {pos} not found");
     };
     let Some(cell_value) = sheet.cell_value(pos) else {
@@ -157,7 +157,7 @@ pub fn assert_data_table_sort_dirty(
 ) {
     let sheet = gc.sheet(sheet_id);
     let data_table = sheet
-        .data_table_at(&pos)
+        .data_table_at(&pos.into())
         .unwrap_or_else(|| panic!("Data table at {pos} not found"));
     assert_eq!(
         data_table.sort_dirty, sort_dirty,

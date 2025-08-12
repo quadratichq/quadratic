@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::{
-    CellValue, Rect,
+    CellValue, Pos, Rect,
     a1::{A1Context, A1Selection},
     grid::js_types::{
         JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
@@ -76,7 +76,7 @@ impl Sheet {
                         if let Some(CellValue::Code(_)) = column.values.get(&y) {
                             // if there is a code cell, then check if it has an error
                             if self
-                                .data_table_at(&(x, y).into())
+                                .data_table_at(&(Pos { x, y }).into())
                                 .map(|code_run| code_run.has_error())
                                 .unwrap_or(false)
                             {

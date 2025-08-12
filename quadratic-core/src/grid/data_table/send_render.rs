@@ -21,7 +21,7 @@ impl DataTable {
         data_table_pos: Pos,
     ) -> Result<()> {
         transaction.add_from_code_run(
-            data_table_pos.to_multi_pos(sheet.id),
+            data_table_pos.to_multi_sheet_pos(sheet.id),
             self.is_image(),
             self.is_html(),
         );

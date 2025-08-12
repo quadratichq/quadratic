@@ -980,7 +980,7 @@ mod test {
 
         // hide first column
         sheet
-            .modify_data_table_at(pos.to_multi_pos(sheet_id), |dt| {
+            .modify_data_table_at(&pos.into(), |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[0].display = false;
                 Ok(())

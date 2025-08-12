@@ -93,7 +93,7 @@ impl GridController {
                         span: None,
                         msg: RunErrorMsg::CodeRunError(std::borrow::Cow::Owned(msg.to_string())),
                     };
-                    transaction.current_multi_pos = Some(sheet_pos.into());
+                    transaction.current_multi_sheet_pos = Some(sheet_pos.into());
                     let _ = self.code_cell_sheet_error(transaction, &error);
 
                     // not ideal to clone the transaction, but we need to close it
@@ -104,7 +104,7 @@ impl GridController {
         }
 
         // stop the computation cycle until async returns
-        transaction.current_multi_pos = Some(sheet_pos.into());
+        transaction.current_multi_sheet_pos = Some(sheet_pos.into());
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Connection { kind, id },
             code,
@@ -255,7 +255,7 @@ mod tests {
             );
 
             let sheet = gc.sheet(sheet_id);
-            let code_cell = sheet.data_table_at(&Pos { x: 10, y: 10 });
+            let code_cell = sheet.data_table_at(&Pos { x: 10, y: 10 }.into());
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {

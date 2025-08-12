@@ -1,6 +1,6 @@
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    MultiPos,
+    MultiSheetPos,
     a1::A1Context,
     controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{DataTable, Grid, RegionMap, SheetId},
@@ -116,22 +116,28 @@ impl GridController {
             };
 
             for multi_pos in positions.into_iter() {
-                let Some(table) = sheet.data_table_multi_pos(&multi_pos) else {
-                    self.a1_context.table_map.remove_at(multi_pos);
+                let Some(data_table) = sheet.data_table_at(&multi_pos) else {
+                    self.a1_context
+                        .table_map
+                        .remove_at(multi_pos.to_multi_sheet_pos(sheet_id));
                     continue;
                 };
 
                 if !self
                     .a1_context()
                     .table_map
-                    .contains_name(table.name(), None)
+                    .contains_name(data_table.name(), None)
                 {
-                    self.a1_context.table_map.remove_at(multi_pos);
-                }
-                if let Some(translated_pos) = multi_pos.translate_pos(sheet) {
                     self.a1_context
                         .table_map
-                        .insert_table(multi_pos, translated_pos, table);
+                        .remove_at(multi_pos.to_multi_sheet_pos(sheet_id));
+                }
+                if let Some(translated_pos) = multi_pos.translate_pos(sheet) {
+                    self.a1_context.table_map.insert_table(
+                        multi_pos.to_multi_sheet_pos(sheet_id),
+                        translated_pos,
+                        data_table,
+                    );
                 }
             }
         }
@@ -154,17 +160,17 @@ impl GridController {
 
     pub(crate) fn update_cells_accessed_cache(
         &mut self,
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
         data_table: &Option<DataTable>,
     ) {
-        self.cells_accessed_cache.remove_pos(multi_pos);
+        self.cells_accessed_cache.remove_pos(multi_sheet_pos);
         if let Some(code_run) = data_table.as_ref().and_then(|dt| dt.code_run()) {
             for (sheet_id, rect) in code_run
                 .cells_accessed
                 .iter_rects_unbounded(&self.a1_context)
             {
                 self.cells_accessed_cache
-                    .insert(multi_pos, (sheet_id, rect));
+                    .insert(multi_sheet_pos, (sheet_id, rect));
             }
         }
     }

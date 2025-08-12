@@ -433,7 +433,11 @@ pub(crate) mod tests {
 
             // all code cells should have valid function names,
             // valid functions may not be implemented yet
-            let code_run = sheet.data_table_at(&pos).unwrap().code_run().unwrap();
+            let code_run = sheet
+                .data_table_at(&pos.into())
+                .unwrap()
+                .code_run()
+                .unwrap();
             if let Some(error) = &code_run.error
                 && error.msg == RunErrorMsg::BadFunctionName
             {

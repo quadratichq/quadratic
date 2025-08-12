@@ -1,7 +1,7 @@
 use itertools::Itertools;
 
 use crate::{
-    MultiPos, SheetPos,
+    MultiSheetPos, SheetPos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     formulas::{Ctx, find_cell_references, parse_formula},
     grid::{CellsAccessed, CodeCellLanguage, CodeRun, DataTable, DataTableKind},
@@ -11,13 +11,13 @@ impl GridController {
     pub(crate) fn run_formula(
         &mut self,
         transaction: &mut PendingTransaction,
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
         code: String,
         translated_pos: SheetPos,
     ) {
         let mut eval_ctx = Ctx::new(self, translated_pos);
         let parse_ctx = self.a1_context();
-        transaction.current_multi_pos = Some(multi_pos);
+        transaction.current_multi_sheet_pos = Some(multi_sheet_pos);
 
         match parse_formula(&code, parse_ctx, translated_pos.sheet_id) {
             Ok(parsed) => {
@@ -44,8 +44,12 @@ impl GridController {
                     None,
                     None,
                 );
-                let _ =
-                    self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
+                let _ = self.finalize_data_table(
+                    transaction,
+                    multi_sheet_pos,
+                    Some(new_data_table),
+                    None,
+                );
             }
             Err(error) => {
                 let _ = self.code_cell_sheet_error(transaction, &error);
@@ -56,13 +60,13 @@ impl GridController {
     pub(crate) fn add_formula_without_eval(
         &mut self,
         transaction: &mut PendingTransaction,
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
         code: &str,
         name: &str,
         translated_pos: SheetPos,
     ) {
         let parse_ctx = self.a1_context();
-        transaction.current_multi_pos = Some(multi_pos);
+        transaction.current_multi_sheet_pos = Some(multi_sheet_pos);
 
         let mut cells_accessed = CellsAccessed::default();
         let cell_references = find_cell_references(code, parse_ctx, translated_pos.sheet_id, None);
@@ -87,7 +91,7 @@ impl GridController {
             None,
             None,
         );
-        let _ = self.finalize_data_table(transaction, multi_pos, Some(new_data_table), None);
+        let _ = self.finalize_data_table(transaction, multi_sheet_pos, Some(new_data_table), None);
     }
 }
 
@@ -135,7 +139,7 @@ mod test {
                     values: CellValues::from(code_cell.clone()),
                 },
                 Operation::ComputeCodeMultiPos {
-                    multi_pos: sheet_pos.into(),
+                    multi_sheet_pos: sheet_pos.into(),
                 },
             ],
             None,
@@ -275,14 +279,14 @@ mod test {
             ..Default::default()
         };
         let mut transaction = PendingTransaction::default();
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, (1, 1).into());
+        let multi_pos = MultiPos::new_pos((1, 1).into());
 
         // need the result to ensure last_modified is the same
         let result = gc
             .js_code_result_to_code_cell_value(
                 &mut transaction,
                 result,
-                multi_pos,
+                multi_pos.to_multi_sheet_pos(sheet_id),
                 CodeCellLanguage::Javascript,
                 r#"return "12";"#.to_string(),
             )
@@ -333,7 +337,7 @@ mod test {
             ..Default::default()
         };
 
-        let multi_pos = MultiPos::new_sheet_pos(sheet_id, (1, 1).into());
+        let multi_pos = MultiPos::new_pos((1, 1).into());
         let mut array = Array::new_empty(ArraySize::new(2, 2).unwrap());
         array
             .set(
@@ -367,7 +371,7 @@ mod test {
             .js_code_result_to_code_cell_value(
                 &mut transaction,
                 result,
-                multi_pos,
+                multi_pos.to_multi_sheet_pos(sheet_id),
                 CodeCellLanguage::Javascript,
                 r#"return [[1.1, 0.2], [3, "Hello"]];"#.to_string(),
             )
@@ -443,7 +447,7 @@ mod test {
         );
         assert!(
             gc.sheet(sheet_id)
-                .data_table_at(&Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 }.into())
                 .unwrap()
                 .has_spill()
         );
@@ -465,7 +469,7 @@ mod test {
         gc.redo(None);
         assert!(
             gc.sheet(sheet_id)
-                .data_table_at(&Pos { x: 2, y: 1 })
+                .data_table_at(&Pos { x: 2, y: 1 }.into())
                 .unwrap()
                 .has_spill()
         );
@@ -501,7 +505,7 @@ mod test {
                 code: "☺".into(),
             }))
         );
-        let result = sheet.data_table_at(&pos).unwrap();
+        let result = sheet.data_table_at(&pos.into()).unwrap();
         assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
 
@@ -521,7 +525,7 @@ mod test {
                 code: "{0,1/0;2/0,0}".into(),
             }))
         );
-        let result = sheet.data_table_at(&pos).unwrap();
+        let result = sheet.data_table_at(&pos.into()).unwrap();
         assert!(!result.has_spill());
         assert!(result.code_run().unwrap().std_err.is_some());
     }

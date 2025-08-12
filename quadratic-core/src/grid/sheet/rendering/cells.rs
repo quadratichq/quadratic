@@ -156,7 +156,7 @@ impl Sheet {
                                 && let Some(inner_value) = self
                                     .display_pos_to_table_pos((x, y).into())
                                     .and_then(|table_pos| {
-                                        self.data_table_multi_pos(&MultiPos::TablePos(table_pos))
+                                        self.data_table_at(&MultiPos::TablePos(table_pos))
                                     })
                                     .and_then(|sub_table| sub_table.display_value_at((0, 0).into()))
                             {

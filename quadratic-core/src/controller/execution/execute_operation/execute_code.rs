@@ -1,5 +1,5 @@
 use crate::{
-    MultiPos, SheetRect,
+    MultiPos, MultiSheetPos, SheetRect,
     a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
@@ -14,7 +14,7 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         output: &SheetRect,
-        skip_compute: Option<MultiPos>,
+        skip_compute: Option<MultiSheetPos>,
     ) {
         if !transaction.is_user_ai() {
             return;
@@ -29,15 +29,15 @@ impl GridController {
                     {
                         // only add a compute operation if there isn't already one pending
                         if !transaction.operations.iter().any(|op| match op {
-                            Operation::ComputeCodeMultiPos { multi_pos } => {
-                                code_cell_multi_pos == multi_pos
+                            Operation::ComputeCodeMultiPos { multi_sheet_pos } => {
+                                code_cell_multi_pos == multi_sheet_pos
                             }
                             _ => false,
                         }) {
                             transaction
                                 .operations
                                 .push_back(Operation::ComputeCodeMultiPos {
-                                    multi_pos: *code_cell_multi_pos,
+                                    multi_sheet_pos: *code_cell_multi_pos,
                                 });
                         }
                     }
@@ -60,9 +60,12 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
-            let original = sheet.data_table_result(&data_table_pos)?.chart_pixel_output;
+            let data_table_multi_pos = data_table_pos.into();
+            let original = sheet
+                .data_table_result_at(&data_table_multi_pos)?
+                .chart_pixel_output;
             let (data_table, dirty_rects) =
-                sheet.modify_data_table_at(data_table_pos.to_multi_pos(sheet_id), |dt| {
+                sheet.modify_data_table_at(&data_table_multi_pos, |dt| {
                     dt.chart_pixel_output = Some((pixel_width, pixel_height));
                     Ok(())
                 })?;
@@ -104,9 +107,12 @@ impl GridController {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
             let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
-            let original = sheet.data_table_result(&data_table_pos)?.chart_output;
+            let data_table_multi_pos = data_table_pos.into();
+            let original = sheet
+                .data_table_result_at(&data_table_multi_pos)?
+                .chart_output;
             let (data_table, dirty_rects) =
-                sheet.modify_data_table_at(data_table_pos.to_multi_pos(sheet_id), |dt| {
+                sheet.modify_data_table_at(&data_table_multi_pos, |dt| {
                     dt.chart_output = Some((w, h));
                     Ok(())
                 })?;
@@ -157,7 +163,7 @@ impl GridController {
             self.execute_compute_code_multi_pos(
                 transaction,
                 Operation::ComputeCodeMultiPos {
-                    multi_pos: MultiPos::SheetPos(sheet_pos),
+                    multi_sheet_pos: sheet_pos.into(),
                 },
             );
         }
@@ -169,7 +175,7 @@ impl GridController {
         transaction: &mut PendingTransaction,
         op: Operation,
     ) {
-        if let Operation::ComputeCodeMultiPos { multi_pos } = op {
+        if let Operation::ComputeCodeMultiPos { multi_sheet_pos } = op {
             if !transaction.is_user_ai_undo_redo() && !transaction.is_server() {
                 dbgjs!(
                     "Only user / ai / undo / redo / server transaction should have a ComputeCode"
@@ -177,15 +183,15 @@ impl GridController {
                 return;
             }
 
-            let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) else {
+            let Some(sheet) = self.try_sheet(multi_sheet_pos.sheet_id) else {
                 return;
             };
 
-            let Some(code_cell) = sheet.code_value(multi_pos) else {
+            let Some(code_cell) = sheet.code_value(multi_sheet_pos.multi_pos) else {
                 return;
             };
 
-            let Some(sheet_pos) = multi_pos.to_sheet_pos(sheet) else {
+            let Some(sheet_pos) = multi_sheet_pos.to_sheet_pos(sheet) else {
                 return;
             };
 
@@ -193,17 +199,22 @@ impl GridController {
                 CodeCellLanguage::Python => {
                     self.run_python(
                         transaction,
-                        multi_pos,
+                        multi_sheet_pos,
                         code_cell.code.clone(),
                         sheet_pos.into(),
                     );
                 }
                 CodeCellLanguage::Formula => {
-                    self.run_formula(transaction, multi_pos, code_cell.code.clone(), sheet_pos);
+                    self.run_formula(
+                        transaction,
+                        multi_sheet_pos,
+                        code_cell.code.clone(),
+                        sheet_pos,
+                    );
                 }
                 CodeCellLanguage::Connection { kind, id } => {
                     // we currently only support connections on sheet positions
-                    if let MultiPos::SheetPos(sheet_pos) = multi_pos {
+                    if matches!(multi_sheet_pos.multi_pos, MultiPos::Pos(_)) {
                         self.run_connection(
                             transaction,
                             sheet_pos,
@@ -214,7 +225,12 @@ impl GridController {
                     }
                 }
                 CodeCellLanguage::Javascript => {
-                    self.run_javascript(transaction, multi_pos, code_cell.code.clone(), sheet_pos);
+                    self.run_javascript(
+                        transaction,
+                        multi_sheet_pos,
+                        code_cell.code.clone(),
+                        sheet_pos,
+                    );
                 }
                 CodeCellLanguage::Import => (), // no-op
             }
@@ -291,7 +307,7 @@ mod tests {
             Some(CellValue::Blank)
         );
 
-        let code_cell = sheet.data_table_at(&Pos { x: 2, y: 1 });
+        let code_cell = sheet.data_table_at(&Pos { x: 2, y: 1 }.into());
         assert!(code_cell.unwrap().has_spill());
     }
 
@@ -348,7 +364,7 @@ mod tests {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.data_table_at(&pos![A1]).unwrap().chart_output,
+            sheet.data_table_at(&pos![A1].into()).unwrap().chart_output,
             Some((4, 5))
         );
     }

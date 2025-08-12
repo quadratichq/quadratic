@@ -20,32 +20,34 @@ impl GridController {
         let mut data_tables_pos_to_adjust = vec![];
 
         for sheet in self.grid.sheets().values() {
-            for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs(sheet.id) {
-                let sheet_id = multi_pos.sheet_id();
-                if let Some(CellValue::Code(code)) = sheet.cell_value_multi_pos_ref(multi_pos) {
+            let sheet_id = sheet.id;
+            for (multi_pos, _) in sheet.data_tables.expensive_iter_code_runs() {
+                if let Some(CellValue::Code(code)) = sheet.cell_value_multi_pos_ref(&multi_pos) {
                     let mut new_code = code.clone();
                     for &adj in adjustments {
                         new_code.adjust_references(sheet_id, &self.a1_context, sheet_id, adj);
                     }
                     if code.code != new_code.code {
-                        data_tables_pos_to_adjust.push((multi_pos, new_code));
+                        data_tables_pos_to_adjust
+                            .push((multi_pos.to_multi_sheet_pos(sheet_id), new_code));
                     }
                 }
             }
         }
 
-        for (multi_pos, new_code) in data_tables_pos_to_adjust {
-            let sheet_id = multi_pos.sheet_id();
+        for (multi_sheet_pos, new_code) in data_tables_pos_to_adjust {
+            let sheet_id = multi_sheet_pos.sheet_id;
             let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
                 continue;
             };
-            let Some(CellValue::Code(code)) = sheet.cell_value_multi_mut(multi_pos) else {
+            let Some(CellValue::Code(code)) = sheet.cell_value_mut(&multi_sheet_pos.multi_pos)
+            else {
                 continue;
             };
             *code = new_code;
             transaction
                 .operations
-                .push_back(Operation::ComputeCodeMultiPos { multi_pos });
+                .push_back(Operation::ComputeCodeMultiPos { multi_sheet_pos });
         }
     }
 
@@ -63,28 +65,29 @@ impl GridController {
             sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
 
             if let Some(sheet) = self.try_sheet(sheet_id)
-                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                    sheet_rect.min.x = min_column;
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
+            {
+                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                sheet_rect.min.x = min_column;
 
-                    self.check_deleted_data_tables(transaction, &sheet_rect);
-                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+                self.check_deleted_data_tables(transaction, &sheet_rect);
+                self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user_ai() {
-                        columns_to_adjust.sort_unstable();
-                        columns_to_adjust.dedup();
-                        columns_to_adjust.reverse();
+                if transaction.is_user_ai() {
+                    columns_to_adjust.sort_unstable();
+                    columns_to_adjust.dedup();
+                    columns_to_adjust.reverse();
 
-                        self.adjust_code_cell_references(
-                            transaction,
-                            &columns_to_adjust
-                                .iter()
-                                .map(|&column| RefAdjust::new_delete_column(sheet_id, column))
-                                .collect_vec(),
-                        );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
-                    }
+                    self.adjust_code_cell_references(
+                        transaction,
+                        &columns_to_adjust
+                            .iter()
+                            .map(|&column| RefAdjust::new_delete_column(sheet_id, column))
+                            .collect_vec(),
+                    );
+                    self.add_compute_operations(transaction, &sheet_rect, None);
                 }
+            }
         }
     }
 
@@ -127,28 +130,29 @@ impl GridController {
             sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
 
             if let Some(sheet) = self.try_sheet(sheet_id)
-                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                    sheet_rect.min.y = min_row;
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
+            {
+                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                sheet_rect.min.y = min_row;
 
-                    self.check_deleted_data_tables(transaction, &sheet_rect);
-                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+                self.check_deleted_data_tables(transaction, &sheet_rect);
+                self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user_ai() {
-                        rows_to_adjust.sort_unstable();
-                        rows_to_adjust.dedup();
-                        rows_to_adjust.reverse();
+                if transaction.is_user_ai() {
+                    rows_to_adjust.sort_unstable();
+                    rows_to_adjust.dedup();
+                    rows_to_adjust.reverse();
 
-                        self.adjust_code_cell_references(
-                            transaction,
-                            &rows_to_adjust
-                                .iter()
-                                .map(|&row| RefAdjust::new_delete_row(sheet_id, row))
-                                .collect_vec(),
-                        );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
-                    }
+                    self.adjust_code_cell_references(
+                        transaction,
+                        &rows_to_adjust
+                            .iter()
+                            .map(|&row| RefAdjust::new_delete_row(sheet_id, row))
+                            .collect_vec(),
+                    );
+                    self.add_compute_operations(transaction, &sheet_rect, None);
                 }
+            }
         }
         Ok(())
     }
@@ -208,21 +212,22 @@ impl GridController {
             }
 
             if let Some(sheet) = self.try_sheet(sheet_id)
-                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                    sheet_rect.min.x = column + 1;
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
+            {
+                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                sheet_rect.min.x = column + 1;
 
-                    self.check_deleted_data_tables(transaction, &sheet_rect);
-                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+                self.check_deleted_data_tables(transaction, &sheet_rect);
+                self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user_ai() {
-                        self.adjust_code_cell_references(
-                            transaction,
-                            &[RefAdjust::new_insert_column(sheet_id, column)],
-                        );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
-                    }
+                if transaction.is_user_ai() {
+                    self.adjust_code_cell_references(
+                        transaction,
+                        &[RefAdjust::new_insert_column(sheet_id, column)],
+                    );
+                    self.add_compute_operations(transaction, &sheet_rect, None);
                 }
+            }
         }
     }
 
@@ -243,22 +248,23 @@ impl GridController {
             }
 
             if let Some(sheet) = self.try_sheet(sheet_id)
-                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
-                    let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
-                    sheet_rect.min.y = row + 1;
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
+            {
+                let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
+                sheet_rect.min.y = row + 1;
 
-                    self.check_deleted_data_tables(transaction, &sheet_rect);
-                    self.update_spills_in_sheet_rect(transaction, &sheet_rect);
+                self.check_deleted_data_tables(transaction, &sheet_rect);
+                self.update_spills_in_sheet_rect(transaction, &sheet_rect);
 
-                    if transaction.is_user_ai() {
-                        self.adjust_code_cell_references(
-                            transaction,
-                            &[RefAdjust::new_insert_row(sheet_id, row)],
-                        );
+                if transaction.is_user_ai() {
+                    self.adjust_code_cell_references(
+                        transaction,
+                        &[RefAdjust::new_insert_row(sheet_id, row)],
+                    );
 
-                        self.add_compute_operations(transaction, &sheet_rect, None);
-                    }
+                    self.add_compute_operations(transaction, &sheet_rect, None);
                 }
+            }
         }
     }
 
@@ -294,8 +300,8 @@ mod tests {
     use std::collections::HashMap;
 
     use crate::{
-        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, MultiPos, Pos, Rect, SheetPos,
-        SheetRect, Value,
+        Array, CellValue, DEFAULT_COLUMN_WIDTH, DEFAULT_ROW_HEIGHT, MultiPos, MultiSheetPos, Pos,
+        Rect, SheetPos, SheetRect, Value,
         a1::A1Selection,
         grid::{
             CellsAccessed, CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
@@ -377,7 +383,7 @@ mod tests {
         assert_eq!(
             &transaction.operations,
             &[Operation::ComputeCodeMultiPos {
-                multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 1).into())
+                multi_sheet_pos: MultiSheetPos::new(sheet_id, MultiPos::new_pos((1, 1).into()))
             },]
         );
 
@@ -401,7 +407,7 @@ mod tests {
         assert_eq!(
             &transaction.operations,
             &[Operation::ComputeCodeMultiPos {
-                multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 2).into())
+                multi_sheet_pos: MultiSheetPos::new(sheet_id, MultiPos::new_pos((1, 2).into()))
             },]
         );
     }
@@ -494,7 +500,7 @@ mod tests {
         assert_eq!(
             &transaction.operations,
             &[Operation::ComputeCodeMultiPos {
-                multi_pos: sheet_pos.into()
+                multi_sheet_pos: MultiSheetPos::new(sheet_id, sheet_pos.into())
             },]
         );
     }
@@ -588,7 +594,7 @@ mod tests {
         assert_eq!(
             &transaction.operations,
             &[Operation::ComputeCodeMultiPos {
-                multi_pos: sheet_pos.into()
+                multi_sheet_pos: MultiSheetPos::new(sheet_id, sheet_pos.into())
             },]
         );
     }
@@ -1134,7 +1140,7 @@ mod tests {
 
         gc.insert_columns(sheet_id, 3, 1, false, None, false);
 
-        assert_eq!(&table, gc.data_table_at(pos![sheet_id!d2].into()).unwrap());
+        assert_eq!(&table, gc.data_table_at(&pos![sheet_id!d2].into()).unwrap());
         assert_data_table_eq(&gc, pos![sheet_id!d2], &table);
     }
 

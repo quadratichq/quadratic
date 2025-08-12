@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use super::Sheet;
 use crate::{
-    CellValue, MultiPos, Pos, Rect, Value,
+    CellValue, MultiPos, MultiSheetPos, Pos, Rect, Value,
     cell_values::CellValues,
     grid::{
         CodeCellValue, DataTableKind,
@@ -131,7 +131,9 @@ impl Sheet {
             );
 
             let sub_data_table = data_table.tables.as_ref().and_then(|tables| {
-                tables.get_at(&(column_index as i64, row_index as i64).into())
+                tables.get_at(&MultiPos::new_pos(
+                    (column_index as i64, row_index as i64).into(),
+                ))
             })?;
 
             sub_data_table.display_value_at((0, 0).into())
@@ -172,7 +174,7 @@ impl Sheet {
         let (code_multi_pos,  code_cell_value) =
             // check for code cell on the sheet
             if let Some(cell_value) = self.cell_value_ref(pos) {
-                (pos.to_multi_pos(self.id), cell_value.code_cell_value()?)
+                (pos.to_multi_pos(), cell_value.code_cell_value()?)
             }
             // check for code cell within a table
             else if let Some((table_pos, Some(code_cell_value))) =
@@ -190,15 +192,15 @@ impl Sheet {
             else {
                 let data_table_pos = self.data_table_pos_that_contains(pos)?;
                 (
-                    data_table_pos.to_multi_pos(self.id),
+                    data_table_pos.to_multi_pos(),
                     self.cell_value_ref(data_table_pos)
                         .and_then(|cell_value| cell_value.code_cell_value())?,
                 )
             };
 
-        let code_pos = code_multi_pos.to_sheet_pos(self).unwrap();
+        let code_pos = code_multi_pos.to_sheet_pos(self)?;
 
-        if let Some(data_table) = self.data_table_multi_pos(&code_multi_pos) {
+        if let Some(data_table) = self.data_table_at(&code_multi_pos) {
             let evaluation_result = serde_json::to_string(&data_table.value).unwrap_or("".into());
             let spill_error = if data_table.has_spill() {
                 Some(self.find_spill_error_reasons(
@@ -268,7 +270,7 @@ impl Sheet {
     /// Returns the code cell value at the MultiPos.
     pub fn code_value(&self, multi_pos: MultiPos) -> Option<&CodeCellValue> {
         match multi_pos {
-            MultiPos::SheetPos(sheet_pos) => match self.cell_value_ref(sheet_pos.into()) {
+            MultiPos::Pos(pos) => match self.cell_value_ref(pos) {
                 Some(CellValue::Code(code)) => Some(code),
                 _ => None,
             },
@@ -279,11 +281,11 @@ impl Sheet {
     /// Converts a Pos to a MultiPos, checking whether the Pos is a sheet pos or
     /// a table pos. Will return a MultiPos::SheetPos for all code tables and
     /// DataTable anchor cells.
-    pub fn convert_to_multi_pos(&self, display_pos: Pos) -> MultiPos {
+    pub fn convert_to_multi_sheet_pos(&self, display_pos: Pos) -> MultiSheetPos {
         if let Some(table_pos) = self.display_pos_to_table_pos(display_pos) {
-            MultiPos::TablePos(table_pos)
+            MultiSheetPos::new(self.id, MultiPos::TablePos(table_pos))
         } else {
-            MultiPos::SheetPos(display_pos.to_sheet_pos(self.id))
+            MultiSheetPos::new(self.id, MultiPos::Pos(display_pos))
         }
     }
 }
@@ -519,23 +521,23 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.convert_to_multi_pos(pos![A1]),
-            MultiPos::new_sheet_pos(sheet_id, (1, 1).into())
+            sheet.convert_to_multi_sheet_pos(pos![A1]),
+            MultiSheetPos::new(sheet_id, MultiPos::new_pos((1, 1).into()))
         );
 
         assert_eq!(
-            sheet.convert_to_multi_pos(pos![B4]),
-            MultiPos::new_table_pos(sheet_id, &pos![2, 2], pos![0, 0])
+            sheet.convert_to_multi_sheet_pos(pos![B4]),
+            MultiSheetPos::new(sheet_id, MultiPos::new_table_pos(pos![2, 2], pos![0, 0]))
         );
         assert_eq!(
-            sheet.convert_to_multi_pos(pos![D6]),
-            MultiPos::new_table_pos(sheet_id, &pos![2, 2], pos![2, 2])
+            sheet.convert_to_multi_sheet_pos(pos![D6]),
+            MultiSheetPos::new(sheet_id, MultiPos::new_table_pos(pos![2, 2], pos![2, 2]))
         );
 
         // anchor cell of data table
         assert_eq!(
-            sheet.convert_to_multi_pos(pos![B2]),
-            MultiPos::new_sheet_pos(sheet_id, (2, 2).into())
+            sheet.convert_to_multi_sheet_pos(pos![B2]),
+            MultiSheetPos::new(sheet_id, MultiPos::new_pos((2, 2).into()))
         );
 
         // code table
@@ -543,8 +545,8 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
-            sheet.convert_to_multi_pos(pos![F3]),
-            MultiPos::new_sheet_pos(sheet_id, (6, 3).into())
+            sheet.convert_to_multi_sheet_pos(pos![F3]),
+            MultiSheetPos::new(sheet_id, MultiPos::new_pos((6, 3).into()))
         );
     }
 }

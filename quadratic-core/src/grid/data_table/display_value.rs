@@ -224,7 +224,7 @@ impl DataTable {
                     .tables
                     .as_ref()
                     .and_then(|tables| {
-                        tables.get_at(&(column_index as i64, row_index as i64).into())
+                        tables.get_at(&Pos::new(column_index as i64, row_index as i64).into())
                     })
                     .and_then(|table| table.value.get(0, 0).ok())
                     .unwrap_or(&CellValue::Blank)

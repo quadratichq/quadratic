@@ -160,11 +160,11 @@ impl Sheet {
 
         data_tables_to_move.sort_by(|a, b| b.x.cmp(&a.x));
         for old_pos in data_tables_to_move {
-            if let Some((index, old_pos, data_table, _)) =
-                self.data_tables.shift_remove_full_pos(&old_pos)
+            if let Ok((index, old_pos, data_table, _)) =
+                self.data_tables.shift_remove_full(&old_pos.into())
             {
                 let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
-                self.data_tables.insert_before(index, &new_pos, data_table);
+                let _ = self.data_tables.insert_before(index, &new_pos, data_table);
             }
         }
     }
@@ -198,11 +198,11 @@ impl Sheet {
 
         data_tables_to_move.sort_by(|a, b| b.y.cmp(&a.y));
         for old_pos in data_tables_to_move {
-            if let Some((index, old_pos, data_table, _)) =
-                self.data_tables.shift_remove_full_pos(&old_pos)
+            if let Ok((index, old_pos, data_table, _)) =
+                self.data_tables.shift_remove_full(&old_pos.into())
             {
                 let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);
-                self.data_tables.insert_before(index, &new_pos, data_table);
+                let _ = self.data_tables.insert_before(index, &new_pos, data_table);
             }
         }
     }
@@ -230,10 +230,10 @@ impl Sheet {
             if validation.render_special().is_some()
                 && let Some(rect) =
                     self.selection_bounds(&validation.selection, false, false, true, a1_context)
-                {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
+            {
+                self.data_bounds.add(rect.min);
+                self.data_bounds.add(rect.max);
+            }
         }
         for (&pos, _) in self.validations.warnings.iter() {
             self.data_bounds.add(pos);

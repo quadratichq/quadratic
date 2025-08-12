@@ -191,7 +191,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 }.into()).unwrap();
         assert!(code_run.has_spill());
 
         // should be a spill caused by 1,2
@@ -212,7 +212,7 @@ mod tests {
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 });
+        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 }.into());
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().has_spill());
 

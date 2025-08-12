@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    CellValue, ClearOption, CopyFormats, MultiPos, SheetPos, SheetRect,
+    CellValue, ClearOption, CopyFormats, MultiSheetPos, SheetPos, SheetRect,
     a1::A1Selection,
     cell_values::CellValues,
     grid::{
@@ -41,13 +41,13 @@ pub enum Operation {
         values: CellValues,
     },
     SetDataTableMultiPos {
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
         data_table: Option<DataTable>,
         index: usize,
     },
     /// Adds or replaces a data table at a specific MultiPos.
     AddDataTableMultiPos {
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
         data_table: DataTable,
         cell_value: CellValue,
 
@@ -57,7 +57,7 @@ pub enum Operation {
         index: Option<usize>,
     },
     DeleteDataTableMultiPos {
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
     },
     SetDataTableAt {
         sheet_pos: SheetPos,
@@ -174,7 +174,7 @@ pub enum Operation {
 
     /// Runs a code cell.
     ComputeCodeMultiPos {
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
     },
 
     /// Updates cell formats for all cells in a selection.

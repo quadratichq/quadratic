@@ -100,7 +100,11 @@ mod tests {
             &[("Sheet1", sheet1_id), ("Sheet 2", sheet2_id)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
-        context.table_mut("Table1").unwrap().set_sheet_id(sheet2_id);
+        context
+            .table_mut("Table1")
+            .unwrap()
+            .multi_sheet_pos
+            .sheet_id = sheet2_id;
         let (_, sheet_id) = CellRefRange::parse("Table1", &context, None).unwrap();
         assert_eq!(sheet_id, Some(sheet2_id));
         let base_pos = Pos::new(10, 15);

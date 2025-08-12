@@ -31,19 +31,21 @@ impl Sheet {
             .get_pos_after_column_sorted(column - 1, false);
 
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos.into(), |dt| {
                 let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
                     if let Some((width, height)) = dt.chart_output
-                        && column >= pos.x && column < pos.x + output_rect.width() as i64 {
-                            dt.chart_output = Some((width + 1, height));
-                            transaction.add_from_code_run(
-                                pos.to_multi_pos(sheet_id),
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                        }
+                        && column >= pos.x
+                        && column < pos.x + output_rect.width() as i64
+                    {
+                        dt.chart_output = Some((width + 1, height));
+                        transaction.add_from_code_run(
+                            pos.to_multi_sheet_pos(sheet_id),
+                            dt.is_image(),
+                            dt.is_html(),
+                        );
+                    }
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
                     // table. Code is not impacted by this change.
@@ -52,30 +54,31 @@ impl Sheet {
                         && (column < pos.x + output_rect.width() as i64
                             || (CopyFormats::Before == copy_formats
                                 && column < pos.x + output_rect.width() as i64 + 1))
-                        && let Ok(display_column_index) = u32::try_from(column - pos.x) {
-                            let column_index =
-                                dt.get_column_index_from_display_index(display_column_index, true);
-                            let _ = dt.insert_column_sorted(column_index as usize, None, None);
-                            transaction.add_from_code_run(
-                                pos.to_multi_pos(sheet_id),
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                            if dt
-                                .formats
-                                .as_ref()
-                                .is_some_and(|formats| formats.has_fills())
-                            {
-                                transaction.add_fill_cells(sheet_id);
-                            }
-                            if !dt
-                                .borders
-                                .as_ref()
-                                .is_none_or(|borders| borders.is_default())
-                            {
-                                transaction.add_borders(sheet_id);
-                            }
+                        && let Ok(display_column_index) = u32::try_from(column - pos.x)
+                    {
+                        let column_index =
+                            dt.get_column_index_from_display_index(display_column_index, true);
+                        let _ = dt.insert_column_sorted(column_index as usize, None, None);
+                        transaction.add_from_code_run(
+                            pos.to_multi_sheet_pos(sheet_id),
+                            dt.is_image(),
+                            dt.is_html(),
+                        );
+                        if dt
+                            .formats
+                            .as_ref()
+                            .is_some_and(|formats| formats.has_fills())
+                        {
+                            transaction.add_fill_cells(sheet_id);
                         }
+                        if !dt
+                            .borders
+                            .as_ref()
+                            .is_none_or(|borders| borders.is_default())
+                        {
+                            transaction.add_borders(sheet_id);
+                        }
+                    }
                 }
 
                 Ok(())
@@ -99,7 +102,7 @@ impl Sheet {
             .get_pos_after_column_sorted(column, false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
+                self.data_table_at(&pos.into()).is_some_and(|dt| {
                     (copy_formats == CopyFormats::Before && pos.x > column)
                         || (copy_formats == CopyFormats::Before && pos.x == column && dt.is_code())
                         || (copy_formats != CopyFormats::Before && pos.x >= column)
@@ -114,7 +117,7 @@ impl Sheet {
             .get_pos_in_columns_sorted(&[column], false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
+                self.data_table_at(&pos.into()).is_some_and(|dt| {
                     (!dt.is_code() || dt.is_html_or_image())
                         && copy_formats == CopyFormats::Before
                         && pos.x == column
@@ -125,17 +128,25 @@ impl Sheet {
         // move the data tables to the right to match with their new anchor positions
         data_tables_to_move_right.sort_by(|(_, a), (_, b)| b.x.cmp(&a.x));
         for (_, old_pos) in data_tables_to_move_right {
-            let old_pos = old_pos.to_multi_pos(self.id);
-            if let Some((index, old_pos, data_table, dirty_rects)) =
-                self.data_table_shift_remove(&old_pos)
+            let old_pos = old_pos.to_multi_sheet_pos(self.id);
+            if let Ok((index, old_pos, data_table, dirty_rects)) =
+                self.data_table_shift_remove(&old_pos.multi_pos)
             {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
-                transaction.add_from_code_run(old_pos, data_table.is_image(), data_table.is_html());
+                transaction.add_from_code_run(
+                    old_pos.to_multi_sheet_pos(self.id),
+                    data_table.is_image(),
+                    data_table.is_html(),
+                );
 
                 let new_pos = old_pos.translate(1, 0, i64::MIN, i64::MIN);
-                transaction.add_from_code_run(new_pos, data_table.is_image(), data_table.is_html());
+                transaction.add_from_code_run(
+                    new_pos.to_multi_sheet_pos(self.id),
+                    data_table.is_image(),
+                    data_table.is_html(),
+                );
                 if let Ok((_, _, dirty_rects)) =
-                    self.data_table_insert_before(index, new_pos, data_table)
+                    self.data_table_insert_before(index, &new_pos, data_table)
                 {
                     transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 }
@@ -147,7 +158,7 @@ impl Sheet {
         for (_, to) in data_tables_to_move_back {
             let from = to.translate(1, 0, i64::MIN, i64::MIN);
             self.columns.move_cell_value(&from, &to);
-            transaction.add_code_cell(to.to_multi_pos(self.id));
+            transaction.add_code_cell(to.to_multi_sheet_pos(self.id));
         }
     }
 }

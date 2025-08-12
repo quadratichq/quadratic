@@ -10,7 +10,7 @@ use crate::{
 
 impl Sheet {
     pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
-        let dt = self.data_table_at(&pos)?;
+        let dt = self.data_table_at(&pos.into())?;
         if !dt.is_html() {
             return None;
         }
@@ -59,8 +59,8 @@ impl Sheet {
     // Returns a single code cell for rendering.
     pub fn get_render_code_cell(&self, multi_pos: MultiPos) -> Option<JsRenderCodeCell> {
         let pos = multi_pos.to_sheet_pos(self)?.into();
-        let code = self.cell_value_multi_pos(multi_pos)?;
-        let data_table = self.data_table_multi_pos(&multi_pos)?;
+        let code = self.cell_value_multi_pos(&multi_pos)?;
+        let data_table = self.data_table_at(&multi_pos)?;
         let output_size = data_table.output_size();
 
         let (state, w, h, spill_error) = if data_table.has_spill() {
@@ -128,9 +128,7 @@ impl Sheet {
             .flat_map(|(data_table_pos, data_table)| {
                 let mut render_code_cells = vec![];
 
-                if let Some(code_cell) =
-                    self.get_render_code_cell(MultiPos::new_sheet_pos(self.id, *data_table_pos))
-                {
+                if let Some(code_cell) = self.get_render_code_cell(data_table_pos.to_multi_pos()) {
                     render_code_cells.push(code_cell);
                 }
 
@@ -139,8 +137,7 @@ impl Sheet {
                 {
                     tables.expensive_iter().for_each(|(sub_table_pos, _)| {
                         if let Some(code_cell) = self.get_render_code_cell(MultiPos::new_table_pos(
-                            self.id,
-                            data_table_pos,
+                            *data_table_pos,
                             *sub_table_pos,
                         )) {
                             render_code_cells.push(code_cell);
@@ -201,7 +198,7 @@ impl Sheet {
         }
 
         let mut sent = false;
-        if let Some(table) = self.data_table_at(&pos)
+        if let Some(table) = self.data_table_at(&pos.into())
             && let Some(CellValue::Image(image)) = table.display_value_at((0, 0).into())
         {
             let output_size = table.chart_output;
@@ -453,7 +450,7 @@ mod tests {
 
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
-        let rendering = sheet.get_render_code_cell(MultiPos::new_sheet_pos(sheet_id, pos));
+        let rendering = sheet.get_render_code_cell(pos.into());
         let last_modified = rendering.as_ref().unwrap().last_modified;
         assert_eq!(
             rendering,

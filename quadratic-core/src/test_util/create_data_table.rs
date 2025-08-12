@@ -92,7 +92,7 @@ pub fn test_create_data_table_with_values(
 
     // return a clone of the created data table
     gc.sheet(gc.sheet_ids()[0])
-        .data_table_at(&pos)
+        .data_table_at(&pos.into())
         .expect("Data table not found")
         .clone()
 }

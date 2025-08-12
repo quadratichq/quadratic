@@ -690,7 +690,7 @@ impl GridController {
                         data_table.name = new_name.into();
 
                         data_table_ops.push(Operation::SetDataTableMultiPos {
-                            multi_pos: final_sheet_pos.into(),
+                            multi_sheet_pos: final_sheet_pos.into(),
                             data_table: Some(data_table),
                             index: usize::MAX,
                         });
@@ -698,7 +698,7 @@ impl GridController {
                 }
 
                 compute_code_ops.push(Operation::ComputeCodeMultiPos {
-                    multi_pos: final_sheet_pos.into(),
+                    multi_sheet_pos: final_sheet_pos.into(),
                 });
             }
         }

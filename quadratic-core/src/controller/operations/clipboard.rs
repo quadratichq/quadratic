@@ -8,7 +8,6 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 use super::operation::Operation;
-use crate::MultiPos;
 use crate::cell_values::CellValues;
 use crate::color::Rgba;
 use crate::compression::CompressionFormat;
@@ -218,48 +217,47 @@ impl From<Clipboard> for JsClipboard {
                     }
 
                     if let Some(format) = format
-                        && !format.is_default() {
-                            if let Some(align) = format.align {
-                                style.push_str(align.as_css_string());
-                            }
-                            if let Some(vertical_align) = format.vertical_align {
-                                style.push_str(vertical_align.as_css_string());
-                            }
-                            if let Some(wrap) = format.wrap {
-                                style.push_str(wrap.as_css_string());
-                            }
-                            if format.bold == Some(true) {
-                                style.push_str("font-weight:bold;");
-                            }
-                            if format.italic == Some(true) {
-                                style.push_str("font-style:italic;");
-                            }
-                            if let Some(text_color) = format.text_color
-                                && let Ok(text_color) = Rgba::try_from(text_color.as_str()) {
-                                    style.push_str(
-                                        format!("color:{};", text_color.as_rgb_hex()).as_str(),
-                                    );
-                                }
-                            if let Some(fill_color) = format.fill_color
-                                && let Ok(fill_color) = Rgba::try_from(fill_color.as_str()) {
-                                    style.push_str(
-                                        format!("background-color:{};", fill_color.as_rgb_hex())
-                                            .as_str(),
-                                    );
-                                }
-                            if format.underline == Some(true) && format.strike_through != Some(true)
-                            {
-                                style.push_str("text-decoration:underline;");
-                            } else if format.underline != Some(true)
-                                && format.strike_through == Some(true)
-                            {
-                                style.push_str("text-decoration:line-through;");
-                            } else if format.underline == Some(true)
-                                && format.strike_through == Some(true)
-                            {
-                                style.push_str("text-decoration:underline line-through;");
-                            }
+                        && !format.is_default()
+                    {
+                        if let Some(align) = format.align {
+                            style.push_str(align.as_css_string());
                         }
+                        if let Some(vertical_align) = format.vertical_align {
+                            style.push_str(vertical_align.as_css_string());
+                        }
+                        if let Some(wrap) = format.wrap {
+                            style.push_str(wrap.as_css_string());
+                        }
+                        if format.bold == Some(true) {
+                            style.push_str("font-weight:bold;");
+                        }
+                        if format.italic == Some(true) {
+                            style.push_str("font-style:italic;");
+                        }
+                        if let Some(text_color) = format.text_color
+                            && let Ok(text_color) = Rgba::try_from(text_color.as_str())
+                        {
+                            style.push_str(format!("color:{};", text_color.as_rgb_hex()).as_str());
+                        }
+                        if let Some(fill_color) = format.fill_color
+                            && let Ok(fill_color) = Rgba::try_from(fill_color.as_str())
+                        {
+                            style.push_str(
+                                format!("background-color:{};", fill_color.as_rgb_hex()).as_str(),
+                            );
+                        }
+                        if format.underline == Some(true) && format.strike_through != Some(true) {
+                            style.push_str("text-decoration:underline;");
+                        } else if format.underline != Some(true)
+                            && format.strike_through == Some(true)
+                        {
+                            style.push_str("text-decoration:line-through;");
+                        } else if format.underline == Some(true)
+                            && format.strike_through == Some(true)
+                        {
+                            style.push_str("text-decoration:underline line-through;");
+                        }
+                    }
 
                     if !border.is_empty() {
                         if border.left.is_some() {
@@ -472,7 +470,7 @@ impl GridController {
                     }
 
                     ops.push(Operation::SetDataTableMultiPos {
-                        multi_pos: MultiPos::new_sheet_pos(start_pos.sheet_id, target_pos),
+                        multi_sheet_pos: target_pos.to_multi_sheet_pos(start_pos.sheet_id),
                         data_table: Some(data_table),
                         index: usize::MAX,
                     });
@@ -486,7 +484,7 @@ impl GridController {
 
                 if should_rerun {
                     ops.push(Operation::ComputeCodeMultiPos {
-                        multi_pos: MultiPos::new_sheet_pos(start_pos.sheet_id, target_pos),
+                        multi_sheet_pos: target_pos.to_multi_sheet_pos(start_pos.sheet_id),
                     });
                 }
             }
@@ -570,12 +568,13 @@ impl GridController {
                 );
 
                 if let Some(table_format_updates) = table_format_updates
-                    && !table_format_updates.is_default() {
-                        ops.push(Operation::DataTableFormats {
-                            sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
-                            formats: table_format_updates,
-                        });
-                    }
+                    && !table_format_updates.is_default()
+                {
+                    ops.push(Operation::DataTableFormats {
+                        sheet_pos: data_table_pos.to_sheet_pos(sheet_id),
+                        formats: table_format_updates,
+                    });
+                }
             }
         }
 
@@ -798,7 +797,7 @@ impl GridController {
 
                 if is_code {
                     compute_code_ops.push(Operation::ComputeCodeMultiPos {
-                        multi_pos: pos.to_sheet_pos(start_pos.sheet_id).into(),
+                        multi_sheet_pos: pos.to_sheet_pos(start_pos.sheet_id).into(),
                     });
                 }
             });
@@ -954,28 +953,27 @@ impl GridController {
                                 );
                             }
                             // for non-code cells, we need to grow the data table if the cell value is touching the right or bottom edge
-                            else if should_expand_data_table
-                                && let Some(sheet) = sheet {
-                                    let new_x = tile_start_x + cols_x as i64;
-                                    let new_y = tile_start_y + cols_y as i64;
-                                    let current_pos = Pos::new(new_x, new_y);
-                                    let within_data_table =
-                                        sheet.data_table_pos_that_contains(current_pos).is_some();
+                            else if should_expand_data_table && let Some(sheet) = sheet {
+                                let new_x = tile_start_x + cols_x as i64;
+                                let new_y = tile_start_y + cols_y as i64;
+                                let current_pos = Pos::new(new_x, new_y);
+                                let within_data_table =
+                                    sheet.data_table_pos_that_contains(current_pos).is_some();
 
-                                    // we're not within a data table
-                                    // expand the data table to the right or bottom if the
-                                    // cell value is touching the right or bottom edge
-                                    if !within_data_table {
-                                        GridController::grow_data_table(
-                                            sheet,
-                                            &mut data_tables_rects,
-                                            &mut data_table_columns,
-                                            &mut data_table_rows,
-                                            SheetPos::new(sheet_id, new_x, new_y),
-                                            cell.to_display().is_empty(),
-                                        );
-                                    }
+                                // we're not within a data table
+                                // expand the data table to the right or bottom if the
+                                // cell value is touching the right or bottom edge
+                                if !within_data_table {
+                                    GridController::grow_data_table(
+                                        sheet,
+                                        &mut data_tables_rects,
+                                        &mut data_table_columns,
+                                        &mut data_table_rows,
+                                        SheetPos::new(sheet_id, new_x, new_y),
+                                        cell.to_display().is_empty(),
+                                    );
                                 }
+                            }
                         }
                     }
                 }
@@ -1912,7 +1910,7 @@ mod test {
         );
 
         // hide the second column
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos.into()).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
@@ -1990,7 +1988,7 @@ mod test {
         );
 
         // show the second column
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos.into()).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
@@ -2071,7 +2069,7 @@ mod test {
         );
 
         // hide the second column
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos.into()).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = false;
         gc.test_data_table_update_meta(
@@ -2137,7 +2135,7 @@ mod test {
         assert!(sheet.cell_format(pos![F14]).is_default());
 
         // show the second column
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos.into()).unwrap();
         let mut column_headers = data_table.column_headers.to_owned().unwrap();
         column_headers[1].display = true;
         gc.test_data_table_update_meta(
@@ -2201,7 +2199,7 @@ mod test {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1].into()).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
@@ -2219,13 +2217,13 @@ mod test {
 
         // paste cell to the right of the data table
         paste(&mut gc, sheet_id, 4, 3, js_clipboard.clone());
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1].into()).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // paste cell to the bottom of the data table
         paste(&mut gc, sheet_id, 1, 6, js_clipboard);
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1].into()).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }
@@ -2345,7 +2343,7 @@ mod test {
     fn test_copy_paste_table_column() {
         let (mut gc, sheet_id, pos, file_name) = simple_csv_at(pos![E2]);
 
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos.into()).unwrap();
 
         assert_data_table_column(
             data_table,
@@ -2391,7 +2389,7 @@ mod test {
             false,
         );
 
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos.into()).unwrap();
 
         assert_data_table_column(
             data_table,

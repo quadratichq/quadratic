@@ -22,8 +22,8 @@ use crate::a1::{A1Context, CellRefRange};
 use crate::cellvalue::Import;
 use crate::grid::CodeRun;
 use crate::{
-    Array, ArraySize, CellValue, MultiPos, Pos, Rect, RunError, RunErrorMsg, SheetPos, SheetRect,
-    Value,
+    Array, ArraySize, CellValue, MultiPos, MultiSheetPos, Pos, Rect, RunError, RunErrorMsg,
+    SheetPos, SheetRect, Value,
 };
 use anyhow::{Ok, Result, anyhow, bail};
 use chrono::{DateTime, Utc};
@@ -42,13 +42,17 @@ use super::{CodeCellLanguage, Grid, SheetFormatting, SheetId};
 pub fn unique_data_table_name(
     name: &str,
     require_number: bool,
-    multi_pos: Option<MultiPos>,
+    skip_multi_sheet_pos: Option<MultiSheetPos>,
     a1_context: &A1Context,
 ) -> String {
     // replace spaces with underscores
     let name = name.replace(' ', "_");
 
-    let check_name = |name: &str| !a1_context.table_map.contains_name(name, multi_pos);
+    let check_name = |name: &str| {
+        !a1_context
+            .table_map
+            .contains_name(name, skip_multi_sheet_pos)
+    };
     let iter_names = a1_context.table_map.iter_rev_table_names();
     unique_name(&name, require_number, check_name, iter_names)
 }
@@ -56,28 +60,29 @@ pub fn unique_data_table_name(
 impl Grid {
     /// Returns the data table at the given position.
     pub fn data_table_at(&self, sheet_id: SheetId, pos: &Pos) -> Result<&DataTable> {
-        self.try_sheet_result(sheet_id)?.data_table_result(pos)
+        self.try_sheet_result(sheet_id)?
+            .data_table_result_at(&pos.into())
     }
 
     /// Updates the name of a data table and replaces the old name in all code cells that reference it.
     pub fn update_data_table_name(
         &mut self,
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
         old_name: &str,
         new_name: &str,
         a1_context: &A1Context,
         require_number: bool,
     ) -> Result<()> {
         let unique_name =
-            unique_data_table_name(new_name, require_number, Some(multi_pos), a1_context);
+            unique_data_table_name(new_name, require_number, Some(multi_sheet_pos), a1_context);
 
         self.replace_table_name_in_code_cells(old_name, &unique_name, a1_context);
 
         let sheet = self
-            .try_sheet_mut(multi_pos.sheet_id())
-            .ok_or_else(|| anyhow!("Sheet {} not found", multi_pos.sheet_id()))?;
+            .try_sheet_mut(multi_sheet_pos.sheet_id)
+            .ok_or_else(|| anyhow!("Sheet {} not found", multi_sheet_pos.sheet_id))?;
 
-        sheet.modify_data_table_at(multi_pos, |dt| {
+        sheet.modify_data_table_at(&multi_sheet_pos.multi_pos, |dt| {
             dt.update_table_name(&unique_name);
             Ok(())
         })?;
@@ -448,7 +453,7 @@ impl DataTable {
 
         // Check if table name already exists
         if let Some(table) = a1_context.table_map.try_table(name)
-            && table.multi_pos != sheet_pos.into()
+            && table.multi_sheet_pos != sheet_pos.into()
         {
             return Err("Table name must be unique".to_string());
         }
@@ -592,7 +597,9 @@ impl DataTable {
                     Some(CellValue::Code(_)) => self
                         .tables
                         .as_ref()
-                        .and_then(|tables| tables.get_at(&(x as i64, y as i64).into()))
+                        .and_then(|tables| {
+                            tables.get_at(&MultiPos::new_pos((x as i64, y as i64).into()))
+                        })
                         .and_then(|table| table.value.get(0, 0).ok())
                         .unwrap_or(&CellValue::Blank)
                         .to_owned(),
@@ -836,9 +843,9 @@ impl DataTable {
 
     /// Returns a mutable reference to the cell value at Pos. This should be
     /// used carefully, as it allows the cell value to be modified in place.
-    pub fn get_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
+    pub fn get_value_mut(&mut self, pos: &Pos) -> Option<&mut CellValue> {
         match &mut self.value {
-            Value::Array(a) => a.get_mut(&pos),
+            Value::Array(a) => a.get_mut(pos),
             Value::Single(v) => Some(v),
             Value::Tuple(_) => None,
         }

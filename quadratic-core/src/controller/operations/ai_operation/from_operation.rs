@@ -326,7 +326,7 @@ impl AIOperation {
             | Operation::SetValidationWarning { .. } => None,
 
             _ => {
-                dbgjs!(format!("Pending implementation: {operation:?}"));
+                // dbgjs!(format!("Pending implementation: {operation:?}"));
                 None
             }
         }

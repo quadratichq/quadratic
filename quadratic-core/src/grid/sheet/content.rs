@@ -94,7 +94,9 @@ mod test {
             Some(true),
             None,
         );
-        sheet.data_table_insert_full(&pos, dt.clone());
+        sheet
+            .data_table_insert_full(&pos.into(), dt.clone())
+            .unwrap();
         assert!(sheet.has_content(pos));
         assert!(sheet.has_content(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content(Pos { x: 3, y: 2 }));
@@ -109,7 +111,7 @@ mod test {
             Some((5, 5)),
         );
         let pos2 = Pos { x: 10, y: 10 };
-        sheet.data_table_insert_full(&pos2, dt);
+        sheet.data_table_insert_full(&pos2.into(), dt).unwrap();
         assert!(sheet.has_content(pos2));
         assert!(sheet.has_content(Pos { x: 14, y: 10 }));
         assert!(!sheet.has_content(Pos { x: 15, y: 10 }));
@@ -147,7 +149,9 @@ mod test {
             Some(true),
             None,
         );
-        sheet.data_table_insert_full(&pos, dt.clone());
+        sheet
+            .data_table_insert_full(&pos.into(), dt.clone())
+            .unwrap();
         assert!(sheet.has_content_ignore_blank_table(pos));
         assert!(sheet.has_content_ignore_blank_table(Pos { x: 2, y: 2 }));
         assert!(!sheet.has_content_ignore_blank_table(Pos { x: 3, y: 2 }));
@@ -175,7 +179,7 @@ mod test {
         );
         let pos3 = Pos { x: 20, y: 20 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos3, dt);
+        sheet.data_table_insert_full(&pos3.into(), dt).unwrap();
 
         let a1_context = gc.a1_context().clone();
         gc.sheet_mut(sheet_id).recalculate_bounds(&a1_context);

@@ -6,12 +6,12 @@ use crate::{
 impl Sheet {
     /// Converts a table_pos to a sheet_pos
     pub fn table_pos_to_sheet_pos(&self, table_pos: TablePos) -> Option<SheetPos> {
-        let table_sheet_pos = table_pos.table_sheet_pos;
-        let table = self.data_table_at(&table_sheet_pos.into())?;
+        let parent_table_pos = table_pos.parent_pos;
+        let table = self.data_table_at(&parent_table_pos.into())?;
 
-        let pos = table_pos.pos;
+        let sub_table_pos = table_pos.sub_table_pos;
 
-        let Ok(x_u32) = u32::try_from(pos.x) else {
+        let Ok(x_u32) = u32::try_from(sub_table_pos.x) else {
             return None;
         };
 
@@ -23,15 +23,15 @@ impl Sheet {
 
         let reverse_display_buffer = table.get_reverse_display_buffer();
         let y = table.get_display_index_from_reverse_display_buffer(
-            u64::try_from(pos.y).ok()?,
+            u64::try_from(sub_table_pos.y).ok()?,
             reverse_display_buffer.as_ref(),
         ) as i64
             + table.y_adjustment(true);
 
         Some(SheetPos {
-            x: table_sheet_pos.x + x,
-            y: table_sheet_pos.y + y,
-            sheet_id: table_sheet_pos.sheet_id,
+            x: parent_table_pos.x + x,
+            y: parent_table_pos.y + y,
+            sheet_id: self.id,
         })
     }
 
@@ -54,17 +54,17 @@ impl Sheet {
         );
 
         Some(TablePos::new(
-            data_table_pos.to_sheet_pos(self.id),
+            data_table_pos,
             Pos::new(table_col as i64, table_row as i64),
         ))
     }
 
     /// Returns the code cell value at the table pos.
     pub fn table_pos_code_value(&self, table_pos: TablePos) -> Option<&CodeCellValue> {
-        let table_sheet_pos = table_pos.table_sheet_pos;
-        let table = self.data_table_at(&table_sheet_pos.into())?;
+        let parent_table_pos = table_pos.parent_pos;
+        let table = self.data_table_at(&parent_table_pos.into())?;
         table
-            .absolute_value_ref_at(table_pos.pos)
+            .absolute_value_ref_at(table_pos.sub_table_pos)
             .and_then(|cell_value| match cell_value {
                 CellValue::Code(code_cell) => Some(code_cell),
                 _ => None,
@@ -87,7 +87,7 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
         let sheet = gc.sheet(sheet_id);
-        let table_pos = TablePos::new(pos![sheet_id!A1], Pos::new(0, 0));
+        let table_pos = TablePos::new(pos![A1], Pos::new(0, 0));
         assert_eq!(
             sheet.table_pos_to_sheet_pos(table_pos),
             Some(pos![sheet_id!A3])
@@ -109,7 +109,7 @@ mod tests {
             false,
         );
 
-        let table_pos = TablePos::new(pos![sheet_id!A1], Pos::new(0, 0));
+        let table_pos = TablePos::new(pos![A1], Pos::new(0, 0));
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

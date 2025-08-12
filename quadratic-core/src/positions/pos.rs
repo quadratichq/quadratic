@@ -1,5 +1,5 @@
 use crate::{
-    MultiPos, RefAdjust, SheetPos,
+    MultiPos, MultiSheetPos, RefAdjust, SheetPos,
     a1::CellRefRangeEnd,
     grid::SheetId,
     renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH},
@@ -40,8 +40,12 @@ impl Pos {
         SheetPos::new(sheet_id, self.x, self.y)
     }
 
-    pub fn to_multi_pos(&self, sheet_id: SheetId) -> MultiPos {
-        MultiPos::SheetPos(self.to_sheet_pos(sheet_id))
+    pub fn to_multi_pos(&self) -> MultiPos {
+        MultiPos::new_pos(*self)
+    }
+
+    pub fn to_multi_sheet_pos(&self, sheet_id: SheetId) -> MultiSheetPos {
+        MultiSheetPos::new(sheet_id, self.to_multi_pos())
     }
 
     /// Returns which quadrant the cell position is in.

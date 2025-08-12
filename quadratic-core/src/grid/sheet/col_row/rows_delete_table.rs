@@ -51,10 +51,10 @@ impl Sheet {
         }
 
         for pos in dt_to_delete.into_iter() {
-            if let Some((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove_pos(&pos)
+            if let Ok((index, pos, old_dt, dirty_rects)) = self.data_table_shift_remove(&pos.into())
             {
                 transaction.add_from_code_run(
-                    pos.to_multi_pos(self.id),
+                    pos.to_multi_sheet_pos(self.id),
                     old_dt.is_image(),
                     old_dt.is_html(),
                 );
@@ -62,7 +62,7 @@ impl Sheet {
                 transaction
                     .reverse_operations
                     .push(Operation::SetDataTableMultiPos {
-                        multi_pos: pos.to_multi_pos(self.id),
+                        multi_sheet_pos: pos.to_multi_sheet_pos(self.id),
                         data_table: Some(old_dt),
                         index,
                     });
@@ -75,7 +75,7 @@ impl Sheet {
 
         let min_row = rows.iter().min().unwrap_or(&1);
         for (index, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
-            if let Some(dt) = self.data_table_at(&pos) {
+            if let Some(dt) = self.data_table_at(&pos.into()) {
                 if (dt.is_code() && !dt.is_html_or_image()) || dt.has_spill() {
                     continue;
                 }
@@ -94,7 +94,7 @@ impl Sheet {
         for (index, pos) in dt_to_update.into_iter() {
             let mut old_dt: Option<DataTable> = None;
 
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos.into(), |dt| {
                 let output_rect = dt.output_rect(pos, false);
                 for row in rows {
                     if *row >= output_rect.min.y && *row <= output_rect.max.y {
@@ -110,25 +110,25 @@ impl Sheet {
                 }
 
                 Ok(())
-            })
-                && let Some(old_dt) = old_dt {
-                    transaction.add_from_code_run(
-                        pos.to_multi_pos(self.id),
-                        old_dt.is_image(),
-                        old_dt.is_html(),
-                    );
-                    transaction.add_dirty_hashes_from_sheet_rect(
-                        old_dt.output_rect(pos, false).to_sheet_rect(self.id),
-                    );
-                    transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
-                    transaction
-                        .reverse_operations
-                        .push(Operation::SetDataTableMultiPos {
-                            multi_pos: pos.to_multi_pos(self.id),
-                            data_table: Some(old_dt),
-                            index,
-                        });
-                }
+            }) && let Some(old_dt) = old_dt
+            {
+                transaction.add_from_code_run(
+                    pos.to_multi_sheet_pos(self.id),
+                    old_dt.is_image(),
+                    old_dt.is_html(),
+                );
+                transaction.add_dirty_hashes_from_sheet_rect(
+                    old_dt.output_rect(pos, false).to_sheet_rect(self.id),
+                );
+                transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetDataTableMultiPos {
+                        multi_sheet_pos: pos.to_multi_sheet_pos(self.id),
+                        data_table: Some(old_dt),
+                        index,
+                    });
+            }
         }
     }
 
@@ -138,25 +138,28 @@ impl Sheet {
 
         let min_row = rows.iter().min().unwrap_or(&1);
         for (_, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
-            if let Some(dt) = self.data_table_at(&pos)
-                && !dt.has_spill() && dt.is_html_or_image() {
-                    let output_rect = dt.output_rect(pos, false);
-                    let count = rows
-                        .iter()
-                        .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
-                        .count();
-                    if count > 0
-                        && let Some((width, height)) = dt.chart_output {
-                            let min = (height - count as u32).max(1);
-                            if min != height {
-                                dt_to_update.push((pos, Some((width, min))));
-                            }
-                        }
+            if let Some(dt) = self.data_table_at(&pos.into())
+                && !dt.has_spill()
+                && dt.is_html_or_image()
+            {
+                let output_rect = dt.output_rect(pos, false);
+                let count = rows
+                    .iter()
+                    .filter(|row| **row >= output_rect.min.y && **row <= output_rect.max.y)
+                    .count();
+                if count > 0
+                    && let Some((width, height)) = dt.chart_output
+                {
+                    let min = (height - count as u32).max(1);
+                    if min != height {
+                        dt_to_update.push((pos, Some((width, min))));
+                    }
                 }
+            }
         }
 
         for (pos, chart_output) in dt_to_update.into_iter() {
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos.into(), |dt| {
                 dt.chart_output = chart_output;
 
                 Ok(())
@@ -176,7 +179,7 @@ impl Sheet {
 
         let min_row = rows.iter().min().unwrap_or(&1);
         for (_, pos) in self.data_tables.get_pos_after_row_sorted(*min_row, false) {
-            if let Some(dt) = self.data_table_at(&pos) {
+            if let Some(dt) = self.data_table_at(&pos.into()) {
                 let mut output_rect = dt.output_rect(pos, false);
 
                 // check how many deleted columns are before the table
@@ -191,7 +194,7 @@ impl Sheet {
                     transaction
                         .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                     transaction.add_from_code_run(
-                        pos.to_multi_pos(self.id),
+                        pos.to_multi_sheet_pos(self.id),
                         dt.is_image(),
                         dt.is_html(),
                     );
@@ -200,7 +203,8 @@ impl Sheet {
                     transaction
                         .add_dirty_hashes_from_sheet_rect(output_rect.to_sheet_rect(self.id));
                     transaction.add_from_code_run(
-                        pos.translate(0, -shift_table, 1, 1).to_multi_pos(self.id),
+                        pos.translate(0, -shift_table, 1, 1)
+                            .to_multi_sheet_pos(self.id),
                         dt.is_image(),
                         dt.is_html(),
                     );
@@ -212,7 +216,7 @@ impl Sheet {
 
         dt_to_shift_up.sort_by(|(a, _), (b, _)| a.y.cmp(&b.y));
         for (pos, shift_table) in dt_to_shift_up {
-            let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_pos(&pos)
+            let Ok((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove(&pos.into())
             else {
                 dbgjs!(format!(
                     "Error in check_delete_tables_columns: cannot shift up data table\n{:?}",
@@ -222,8 +226,10 @@ impl Sheet {
             };
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
 
-            let new_pos = pos.translate(0, -shift_table, 1, 1).to_multi_pos(self.id);
-            if let Ok((_, _, dirty_rects)) = self.data_table_insert_before(index, new_pos, old_dt) {
+            let new_pos = pos.translate(0, -shift_table, 1, 1);
+            if let Ok((_, _, dirty_rects)) =
+                self.data_table_insert_before(index, &new_pos.into(), old_dt)
+            {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
             }
         }
@@ -447,7 +453,7 @@ mod tests {
 
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at_pos(&pos![A1], |dt| {
+            .modify_data_table_at(&pos![A1].into(), |dt| {
                 dt.show_name = Some(true);
                 dt.show_columns = Some(true);
 

@@ -72,12 +72,12 @@ impl GridController {
             ));
         }
 
-        let Some(code_multi_pos) = transaction.current_multi_pos else {
+        let Some(current_multi_sheet_pos) = transaction.current_multi_sheet_pos else {
             return map_error(CoreError::TransactionNotFound(
                 "Transaction's position not found".into(),
             ));
         };
-        let selection = match self.a1_selection_from_string(&a1, code_multi_pos.sheet_id()) {
+        let selection = match self.a1_selection_from_string(&a1, current_multi_sheet_pos.sheet_id) {
             Ok(selection) => selection,
             Err(e) => {
                 // unable to parse A1 string
@@ -87,17 +87,17 @@ impl GridController {
 
         let context = self.a1_context();
 
-        let Some(sheet) = self.try_sheet(code_multi_pos.sheet_id()) else {
+        let Some(sheet) = self.try_sheet(current_multi_sheet_pos.sheet_id) else {
             return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
-        let Some(sheet_pos) = code_multi_pos.to_sheet_pos(sheet) else {
+        let Some(sheet_pos) = current_multi_sheet_pos.to_sheet_pos(sheet) else {
             return map_error(CoreError::CodeCellSheetError(
                 "Table not found in sheet".to_string(),
             ));
         };
 
         // ensure that the selection is not a direct self reference
-        if selection.sheet_id == code_multi_pos.sheet_id()
+        if selection.sheet_id == current_multi_sheet_pos.sheet_id
             && selection.might_contain_pos(sheet_pos.into(), context)
         {
             return map_error(CoreError::A1Error("Self reference not allowed".to_string()));
@@ -106,12 +106,12 @@ impl GridController {
         let Some(selection_sheet) = self.try_sheet(selection.sheet_id) else {
             return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
-        let Some(code_sheet) = self.try_sheet(code_multi_pos.sheet_id()) else {
+        let Some(code_sheet) = self.try_sheet(current_multi_sheet_pos.sheet_id) else {
             return map_error(CoreError::CodeCellSheetError("Sheet not found".to_string()));
         };
 
         // get the original code cell
-        let Some(code) = code_sheet.code_value(code_multi_pos) else {
+        let Some(code) = code_sheet.code_value(current_multi_sheet_pos.multi_pos) else {
             return map_error(CoreError::CodeCellSheetError(
                 "Code cell not found".to_string(),
             ));
@@ -238,7 +238,7 @@ mod test {
         );
 
         let transactions = gc.transactions.async_transactions_mut();
-        transactions[0].current_multi_pos = None;
+        transactions[0].current_multi_sheet_pos = None;
         let transaction_id = transactions[0].id.to_string();
         let result = gc.calculation_get_cells_a1(transaction_id, "A1".to_string());
         assert!(result.error.is_some());
@@ -272,7 +272,7 @@ mod test {
         .unwrap();
         let sheet = gc.sheet(sheet_id);
         let error = sheet
-            .data_table_at(&Pos { x: 1, y: 1 })
+            .data_table_at(&Pos { x: 1, y: 1 }.into())
             .unwrap()
             .code_run()
             .unwrap()

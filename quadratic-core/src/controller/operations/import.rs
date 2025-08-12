@@ -196,7 +196,7 @@ impl GridController {
 
             data_table.apply_first_row_as_header();
             ops.push(Operation::AddDataTableMultiPos {
-                multi_pos: sheet_pos.into(),
+                multi_sheet_pos: sheet_pos.into(),
                 data_table,
                 cell_value: CellValue::Import(import),
                 index: None,
@@ -286,7 +286,9 @@ impl GridController {
 
             // values
             let range = workbook.worksheet_range(&sheet_name).map_err(error)?;
-            let values_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
+            let values_insert_at = range
+                .start()
+                .map_or_else(|| Pos::new(1, 1), xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, cell) in row.iter().enumerate() {
                     let cell_value = match cell {
@@ -404,7 +406,9 @@ impl GridController {
 
             // styles
             let range = workbook.worksheet_style(&sheet_name).map_err(error)?;
-            let style_insert_at = range.start().map_or_else(|| pos![A1], xlsx_range_to_pos);
+            let style_insert_at = range
+                .start()
+                .map_or_else(|| Pos::new(1, 1), xlsx_range_to_pos);
             for (y, row) in range.rows().enumerate() {
                 for (x, style) in row.iter().enumerate() {
                     let pos = Pos {
@@ -541,7 +545,7 @@ impl GridController {
         data_table.apply_first_row_as_header();
 
         let ops = vec![Operation::AddDataTableMultiPos {
-            multi_pos: insert_at.to_multi_pos(sheet_id),
+            multi_sheet_pos: insert_at.to_multi_sheet_pos(sheet_id),
             data_table,
             cell_value: CellValue::Import(import),
             index: None,
@@ -1309,8 +1313,9 @@ fn convert_excel_borders_to_quadratic(borders: &calamine::Borders) -> BorderStyl
 mod test {
     use super::*;
     use crate::{
-        ArraySize, CellValue, MultiPos, controller::user_actions::import::tests::simple_csv_at,
-        number::decimal_from_str, test_util::*,
+        ArraySize, CellValue, MultiPos, MultiSheetPos,
+        controller::user_actions::import::tests::simple_csv_at, number::decimal_from_str,
+        test_util::*,
     };
     use calamine::{BorderStyle, Color};
     use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Timelike};
@@ -1320,7 +1325,7 @@ mod test {
         let (gc, sheet_id, pos, _) = simple_csv_at(Pos { x: 1, y: 1 });
         let sheet = gc.sheet(sheet_id);
         let cell_values = sheet
-            .data_table_at(&pos)
+            .data_table_at(&pos.into())
             .unwrap()
             .value_as_array()
             .unwrap()
@@ -1368,7 +1373,7 @@ mod test {
         expected_data_table.name = CellValue::Text(file_name.to_string());
 
         let expected = Operation::AddDataTableMultiPos {
-            multi_pos: MultiPos::new_sheet_pos(sheet_id, (1, 1).into()),
+            multi_sheet_pos: MultiSheetPos::new(sheet_id, MultiPos::new_pos((1, 1).into())),
             data_table: expected_data_table,
             cell_value,
             index: None,
@@ -1402,15 +1407,15 @@ mod test {
             .unwrap();
 
         assert_eq!(ops.len(), 1);
-        let (multi_pos, data_table) = match &ops[0] {
+        let (multi_sheet_pos, data_table) = match &ops[0] {
             Operation::AddDataTableMultiPos {
-                multi_pos,
+                multi_sheet_pos,
                 data_table,
                 ..
-            } => (*multi_pos, data_table.clone()),
+            } => (*multi_sheet_pos, data_table.clone()),
             _ => panic!("Expected AddDataTableMultiPos operation"),
         };
-        assert_eq!(multi_pos.to_pos().x, 1);
+        assert_eq!(multi_sheet_pos, pos.to_multi_sheet_pos(sheet_id));
         assert_eq!(
             data_table.display_value_ref_at((0, 1).into()),
             Some(&CellValue::Text("city0".into()))
@@ -1524,7 +1529,7 @@ mod test {
         .unwrap();
 
         let sheet = gc.sheet(sheet_id);
-        let data_table = sheet.data_table_at(&pos).unwrap();
+        let data_table = sheet.data_table_at(&pos.into()).unwrap();
 
         // date
         assert_eq!(

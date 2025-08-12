@@ -4,11 +4,13 @@ use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
 mod multi_pos;
+mod multi_sheet_pos;
 mod pos;
 mod sheet_pos;
 mod table_pos;
 
 pub use multi_pos::*;
+pub use multi_sheet_pos::*;
 pub use pos::*;
 pub use sheet_pos::*;
 pub use table_pos::*;

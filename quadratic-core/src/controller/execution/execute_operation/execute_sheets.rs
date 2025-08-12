@@ -27,7 +27,7 @@ impl GridController {
 
         let data_tables_pos = sheet
             .data_tables
-            .expensive_iter_with_sub_tables(sheet_id)
+            .expensive_iter_with_sub_tables()
             .map(|(p, _)| p)
             .collect::<Vec<_>>();
         let mut table_names_to_update_in_cell_ref = vec![];
@@ -35,9 +35,9 @@ impl GridController {
         // update table names in data tables in the new sheet
         let sheet = self.try_sheet_mut_result(sheet_id)?;
         for multi_pos in data_tables_pos.iter() {
-            transaction.add_code_cell(*multi_pos);
+            transaction.add_code_cell(multi_pos.to_multi_sheet_pos(sheet_id));
 
-            sheet.modify_data_table_at(*multi_pos, |data_table| {
+            sheet.modify_data_table_at(multi_pos, |data_table| {
                 let old_name = data_table.name().to_string();
                 let unique_name = unique_data_table_name(&old_name, false, None, &context);
                 if old_name != unique_name {
@@ -46,7 +46,7 @@ impl GridController {
                     // update table context for replacing table names in code cells
                     if let Some(old_table_map_entry) = context.table_map.try_table(&old_name) {
                         let mut new_table_map_entry = old_table_map_entry.to_owned();
-                        new_table_map_entry.set_sheet_id(sheet_id);
+                        new_table_map_entry.multi_sheet_pos.sheet_id = sheet_id;
                         new_table_map_entry.table_name = unique_name.to_owned();
                         context.table_map.insert(new_table_map_entry);
                     }
@@ -66,16 +66,17 @@ impl GridController {
                 let sheet_pos = multi_pos.to_sheet_pos(sheet);
 
                 if let Some(code_cell_value) = sheet
-                    .cell_value_multi_mut(*multi_pos)
+                    .cell_value_mut(multi_pos)
                     .and_then(|cv| cv.code_cell_value_mut())
-                    && let Some(sheet_pos) = sheet_pos {
-                        code_cell_value.replace_table_name_in_cell_references(
-                            &context,
-                            sheet_pos.sheet_id,
-                            &old_name,
-                            &unique_name,
-                        );
-                    }
+                    && let Some(sheet_pos) = sheet_pos
+                {
+                    code_cell_value.replace_table_name_in_cell_references(
+                        &context,
+                        sheet_pos.sheet_id,
+                        &old_name,
+                        &unique_name,
+                    );
+                }
             }
         }
 
@@ -675,7 +676,10 @@ mod tests {
             false,
         );
         assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos![J10]).unwrap().name(),
+            gc.sheet(sheet_id)
+                .data_table_at(&pos![J10].into())
+                .unwrap()
+                .name(),
             "Table1"
         );
 
@@ -690,7 +694,10 @@ mod tests {
             false,
         );
         assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos![T20]).unwrap().name(),
+            gc.sheet(sheet_id)
+                .data_table_at(&pos![T20].into())
+                .unwrap()
+                .name(),
             "Table2"
         );
 
@@ -698,7 +705,10 @@ mod tests {
         gc.start_user_ai_transaction(ops, None, TransactionName::DuplicateSheet, false);
 
         let duplicated_sheet_id = gc.sheet_ids()[1];
-        let data_table = gc.sheet(duplicated_sheet_id).data_table_at(&pos).unwrap();
+        let data_table = gc
+            .sheet(duplicated_sheet_id)
+            .data_table_at(&pos.into())
+            .unwrap();
         assert_eq!(data_table.name().to_string(), format!("{file_name}1"));
         assert_eq!(
             gc.sheet(duplicated_sheet_id).cell_value(pos![J10]).unwrap(),
@@ -719,14 +729,14 @@ mod tests {
 
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
-                .data_table_at(&pos![J10])
+                .data_table_at(&pos![J10].into())
                 .unwrap()
                 .name(),
             "Table3"
         );
         assert_eq!(
             gc.sheet(duplicated_sheet_id)
-                .data_table_at(&pos![T20])
+                .data_table_at(&pos![T20].into())
                 .unwrap()
                 .name(),
             "Table4"

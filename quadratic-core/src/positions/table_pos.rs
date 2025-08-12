@@ -1,28 +1,20 @@
 //! Used for referencing a pos in a data table.
 
-use crate::{Pos, SheetPos, grid::SheetId};
+use crate::Pos;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Copy, Clone)]
 pub struct TablePos {
-    pub table_sheet_pos: SheetPos,
-    pub pos: Pos,
+    pub parent_pos: Pos,
+    pub sub_table_pos: Pos,
 }
 
 impl TablePos {
-    pub fn new(table_sheet_pos: SheetPos, code_pos: Pos) -> Self {
+    pub fn new(parent_pos: Pos, sub_table_pos: Pos) -> Self {
         Self {
-            table_sheet_pos,
-            pos: code_pos,
+            parent_pos,
+            sub_table_pos,
         }
-    }
-
-    pub fn sheet_id(&self) -> SheetId {
-        self.table_sheet_pos.sheet_id
-    }
-
-    pub fn set_sheet_id(&mut self, sheet_id: SheetId) {
-        self.table_sheet_pos.sheet_id = sheet_id;
     }
 }
 
@@ -32,12 +24,11 @@ mod tests {
 
     #[test]
     fn test_table_pos() {
-        let sheet_id = SheetId::TEST;
-        let table_pos = pos![sheet_id!A1];
-        let code_pos = Pos { x: 0, y: 0 };
-        let table_pos = TablePos::new(table_pos, code_pos);
+        let parent_pos = pos![A1];
+        let sub_table_pos = Pos { x: 0, y: 0 };
+        let table_pos = TablePos::new(parent_pos, sub_table_pos);
 
-        assert_eq!(table_pos.table_sheet_pos, pos![sheet_id!A1]);
-        assert_eq!(table_pos.pos, Pos { x: 0, y: 0 });
+        assert_eq!(table_pos.parent_pos, parent_pos);
+        assert_eq!(table_pos.sub_table_pos, sub_table_pos);
     }
 }

@@ -21,19 +21,21 @@ impl Sheet {
             self.data_tables.get_pos_after_row_sorted(row - 1, false);
 
         for (_, pos) in all_pos_intersecting_columns.into_iter().rev() {
-            if let Ok((_, dirty_rects)) = self.modify_data_table_at_pos(&pos, |dt| {
+            if let Ok((_, dirty_rects)) = self.modify_data_table_at(&pos.into(), |dt| {
                 let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the height
                 if dt.is_html_or_image() {
                     if let Some((width, height)) = dt.chart_output
-                        && row >= pos.y && row < pos.y + output_rect.height() as i64 {
-                            dt.chart_output = Some((width, height + 1));
-                            transaction.add_from_code_run(
-                                pos.to_multi_pos(sheet_id),
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                        }
+                        && row >= pos.y
+                        && row < pos.y + output_rect.height() as i64
+                    {
+                        dt.chart_output = Some((width, height + 1));
+                        transaction.add_from_code_run(
+                            pos.to_multi_sheet_pos(sheet_id),
+                            dt.is_image(),
+                            dt.is_html(),
+                        );
+                    }
                 } else {
                     // Adds rows to data tables if the row is inserted inside the
                     // table. Code is not impacted by this change.
@@ -42,32 +44,33 @@ impl Sheet {
                         && (row < pos.y + output_rect.height() as i64
                             || (CopyFormats::Before == copy_formats
                                 && row < pos.y + output_rect.height() as i64 + 1))
-                        && let Ok(display_row_index) = usize::try_from(row - pos.y) {
-                            dt.insert_row(display_row_index, None)?;
+                        && let Ok(display_row_index) = usize::try_from(row - pos.y)
+                    {
+                        dt.insert_row(display_row_index, None)?;
 
-                            if dt.sort.is_some() {
-                                dt.sort_dirty = true;
-                            }
-                            transaction.add_from_code_run(
-                                pos.to_multi_pos(sheet_id),
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                            if dt
-                                .formats
-                                .as_ref()
-                                .is_some_and(|formats| formats.has_fills())
-                            {
-                                transaction.add_fill_cells(sheet_id);
-                            }
-                            if !dt
-                                .borders
-                                .as_ref()
-                                .is_none_or(|borders| borders.is_default())
-                            {
-                                transaction.add_borders(sheet_id);
-                            }
+                        if dt.sort.is_some() {
+                            dt.sort_dirty = true;
                         }
+                        transaction.add_from_code_run(
+                            pos.to_multi_sheet_pos(sheet_id),
+                            dt.is_image(),
+                            dt.is_html(),
+                        );
+                        if dt
+                            .formats
+                            .as_ref()
+                            .is_some_and(|formats| formats.has_fills())
+                        {
+                            transaction.add_fill_cells(sheet_id);
+                        }
+                        if !dt
+                            .borders
+                            .as_ref()
+                            .is_none_or(|borders| borders.is_default())
+                        {
+                            transaction.add_borders(sheet_id);
+                        }
+                    }
                 }
 
                 Ok(())
@@ -92,17 +95,25 @@ impl Sheet {
 
         data_tables_to_move.sort_by(|(_, a), (_, b)| b.y.cmp(&a.y));
         for (_, old_pos) in data_tables_to_move {
-            if let Some((index, old_pos, data_table, dirty_rects)) =
-                self.data_table_shift_remove(&old_pos.to_multi_pos(self.id))
+            if let Ok((index, old_pos, data_table, dirty_rects)) =
+                self.data_table_shift_remove(&old_pos.into())
             {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 let new_pos = old_pos.translate(0, 1, i64::MIN, i64::MIN);
 
                 // signal the client to updates to the code cells (to draw the code arrays)
-                transaction.add_from_code_run(old_pos, data_table.is_image(), data_table.is_html());
-                transaction.add_from_code_run(new_pos, data_table.is_image(), data_table.is_html());
+                transaction.add_from_code_run(
+                    old_pos.to_multi_sheet_pos(self.id),
+                    data_table.is_image(),
+                    data_table.is_html(),
+                );
+                transaction.add_from_code_run(
+                    new_pos.to_multi_sheet_pos(self.id),
+                    data_table.is_image(),
+                    data_table.is_html(),
+                );
                 if let Ok((_, _, dirty_rects)) =
-                    self.data_table_insert_before(index, new_pos, data_table)
+                    self.data_table_insert_before(index, &new_pos, data_table)
                 {
                     transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
                 }

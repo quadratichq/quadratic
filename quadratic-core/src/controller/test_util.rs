@@ -37,8 +37,6 @@ impl GridController {
         h: u32,
         n: Vec<&str>,
     ) {
-        use crate::MultiPos;
-
         let cell_value = CellValue::Code(CodeCellValue {
             language: CodeCellLanguage::Formula,
             code: "code".to_string(),
@@ -80,7 +78,7 @@ impl GridController {
         );
 
         let op = Operation::AddDataTableMultiPos {
-            multi_pos: MultiPos::new_sheet_pos(sheet_id, (x, y).into()),
+            multi_sheet_pos: pos![sheet_id!x,y].into(),
             data_table,
             cell_value,
             index: None,
@@ -114,7 +112,7 @@ impl GridController {
         );
 
         let op = Operation::AddDataTableMultiPos {
-            multi_pos: sheet_pos.into(),
+            multi_sheet_pos: sheet_pos.into(),
             data_table,
             cell_value,
             index: None,

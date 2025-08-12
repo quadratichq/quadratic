@@ -4,7 +4,7 @@ use indexmap::IndexMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    MultiPos, Pos, SheetPos,
+    MultiSheetPos, Pos, SheetPos,
     grid::{CodeCellLanguage, DataTable, SheetId},
     util::case_fold_ascii,
 };
@@ -15,34 +15,39 @@ use super::{JsTableInfo, TableMapEntry};
 pub struct TableMap {
     tables: IndexMap<String, TableMapEntry>,
 
-    multi_pos_to_table: HashMap<MultiPos, String>,
+    multi_sheet_pos_to_table: HashMap<MultiSheetPos, String>,
 }
 
 impl TableMap {
     pub fn insert(&mut self, table_map_entry: TableMapEntry) {
         let table_name_folded = case_fold_ascii(&table_map_entry.table_name);
-        self.multi_pos_to_table
-            .insert(table_map_entry.multi_pos, table_name_folded.clone());
+        self.multi_sheet_pos_to_table
+            .insert(table_map_entry.multi_sheet_pos, table_name_folded.clone());
         self.tables.insert(table_name_folded, table_map_entry);
     }
 
-    pub fn insert_table(&mut self, multi_pos: MultiPos, translated_pos: Pos, table: &DataTable) {
-        let table_map_entry = TableMapEntry::from_table(multi_pos, translated_pos, table);
+    pub fn insert_table(
+        &mut self,
+        multi_sheet_pos: MultiSheetPos,
+        translated_pos: Pos,
+        table: &DataTable,
+    ) {
+        let table_map_entry = TableMapEntry::from_table(multi_sheet_pos, translated_pos, table);
         self.insert(table_map_entry);
     }
 
-    pub fn remove_at(&mut self, multi_pos: MultiPos) {
-        if let Some(table_name) = self.multi_pos_to_table.remove(&multi_pos)
+    pub fn remove_at(&mut self, multi_sheet_pos: MultiSheetPos) {
+        if let Some(table_name) = self.multi_sheet_pos_to_table.remove(&multi_sheet_pos)
             && let Some(table) = self.tables.get(&table_name)
-            && table.multi_pos == multi_pos
+            && table.multi_sheet_pos == multi_sheet_pos
         {
             self.tables.swap_remove(&table_name);
         }
     }
 
     pub fn remove_sheet(&mut self, sheet_id: SheetId) {
-        self.multi_pos_to_table.retain(|sheet_pos, name| {
-            if sheet_pos.sheet_id() == sheet_id {
+        self.multi_sheet_pos_to_table.retain(|sheet_pos, name| {
+            if sheet_pos.sheet_id == sheet_id {
                 self.tables.swap_remove(name);
                 false
             } else {
@@ -102,9 +107,9 @@ impl TableMap {
         &self,
         sheet_id: SheetId,
     ) -> impl Iterator<Item = &TableMapEntry> {
-        self.multi_pos_to_table
+        self.multi_sheet_pos_to_table
             .iter()
-            .filter(move |(sheet_pos, _)| sheet_pos.sheet_id() == sheet_id)
+            .filter(move |(sheet_pos, _)| sheet_pos.sheet_id == sheet_id)
             .flat_map(|(_, table_name)| self.tables.get(table_name))
     }
 
@@ -115,7 +120,7 @@ impl TableMap {
 
     /// Finds a table by position
     pub fn table_from_pos(&self, sheet_pos: SheetPos) -> Option<&TableMapEntry> {
-        if let Some(table_name) = self.multi_pos_to_table.get(&sheet_pos.into()) {
+        if let Some(table_name) = self.multi_sheet_pos_to_table.get(&sheet_pos.into()) {
             self.tables.get(table_name)
         } else {
             self.tables.values().find(|table| {
@@ -135,11 +140,15 @@ impl TableMap {
         }
     }
 
-    pub fn contains_name(&self, table_name: &str, skip_multi_pos: Option<MultiPos>) -> bool {
+    pub fn contains_name(
+        &self,
+        table_name: &str,
+        skip_multi_sheet_pos: Option<MultiSheetPos>,
+    ) -> bool {
         let table = self.try_table(table_name);
         if let Some(table) = table {
-            if let Some(multi_pos) = skip_multi_pos {
-                table.multi_pos != multi_pos
+            if let Some(multi_sheet_pos) = skip_multi_sheet_pos {
+                table.multi_sheet_pos != multi_sheet_pos
             } else {
                 true
             }
@@ -167,8 +176,8 @@ impl TableMap {
     }
 
     /// Finds a table by position.
-    pub fn table_at(&self, multi_pos: MultiPos) -> Option<&TableMapEntry> {
-        self.multi_pos_to_table
+    pub fn table_at(&self, multi_pos: MultiSheetPos) -> Option<&TableMapEntry> {
+        self.multi_sheet_pos_to_table
             .get(&multi_pos)
             .and_then(|table_name| self.tables.get(table_name))
     }
@@ -199,7 +208,7 @@ impl TableMap {
     pub fn remove(&mut self, table_name: &str) -> Option<TableMapEntry> {
         let table_name_folded = case_fold_ascii(table_name);
         if let Some(table) = self.tables.shift_remove(&table_name_folded) {
-            self.multi_pos_to_table.remove(&table.multi_pos);
+            self.multi_sheet_pos_to_table.remove(&table.multi_sheet_pos);
             Some(table)
         } else {
             None

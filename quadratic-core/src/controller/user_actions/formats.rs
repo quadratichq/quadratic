@@ -65,12 +65,13 @@ impl GridController {
                             .set_format_rect(intersection_rect, FormatUpdate::cleared());
 
                         if let Some(table_format_updates) = table_format_updates
-                            && !table_format_updates.is_default() {
-                                ops.push(Operation::DataTableFormats {
-                                    sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
-                                    formats: table_format_updates,
-                                });
-                            }
+                            && !table_format_updates.is_default()
+                        {
+                            ops.push(Operation::DataTableFormats {
+                                sheet_pos: data_table_pos.to_sheet_pos(selection.sheet_id),
+                                formats: table_format_updates,
+                            });
+                        }
                     }
                 }
                 CellRefRange::Table { range } => {
@@ -80,7 +81,7 @@ impl GridController {
 
                     let data_table_pos = table.bounds.min;
 
-                    let Some(data_table) = sheet.data_table_at(&data_table_pos) else {
+                    let Some(data_table) = sheet.data_table_at(&data_table_pos.into()) else {
                         continue;
                     };
 

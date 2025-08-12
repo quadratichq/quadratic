@@ -1,5 +1,5 @@
 use crate::{
-    MultiPos, Pos,
+    MultiSheetPos, Pos,
     controller::{GridController, active_transactions::pending_transaction::PendingTransaction},
     grid::{CodeCellLanguage, CodeCellValue},
 };
@@ -8,7 +8,7 @@ impl GridController {
     pub(crate) fn run_python(
         &mut self,
         transaction: &mut PendingTransaction,
-        multi_pos: MultiPos,
+        multi_sheet_pos: MultiSheetPos,
         code: String,
         pos: Pos,
     ) {
@@ -17,12 +17,12 @@ impl GridController {
                 transaction.id.to_string(),
                 pos.x as i32,
                 pos.y as i32,
-                multi_pos.sheet_id().to_string(),
+                multi_sheet_pos.sheet_id.to_string(),
                 code.clone(),
             );
         }
         // stop the computation cycle until async returns
-        transaction.current_multi_pos = Some(multi_pos);
+        transaction.current_multi_sheet_pos = Some(multi_sheet_pos);
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Python,
             code,
@@ -82,13 +82,13 @@ mod tests {
         }
         sheet
             .data_tables
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(&pos.into(), |dt| {
                 dt.show_name = Some(false);
                 dt.show_columns = Some(false);
                 Ok(())
             })
             .unwrap();
-        let data_table = sheet.data_table_at(&pos).unwrap();
+        let data_table = sheet.data_table_at(&pos.into()).unwrap();
         assert_eq!(data_table.output_size(), ArraySize::_1X1);
         assert_eq!(
             data_table.absolute_value_at((0, 0).into()),

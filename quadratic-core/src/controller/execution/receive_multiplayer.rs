@@ -1108,7 +1108,7 @@ mod tests {
         let find_index = |sheet: &Sheet, x: i64, y: i64| {
             sheet
                 .data_tables
-                .get_multi_pos_index_of(&MultiPos::new_sheet_pos(sheet_id, (x, y).into()))
+                .get_index_of(&MultiPos::new_pos((x, y).into()))
                 .unwrap()
         };
         let sheet = gc.sheet(sheet_id);

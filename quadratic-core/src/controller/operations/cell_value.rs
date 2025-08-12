@@ -125,7 +125,7 @@ impl GridController {
 
                     if is_code {
                         compute_code_ops.push(Operation::ComputeCodeMultiPos {
-                            multi_pos: current_sheet_pos.into(),
+                            multi_sheet_pos: current_sheet_pos.into(),
                         });
                     }
                 }
@@ -310,7 +310,7 @@ impl GridController {
 
                 delete_data_tables.iter().for_each(|data_table_pos| {
                     ops.push(Operation::DeleteDataTableMultiPos {
-                        multi_pos: data_table_pos.to_multi_pos(selection.sheet_id),
+                        multi_sheet_pos: data_table_pos.to_multi_sheet_pos(selection.sheet_id),
                     });
                 });
 
@@ -912,7 +912,7 @@ mod test {
         let sheet_id = first_sheet_id(&gc);
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1].into()).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
@@ -920,14 +920,14 @@ mod test {
         // add a cell to the right of the data table
         let sheet_pos = SheetPos::new(sheet_id, 4, 3);
         gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None, false);
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1].into()).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // add a cell to the bottom of the data table
         let sheet_pos = SheetPos::new(sheet_id, 1, 6);
         gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None, false);
-        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
+        let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1].into()).unwrap();
         print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }

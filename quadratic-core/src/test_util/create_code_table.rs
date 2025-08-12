@@ -75,14 +75,14 @@ pub fn test_create_code_table_with_values(
     );
 
     let op = Operation::AddDataTableMultiPos {
-        multi_pos: pos.to_multi_pos(sheet_id),
+        multi_sheet_pos: pos.to_multi_sheet_pos(sheet_id),
         data_table,
         cell_value,
         index: None,
     };
     gc.start_user_ai_transaction(vec![op], None, TransactionName::Unknown, false);
 
-    gc.data_table_at(pos.to_sheet_pos(sheet_id).into())
+    gc.data_table_at(&pos.to_sheet_pos(sheet_id).into())
         .unwrap()
         .clone()
 }
@@ -101,7 +101,7 @@ pub fn test_create_formula(
         None,
         false,
     );
-    gc.data_table_at(sheet_pos.into()).unwrap().clone()
+    gc.data_table_at(&sheet_pos.into()).unwrap().clone()
 }
 
 #[cfg(test)]
@@ -121,7 +121,7 @@ mod tests {
 
         let sheet = sheet(&gc, sheet_id);
 
-        let table = sheet.data_table_at(&pos).unwrap();
+        let table = sheet.data_table_at(&pos.into()).unwrap();
         if let Value::Array(array) = &table.value {
             assert_eq!(array.width(), 2);
             assert_eq!(array.height(), 2);
@@ -151,7 +151,7 @@ mod tests {
         );
 
         let sheet = sheet(&gc, sheet_id);
-        let table = sheet.data_table_at(&pos).unwrap();
+        let table = sheet.data_table_at(&pos.into()).unwrap();
 
         if let Value::Array(array) = &table.value {
             assert_eq!(array.get(0, 0).unwrap(), &CellValue::Number(1.into()));

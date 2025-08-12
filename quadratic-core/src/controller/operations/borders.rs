@@ -464,8 +464,8 @@ impl GridController {
                 return false;
             }
 
-            for (table_sheet_pos, table_borders) in tables_borders {
-                let Some(data_table) = sheet.data_table_at(&table_sheet_pos) else {
+            for (data_table_pos, table_borders) in tables_borders {
+                let Some(data_table) = sheet.data_table_at(&data_table_pos.into()) else {
                     return false;
                 };
 

@@ -280,8 +280,18 @@ mod test {
             sheet.formats.fill_color.get(pos![C1]),
             Some("blue".to_string())
         );
-        assert!(sheet.data_tables.get_at(&Pos { x: 1, y: 2 }).is_some());
-        assert!(sheet.data_tables.get_at(&Pos { x: 1, y: 3 }).is_some());
+        assert!(
+            sheet
+                .data_tables
+                .get_at(&(Pos { x: 1, y: 2 }).into())
+                .is_some()
+        );
+        assert!(
+            sheet
+                .data_tables
+                .get_at(&(Pos { x: 1, y: 3 }).into())
+                .is_some()
+        );
     }
 
     #[test]

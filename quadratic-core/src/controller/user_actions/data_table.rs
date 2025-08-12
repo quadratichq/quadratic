@@ -1,5 +1,5 @@
 use crate::{
-    CopyFormats, MultiPos, SheetPos, SheetRect,
+    CopyFormats, MultiSheetPos, SheetPos, SheetRect,
     controller::{GridController, active_transactions::transaction_name::TransactionName},
     grid::{
         CodeRun, DataTable, data_table::column_header::DataTableColumnHeader, sort::DataTableSort,
@@ -10,17 +10,18 @@ use anyhow::Result;
 
 impl GridController {
     /// Gets a data table based on a sheet position.
-    pub fn data_table_at(&self, multi_pos: MultiPos) -> Option<&DataTable> {
-        if let Some(sheet) = self.try_sheet(multi_pos.sheet_id()) {
-            sheet.data_table_multi_pos(&multi_pos)
+    pub fn data_table_at(&self, multi_sheet_pos: &MultiSheetPos) -> Option<&DataTable> {
+        if let Some(sheet) = self.try_sheet(multi_sheet_pos.sheet_id) {
+            sheet.data_table_at(&multi_sheet_pos.multi_pos)
         } else {
             None
         }
     }
 
     /// Gets a data table based on a sheet position.
-    pub fn code_run_at(&self, multi_pos: MultiPos) -> Option<&CodeRun> {
-        self.data_table_at(multi_pos).and_then(|dt| dt.code_run())
+    pub fn code_run_at(&self, multi_sheet_pos: &MultiSheetPos) -> Option<&CodeRun> {
+        self.data_table_at(multi_sheet_pos)
+            .and_then(|dt| dt.code_run())
     }
 
     pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>, is_ai: bool) {
@@ -233,7 +234,9 @@ mod tests {
         let sheet_id = gc.grid.sheets()[0].id;
         let pos = Pos { x: 1, y: 1 };
         let sheet = gc.sheet_mut(sheet_id);
-        sheet.data_table_insert_full(&pos, data_table);
+        sheet
+            .data_table_insert_full(&pos.into(), data_table)
+            .unwrap();
         let code_cell_value = CodeCellValue {
             language: CodeCellLanguage::Javascript,
             code: "return [1,2,3]".into(),
@@ -277,7 +280,7 @@ mod tests {
         let sheet_pos_code_cell = SheetPos::from((pos_code_cell, sheet_id));
         let old_name = gc
             .sheet(sheet_id)
-            .data_table_at(&pos)
+            .data_table_at(&pos.into())
             .unwrap()
             .name
             .to_owned();
@@ -325,7 +328,7 @@ mod tests {
 
         let updated_name = gc
             .sheet(sheet_id)
-            .data_table_at(&pos)
+            .data_table_at(&pos.into())
             .unwrap()
             .name
             .to_owned();
@@ -343,7 +346,7 @@ mod tests {
         let sheet_pos_code_cell = SheetPos::from((pos_code_cell, sheet_id));
         let column_headers = gc
             .sheet(sheet_id)
-            .data_table_at(&pos)
+            .data_table_at(&pos.into())
             .unwrap()
             .column_headers
             .clone();
@@ -394,7 +397,7 @@ mod tests {
 
         let updated_name = gc
             .sheet(sheet_id)
-            .data_table_at(&pos)
+            .data_table_at(&pos.into())
             .unwrap()
             .column_headers
             .as_ref()
@@ -416,10 +419,19 @@ mod tests {
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .height(true),
             11
         );
-        assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 4);
+        assert_eq!(
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .width(),
+            4
+        );
 
         let sheet_pos = SheetPos::from((pos, sheet_id));
         let select_table = true;
@@ -445,26 +457,53 @@ mod tests {
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .height(true),
             12
         );
-        assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 5);
+        assert_eq!(
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .width(),
+            5
+        );
 
         gc.undo(None);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .height(true),
             11
         );
-        assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 4);
+        assert_eq!(
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .width(),
+            4
+        );
 
         gc.redo(None);
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
         assert_eq!(
-            gc.sheet(sheet_id).data_table_at(&pos).unwrap().height(true),
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .height(true),
             12
         );
-        assert_eq!(gc.sheet(sheet_id).data_table_at(&pos).unwrap().width(), 5);
+        assert_eq!(
+            gc.sheet(sheet_id)
+                .data_table_at(&pos.into())
+                .unwrap()
+                .width(),
+            5
+        );
 
         expect_js_call(
             "jsSetCursor",
@@ -501,7 +540,7 @@ mod tests {
         // Verify the first data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![A1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![A1].into()).unwrap();
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_1".into());
@@ -558,7 +597,7 @@ mod tests {
         // Verify the second data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![D1].into()).unwrap();
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_2".into());
@@ -583,14 +622,14 @@ mod tests {
                 sheet.cell_value(pos![D1]),
                 Some(CellValue::Text("Test value".into()))
             );
-            assert!(sheet.data_table_at(&pos![D1]).is_none());
+            assert!(sheet.data_table_at(&pos![D1].into()).is_none());
         }
 
         gc.redo(None);
         {
             let sheet = gc.sheet(sheet_id);
             assert!(sheet.cell_value(pos![D1]).is_some());
-            assert!(sheet.data_table_at(&pos![D1]).is_some());
+            assert!(sheet.data_table_at(&pos![D1].into()).is_some());
         }
 
         // overwrite second data table with a new data table
@@ -606,7 +645,7 @@ mod tests {
         // Verify the third data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![D1].into()).unwrap();
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_3".into());
@@ -628,7 +667,7 @@ mod tests {
         // Verify the second data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![D1].into()).unwrap();
 
             // Check basic properties
             // assert_eq!(data_table.name, "Table_2".into());
@@ -647,7 +686,7 @@ mod tests {
         // Verify the third data table
         {
             let sheet = gc.sheet(sheet_id);
-            let data_table = sheet.data_table_at(&pos![D1]).unwrap();
+            let data_table = sheet.data_table_at(&pos![D1].into()).unwrap();
 
             // Check basic properties
             assert_eq!(data_table.name, "Table_3".into());
@@ -669,8 +708,8 @@ mod tests {
 
         let dt = test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
 
-        assert_eq!(gc.data_table_at(pos![sheet_id!A1].into()), Some(&dt));
-        assert!(gc.data_table_at(pos![sheet_id!A2].into()).is_none());
+        assert_eq!(gc.data_table_at(&pos![sheet_id!A1].into()), Some(&dt));
+        assert!(gc.data_table_at(&pos![sheet_id!A2].into()).is_none());
     }
 
     #[test]

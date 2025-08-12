@@ -225,8 +225,8 @@ impl A1Selection {
     }
 
     /// Constructs the default selection, which contains only the cell A1.
-    pub fn default(sheet: SheetId) -> Self {
-        Self::from_single_cell(pos![A1].to_sheet_pos(sheet))
+    pub fn default(sheet_id: SheetId) -> Self {
+        Self::from_single_cell(Pos::new(1, 1).to_sheet_pos(sheet_id))
     }
 
     /// Constructs a selection for a range of columns.

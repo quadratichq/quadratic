@@ -478,7 +478,7 @@ mod tests {
         assert!(
             imported.sheets[0]
                 .data_tables
-                .get_at(&Pos { x: 1, y: 3 })
+                .get_at(&Pos { x: 1, y: 3 }.into())
                 .is_some()
         );
         let code_cell = imported.sheets[0]
@@ -599,7 +599,7 @@ mod tests {
         assert_eq!(
             sheet
                 .data_tables
-                .get_at(&Pos { x: 1, y: 4 })
+                .get_at(&Pos { x: 1, y: 4 }.into())
                 .unwrap()
                 .output_size(),
             ArraySize::new(1, 500).unwrap()
@@ -615,7 +615,7 @@ mod tests {
         assert_eq!(
             sheet
                 .data_tables
-                .get_at(&Pos { x: 3, y: 7 })
+                .get_at(&Pos { x: 3, y: 7 }.into())
                 .unwrap()
                 .code_run()
                 .unwrap()
