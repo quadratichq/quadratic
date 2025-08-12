@@ -159,10 +159,7 @@ export const workosClient: AuthClient = {
   },
 
   async loginWithPassword(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.loginWithPassword({
-      email: args.email,
-      password: args.password,
-    });
+    const { pendingAuthenticationToken } = await apiClient.auth.loginWithPassword(args);
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
     await handleRedirectTo();
   },
@@ -212,43 +209,32 @@ export const workosClient: AuthClient = {
   },
 
   async signupWithPassword(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.signupWithPassword({
-      email: args.email,
-      password: args.password,
-      firstName: args.firstName,
-      lastName: args.lastName,
-    });
+    const { pendingAuthenticationToken } = await apiClient.auth.signupWithPassword(args);
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
     await handleRedirectTo();
   },
 
   async verifyEmail(args) {
-    await apiClient.auth.verifyEmail({
-      pendingAuthenticationToken: args.pendingAuthenticationToken,
-      code: args.code,
-    });
+    await apiClient.auth.verifyEmail(args);
     await handleRedirectTo();
   },
 
   async sendResetPassword(args) {
-    await apiClient.auth.sendResetPassword({ email: args.email });
+    await apiClient.auth.sendResetPassword(args);
   },
 
   async resetPassword(args) {
-    await apiClient.auth.resetPassword({ token: args.token, password: args.password });
+    await apiClient.auth.resetPassword(args);
     await handleRedirectTo();
   },
 
   async sendMagicAuthCode(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.sendMagicAuthCode({ email: args.email });
+    const { pendingAuthenticationToken } = await apiClient.auth.sendMagicAuthCode(args);
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
   },
 
   async authenticateWithMagicCode(args) {
-    const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithMagicCode({
-      email: args.email,
-      code: args.code,
-    });
+    const { pendingAuthenticationToken } = await apiClient.auth.authenticateWithMagicCode(args);
     await handlePendingAuthenticationToken(pendingAuthenticationToken);
     await handleRedirectTo();
   },
