@@ -29,4 +29,8 @@ Parametrized queries in SQL can only read single cells from the file. They can o
 \`\`\`sql
 SELECT * FROM {{A1}} WHERE {{column_name}} = {{Sheet2!B7}}
 \`\`\`
+
+## Getting Schema from Database
+
+Use the get_database_schemas tool to get the schema of a database.
 `;
