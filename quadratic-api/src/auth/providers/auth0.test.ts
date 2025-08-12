@@ -1,6 +1,4 @@
 import { auth0Mock } from '../../tests/auth0Mock';
-import { getUsersFromAuth0 } from './auth0';
-
 jest.mock('auth0', () =>
   auth0Mock([
     {
@@ -14,6 +12,8 @@ jest.mock('auth0', () =>
     },
   ])
 );
+
+import { getUsersFromAuth0 } from './auth0';
 
 describe('auth0.ts', () => {
   it('finds existing users', async () => {
