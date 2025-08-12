@@ -160,7 +160,7 @@ const updateTeamStatus = async (
   }
 
   // Use a transaction to get old data and update atomically
-  const { oldTeam, updatedTeam, teamOwner } = await dbClient.$transaction(async (tx) => {
+  const result = await dbClient.$transaction(async (tx) => {
     // Get the team before updating
     const oldTeam = await tx.team.findUnique({
       where: { stripeCustomerId: customerId },
@@ -176,8 +176,6 @@ const updateTeamStatus = async (
     }
 
     // Get the teams first owner
-    // TODO: this is a hack to get the team owner.
-    // Once we store email on the user, we can use that instead because it's also stored in stripe.
     const userTeamRole = await tx.userTeamRole.findFirst({
       where: {
         teamId: oldTeam.id,
@@ -212,6 +210,12 @@ const updateTeamStatus = async (
 
     return { oldTeam, updatedTeam, teamOwner };
   });
+
+  if (!result) {
+    return;
+  }
+
+  const { oldTeam, updatedTeam, teamOwner } = result;
 
   // Now you can compare the statuses
   const statusChanged = oldTeam?.stripeSubscriptionStatus !== updatedTeam.stripeSubscriptionStatus;
