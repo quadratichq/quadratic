@@ -10,6 +10,7 @@ use crate::grid::js_types::JsTablesContext;
 impl GridController {
     /// get context for ai in selection
     /// returns an array of JsSelectionContext, one for each selection
+    #[allow(clippy::too_many_arguments)]
     #[wasm_bindgen(js_name = "getAISelectionContexts")]
     pub fn js_ai_selection_contexts(
         &self,

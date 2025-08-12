@@ -434,9 +434,10 @@ impl DataTable {
 
         // Check if table name already exists
         if let Some(table) = a1_context.table_map.try_table(name)
-            && (table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into()) {
-                return Err("Table name must be unique".to_string());
-            }
+            && (table.sheet_id != sheet_pos.sheet_id || table.bounds.min != sheet_pos.into())
+        {
+            return Err("Table name must be unique".to_string());
+        }
 
         std::result::Result::Ok(true)
     }
@@ -596,14 +597,12 @@ impl DataTable {
     pub fn get_error_include_single_formula_error(&self) -> Option<RunError> {
         if let Some(code_run) = self.code_run() {
             code_run.error.to_owned()
+        } else if self.is_single_value()
+            && let Some(CellValue::Error(error)) = self.cell_value_at(0, 0)
+        {
+            Some(*error)
         } else {
-            if self.is_single_value()
-                && let Some(CellValue::Error(error)) = self.cell_value_at(0, 0)
-            {
-                Some(*error)
-            } else {
-                None
-            }
+            None
         }
     }
 
