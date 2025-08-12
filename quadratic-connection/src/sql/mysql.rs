@@ -1,4 +1,8 @@
-use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use axum::{
+    Extension, Json,
+    extract::{Path, Query},
+    response::IntoResponse,
+};
 use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection, sql::mysql_connection::MySqlConnection,
@@ -15,7 +19,7 @@ use crate::{
     state::State,
 };
 
-use super::{Schema, query_generic, schema_generic_with_ssh};
+use super::{Schema, SchemaQuery, query_generic, schema_generic_with_ssh};
 
 /// Test the connection to the database.
 pub(crate) async fn test(
@@ -82,11 +86,12 @@ pub(crate) async fn schema(
     headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
+    Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
     let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
 
-    schema_generic_with_ssh(api_connection, state).await
+    schema_generic_with_ssh(api_connection, state, params).await
 }
 
 #[cfg(test)]
@@ -163,7 +168,8 @@ mod tests {
     async fn mysql_schema() {
         let api_connection = get_connection(false);
         let state = Extension(new_state().await);
-        let response = schema_generic_with_ssh(api_connection, state)
+        let params = SchemaQuery::forced_cache_refresh();
+        let response = schema_generic_with_ssh(api_connection, state, params)
             .await
             .unwrap();
 

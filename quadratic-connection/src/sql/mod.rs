@@ -31,6 +31,20 @@ pub struct Schema {
     pub tables: Vec<SchemaTable>,
 }
 
+#[derive(Debug, PartialEq, Clone, serde::Deserialize)]
+pub struct SchemaQuery {
+    force_cache_refresh: Option<bool>,
+}
+
+impl SchemaQuery {
+    #[cfg(test)]
+    pub fn forced_cache_refresh() -> Self {
+        SchemaQuery {
+            force_cache_refresh: Some(true),
+        }
+    }
+}
+
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query_generic<'a, T: Connection<'a>>(
     mut connection: T,
@@ -64,19 +78,24 @@ pub(crate) async fn query_generic<'a, T: Connection<'a>>(
 pub(crate) async fn schema_generic<'a, C>(
     api_connection: ApiConnection<C>,
     state: Extension<State>,
+    params: SchemaQuery,
 ) -> Result<Json<Schema>>
 where
     C: Connection<'a> + 'a,
 {
-    // first check if the schema is in the cache
-    let schema = state.cache.get_schema(api_connection.uuid).await;
+    let should_clear_cache = params.force_cache_refresh.unwrap_or(false);
 
-    if let Some(schema) = schema {
-        println!("schema found in cache: {:?}", schema.id);
-        return Ok(Json(schema));
+    if should_clear_cache {
+        // if the force_cache_refresh is true, delete the schema from the cache
+        state.cache.delete_schema(api_connection.uuid).await;
+    } else {
+        // if the schema is in the cache, return it
+        if let Some(schema) = state.cache.get_schema(api_connection.uuid).await {
+            return Ok(Json(schema));
+        }
     }
 
-    // if not, get the schema from the database
+    // we're not using the cache, so get the schema from the database
     let mut pool = api_connection.type_details.connect().await?;
     let database_schema = api_connection.type_details.schema(&mut pool).await?;
     let schema = Schema {
@@ -99,6 +118,7 @@ where
 pub(crate) async fn schema_generic_with_ssh<'a, C>(
     mut api_connection: ApiConnection<C>,
     state: Extension<State>,
+    params: SchemaQuery,
 ) -> Result<Json<Schema>>
 where
     C: Connection<'a> + Clone + UsesSsh + 'a,
@@ -106,7 +126,7 @@ where
     <C as TryInto<SshConfig>>::Error: Into<ConnectionError>,
 {
     let tunnel = open_ssh_tunnel_for_connection(&mut api_connection.type_details).await?;
-    let schema = schema_generic(api_connection, state).await?;
+    let schema = schema_generic(api_connection, state, params).await?;
 
     if let Some(mut tunnel) = tunnel {
         tunnel.close().await?;

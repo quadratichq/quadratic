@@ -48,6 +48,11 @@ impl Cache {
             .create(&uuid, schema, Some(CACHE_DURATION_S))
             .await;
     }
+
+    /// Remove a schema from the cache
+    pub(crate) async fn delete_schema(&self, uuid: Uuid) -> Option<Schema> {
+        (*self.schema.lock().await).delete(&uuid).await
+    }
 }
 
 #[derive(Debug, Clone)]
