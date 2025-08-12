@@ -66,8 +66,8 @@ export const AIToolSchema = z.enum([
   AITool.SetChatName,
   AITool.AddDataTable,
   AITool.SetCellValues,
-  AITool.SetCodeCellValue,
   AITool.GetCodeCellValue,
+  AITool.SetCodeCellValue,
   AITool.GetDatabaseSchemas,
   AITool.SetSQLCodeCellValue,
   AITool.SetFormulaCellValue,
@@ -227,17 +227,17 @@ export const AIToolsArgsSchema = {
     table_name: stringSchema,
     table_data: array2DSchema,
   }),
+  [AITool.GetCodeCellValue]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    code_cell_name: z.string().nullable().optional(),
+    code_cell_position: z.string().nullable().optional(),
+  }),
   [AITool.SetCodeCellValue]: z.object({
     sheet_name: stringNullableOptionalSchema,
     code_cell_name: stringSchema,
     code_cell_language: cellLanguageSchema,
     code_cell_position: stringSchema,
     code_string: stringSchema,
-  }),
-  [AITool.GetCodeCellValue]: z.object({
-    sheet_name: z.string().nullable().optional(),
-    code_cell_name: z.string().nullable().optional(),
-    code_cell_position: z.string().nullable().optional(),
   }),
   [AITool.GetDatabaseSchemas]: z.object({
     connection_ids: z
@@ -798,6 +798,36 @@ Values set using this function will replace the existing values in the cell and 
 To clear the values of a cell, set the value to an empty string.\n
 Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
 `,
+  },
+  [AITool.GetCodeCellValue]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool gets the code for a Python, JavaScript, Formula, or connection cell.
+Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_name: {
+          type: 'string',
+          description: 'The name of the code cell to get the value of',
+        },
+        code_cell_position: {
+          type: 'string',
+          description: 'The position of the code cell to get the value of, in a1 notation',
+        },
+      },
+      required: ['sheet_name', 'code_cell_name', 'code_cell_position'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetCodeCellValue],
+    prompt: `
+This tool gets the code for a Python, JavaScript, Formula, or connection cell.
+Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
   },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
@@ -2571,35 +2601,5 @@ This tool removes all validations in a sheet from a range.\n`,
     responseSchema: AIToolsArgsSchema[AITool.RemoveValidations],
     prompt: `
 This tool removes all validations in a sheet from a range.\n`,
-  },
-  [AITool.GetCodeCellValue]: {
-    sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
-    description: `
-This tool gets the code for a Python, JavaScript, Formula, or connection cell.
-Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
-    parameters: {
-      type: 'object',
-      properties: {
-        sheet_name: {
-          type: 'string',
-          description: 'The sheet name of the current sheet as defined in the context',
-        },
-        code_cell_name: {
-          type: 'string',
-          description: 'The name of the code cell to get the value of',
-        },
-        code_cell_position: {
-          type: 'string',
-          description: 'The position of the code cell to get the value of, in a1 notation',
-        },
-      },
-      required: ['sheet_name', 'code_cell_name', 'code_cell_position'],
-      additionalProperties: false,
-    },
-    responseSchema: AIToolsArgsSchema[AITool.GetCodeCellValue],
-    prompt: `
-This tool gets the code for a Python, JavaScript, Formula, or connection cell.
-Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
   },
 } as const;

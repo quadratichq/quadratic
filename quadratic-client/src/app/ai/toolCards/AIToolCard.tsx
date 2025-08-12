@@ -61,6 +61,8 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <AddDataTable toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCellValues:
       return <SetCellValues toolCall={toolCall} className={cn('tool-card', className)} />;
+    case AITool.GetCodeCellValue:
+      return <GetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.SetCodeCellValue:
       return <SetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.GetDatabaseSchemas:
@@ -141,8 +143,6 @@ export const AIToolCard = memo(({ toolCall, className }: AIToolCardProps) => {
       return <AddDateTimeValidation toolCall={toolCall} className={cn('tool-card', className)} />;
     case AITool.RemoveValidations:
       return <RemoveValidations toolCall={toolCall} className={cn('tool-card', className)} />;
-    case AITool.GetCodeCellValue:
-      return <GetCodeCellValue toolCall={toolCall} className={cn('tool-card', className)} />;
     default:
       console.error(`Unknown tool: ${toolCall.name}`);
       return null;
