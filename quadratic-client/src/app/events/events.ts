@@ -83,6 +83,7 @@ interface EventTypes {
 
   transactionStart: (message: CoreClientTransactionStart) => void;
   transactionEnd: (message: CoreClientTransactionEnd) => void;
+  transactionEndUpdated: (transactionId: string) => void;
 
   multiplayerUpdate: (users: MultiplayerUser[]) => void;
   multiplayerChangeSheet: () => void;

@@ -127,7 +127,7 @@ export class TableColumnHeaders extends Container {
       sort = newOrder === 'None' ? [] : [{ column_index: column.valueIndex, direction: newOrder }];
     }
 
-    quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort, sheets.getCursorPosition());
+    quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort);
   };
 
   private createColumnHeaders = () => {

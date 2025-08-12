@@ -124,10 +124,8 @@ export class CellsTextHash {
 
   private createLabel(cell: JsRenderCell) {
     const rectangle = this.cellsLabels.getCellOffsets(Number(cell.x), Number(cell.y));
-    if (cell.special !== 'Checkbox') {
-      const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
-      this.labels.set(this.getKey(cell), cellLabel);
-    }
+    const cellLabel = new CellLabel(this.cellsLabels, cell, rectangle);
+    this.labels.set(this.getKey(cell), cellLabel);
     if (cell.special === 'Checkbox') {
       this.special.addCheckbox(
         Number(cell.x),

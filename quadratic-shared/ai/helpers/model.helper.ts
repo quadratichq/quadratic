@@ -10,6 +10,7 @@ import type {
   BedrockModelKey,
   FireworksModelKey,
   GeminiAIModelKey,
+  ModelMode,
   OpenAIModelKey,
   OpenRouterModelKey,
   QuadraticModelKey,
@@ -87,6 +88,7 @@ export const getModelOptions = (
   promptCaching: boolean;
   strictParams: boolean;
   imageSupport: boolean;
+  aiModelMode: ModelMode;
   top_p?: number;
   top_k?: number;
   min_p?: number;
@@ -112,6 +114,7 @@ export const getModelOptions = (
     promptCaching: config.promptCaching,
     strictParams: !!config.strictParams,
     imageSupport: config.imageSupport,
+    aiModelMode: config.mode,
     top_p: config.top_p,
     top_k: config.top_k,
     min_p: config.min_p,

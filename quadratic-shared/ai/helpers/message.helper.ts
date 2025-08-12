@@ -270,3 +270,10 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
     }
   });
 };
+
+export const createTextContent = (text: string): TextContent => {
+  return {
+    type: 'text' as const,
+    text,
+  };
+};

@@ -5,6 +5,8 @@ import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetCo
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+import { useSheetInfoMessages } from '@/app/ai/hooks/useSheetInfoMessages';
+import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
 import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -78,6 +80,7 @@ export function useSubmitAIAnalystPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
   const { getOtherSheetsContext } = useOtherSheetsContextMessages();
+  const { getSheetInfoContext } = useSheetInfoMessages();
   const { getTablesContext } = useTablesContextMessages();
   const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
@@ -85,21 +88,33 @@ export function useSubmitAIAnalystPrompt() {
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
   const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
+  const { getSqlContext } = useSqlContextMessages();
 
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [filesContext, otherSheetsContext, tablesContext, currentSheetContext, visibleContext] =
-          await Promise.all([
-            getFilesContext({ chatMessages }),
-            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-            getTablesContext(),
-            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
-            getVisibleContext(),
-          ]);
+        const [
+          sqlContext,
+          filesContext,
+          sheetInfoContext,
+          otherSheetsContext,
+          tablesContext,
+          currentSheetContext,
+          visibleContext,
+        ] = await Promise.all([
+          getSqlContext(),
+          getFilesContext({ chatMessages }),
+          getSheetInfoContext({ sheets: sheets.sheets }),
+          getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+          getTablesContext(),
+          getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+          getVisibleContext(),
+        ]);
 
         const messagesWithContext: ChatMessage[] = [
+          ...sqlContext,
           ...filesContext,
+          ...sheetInfoContext,
           ...otherSheetsContext,
           ...tablesContext,
           ...getCurrentDateTimeContext(),
@@ -117,6 +132,8 @@ export function useSubmitAIAnalystPrompt() {
       getCurrentSheetContext,
       getVisibleContext,
       getFilesContext,
+      getSheetInfoContext,
+      getSqlContext,
     ]
   );
 
@@ -353,7 +370,7 @@ export function useSubmitAIAnalystPrompt() {
                 try {
                   inlineEditorHandler.close({ skipFocusGrid: true });
                   const aiTool = toolCall.name as AITool;
-                  const argsObject = JSON.parse(toolCall.arguments);
+                  const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
                   const args = aiToolsSpec[aiTool].responseSchema.parse(argsObject);
                   const toolResultContent = await aiToolsActions[aiTool](args as any, {
                     source: 'AIAnalyst',
@@ -394,7 +411,7 @@ export function useSubmitAIAnalystPrompt() {
 
             const importPDFToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.PDFImport);
             for (const toolCall of importPDFToolCalls) {
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
               const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
               toolResultMessage.content.push({
@@ -405,7 +422,7 @@ export function useSubmitAIAnalystPrompt() {
 
             const webSearchToolCalls = response.toolCalls.filter((toolCall) => toolCall.name === AITool.WebSearch);
             for (const toolCall of webSearchToolCalls) {
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const searchArgs = aiToolsSpec[AITool.WebSearch].responseSchema.parse(argsObject);
               const { toolResultContent, internal } = await search({ searchArgs });
               toolResultMessage.content.push({

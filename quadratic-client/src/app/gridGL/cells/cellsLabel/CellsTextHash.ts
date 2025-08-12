@@ -165,6 +165,7 @@ export class CellsTextHash extends Container {
       }
     }
     this.updateHashBounds();
+    this.warnings.reposition();
   }
 
   getErrorMarker(x: number, y: number): ErrorMarker | undefined {

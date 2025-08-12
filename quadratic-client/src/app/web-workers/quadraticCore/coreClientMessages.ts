@@ -17,15 +17,17 @@ import type {
   JsRenderCell,
   JsResponse,
   JsSelectionContext,
+  JsSheetNameToColor,
+  JsSheetPosText,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
   JsTablesContext,
   Pos,
   SearchOptions,
-  SheetPos,
   SheetRect,
   TransactionName,
   Validation,
+  ValidationUpdate,
 } from '@/app/quadratic-core-types';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
@@ -198,7 +200,7 @@ export interface ClientCoreSearch {
 
 export interface CoreClientSearch {
   type: 'coreClientSearch';
-  results: SheetPos[];
+  results: JsSheetPosText[];
   id: number;
 }
 
@@ -456,17 +458,31 @@ export interface CoreClientSheetMetaFills {
 
 export interface ClientCoreRerunCodeCells {
   type: 'clientCoreRerunCodeCells';
+  id: number;
   sheetId?: string;
   selection?: string;
   cursor: string;
 }
 
+export interface CoreClientRerunCodeCells {
+  type: 'coreClientRerunCodeCells';
+  id: number;
+  response: string | JsResponse | undefined;
+}
+
 export interface ClientCoreSetBorders {
   type: 'clientCoreSetBorders';
+  id: number;
   selection: string;
   borderSelection: BorderSelection;
   style?: BorderStyle;
   cursor: string;
+}
+
+export interface CoreClientSetBorders {
+  type: 'coreClientSetBorders';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreSetCellRenderResize {
@@ -502,8 +518,15 @@ export interface ClientCoreAutocomplete {
 
 export interface ClientCoreUpdateValidation {
   type: 'clientCoreUpdateValidation';
-  validation: Validation;
+  id: number;
+  validation: ValidationUpdate;
   cursor: string;
+}
+
+export interface CoreClientUpdateValidation {
+  type: 'coreClientUpdateValidation';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreRemoveValidation {
@@ -543,7 +566,16 @@ export interface CoreClientSheetBoundsUpdate {
 
 export interface ClientCoreAddSheet {
   type: 'clientCoreAddSheet';
+  id: number;
+  sheetName?: string;
+  insertBeforeSheetName?: string;
   cursor?: string;
+}
+
+export interface CoreClientAddSheetResponse {
+  type: 'coreClientAddSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientAddSheet {
@@ -552,10 +584,31 @@ export interface CoreClientAddSheet {
   user: boolean;
 }
 
+export interface ClientCoreDuplicateSheet {
+  type: 'clientCoreDuplicateSheet';
+  id: number;
+  sheetId: string;
+  nameOfNewSheet?: string;
+  cursor: string;
+}
+
+export interface CoreClientDuplicateSheetResponse {
+  type: 'coreClientDuplicateSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreDeleteSheet {
   type: 'clientCoreDeleteSheet';
+  id: number;
   sheetId: string;
   cursor: string;
+}
+
+export interface CoreClientDeleteSheetResponse {
+  type: 'coreClientDeleteSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientDeleteSheet {
@@ -566,9 +619,16 @@ export interface CoreClientDeleteSheet {
 
 export interface ClientCoreMoveSheet {
   type: 'clientCoreMoveSheet';
+  id: number;
   sheetId: string;
   previous?: string;
   cursor: string;
+}
+
+export interface CoreClientMoveSheetResponse {
+  type: 'coreClientMoveSheetResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientSheetInfoUpdate {
@@ -578,22 +638,43 @@ export interface CoreClientSheetInfoUpdate {
 
 export interface ClientCoreSetSheetName {
   type: 'clientCoreSetSheetName';
+  id: number;
   sheetId: string;
   name: string;
   cursor: string;
 }
 
+export interface CoreClientSetSheetNameResponse {
+  type: 'coreClientSetSheetNameResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreSetSheetColor {
   type: 'clientCoreSetSheetColor';
+  id: number;
   sheetId: string;
   color: string | undefined;
   cursor: string;
 }
 
-export interface ClientCoreDuplicateSheet {
-  type: 'clientCoreDuplicateSheet';
-  sheetId: string;
+export interface CoreClientSetSheetColorResponse {
+  type: 'coreClientSetSheetColorResponse';
+  id: number;
+  response: JsResponse | undefined;
+}
+
+export interface ClientCoreSetSheetsColor {
+  type: 'clientCoreSetSheetsColor';
+  id: number;
+  sheetNameToColor: JsSheetNameToColor[];
   cursor: string;
+}
+
+export interface CoreClientSetSheetsColorResponse {
+  type: 'coreClientSetSheetsColorResponse';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientSetCursor {
@@ -698,6 +779,19 @@ export interface ClientCoreCommitSingleResize {
   row: number | undefined;
   size: number;
   cursor: string;
+}
+
+export interface ClientCoreHasCellData {
+  type: 'clientCoreHasCellData';
+  sheetId: string;
+  selection: string;
+  id: number;
+}
+
+export interface CoreClientHasCellData {
+  type: 'coreClientHasCellData';
+  id: number;
+  hasData: boolean;
 }
 
 //#endregion
@@ -955,20 +1049,35 @@ export interface CoreClientNeighborText {
 
 export interface ClientCoreDeleteColumns {
   type: 'clientCoreDeleteColumns';
+  id: number;
   sheetId: string;
   columns: number[];
   cursor: string;
 }
 
+export interface CoreClientDeleteColumns {
+  type: 'coreClientDeleteColumns';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreDeleteRows {
   type: 'clientCoreDeleteRows';
+  id: number;
   sheetId: string;
   rows: number[];
   cursor: string;
 }
 
+export interface CoreClientDeleteRows {
+  type: 'coreClientDeleteRows';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreInsertColumns {
   type: 'clientCoreInsertColumns';
+  id: number;
   sheetId: string;
   column: number;
   count: number;
@@ -976,13 +1085,26 @@ export interface ClientCoreInsertColumns {
   cursor: string;
 }
 
+export interface CoreClientInsertColumns {
+  type: 'coreClientInsertColumns';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreInsertRows {
   type: 'clientCoreInsertRows';
+  id: number;
   sheetId: string;
   row: number;
   count: number;
   below: boolean;
   cursor: string;
+}
+
+export interface CoreClientInsertRows {
+  type: 'coreClientInsertRows';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreFlattenDataTable {
@@ -1018,6 +1140,7 @@ export interface CoreClientGridToDataTable {
 
 export interface ClientCoreDataTableMeta {
   type: 'clientCoreDataTableMeta';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
@@ -1027,6 +1150,12 @@ export interface ClientCoreDataTableMeta {
   showName?: boolean;
   showColumns?: boolean;
   cursor: string;
+}
+
+export interface CoreClientDataTableMeta {
+  type: 'coreClientDataTableMeta';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreDataTableMutations {
@@ -1048,6 +1177,7 @@ export interface ClientCoreDataTableMutations {
 export interface CoreClientDataTableMutations {
   type: 'coreClientDataTableMutations';
   id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreSortDataTable {
@@ -1061,11 +1191,18 @@ export interface ClientCoreSortDataTable {
 
 export interface ClientCoreDataTableFirstRowAsHeader {
   type: 'clientCoreDataTableFirstRowAsHeader';
+  id: number;
   sheetId: string;
   x: number;
   y: number;
   firstRowAsHeader: boolean;
   cursor: string;
+}
+
+export interface CoreClientDataTableFirstRowAsHeader {
+  type: 'coreClientDataTableFirstRowAsHeader';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface CoreClientClientMessage {
@@ -1164,16 +1301,30 @@ export interface CoreClientGetAIFormats {
 
 export interface ClientCoreResizeColumns {
   type: 'clientCoreResizeColumns';
+  id: number;
   sheetId: string;
   columns: ColumnRowResize[];
   cursor: string;
 }
 
+export interface CoreClientResizeColumns {
+  type: 'coreClientResizeColumns';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export interface ClientCoreResizeRows {
   type: 'clientCoreResizeRows';
+  id: number;
   sheetId: string;
   rows: ColumnRowResize[];
   cursor: string;
+}
+
+export interface CoreClientResizeRows {
+  type: 'coreClientResizeRows';
+  id: number;
+  response: JsResponse | undefined;
 }
 
 export interface ClientCoreResizeAllColumns {
@@ -1214,6 +1365,20 @@ export interface CoreClientGetFormatSelection {
   format: CellFormatSummary | JsResponse | undefined;
 }
 
+export interface ClientCoreRemoveValidationSelection {
+  type: 'clientCoreRemoveValidationSelection';
+  id: number;
+  sheetId: string;
+  selection: string;
+  cursor: string;
+}
+
+export interface CoreClientRemoveValidationSelection {
+  type: 'coreClientRemoveValidationSelection';
+  id: number;
+  response: JsResponse | undefined;
+}
+
 export type ClientCoreMessage =
   | ClientCoreLoad
   | ClientCoreGetCodeCell
@@ -1247,6 +1412,7 @@ export type ClientCoreMessage =
   | ClientCoreMoveSheet
   | ClientCoreSetSheetName
   | ClientCoreSetSheetColor
+  | ClientCoreSetSheetsColor
   | ClientCoreDuplicateSheet
   | ClientCoreUndo
   | ClientCoreRedo
@@ -1309,7 +1475,9 @@ export type ClientCoreMessage =
   | ClientCoreResizeRows
   | ClientCoreResizeAllColumns
   | ClientCoreResizeAllRows
-  | ClientCoreGetFormatSelection;
+  | ClientCoreGetFormatSelection
+  | ClientCoreHasCellData
+  | ClientCoreRemoveValidationSelection;
 
 export type CoreClientMessage =
   | CoreClientGetCodeCell
@@ -1383,4 +1551,24 @@ export type CoreClientMessage =
   | CoreClientDataTablesCache
   | CoreClientContentCache
   | CoreClientSetCellRenderResize
-  | CoreClientGetFormatSelection;
+  | CoreClientGetFormatSelection
+  | CoreClientAddSheetResponse
+  | CoreClientDeleteSheetResponse
+  | CoreClientMoveSheetResponse
+  | CoreClientSetSheetNameResponse
+  | CoreClientSetSheetColorResponse
+  | CoreClientSetSheetsColorResponse
+  | CoreClientDuplicateSheetResponse
+  | CoreClientHasCellData
+  | CoreClientRerunCodeCells
+  | CoreClientResizeColumns
+  | CoreClientResizeRows
+  | CoreClientSetBorders
+  | CoreClientDeleteColumns
+  | CoreClientDeleteRows
+  | CoreClientInsertColumns
+  | CoreClientInsertRows
+  | CoreClientDataTableFirstRowAsHeader
+  | CoreClientDataTableMeta
+  | CoreClientUpdateValidation
+  | CoreClientRemoveValidationSelection;
