@@ -65,7 +65,6 @@ export const LoginForm = memo(() => {
                     type="text"
                     autoComplete="username"
                     autoFocus
-                    placeholder="Work email*"
                     {...field}
                   />
                 </FormControl>
@@ -87,7 +86,6 @@ export const LoginForm = memo(() => {
                     autoCapitalize="off"
                     type="password"
                     autoComplete="current-password"
-                    placeholder="Password*"
                     {...field}
                   />
                 </FormControl>

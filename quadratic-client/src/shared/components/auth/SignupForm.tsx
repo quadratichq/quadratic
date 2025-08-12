@@ -69,7 +69,6 @@ export const SignupForm = memo(() => {
                     type="text"
                     autoComplete="username"
                     autoFocus
-                    placeholder="Work email*"
                     {...field}
                   />
                 </FormControl>
@@ -91,7 +90,6 @@ export const SignupForm = memo(() => {
                     autoCapitalize="off"
                     type="password"
                     autoComplete="current-password"
-                    placeholder="Password*"
                     {...field}
                   />
                 </FormControl>
@@ -114,7 +112,6 @@ export const SignupForm = memo(() => {
                       autoCapitalize="off"
                       type="text"
                       autoComplete="given-name"
-                      placeholder="First name*"
                       {...field}
                     />
                   </FormControl>
@@ -136,7 +133,6 @@ export const SignupForm = memo(() => {
                       autoCapitalize="off"
                       type="text"
                       autoComplete="family-name"
-                      placeholder="Last name*"
                       {...field}
                     />
                   </FormControl>

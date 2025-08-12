@@ -73,7 +73,6 @@ export const Component = () => {
                     autoCapitalize="off"
                     type="text"
                     autoFocus
-                    placeholder="Code*"
                     {...field}
                   />
                 </FormControl>

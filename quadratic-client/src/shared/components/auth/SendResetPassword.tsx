@@ -56,7 +56,6 @@ export const SendResetPassword = memo(() => {
                     type="text"
                     autoComplete="username"
                     autoFocus
-                    placeholder="Work email*"
                     {...field}
                   />
                 </FormControl>
