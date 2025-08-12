@@ -9,6 +9,8 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
+import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
+import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
@@ -22,13 +24,23 @@ import type {
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
+  JsCoordinate,
   JsDataTableColumnHeader,
+  JsGetAICellResult,
+  JsResponse,
   JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { columnNameToIndex, stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
+import {
+  columnNameToIndex,
+  convertTableToSheetPos,
+  selectionToSheetRect,
+  stringToSelection,
+  xyToA1,
+  type JsSelection,
+} from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -642,10 +654,15 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { selection, sheet_name, page } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const response = await quadraticCore.getAICells(selection, sheetId, page);
-      if (typeof response === 'string') {
-        return [createTextContent(response)];
+      if ((response as JsResponse)?.error) {
+        return [
+          createTextContent(`There was an error executing the get cells tool ${(response as JsResponse)?.error}`),
+        ];
+      } else if (typeof response === 'object') {
+        return [createTextContent(AICellResultToMarkdown(response as any as JsGetAICellResult))];
       } else {
-        return [createTextContent(`There was an error executing the get cells tool ${response?.error}`)];
+        // should not be reached
+        return [createTextContent('There was an error executing the get cells tool')];
       }
     } catch (e) {
       return [createTextContent(`Error executing get cell data tool: ${e}`)];
@@ -1268,6 +1285,46 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(text)];
     } catch (e) {
       return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+  },
+  [AITool.GetCodeCellValue]: async (args) => {
+    let sheetId: string | undefined;
+    let codePos: JsCoordinate | undefined;
+    if (args.sheet_name) {
+      sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    }
+    if (!sheetId) {
+      sheetId = sheets.current;
+    }
+    if (args.code_cell_name) {
+      try {
+        const tableSheetPos = convertTableToSheetPos(args.code_cell_name, sheets.jsA1Context);
+        if (tableSheetPos) {
+          codePos = { x: tableSheetPos.x, y: tableSheetPos.y };
+          sheetId = tableSheetPos.sheetId.id;
+        }
+      } catch (e) {}
+    }
+    if (!codePos && args.code_cell_position) {
+      try {
+        const sheetRect = selectionToSheetRect(sheetId ?? sheets.current, args.code_cell_position, sheets.jsA1Context);
+        codePos = { x: sheetRect.min.x, y: sheetRect.min.y };
+        sheetId = sheetRect.sheetId.id;
+      } catch (e) {}
+    }
+
+    if (!codePos || !sheetId) {
+      return [
+        createTextContent(
+          `Error executing get code cell value tool. Invalid code cell position: ${args.code_cell_position} or table name: ${args.code_cell_name}.`
+        ),
+      ];
+    }
+    try {
+      const text = await codeCellToMarkdown(sheetId, codePos.x, codePos.y);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing get code cell value tool: ${e}`)];
     }
   },
 } as const;

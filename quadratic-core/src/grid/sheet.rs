@@ -16,6 +16,7 @@ use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
+use crate::grid::js_types::JsCellValueDescription;
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -220,7 +221,7 @@ impl Sheet {
     pub fn js_cell_value(&self, pos: Pos) -> Option<JsCellValue> {
         self.display_value(pos).map(|value| JsCellValue {
             value: value.to_string(),
-            kind: value.type_name().to_string(),
+            kind: value.into(),
         })
     }
 
@@ -237,28 +238,23 @@ impl Sheet {
         })
     }
 
-    /// Returns the JsCellValuePos in a rect
-    pub fn js_cell_value_pos_in_rect(
+    /// Returns the description of cell values in a rect for ai context.
+    pub fn js_cell_value_description(
         &self,
         rect: Rect,
         max_rows: Option<usize>,
-    ) -> Vec<Vec<JsCellValuePos>> {
-        let mut rect_values = Vec::new();
-        for y in rect
-            .y_range()
-            .take(max_rows.unwrap_or(rect.height() as usize))
-        {
-            let mut row_values = Vec::new();
-            for x in rect.x_range() {
-                if let Some(cell_value_pos) = self.js_cell_value_pos((x, y).into()) {
-                    row_values.push(cell_value_pos);
-                }
-            }
-            if !row_values.is_empty() {
-                rect_values.push(row_values);
-            }
-        }
-        rect_values
+    ) -> JsCellValueDescription {
+        let limited_rect = Rect::new(
+            rect.min.x,
+            rect.min.y,
+            rect.max.x,
+            rect.min.y
+                + max_rows
+                    .unwrap_or(rect.height() as usize)
+                    .min(rect.height() as usize) as i64
+                - 1,
+        );
+        self.cells_as_string(limited_rect, rect)
     }
 
     /// Returns the ref of the cell_value at the Pos in column.values. This does
@@ -526,7 +522,7 @@ mod test {
     use crate::a1::A1Selection;
     use crate::controller::GridController;
     use crate::grid::formats::FormatUpdate;
-    use crate::grid::js_types::{CellFormatSummary, CellType};
+    use crate::grid::js_types::{CellFormatSummary, CellType, JsCellValueKind};
     use crate::grid::{
         CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind, NumericFormat,
     };
@@ -925,7 +921,7 @@ mod test {
             js_cell_value,
             Some(JsCellValue {
                 value: "test".to_string(),
-                kind: "text".to_string()
+                kind: JsCellValueKind::Text
             })
         );
     }
@@ -940,7 +936,7 @@ mod test {
             js_cell_value_pos,
             Some(JsCellValuePos {
                 value: "test".to_string(),
-                kind: "text".to_string(),
+                kind: JsCellValueKind::Text,
                 pos: pos.a1_string(),
             })
         );
@@ -952,7 +948,7 @@ mod test {
             js_cell_value_pos,
             Some(JsCellValuePos {
                 value: "Javascript chart code cell anchor".to_string(),
-                kind: "image".to_string(),
+                kind: JsCellValueKind::Image,
                 pos: pos.a1_string(),
             })
         );
@@ -964,7 +960,7 @@ mod test {
             js_cell_value_pos,
             Some(JsCellValuePos {
                 value: "Python chart code cell anchor".to_string(),
-                kind: "html".to_string(),
+                kind: JsCellValueKind::Html,
                 pos: pos.a1_string(),
             })
         );
@@ -976,10 +972,10 @@ mod test {
         sheet.set_cell_values(
             Rect {
                 min: Pos { x: 1, y: 1 },
-                max: Pos { x: 10, y: 1000 },
+                max: Pos { x: 10, y: 100 },
             },
             Array::from(
-                (1..=1000)
+                (1..=100)
                     .map(|row| {
                         (1..=10)
                             .map(|_| {
@@ -997,7 +993,7 @@ mod test {
 
         let max_rows = 3;
 
-        let js_cell_value_pos_in_rect = sheet.js_cell_value_pos_in_rect(
+        let result = sheet.js_cell_value_description(
             Rect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 10, y: 1000 },
@@ -1005,42 +1001,9 @@ mod test {
             Some(max_rows),
         );
 
-        assert_eq!(js_cell_value_pos_in_rect.len(), max_rows);
-
-        let expected_js_cell_value_pos_in_rect: Vec<Vec<JsCellValuePos>> = (1..=max_rows)
-            .map(|row| {
-                (1..=10)
-                    .map(|col| {
-                        if row == 1 {
-                            JsCellValuePos {
-                                value: "heading".to_string(),
-                                kind: "text".to_string(),
-                                pos: Pos {
-                                    x: col,
-                                    y: row as i64,
-                                }
-                                .a1_string(),
-                            }
-                        } else {
-                            JsCellValuePos {
-                                value: "value".to_string(),
-                                kind: "text".to_string(),
-                                pos: Pos {
-                                    x: col,
-                                    y: row as i64,
-                                }
-                                .a1_string(),
-                            }
-                        }
-                    })
-                    .collect::<Vec<JsCellValuePos>>()
-            })
-            .collect::<Vec<Vec<JsCellValuePos>>>();
-
-        assert_eq!(
-            js_cell_value_pos_in_rect,
-            expected_js_cell_value_pos_in_rect
-        );
+        assert_eq!(result.total_range, "A1:J1000");
+        assert_eq!(result.range, "A1:J3");
+        assert_eq!(result.values.iter().flatten().count(), 10 * max_rows);
     }
 
     #[test]

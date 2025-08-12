@@ -5,6 +5,7 @@
  * directly accessed by its siblings.
  */
 
+import { maxRows } from '@/app/ai/constants/context';
 import { bigIntReplacer } from '@/app/bigint';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -1075,6 +1076,7 @@ class Core {
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
+    includeDataRectsSummary: boolean;
   }): JsSelectionContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
@@ -1084,7 +1086,8 @@ class Core {
         args.maxRows,
         args.includeErroredCodeCells,
         args.includeTablesSummary,
-        args.includeChartsSummary
+        args.includeChartsSummary,
+        args.includeDataRectsSummary
       );
     } catch (e) {
       this.handleCoreError('getAISelectionContexts', e);
@@ -1095,7 +1098,7 @@ class Core {
   getAITablesContext(): JsTablesContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.getAITablesContext();
+      return this.gridController.getAITablesContext(maxRows);
     } catch (e) {
       this.handleCoreError('getAITablesContext', e);
       return undefined;
@@ -1396,6 +1399,15 @@ class Core {
       return this.gridController.removeValidationSelection(sheetId, selection, cursor);
     } catch (e) {
       this.handleCoreError('removeValidationSelection', e);
+    }
+  }
+
+  getAICodeErrors(maxErrors: number) {
+    try {
+      if (!this.gridController) throw new Error('Expected gridController to be defined');
+      return this.gridController.getAICodeErrors(maxErrors);
+    } catch (e) {
+      this.handleCoreError('getAICodeErrors', e);
     }
   }
 }

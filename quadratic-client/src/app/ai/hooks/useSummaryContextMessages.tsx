@@ -1,9 +1,13 @@
 import { maxRects, maxRows } from '@/app/ai/constants/context';
+import { AICellsToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { getAllSelection } from '@/app/grid/sheet/selection';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
+import { pluralize } from '@/app/helpers/pluralize';
+import type { JsCellValueDescription } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { joinListWith } from '@/shared/components/JointListWith';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -12,9 +16,11 @@ export function useSummaryContextMessages() {
     async ({
       currentSheetName,
       allSheets = [],
+      includeData = true,
     }: {
       currentSheetName: string;
       allSheets?: Sheet[];
+      includeData?: boolean;
     }): Promise<ChatMessage[]> => {
       if (!fileHasData()) {
         return [
@@ -43,7 +49,7 @@ export function useSummaryContextMessages() {
       const hasCurrentSheetData = currentSheetBounds?.type === 'nonEmpty';
 
       // Get flat data rectangles for current sheet
-      let flatDataRects: any[] = [];
+      let flatDataRects: JsCellValueDescription[] = [];
       if (hasCurrentSheetData && currentSheet) {
         const selection = getAllSelection(currentSheet.id);
         if (selection) {
@@ -54,107 +60,193 @@ export function useSummaryContextMessages() {
             includeErroredCodeCells: false,
             includeTablesSummary: false,
             includeChartsSummary: false,
+            includeDataRectsSummary: includeData,
           });
           flatDataRects = sheetContext?.[0]?.data_rects || [];
         }
       }
 
-      // Get other sheets with data and empty sheets
-      const otherSheetsWithData = allSheets
-        .filter((sheet) => sheet.name !== currentSheetName)
-        .filter((sheet) => {
-          const sheetObj = sheets.getSheetByName(sheet.name);
-          return sheetObj?.boundsWithoutFormatting?.type === 'nonEmpty';
-        })
-        .map((sheet) => sheet.name);
-
-      const otherEmptySheets = allSheets
-        .filter((sheet) => sheet.name !== currentSheetName)
-        .filter((sheet) => {
-          const sheetObj = sheets.getSheetByName(sheet.name);
-          return sheetObj?.boundsWithoutFormatting?.type !== 'nonEmpty';
-        })
-        .map((sheet) => sheet.name);
-
       // Categorize tables by sheet
       const currentSheetTables = dataTables.filter((table) => table.sheet_name === currentSheetName);
-      const currentSheetCodeTables = codeTables.filter((table) => table.sheet_name === currentSheetName);
+      const currentSheetCodeTables = codeTables.filter(
+        (table) =>
+          table.sheet_name === currentSheetName && !(typeof table.language === 'object' && table.language.Connection)
+      );
+      const currentSheetConnectionTables = codeTables.filter(
+        (table) =>
+          table.sheet_name === currentSheetName && typeof table.language === 'object' && table.language.Connection
+      );
       const currentSheetCharts = charts.filter((chart) => chart.sheet_name === currentSheetName);
 
       // Build summary text
       const sheetCount = allSheets.length;
-      const dataSheetCount = (hasCurrentSheetData ? 1 : 0) + otherSheetsWithData.length; // only count current if it has data
+      // const dataSheetCount = (hasCurrentSheetData ? 1 : 0) + otherSheetsWithData.length; // only count current if it has data
 
-      let summary = `Summary: File has ${sheetCount} sheet${sheetCount !== 1 ? 's' : ''}`;
+      let summary = `# File Summary
 
-      if (dataSheetCount > 1) {
-        summary += ` (${dataSheetCount} with data)`;
-      }
+## Sheets
+
+File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({ arr: allSheets.map((sheet) => `'${sheet.name}'`), conjunction: 'and' })}.`;
+
+      summary += `
+
+## '${currentSheetName}'
+
+- user's current sheet
+- ${sheets.getAISheetBounds(currentSheetName)}`;
 
       if (hasCurrentSheetData) {
-        summary += `. Current sheet: '${currentSheetName}'`;
-      } else {
-        summary += `. Current sheet: '${currentSheetName}' is empty`;
-      }
+        if (currentSheetTables.length > 0) {
+          summary += `
+- ${currentSheetTables.length} data ${pluralize('table', currentSheetTables.length)}`;
+        }
+        if (currentSheetCodeTables.length > 0) {
+          summary += `
+- ${currentSheetCodeTables.length} code ${pluralize('table', currentSheetCodeTables.length)}`;
+        }
+        if (currentSheetCharts.length > 0) {
+          summary += `
+- ${currentSheetCharts.length} ${pluralize('chart', currentSheetCharts.length)}`;
+        }
+        if (currentSheetConnectionTables.length > 0) {
+          summary += `
+- ${currentSheetConnectionTables.length} connection ${pluralize('table', currentSheetConnectionTables.length)}`;
+        }
+        summary += '\n';
 
-      if (!hasCurrentSheetData && otherSheetsWithData.length === 0) {
-        summary += `. No data in any sheets.`;
-      } else {
-        if (hasCurrentSheetData) {
-          const tableInfo = [];
-          if (currentSheetTables.length > 0) {
-            tableInfo.push(`${currentSheetTables.length} data table${currentSheetTables.length !== 1 ? 's' : ''}`);
-          }
-          if (currentSheetCodeTables.length > 0) {
-            tableInfo.push(
-              `${currentSheetCodeTables.length} code table${currentSheetCodeTables.length !== 1 ? 's' : ''}`
-            );
-          }
-          if (currentSheetCharts.length > 0) {
-            tableInfo.push(`${currentSheetCharts.length} chart${currentSheetCharts.length !== 1 ? 's' : ''}`);
-          }
+        if (currentSheetTables.length > 0) {
+          summary += `
+### '${currentSheetName}' Data tables:
+`;
+        }
+        currentSheetTables.forEach((table) => {
+          summary += `
+#### ${table.data_table_name}
 
-          if (tableInfo.length > 0) {
-            summary += ` has ${tableInfo.join(', ')}.`;
-          } else {
-            summary += ` has data.`;
+'${table.data_table_name}' has bounds of (${table.bounds}).
+
+First rows of '${table.data_table_name}' (limited to ${maxRows} rows):
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
+          if (table.last_rows_visible_values) {
+            summary += `
+Last rows of '${table.data_table_name}' (limited to ${maxRows} rows):
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
           }
+        });
+
+        if (currentSheetCodeTables.length > 0) {
+          summary += `
+### '${currentSheetName}' Code tables
+
+These are the code tables that output more than one cell on the sheet:
+`;
+
+          currentSheetCodeTables.forEach((table) => {
+            summary += `
+#### ${table.code_table_name}
+
+'${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}.
+
+First rows of '${table.code_table_name}' (limited to ${maxRows} rows):
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
+            if (table.last_rows_visible_values) {
+              summary += `
+Last rows of '${table.code_table_name}' (limited to ${maxRows} rows):
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
+            }
+          });
         }
 
-        if (otherSheetsWithData.length > 0) {
-          summary += ` Sheets with data: ${otherSheetsWithData.map((name) => `'${name}'`).join(', ')}.`;
+        if (currentSheetConnectionTables.length > 0) {
+          summary += `
+### '${currentSheetName}' Connection tables
+
+These are the connection tables on the sheet:
+`;
+
+          currentSheetConnectionTables.forEach((table) => {
+            if (typeof table.language !== 'object' || !table.language.Connection) return;
+            summary += `
+#### ${table.code_table_name}
+
+'${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}.
+
+First rows of '${table.code_table_name}' (limited to ${maxRows} rows):
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
+            if (table.last_rows_visible_values) {
+              summary += `
+Last rows of '${table.code_table_name}' (limited to ${maxRows} rows):
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
+            }
+          });
         }
 
-        if (otherEmptySheets.length > 0) {
-          summary += ` Empty sheets: ${otherEmptySheets.map((name) => `'${name}'`).join(', ')}.`;
+        if (currentSheetCharts.length > 0) {
+          summary += `
+### '${currentSheetName}' Charts
+
+These are the charts on the sheet:
+`;
+
+          currentSheetCharts.forEach((chart) => {
+            summary += `
+#### ${chart.chart_name}
+
+'${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}.
+`;
+          });
         }
-      }
 
-      // Add table names with ranges for easy reference
-      const allDataTablesWithRanges = dataTables.map(
-        (table) => `${table.data_table_name} (${table.bounds}) on '${table.sheet_name}'`
-      );
-      if (allDataTablesWithRanges.length > 0) {
-        summary += `\nAvailable data tables: ${allDataTablesWithRanges.join(', ')}.`;
-      }
+        if (flatDataRects.length > 0) {
+          summary += `
+### '${currentSheetName}' Flat data
 
-      // Add code table names with ranges
-      const allCodeTablesWithRanges = codeTables.map(
-        (table) => `${table.code_table_name || 'Unnamed'} (${table.bounds}) on '${table.sheet_name}'`
-      );
-      if (allCodeTablesWithRanges.length > 0) {
-        summary += `\nAvailable code tables: ${allCodeTablesWithRanges.join(', ')}.`;
-      }
+This is the flat data on the sheet (limited to ${maxRows} rows each):
+`;
 
-      // Add flat data rectangles with ranges
-      const flatDataWithRanges = flatDataRects.map((rect) => {
-        const endCol = String.fromCharCode(rect.rect_origin.charCodeAt(0) + rect.rect_width - 1);
-        const endRow = parseInt(rect.rect_origin.slice(1)) + rect.rect_height - 1;
-        const range = `${rect.rect_origin}:${endCol}${endRow}`;
-        return `${range} on '${rect.sheet_name}'`;
-      });
-      if (flatDataWithRanges.length > 0) {
-        summary += `\nAvailable flat data: ${flatDataWithRanges.join(', ')}.`;
+          flatDataRects.forEach((description) => {
+            summary += `
+${AICellsToMarkdown(description, true)}`;
+          });
+        }
+
+        const sheetList = sheets.sheets.flatMap((sheet) => {
+          if (sheet.name === currentSheetName) {
+            return [];
+          }
+          return [sheet.name];
+        });
+
+        if (sheetList.length > 0) {
+          summary += `
+## Other sheets
+
+Use get_cell_data tool to get more information about the data in these sheets.
+`;
+        }
+
+        for (const sheet of sheetList) {
+          summary += `
+### ${sheet}
+
+- ${sheets.getAISheetBounds(sheet)}`;
+          const sheetDataTables = dataTables.filter((table) => table.sheet_name === sheet);
+          const sheetCodeTables = codeTables.filter((table) => table.sheet_name === sheet);
+          const sheetCharts = charts.filter((chart) => chart.sheet_name === sheet);
+          if (sheetDataTables.length > 0) {
+            summary += `
+- ${sheetDataTables.length} data ${pluralize('table', sheetDataTables.length)}, named ${joinListWith({ arr: sheetDataTables.map((table) => `'${table.data_table_name}' (${table.bounds})`), conjunction: 'and' })}`;
+          }
+          if (sheetCodeTables.length > 0) {
+            summary += `
+- ${sheetCodeTables.length} code ${pluralize('table', sheetCodeTables.length)}, named ${joinListWith({ arr: sheetCodeTables.map((table) => `'${table.code_table_name}' (${table.bounds})`), conjunction: 'and' })}`;
+          }
+          if (sheetCharts.length > 0) {
+            summary += `
+- ${sheetCharts.length} ${pluralize('chart', sheetCharts.length)}, named ${joinListWith({ arr: sheetCharts.map((chart) => `'${chart.chart_name}' (${chart.bounds})`), conjunction: 'and' })}`;
+          }
+          summary += `\n`;
+        }
       }
 
       return [
@@ -166,17 +258,17 @@ export function useSummaryContextMessages() {
               text: summary,
             },
           ],
-          contextType: 'tables',
+          contextType: 'fileSummary',
         },
         {
           role: 'assistant',
           content: [
             {
               type: 'text',
-              text: `I understand the file structure summary. If asked to solve a data problem, I will first use get_cell_data tool to view the data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`,
+              text: `I understand the file structure summary. If asked to solve a data problem, I will first use get_cell_data tool to view complete data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`,
             },
           ],
-          contextType: 'tables',
+          contextType: 'fileSummary',
         },
       ];
     },
