@@ -39,7 +39,7 @@ app.use('/', cors({ origin: AUTH_CORS, credentials: true }), authRouter);
 app.use(cors({ origin: CORS }));
 
 // Request logging middleware for Datadog
-if (LOG_REQUEST_INFO) {
+if (LOG_REQUEST_INFO === 'true') {
   app.use(
     expressWinston.logger({
       transports: [new winston.transports.Console()],

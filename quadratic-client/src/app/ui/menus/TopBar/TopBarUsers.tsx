@@ -17,24 +17,28 @@ import {
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { displayInitials, displayName } from '@/shared/utils/userUtil';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useSubmit } from 'react-router';
 import { useRecoilValue, useSetRecoilState } from 'recoil';
 
 export const TopBarUsers = () => {
   const submit = useSubmit();
-  const { loggedInUser: user } = useRootRouteLoaderData();
+  const { loggedInUser } = useRootRouteLoaderData();
   const follow = useRecoilValue(editorInteractionStateFollowAtom);
   const setFollow = useSetRecoilState(editorInteractionStateFollowAtom);
   const { users, followers } = useMultiplayerUsers();
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
 
-  const anonymous = !user
-    ? {
-        index: multiplayer.index,
-        colorString: MULTIPLAYER_COLORS[(multiplayer.index ?? 0) % MULTIPLAYER_COLORS.length],
-      }
-    : undefined;
+  const anonymous = useMemo(
+    () =>
+      !loggedInUser
+        ? {
+            index: multiplayer.index,
+            colorString: MULTIPLAYER_COLORS[(multiplayer.index ?? 0) % MULTIPLAYER_COLORS.length],
+          }
+        : undefined,
+    [loggedInUser]
+  );
 
   const handleFollow = ({
     isFollowingYou,
@@ -96,13 +100,13 @@ export const TopBarUsers = () => {
         <DropdownMenu>
           <DropdownMenuTrigger className="self-center" disabled={Boolean(anonymous)}>
             <You
-              displayName={displayName(user ?? anonymous, true)}
-              initial={displayInitials(user ?? anonymous)}
-              picture={user?.picture ?? ''}
+              displayName={displayName(loggedInUser ?? anonymous, true)}
+              initial={displayInitials(loggedInUser ?? anonymous)}
+              picture={loggedInUser?.picture ?? ''}
             />
           </DropdownMenuTrigger>
           <DropdownMenuContent className="text-sm">
-            <DropdownMenuItem disabled>{user?.email}</DropdownMenuItem>
+            <DropdownMenuItem disabled>{loggedInUser?.email}</DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => {
