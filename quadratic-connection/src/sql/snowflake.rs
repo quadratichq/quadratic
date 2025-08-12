@@ -1,4 +1,8 @@
-use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use axum::{
+    Extension, Json,
+    extract::{Path, Query},
+    response::IntoResponse,
+};
 use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection, sql::snowflake_connection::SnowflakeConnection,
@@ -15,7 +19,7 @@ use crate::{
     state::State,
 };
 
-use super::{Schema, query_generic, schema_generic};
+use super::{Schema, SchemaQuery, query_generic, schema_generic};
 
 /// Test the connection to the database.
 pub(crate) async fn test(
@@ -77,11 +81,12 @@ pub(crate) async fn schema(
     headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
+    Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
     let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
 
-    schema_generic(api_connection, state).await
+    schema_generic(api_connection, state, params).await
 }
 
 use std::sync::{LazyLock, Mutex};
@@ -119,9 +124,16 @@ mod tests {
         let connection_id = Uuid::new_v4();
         let (_, headers) = new_team_id_with_header().await;
         let state = Extension(new_state().await);
-        let response = schema(Path(connection_id), headers, state, get_claims())
-            .await
-            .unwrap();
+        let params = SchemaQuery::forced_cache_refresh();
+        let response = schema(
+            Path(connection_id),
+            headers,
+            state,
+            get_claims(),
+            Query(params),
+        )
+        .await
+        .unwrap();
         let schema = response.0;
         let columns = &schema.tables[0].columns;
 

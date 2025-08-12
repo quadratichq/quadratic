@@ -1,4 +1,8 @@
-use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use axum::{
+    Extension, Json,
+    extract::{Path, Query, State},
+    response::IntoResponse,
+};
 use http::HeaderMap;
 use quadratic_rust_shared::{
     quadratic_api::Connection as ApiConnection, sql::postgres_connection::PostgresConnection,
@@ -11,8 +15,9 @@ use crate::{
     error::Result,
     header::get_team_id_header,
     server::{SqlQuery, TestResponse, test_connection},
+    sql::SchemaQuery,
     ssh::open_ssh_tunnel_for_connection,
-    state::State,
+    state::State as AppState,
 };
 
 use super::{Schema, query_generic, schema_generic_with_ssh};
@@ -21,7 +26,7 @@ use super::{Schema, query_generic, schema_generic_with_ssh};
 // #[axum::debug_handler]
 pub(crate) async fn test(
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<AppState>,
     claims: Claims,
     Json(mut connection): Json<PostgresConnection>,
 ) -> Result<Json<TestResponse>> {
@@ -39,7 +44,7 @@ pub(crate) async fn test(
 
 /// Get the connection details from the API and create a PostgresConnection.
 async fn get_connection(
-    state: &State,
+    state: &AppState,
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
@@ -52,7 +57,7 @@ async fn get_connection(
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query(
     headers: HeaderMap,
-    state: Extension<State>,
+    state: Extension<AppState>,
     claims: Claims,
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
@@ -64,7 +69,7 @@ pub(crate) async fn query(
 
 /// Query the database and return the results as a parquet file.
 pub(crate) async fn query_with_connection(
-    state: Extension<State>,
+    state: Extension<AppState>,
     sql_query: Json<SqlQuery>,
     mut connection: PostgresConnection,
 ) -> Result<impl IntoResponse> {
@@ -79,16 +84,18 @@ pub(crate) async fn query_with_connection(
 }
 
 /// Get the schema of the database
+#[axum::debug_handler]
 pub(crate) async fn schema(
     Path(id): Path<Uuid>,
     headers: HeaderMap,
-    state: Extension<State>,
+    State(state): State<AppState>,
     claims: Claims,
+    Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
     let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
 
-    schema_generic_with_ssh(api_connection, state).await
+    schema_generic_with_ssh(api_connection, Extension(state), params).await
 }
 
 #[cfg(test)]
@@ -164,7 +171,8 @@ pub mod tests {
         let state = new_state().await;
         let api_connection = get_connection(false);
         let api_connection_id = api_connection.uuid;
-        let response = schema_generic_with_ssh(api_connection, Extension(state.clone()))
+        let params = SchemaQuery::forced_cache_refresh();
+        let response = schema_generic_with_ssh(api_connection, Extension(state.clone()), params)
             .await
             .unwrap();
         let columns = &response
