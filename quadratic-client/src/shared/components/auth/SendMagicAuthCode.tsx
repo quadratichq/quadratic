@@ -40,7 +40,7 @@ export const SendMagicAuthCode = memo(() => {
 
   return (
     <>
-      <h1 className="text-2xl font-medium">Send Magic Code</h1>
+      <h1 className="text-2xl font-medium">Send magic code</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">

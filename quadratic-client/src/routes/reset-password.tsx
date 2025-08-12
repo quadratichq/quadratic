@@ -56,7 +56,7 @@ export const Component = () => {
 
   return (
     <>
-      <h1 className="text-2xl font-medium">Reset Password</h1>
+      <h1 className="text-2xl font-medium">Reset password</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">
@@ -65,7 +65,7 @@ export const Component = () => {
             name="password"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>New Password</FormLabel>
+                <FormLabel>New password</FormLabel>
                 <FormControl>
                   <Input
                     data-testid="reset-password-password"
@@ -73,7 +73,7 @@ export const Component = () => {
                     autoCapitalize="off"
                     type="password"
                     autoFocus
-                    placeholder="New Password*"
+                    placeholder="New password*"
                     {...field}
                   />
                 </FormControl>

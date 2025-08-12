@@ -7,7 +7,7 @@ const TEAM_ID = '00000000-0000-9000-8000-000000000001';
 export const TEAM_OWNER_AUTH0_ID = 'teamOwner';
 
 /**
- * TEAM TEST UTLITIES
+ * TEAM TEST UTILITIES
  */
 export async function getTeam(teamId: string): Promise<Team | null> {
   return await dbClient.team.findUnique({

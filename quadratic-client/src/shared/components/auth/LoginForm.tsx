@@ -140,7 +140,7 @@ const SwitchToMagicAuthCode = memo(() => {
       onClick={switchToMagicAuthCode}
       className="text-sm font-medium text-primary hover:text-primary/80"
     >
-      {'Magic Code'}
+      {'Magic code'}
     </button>
   );
 });
@@ -163,7 +163,7 @@ const SwitchToResetPassword = memo(() => {
       onClick={switchToResetPassword}
       className="text-sm font-medium text-primary hover:text-primary/80"
     >
-      {'Reset Password'}
+      {'Reset password'}
     </button>
   );
 });

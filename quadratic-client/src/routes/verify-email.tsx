@@ -56,7 +56,7 @@ export const Component = () => {
 
   return (
     <>
-      <h1 className="text-2xl font-medium">Verify Email</h1>
+      <h1 className="text-2xl font-medium">Verify email</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">

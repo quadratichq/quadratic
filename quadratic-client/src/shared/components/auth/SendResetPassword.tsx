@@ -38,7 +38,7 @@ export const SendResetPassword = memo(() => {
 
   return (
     <>
-      <h1 className="text-2xl font-medium">Reset Password</h1>
+      <h1 className="text-2xl font-medium">Reset password</h1>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmitForm)} className="flex w-full flex-col gap-6">
