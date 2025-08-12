@@ -4,6 +4,7 @@ import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
 import { parseRequest } from '../../middleware/validateRequestSchema';
 import type { Request } from '../../types/Request';
+import logger from '../../utils/logger';
 import { clearCookies, loginWithPassword } from '../providers/auth';
 
 const schema = z.object({
@@ -23,7 +24,9 @@ loginWithPasswordRouter.post(
       const { pendingAuthenticationToken } = await loginWithPassword({ email, password, res });
 
       return res.status(200).json({ message: 'Login successful', pendingAuthenticationToken });
-    } catch {
+    } catch (error) {
+      logger.info('/v0/auth/login-with-password.POST.response', error);
+
       clearCookies({ res });
 
       return res.status(401).json({ message: 'Login failed', pendingAuthenticationToken: undefined });
