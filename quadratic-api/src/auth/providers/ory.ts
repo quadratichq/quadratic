@@ -5,7 +5,7 @@ import type { GetVerificationKey } from 'jwks-rsa';
 import jwksRsa from 'jwks-rsa';
 import { ORY_ADMIN_HOST, ORY_JWKS_URI } from '../../env-vars';
 import logger from '../../utils/logger';
-import type { ByEmailUser, User } from './auth';
+import type { ByEmailUser, User, UsersRequest } from './auth';
 
 const config = new Configuration({
   basePath: ORY_ADMIN_HOST,
@@ -25,7 +25,7 @@ export const jwtConfigOry = {
   algorithms: ['RS256'] as Algorithm[],
 };
 
-export const getUsersFromOry = async (users: { id: number; auth0Id: string }[]): Promise<Record<number, User>> => {
+export const getUsersFromOry = async (users: UsersRequest[]): Promise<Record<number, User>> => {
   // If we got nothing, we return an empty object
   if (users.length === 0) return {};
 

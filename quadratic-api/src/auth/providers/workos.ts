@@ -5,7 +5,7 @@ import type { Algorithm } from 'jsonwebtoken';
 import JwksRsa, { type GetVerificationKey } from 'jwks-rsa';
 import { JWKS_URI, WORKOS_API_KEY, WORKOS_CLIENT_ID } from '../../env-vars';
 import logger from '../../utils/logger';
-import type { ByEmailUser, User } from './auth';
+import type { ByEmailUser, User, UsersRequest } from './auth';
 
 const WORKOS_REFRESH_TOKEN_COOKIE_NAME = 'refresh-token';
 const WORKOS_HAS_SESSION_COOKIE_NAME = 'workos-has-session';
@@ -20,7 +20,7 @@ const getWorkos = (): WorkOS => {
   return workos;
 };
 
-export const getUsersFromWorkos = async (users: { id: number; auth0Id: string }[]): Promise<Record<number, User>> => {
+export const getUsersFromWorkos = async (users: UsersRequest[]): Promise<Record<number, User>> => {
   // If we got nothing, we return an empty object
   if (users.length === 0) return {};
 
