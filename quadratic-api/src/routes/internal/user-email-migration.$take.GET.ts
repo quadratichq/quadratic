@@ -50,6 +50,7 @@ router.get(
         },
         take,
       });
+      logger.info(`[user-email-migration] Found ${users.length} users without an email`);
 
       const newUsers = users.filter((user) => !seenUsers.has(user.id));
       if (newUsers.length === 0) {
@@ -59,8 +60,14 @@ router.get(
       newUsers.forEach((user) => seenUsers.add(user.id));
 
       const usersWithEmail = await getUsers(newUsers);
+      logger.info(`[user-email-migration] Found ${Object.values(usersWithEmail).length} auth0 users with an email`);
+
       const usersWithEmailNonEmpty = Object.values(usersWithEmail).filter((user) => !!user.email);
+      logger.info(`[user-email-migration] Found ${usersWithEmailNonEmpty.length} auth0 users with a non-empty email`);
+
       const usersWithEmailUnique = usersWithEmailNonEmpty.filter((user) => !seenEmails.has(user.email));
+      logger.info(`[user-email-migration] Found ${usersWithEmailUnique.length} auth0 users with a unique email`);
+
       if (usersWithEmailUnique.length === 0) {
         loop = false;
         break;
@@ -77,8 +84,9 @@ router.get(
           )
         );
         count += usersWithEmailUnique.length;
+        logger.info(`[user-email-migration] Migrated ${count} users`);
       } catch (error) {
-        logger.error('Error in user-email-migration', error);
+        logger.error('[user-email-migration] Error:', error);
       }
     }
 
