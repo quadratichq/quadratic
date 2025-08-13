@@ -7,7 +7,7 @@ import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/vie
 export class LightWeightApp extends BaseApp {
   private parent: HTMLElement;
 
-  constructor(parent: HTMLElement, first: boolean) {
+  constructor(parent: HTMLElement) {
     super();
     this.parent = parent;
     this.parent.appendChild(this.canvas);
@@ -24,20 +24,20 @@ export class LightWeightApp extends BaseApp {
       })
     );
 
-    let x = first ? 2 : 7;
-    let y = first ? 2 : 2;
-    const position = sheets.sheet.getCellOffsets(x, y);
-    this.viewport.position.set(-position.x, -position.y);
-
     this.viewport.addChild(this.gridLines);
 
     this.resize();
     this.update();
   }
 
+  reposition(column: number, row: number) {
+    const position = sheets.sheet.getCellOffsets(column, row);
+    this.viewport.position.set(-position.x, -position.y);
+  }
+
   destroy() {
     super.destroy();
-    this.parent.removeChild(this.canvas);
+    // this.renderer.destroy(true);
   }
 
   resize() {
@@ -48,7 +48,7 @@ export class LightWeightApp extends BaseApp {
     this.canvas.height = this.renderer.resolution * height;
     this.renderer.resize(width, height);
     this.viewport.resize(width, height);
-    // this.gridLines.dirty = true;
+    this.gridLines.dirty = true;
     // this.headings.dirty = true;
     // this.cursor.dirty = true;
     // this.cellHighlights.setDirty();
@@ -56,7 +56,6 @@ export class LightWeightApp extends BaseApp {
   }
 
   render() {
-    // hacking to get the cell sheet to render at a specific position
     const cellSheet = pixiApp.cellsSheet();
     const oldParent = cellSheet.parent;
 
