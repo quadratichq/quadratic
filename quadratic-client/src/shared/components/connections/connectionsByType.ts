@@ -121,7 +121,7 @@ export type PotentialConnectionType =
   | 'REDSHIFT'
   | 'ATHENA'
   | 'S3'
-  | 'DYANMODB'
+  | 'DYNAMODB'
   | 'CASSANDRA'
   | 'CLICKHOUSE'
   | 'MONGODB'
@@ -149,7 +149,7 @@ export const potentialConnectionsByType: Record<
     name: 'S3',
     Logo: S3Logo,
   },
-  DYANMODB: {
+  DYNAMODB: {
     name: 'DynamoDB',
     Logo: DynamoDBLogo,
   },
