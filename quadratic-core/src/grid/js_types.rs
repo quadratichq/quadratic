@@ -12,9 +12,9 @@ use super::formats::Format;
 use super::formatting::{CellAlign, CellVerticalAlign, CellWrap};
 use super::sheet::validations::validation::ValidationStyle;
 use super::{CodeCellLanguage, NumericFormat, SheetId};
-use crate::Pos;
 use crate::controller::execution::TransactionSource;
 use crate::controller::operations::ai_operation::AIOperation;
+use crate::{CellValue, Pos};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
@@ -61,16 +61,56 @@ impl From<&Format> for JsNumber {
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub enum JsCellValueKind {
+    #[default]
+    Blank,
+    Text,
+    Number,
+    Logical,
+    DateTime,
+    Date,
+    Time,
+    Duration,
+    Error,
+    Html,
+    Code,
+    Image,
+    Import,
+}
+
+impl From<CellValue> for JsCellValueKind {
+    fn from(value: CellValue) -> Self {
+        match value {
+            CellValue::Blank => JsCellValueKind::Blank,
+            CellValue::Instant(_) => JsCellValueKind::DateTime, // deprecated
+            CellValue::Number(_) => JsCellValueKind::Number,
+            CellValue::Text(_) => JsCellValueKind::Text,
+            CellValue::Logical(_) => JsCellValueKind::Logical,
+            CellValue::DateTime(_) => JsCellValueKind::DateTime,
+            CellValue::Date(_) => JsCellValueKind::Date,
+            CellValue::Time(_) => JsCellValueKind::Time,
+            CellValue::Duration(_) => JsCellValueKind::Duration,
+            CellValue::Error(_) => JsCellValueKind::Error,
+            CellValue::Html(_) => JsCellValueKind::Html,
+            CellValue::Code(_) => JsCellValueKind::Code,
+            CellValue::Image(_) => JsCellValueKind::Image,
+            CellValue::Import(_) => JsCellValueKind::Import,
+        }
+    }
+}
+
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellValue {
     pub value: String,
-    pub kind: String,
+    pub kind: JsCellValueKind,
 }
 
 #[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellValuePos {
     pub value: String,
-    pub kind: String,
+    pub kind: JsCellValueKind,
     pub pos: String,
 }
 
@@ -78,20 +118,10 @@ pub struct JsCellValuePos {
 #[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsSelectionContext {
     pub sheet_name: String,
-    pub data_rects: Vec<JsCellValuePosContext>,
+    pub data_rects: Vec<JsCellValueDescription>,
     pub errored_code_cells: Option<Vec<JsCodeCell>>,
     pub tables_summary: Option<Vec<JsTableSummaryContext>>,
     pub charts_summary: Option<Vec<JsChartSummaryContext>>,
-}
-
-#[derive(Serialize, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "js", derive(ts_rs::TS))]
-pub struct JsCellValuePosContext {
-    pub sheet_name: String,
-    pub rect_origin: String,
-    pub rect_width: u32,
-    pub rect_height: u32,
-    pub starting_rect_values: Vec<Vec<JsCellValuePos>>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -101,6 +131,8 @@ pub struct JsTableSummaryContext {
     pub table_name: String,
     pub table_type: JsTableType,
     pub bounds: String,
+    pub connection_name: Option<String>,
+    pub connection_id: Option<String>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -108,7 +140,10 @@ pub struct JsTableSummaryContext {
 #[serde(rename_all = "camelCase")]
 pub enum JsTableType {
     DataTable,
-    CodeTable,
+    Formula,
+    Python,
+    Javascript,
+    Connection,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -117,6 +152,18 @@ pub struct JsChartSummaryContext {
     pub sheet_name: String,
     pub chart_name: String,
     pub bounds: String,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsCodeErrorContext {
+    pub sheet_name: String,
+    pub pos: String,
+    pub name: String,
+    pub language: CodeCellLanguage,
+    pub error: Option<String>,
+    pub is_spill: bool,
+    pub expected_bounds: Option<String>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq)]
@@ -135,8 +182,8 @@ pub struct JsDataTableContext {
     pub data_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_row_visible_values: Vec<JsCellValuePos>,
-    pub last_row_visible_values: Vec<JsCellValuePos>,
+    pub first_rows_visible_values: JsCellValueDescription,
+    pub last_rows_visible_values: Option<JsCellValueDescription>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -151,8 +198,8 @@ pub struct JsCodeTableContext {
     pub code_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_row_visible_values: Vec<JsCellValuePos>,
-    pub last_row_visible_values: Vec<JsCellValuePos>,
+    pub first_rows_visible_values: JsCellValueDescription,
+    pub last_rows_visible_values: Option<JsCellValueDescription>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -597,6 +644,31 @@ pub struct JsSheetPosText {
     pub x: i64,
     pub y: i64,
     pub text: Option<String>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsCellValueCode {
+    pub value: String,
+    pub kind: JsCellValueKind,
+    pub language: Option<CodeCellLanguage>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsCellValueDescription {
+    pub total_range: String,
+    pub range: String,
+    pub values: Vec<Vec<JsCellValueCode>>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
+pub struct JsGetAICellResult {
+    pub selection: String,
+    pub page: i32,
+    pub total_pages: i32,
+    pub values: Vec<JsCellValueDescription>,
 }
 
 #[derive(Debug, Serialize, PartialEq)]

@@ -195,6 +195,9 @@ const InternalContextTypeSchema = z.enum([
   'modelRouter',
   'currentDate',
   'sheetNames',
+  'sqlSchemas',
+  'codeErrors',
+  'fileSummary',
   'aiUpdates',
 ]);
 const ToolResultContextTypeSchema = z.literal('toolResult');

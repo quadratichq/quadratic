@@ -793,6 +793,14 @@ class CoreClient {
         });
         return;
 
+      case 'clientCoreGetAICodeErrors':
+        this.send({
+          type: 'coreClientGetAICodeErrors',
+          id: e.data.id,
+          errors: core.getAICodeErrors(e.data.maxErrors),
+        });
+        return;
+
       default:
         if (e.data.id !== undefined) {
           // handle responses from requests to quadratic-core

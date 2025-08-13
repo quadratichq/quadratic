@@ -24,6 +24,7 @@ import {
   selectionToSheetRect,
   selectionToSheetRectString,
   stringToSelection,
+  xyxyToA1,
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
@@ -472,6 +473,23 @@ export class Sheets {
 
   convertTableToRange = (tableName: string, currentSheetId: string): string => {
     return convertTableToRange(tableName, currentSheetId, this.jsA1Context);
+  };
+
+  getAISheetBounds = (sheetName: string): string => {
+    const sheet = this.getSheetByName(sheetName);
+    if (!sheet) {
+      return `is not a valid sheet name`;
+    }
+    const bounds = sheet.boundsWithoutFormatting;
+    if (bounds.type === 'empty') {
+      return `is empty`;
+    }
+    return `has bounds of ${xyxyToA1(
+      Number(bounds.min.x),
+      Number(bounds.min.y),
+      Number(bounds.max.x),
+      Number(bounds.max.y)
+    )}`;
   };
 }
 

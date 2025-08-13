@@ -24,6 +24,7 @@ import type {
   JsCellValue,
   JsClipboard,
   JsCodeCell,
+  JsCodeErrorContext,
   JsCoordinate,
   JsDataTableColumnHeader,
   JsHashValidationWarnings,
@@ -73,6 +74,7 @@ import type {
   CoreClientExportCsvSelection,
   CoreClientExportExcel,
   CoreClientGetAICells,
+  CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
   CoreClientGetAITablesContext,
@@ -437,9 +439,11 @@ class QuadraticCore {
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
+    maxRows?: number;
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
+    includeDataRectsSummary: boolean;
   }): Promise<JsSelectionContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -451,9 +455,11 @@ class QuadraticCore {
         id,
         selections: args.selections,
         maxRects: args.maxRects,
+        maxRows: args.maxRows,
         includeErroredCodeCells: args.includeErroredCodeCells,
         includeTablesSummary: args.includeTablesSummary,
         includeChartsSummary: args.includeChartsSummary,
+        includeDataRectsSummary: args.includeDataRectsSummary,
       });
     });
   }
@@ -1774,6 +1780,20 @@ class QuadraticCore {
         sheetId,
         selection,
         id,
+      });
+    });
+  }
+
+  getAICodeErrors(maxErrors: number): Promise<Map<string, JsCodeErrorContext[]> | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAICodeErrors) => {
+        resolve(message.errors);
+      };
+      this.send({
+        type: 'clientCoreGetAICodeErrors',
+        id,
+        maxErrors,
       });
     });
   }

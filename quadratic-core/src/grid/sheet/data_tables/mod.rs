@@ -764,6 +764,19 @@ impl SheetDataTables {
             })
     }
 
+    /// Exports the cache of data tables.
+    pub fn cache_ref(&self) -> &SheetDataTablesCache {
+        &self.cache
+    }
+
+    /// Returns true if the given rectangle has any content.
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.cache
+            .get_nondefault_rects_in_rect(rect)
+            .next()
+            .is_some()
+    }
+
     /// This is expensive used only for file migration (< v1.7.1), having data in -ve coordinates
     /// and Contiguous2d cache does not work for -ve coordinates
     pub fn migration_iter_mut(&mut self) -> impl Iterator<Item = (&Pos, &mut DataTable)> {
@@ -776,11 +789,6 @@ impl SheetDataTables {
         self.data_tables.iter_mut().flat_map(|(pos, data_table)| {
             data_table.code_run_mut().map(|code_run| (*pos, code_run))
         })
-    }
-
-    /// Exports the cache of data tables.
-    pub fn cache_ref(&self) -> &SheetDataTablesCache {
-        &self.cache
     }
 
     /// Returns the data table at the given position, if it exists.

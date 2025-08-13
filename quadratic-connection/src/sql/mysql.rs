@@ -1,8 +1,11 @@
-use axum::{Extension, Json, extract::Path, response::IntoResponse};
+use axum::{
+    Extension, Json,
+    extract::{Path, Query},
+    response::IntoResponse,
+};
 use http::HeaderMap;
 use quadratic_rust_shared::{
-    quadratic_api::Connection as ApiConnection,
-    sql::{Connection, mysql_connection::MySqlConnection},
+    quadratic_api::Connection as ApiConnection, sql::mysql_connection::MySqlConnection,
 };
 use uuid::Uuid;
 
@@ -16,7 +19,7 @@ use crate::{
     state::State,
 };
 
-use super::{Schema, query_generic};
+use super::{Schema, SchemaQuery, query_generic, schema_generic_with_ssh};
 
 /// Test the connection to the database.
 pub(crate) async fn test(
@@ -43,10 +46,10 @@ async fn get_connection(
     claims: &Claims,
     connection_id: &Uuid,
     team_id: &Uuid,
-) -> Result<(MySqlConnection, ApiConnection<MySqlConnection>)> {
+) -> Result<ApiConnection<MySqlConnection>> {
     let connection = get_api_connection(state, "", &claims.sub, connection_id, team_id).await?;
 
-    Ok(((&connection).into(), connection))
+    Ok(connection)
 }
 
 /// Query the database and return the results as a parquet file.
@@ -57,11 +60,9 @@ pub(crate) async fn query(
     sql_query: Json<SqlQuery>,
 ) -> Result<impl IntoResponse> {
     let team_id = get_team_id_header(&headers)?;
-    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id)
-        .await?
-        .0;
+    let connection = get_connection(&state, &claims, &sql_query.connection_id, &team_id).await?;
 
-    query_with_connection(state, sql_query, connection).await
+    query_with_connection(state, sql_query, connection.type_details).await
 }
 
 pub(crate) async fn query_with_connection(
@@ -85,35 +86,12 @@ pub(crate) async fn schema(
     headers: HeaderMap,
     state: Extension<State>,
     claims: Claims,
+    Query(params): Query<SchemaQuery>,
 ) -> Result<Json<Schema>> {
     let team_id = get_team_id_header(&headers)?;
-    let (connection, api_connection) = get_connection(&state, &claims, &id, &team_id).await?;
+    let api_connection = get_connection(&state, &claims, &id, &team_id).await?;
 
-    schema_with_connection(connection, api_connection).await
-}
-
-/// Get the schema of the database
-pub(crate) async fn schema_with_connection(
-    mut connection: MySqlConnection,
-    api_connection: ApiConnection<MySqlConnection>,
-) -> Result<Json<Schema>> {
-    let tunnel = open_ssh_tunnel_for_connection(&mut connection).await?;
-    let mut pool = connection.connect().await?;
-    let database_schema = connection.schema(&mut pool).await?;
-
-    if let Some(mut tunnel) = tunnel {
-        tunnel.close().await?;
-    }
-
-    let schema = Schema {
-        id: api_connection.uuid,
-        name: api_connection.name,
-        r#type: api_connection.r#type,
-        database: api_connection.type_details.database,
-        tables: database_schema.tables.into_values().collect(),
-    };
-
-    Ok(Json(schema))
+    schema_generic_with_ssh(api_connection, state, params).await
 }
 
 #[cfg(test)]
@@ -189,8 +167,9 @@ mod tests {
     #[traced_test]
     async fn mysql_schema() {
         let api_connection = get_connection(false);
-        let connection = (&api_connection).into();
-        let response = schema_with_connection(connection, api_connection)
+        let state = Extension(new_state().await);
+        let params = SchemaQuery::forced_cache_refresh();
+        let response = schema_generic_with_ssh(api_connection, state, params)
             .await
             .unwrap();
 

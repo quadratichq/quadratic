@@ -70,6 +70,25 @@ impl Sheet {
         }
     }
 
+    /// Returns the data table pos of the data table that contains a position
+    pub fn is_in_non_single_code_cell_code_table(&self, pos: Pos) -> bool {
+        if let Some(data_table_pos) = self.data_tables.get_pos_contains(pos) {
+            if pos != data_table_pos {
+                true
+            } else if let Some(data_table) = self.data_tables.get_at(&data_table_pos.into()) {
+                if !matches!(data_table.kind, DataTableKind::CodeRun(_)) {
+                    true
+                } else {
+                    !data_table.is_single_value()
+                }
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
     /// Returns anchor positions of data tables that intersect a rect, sorted by index
     pub fn data_tables_pos_intersect_rect(&self, rect: Rect) -> impl Iterator<Item = MultiPos> {
         self.data_tables

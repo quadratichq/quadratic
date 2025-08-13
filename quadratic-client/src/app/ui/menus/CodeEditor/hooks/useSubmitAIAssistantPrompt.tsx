@@ -1,7 +1,7 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
-import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -18,7 +18,6 @@ import {
   codeEditorWaitingForEditorClose,
   showAIAssistantAtom,
 } from '@/app/atoms/codeEditorAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
@@ -46,7 +45,7 @@ export type SubmitAIAssistantPromptArgs = {
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getCurrentSheetContext } = useCurrentSheetContextMessages();
+  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
@@ -61,9 +60,9 @@ export function useSubmitAIAssistantPrompt() {
         codeCell: CodeCell;
         chatMessages: ChatMessage[];
       }): Promise<ChatMessage[]> => {
-        const [filesContext, currentSheetContext, visibleContext, codeContext, prevMessages] = await Promise.all([
+        const [filesContext, /*currentSheetContext,*/ visibleContext, codeContext, prevMessages] = await Promise.all([
           getFilesContext({ chatMessages }),
-          getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
+          // getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
           getVisibleContext(),
           getCodeCellContext({ codeCell }),
           snapshot.getPromise(aiAssistantMessagesAtom),
@@ -71,7 +70,7 @@ export function useSubmitAIAssistantPrompt() {
 
         const messagesWithContext: ChatMessage[] = [
           ...filesContext,
-          ...currentSheetContext,
+          // ...currentSheetContext,
           ...visibleContext,
           ...codeContext,
           ...getPromptAndInternalMessages(prevMessages),
@@ -79,7 +78,7 @@ export function useSubmitAIAssistantPrompt() {
 
         return messagesWithContext;
       },
-    [getCurrentSheetContext, getVisibleContext, getCodeCellContext]
+    [/*getCurrentSheetContext, */ getVisibleContext, getCodeCellContext]
   );
 
   const submitPrompt = useRecoilCallback(

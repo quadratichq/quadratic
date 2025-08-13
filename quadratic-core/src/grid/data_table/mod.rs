@@ -574,6 +574,36 @@ impl DataTable {
         }
     }
 
+    /// Helper function to determine if the DataTable's CodeRun has an error.
+    /// Returns `false` if the DataTableKind is not CodeRun or if there is no error.
+    pub fn has_error_include_single_formula_error(&self) -> bool {
+        match self.kind {
+            DataTableKind::CodeRun(ref code_run) => {
+                if code_run.error.is_some() {
+                    true
+                } else {
+                    // also need to check if the formula has an error
+                    if self.get_language() == CodeCellLanguage::Formula {
+                        match &self.value {
+                            Value::Array(_) => false,
+                            Value::Tuple(_) => false,
+                            Value::Single(v) => {
+                                if let CellValue::Error(_) = v {
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
+                        }
+                    } else {
+                        false
+                    }
+                }
+            }
+            _ => false,
+        }
+    }
+
     /// Helper function to get the error in the CodeRun from the DataTable.
     /// Returns `None` if the DataTableKind is not CodeRun or if there is no error.
     pub fn get_error(&self) -> Option<RunError> {
@@ -778,8 +808,11 @@ impl DataTable {
         if self.is_html_or_image() {
             return false;
         }
-
-        matches!(self.value, Value::Single(_))
+        match &self.value {
+            Value::Single(_) => true,
+            Value::Array(a) => a.width() * a.height() < 2,
+            Value::Tuple(_) => false,
+        }
     }
 
     /// Returns true if the data table is a single column (ie, not an array), or
@@ -819,6 +852,11 @@ impl DataTable {
         } else {
             false
         }
+    }
+
+    /// Returns true if the data table is a formula table
+    pub fn is_formula_table(&self) -> bool {
+        matches!(self.get_language(), CodeCellLanguage::Formula)
     }
 
     /// Returns the rows that are part of the data table's UI.
