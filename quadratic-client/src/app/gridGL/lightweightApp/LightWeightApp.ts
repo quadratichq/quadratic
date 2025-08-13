@@ -29,6 +29,8 @@ export class LightWeightApp extends BaseApp {
     const position = sheets.sheet.getCellOffsets(x, y);
     this.viewport.position.set(-position.x, -position.y);
 
+    this.viewport.addChild(this.gridLines);
+
     this.resize();
     this.update();
   }
@@ -42,7 +44,6 @@ export class LightWeightApp extends BaseApp {
     if (!this.parent || this.destroyed) return;
     const width = this.parent.offsetWidth;
     const height = this.parent.offsetHeight;
-    console.log(width, height);
     this.canvas.width = this.renderer.resolution * width;
     this.canvas.height = this.renderer.resolution * height;
     this.renderer.resize(width, height);
@@ -59,9 +60,9 @@ export class LightWeightApp extends BaseApp {
     const cellSheet = pixiApp.cellsSheet();
     const oldParent = cellSheet.parent;
 
-    // show at G2 for "Keyboard Movement" sheet
     this.viewport.addChild(cellSheet);
 
+    this.gridLines.update(this.viewport.getVisibleBounds(), this.viewport.scale.x, true);
     this.renderer.render(this.viewport);
 
     oldParent.addChild(cellSheet);

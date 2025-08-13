@@ -2,6 +2,7 @@ import type { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import type { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
+import { GridLines } from '@/app/gridGL/UI/GridLines';
 import { Renderer } from 'pixi.js';
 
 export abstract class BaseApp {
@@ -10,6 +11,7 @@ export abstract class BaseApp {
   viewport: Viewport;
 
   headings!: GridHeadings;
+  gridLines: GridLines;
   pointer?: Pointer;
 
   momentumDetector: MomentumScrollDetector;
@@ -27,6 +29,8 @@ export abstract class BaseApp {
     });
     this.viewport = new Viewport(this);
     this.momentumDetector = new MomentumScrollDetector();
+
+    this.gridLines = new GridLines();
   }
 
   destroy() {

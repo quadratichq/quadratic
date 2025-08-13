@@ -12,7 +12,6 @@ import { BaseApp } from '@/app/gridGL/BaseApp';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { Background } from '@/app/gridGL/UI/Background';
 import { Cursor } from '@/app/gridGL/UI/Cursor';
-import { GridLines } from '@/app/gridGL/UI/GridLines';
 import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
 import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
@@ -52,7 +51,6 @@ export class PixiApp extends BaseApp {
 
   // todo: UI should be pulled out and separated into its own class
 
-  gridLines: GridLines;
   background: Background;
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
@@ -93,7 +91,6 @@ export class PixiApp extends BaseApp {
     super();
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
-    this.gridLines = new GridLines();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
