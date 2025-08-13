@@ -1,4 +1,5 @@
 use dashmap::DashMap;
+use quadratic_rust_shared::multiplayer::message::response::{MessageResponse, MinVersion};
 use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::quadratic_api::get_file_checkpoint;
 use serde::Serialize;
@@ -63,6 +64,23 @@ impl Room {
     /// Get the number of users in the room.
     pub fn num_users(&self) -> u64 {
         self.users.len() as u64
+    }
+
+    pub fn to_users_in_room_response(&self, version: &str) -> MessageResponse {
+        MessageResponse::UsersInRoom {
+            users: self
+                .users
+                .iter()
+                .map(|user_ref| user_ref.value().to_owned().into())
+                .collect(),
+            version: version.to_string(),
+
+            // TODO: to be deleted after next version
+            min_version: MinVersion {
+                required_version: 5,
+                recommended_version: 5,
+            },
+        }
     }
 }
 
@@ -222,8 +240,8 @@ mod tests {
     async fn enters_retrieves_leaves_and_removes_a_room() {
         let state = new_state().await;
         let file_id = Uuid::new_v4();
-        let mut user = new_user();
-        let mut user2 = new_user();
+        let mut user = new_user(0);
+        let mut user2 = new_user(1);
         let connection = PreConnection::new(None, None);
         let connection2 = PreConnection::new(None, None);
 
@@ -270,9 +288,9 @@ mod tests {
     async fn user_gets_assigned_indices() {
         let state = new_state().await;
         let file_id = Uuid::new_v4();
-        let mut user = new_user();
-        let mut user2 = new_user();
-        let mut user3 = new_user();
+        let mut user = new_user(0);
+        let mut user2 = new_user(1);
+        let mut user3 = new_user(2);
         let connection = PreConnection::new(None, None);
         let connection2 = PreConnection::new(None, None);
         let connection3 = PreConnection::new(None, None);

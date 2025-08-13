@@ -19,6 +19,7 @@ use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use prost::Message as ProstMessage;
 use quadratic_rust_shared::auth::jwt::get_jwks;
+use quadratic_rust_shared::auth::jwt::tests::TOKEN;
 use quadratic_rust_shared::net::websocket_server::server::SharedSplitSinkSocket;
 use quadratic_rust_shared::protobuf::quadratic::transaction::Error;
 use quadratic_rust_shared::storage::Storage;
@@ -212,7 +213,8 @@ async fn ws_handler(
         cookie,
         headers,
         true,
-        state.settings.jwks.clone().unwrap(),
+        state.settings.jwks.clone(),
+        cfg!(test).then(|| TOKEN.to_string()),
     );
 
     match pre_connection {

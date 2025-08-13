@@ -1,9 +1,7 @@
 use quadratic_core::SheetPos;
 use quadratic_core::cell_values::CellValues;
 use quadratic_core::controller::GridController;
-use quadratic_core::controller::active_transactions::pending_transaction::PendingTransaction;
 use quadratic_core::controller::active_transactions::transaction_name::TransactionName;
-use quadratic_core::controller::execution::TransactionSource;
 use quadratic_core::controller::operations::operation::Operation;
 use quadratic_rust_shared::net::websocket_client::{WebSocketReceiver, WebSocketSender};
 use quadratic_rust_shared::storage::StorageContainer;
@@ -197,17 +195,16 @@ impl Worker {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
+    use super::*;
 
     use quadratic_core::{CellValue, grid::SheetId};
+    use std::{str::FromStr, time::Duration};
 
     use crate::{get_mut_worker, test_util::setup};
 
-    use super::*;
-
     #[tokio::test(flavor = "multi_thread")]
     async fn test_worker_startup() {
-        let (config, state, _) = setup().await;
+        let (_, state, _) = setup().await;
         let file_id = Uuid::parse_str("16baaecd-3633-4ac4-b1a7-68b36a00cc70").unwrap();
         let get_state = async || state.get_worker(&file_id).await.unwrap().state;
         let sheet_id = SheetId::from_str("b8718a71-e4b1-49bb-8f32-f0d931850cfd").unwrap();
@@ -218,13 +215,14 @@ mod tests {
         assert_eq!(state.num_workers().await.unwrap(), 1);
         assert_eq!(get_state().await, WorkerState::Running);
 
+        // then, connect to the multiplayer server
         get_mut_worker!(state, file_id)
             .unwrap()
             .connect(state.clone())
             .await
             .unwrap();
 
-        // listen for messages in a separate thread
+        // get the multiplayer receiver
         let receiver = state
             .get_worker(&file_id)
             .await
@@ -232,12 +230,14 @@ mod tests {
             .websocket_receiver
             .unwrap();
 
+        // listen for messages in a separate thread
+        // TODO(ddimaria): ensure that we receive ACKs for all transactions
         tokio::spawn(async move {
             while let Ok(message) = receiver.lock().await.receive().await {
                 // ignore if the string containts "UserUpdate"
                 let message = message.unwrap();
-                if !message.contains("UserUpdate") {
-                    // println!("message: {:?}", message);
+                if message.contains("TransactionAck") {
+                    println!("message: {:?}", message);
                 }
             }
         });
@@ -270,6 +270,6 @@ mod tests {
         assert_eq!(state.num_workers().await.unwrap(), 0);
 
         // wait 1 minute to show presence in the demo
-        // tokio::time::sleep(Duration::from_secs(60)).await;
+        tokio::time::sleep(Duration::from_secs(60)).await;
     }
 }

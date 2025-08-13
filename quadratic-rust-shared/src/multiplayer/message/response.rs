@@ -2,44 +2,57 @@
 //!
 //! A central place for websocket messages responses.
 
-use crate::error::MpError;
-use crate::state::user::{User, UserStateUpdate};
+use crate::{
+    error::ErrorLevel,
+    multiplayer::message::{User, UserStateUpdate},
+};
 
 use base64::{Engine, engine::general_purpose::STANDARD};
-use dashmap::DashMap;
-use quadratic_core::controller::transaction::TransactionServer;
-use quadratic_rust_shared::ErrorLevel;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct Transaction {
-    pub(crate) id: Uuid,
-    pub(crate) file_id: Uuid,
-    pub(crate) sequence_num: u64,
-    pub(crate) operations: String,
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
+pub struct TransactionServer {
+    pub id: Uuid,
+    pub file_id: Uuid,
+    pub operations: Vec<u8>,
+    pub sequence_num: u64,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub(crate) struct BinaryTransaction {
-    pub(crate) id: Uuid,
-    pub(crate) file_id: Uuid,
-    pub(crate) sequence_num: u64,
-    pub(crate) operations: Vec<u8>,
+pub struct Transaction {
+    pub id: Uuid,
+    pub file_id: Uuid,
+    pub sequence_num: u64,
+    pub operations: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub struct BinaryTransaction {
+    pub id: Uuid,
+    pub file_id: Uuid,
+    pub sequence_num: u64,
+    pub operations: Vec<u8>,
 }
 
 // TODO: to be deleted after the next release
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct MinVersion {
-    pub(crate) required_version: u32,
-    pub(crate) recommended_version: u32,
+pub struct MinVersion {
+    pub required_version: u32,
+    pub recommended_version: u32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+pub enum ResponseError {
+    MissingTransactions(String, String),
+    Unknown(String),
 }
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
-pub(crate) enum MessageResponse {
+pub enum MessageResponse {
     UsersInRoom {
         users: Vec<User>,
         version: String,
@@ -83,13 +96,13 @@ pub(crate) enum MessageResponse {
         sequence_num: u64,
     },
     Error {
-        error: MpError,
+        error: ResponseError,
         error_level: ErrorLevel,
     },
 }
 
 impl MessageResponse {
-    pub(crate) fn is_binary(&self) -> bool {
+    pub fn is_binary(&self) -> bool {
         matches!(
             self,
             MessageResponse::BinaryTransaction { .. } | MessageResponse::BinaryTransactions { .. }
@@ -115,21 +128,6 @@ impl From<TransactionServer> for BinaryTransaction {
             file_id: transaction_server.file_id,
             sequence_num: transaction_server.sequence_num,
             operations: transaction_server.operations,
-        }
-    }
-}
-
-impl From<(DashMap<Uuid, User>, &String)> for MessageResponse {
-    fn from((users, version): (DashMap<Uuid, User>, &String)) -> Self {
-        MessageResponse::UsersInRoom {
-            users: users.into_iter().map(|user| (user.1)).collect(),
-            version: version.to_owned(),
-
-            // TODO: to be deleted after next version
-            min_version: MinVersion {
-                required_version: 5,
-                recommended_version: 5,
-            },
         }
     }
 }

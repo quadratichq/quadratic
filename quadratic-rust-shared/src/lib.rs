@@ -15,6 +15,9 @@ pub mod environment;
 
 pub mod error;
 
+#[cfg(feature = "multiplayer")]
+pub mod multiplayer;
+
 #[cfg(feature = "net")]
 pub mod net;
 

@@ -20,6 +20,7 @@ aws-sdk-s3 = { version = "1.12.0", features = [
 axum = { version = "0.8.1", features = ["ws"], optional = true }
 axum-extra = { version = "0.10.0", features = ["typed-header"], optional = true }
 axum-macros = { version = "0.5.0", optional = true }
+base64 = { version = "0.22.1", optional = true }
 bigdecimal = "0.4.5" # need this fixed to the sqlx dependency
 bytes = "1.6.0"
 cbc = { version = "0.1.2", features = ["alloc"] }
@@ -93,6 +94,7 @@ auth = ["jsonwebtoken", "tokio", "reqwest"]
 aws = ["aws-sdk-s3", "aws-config"]
 crypto = ["aes"]
 environment = []
+multiplayer = ["base64"]
 net = [
   "axum",
   "axum-extra",

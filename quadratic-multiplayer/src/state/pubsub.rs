@@ -1,12 +1,13 @@
 use quadratic_core::controller::transaction::{Transaction, TransactionServer};
-use quadratic_rust_shared::pubsub::{
-    Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection,
+use quadratic_rust_shared::{
+    multiplayer::message::response::MessageResponse,
+    pubsub::{Config as PubSubConfig, PubSub as PubSubTrait, redis_streams::RedisConnection},
 };
 use uuid::Uuid;
 
 use crate::{
     error::{MpError, Result},
-    message::{proto::response::encode_message, response::MessageResponse},
+    message::proto::response::encode_message,
 };
 
 use super::State;

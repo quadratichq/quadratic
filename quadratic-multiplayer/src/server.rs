@@ -18,7 +18,11 @@ use futures::stream::StreamExt;
 use futures_util::SinkExt;
 use quadratic_rust_shared::{
     ErrorLevel,
-    auth::jwt::get_jwks,
+    auth::jwt::{get_jwks, tests::TOKEN},
+    multiplayer::message::{
+        request::MessageRequest,
+        response::{MessageResponse, ResponseError},
+    },
     net::websocket_server::{pre_connection::PreConnection, server::WebsocketServer},
 };
 use std::{net::SocketAddr, sync::Arc};
@@ -36,8 +40,6 @@ use crate::{
         broadcast,
         handle::handle_message,
         proto::{request::decode_transaction, response::encode_message},
-        request::MessageRequest,
-        response::MessageResponse,
     },
     state::{State, user::UserSocket},
 };
@@ -165,7 +167,8 @@ async fn ws_handler(
         cookie,
         headers,
         state.settings.authenticate_jwt,
-        state.settings.jwks.clone().unwrap(),
+        state.settings.jwks.clone(),
+        cfg!(test).then(|| TOKEN.to_string()),
     );
 
     match pre_connection {
@@ -208,11 +211,26 @@ async fn handle_socket(
             Ok(ControlFlow::Continue(_)) => {}
             Ok(ControlFlow::Break(_)) => break,
             Err(error) => {
+                let should_break = matches!(
+                    error,
+                    MpError::Authentication(_)
+                        | MpError::UserNotFound(_, _)
+                        | MpError::FilePermissions(_)
+                        | MpError::RoomNotFound(_)
+                );
+
                 let error_level = ErrorLevel::from(&error);
                 error_level.log(&format!("Error processing message: {:?}", &error));
 
+                let response_error = match error {
+                    MpError::MissingTransactions(expected, got) => {
+                        ResponseError::MissingTransactions(expected, got)
+                    }
+                    _ => ResponseError::Unknown(error.to_string()),
+                };
+
                 if let Ok(message) = serde_json::to_string(&MessageResponse::Error {
-                    error: error.to_owned(),
+                    error: response_error,
                     error_level,
                 }) {
                     // send error message to the client
@@ -227,17 +245,9 @@ async fn handle_socket(
                     }
                 }
 
-                match error {
-                    // kill the ws connection for certain errors
-                    MpError::Authentication(_)
-                    | MpError::UserNotFound(_, _)
-                    | MpError::FilePermissions(_)
-                    | MpError::RoomNotFound(_) => {
-                        break;
-                    }
-                    // noop
-                    _ => {}
-                };
+                if should_break {
+                    break;
+                }
             }
         }
     }
@@ -254,7 +264,7 @@ async fn handle_socket(
                 if let Ok(room) = state.get_room(&file_id).await {
                     tracing::info!("Broadcasting room {file_id} after connection close");
 
-                    let message = MessageResponse::from((room.users, &state.settings.version));
+                    let message = room.to_users_in_room_response(&state.settings.version);
                     if let Err(error) = broadcast(
                         vec![connection.session_id],
                         file_id,
@@ -300,7 +310,12 @@ async fn process_message(
         // binary messages are protocol buffers
         Message::Binary(b) => {
             let transaction = decode_transaction(&b)?;
-            let message_request = MessageRequest::try_from(transaction)?;
+            let message_request = MessageRequest::BinaryTransaction {
+                id: transaction.id.parse()?,
+                session_id: transaction.session_id.parse()?,
+                file_id: transaction.file_id.parse()?,
+                operations: transaction.operations,
+            };
             let message_response =
                 handle_message(message_request, state, Arc::clone(&sender), pre_connection).await?;
 
@@ -343,11 +358,11 @@ pub(crate) async fn send_response(
 #[cfg(test)]
 pub(crate) mod tests {
 
-    use super::*;
-    use crate::message::response::MinVersion;
-    use crate::state::settings::version;
-    use crate::state::user::{User, UserStateUpdate};
+    use crate::state::user::User;
     use crate::test_util::{integration_test_send_and_receive, setup};
+    use quadratic_rust_shared::multiplayer::message::UserStateUpdate;
+    use quadratic_rust_shared::multiplayer::message::request::MessageRequest;
+    use quadratic_rust_shared::multiplayer::message::response::MessageResponse;
 
     use base64::{Engine, engine::general_purpose::STANDARD};
     use quadratic_core::controller::operations::operation::Operation;
@@ -390,42 +405,6 @@ pub(crate) mod tests {
                 follow: None,
             },
         }
-    }
-
-    #[tokio::test]
-    async fn test_user_enters_a_room() {
-        // user_2 is created using the MessageRequest::EnterRoom message
-        let (_, state, _, file_id, _, _) = setup().await;
-
-        let num_users_in_room = state.get_room(&file_id).await.unwrap().users.len();
-        assert_eq!(num_users_in_room, 2);
-    }
-
-    #[tokio::test]
-    async fn user_leaves_a_room() {
-        let (socket, _, _, file_id, user_1, user_2) = setup().await;
-
-        // user_2 leaves the room
-        let request = MessageRequest::LeaveRoom {
-            session_id: user_2.session_id,
-            file_id,
-        };
-
-        // only the initial user is left in the room
-        let expected = MessageResponse::UsersInRoom {
-            users: vec![user_1.clone()],
-            version: version(),
-
-            // TODO: to be deleted after next version
-            min_version: MinVersion {
-                required_version: 5,
-                recommended_version: 5,
-            },
-        };
-
-        let response = integration_test_send_and_receive(&socket, request, true, 4).await;
-
-        assert_eq!(response, Some(expected));
     }
 
     // flaky test which often gets stuck until timeout

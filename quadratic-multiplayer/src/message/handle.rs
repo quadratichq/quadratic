@@ -7,6 +7,12 @@
 
 use base64::{Engine, engine::general_purpose::STANDARD};
 use quadratic_rust_shared::ErrorLevel;
+use quadratic_rust_shared::multiplayer::message::response::{
+    BinaryTransaction, ResponseError, Transaction,
+};
+use quadratic_rust_shared::multiplayer::message::{
+    UserState, request::MessageRequest, response::MessageResponse,
+};
 use quadratic_rust_shared::net::websocket_server::pre_connection::PreConnection;
 use quadratic_rust_shared::quadratic_api::{ADMIN_PERMS, get_file_perms};
 use std::sync::Arc;
@@ -14,20 +20,13 @@ use uuid::Uuid;
 
 use crate::error::{MpError, Result};
 use crate::get_mut_room;
-use crate::message::response::{BinaryTransaction, Transaction};
-use crate::message::{
-    broadcast, request::MessageRequest, response::MessageResponse, send_user_message,
-};
+use crate::message::{broadcast, send_user_message};
 use crate::permissions::{
     validate_can_edit_or_view_file, validate_user_can_edit_file,
     validate_user_can_edit_or_view_file,
 };
 use crate::state::user::UserSocket;
-use crate::state::{
-    State,
-    pubsub::GROUP_NAME,
-    user::{User, UserState},
-};
+use crate::state::{State, pubsub::GROUP_NAME, user::User};
 
 /// Handle incoming messages.  All requests and responses are strictly typed.
 #[tracing::instrument(level = "trace")]
@@ -140,7 +139,7 @@ pub(crate) async fn handle_message(
             // response is the variant MessageResponse::UsersInRoom
             if is_new {
                 let room = state.get_room(&file_id).await?;
-                let response = MessageResponse::from((room.users, &state.settings.version));
+                let response = room.to_users_in_room_response(&state.settings.version);
 
                 broadcast(vec![], file_id, Arc::clone(&state), response);
             }
@@ -162,7 +161,7 @@ pub(crate) async fn handle_message(
             let room = state.get_room(&file_id).await?;
 
             if is_not_empty {
-                let response = MessageResponse::from((room.users, &state.settings.version));
+                let response = room.to_users_in_room_response(&state.settings.version);
                 broadcast(vec![session_id], file_id, Arc::clone(&state), response);
             }
 
@@ -228,10 +227,8 @@ pub(crate) async fn handle_message(
             file_id,
             operations,
         } => {
-            println!("BinaryTransaction");
             validate_user_can_edit_file(Arc::clone(&state), file_id, session_id).await?;
 
-            println!("validate_user_can_edit_file");
             // update the heartbeat
             state.update_user_heartbeat(file_id, &session_id).await?;
 
@@ -300,7 +297,12 @@ pub(crate) async fn handle_message(
                 .get_messages_from_pubsub(&file_id, min_sequence_num)
                 .await?
                 .into_iter()
-                .map(|transaction| transaction.into())
+                .map(|transaction| Transaction {
+                    id: transaction.id,
+                    file_id: transaction.file_id,
+                    sequence_num: transaction.sequence_num,
+                    operations: STANDARD.encode(&transaction.operations),
+                })
                 .collect::<Vec<Transaction>>();
 
             tracing::trace!("got: {}", transactions.len());
@@ -309,7 +311,7 @@ pub(crate) async fn handle_message(
             // send an error to the client so they can reload
             if transactions.len() < expected_num_transactions as usize {
                 return Ok(Some(MessageResponse::Error {
-                    error: MpError::MissingTransactions(
+                    error: ResponseError::MissingTransactions(
                         expected_num_transactions.to_string(),
                         transactions.len().to_string(),
                     ),
@@ -350,7 +352,12 @@ pub(crate) async fn handle_message(
                 .get_messages_from_pubsub(&file_id, min_sequence_num)
                 .await?
                 .into_iter()
-                .map(|transaction| transaction.into())
+                .map(|transaction| BinaryTransaction {
+                    id: transaction.id,
+                    file_id: transaction.file_id,
+                    sequence_num: transaction.sequence_num,
+                    operations: transaction.operations,
+                })
                 .collect::<Vec<BinaryTransaction>>();
 
             tracing::trace!("got: {}", transactions.len());
@@ -359,7 +366,7 @@ pub(crate) async fn handle_message(
             // send an error to the client so they can reload
             if transactions.len() < expected_num_transactions as usize {
                 return Ok(Some(MessageResponse::Error {
-                    error: MpError::MissingTransactions(
+                    error: ResponseError::MissingTransactions(
                         expected_num_transactions.to_string(),
                         transactions.len().to_string(),
                     ),
@@ -424,10 +431,13 @@ pub(crate) mod tests {
     use uuid::Uuid;
 
     use super::*;
-    use crate::message::response::MinVersion;
     use crate::state::settings::version;
-    use crate::state::user::{CellEdit, UserStateUpdate};
     use crate::test_util::{integration_test_receive, new_user, setup};
+    use quadratic_rust_shared::multiplayer::message::{
+        CellEdit, UserStateUpdate,
+        request::MessageRequest,
+        response::{MessageResponse, MinVersion},
+    };
 
     async fn test_handle(
         socket: Arc<Mutex<WebSocketStream<MaybeTlsStream<TcpStream>>>>,
@@ -445,6 +455,7 @@ pub(crate) mod tests {
             .socket
             .unwrap();
 
+        println!("request: {:?}", &request);
         let handled = handle_message(
             request,
             state.clone(),
@@ -454,6 +465,7 @@ pub(crate) mod tests {
         .await
         .unwrap();
         assert_eq!(handled, response);
+        println!("handled: {:?}", &handled);
 
         if let Some(broadcast_response) = broadcast_response {
             let received = integration_test_receive(&socket, 4).await.unwrap();
@@ -505,7 +517,7 @@ pub(crate) mod tests {
     #[tokio::test]
     async fn handle_enter_room() {
         let (socket, state, _, file_id, user_1, _) = setup().await;
-        let user = new_user();
+        let user = new_user(0);
 
         let request = MessageRequest::EnterRoom {
             file_id,
@@ -558,7 +570,7 @@ pub(crate) mod tests {
         };
 
         let response = MessageResponse::UsersInRoom {
-            users: vec![user_2.clone()],
+            users: vec![user_2.clone().into()],
             version: version(),
             // TODO: to be deleted after next version
             min_version: MinVersion {
@@ -703,7 +715,7 @@ pub(crate) mod tests {
             .increment_sequence_num();
 
         let response = MessageResponse::Error {
-            error: MpError::MissingTransactions("1".into(), "0".into()), // requested 1, got 0
+            error: ResponseError::MissingTransactions("1".into(), "0".into()), // requested 1, got 0
             error_level: ErrorLevel::Error,
         };
 

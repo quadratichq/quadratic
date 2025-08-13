@@ -38,23 +38,20 @@ impl WebsocketServer {
         cookie: Option<TypedHeader<headers::Cookie>>,
         headers: HeaderMap,
         authenticate_jwt: bool,
-        jwks: jsonwebtoken::jwk::JwkSet,
+        jwks: Option<jsonwebtoken::jwk::JwkSet>,
+        jwt_override: Option<String>,
     ) -> Result<PreConnection> {
+        let auth_error = |error: &str| WebsocketServerError::Authentication(error.to_string());
+
         let user_agent = user_agent.map_or("Unknown user agent".into(), |user_agent| {
             user_agent.to_string()
         });
         let addr = addr.to_string();
 
-        #[allow(unused)]
-        let mut jwt = None;
+        let mut jwt = jwt_override;
 
-        #[cfg(test)]
-        {
-            jwt = Some(crate::auth::jwt::tests::TOKEN.to_string());
-        }
-
-        if authenticate_jwt {
-            let auth_error = |error: &str| WebsocketServerError::Authentication(error.to_string());
+        if authenticate_jwt && jwt.is_none() {
+            let jwks = jwks.ok_or_else(|| auth_error("No JWKS found"))?;
 
             // validate the JWT or ignore for anonymous users if it doesn't exist
             let result = {
@@ -117,7 +114,4 @@ impl WebsocketServer {
 }
 
 #[cfg(test)]
-pub(crate) mod tests {
-
-    use super::*;
-}
+pub(crate) mod tests {}

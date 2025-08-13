@@ -72,7 +72,6 @@ pub(crate) async fn process_transaction(
     let get_cells = move |a1: String| {
         tokio::task::block_in_place(|| {
             Handle::current().block_on(async {
-                println!("sending get_cells request: {:?}", a1);
                 // send the request
                 tx_get_cells_request.lock().await.send(a1).await?;
 

@@ -5,12 +5,12 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::state::user::{CellEdit, UserStateUpdate};
+use crate::multiplayer::message::{CellEdit, UserStateUpdate};
 
 // NOTE: needs to be kept in sync with multiplayerTypes.ts
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 #[serde(tag = "type")]
-pub(crate) enum MessageRequest {
+pub enum MessageRequest {
     EnterRoom {
         session_id: Uuid,
         user_id: String,
