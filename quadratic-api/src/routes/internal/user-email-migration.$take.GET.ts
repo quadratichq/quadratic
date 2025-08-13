@@ -76,7 +76,7 @@ router.get(
             })
           )
         );
-        count += newUsers.length;
+        count += usersWithEmailUnique.length;
       } catch (error) {
         logger.error('Error in user-email-migration', error);
       }
