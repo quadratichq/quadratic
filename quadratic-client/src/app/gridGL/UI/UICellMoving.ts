@@ -32,7 +32,7 @@ export class UICellMoving extends Container {
   }
 
   private drawMove() {
-    const moving = pixiApp.pointer.pointerCellMoving.movingCells;
+    const moving = pixiApp.pointer?.pointerCellMoving.movingCells;
     if (!moving) {
       throw new Error('Expected moving to be defined in drawMove');
     }
@@ -59,7 +59,7 @@ export class UICellMoving extends Container {
 
   // draw moving columns and rows (this is the cut and paste version when dragging from the headers)
   private drawColRow() {
-    const moving = pixiApp.pointer.pointerHeading.movingColRows;
+    const moving = pixiApp.pointer?.pointerHeading.movingColRows;
     if (!moving) {
       throw new Error('Expected movingColRows to be defined in drawColRow');
     }
@@ -100,7 +100,7 @@ export class UICellMoving extends Container {
 
   // draw moving columns and rows (this is the normal cell move for entire rows and columns)
   private drawMovingColRow() {
-    const moving = pixiApp.pointer.pointerCellMoving.movingCells;
+    const moving = pixiApp.pointer?.pointerCellMoving.movingCells;
     if (!moving) {
       throw new Error('Expected moving to be defined in drawColRow');
     }
@@ -133,10 +133,10 @@ export class UICellMoving extends Container {
     }
 
     this.dirty = false;
-    if (pixiApp.pointer.pointerHeading.movingColRows) {
+    if (pixiApp.pointer?.pointerHeading.movingColRows) {
       this.drawColRow();
     } else {
-      switch (pixiApp.pointer.pointerCellMoving.state) {
+      switch (pixiApp.pointer?.pointerCellMoving.state) {
         case 'hover':
           if (this.visible) {
             this.visible = false;

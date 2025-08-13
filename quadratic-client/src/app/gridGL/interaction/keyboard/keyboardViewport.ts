@@ -91,7 +91,7 @@ export function keyboardViewport(event: React.KeyboardEvent<HTMLElement>): boole
       });
       return true;
     }
-    return pointer.handleEscape();
+    return pointer?.handleEscape() ?? false;
   }
 
   // Show go to menu

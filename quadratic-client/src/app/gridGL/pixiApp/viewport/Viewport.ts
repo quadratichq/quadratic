@@ -1,7 +1,7 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { BaseApp } from '@/app/gridGL/BaseApp';
 import { MOUSE_EDGES_DISTANCE, MOUSE_EDGES_SPEED } from '@/app/gridGL/interaction/pointer/pointerUtils';
-import { pixiApp, type PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Decelerate } from '@/app/gridGL/pixiApp/viewport/Decelerate';
 import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { MouseEdges } from '@/app/gridGL/pixiApp/viewport/MouseEdges';
@@ -15,7 +15,7 @@ import { isMobile } from 'react-device-detect';
 const MULTIPLAYER_VIEWPORT_EASE_TIME = 100;
 const MINIMUM_VIEWPORT_SCALE = 0.01;
 const MAXIMUM_VIEWPORT_SCALE = 10;
-const WHEEL_ZOOM_PERCENT = 1.5;
+export const WHEEL_ZOOM_PERCENT = 1.5;
 
 const WAIT_TO_SNAP_TIME = 200;
 const SNAPPING_TIME = 50;
@@ -23,7 +23,7 @@ const SNAPPING_TIME = 50;
 type SnapState = 'waiting' | 'snapping' | undefined;
 
 export class Viewport extends PixiViewport {
-  private pixiApp: PixiApp;
+  private pixiApp: BaseApp;
 
   private lastViewportPosition: Point = new Point();
 
@@ -40,11 +40,11 @@ export class Viewport extends PixiViewport {
   private snapState?: SnapState;
   private snapTimeout?: number;
 
-  constructor(pixiApp: PixiApp) {
+  constructor(gridApp: BaseApp) {
     super({
-      events: pixiApp.renderer.events,
+      events: gridApp.renderer.events,
     });
-    this.pixiApp = pixiApp;
+    this.pixiApp = gridApp;
     this.plugins.add(
       'drag',
       new Drag(this, {
@@ -219,7 +219,7 @@ export class Viewport extends PixiViewport {
 
   private handleMoved = (event: { viewport: Viewport; type: string }) => {
     if (event.type === 'mouse-edges') {
-      if (this.pixiApp.pointer.pointerHeading.movingColRows) return;
+      if (this.pixiApp.pointer?.pointerHeading.movingColRows) return;
 
       const headings = this.pixiApp.headings.headingSize;
       if (this.x > headings.width || this.y > headings.height) {
@@ -311,7 +311,7 @@ export class Viewport extends PixiViewport {
 
   private handleMouseEdgeMove = (event: { viewport: Viewport; type: string }) => {
     if (event.type === 'mouse-edges') {
-      pixiApp.pointer.pointerMove(this.pixiApp.renderer.events.pointer);
+      this.pixiApp.pointer?.pointerMove(this.pixiApp.renderer.events.pointer);
     }
   };
 }

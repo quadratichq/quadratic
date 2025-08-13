@@ -18,6 +18,7 @@ import { AILoading } from '@/app/ui/components/AILoading';
 import { Markdown } from '@/app/ui/components/Markdown';
 import { AIAnalystExamplePrompts } from '@/app/ui/menus/AIAnalyst/AIAnalystExamplePrompts';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
+import { AILightWeight } from '@/app/ui/menus/AIAnalyst/AILightWeight';
 import { ThinkingBlock } from '@/app/ui/menus/AIAnalyst/AIThinkingBlock';
 import { defaultAIAnalystContext } from '@/app/ui/menus/AIAnalyst/const/defaultAIAnalystContext';
 import { useSubmitAIAnalystPrompt } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
@@ -44,6 +45,8 @@ import { useRecoilCallback, useRecoilState, useRecoilValue } from 'recoil';
 type AIAnalystMessagesProps = {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 };
+
+const LIGHTWEIGHT_DEMO = true;
 
 export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) => {
   const { debug, debugFlags } = useDebugFlags();
@@ -156,7 +159,17 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   }, [promptSuggestionsCount, scrollToBottom]);
 
   if (messagesCount === 0) {
-    return <AIAnalystExamplePrompts />;
+    if (LIGHTWEIGHT_DEMO) {
+      return (
+        <>
+          <AILightWeight height={100} first={true} />
+          <div className="h-5" />
+          <AILightWeight height={200} first={false} />
+        </>
+      );
+    } else {
+      return <AIAnalystExamplePrompts />;
+    }
   }
 
   return (
