@@ -7,7 +7,7 @@ import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { pluralize } from '@/app/helpers/pluralize';
 import type { JsCellValueDescription } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { joinListWith } from '@/shared/components/JoinListWith';
+import { joinListWith } from '@/shared/components/JointListWith';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 

@@ -2,7 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { JoinListWith } from '@/shared/components/JoinListWith';
+import { JoinListWith } from '@/shared/components/JointListWith';
 import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import type { JSX } from 'react';
 
