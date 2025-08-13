@@ -457,8 +457,8 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       const transactionId = await quadraticCore.setCodeCellValue({
         sheetId,
-        x,
-        y,
+        pos: { x, y },
+        tablePos: undefined,
         codeString: sql_code_string,
         language: {
           Connection: {
