@@ -34,7 +34,7 @@ impl DataTable {
             .filter_map(|index| {
                 value
                     .get_row(*index as usize)
-                    .map(|row| self.display_columns(&columns_to_show, row))
+                    .map(|row| self.display_columns(&columns_to_show, row, *index as usize))
                     .ok()
             })
             .collect::<Vec<Vec<CellValue>>>();
@@ -72,7 +72,8 @@ impl DataTable {
             .to_owned()
             .into_array()?
             .rows()
-            .map(|row| self.display_columns(&columns_to_show, row))
+            .enumerate()
+            .map(|(row_index, row)| self.display_columns(&columns_to_show, row, row_index))
             .collect::<Vec<Vec<CellValue>>>();
         let array = Array::from(values);
 
@@ -109,12 +110,16 @@ impl DataTable {
         }
     }
 
-    /// Get the display value at a given position.
-    pub fn display_value_at(&self, mut pos: Pos) -> Result<&CellValue> {
+    /// Get the display value at a given display position.
+    pub fn display_value_ref_at(&self, mut pos: Pos) -> Option<&CellValue> {
+        if self.has_spill() || self.has_error() {
+            return Some(&CellValue::Blank);
+        }
+
         // the source cell is HTML or image, then display the first cell or blank
         if self.is_html_or_image() {
-            return Ok(if pos.x == 0 && pos.y == 0 {
-                self.value.get(0, 0)?
+            return Some(if pos.x == 0 && pos.y == 0 {
+                self.value.get(0, 0).ok()?
             } else {
                 &CellValue::Blank
             });
@@ -125,23 +130,53 @@ impl DataTable {
 
         // if the position is the first cell and the name and ui are shown, return the name
         if pos.x == 0 && pos.y == 0 && show_name {
-            return Ok(self.name.as_ref());
+            return Some(self.name.as_ref());
         }
 
         let header_y = if show_name { 1 } else { 0 };
 
         // if the position is the first cell and the header is shown, return the header
-        if pos.y == header_y && show_columns
-            && let Some(header) = self.display_header_at(pos.x as u32) {
-                return Ok(header.name.as_ref());
-            }
+        if pos.y == header_y
+            && show_columns
+            && let std::result::Result::Ok(display_x) = u32::try_from(pos.x)
+            && let Some(header) = self.display_header_at(display_x)
+        {
+            return Some(header.name.as_ref());
+        }
 
         pos.y -= self.y_adjustment(true);
 
         match self.display_buffer {
-            Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos),
-            None => self.display_value_from_value_at(pos),
+            Some(ref display_buffer) => self.display_value_from_buffer_at(display_buffer, pos).ok(),
+            None => self.display_value_from_value_at(pos).ok(),
         }
+    }
+
+    /// Get the display value at a given display position.
+    pub fn display_value_at(&self, pos: Pos) -> Option<CellValue> {
+        self.display_value_ref_at(pos).cloned()
+    }
+
+    /// Get the value ref at a given absolute position.
+    pub fn absolute_value_ref_at(&self, pos: Pos) -> Option<&CellValue> {
+        match &self.value {
+            Value::Single(v) => {
+                if pos.x == 0 && pos.y == 0 {
+                    Some(v)
+                } else {
+                    None
+                }
+            }
+            Value::Array(a) => a
+                .get(u32::try_from(pos.x).ok()?, u32::try_from(pos.y).ok()?)
+                .ok(),
+            Value::Tuple(_) => None,
+        }
+    }
+
+    /// Get the value at a given absolute position.
+    pub fn absolute_value_at(&self, pos: Pos) -> Option<CellValue> {
+        self.absolute_value_ref_at(pos).cloned()
     }
 
     /// Get the indices of the columns to show.
@@ -174,12 +209,28 @@ impl DataTable {
     }
 
     /// For a given row of CellValues, return only the columns that should be displayed
-    pub fn display_columns(&self, columns_to_show: &[usize], row: &[CellValue]) -> Vec<CellValue> {
+    pub fn display_columns(
+        &self,
+        columns_to_show: &[usize],
+        row: &[CellValue],
+        row_index: usize,
+    ) -> Vec<CellValue> {
         row.iter()
             .cloned()
             .enumerate()
-            .filter(|(i, _)| columns_to_show.contains(i))
-            .map(|(_, v)| v)
+            .filter(|(column_index, _)| columns_to_show.contains(column_index))
+            .map(|(column_index, cell_value)| match cell_value {
+                CellValue::Code(_) => self
+                    .tables
+                    .as_ref()
+                    .and_then(|tables| {
+                        tables.get_at(&Pos::new(column_index as i64, row_index as i64).into())
+                    })
+                    .and_then(|table| table.value.get(0, 0).ok())
+                    .unwrap_or(&CellValue::Blank)
+                    .to_owned(),
+                _ => cell_value,
+            })
             .collect::<Vec<CellValue>>()
     }
 
@@ -232,7 +283,7 @@ impl DataTable {
 #[cfg(test)]
 pub mod test {
     use crate::{
-        ArraySize, CellValue, Pos, SheetPos,
+        ArraySize, CellValue, Pos,
         controller::{
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
@@ -248,11 +299,7 @@ pub mod test {
     fn test_display_value_at_html_or_image() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
+        let sheet_pos = pos![sheet_id!A1];
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Python,

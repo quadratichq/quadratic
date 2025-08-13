@@ -667,7 +667,7 @@ impl GridController {
                     code_cell.adjust_references(
                         sheet_id,
                         context,
-                        original_pos.to_sheet_pos(sheet_id),
+                        sheet_id,
                         RefAdjust {
                             sheet_id: None,
                             relative_only: true,
@@ -689,16 +689,16 @@ impl GridController {
                         let new_name = unique_data_table_name(&old_name, false, None, context);
                         data_table.name = new_name.into();
 
-                        data_table_ops.push(Operation::SetDataTable {
-                            sheet_pos: final_sheet_pos,
+                        data_table_ops.push(Operation::SetDataTableMultiPos {
+                            multi_sheet_pos: final_sheet_pos.into(),
                             data_table: Some(data_table),
                             index: usize::MAX,
                         });
                     }
                 }
 
-                compute_code_ops.push(Operation::ComputeCode {
-                    sheet_pos: final_sheet_pos,
+                compute_code_ops.push(Operation::ComputeCodeMultiPos {
+                    multi_sheet_pos: final_sheet_pos.into(),
                 });
             }
         }

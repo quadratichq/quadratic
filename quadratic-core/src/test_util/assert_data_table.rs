@@ -7,7 +7,7 @@ use crate::{CellValue, Pos, SheetPos, controller::GridController, grid::DataTabl
 #[track_caller]
 #[cfg(test)]
 pub fn assert_data_table_at(dt: &DataTable, col: i64, row: i64, value: &str) {
-    let cell_value = dt.cell_value_at(col as u32, row as u32 + dt.y_adjustment(true) as u32);
+    let cell_value = dt.display_value_at((col, row + dt.y_adjustment(true)).into());
     assert_eq!(
         cell_value,
         if value.is_empty() {
@@ -88,7 +88,7 @@ pub fn assert_data_table_size(
     use crate::CellValue;
 
     let sheet = gc.sheet(sheet_id);
-    let Some(data_table) = sheet.data_table_at(&pos) else {
+    let Some(data_table) = sheet.data_table_at(&pos.into()) else {
         panic!("Data table at {pos} not found");
     };
     let Some(cell_value) = sheet.cell_value(pos) else {
@@ -157,7 +157,7 @@ pub fn assert_data_table_sort_dirty(
 ) {
     let sheet = gc.sheet(sheet_id);
     let data_table = sheet
-        .data_table_at(&pos)
+        .data_table_at(&pos.into())
         .unwrap_or_else(|| panic!("Data table at {pos} not found"));
     assert_eq!(
         data_table.sort_dirty, sort_dirty,

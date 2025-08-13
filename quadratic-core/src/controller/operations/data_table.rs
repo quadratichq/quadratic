@@ -152,51 +152,55 @@ impl GridController {
         let mut ops = vec![];
 
         if let Some(columns_to_add) = columns_to_add
-            && !columns_to_add.is_empty() {
-                ops.push(Operation::InsertDataTableColumns {
-                    sheet_pos,
-                    columns: columns_to_add
-                        .into_iter()
-                        .map(|index| (index, None, None))
-                        .collect(),
-                    swallow: swallow_on_insert.unwrap_or(false),
-                    select_table,
-                    copy_formats_from: None,
-                    copy_formats: None,
-                });
-            }
+            && !columns_to_add.is_empty()
+        {
+            ops.push(Operation::InsertDataTableColumns {
+                sheet_pos,
+                columns: columns_to_add
+                    .into_iter()
+                    .map(|index| (index, None, None))
+                    .collect(),
+                swallow: swallow_on_insert.unwrap_or(false),
+                select_table,
+                copy_formats_from: None,
+                copy_formats: None,
+            });
+        }
 
         if let Some(columns_to_remove) = columns_to_remove
-            && !columns_to_remove.is_empty() {
-                ops.push(Operation::DeleteDataTableColumns {
-                    sheet_pos,
-                    columns: columns_to_remove,
-                    flatten: flatten_on_delete.unwrap_or(false),
-                    select_table,
-                });
-            }
+            && !columns_to_remove.is_empty()
+        {
+            ops.push(Operation::DeleteDataTableColumns {
+                sheet_pos,
+                columns: columns_to_remove,
+                flatten: flatten_on_delete.unwrap_or(false),
+                select_table,
+            });
+        }
 
         if let Some(rows_to_add) = rows_to_add
-            && !rows_to_add.is_empty() {
-                ops.push(Operation::InsertDataTableRows {
-                    sheet_pos,
-                    rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
-                    swallow: swallow_on_insert.unwrap_or(false),
-                    select_table,
-                    copy_formats_from: None,
-                    copy_formats: None,
-                });
-            }
+            && !rows_to_add.is_empty()
+        {
+            ops.push(Operation::InsertDataTableRows {
+                sheet_pos,
+                rows: rows_to_add.into_iter().map(|index| (index, None)).collect(),
+                swallow: swallow_on_insert.unwrap_or(false),
+                select_table,
+                copy_formats_from: None,
+                copy_formats: None,
+            });
+        }
 
         if let Some(rows_to_remove) = rows_to_remove
-            && !rows_to_remove.is_empty() {
-                ops.push(Operation::DeleteDataTableRows {
-                    sheet_pos,
-                    rows: rows_to_remove,
-                    flatten: flatten_on_delete.unwrap_or(false),
-                    select_table,
-                });
-            }
+            && !rows_to_remove.is_empty()
+        {
+            ops.push(Operation::DeleteDataTableRows {
+                sheet_pos,
+                rows: rows_to_remove,
+                flatten: flatten_on_delete.unwrap_or(false),
+                select_table,
+            });
+        }
 
         ops
     }
@@ -234,6 +238,7 @@ impl GridController {
         ]
     }
 
+    /// Adds a data table to the sheet.
     pub fn add_data_table_operations(
         &self,
         sheet_pos: SheetPos,
@@ -287,7 +292,7 @@ impl GridController {
         }
 
         let import = Import::new(name.to_owned());
-        let name = unique_data_table_name(&name, false, Some(sheet_pos), self.a1_context());
+        let name = unique_data_table_name(&name, false, Some(sheet_pos.into()), self.a1_context());
         let mut data_table = DataTable::new(
             DataTableKind::Import(import.to_owned()),
             &name,
@@ -303,8 +308,8 @@ impl GridController {
             .apply_updates(&sheet_format_updates);
         drop(sheet_format_updates);
 
-        ops.push(Operation::AddDataTable {
-            sheet_pos,
+        ops.push(Operation::AddDataTableMultiPos {
+            multi_sheet_pos: sheet_pos.into(),
             data_table,
             cell_value: CellValue::Import(import),
             index: None,
@@ -440,7 +445,7 @@ mod test {
         assert_eq!(ops.len(), 1);
 
         match &ops[0] {
-            Operation::AddDataTable {
+            Operation::AddDataTableMultiPos {
                 data_table,
                 cell_value,
                 ..
@@ -497,7 +502,7 @@ mod test {
                     Some(true)
                 );
             }
-            _ => panic!("Expected AddDataTable operation"),
+            _ => panic!("Expected AddDataTableMultiPos operation"),
         }
     }
 

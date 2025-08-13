@@ -4,7 +4,6 @@ use wasm_bindgen::prelude::*;
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 use uuid::Uuid;
 
 use super::cells_accessed::JsCellsAccessed;
@@ -17,7 +16,8 @@ use crate::controller::execution::TransactionSource;
 use crate::controller::operations::ai_operation::AIOperation;
 use crate::{CellValue, Pos};
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum JsRenderCellSpecial {
     Chart,
     SpillError,
@@ -27,7 +27,8 @@ pub enum JsRenderCellSpecial {
     List,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsNumber {
     pub decimals: Option<i16>,
     pub commas: Option<bool>,
@@ -58,7 +59,8 @@ impl From<&Format> for JsNumber {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum JsCellValueKind {
     #[default]
     Blank,
@@ -97,20 +99,23 @@ impl From<CellValue> for JsCellValueKind {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellValue {
     pub value: String,
     pub kind: JsCellValueKind,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellValuePos {
     pub value: String,
     pub kind: JsCellValueKind,
     pub pos: String,
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsSelectionContext {
     pub sheet_name: String,
     pub data_rects: Vec<JsCellValueDescription>,
@@ -119,16 +124,8 @@ pub struct JsSelectionContext {
     pub charts_summary: Option<Vec<JsChartSummaryContext>>,
 }
 
-// #[derive(Serialize, Debug, PartialEq, Eq, TS)]
-// pub struct JsCellValuePosContext {
-//     pub sheet_name: String,
-//     pub rect_origin: String,
-//     pub rect_width: u32,
-//     pub rect_height: u32,
-//     pub starting_rect_values: Option<>,
-// }
-
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsTableSummaryContext {
     pub sheet_name: String,
     pub table_name: String,
@@ -138,7 +135,8 @@ pub struct JsTableSummaryContext {
     pub connection_id: Option<String>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub enum JsTableType {
     DataTable,
@@ -148,14 +146,16 @@ pub enum JsTableType {
     Connection,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsChartSummaryContext {
     pub sheet_name: String,
     pub chart_name: String,
     pub bounds: String,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCodeErrorContext {
     pub sheet_name: String,
     pub pos: String,
@@ -166,7 +166,8 @@ pub struct JsCodeErrorContext {
     pub expected_bounds: Option<String>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsTablesContext {
     pub sheet_name: String,
     pub data_tables: Vec<JsDataTableContext>,
@@ -174,7 +175,8 @@ pub struct JsTablesContext {
     pub charts: Vec<JsChartContext>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsDataTableContext {
     pub sheet_name: String,
     pub data_table_name: String,
@@ -189,7 +191,8 @@ pub struct JsDataTableContext {
     pub spill: bool,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCodeTableContext {
     pub sheet_name: String,
     pub code_table_name: String,
@@ -208,7 +211,8 @@ pub struct JsCodeTableContext {
     pub spill: bool,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsChartContext {
     pub sheet_name: String,
     pub chart_name: String,
@@ -219,7 +223,8 @@ pub struct JsChartContext {
     pub spill: bool,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsRenderCell {
     pub x: i64,
@@ -290,20 +295,23 @@ impl From<Pos> for JsRenderCell {
     }
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsHashRenderCells {
     pub sheet_id: SheetId,
     pub hash: Pos,
     pub cells: Vec<JsRenderCell>,
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsHashesDirty {
     pub sheet_id: SheetId,
     pub hashes: Vec<Pos>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderFill {
     pub x: i64,
     pub y: i64,
@@ -313,7 +321,8 @@ pub struct JsRenderFill {
     pub color: String,
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsSheetFill {
     pub x: u32,
     pub y: u32,
@@ -322,13 +331,15 @@ pub struct JsSheetFill {
     pub color: String,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum CellType {
     Date,
     DateTime,
 }
 
-#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct CellFormatSummary {
     pub bold: Option<bool>,
@@ -351,13 +362,15 @@ pub struct CellFormatSummary {
     pub numeric_format: Option<NumericFormat>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsReturnInfo {
     pub line_number: Option<u32>,
     pub output_type: Option<String>,
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCodeCell {
     pub x: i64,
     pub y: i64,
@@ -372,7 +385,8 @@ pub struct JsCodeCell {
     pub last_modified: i64,
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRenderCodeCell {
     pub x: i32,
     pub y: i32,
@@ -395,7 +409,8 @@ pub struct JsRenderCodeCell {
     pub last_modified: i64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsHtmlOutput {
     pub sheet_id: String,
     pub x: i32,
@@ -407,7 +422,8 @@ pub struct JsHtmlOutput {
     pub show_name: bool,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub enum JsRenderCodeCellState {
     NotYetRun,
     RunError,
@@ -417,7 +433,8 @@ pub enum JsRenderCodeCellState {
     Image,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsClipboard {
     pub plain_text: String,
@@ -425,7 +442,8 @@ pub struct JsClipboard {
 }
 
 // Used to serialize the checkboxes contained within a sheet.
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsValidationSheet {
     // checkboxes that need to be rendered
     checkboxes: Vec<(Pos, bool)>,
@@ -434,7 +452,8 @@ pub struct JsValidationSheet {
     errors: Vec<(Pos, String)>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsDataTableColumnHeader {
     pub name: String,
@@ -462,13 +481,15 @@ impl From<JsDataTableColumnHeader> for DataTableColumnHeader {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsColumnWidth {
     pub column: i64,
     pub width: f64,
 }
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsRowHeight {
     pub row: i64,
     pub height: f64,
@@ -480,7 +501,8 @@ impl fmt::Display for JsRowHeight {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Copy, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "camelCase")]
 pub struct JsOffset {
     pub column: Option<i32>,
@@ -498,28 +520,32 @@ impl fmt::Display for JsOffset {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsValidationWarning {
     pub pos: Pos,
     pub validation: Option<Uuid>,
     pub style: Option<ValidationStyle>,
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsHashValidationWarnings {
     pub sheet_id: SheetId,
     pub hash: Option<Pos>,
     pub warnings: Vec<JsValidationWarning>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsSummarizeSelectionResult {
     pub count: i64,
     pub sum: Option<f64>,
     pub average: Option<f64>,
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(rename_all = "lowercase")]
 pub enum JsSnackbarSeverity {
     Error,
@@ -568,7 +594,8 @@ mod test {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsResponse {
     pub result: bool,
     pub error: Option<String>,
@@ -579,22 +606,23 @@ impl From<JsResponse> for wasm_bindgen::JsValue {
     }
 }
 
-#[derive(Serialize, Debug, PartialEq, TS)]
+#[derive(Serialize, Debug, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsUpdateCodeCell {
     pub sheet_id: SheetId,
     pub pos: Pos,
     pub render_code_cell: Option<JsRenderCodeCell>,
 }
 
-#[derive(Debug, Clone, TS)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct JsCoordinate {
     pub x: u32,
     pub y: u32,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub enum Direction {
     Up,
     Down,
@@ -602,13 +630,15 @@ pub enum Direction {
     Right,
 }
 
-#[derive(Debug, Serialize, Deserialize, TS)]
+#[derive(Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsSheetNameToColor {
     pub sheet_name: String,
     pub color: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, TS, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsSheetPosText {
     pub sheet_id: String,
     pub x: i64,
@@ -616,21 +646,24 @@ pub struct JsSheetPosText {
     pub text: Option<String>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellValueCode {
     pub value: String,
     pub kind: JsCellValueKind,
     pub language: Option<CodeCellLanguage>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsCellValueDescription {
     pub total_range: String,
     pub range: String,
     pub values: Vec<Vec<JsCellValueCode>>,
 }
 
-#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsGetAICellResult {
     pub selection: String,
     pub page: i32,
@@ -638,7 +671,8 @@ pub struct JsGetAICellResult {
     pub values: Vec<JsCellValueDescription>,
 }
 
-#[derive(Debug, Serialize, TS, PartialEq)]
+#[derive(Debug, Serialize, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct JsAITransactions {
     pub ops: Vec<AIOperation>,
     pub source: TransactionSource,

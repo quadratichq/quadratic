@@ -23,6 +23,7 @@ import type {
   JsCodeCell,
   JsCodeResult,
   JsColumnWidth,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsResponse,
   JsRowHeight,
@@ -516,8 +517,7 @@ class Core {
 
   setCodeCellValue(
     sheetId: string,
-    x: number,
-    y: number,
+    pos: JsCoordinate,
     language: CodeCellLanguage,
     codeString: string,
     codeCellName: string | undefined,
@@ -526,7 +526,15 @@ class Core {
   ): string | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.setCellCode(sheetId, posToPos(x, y), language, codeString, codeCellName, cursor, isAi);
+      return this.gridController.setCellCode(
+        sheetId,
+        posToPos(pos.x, pos.y),
+        language,
+        codeString,
+        codeCellName,
+        cursor,
+        isAi
+      );
     } catch (e) {
       this.handleCoreError('setCodeCellValue', e);
     }

@@ -287,7 +287,7 @@ mod tests {
     use crate::controller::transaction_types::{JsCellValueResult, JsCodeResult};
     use crate::grid::{CodeCellLanguage, CodeCellValue, Sheet};
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call};
-    use crate::{CellValue, Pos, SheetPos};
+    use crate::{CellValue, MultiPos, Pos, SheetPos};
 
     #[test]
     fn test_multiplayer_hello_world() {
@@ -732,11 +732,7 @@ mod tests {
             Transaction::serialize_and_compress(&other_operations).unwrap();
 
         client.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             crate::grid::CodeCellLanguage::Python,
             "start this before receiving multiplayer".to_string(),
             None,
@@ -1086,11 +1082,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "1".to_string(),
             None,
@@ -1098,11 +1090,7 @@ mod tests {
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "2".to_string(),
             None,
@@ -1110,19 +1098,19 @@ mod tests {
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 3,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 3, 1),
             CodeCellLanguage::Formula,
             "3".to_string(),
             None,
             None,
             false,
         );
-        let find_index =
-            |sheet: &Sheet, x: i64, y: i64| sheet.data_tables.get_index_of(&Pos { x, y }).unwrap();
+        let find_index = |sheet: &Sheet, x: i64, y: i64| {
+            sheet
+                .data_tables
+                .get_index_of(&MultiPos::new_pos((x, y).into()))
+                .unwrap()
+        };
         let sheet = gc.sheet(sheet_id);
         assert_eq!(find_index(sheet, 1, 1), 0);
         assert_eq!(find_index(sheet, 2, 1), 1);

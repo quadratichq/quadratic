@@ -1,3 +1,4 @@
+use crate::MultiPos;
 use crate::controller::GridController;
 use crate::controller::active_transactions::transaction_name::TransactionName;
 use crate::controller::operations::clipboard::{Clipboard, PasteSpecial};
@@ -43,25 +44,25 @@ impl GridController {
         if let Ok(clipboard) = Clipboard::decode(&js_clipboard.html)
             && let Ok((ops, data_table_ops)) =
                 self.paste_html_operations(insert_at, end_pos, selection, clipboard, special)
-            {
+        {
+            self.start_user_ai_transaction(
+                ops,
+                cursor.clone(),
+                TransactionName::PasteClipboard,
+                is_ai,
+            );
+
+            if !data_table_ops.is_empty() {
                 self.start_user_ai_transaction(
-                    ops,
-                    cursor.clone(),
+                    data_table_ops,
+                    cursor,
                     TransactionName::PasteClipboard,
                     is_ai,
                 );
-
-                if !data_table_ops.is_empty() {
-                    self.start_user_ai_transaction(
-                        data_table_ops,
-                        cursor,
-                        TransactionName::PasteClipboard,
-                        is_ai,
-                    );
-                }
-
-                return;
             }
+
+            return;
+        }
 
         // if not quadratic html, then use the plain text
         if let Ok(ops) = self.paste_plain_text_operations(
@@ -107,7 +108,7 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
         let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell((x, y).into())?;
+        let code_cell = sheet.get_render_code_cell(MultiPos::new_pos((x, y).into()))?;
         if sheet_end {
             if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
                 dest = if reverse {
@@ -154,7 +155,7 @@ impl GridController {
         let sheet = self.try_sheet(sheet_id)?;
         let source = SheetRect::from_numbers(x, y, 1, 1, sheet_id);
         let mut dest = SheetPos::new(sheet_id, x, y);
-        let code_cell = sheet.get_render_code_cell((x, y).into())?;
+        let code_cell = sheet.get_render_code_cell(MultiPos::new_pos((x, y).into()))?;
         if sheet_end {
             if let GridBounds::NonEmpty(rect) = sheet.bounds(true) {
                 dest = if reverse {
@@ -216,7 +217,7 @@ mod test {
         y: i64,
     ) {
         gc.set_code_cell(
-            SheetPos { x, y, sheet_id },
+            SheetPos::new(sheet_id, x, y),
             language,
             code.into(),
             None,
@@ -1329,7 +1330,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_at(&pos).unwrap();
+        let data_table = sheet.data_table_at(&pos.into()).unwrap();
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1349,7 +1350,7 @@ mod test {
 
         // first row is not header
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(&pos.into(), |dt| {
                 dt.header_is_first_row = false;
                 Ok(())
             })
@@ -1364,7 +1365,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_at(&pos).unwrap();
+        let data_table = sheet.data_table_at(&pos.into()).unwrap();
         assert_eq!(
             sheet.display_value(pos![G10]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1384,7 +1385,7 @@ mod test {
 
         // first row is not header
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(&pos.into(), |dt| {
                 dt.show_name = Some(false);
                 dt.show_columns = Some(false);
                 Ok(())
@@ -1400,7 +1401,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_at(&pos).unwrap();
+        let data_table = sheet.data_table_at(&pos.into()).unwrap();
         assert_eq!(
             sheet.display_value(pos![E11]).unwrap(),
             CellValue::Text("value".to_string())
@@ -1426,7 +1427,7 @@ mod test {
         // sort column 3 descending
         let sheet = gc.sheet_mut(sheet_id);
         sheet
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(&pos.into(), |dt| {
                 dt.sort_column(3, SortDirection::Descending).unwrap();
                 Ok(())
             })
@@ -1451,7 +1452,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_at(&pos).unwrap();
+        let data_table = sheet.data_table_at(&pos.into()).unwrap();
 
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),
@@ -1477,7 +1478,7 @@ mod test {
 
         // hide first column
         gc.sheet_mut(sheet_id)
-            .modify_data_table_at(&pos, |dt| {
+            .modify_data_table_at(&pos.into(), |dt| {
                 let column_headers = dt.column_headers.as_mut().unwrap();
                 column_headers[2].display = false;
                 Ok(())
@@ -1503,7 +1504,7 @@ mod test {
         );
 
         let sheet = gc.sheet_mut(sheet_id);
-        let data_table = sheet.data_table_at(&pos).unwrap();
+        let data_table = sheet.data_table_at(&pos.into()).unwrap();
 
         assert_eq!(
             sheet.display_value(pos![F5]).unwrap(),

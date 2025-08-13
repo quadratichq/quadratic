@@ -3,19 +3,6 @@ use crate::a1::{A1Context, A1Error, SheetCellRefRange};
 use super::*;
 
 impl A1Selection {
-    /// Parses a selection from a comma-separated list of ranges, using only A1
-    /// notation (not RC).
-    ///
-    /// Returns an error if ranges refer to different sheets. Ranges without an
-    /// explicit sheet use `default_sheet_id`.
-    pub fn parse_a1(
-        a1: &str,
-        default_sheet_id: SheetId,
-        a1_context: &A1Context,
-    ) -> Result<Self, A1Error> {
-        Self::parse(a1, default_sheet_id, a1_context, None)
-    }
-
     /// Parses a selection from a comma-separated list of ranges.
     ///
     /// Returns an error if ranges refer to different sheets. Ranges without an
@@ -27,7 +14,6 @@ impl A1Selection {
         s: &str,
         default_sheet_id: SheetId,
         a1_context: &A1Context,
-        base_pos: Option<Pos>,
     ) -> Result<Self, A1Error> {
         let mut sheet = None;
         let mut ranges = vec![];
@@ -77,8 +63,7 @@ impl A1Selection {
 
         let mut sheet_id = None;
         for segment in segments {
-            let range =
-                SheetCellRefRange::parse(segment.trim(), default_sheet_id, a1_context, base_pos)?;
+            let range = SheetCellRefRange::parse_a1(segment.trim(), default_sheet_id, a1_context)?;
             if *sheet.get_or_insert(range.sheet_id) != range.sheet_id {
                 return Err(A1Error::TooManySheets(s.to_string()));
             }
@@ -110,7 +95,7 @@ mod tests {
         let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse_a1("A1", sheet_id, &context),
+            A1Selection::parse("A1", sheet_id, &context),
             Ok(A1Selection::from_xy(1, 1, sheet_id)),
         );
     }
@@ -120,7 +105,7 @@ mod tests {
         let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse_a1("*", sheet_id, &context),
+            A1Selection::parse("*", sheet_id, &context),
             Ok(A1Selection::from_range(
                 CellRefRange::ALL,
                 sheet_id,
@@ -134,15 +119,15 @@ mod tests {
         let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse_a1("A1:B2", sheet_id, &context),
+            A1Selection::parse("A1:B2", sheet_id, &context),
             Ok(A1Selection::test_a1("A1:B2")),
         );
         assert_eq!(
-            A1Selection::parse_a1("D1:A5", sheet_id, &context),
+            A1Selection::parse("D1:A5", sheet_id, &context),
             Ok(A1Selection::test_a1("D1:A5")),
         );
         assert_eq!(
-            A1Selection::parse_a1("A1:B2,D1:A5", sheet_id, &context),
+            A1Selection::parse("A1:B2,D1:A5", sheet_id, &context),
             Ok(A1Selection::test_a1("A1:B2,D1:A5")),
         );
     }
@@ -152,7 +137,7 @@ mod tests {
         let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         let selection =
-            A1Selection::parse_a1("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", sheet_id, &context).unwrap();
+            A1Selection::parse("A1,B1:D2,E:G,2:3,5:7,F6:G8,4", sheet_id, &context).unwrap();
 
         assert_eq!(selection.sheet_id, sheet_id);
         assert_eq!(selection.cursor, pos![A4]);
@@ -175,7 +160,7 @@ mod tests {
         let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse_a1("1", sheet_id, &context),
+            A1Selection::parse("1", sheet_id, &context),
             Ok(A1Selection::from_range(
                 CellRefRange::new_relative_row(1),
                 sheet_id,
@@ -184,12 +169,12 @@ mod tests {
         );
 
         assert_eq!(
-            A1Selection::parse_a1("1:3", sheet_id, &context),
+            A1Selection::parse("1:3", sheet_id, &context),
             Ok(A1Selection::test_a1("1:3")),
         );
 
         assert_eq!(
-            A1Selection::parse_a1("1:", sheet_id, &context),
+            A1Selection::parse("1:", sheet_id, &context),
             Ok(A1Selection::test_a1("*")),
         );
     }
@@ -200,7 +185,7 @@ mod tests {
         let sheet_id2 = SheetId::new();
         let context = A1Context::test(&[("Sheet1", sheet_id), ("Second", sheet_id2)], &[]);
         assert_eq!(
-            A1Selection::parse_a1("'Second'!A1", sheet_id, &context),
+            A1Selection::parse("'Second'!A1", sheet_id, &context),
             Ok(A1Selection::from_xy(1, 1, sheet_id2)),
         );
     }
@@ -210,7 +195,7 @@ mod tests {
         let sheet_id = SheetId::TEST;
         let context = A1Context::default();
         assert_eq!(
-            A1Selection::parse_a1("Sheet' 1'!A1", sheet_id, &context),
+            A1Selection::parse("Sheet' 1'!A1", sheet_id, &context),
             Err(A1Error::InvalidSheetName("Sheet' 1'!A1".to_string())),
         );
     }
@@ -223,7 +208,7 @@ mod tests {
             &[("test_table", &["Col1"], Rect::test_a1("A1:C3"))],
         );
         assert_eq!(
-            A1Selection::parse_a1(
+            A1Selection::parse(
                 "test_table[[#DATA],[#HEADERS],[Col1]],A1",
                 sheet_id,
                 &context
@@ -238,7 +223,7 @@ mod tests {
             &[("test_table-2.csv", &["Col1"], Rect::test_a1("A1:C3"))],
         );
         assert_eq!(
-            A1Selection::parse_a1("test_table-2.csv[Col1]", sheet_id, &context)
+            A1Selection::parse("test_table-2.csv[Col1]", sheet_id, &context)
                 .unwrap()
                 .to_string(Some(sheet_id), &context),
             "test_table-2.csv[Col1]".to_string(),

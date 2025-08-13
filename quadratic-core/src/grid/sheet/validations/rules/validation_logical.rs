@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::CellValue;
 
-#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq, TS)]
+#[derive(Default, Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct ValidationLogical {
     pub show_checkbox: bool,
     pub ignore_blank: bool,

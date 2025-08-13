@@ -148,8 +148,8 @@ mod test {
         );
         assert_eq!(sheet.borders.get_side(BorderSide::Top, pos![E1]), None);
 
-        assert!(sheet.data_tables.get_at(&pos![D1]).is_none());
-        assert!(sheet.data_tables.get_at(&pos![D2]).is_some());
+        assert!(sheet.data_tables.get_at(&pos![D1].into()).is_none());
+        assert!(sheet.data_tables.get_at(&pos![D2].into()).is_some());
 
         assert_eq!(
             sheet.display_value(pos![D2]),

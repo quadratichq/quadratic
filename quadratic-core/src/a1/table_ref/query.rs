@@ -215,7 +215,7 @@ impl TableRef {
 
     /// Tries to convert the TableRef to a Pos.
     pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
-        let range = self.convert_to_ref_range_bounds(false, a1_context, false, false)?;
+        let range = self.convert_to_ref_range_bounds(false, a1_context, false, false, None)?;
         range.try_to_pos()
     }
 
@@ -312,6 +312,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
 
         let cols = table_ref.selected_cols(1, 3, &context);
@@ -327,6 +328,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.selected_cols(1, 3, &context);
 
@@ -353,6 +355,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(!table_ref.is_multi_cursor(&context));
 
@@ -371,6 +374,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(table_ref.is_multi_cursor(&context));
 
@@ -381,6 +385,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
         assert!(table_ref.is_multi_cursor(&context));
 
@@ -391,6 +396,7 @@ mod tests {
             data: false,
             headers: true,
             totals: false,
+            this_row: false,
         };
         assert!(!table_ref.is_multi_cursor(&context));
     }
@@ -404,6 +410,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
 
         let rect = table_ref.to_largest_rect(&context);
@@ -428,9 +435,10 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false, false);
+        let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false, false, None);
         assert_eq!(ranges, Some(RefRangeBounds::test_a1("B3:B4")));
 
         // Column to end
@@ -440,9 +448,10 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
 
-        let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false, false);
+        let ranges = table_ref.convert_to_ref_range_bounds(false, &context, false, false, None);
         assert_eq!(ranges, Some(RefRangeBounds::test_a1("B3:C4")));
     }
 
@@ -455,6 +464,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(!table_ref.is_two_dimensional());
 
@@ -465,6 +475,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(table_ref.is_two_dimensional());
 
@@ -475,6 +486,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(table_ref.is_two_dimensional());
     }
@@ -488,6 +500,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert_eq!(table_ref.try_to_pos(&context), Some(pos![B3]));
     }
@@ -501,6 +514,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert_eq!(table_ref.cursor_pos_from_last_range(&context), pos![A2]);
 
@@ -527,6 +541,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
 
         // Test all columns
@@ -540,6 +555,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![1]));
@@ -551,6 +567,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![0, 1]));
@@ -562,6 +579,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![0, 1]));
@@ -573,6 +591,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.table_column_selection("test_table", &context);
         assert_eq!(cols, Some(vec![1, 2]));
@@ -584,6 +603,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.table_column_selection("different_table", &context);
         assert_eq!(cols, None);
@@ -600,6 +620,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.selected_cols_finite(&context);
         assert_eq!(cols, vec![1, 2, 3]);
@@ -611,6 +632,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.selected_cols_finite(&context);
         assert_eq!(cols, vec![2]);
@@ -622,6 +644,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.selected_cols_finite(&context);
         assert_eq!(cols, vec![1, 2]);
@@ -636,6 +659,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
 
         // Test normal range
@@ -649,6 +673,7 @@ mod tests {
             data: false,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let rows = table_ref.selected_rows(1, 5, &context);
         assert_eq!(rows, vec![2]);
@@ -660,6 +685,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let rows = table_ref.selected_rows(10, 15, &context);
         assert_eq!(rows, Vec::<i64>::new());
@@ -676,6 +702,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let rows = table_ref.selected_rows_finite(&context);
         assert_eq!(rows, vec![3]);
@@ -687,6 +714,7 @@ mod tests {
             data: false,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let rows = table_ref.selected_rows_finite(&context);
         assert_eq!(rows, vec![2]);
@@ -703,6 +731,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.selected_cols(4, 6, &context); // Beyond table bounds
         assert_eq!(cols, Vec::<i64>::new());
@@ -714,6 +743,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.selected_cols(1, 3, &context);
         assert_eq!(cols, Vec::<i64>::new());
@@ -725,6 +755,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let cols = table_ref.selected_cols(1, 3, &context);
         assert_eq!(cols, Vec::<i64>::new());
@@ -748,6 +779,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(table_ref.is_multi_cursor(&context));
 
@@ -765,6 +797,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(table_ref.is_multi_cursor(&context));
 
@@ -779,6 +812,7 @@ mod tests {
             data: false,
             headers: true,
             totals: false,
+            this_row: false,
         };
         assert!(!table_ref.is_multi_cursor(&context));
     }
@@ -794,6 +828,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let rect = table_ref.to_largest_rect(&context);
         assert_eq!(rect.unwrap(), Rect::test_a1("B2:C3"));
@@ -806,6 +841,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         let rect = table_ref.to_largest_rect(&context);
         assert_eq!(rect.unwrap(), Rect::test_a1("A1:C3"));
@@ -817,6 +853,7 @@ mod tests {
             data: true,
             headers: false,
             totals: false,
+            this_row: false,
         };
         assert!(table_ref.to_largest_rect(&context).is_none());
     }
@@ -830,6 +867,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
 
         // Test when show_ui is false
@@ -861,6 +899,7 @@ mod tests {
             data: true,
             headers: true,
             totals: false,
+            this_row: false,
         };
         let table = context.table_map.try_table_mut("test_table").unwrap();
         table.show_columns = true;

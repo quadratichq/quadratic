@@ -11,7 +11,6 @@ use std::str::FromStr;
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
 
 use crate::formulas::{escape_string, parse_sheet_name};
 use crate::{Pos, a1::UNBOUNDED};
@@ -19,7 +18,8 @@ use crate::{Pos, a1::UNBOUNDED};
 /// A reference to a cell or a range of cells.
 ///
 /// TODO: replace with `CellRefRange`
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type")]
 pub enum RangeRef {
     // this is not yet used...
@@ -82,7 +82,8 @@ impl RangeRef {
 /// `CellRefRangeEnd`
 ///
 /// TODO: change `sheet` to a sheet ID instead of a name
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 pub struct CellRef {
     pub sheet: Option<String>,
     pub x: CellRefCoord,
@@ -227,7 +228,8 @@ impl CellRef {
 /// absolute coordinate (and merely holds a flag that says whether it is
 /// intended to be relative). **It should be impossible to convert between them
 /// without a base coordinate from which to the resolve the reference.**
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS))]
 #[serde(tag = "type", content = "coord")]
 pub enum CellRefCoord {
     Relative(i64),

@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
-use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+#[cfg(feature = "js")]
+use wasm_bindgen::{JsValue, prelude::*};
 
 use crate::a1::A1Selection;
 use crate::controller::GridController;
 use crate::grid::js_types::JsTablesContext;
+use std::collections::HashMap;
 
 #[wasm_bindgen]
 impl GridController {

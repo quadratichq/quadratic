@@ -116,7 +116,7 @@ impl Sheet {
             let range = match range {
                 CellRefRange::Table { range } => {
                     if let Some(range) =
-                        range.convert_to_ref_range_bounds(false, context, false, false)
+                        range.convert_to_ref_range_bounds(false, context, false, false, None)
                     {
                         range
                     } else {

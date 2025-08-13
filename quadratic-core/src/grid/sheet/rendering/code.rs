@@ -1,20 +1,20 @@
 //! Code and html/image output for client rendering.
 
 use crate::{
-    CellValue, Pos, Value,
+    CellValue, MultiPos, Pos, Value,
     grid::{
-        CodeCellLanguage, DataTable, Sheet,
+        CodeCellLanguage, Sheet,
         js_types::{JsHtmlOutput, JsRenderCodeCell, JsRenderCodeCellState},
     },
 };
 
 impl Sheet {
     pub fn get_single_html_output(&self, pos: Pos) -> Option<JsHtmlOutput> {
-        let dt = self.data_table_at(&pos)?;
+        let dt = self.data_table_at(&pos.into())?;
         if !dt.is_html() {
             return None;
         }
-        let output = dt.cell_value_at(0, 0)?;
+        let output = dt.display_value_at((0, 0).into())?;
 
         Some(JsHtmlOutput {
             sheet_id: self.id.to_string(),
@@ -35,7 +35,7 @@ impl Sheet {
         self.data_tables
             .expensive_iter()
             .filter_map(|(pos, dt)| {
-                let output = dt.cell_value_at(0, 0)?;
+                let output = dt.display_value_at((0, 0).into())?;
                 if !matches!(output, CellValue::Html(_)) {
                     return None;
                 }
@@ -56,10 +56,13 @@ impl Sheet {
             .collect()
     }
 
-    // Returns data for rendering a code cell.
-    fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
-        let code = self.cell_value_ref(pos)?;
+    // Returns a single code cell for rendering.
+    pub fn get_render_code_cell(&self, multi_pos: MultiPos) -> Option<JsRenderCodeCell> {
+        let pos = multi_pos.to_sheet_pos(self)?.into();
+        let code = self.cell_value_multi_pos(&multi_pos)?;
+        let data_table = self.data_table_at(&multi_pos)?;
         let output_size = data_table.output_size();
+
         let (state, w, h, spill_error) = if data_table.has_spill() {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
             (
@@ -82,6 +85,7 @@ impl Sheet {
             };
             (state, output_size.w.get(), output_size.h.get(), None)
         };
+
         let alternating_colors = !data_table.has_spill()
             && !data_table.has_error()
             && !data_table.is_image()
@@ -93,6 +97,7 @@ impl Sheet {
             CellValue::Import(_) => CodeCellLanguage::Import,
             _ => return None,
         };
+
         Some(JsRenderCodeCell {
             x: pos.x as i32,
             y: pos.y as i32,
@@ -116,10 +121,33 @@ impl Sheet {
         })
     }
 
-    // Returns a single code cell for rendering.
-    pub fn get_render_code_cell(&self, pos: Pos) -> Option<JsRenderCodeCell> {
-        let data_table = self.data_table_at(&pos)?;
-        self.render_code_cell(pos, data_table)
+    /// Returns all code cells for rendering.
+    fn all_render_code_cells(&self) -> Vec<JsRenderCodeCell> {
+        self.data_tables
+            .expensive_iter()
+            .flat_map(|(data_table_pos, data_table)| {
+                let mut render_code_cells = vec![];
+
+                if let Some(code_cell) = self.get_render_code_cell(data_table_pos.to_multi_pos()) {
+                    render_code_cells.push(code_cell);
+                }
+
+                if data_table.is_data_table()
+                    && let Some(tables) = &data_table.tables
+                {
+                    tables.expensive_iter().for_each(|(sub_table_pos, _)| {
+                        if let Some(code_cell) = self.get_render_code_cell(MultiPos::new_table_pos(
+                            *data_table_pos,
+                            *sub_table_pos,
+                        )) {
+                            render_code_cells.push(code_cell);
+                        }
+                    });
+                }
+
+                render_code_cells
+            })
+            .collect::<Vec<_>>()
     }
 
     /// Sends all sheet code cells for rendering to client
@@ -128,16 +156,13 @@ impl Sheet {
             return;
         }
 
-        let code = self
-            .data_tables
-            .expensive_iter()
-            .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
-            .collect::<Vec<_>>();
+        let code_cells = self.all_render_code_cells();
 
-        if !code.is_empty()
-            && let Ok(render_code_cells) = serde_json::to_vec(&code) {
-                crate::wasm_bindings::js::jsSheetCodeCells(self.id.to_string(), render_code_cells);
-            }
+        if !code_cells.is_empty()
+            && let Ok(render_code_cells) = serde_json::to_vec(&code_cells)
+        {
+            crate::wasm_bindings::js::jsSheetCodeCells(self.id.to_string(), render_code_cells);
+        }
     }
 
     /// Send images in this sheet to the client. Note: we only have images
@@ -152,7 +177,7 @@ impl Sheet {
         self.data_tables
             .expensive_iter()
             .for_each(|(pos, data_table)| {
-                if let Some(CellValue::Image(image)) = data_table.cell_value_at(0, 0) {
+                if let Some(CellValue::Image(image)) = data_table.display_value_at((0, 0).into()) {
                     let cell_size = data_table.chart_output;
                     crate::wasm_bindings::js::jsSendImage(
                         self.id.to_string(),
@@ -173,19 +198,20 @@ impl Sheet {
         }
 
         let mut sent = false;
-        if let Some(table) = self.data_table_at(&pos)
-            && let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
-                let output_size = table.chart_output;
-                crate::wasm_bindings::js::jsSendImage(
-                    self.id.to_string(),
-                    pos.x as i32,
-                    pos.y as i32,
-                    output_size.map(|(w, _)| w as i32).unwrap_or(0),
-                    output_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
-                    Some(image),
-                );
-                sent = true;
-            }
+        if let Some(table) = self.data_table_at(&pos.into())
+            && let Some(CellValue::Image(image)) = table.display_value_at((0, 0).into())
+        {
+            let output_size = table.chart_output;
+            crate::wasm_bindings::js::jsSendImage(
+                self.id.to_string(),
+                pos.x as i32,
+                pos.y as i32,
+                output_size.map(|(w, _)| w as i32).unwrap_or(0),
+                output_size.map(|(_, h)| h as i32 + 1).unwrap_or(0),
+                Some(image),
+            );
+            sent = true;
+        }
         if !sent {
             crate::wasm_bindings::js::jsSendImage(
                 self.id.to_string(),
@@ -208,7 +234,8 @@ mod tests {
             GridController,
             transaction_types::{JsCellValueResult, JsCodeResult},
         },
-        grid::{CodeCellValue, CodeRun, DataTableKind, js_types::JsNumber},
+        grid::{CodeCellValue, CodeRun, DataTable, DataTableKind, js_types::JsNumber},
+        test_util::*,
         wasm_bindings::js::{clear_js_calls, expect_js_call, expect_js_call_count},
     };
 
@@ -219,11 +246,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Python,
             "<html></html>".to_string(),
             None,
@@ -427,7 +450,7 @@ mod tests {
 
         sheet.set_data_table(pos, Some(data_table));
         sheet.set_cell_value(pos, code);
-        let rendering = sheet.get_render_code_cell(pos);
+        let rendering = sheet.get_render_code_cell(pos.into());
         let last_modified = rendering.as_ref().unwrap().last_modified;
         assert_eq!(
             rendering,
@@ -541,5 +564,34 @@ mod tests {
             ),
             true,
         );
+    }
+
+    #[test]
+    fn test_send_inner_code_cells() {
+        let (mut gc, sheet_id) = test_grid();
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        gc.set_code_cell(
+            pos![sheet_id!A3],
+            CodeCellLanguage::Formula,
+            "\"FORMULA RESULT\"".to_string(),
+            None,
+            None,
+            false,
+        );
+
+        let sheet = gc.sheet(sheet_id);
+        let code_cells = sheet.all_render_code_cells();
+        assert_eq!(code_cells.len(), 2);
+
+        let inner_code = code_cells[1].clone();
+        assert_eq!(inner_code.x, 1);
+        assert_eq!(inner_code.y, 3);
+        assert_eq!(inner_code.w, 1);
+        assert_eq!(inner_code.h, 1);
+        assert_eq!(inner_code.language, CodeCellLanguage::Formula);
+        assert_eq!(inner_code.state, JsRenderCodeCellState::Success);
+        assert_eq!(inner_code.name, "Formula1".to_string());
+        assert!(!inner_code.show_name);
     }
 }

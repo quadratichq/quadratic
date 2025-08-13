@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Pos, RefAdjust, RefError, SheetPos, grid::SheetId};
+use crate::{Pos, RefAdjust, RefError, grid::SheetId};
 
 use super::{A1Context, A1Error, CellRefRange, parse_optional_sheet_name_to_id};
 
@@ -16,14 +16,6 @@ pub struct SheetCellRefRange {
 }
 
 impl SheetCellRefRange {
-    /// Parses a cell range reference using A1 or RC notation.
-    ///
-    /// Ranges without an explicit sheet use `pos.sheet_id`.
-    ///
-    /// This is a wrapper around [`Self::parse()`] that takes a [`SheetPos`].
-    pub fn parse_at(a1: &str, pos: SheetPos, a1_context: &A1Context) -> Result<Self, A1Error> {
-        Self::parse(a1, pos.sheet_id, a1_context, Some(pos.into()))
-    }
     /// Parses a cell range reference using A1 notation.
     ///
     /// Ranges without an explicit sheet use `default_sheet_id`.
@@ -55,7 +47,7 @@ impl SheetCellRefRange {
     }
 
     /// Returns whether the reference needs a sheet name in order to be unambiguous.
-    fn needs_sheet_name(&self, default_sheet_id: Option<SheetId>) -> bool {
+    pub fn needs_sheet_name(&self, default_sheet_id: Option<SheetId>) -> bool {
         match self.cells {
             CellRefRange::Sheet { .. } => {
                 self.explicit_sheet_name
@@ -76,34 +68,15 @@ impl SheetCellRefRange {
         a1_context: &A1Context,
     ) -> String {
         if self.needs_sheet_name(default_sheet_id)
-            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
-                return format!(
-                    "{}!{}",
-                    super::quote_sheet_name(sheet_name),
-                    self.cells.to_a1_string(),
-                );
-            }
+            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id)
+        {
+            return format!(
+                "{}!{}",
+                super::quote_sheet_name(sheet_name),
+                self.cells.to_a1_string(),
+            );
+        }
         format!("{}", self.cells)
-    }
-
-    /// Returns an RC-style string describing the range. The sheet name is
-    /// included in the output only if `default_sheet_id` is `None` or differs
-    /// from the ID of the sheet containing the range.
-    pub fn to_rc_string(
-        &self,
-        default_sheet_id: Option<SheetId>,
-        a1_context: &A1Context,
-        base_pos: Pos,
-    ) -> String {
-        if self.needs_sheet_name(default_sheet_id)
-            && let Some(sheet_name) = a1_context.try_sheet_id(self.sheet_id) {
-                return format!(
-                    "{}!{}",
-                    super::quote_sheet_name(sheet_name),
-                    self.cells.to_rc_string(base_pos),
-                );
-            }
-        self.cells.to_rc_string(base_pos)
     }
 
     /// Adjusts coordinates by `adjust`. Returns an error if the result is out

@@ -1,7 +1,8 @@
 use std::{fmt, ops::RangeInclusive};
 
 use serde::{Deserialize, Serialize};
-use ts_rs::TS;
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::RefError;
@@ -9,9 +10,9 @@ use crate::RefError;
 /// Unbounded coordinate on lower or upper end.
 pub const UNBOUNDED: i64 = i64::MAX;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, TS)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct CellRefCoord {
     #[cfg_attr(test, proptest(strategy = "super::PROPTEST_COORDINATE_I64"))]
     pub coord: i64,
@@ -102,18 +103,6 @@ impl CellRefCoord {
             write!(f, "$")?;
         }
         write!(f, "{}", self.coord)
-    }
-
-    /// Returns the number as a string for use in RC-style notation.
-    ///
-    /// - If the coordinate is relative, returns a string containing the number
-    ///   surrounded by square brackets.
-    /// - If the coordinate is absolute, returns a string containing the number.
-    pub(crate) fn to_rc_string(self, base_coord: i64) -> String {
-        match self.is_absolute {
-            true => format!("{{{}}}", self.coord),
-            false => format!("[{}]", self.coord.saturating_sub(base_coord)), // when changing to `u64`, this MUST stay `i64`
-        }
     }
 
     pub fn new_rel(coord: i64) -> Self {

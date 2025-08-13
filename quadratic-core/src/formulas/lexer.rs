@@ -81,6 +81,9 @@ const A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN: &str = r"[\p{Letter}\$_][\p{Lette
 
 /// Contents of the inner square brackets of a table reference.
 ///
+/// For now, we handle the @ prefix without tokenizing it. (When refactoring, we
+/// should be tokenizing it.)
+///
 /// ```ignored
 ///           |                  either of ...
 /// #[a-zA-Z]*                     #header, #data, #all, #totals, etc.
@@ -89,7 +92,7 @@ const A1_CELL_REFERENCE_OR_TABLE_NAME_PATTERN: &str = r"[\p{Letter}\$_][\p{Lette
 ///             '.                     a character escaped using '.
 ///                [^'\[\]]            any character other than a single quote or square bracket
 /// ```
-const TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN: &str = r"#[a-zA-Z]*|('.|[^'\[\]])*";
+const TABLE_BRACKETS_SEGMENT_CONTENTS_PATTERN: &str = r"@?#[a-zA-Z]*|('.|[^'\[\]])*";
 
 lazy_static! {
     /// Inner square brackets of a table reference.

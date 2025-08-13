@@ -64,8 +64,8 @@ export const UpdateCodeCell = memo(
 
           quadraticCore.setCodeCellValue({
             sheetId: codeCell.sheetId,
-            x: codeCell.pos.x,
-            y: codeCell.pos.y,
+            pos: codeCell.pos,
+            tablePos: undefined,
             codeString: code_string ?? '',
             language: codeCell.language,
             isAi: false,

@@ -6,7 +6,9 @@ use rust_decimal::prelude::*;
 pub(crate) use super::*;
 use crate::a1::{CellRefCoord, CellRefRange, SheetCellRefRange};
 use crate::controller::GridController;
+use crate::grid::CodeCellLanguage;
 pub(crate) use crate::grid::Grid;
+use crate::test_util::*;
 pub(crate) use crate::values::*;
 pub(crate) use crate::{CodeResult, RunError, RunErrorMsg, Spanned, array};
 use crate::{CoerceInto, Pos, SheetPos};
@@ -28,7 +30,7 @@ pub(crate) fn eval_at(grid_controller: &GridController, pos: SheetPos, s: &str) 
     match parse_formula(
         s,
         grid_controller.a1_context(),
-        grid_controller.grid().origin_in_first_sheet(),
+        grid_controller.grid().first_sheet_id(),
     ) {
         Ok(formula) => formula.eval(&mut ctx).inner,
         Err(e) => e.into(),
@@ -131,7 +133,7 @@ fn test_formula_circular_array_ref() {
     let g = GridController::new();
     let sheet_id = g.sheet_ids()[0];
     let pos = pos![B3].to_sheet_pos(sheet_id);
-    let form = parse_formula("$B$1:$C$4", g.a1_context(), pos).unwrap();
+    let form = parse_formula("$B$1:$C$4", g.a1_context(), sheet_id).unwrap();
     let mut ctx = Ctx::new(&g, pos);
     assert_eq!(
         RunErrorMsg::CircularReference,
@@ -349,7 +351,7 @@ fn test_find_cell_references() {
         })
     };
 
-    // Another test checks that `parse_a1()` is correct.
+    // Another test checks that `parse()` is correct.
     let test_cases = [
         // Basic cell reference
         ("$A$1", new_ref(sheet1, a(1), a(1), a(1), a(1), false)),
@@ -376,8 +378,7 @@ fn test_find_cell_references() {
         ),
     ];
     let formula_string = test_cases.iter().map(|(string, _)| string).join(" + ");
-    let pos = Pos::ORIGIN.to_sheet_pos(sheet1);
-    let cell_references_found = find_cell_references(&formula_string, g.a1_context(), pos)
+    let cell_references_found = find_cell_references(&formula_string, g.a1_context(), sheet1, None)
         .into_iter()
         .map(|Spanned { span, inner }| (span.of_str(&formula_string), inner))
         .collect_vec();
@@ -543,4 +544,48 @@ fn test_syntax_check_ok() {
     assert_check_syntax_succeeds(&g, "{1, 2; 3, 4}");
     assert_check_syntax_succeeds(&g, "XLOOKUP(\"zebra\", A1:Z1, A4:Z6)");
     assert_check_syntax_succeeds(&g, "ABS(({1, 2; 3, 4}, A1:C10))");
+}
+
+#[test]
+fn test_table_this_row() {
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+
+    test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+    gc.set_code_cell(
+        pos![sheet_id!E3],
+        CodeCellLanguage::Formula,
+        "test_table[[#this row],[Column 1]]".to_string(),
+        None,
+        None,
+        false,
+    );
+
+    print_first_sheet(&gc);
+
+    assert_display_cell_value(&gc, sheet_id, 5, 3, "0");
+    assert_display_cell_value(&gc, sheet_id, 5, 4, "");
+}
+
+#[test]
+fn test_table_this_row_short() {
+    let mut gc = test_create_gc();
+    let sheet_id = first_sheet_id(&gc);
+
+    test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
+
+    gc.set_code_cell(
+        pos![sheet_id!E3],
+        CodeCellLanguage::Formula,
+        "test_table[@Column 1]".to_string(),
+        None,
+        None,
+        false,
+    );
+
+    print_first_sheet(&gc);
+
+    assert_display_cell_value(&gc, sheet_id, 5, 3, "0");
+    assert_display_cell_value(&gc, sheet_id, 5, 4, "");
 }

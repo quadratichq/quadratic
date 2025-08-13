@@ -88,6 +88,7 @@ impl A1Selection {
                     headers: false,
                     totals: false,
                     col_range: ColRange::All,
+                    this_row: false,
                 },
             }],
         }
@@ -140,7 +141,7 @@ impl A1Selection {
             None
         } else {
             Some(Self {
-                sheet_id: table_entry.sheet_id,
+                sheet_id: table_entry.sheet_id(),
                 cursor,
                 ranges: ranges
                     .into_iter()
@@ -151,6 +152,7 @@ impl A1Selection {
                             headers: false,
                             totals: false,
                             col_range: range,
+                            this_row: false,
                         },
                     })
                     .collect(),
@@ -223,8 +225,8 @@ impl A1Selection {
     }
 
     /// Constructs the default selection, which contains only the cell A1.
-    pub fn default(sheet: SheetId) -> Self {
-        Self::from_single_cell(pos![A1].to_sheet_pos(sheet))
+    pub fn default(sheet_id: SheetId) -> Self {
+        Self::from_single_cell(Pos::new(1, 1).to_sheet_pos(sheet_id))
     }
 
     /// Constructs a selection for a range of columns.
@@ -252,19 +254,19 @@ impl A1Selection {
     /// Returns a test selection from the A1-string with SheetId::TEST.
     #[cfg(test)]
     pub fn test_a1(a1: &str) -> Self {
-        Self::parse(a1, SheetId::TEST, &A1Context::default(), None).unwrap()
+        Self::parse(a1, SheetId::TEST, &A1Context::default()).unwrap()
     }
 
     /// Returns a test selection from the A1-string with the given sheet ID.
     #[cfg(test)]
     pub fn test_a1_sheet_id(a1: &str, sheet_id: SheetId) -> Self {
-        Self::parse(a1, sheet_id, &A1Context::default(), None).unwrap()
+        Self::parse(a1, sheet_id, &A1Context::default()).unwrap()
     }
 
     #[cfg(test)]
     #[track_caller]
     pub fn test_a1_context(a1: &str, a1_context: &A1Context) -> Self {
-        Self::parse(a1, SheetId::TEST, a1_context, None).unwrap()
+        Self::parse(a1, SheetId::TEST, a1_context).unwrap()
     }
 }
 

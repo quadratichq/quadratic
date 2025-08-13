@@ -2,7 +2,8 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::fmt;
-use ts_rs::TS;
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use super::{A1Error, CellRefCoord, UNBOUNDED};
@@ -11,9 +12,9 @@ use crate::{Pos, RefAdjust, RefError, a1::column_name};
 /// The maximum value for a column or row number.
 const OUT_OF_BOUNDS: i64 = 1_000_000_000;
 
-#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash, TS)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialEq, Eq, Hash)]
 #[cfg_attr(test, derive(proptest_derive::Arbitrary))]
-#[cfg_attr(feature = "js", wasm_bindgen)]
+#[cfg_attr(feature = "js", derive(ts_rs::TS), wasm_bindgen)]
 pub struct CellRefRangeEnd {
     pub col: CellRefCoord,
     pub row: CellRefCoord,
@@ -161,7 +162,7 @@ impl CellRefRangeEnd {
         let a1_result = Self::parse_a1_components(s);
         match (base_pos, a1_result) {
             (Some(base_pos), Err(A1Error::InvalidCellReference(_))) => {
-                Self::parse_rc_components(s, base_pos)
+                Self::migration_parse_rc_components(s, base_pos)
             }
             (_, other) => other,
         }
@@ -239,70 +240,6 @@ impl CellRefRangeEnd {
         Ok((col, col_is_absolute, row, row_is_absolute))
     }
 
-    fn parse_rc_components(
-        s: &str,
-        base_pos: Pos,
-    ) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
-        lazy_static! {
-            /// ^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$
-            /// ^                                                      $    match whole string
-            ///  (                        )?                                group 1: optional row
-            ///   R                                                           literal R
-            ///    (           |         )                                    group 2: either of ...
-            ///     \[       \]                                                 square brackets containing ...
-            ///       (-?\d+)                                                     group 3: positive or negative integer
-            ///                 \{     \}                                       curly braces containing ...
-            ///                   (\d+)                                           group 4: positive integer
-            ///                             (                        )?     group 5: optional column (same as row)
-            ///                              C                                literal C
-            ///                               (           |         )         group 6: either of ...
-            ///                                \[(-?\d+)\]                      group 7: `[]` with positive or negative integer
-            ///                                            \{(\d+)\}            group 8: `{}` with positive integer
-            static ref RC_REGEX: Regex =
-                Regex::new(r#"^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$"#)
-                    .expect("bad regex");
-        }
-
-        let captures = RC_REGEX
-            .captures(s)
-            .ok_or_else(|| A1Error::InvalidCellReference(s.to_string()))?;
-
-        // These MUST be i64
-        let relative_row: Option<Result<i64, _>> = captures.get(3).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
-        let absolute_row: Option<Result<i64, _>> = captures.get(4).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
-
-        // These MAY be u64
-        let relative_col: Option<Result<i64, _>> = captures.get(7).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
-        let absolute_col: Option<Result<i64, _>> = captures.get(8).map(|g| {
-            let s = g.as_str();
-            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
-        });
-
-        let row_is_absolute = absolute_row.is_some();
-        let col_is_absolute = absolute_col.is_some();
-
-        let row = match relative_row {
-            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.y, delta?)?),
-            None => absolute_row.transpose()?,
-        };
-
-        let col = match relative_col {
-            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.x, delta?)?),
-            None => absolute_col.transpose()?,
-        };
-
-        Ok((col, col_is_absolute, row, row_is_absolute))
-    }
-
     /// Parses the components of a CellRefRangeEnd.
     ///
     /// If `base_pos` is `None`, then only A1 notation is accepted. If it is
@@ -370,6 +307,73 @@ impl CellRefRangeEnd {
             self.col.is_absolute = false;
             self.row.is_absolute = false;
         }
+    }
+
+    /// Parses the components of a CellRefRangeEnd from RC notation.
+    ///
+    /// Retained to support migration of old files that have RC notation.
+    fn migration_parse_rc_components(
+        s: &str,
+        base_pos: Pos,
+    ) -> Result<(Option<i64>, bool, Option<i64>, bool), A1Error> {
+        lazy_static! {
+            /// ^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$
+            /// ^                                                      $    match whole string
+            ///  (                        )?                                group 1: optional row
+            ///   R                                                           literal R
+            ///    (           |         )                                    group 2: either of ...
+            ///     \[       \]                                                 square brackets containing ...
+            ///       (-?\d+)                                                     group 3: positive or negative integer
+            ///                 \{     \}                                       curly braces containing ...
+            ///                   (\d+)                                           group 4: positive integer
+            ///                             (                        )?     group 5: optional column (same as row)
+            ///                              C                                literal C
+            ///                               (           |         )         group 6: either of ...
+            ///                                \[(-?\d+)\]                      group 7: `[]` with positive or negative integer
+            ///                                            \{(\d+)\}            group 8: `{}` with positive integer
+            static ref RC_REGEX: Regex =
+                Regex::new(r#"^(R(\[(-?\d+)\]|\{(\d+)\}))?(C(\[(-?\d+)\]|\{(\d+)\}))?$"#)
+                    .expect("bad regex");
+        }
+
+        let captures = RC_REGEX
+            .captures(s)
+            .ok_or_else(|| A1Error::InvalidCellReference(s.to_string()))?;
+
+        // These MUST be i64
+        let relative_row: Option<Result<i64, _>> = captures.get(3).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+        let absolute_row: Option<Result<i64, _>> = captures.get(4).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+
+        // These MAY be u64
+        let relative_col: Option<Result<i64, _>> = captures.get(7).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+        let absolute_col: Option<Result<i64, _>> = captures.get(8).map(|g| {
+            let s = g.as_str();
+            s.parse().map_err(|_| A1Error::InvalidRow(s.to_string()))
+        });
+
+        let row_is_absolute = absolute_row.is_some();
+        let col_is_absolute = absolute_col.is_some();
+
+        let row = match relative_row {
+            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.y, delta?)?),
+            None => absolute_row.transpose()?,
+        };
+
+        let col = match relative_col {
+            Some(delta) => Some(crate::util::offset_cell_coord(base_pos.x, delta?)?),
+            None => absolute_col.transpose()?,
+        };
+
+        Ok((col, col_is_absolute, row, row_is_absolute))
     }
 }
 

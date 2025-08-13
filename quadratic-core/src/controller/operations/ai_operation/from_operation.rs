@@ -135,6 +135,7 @@ impl AIOperation {
             // Sheet operations
             Operation::AddSheetSchema { schema } => Some(Self::AddSheet {
                 sheet_id: match schema.as_ref() {
+                    SheetSchema::V1_12(schema) => schema.id.to_string(),
                     SheetSchema::V1_11(schema) => schema.id.to_string(),
                     SheetSchema::V1_10(schema) => schema.id.to_string(),
                     SheetSchema::V1_9(schema) => schema.id.to_string(),
@@ -323,6 +324,11 @@ impl AIOperation {
             | Operation::SetCursor { .. }
             | Operation::SetCursorSelection { .. }
             | Operation::SetValidationWarning { .. } => None,
+
+            _ => {
+                // dbgjs!(format!("Pending implementation: {operation:?}"));
+                None
+            }
         }
     }
 }

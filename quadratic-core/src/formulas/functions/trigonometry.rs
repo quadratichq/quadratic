@@ -1,3 +1,4 @@
+#![allow(clippy::neg_multiply)]
 use super::*;
 
 pub const CATEGORY: FormulaFunctionCategory = FormulaFunctionCategory {

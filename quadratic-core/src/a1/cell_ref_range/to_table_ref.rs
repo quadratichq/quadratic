@@ -56,6 +56,7 @@ impl CellRefRange {
                             data: true,
                             headers: false,
                             totals: false,
+                            this_row: false,
                         },
                     });
                 }
@@ -68,6 +69,7 @@ impl CellRefRange {
                             data: true,
                             headers: false,
                             totals: false,
+                            this_row: false,
                         },
                     });
                 }
@@ -103,6 +105,7 @@ impl CellRefRange {
                             data: true,
                             headers: false,
                             totals: false,
+                            this_row: false,
                         },
                     });
                 }
@@ -116,6 +119,7 @@ impl CellRefRange {
                             data: true,
                             headers: false,
                             totals: false,
+                            this_row: false,
                         },
                     });
                 }
@@ -132,6 +136,7 @@ impl CellRefRange {
                             data: true,
                             headers: true,
                             totals: false,
+                            this_row: false,
                         },
                     });
                 }
@@ -165,6 +170,7 @@ mod tests {
                     data: true,
                     headers: true,
                     totals: false,
+                    this_row: false,
                 },
             })
         );
@@ -190,6 +196,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 },
             })
         );
@@ -215,6 +222,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 },
             })
         );
@@ -233,6 +241,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 },
             })
         );
@@ -258,6 +267,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 },
             })
         );
@@ -283,6 +293,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 },
             })
         );
@@ -363,6 +374,7 @@ mod tests {
                     data: true,
                     headers: false,
                     totals: false,
+                    this_row: false,
                 },
             })
         );

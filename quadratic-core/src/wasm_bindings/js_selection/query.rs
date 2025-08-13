@@ -1,3 +1,4 @@
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use crate::{a1::CellRefRange, grid::sheet::data_tables::cache::SheetDataTablesCache};
@@ -114,7 +115,13 @@ impl JsSelection {
                     {
                         return None;
                     }
-                    range.convert_to_ref_range_bounds(false, context.get_context(), false, true)
+                    range.convert_to_ref_range_bounds(
+                        false,
+                        context.get_context(),
+                        false,
+                        true,
+                        None,
+                    )
                 }
             })
             .collect::<Vec<_>>();

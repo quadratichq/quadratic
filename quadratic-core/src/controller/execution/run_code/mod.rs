@@ -6,7 +6,7 @@ use crate::controller::operations::operation::Operation;
 use crate::controller::transaction_types::JsCodeResult;
 use crate::error_core::{CoreError, Result};
 use crate::grid::{CodeCellLanguage, CodeRun, DataTable, DataTableKind, unique_data_table_name};
-use crate::{Array, CellValue, Pos, RunError, RunErrorMsg, SheetPos, SheetRect, Span, Value};
+use crate::{Array, CellValue, MultiSheetPos, Pos, RunError, RunErrorMsg, SheetRect, Span, Value};
 
 pub mod get_cells;
 pub mod run_connection;
@@ -31,24 +31,29 @@ impl GridController {
     pub(crate) fn finalize_data_table(
         &mut self,
         transaction: &mut PendingTransaction,
-        sheet_pos: SheetPos,
+        multi_sheet_pos: MultiSheetPos,
         mut new_data_table: Option<DataTable>,
         index: Option<usize>,
-    ) {
-        transaction.current_sheet_pos = None;
+    ) -> Result<()> {
+        transaction.current_multi_sheet_pos = None;
         transaction.cells_accessed.clear();
         transaction.waiting_for_async = None;
 
-        self.update_cells_accessed_cache(sheet_pos, &new_data_table);
+        self.update_cells_accessed_cache(multi_sheet_pos, &new_data_table);
 
-        let sheet_id = sheet_pos.sheet_id;
-        let pos: Pos = sheet_pos.into();
+        let sheet_id = multi_sheet_pos.sheet_id;
+
         let Some(sheet) = self.grid.try_sheet_mut(sheet_id) else {
             // sheet may have been deleted
-            return;
+            return Ok(());
         };
 
-        let old_data_table = sheet.data_table_at(&pos);
+        let old_data_table = sheet.data_table_at(&multi_sheet_pos.multi_pos);
+
+        let Some(sheet_pos) = multi_sheet_pos.to_sheet_pos(sheet) else {
+            // sheet table may have been deleted
+            return Ok(());
+        };
 
         // preserve some settings from the previous code run
         if let (Some(old_data_table), Some(new_data_table)) = (old_data_table, &mut new_data_table)
@@ -105,7 +110,7 @@ impl GridController {
             let unique_name = unique_data_table_name(
                 new_data_table.name(),
                 false,
-                Some(sheet_pos),
+                Some(multi_sheet_pos),
                 &self.a1_context,
             );
             new_data_table.update_table_name(&unique_name);
@@ -160,31 +165,39 @@ impl GridController {
         }
 
         transaction.add_from_code_run(
-            sheet_id,
-            pos,
+            multi_sheet_pos,
             old_data_table.as_ref().is_some_and(|dt| dt.is_image()),
             old_data_table.as_ref().is_some_and(|dt| dt.is_html()),
         );
         transaction.add_from_code_run(
-            sheet_id,
-            pos,
+            multi_sheet_pos,
             new_data_table.as_ref().is_some_and(|dt| dt.is_image()),
             new_data_table.as_ref().is_some_and(|dt| dt.is_html()),
         );
         transaction.add_dirty_hashes_from_sheet_rect(sheet_rect);
 
         // index for SetCodeRun is either set by execute_set_code_run or calculated
-        let index = index.unwrap_or(sheet.data_tables.get_index_of(&pos).unwrap_or(usize::MAX));
+        let index = index.unwrap_or(
+            sheet
+                .data_tables
+                .get_index_of(&multi_sheet_pos.multi_pos)
+                .unwrap_or(usize::MAX),
+        );
 
         if transaction.is_user_ai_undo_redo() {
             let (index, old_data_table, dirty_rects) = if let Some(new_data_table) = &new_data_table
             {
-                sheet.data_table_insert_before(index, &pos, new_data_table.to_owned())
+                sheet.data_table_insert_before(
+                    index,
+                    &multi_sheet_pos.multi_pos,
+                    new_data_table.to_owned(),
+                )?
             } else {
-                sheet.data_table_shift_remove_full(&pos).map_or(
-                    (index, None, HashSet::new()),
-                    |(index, _, data_table, dirty_rects)| (index, Some(data_table), dirty_rects),
-                )
+                sheet
+                    .data_table_shift_remove(&multi_sheet_pos.multi_pos)
+                    .map_or((index, None, HashSet::new()), |full| {
+                        (full.0, Some(full.2), full.3)
+                    })
             };
 
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
@@ -205,37 +218,39 @@ impl GridController {
                 }
             }
 
-            self.add_compute_operations(transaction, sheet_rect, Some(sheet_pos));
+            self.add_compute_operations(transaction, &sheet_rect, Some(multi_sheet_pos));
 
             transaction
                 .forward_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos,
+                .push(Operation::SetDataTableMultiPos {
+                    multi_sheet_pos,
                     data_table: new_data_table,
                     index,
                 });
 
             transaction
                 .reverse_operations
-                .push(Operation::SetDataTable {
-                    sheet_pos,
+                .push(Operation::SetDataTableMultiPos {
+                    multi_sheet_pos,
                     data_table: old_data_table,
                     index,
                 });
         } else {
             let dirty_rects = if let Some(new_data_table) = new_data_table {
                 sheet
-                    .data_table_insert_before(index, &pos, new_data_table)
+                    .data_table_insert_before(index, &multi_sheet_pos.multi_pos, new_data_table)?
                     .2
             } else {
                 sheet
-                    .data_table_shift_remove(&pos)
-                    .map_or(HashSet::new(), |(_, dirty_rects)| dirty_rects)
+                    .data_table_shift_remove(&multi_sheet_pos.multi_pos)
+                    .map_or(HashSet::new(), |(_, _, _, dirty_rects)| dirty_rects)
             };
 
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
             self.send_updated_bounds(transaction, sheet_id);
         }
+
+        Ok(())
     }
 
     /// continues the calculate cycle after an async call
@@ -244,14 +259,11 @@ impl GridController {
         transaction: &mut PendingTransaction,
         result: JsCodeResult,
     ) -> Result<()> {
-        let current_sheet_pos = match transaction.current_sheet_pos {
-            Some(current_sheet_pos) => current_sheet_pos,
-            None => {
-                return Err(CoreError::TransactionNotFound(
-                    "Expected current_sheet_pos to be defined in after_calculation_async".into(),
-                ));
-            }
-        };
+        let current_multi_sheet_pos = transaction.current_multi_sheet_pos.ok_or_else(|| {
+            CoreError::TransactionNotFound(
+                "Expected current_sheet_pos to be defined in after_calculation_async".into(),
+            )
+        })?;
 
         match &transaction.waiting_for_async {
             None => {
@@ -267,15 +279,15 @@ impl GridController {
                 let new_data_table = self.js_code_result_to_code_cell_value(
                     transaction,
                     result,
-                    current_sheet_pos,
+                    current_multi_sheet_pos,
                     code_cell.language.clone(),
                     code_cell.code.clone(),
                 );
 
-                self.finalize_data_table(
+                let _ = self.finalize_data_table(
                     transaction,
-                    current_sheet_pos,
-                    Some(new_data_table),
+                    current_multi_sheet_pos,
+                    new_data_table.ok(),
                     None,
                 );
             }
@@ -297,24 +309,19 @@ impl GridController {
         transaction: &mut PendingTransaction,
         error: &RunError,
     ) -> Result<()> {
-        let sheet_pos = match transaction.current_sheet_pos {
-            Some(sheet_pos) => sheet_pos,
-            None => {
-                return Err(CoreError::TransactionNotFound(
-                    "Expected current_sheet_pos to be defined in transaction::code_cell_error"
-                        .into(),
-                ));
-            }
-        };
-        let sheet_id = sheet_pos.sheet_id;
-        let pos = Pos::from(sheet_pos);
-        let Some(sheet) = self.try_sheet(sheet_id) else {
+        let multi_sheet_pos = transaction.current_multi_sheet_pos.ok_or_else(|| {
+            CoreError::TransactionNotFound(
+                "Expected current_sheet_pos to be defined in transaction::code_cell_error".into(),
+            )
+        })?;
+
+        let Some(sheet) = self.try_sheet(multi_sheet_pos.sheet_id) else {
             // sheet may have been deleted before the async operation completed
             return Ok(());
         };
 
         // ensure the code_cell still exists
-        let Some(code_cell) = sheet.cell_value_ref(pos) else {
+        let Some(code_cell) = sheet.cell_value_multi_pos(&multi_sheet_pos.multi_pos) else {
             // cell may have been deleted before the async operation completed
             return Ok(());
         };
@@ -324,7 +331,7 @@ impl GridController {
         };
 
         let code_run = sheet
-            .data_table_at(&pos)
+            .data_table_at(&multi_sheet_pos.multi_pos)
             .and_then(|data_table| data_table.code_run());
 
         let new_code_run = match code_run {
@@ -357,12 +364,14 @@ impl GridController {
                 cells_accessed: std::mem::take(&mut transaction.cells_accessed),
             },
         };
+
         let table_name = match code_cell_value.language {
             CodeCellLanguage::Formula => "Formula1",
             CodeCellLanguage::Javascript => "JavaScript1",
             CodeCellLanguage::Python => "Python1",
             _ => "Table1",
         };
+
         let new_data_table = DataTable::new(
             DataTableKind::CodeRun(new_code_run),
             table_name,
@@ -373,7 +382,7 @@ impl GridController {
             None,
         );
 
-        self.finalize_data_table(transaction, sheet_pos, Some(new_data_table), None);
+        let _ = self.finalize_data_table(transaction, multi_sheet_pos, Some(new_data_table), None);
 
         Ok(())
     }
@@ -383,10 +392,10 @@ impl GridController {
         &mut self,
         transaction: &mut PendingTransaction,
         js_code_result: JsCodeResult,
-        start: SheetPos,
+        start: MultiSheetPos,
         language: CodeCellLanguage,
         code: String,
-    ) -> DataTable {
+    ) -> Result<DataTable> {
         let table_name = match language {
             CodeCellLanguage::Formula => "Formula1",
             CodeCellLanguage::Javascript => "JavaScript1",
@@ -415,7 +424,7 @@ impl GridController {
                 cells_accessed: std::mem::take(&mut transaction.cells_accessed),
             };
 
-            return DataTable::new(
+            return Ok(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 table_name,
                 Value::Single(CellValue::Blank), // TODO(ddimaria): this will eventually be an empty vec
@@ -423,12 +432,19 @@ impl GridController {
                 None,
                 None,
                 None,
-            );
+            ));
         };
+
+        let Some(start_sheet_pos) = start.to_sheet_pos(sheet) else {
+            return Err(CoreError::TransactionNotFound(
+                "Could not find SheetPos in js_code_result_to_code_cell_value".into(),
+            ));
+        };
+        let start_pos = start_sheet_pos.into();
 
         let value = if js_code_result.success {
             if let Some(array_output) = js_code_result.output_array {
-                let (array, ops) = Array::from_string_list(start.into(), sheet, array_output);
+                let (array, ops) = Array::from_string_list(start_pos, sheet, array_output);
                 transaction.reverse_operations.extend(ops);
                 if let Some(array) = array {
                     Value::Array(array)
@@ -436,7 +452,7 @@ impl GridController {
                     Value::Single("".into())
                 }
             } else if let Some(output_value) = js_code_result.output_value {
-                let (cell_value, ops) = CellValue::from_js(output_value, start.into(), sheet)
+                let (cell_value, ops) = CellValue::from_js(output_value, start_pos, sheet)
                     .unwrap_or_else(|e| {
                         dbgjs!(format!("Error parsing output value: {}", e));
                         (CellValue::Blank, vec![])
@@ -491,7 +507,7 @@ impl GridController {
                 Some(
                     sheet
                         .offsets
-                        .calculate_grid_size(start.into(), pixel_width, pixel_height),
+                        .calculate_grid_size(start_pos, pixel_width, pixel_height),
                 )
             }
             _ => None,
@@ -516,9 +532,9 @@ impl GridController {
         {
             let column_headers =
                 data_table.default_header_with_name(|i| format!("{}", i - 1), None);
-            data_table.with_column_headers(column_headers)
+            Ok(data_table.with_column_headers(column_headers))
         } else {
-            data_table
+            Ok(data_table)
         }
     }
 }
@@ -527,6 +543,7 @@ impl GridController {
 mod test {
 
     use super::*;
+    use crate::SheetPos;
     use crate::controller::transaction_types::JsCellValueResult;
     use crate::grid::CodeCellValue;
     use crate::wasm_bindings::js::{clear_js_calls, expect_js_call_count};
@@ -535,17 +552,13 @@ mod test {
     fn test_finalize_data_table() {
         let mut gc: GridController = GridController::default();
         let sheet_id = gc.sheet_ids()[0];
-
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
+        let pos = pos![A1];
+        let multi_sheet_pos = pos.to_multi_sheet_pos(sheet_id);
 
         // manually set the CellValue::Code
         let sheet = gc.try_sheet_mut(sheet_id).unwrap();
         sheet.set_cell_value(
-            sheet_pos.into(),
+            pos,
             CellValue::Code(CodeCellValue {
                 language: CodeCellLanguage::Python,
                 code: "delete me".to_string(),
@@ -576,14 +589,17 @@ mod test {
             Some(true),
             None,
         );
-        gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
+        gc.finalize_data_table(
+            transaction,
+            multi_sheet_pos,
+            Some(new_data_table.clone()),
+            None,
+        )
+        .unwrap();
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(
-            sheet.data_table_at(&sheet_pos.into()),
-            Some(&new_data_table)
-        );
+        assert_eq!(sheet.data_table_at(&pos.into()), Some(&new_data_table));
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -618,14 +634,17 @@ mod test {
         );
         new_data_table.column_headers = None;
 
-        gc.finalize_data_table(transaction, sheet_pos, Some(new_data_table.clone()), None);
+        gc.finalize_data_table(
+            transaction,
+            multi_sheet_pos,
+            Some(new_data_table.clone()),
+            None,
+        )
+        .unwrap();
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(
-            sheet.data_table_at(&sheet_pos.into()),
-            Some(&new_data_table)
-        );
+        assert_eq!(sheet.data_table_at(&pos.into()), Some(&new_data_table));
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -635,11 +654,12 @@ mod test {
 
         // remove the code_run
         let transaction = &mut PendingTransaction::default();
-        gc.finalize_data_table(transaction, sheet_pos, None, None);
+        gc.finalize_data_table(transaction, multi_sheet_pos, None, None)
+            .unwrap();
         assert_eq!(transaction.forward_operations.len(), 1);
         assert_eq!(transaction.reverse_operations.len(), 1);
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        assert_eq!(sheet.data_table_at(&sheet_pos.into()), None);
+        assert_eq!(sheet.data_table_at(&pos.into()), None);
 
         // todo: need a way to test the js functions as that replaced these
         // let summary = transaction.send_transaction(true);
@@ -654,11 +674,7 @@ mod test {
 
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 0,
-            y: 0,
-            sheet_id,
-        };
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
         gc.set_code_cell(
             sheet_pos,
             CodeCellLanguage::Javascript,
@@ -682,11 +698,7 @@ mod test {
     fn ensure_chart_size_remains_same_if_same_cell() {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
-        let sheet_pos = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
+        let sheet_pos = SheetPos::new(sheet_id, 1, 1);
 
         let languages = vec![CodeCellLanguage::Javascript, CodeCellLanguage::Python];
 

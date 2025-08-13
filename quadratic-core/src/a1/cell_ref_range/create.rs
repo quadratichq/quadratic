@@ -74,9 +74,10 @@ impl CellRefRange {
     ) -> Result<(Self, Option<SheetId>), A1Error> {
         // first try table parsing
         if let Ok(table_ref) = TableRef::parse(s, a1_context)
-            && let Some(entry) = a1_context.try_table(&table_ref.table_name) {
-                return Ok((Self::Table { range: table_ref }, Some(entry.sheet_id)));
-            }
+            && let Some(entry) = a1_context.try_table(&table_ref.table_name)
+        {
+            return Ok((Self::Table { range: table_ref }, Some(entry.sheet_id())));
+        }
         // then try sheet parsing
         Ok((
             Self::Sheet {
@@ -91,27 +92,6 @@ impl CellRefRange {
 mod tests {
     use super::*;
 
-    use proptest::prelude::*;
-
-    proptest! {
-        #[test]
-        fn proptest_cell_ref_range_parsing(cell_ref_range: CellRefRange) {
-            if matches!(cell_ref_range, CellRefRange::Table { .. }) {
-                return Ok(());
-            }
-            let context = A1Context::default();
-
-            let base_pos = Pos::new(10, 15);
-            let a1_string = cell_ref_range.to_string();
-            let rc_string = cell_ref_range.to_rc_string(base_pos);
-            let expected = (cell_ref_range, None);
-
-            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, None).unwrap());
-            assert_eq!(expected, CellRefRange::parse(&a1_string, &context, Some(base_pos)).unwrap());
-            assert_eq!(expected, CellRefRange::parse(&rc_string, &context, Some(base_pos)).unwrap());
-        }
-    }
-
     #[test]
     fn test_table_different_sheet() {
         let sheet1_id = SheetId::TEST;
@@ -120,7 +100,11 @@ mod tests {
             &[("Sheet1", sheet1_id), ("Sheet 2", sheet2_id)],
             &[("Table1", &["col1", "col2", "col3"], Rect::test_a1("A1:C3"))],
         );
-        context.table_mut("Table1").unwrap().sheet_id = sheet2_id;
+        context
+            .table_mut("Table1")
+            .unwrap()
+            .multi_sheet_pos
+            .sheet_id = sheet2_id;
         let (_, sheet_id) = CellRefRange::parse("Table1", &context, None).unwrap();
         assert_eq!(sheet_id, Some(sheet2_id));
         let base_pos = Pos::new(10, 15);

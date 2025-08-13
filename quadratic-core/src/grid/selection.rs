@@ -9,7 +9,7 @@ impl GridController {
         a1: &str,
         default_sheet_id: SheetId,
     ) -> Result<A1Selection, A1Error> {
-        A1Selection::parse_a1(a1, default_sheet_id, self.a1_context())
+        A1Selection::parse(a1, default_sheet_id, self.a1_context())
     }
 }
 

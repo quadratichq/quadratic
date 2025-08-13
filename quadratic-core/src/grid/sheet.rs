@@ -19,7 +19,7 @@ use crate::a1::{A1Context, UNBOUNDED};
 use crate::grid::js_types::JsCellValueDescription;
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
-use crate::{CellValue, Pos, Rect};
+use crate::{CellValue, MultiPos, Pos, Rect};
 
 pub mod a1_context;
 pub mod a1_selection;
@@ -45,6 +45,7 @@ pub mod search;
 #[cfg(test)]
 pub mod sheet_test;
 pub mod summarize;
+mod table_pos;
 pub mod validations;
 
 const SHEET_NAME_VALID_CHARS: &str = r#"^[a-zA-Z0-9_\-(][a-zA-Z0-9_\- .()\p{Pd}]*[a-zA-Z0-9_\-)]$"#;
@@ -125,9 +126,10 @@ impl Sheet {
 
         // Check if sheet name already exists
         if let Some(existing_sheet_id) = a1_context.sheet_map.try_sheet_name(name)
-            && existing_sheet_id != sheet_id {
-                return Err("Sheet name must be unique".to_string());
-            }
+            && existing_sheet_id != sheet_id
+        {
+            return Err("Sheet name must be unique".to_string());
+        }
 
         Ok(())
     }
@@ -147,11 +149,11 @@ impl Sheet {
         old_a1_context: &A1Context,
         new_a1_context: &A1Context,
     ) {
-        self.update_code_cells(|code_cell_value, pos| {
+        self.update_code_cells(|code_cell_value, sheet_id| {
             code_cell_value.replace_sheet_name_in_cell_references(
                 old_a1_context,
                 new_a1_context,
-                pos,
+                sheet_id,
             );
         });
     }
@@ -209,9 +211,10 @@ impl Sheet {
             && !matches!(
                 cell_value,
                 CellValue::Code(_) | CellValue::Import(_) | CellValue::Blank
-            ) {
-                return Some(cell_value.clone());
-            }
+            )
+        {
+            return Some(cell_value.clone());
+        }
 
         // if there is no CellValue at Pos, then we still need to check data_tables
         self.get_code_cell_value(pos)
@@ -257,6 +260,44 @@ impl Sheet {
         self.cells_as_string(limited_rect, rect)
     }
 
+    /// Returns the cell_value at the MultiPos.
+    pub fn cell_value_multi_pos_ref(&self, multi_pos: &MultiPos) -> Option<&CellValue> {
+        match multi_pos {
+            MultiPos::Pos(pos) => self.cell_value_ref(*pos),
+            MultiPos::TablePos(table_pos) => {
+                let data_table = self.data_tables.get_at(&table_pos.parent_pos.into())?;
+                data_table.absolute_value_ref_at(table_pos.sub_table_pos)
+            }
+        }
+    }
+
+    /// Returns the cell_value at the MultiPos.
+    pub fn cell_value_multi_pos(&self, multi_pos: &MultiPos) -> Option<CellValue> {
+        self.cell_value_multi_pos_ref(multi_pos).cloned()
+    }
+
+    /// Returns the cell value at a position, or an error if the cell value is not found.
+    pub fn cell_value_multi_pos_result(&self, multi_pos: &MultiPos) -> Result<CellValue> {
+        self.cell_value_multi_pos(multi_pos)
+            .ok_or_else(|| anyhow!("Cell value not found at {:?}", multi_pos))
+    }
+
+    /// Returns a mutable reference to the cell value at the MultiPos. This
+    /// should be used with caution, as it allows the cell value to be modified
+    /// in place.
+    pub fn cell_value_mut(&mut self, multi_pos: &MultiPos) -> Option<&mut CellValue> {
+        match multi_pos {
+            MultiPos::Pos(pos) => self.columns.get_value_mut(pos),
+            MultiPos::TablePos(table_pos) => {
+                if let Some(data_table) = self.data_tables.get_at_mut(&table_pos.parent_pos) {
+                    data_table.get_value_mut(&table_pos.sub_table_pos)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
     /// Returns the ref of the cell_value at the Pos in column.values. This does
     /// not check or return results within data_tables.
     pub fn cell_value_ref(&self, pos: Pos) -> Option<&CellValue> {
@@ -264,20 +305,10 @@ impl Sheet {
             .and_then(|column| column.values.get(&pos.y))
     }
 
-    /// Returns the cell_value at the Pos in column.values. This does not check or return results within code_runs.
+    /// Returns the cell_value at the Pos in column.values. This does not check
+    /// or return results within code_runs.
     pub fn cell_value(&self, pos: Pos) -> Option<CellValue> {
         self.cell_value_ref(pos).cloned()
-    }
-
-    /// Returns the cell value at a position, or an error if the cell value is not found.
-    pub fn cell_value_result(&self, pos: Pos) -> Result<CellValue> {
-        self.cell_value(pos)
-            .ok_or_else(|| anyhow!("Cell value not found at {:?}", pos))
-    }
-
-    /// Returns a mutable reference to the cell value at the Pos in column.values.
-    pub fn cell_value_mut(&mut self, pos: Pos) -> Option<&mut CellValue> {
-        self.columns.get_value_mut(&pos)
     }
 
     /// Returns the cell value at a position using both `column.values` and
@@ -290,7 +321,7 @@ impl Sheet {
         if let Some(cell_value) = cell_value {
             match cell_value {
                 CellValue::Blank | CellValue::Code(_) | CellValue::Import(_) => {
-                    match self.data_tables.get_at(&pos) {
+                    match self.data_tables.get_at(&pos.into()) {
                         Some(data_table) => data_table.get_cell_for_formula(
                             0,
                             if data_table.header_is_first_row { 1 } else { 0 },
@@ -316,14 +347,16 @@ impl Sheet {
         let sheet_format = self.formats.try_format(pos).unwrap_or_default();
 
         if let Ok(data_table_pos) = self.data_table_pos_that_contains_result(pos)
-            && let Some(data_table) = self.data_table_at(&data_table_pos)
-                && !data_table.has_spill() && !data_table.has_error() {
-                    // pos relative to data table pos (top left pos)
-                    let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
-                    let table_format = data_table.get_format(format_pos);
-                    let combined_format = table_format.combine(&sheet_format);
-                    return combined_format;
-                }
+            && let Some(data_table) = self.data_table_at(&data_table_pos.into())
+            && !data_table.has_spill()
+            && !data_table.has_error()
+        {
+            // pos relative to data table pos (top left pos)
+            let format_pos = pos.translate(-data_table_pos.x, -data_table_pos.y, 0, 0);
+            let table_format = data_table.get_format(format_pos);
+            let combined_format = table_format.combine(&sheet_format);
+            return combined_format;
+        }
 
         sheet_format
     }
@@ -356,13 +389,15 @@ impl Sheet {
                 values.push("strike through".to_string());
             }
             if let Some(text_color) = format.text_color
-                && !text_color.is_empty() {
-                    values.push(format!("text color is {}", text_color.clone()));
-                }
+                && !text_color.is_empty()
+            {
+                values.push(format!("text color is {}", text_color.clone()));
+            }
             if let Some(fill_color) = format.fill_color
-                && !fill_color.is_empty() {
-                    values.push(format!("fill color is {}", fill_color.clone()));
-                }
+                && !fill_color.is_empty()
+            {
+                values.push(format!("fill color is {}", fill_color.clone()));
+            }
             if let Some(align) = format.align {
                 values.push(format!("horizontal align is {}", align.clone()));
             }
@@ -1127,7 +1162,9 @@ mod test {
             Some(true),
             None,
         );
-        sheet.data_table_insert_full(&anchor_pos, dt);
+        sheet
+            .data_table_insert_full(&anchor_pos.into(), dt)
+            .unwrap();
 
         // Test row edges
         assert!(sheet.is_at_table_edge_row(pos![B2])); // Table name
@@ -1156,7 +1193,9 @@ mod test {
             None,
         );
         dt_no_ui.show_name = Some(false);
-        sheet.data_table_insert_full(&pos![E5], dt_no_ui);
+        sheet
+            .data_table_insert_full(&pos![E5].into(), dt_no_ui)
+            .unwrap();
 
         // Test edges without UI
         assert!(sheet.is_at_table_edge_row(pos![E5])); // Top edge

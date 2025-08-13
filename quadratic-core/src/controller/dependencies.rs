@@ -1,14 +1,15 @@
-use std::{self};
-
 use std::collections::HashSet;
 
-use crate::{SheetPos, SheetRect};
+use crate::{MultiSheetPos, SheetRect};
 
 use super::GridController;
 
 impl GridController {
     /// Searches all data_tables in all sheets for cells that are dependent on the given sheet_rect.
-    pub fn get_dependent_code_cells(&self, sheet_rect: SheetRect) -> Option<HashSet<SheetPos>> {
+    pub fn get_dependent_code_cells(
+        &self,
+        sheet_rect: &SheetRect,
+    ) -> Option<HashSet<MultiSheetPos>> {
         let all_dependent_cells = self
             .cells_accessed()
             .get_positions_associated_with_region(sheet_rect.to_region());
@@ -16,11 +17,17 @@ impl GridController {
         let mut dependent_cells = HashSet::new();
 
         for dependent_cell in all_dependent_cells {
-            let Some(sheet) = self.try_sheet(dependent_cell.sheet_id) else {
+            let sheet_id = dependent_cell.sheet_id;
+
+            let Some(sheet) = self.try_sheet(sheet_id) else {
                 continue;
             };
 
-            let Some(data_table) = sheet.data_table_at(&dependent_cell.into()) else {
+            let Some(data_table_sheet_pos) = dependent_cell.to_sheet_pos(sheet) else {
+                continue;
+            };
+
+            let Some(data_table) = sheet.data_table_at(&dependent_cell.multi_pos) else {
                 continue;
             };
 
@@ -31,7 +38,7 @@ impl GridController {
             // ignore code cells that have self reference
             if !code_run
                 .cells_accessed
-                .contains(dependent_cell, self.a1_context())
+                .contains(data_table_sheet_pos, self.a1_context())
             {
                 dependent_cells.insert(dependent_cell);
             }
@@ -63,16 +70,8 @@ mod test {
         let _ = sheet.set_cell_value(Pos { x: 0, y: 0 }, CellValue::Number(1.into()));
         let _ = sheet.set_cell_value(Pos { x: 0, y: 1 }, CellValue::Number(2.into()));
         let mut cells_accessed = CellsAccessed::default();
-        let sheet_pos_00 = SheetPos {
-            x: 1,
-            y: 1,
-            sheet_id,
-        };
-        let sheet_pos_01 = SheetPos {
-            x: 1,
-            y: 2,
-            sheet_id,
-        };
+        let sheet_pos_00 = pos![sheet_id!A1];
+        let sheet_pos_01 = pos![sheet_id!A2];
         let sheet_rect = SheetRect {
             min: sheet_pos_00.into(),
             max: sheet_pos_01.into(),
@@ -91,16 +90,12 @@ mod test {
             cells_accessed: cells_accessed.clone(),
         };
 
-        let sheet_pos_02 = SheetPos {
-            x: 1,
-            y: 3,
-            sheet_id,
-        };
+        let sheet_pos_02 = pos![sheet_id!A3];
 
         let mut transaction = PendingTransaction::default();
         gc.finalize_data_table(
             &mut transaction,
-            sheet_pos_02,
+            sheet_pos_02.into(),
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table 1",
@@ -111,29 +106,30 @@ mod test {
                 None,
             )),
             None,
-        );
+        )
+        .unwrap();
 
         assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_00.into())
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
                 .unwrap()
                 .len(),
             1
         );
         assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_00.into())
+            gc.get_dependent_code_cells(&sheet_pos_00.into())
                 .unwrap()
                 .iter()
                 .next(),
-            Some(&sheet_pos_02)
+            Some(&sheet_pos_02.into())
         );
         assert_eq!(
-            gc.get_dependent_code_cells(sheet_pos_01.into())
+            gc.get_dependent_code_cells(&sheet_pos_01.into())
                 .unwrap()
                 .iter()
                 .next(),
-            Some(&sheet_pos_02)
+            Some(&sheet_pos_02.into())
         );
-        assert_eq!(gc.get_dependent_code_cells(sheet_pos_02.into()), None);
+        assert_eq!(gc.get_dependent_code_cells(&sheet_pos_02.into()), None);
     }
 
     #[test]
@@ -151,11 +147,7 @@ mod test {
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 2, 1),
             CodeCellLanguage::Formula,
             "A1 + 5".to_string(),
             None,
@@ -163,17 +155,20 @@ mod test {
             false,
         );
         assert_eq!(
-            gc.get_dependent_code_cells(SheetRect {
+            gc.get_dependent_code_cells(&SheetRect {
                 min: Pos { x: 1, y: 1 },
                 max: Pos { x: 1, y: 1 },
                 sheet_id
             }),
             Some(
-                vec![SheetPos {
-                    x: 2,
-                    y: 1,
-                    sheet_id
-                }]
+                vec![
+                    SheetPos {
+                        x: 2,
+                        y: 1,
+                        sheet_id
+                    }
+                    .into()
+                ]
                 .into_iter()
                 .collect()
             )

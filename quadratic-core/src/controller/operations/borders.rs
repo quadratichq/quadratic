@@ -223,32 +223,30 @@ impl GridController {
                     .top
                     .get_or_insert_default()
                     .set_rect(x1, y1 + 1, x2, y2, style);
-                if clear_neighbors
-                    && let Some(y2) = y2 {
-                        borders.bottom.get_or_insert_default().set_rect(
-                            x1,
-                            y1,
-                            x2,
-                            Some((y2 - 1).max(1)),
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(y2) = y2 {
+                    borders.bottom.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        x2,
+                        Some((y2 - 1).max(1)),
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Vertical => {
                 borders
                     .left
                     .get_or_insert_default()
                     .set_rect(x1 + 1, y1, x2, y2, style);
-                if clear_neighbors
-                    && let Some(x2) = x2 {
-                        borders.right.get_or_insert_default().set_rect(
-                            x1,
-                            y1,
-                            Some((x2 - 1).max(1)),
-                            y2,
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(x2) = x2 {
+                    borders.right.get_or_insert_default().set_rect(
+                        x1,
+                        y1,
+                        Some((x2 - 1).max(1)),
+                        y2,
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Left => {
                 borders
@@ -295,16 +293,15 @@ impl GridController {
                         style,
                     );
                 }
-                if clear_neighbors
-                    && let Some(x2) = x2 {
-                        borders.left.get_or_insert_default().set_rect(
-                            x2 + 1,
-                            y1,
-                            Some(x2 + 1),
-                            y2,
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(x2) = x2 {
+                    borders.left.get_or_insert_default().set_rect(
+                        x2 + 1,
+                        y1,
+                        Some(x2 + 1),
+                        y2,
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             BorderSelection::Bottom => {
                 if let Some(y2) = y2 {
@@ -321,16 +318,15 @@ impl GridController {
                         style,
                     );
                 }
-                if clear_neighbors
-                    && let Some(y2) = y2 {
-                        borders.top.get_or_insert_default().set_rect(
-                            x1,
-                            y2 + 1,
-                            x2,
-                            Some(y2 + 1),
-                            Some(ClearOption::Clear),
-                        );
-                    }
+                if clear_neighbors && let Some(y2) = y2 {
+                    borders.top.get_or_insert_default().set_rect(
+                        x1,
+                        y2 + 1,
+                        x2,
+                        Some(y2 + 1),
+                        Some(ClearOption::Clear),
+                    );
+                }
             }
             // for clear, we need to remove any borders that are at the edges of
             // the range--eg, the left border at the next column to the right of the range
@@ -431,10 +427,10 @@ impl GridController {
                 CellRefRange::Table { range } => {
                     if let Some(table) = context.try_table(&range.table_name)
                         && let Some(range) =
-                            range.convert_to_ref_range_bounds(true, context, false, false)
-                        {
-                            add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
-                        }
+                            range.convert_to_ref_range_bounds(true, context, false, false, None)
+                    {
+                        add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
+                    }
                 }
             }
         }
@@ -468,8 +464,8 @@ impl GridController {
                 return false;
             }
 
-            for (table_sheet_pos, table_borders) in tables_borders {
-                let Some(data_table) = sheet.data_table_at(&table_sheet_pos) else {
+            for (data_table_pos, table_borders) in tables_borders {
+                let Some(data_table) = sheet.data_table_at(&data_table_pos.into()) else {
                     return false;
                 };
 

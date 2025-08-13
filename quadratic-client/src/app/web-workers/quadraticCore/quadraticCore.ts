@@ -25,6 +25,7 @@ import type {
   JsClipboard,
   JsCodeCell,
   JsCodeErrorContext,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsHashValidationWarnings,
   JsHtmlOutput,
@@ -506,8 +507,8 @@ class QuadraticCore {
 
   setCodeCellValue(options: {
     sheetId: string;
-    x: number;
-    y: number;
+    pos: JsCoordinate;
+    tablePos: JsCoordinate | undefined;
     language: CodeCellLanguage;
     codeString: string;
     codeCellName?: string;
@@ -522,8 +523,8 @@ class QuadraticCore {
         type: 'clientCoreSetCodeCellValue',
         id,
         sheetId: options.sheetId,
-        x: options.x,
-        y: options.y,
+        pos: options.pos,
+        tablePos: options.tablePos,
         language: options.language,
         codeString: options.codeString,
         cursor: sheets.getCursorPosition(),

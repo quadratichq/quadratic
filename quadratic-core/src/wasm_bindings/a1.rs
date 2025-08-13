@@ -1,11 +1,13 @@
 use std::str::FromStr;
 
 use crate::{
-    SheetRect,
+    Pos, SheetRect,
     a1::{A1Selection, CellRefRange, RefRangeBounds, column_from_name},
     grid::SheetId,
     wasm_bindings::js_selection::JsSelection,
 };
+
+#[cfg(feature = "js")]
 use wasm_bindgen::prelude::*;
 
 use super::js_a1_context::JsA1Context;
@@ -29,7 +31,7 @@ fn selection_to_sheet_rect(
     context: &JsA1Context,
 ) -> Result<SheetRect, String> {
     let sheet_id = SheetId::from_str(sheet_id).map_err(|e| format!("Sheet not found: {e}"))?;
-    let selection = A1Selection::parse_a1(selection, sheet_id, context.get_context())
+    let selection = A1Selection::parse(selection, sheet_id, context.get_context())
         .map_err(|e| format!("Invalid selection: {e}"))?;
     let range = selection
         .ranges
@@ -70,7 +72,7 @@ pub fn to_selection(
     context: &JsA1Context,
 ) -> Result<JsSelection, String> {
     let default_sheet_id = SheetId::from_str(default_sheet_id).map_err(|e| e.to_string())?;
-    let selection = A1Selection::parse_a1(a1, default_sheet_id, context.get_context())
+    let selection = A1Selection::parse(a1, default_sheet_id, context.get_context())
         .map_err(|e| serde_json::to_string(&e).unwrap_or(e.to_string()))?;
     Ok(JsSelection::new_with_selection(selection))
 }
@@ -93,15 +95,26 @@ pub fn cell_ref_range_to_ref_range_bounds(
     cell_ref_range: String,
     show_table_headers_for_python: bool,
     context: &JsA1Context,
+    source_cell_x: Option<i32>,
+    source_cell_y: Option<i32>,
 ) -> Result<JsValue, String> {
     let cell_ref_range =
         serde_json::from_str::<CellRefRange>(&cell_ref_range).map_err(|e| e.to_string())?;
     let ref_range_bounds = match cell_ref_range {
         CellRefRange::Sheet { range } => range,
         CellRefRange::Table { range } => {
+            let source_cell = if let (Some(x), Some(y)) = (source_cell_x, source_cell_y) {
+                Some(Pos {
+                    x: x as i64,
+                    y: y as i64,
+                })
+            } else {
+                None
+            };
             match range.convert_cells_accessed_to_ref_range_bounds(
                 show_table_headers_for_python,
                 context.get_context(),
+                source_cell,
             ) {
                 Some(ref_range_bounds) => ref_range_bounds,
                 None => {
@@ -141,7 +154,7 @@ pub fn convert_table_to_sheet_pos(
     context: &JsA1Context,
 ) -> Result<JsValue, String> {
     if let Some(table) = context.get_context().try_table(table_name) {
-        serde_wasm_bindgen::to_value(&(table.bounds.min.to_sheet_pos(table.sheet_id)))
+        serde_wasm_bindgen::to_value(&(table.bounds.min.to_sheet_pos(table.sheet_id())))
             .map_err(|e| e.to_string())
     } else {
         Err("Table not found".to_string())

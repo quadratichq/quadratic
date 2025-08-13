@@ -93,8 +93,8 @@ export const SetSQLCodeCellValue = memo(
 
         quadraticCore.setCodeCellValue({
           sheetId: sheets.current,
-          x: codeCellPos.x,
-          y: codeCellPos.y,
+          pos: codeCellPos,
+          tablePos: undefined,
           codeString: toolArgs.sql_code_string,
           language: {
             Connection: {

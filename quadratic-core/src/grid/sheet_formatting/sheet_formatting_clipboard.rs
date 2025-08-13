@@ -21,7 +21,7 @@ impl SheetFormatting {
             SheetFormatUpdates::from_sheet_formatting_selection(selection, self);
 
         // get the largest rect that is finite of the selection
-        for rect in sheet.selection_to_rects(selection, false, false, false, a1_context) {
+        for rect in sheet.selection_to_rects(selection, false, false, false, a1_context, None) {
             // get the formats from the data table and merge them with the sheet formats
             for (output_rect, intersection_rect, data_table) in
                 sheet.iter_data_tables_intersects_rect(rect)

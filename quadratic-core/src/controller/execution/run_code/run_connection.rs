@@ -35,7 +35,7 @@ impl GridController {
             result.push_str(&code[last_match_end..whole_match.start()]);
 
             let content = cap.get(1).map(|m| m.as_str().trim()).unwrap_or("");
-            let selection = A1Selection::parse_a1(content, default_sheet_id, context)?;
+            let selection = A1Selection::parse(content, default_sheet_id, context)?;
 
             let Some(pos) = selection.try_to_pos(context) else {
                 return Err(A1Error::WrongCellCount(
@@ -93,7 +93,7 @@ impl GridController {
                         span: None,
                         msg: RunErrorMsg::CodeRunError(std::borrow::Cow::Owned(msg.to_string())),
                     };
-                    transaction.current_sheet_pos = Some(sheet_pos);
+                    transaction.current_multi_sheet_pos = Some(sheet_pos.into());
                     let _ = self.code_cell_sheet_error(transaction, &error);
 
                     // not ideal to clone the transaction, but we need to close it
@@ -104,7 +104,7 @@ impl GridController {
         }
 
         // stop the computation cycle until async returns
-        transaction.current_sheet_pos = Some(sheet_pos);
+        transaction.current_multi_sheet_pos = Some(sheet_pos.into());
         let code_cell = CodeCellValue {
             language: CodeCellLanguage::Connection { kind, id },
             code,
@@ -243,11 +243,7 @@ mod tests {
     fn test_run_connection_sheet_name_error() {
         fn test_error(gc: &mut GridController, code: &str, sheet_id: SheetId) {
             gc.set_code_cell(
-                SheetPos {
-                    x: 10,
-                    y: 10,
-                    sheet_id,
-                },
+                SheetPos::new(sheet_id, 10, 10),
                 CodeCellLanguage::Connection {
                     kind: ConnectionKind::Postgres,
                     id: "test".to_string(),
@@ -259,7 +255,7 @@ mod tests {
             );
 
             let sheet = gc.sheet(sheet_id);
-            let code_cell = sheet.data_table_at(&Pos { x: 10, y: 10 });
+            let code_cell = sheet.data_table_at(&Pos { x: 10, y: 10 }.into());
             assert_eq!(
                 code_cell.unwrap().get_error(),
                 Some(RunError {

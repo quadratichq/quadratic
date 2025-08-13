@@ -26,7 +26,7 @@ pub fn output_pretty_print_data_table(
     max: Option<usize>,
 ) -> String {
     if data_table.is_single_value() {
-        let value = data_table.cell_value_at(0, 0).unwrap();
+        let value = data_table.display_value_at((0, 0).into()).unwrap();
         return format!(
             "{title} with single value: {value}",
             title = title.unwrap_or("Data Table"),
@@ -103,7 +103,9 @@ pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
 #[track_caller]
 pub fn print_table_at(gc: &GridController, sheet_id: SheetId, pos: Pos) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
-    let data_table = sheet.data_table_at(&pos).expect("Data table not found");
+    let data_table = sheet
+        .data_table_at(&pos.into())
+        .expect("Data table not found");
     pretty_print_data_table(data_table, None, None);
 }
 
@@ -114,7 +116,7 @@ pub fn print_table_in_rect(grid_controller: &GridController, sheet_id: SheetId, 
         .try_sheet(sheet_id)
         .expect("Sheet not found");
 
-    if let Some(data_table) = sheet.data_table_at(&rect.min) {
+    if let Some(data_table) = sheet.data_table_at(&rect.min.into()) {
         let max = rect.max.y - rect.min.y + 1;
         pretty_print_data_table(data_table, None, Some(max as usize));
     } else {

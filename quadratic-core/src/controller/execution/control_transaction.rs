@@ -10,7 +10,7 @@ use crate::error_core::Result;
 use crate::grid::{CodeCellLanguage, CodeRun, ConnectionKind, DataTable, DataTableKind};
 use crate::parquet::parquet_to_array;
 use crate::renderer_constants::{CELL_SHEET_HEIGHT, CELL_SHEET_WIDTH};
-use crate::{CellValue, Pos, RunError, RunErrorMsg, Value};
+use crate::{CellValue, MultiPos, Pos, RunError, RunErrorMsg, Value};
 
 impl GridController {
     // loop compute cycle until complete or an async call is made
@@ -185,87 +185,86 @@ impl GridController {
         let transaction_id = Uuid::parse_str(&transaction_id)?;
         let mut transaction = self.transactions.remove_awaiting_async(transaction_id)?;
 
-        if let Some(current_sheet_pos) = transaction.current_sheet_pos {
+        // connections cannot run as a code within a data table
+        if let Some(current_multi_sheet_pos) = transaction.current_multi_sheet_pos
+            && let MultiPos::Pos(pos) = current_multi_sheet_pos.multi_pos
             // if sheet exists, proceed with processing the connection result
             // sheet may not exist if deleted by user or multiplayer during the async call
-            if let Some(sheet) = self.try_sheet(current_sheet_pos.sheet_id) {
-                // if code cell exists, proceed with processing the connection result
-                // code cell may not exist if deleted by user or multiplayer during the async call
-                if let Some(CellValue::Code(code)) = sheet.cell_value_ref(current_sheet_pos.into())
-                {
-                    let name = match code.language {
-                        CodeCellLanguage::Connection { kind, .. } => match kind {
-                            ConnectionKind::Postgres => "Postgres1",
-                            ConnectionKind::Mysql => "MySQL1",
-                            ConnectionKind::Mssql => "MSSQL1",
-                            ConnectionKind::Snowflake => "Snowflake1",
-                            ConnectionKind::Cockroachdb => "Cockroachdb1",
-                            ConnectionKind::Bigquery => "Bigquery1",
-                            ConnectionKind::Mariadb => "Mariadb1",
-                            ConnectionKind::Supabase => "Supabase1",
-                            ConnectionKind::Neon => "Neon1",
-                        },
-                        // this should not happen
-                        _ => "Connection 1",
-                    };
+            && let Some(sheet) = self.try_sheet(current_multi_sheet_pos.sheet_id)
+            // if code cell exists, proceed with processing the connection result
+            // code cell may not exist if deleted by user or multiplayer during the async call
+            && let Some(CellValue::Code(code)) = sheet.cell_value_ref(pos)
+        {
+            let name = match code.language {
+                CodeCellLanguage::Connection { kind, .. } => match kind {
+                    ConnectionKind::Postgres => "Postgres1",
+                    ConnectionKind::Mysql => "MySQL1",
+                    ConnectionKind::Mssql => "MSSQL1",
+                    ConnectionKind::Snowflake => "Snowflake1",
+                    ConnectionKind::Cockroachdb => "Cockroachdb1",
+                    ConnectionKind::Bigquery => "Bigquery1",
+                    ConnectionKind::Mariadb => "Mariadb1",
+                    ConnectionKind::Supabase => "Supabase1",
+                    ConnectionKind::Neon => "Neon1",
+                },
+                // this should not happen
+                _ => "Connection 1",
+            };
 
-                    let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
-                    let parse_error = |e: &String| {
-                        dbgjs!(format!("Error parsing Parquet file {}: {}", name, e));
-                        ("0x0 Array".to_string(), Value::default())
-                    };
+            let array = parquet_to_array(data, name, None::<fn(&str, u32, u32)>);
+            let parse_error = |e: &String| {
+                dbgjs!(format!("Error parsing Parquet file {}: {}", name, e));
+                ("0x0 Array".to_string(), Value::default())
+            };
 
-                    let (mut return_type, value) = match (array, &std_err) {
-                        (Ok(array), None) => {
-                            // subtract 1 from the length to account for the header row
-                            let return_type =
-                                format!("{}×{} Array", array.width(), array.height() - 1);
+            let (mut return_type, value) = match (array, &std_err) {
+                (Ok(array), None) => {
+                    // subtract 1 from the length to account for the header row
+                    let return_type = format!("{}×{} Array", array.width(), array.height() - 1);
 
-                            (return_type, Value::Array(array))
-                        }
-                        (Err(e), None) => parse_error(&e.to_string()),
-                        (_, Some(std_err)) => parse_error(std_err),
-                    };
-
-                    if let Some(extra) = extra {
-                        return_type = format!("{return_type}\n{extra}");
-                    }
-
-                    let error = std_err.to_owned().map(|msg| RunError {
-                        span: None,
-                        msg: RunErrorMsg::CodeRunError(msg.into()),
-                    });
-
-                    let code_run = CodeRun {
-                        language: code.language.to_owned(),
-                        code: code.code.to_owned(),
-                        error,
-                        return_type: Some(return_type.to_owned()),
-                        line_number: Some(1),
-                        output_type: Some(return_type),
-                        std_out,
-                        std_err,
-                        cells_accessed: std::mem::take(&mut transaction.cells_accessed),
-                    };
-
-                    let data_table = DataTable::new(
-                        DataTableKind::CodeRun(code_run),
-                        name,
-                        value,
-                        true,
-                        None,
-                        None,
-                        None,
-                    );
-
-                    self.finalize_data_table(
-                        &mut transaction,
-                        current_sheet_pos,
-                        Some(data_table),
-                        None,
-                    );
+                    (return_type, Value::Array(array))
                 }
+                (Err(e), None) => parse_error(&e.to_string()),
+                (_, Some(std_err)) => parse_error(std_err),
+            };
+
+            if let Some(extra) = extra {
+                return_type = format!("{return_type}\n{extra}");
             }
+
+            let error = std_err.to_owned().map(|msg| RunError {
+                span: None,
+                msg: RunErrorMsg::CodeRunError(msg.into()),
+            });
+
+            let code_run = CodeRun {
+                language: code.language.to_owned(),
+                code: code.code.to_owned(),
+                error,
+                return_type: Some(return_type.to_owned()),
+                line_number: Some(1),
+                output_type: Some(return_type),
+                std_out,
+                std_err,
+                cells_accessed: std::mem::take(&mut transaction.cells_accessed),
+            };
+
+            let data_table = DataTable::new(
+                DataTableKind::CodeRun(code_run),
+                name,
+                value,
+                true,
+                None,
+                None,
+                None,
+            );
+
+            let _ = self.finalize_data_table(
+                &mut transaction,
+                current_multi_sheet_pos,
+                Some(data_table),
+                None,
+            );
         }
 
         self.start_transaction(&mut transaction);
@@ -426,11 +425,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             crate::grid::CodeCellLanguage::Python,
             "1 + 1".into(),
             None,
@@ -454,11 +449,7 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
         gc.set_code_cell(
-            SheetPos {
-                x: 0,
-                y: 0,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Connection {
                 kind: ConnectionKind::Postgres,
                 id: Uuid::new_v4().to_string(),

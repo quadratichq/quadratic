@@ -69,11 +69,7 @@ mod tests {
         sheet.set_cell_value(Pos { x: 1, y: 1 }, CellValue::Number(1.into()));
         sheet.set_cell_value(Pos { x: 1, y: 2 }, CellValue::Number(2.into()));
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 2, 1),
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -109,11 +105,7 @@ mod tests {
 
         // sets code cell that outputs 1,0=1 and 1,1=2
         gc.set_code_cell(
-            SheetPos {
-                x: 2,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 2, 1),
             crate::grid::CodeCellLanguage::Formula,
             "A1:A2".to_string(),
             None,
@@ -178,11 +170,7 @@ mod tests {
         );
 
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -203,7 +191,7 @@ mod tests {
         );
 
         let sheet = gc.sheet(sheet_id);
-        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 }).unwrap();
+        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 }.into()).unwrap();
         assert!(code_run.has_spill());
 
         // should be a spill caused by 1,2
@@ -224,7 +212,7 @@ mod tests {
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
-        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 });
+        let code_run = sheet.data_table_at(&Pos { x: 1, y: 1 }.into());
         assert!(code_run.is_some());
         assert!(!code_run.unwrap().has_spill());
 
@@ -257,11 +245,7 @@ mod tests {
 
         // value to cause the spill
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Formula,
             "B1:B4".into(),
             None,
@@ -280,18 +264,18 @@ mod tests {
             sheet.get_render_cells(Rect::single_pos(Pos { x: 1, y: 2 }), gc.a1_context());
         assert_eq!(render_cells, output_number(1, 2, "2", None, None));
 
+        print_first_sheet!(&gc);
+
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 2,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 2),
             CodeCellLanguage::Formula,
             "1 + 2".into(),
             None,
             None,
             false,
         );
+
+        print_first_sheet!(&gc);
 
         // should be spilled because of the code_cell
         let sheet = gc.sheet(sheet_id);
@@ -323,11 +307,7 @@ mod tests {
 
         // copies values to copy to 10,10: column: 10-12, rows: 10="1", 11="2", 12="3"
         gc.set_code_cell(
-            SheetPos {
-                x: 11,
-                y: 11,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 11, 11),
             CodeCellLanguage::Formula,
             "A1:C3".into(),
             None,
@@ -337,11 +317,7 @@ mod tests {
 
         // output that is spilled column: 11, row: 9 creates a spill (since it's inside the other code_cell)
         gc.set_code_cell(
-            SheetPos {
-                x: 12,
-                y: 10,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 12, 10),
             CodeCellLanguage::Formula,
             "A1:A3".into(),
             None,
@@ -419,11 +395,7 @@ mod tests {
             false,
         );
         gc.set_code_cell(
-            SheetPos {
-                x: 1,
-                y: 1,
-                sheet_id,
-            },
+            SheetPos::new(sheet_id, 1, 1),
             CodeCellLanguage::Javascript,
             "".into(),
             None,
