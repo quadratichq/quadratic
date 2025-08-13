@@ -13,7 +13,7 @@ const router = express.Router();
 
 const schema = z.object({
   params: z.object({
-    take: z.number(),
+    take: z.coerce.number(),
   }),
 });
 
