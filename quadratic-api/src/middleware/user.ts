@@ -3,6 +3,7 @@ import { getUsers } from '../auth/auth';
 import dbClient from '../dbClient';
 import { addUserToTeam } from '../internal/addUserToTeam';
 import type { RequestWithAuth, RequestWithOptionalAuth, RequestWithUser } from '../types/Request';
+import logger from '../utils/logger';
 
 const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.user.create>>) => {
   const { id: userId, auth0Id } = user;
@@ -10,6 +11,21 @@ const runFirstTimeUserLogic = async (user: Awaited<ReturnType<typeof dbClient.us
   // Lookup their email in auth0
   const usersById = await getUsers([{ id: userId, auth0Id }]);
   const { email } = usersById[userId];
+
+  if (email) {
+    try {
+      await dbClient.user.update({
+        where: {
+          auth0Id,
+        },
+        data: {
+          email,
+        },
+      });
+    } catch (error) {
+      logger.error(`Error updating user email for user ${auth0Id}`, error);
+    }
+  }
 
   // See if they've been invited to any teams and make them team members
   const teamInvites = await dbClient.teamInvite.findMany({
