@@ -18,7 +18,7 @@ export const AILightWeight = (props: Props) => {
       setLightWeightApp(app);
       try {
         const range = selectionToSheetRect(sheets.current, props.a1, sheets.jsA1Context);
-        app.reposition(Number(range.min.x), Number(range.min.y));
+        app.reposition(Number(range.min.x), Number(range.min.y), Number(range.max.x), Number(range.max.y));
       } catch {}
 
       return () => {

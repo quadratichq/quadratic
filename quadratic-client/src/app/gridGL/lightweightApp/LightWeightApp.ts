@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { BaseApp } from '@/app/gridGL/BaseApp';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
-import { Viewport, WHEEL_ZOOM_PERCENT } from '@/app/gridGL/pixiApp/viewport/Viewport';
+import { WHEEL_ZOOM_PERCENT } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
 
 export class LightWeightApp extends BaseApp {
@@ -12,7 +12,6 @@ export class LightWeightApp extends BaseApp {
     this.parent = parent;
     this.parent.appendChild(this.canvas);
 
-    this.viewport = new Viewport(this);
     this.viewport.drag().pinch();
     this.viewport.plugins.add(
       'wheel',
@@ -30,9 +29,21 @@ export class LightWeightApp extends BaseApp {
     this.update();
   }
 
-  reposition(column: number, row: number) {
-    const position = sheets.sheet.getCellOffsets(column, row);
-    this.viewport.position.set(-position.x, -position.y);
+  reposition(columnStart: number, rowStart: number, columnEnd: number, rowEnd: number) {
+    const start = sheets.sheet.getCellOffsets(columnStart, rowStart);
+    const end = sheets.sheet.getCellOffsets(columnEnd, rowEnd);
+    this.viewport.position.set(-start.x, -start.y);
+    this.viewport.clamp({
+      left: start.x,
+      top: start.y,
+      right: end.x + end.width,
+      bottom: end.y + end.height,
+      underflow: 'top-left',
+    });
+    this.viewport.clampZoom({
+      maxWidth: end.x + end.width - start.x,
+      maxHeight: end.y + end.height - start.y,
+    });
   }
 
   destroy() {
