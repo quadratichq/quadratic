@@ -17,7 +17,7 @@ type Selected = 'all' | number[] | undefined;
 
 export type IntersectsHeadings = { column: number | null; row: number | null; corner?: true };
 
-interface HeadingSize {
+export interface HeadingSize {
   width: number;
   height: number;
   unscaledWidth: number;

@@ -23,7 +23,7 @@ const SNAPPING_TIME = 50;
 type SnapState = 'waiting' | 'snapping' | undefined;
 
 export class Viewport extends PixiViewport {
-  private pixiApp: BaseApp;
+  private baseApp: BaseApp;
 
   private lastViewportPosition: Point = new Point();
 
@@ -44,7 +44,7 @@ export class Viewport extends PixiViewport {
     super({
       events: gridApp.renderer.events,
     });
-    this.pixiApp = gridApp;
+    this.baseApp = gridApp;
     this.plugins.add(
       'drag',
       new Drag(this, {
@@ -152,13 +152,13 @@ export class Viewport extends PixiViewport {
 
   // resets the viewport to start
   reset = () => {
-    const headings = this.pixiApp.headings.headingSize;
+    const headings = this.baseApp.headings.headingSize;
     this.position.set(headings.width, headings.height);
     this.dirty = true;
   };
 
   getWorld = (): Point => {
-    return this.toWorld(this.pixiApp.renderer.events.pointer.global);
+    return this.toWorld(this.baseApp.renderer.events.pointer.global);
   };
 
   enableMouseEdges = (world?: Point, direction?: 'horizontal' | 'vertical') => {
@@ -186,7 +186,7 @@ export class Viewport extends PixiViewport {
   }
 
   private startSnap = () => {
-    const headings = this.pixiApp.headings.headingSize;
+    const headings = this.baseApp.headings.headingSize;
     let x: number;
     let y: number;
     let snap = false;
@@ -219,9 +219,9 @@ export class Viewport extends PixiViewport {
 
   private handleMoved = (event: { viewport: Viewport; type: string }) => {
     if (event.type === 'mouse-edges') {
-      if (this.pixiApp.pointer?.pointerHeading.movingColRows) return;
+      if (this.baseApp.pointer?.pointerHeading.movingColRows) return;
 
-      const headings = this.pixiApp.headings.headingSize;
+      const headings = this.baseApp.headings.headingSize;
       if (this.x > headings.width || this.y > headings.height) {
         this.disableMouseEdges();
 
@@ -259,7 +259,7 @@ export class Viewport extends PixiViewport {
       dirty = true;
     }
     if (dirty) {
-      this.pixiApp.viewportChanged();
+      this.baseApp.viewportChanged();
       this.sendRenderViewport();
 
       // signals to react that the viewport has changed (so it can update any
@@ -271,9 +271,9 @@ export class Viewport extends PixiViewport {
       this.snapState = undefined;
     } else if (!this.waitForZoomEnd) {
       if (!this.snapState) {
-        const headings = this.pixiApp.headings.headingSize;
+        const headings = this.baseApp.headings.headingSize;
         if (this.x > headings.width || this.y > headings.height) {
-          if (this.pixiApp.momentumDetector.hasMomentumScroll()) {
+          if (this.baseApp.momentumDetector.hasMomentumScroll()) {
             if (!this.plugins.get('drag')?.active) {
               this.startSnap();
             }
@@ -311,7 +311,7 @@ export class Viewport extends PixiViewport {
 
   private handleMouseEdgeMove = (event: { viewport: Viewport; type: string }) => {
     if (event.type === 'mouse-edges') {
-      this.pixiApp.pointer?.pointerMove(this.pixiApp.renderer.events.pointer);
+      this.baseApp.pointer?.pointerMove(this.baseApp.renderer.events.pointer);
     }
   };
 }

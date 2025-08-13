@@ -21,7 +21,6 @@ import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
-import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
@@ -155,8 +154,8 @@ export class PixiApp extends BaseApp {
 
     // this is a hack to ensure that table column names appears over the column
     // headings, but under the row headings
-    const gridHeadings = new GridHeadings();
-    this.viewportContents.addChild(gridHeadings.gridHeadingsRows);
+    // const gridHeadings = new GridHeadings();
+    this.viewportContents.addChild(this.headings.gridHeadingsRows);
 
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
@@ -171,7 +170,7 @@ export class PixiApp extends BaseApp {
     this.singleCellOutlines = this.viewportContents.addChild(this.singleCellOutlines);
     this.viewportContents.addChild(this.hoverTableHeaders);
     this.viewportContents.addChild(this.hoverTableColumnsSelection);
-    this.headings = this.viewportContents.addChild(gridHeadings);
+    this.viewportContents.addChild(this.headings);
 
     // useful for debugging at viewport locations
     this.viewportContents.addChild(this.debug);

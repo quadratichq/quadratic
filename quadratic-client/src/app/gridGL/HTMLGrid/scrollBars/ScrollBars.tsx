@@ -2,6 +2,7 @@
 
 import { showScrollbarsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
+import type { BaseApp } from '@/app/gridGL/BaseApp';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import { useCallback, useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
@@ -9,17 +10,21 @@ import { useRecoilValue } from 'recoil';
 
 const SCROLLBAR_SIZE = 6;
 
-export const ScrollBars = () => {
+interface Props {
+  baseApp: BaseApp;
+}
+
+export const ScrollBars = (props: Props) => {
   const showScrollbars = useRecoilValue(showScrollbarsAtom);
   const [down, setDown] = useState<{ x: number; y: number } | undefined>(undefined);
   const [start, setStart] = useState<number | undefined>(undefined);
   const [state, setState] = useState<'horizontal' | 'vertical' | undefined>(undefined);
 
   const scrollBarsHandler = useMemo(() => {
-    const scrollBarsHandler = new ScrollBarsHandler();
+    const scrollBarsHandler = new ScrollBarsHandler(props.baseApp);
     events.emit('scrollBarsHandler', scrollBarsHandler);
     return scrollBarsHandler;
-  }, []);
+  }, [props.baseApp]);
 
   // Need to listen to pointermove and pointerup events on window to handle
   // mouse leaving the scrollbars

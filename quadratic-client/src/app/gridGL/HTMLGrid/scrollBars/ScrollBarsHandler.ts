@@ -1,12 +1,12 @@
 //! Adjusts scrollbars for the grid.
 
-// todo: this can be moved near the ScrollBars.tsx component
-
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import type { BaseApp } from '@/app/gridGL/BaseApp';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { HeadingSize } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
 import { Point, Rectangle } from 'pixi.js';
 
 const SCROLLBAR_SIZE = 6;
@@ -16,6 +16,7 @@ const SCROLLBAR_MINIMUM_SIZE = 15;
 export type Scrollbar = 'horizontal' | 'vertical' | undefined;
 
 export class ScrollBarsHandler {
+  private baseApp: BaseApp;
   private dirty = true;
 
   // we need to cache these values since we use the last non-dragged values
@@ -38,7 +39,8 @@ export class ScrollBarsHandler {
 
   private dragging: 'horizontal' | 'vertical' | undefined;
 
-  constructor() {
+  constructor(baseApp: BaseApp) {
+    this.baseApp = baseApp;
     events.on('sheetsInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('headingSize', this.setDirty);
@@ -85,7 +87,7 @@ export class ScrollBarsHandler {
 
     // If the content is smaller than the viewport, and the viewport is at the
     // start of the content, then the scrollbar is not visible.
-    if (!this.dragging && viewportSize >= contentSize && viewportStart <= -headingSize / pixiApp.viewport.scaled) {
+    if (!this.dragging && viewportSize >= contentSize && viewportStart <= -headingSize / this.baseApp.viewport.scaled) {
       return undefined;
     }
 
@@ -119,9 +121,12 @@ export class ScrollBarsHandler {
     const horizontalBar = document.querySelector('#grid-scrollbars-horizontal') as HTMLDivElement;
     if (!verticalBar || !horizontalBar) return;
 
-    const viewport = pixiApp.viewport;
+    const viewport = this.baseApp.viewport;
     const { screenWidth, screenHeight } = viewport;
-    const { headingSize } = pixiApp.headings;
+    let headingSize: HeadingSize = { width: 0, height: 0, unscaledWidth: 0, unscaledHeight: 0 };
+    if ('headings' in (this.baseApp as PixiApp).headings) {
+      headingSize = (this.baseApp as PixiApp).headings.headingSize;
+    }
     const viewportBounds = viewport.getVisibleBounds();
     const contentSize = sheets.sheet.getScrollbarBounds();
     const dragging = this.dragging;
@@ -149,10 +154,10 @@ export class ScrollBarsHandler {
 
         if (viewportBounds.right < contentSize.width) {
           // adjusts when content is larger than viewport but we are not passed the end of the content
-          this.scrollbarScaleX = (viewportBounds.width / this.horizontalBarWidth) * pixiApp.viewport.scaled;
+          this.scrollbarScaleX = (viewportBounds.width / this.horizontalBarWidth) * this.baseApp.viewport.scaled;
         } else {
           // adjusts when we are past the end of the content
-          this.scrollbarScaleX = (viewportBounds.right / this.scrollbarAreaWidth) * pixiApp.viewport.scaled;
+          this.scrollbarScaleX = (viewportBounds.right / this.scrollbarAreaWidth) * this.baseApp.viewport.scaled;
         }
       }
       const horizontalY = screenHeight - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
@@ -188,10 +193,10 @@ export class ScrollBarsHandler {
 
         if (viewportBounds.bottom < contentSize.height) {
           // adjusts when content is larger than viewport but we are not passed the end of the content
-          this.scrollbarScaleY = (viewportBounds.height / this.verticalBarHeight) * pixiApp.viewport.scaled;
+          this.scrollbarScaleY = (viewportBounds.height / this.verticalBarHeight) * this.baseApp.viewport.scaled;
         } else {
           // adjusts when we are past the end of the content
-          this.scrollbarScaleY = (viewportBounds.bottom / this.scrollbarAreaHeight) * pixiApp.viewport.scaled;
+          this.scrollbarScaleY = (viewportBounds.bottom / this.scrollbarAreaHeight) * this.baseApp.viewport.scaled;
         }
       }
       const verticalX = screenWidth - SCROLLBAR_SIZE - SCROLLBAR_PADDING;
@@ -211,12 +216,12 @@ export class ScrollBarsHandler {
     if (!this.dirty && !forceDirty) return;
     this.dirty = false;
     this.calculate();
-    pixiApp.setViewportDirty();
+    this.baseApp.setViewportDirty();
   };
 
   /// Returns the scrollbar that the point is over.
   contains = (x: number, y: number): Scrollbar => {
-    const canvasBounds = pixiApp.canvas.getBoundingClientRect();
+    const canvasBounds = this.baseApp.canvas.getBoundingClientRect();
     const point = new Point(x - canvasBounds.left, y - canvasBounds.top);
     if (this.horizontal && intersects.rectanglePoint(this.horizontal, point)) {
       return 'horizontal';
@@ -231,19 +236,19 @@ export class ScrollBarsHandler {
   /// was applied.
   adjustHorizontal = (delta: number): number => {
     if (!delta) return 0;
-    const last = pixiApp.viewport.x;
-    pixiApp.viewport.x -= delta * this.scrollbarScaleX;
-    pixiApp.viewport.x = Math.min(pixiApp.headings.headingSize.width, pixiApp.viewport.x);
-    return (last - pixiApp.viewport.x) / this.scrollbarScaleX;
+    const last = this.baseApp.viewport.x;
+    this.baseApp.viewport.x -= delta * this.scrollbarScaleX;
+    this.baseApp.viewport.x = Math.min(this.baseApp.headings.headingSize.width, this.baseApp.viewport.x);
+    return (last - this.baseApp.viewport.x) / this.scrollbarScaleX;
   };
 
   /// Adjusts vertical scrollbar by the delta. Returns the actual delta that
   /// was applied.
   adjustVertical = (delta: number): number => {
     if (!delta) return 0;
-    const last = pixiApp.viewport.y;
-    pixiApp.viewport.y -= delta * this.scrollbarScaleY;
-    pixiApp.viewport.y = Math.min(pixiApp.headings.headingSize.height, pixiApp.viewport.y);
-    return (last - pixiApp.viewport.y) / this.scrollbarScaleY;
+    const last = this.baseApp.viewport.y;
+    this.baseApp.viewport.y -= delta * this.scrollbarScaleY;
+    this.baseApp.viewport.y = Math.min(this.baseApp.headings.headingSize.height, this.baseApp.viewport.y);
+    return (last - this.baseApp.viewport.y) / this.scrollbarScaleY;
   };
 }
