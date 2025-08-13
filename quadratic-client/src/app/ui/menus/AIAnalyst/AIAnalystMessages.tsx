@@ -161,11 +161,16 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
   if (messagesCount === 0) {
     if (LIGHTWEIGHT_DEMO) {
       return (
-        <>
-          <AILightWeight height={100} first={true} />
-          <div className="h-5" />
-          <AILightWeight height={200} first={false} />
-        </>
+        <div className="flex flex-col gap-5">
+          <div className="border bg-blue-200">
+            <div className="bold px-1">B2:D5</div>
+            <AILightWeight height={100} first={true} />
+          </div>
+          <div className="border bg-blue-200">
+            <div className="bold px-1">This is Table1</div>
+            <AILightWeight height={200} first={false} />
+          </div>
+        </div>
       );
     } else {
       return <AIAnalystExamplePrompts />;
