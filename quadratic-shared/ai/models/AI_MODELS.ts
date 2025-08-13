@@ -456,7 +456,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'fast',
     provider: 'baseten',
     promptCaching: true,
-    strictParams: true,
+    strictParams: false,
     imageSupport: false,
     rate_per_million_input_tokens: 0.38,
     rate_per_million_output_tokens: 1.53,
@@ -472,7 +472,7 @@ export const MODELS_CONFIGURATION: {
     model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
     backupModelKey: 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
     displayName: 'Qwen3 Coder 480B',
-    temperature: 0.1,
+    temperature: 0.7,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
