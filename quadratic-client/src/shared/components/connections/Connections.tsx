@@ -14,8 +14,8 @@ import {
 } from '@/shared/components/connections/connectionsByType';
 import { ConnectionsList } from '@/shared/components/connections/ConnectionsList';
 import { ConnectionsNew } from '@/shared/components/connections/ConnectionsNew';
+import { ConnectionsPotential } from '@/shared/components/connections/ConnectionsPotential';
 import { ConnectionsSidebar } from '@/shared/components/connections/ConnectionsSidebar';
-import { CONTACT_URL } from '@/shared/constants/urls';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
 import {
   Breadcrumb,
@@ -25,12 +25,11 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/shared/shadcn/ui/breadcrumb';
-import { Button } from '@/shared/shadcn/ui/button';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { Fragment, useCallback, useState } from 'react';
-import { Link, useFetchers, useSearchParams, useSubmit } from 'react-router';
+import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
   disabled?: boolean;
@@ -248,22 +247,10 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
               ]}
               Logo={potentialConnectionsByType[activeConnectionState.type].Logo}
             />
-            <div className="flex flex-col gap-2">
-              <p className="mb-4 text-sm">
-                <strong>This connection is not currently supported.</strong> However, we plan to work on it in the
-                future. Contact us if you'd like to see it prioritized.
-              </p>
-              <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={handleNavigateToListView}>
-                  Cancel
-                </Button>
-                <Button asChild>
-                  <Link to={CONTACT_URL} target="_blank">
-                    Contact us
-                  </Link>
-                </Button>
-              </div>
-            </div>
+            <ConnectionsPotential
+              handleNavigateToListView={handleNavigateToListView}
+              connectionType={activeConnectionState.type}
+            />
           </>
         ) : (
           <ConnectionsList

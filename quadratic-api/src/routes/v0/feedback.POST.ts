@@ -11,18 +11,20 @@ import logger from '../../utils/logger';
 const RequestBodySchema = z.object({
   feedback: z.string(),
   userEmail: z.string().optional(),
+  context: z.string().optional(),
 });
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
 export default [validateAccessToken, userMiddleware, handler];
 
 async function handler(req: RequestWithUser, res: express.Response) {
-  const { feedback, userEmail }: RequestBody = RequestBodySchema.parse(req.body);
+  const { feedback, userEmail, context }: RequestBody = RequestBodySchema.parse(req.body);
 
   // Add to DB
   await dbClient.qFeedback.create({
     data: {
       feedback,
+      context,
       userId: req.user.id,
       created_date: new Date(),
     },
@@ -45,6 +47,9 @@ async function handler(req: RequestWithUser, res: express.Response) {
     },
   });
 
+  // If there's no context, we assume it's in-app feedback as that's the first
+  // kind we used.
+  const slackContext = context ? context : 'In-app';
   const payingUser = userPaidTeams.length > 0 ? '*💰 Paying user*' : '';
 
   // Post to Slack
@@ -55,6 +60,7 @@ async function handler(req: RequestWithUser, res: express.Response) {
       text: [
         `📣 ${NODE_ENV === 'production' ? '' : '[STAGING]'} New product feedback`,
         `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0Id}) ${payingUser}`,
+        `*Context:* ${slackContext}`,
         '*Message*:',
         feedback,
       ].join('\n\n'),
