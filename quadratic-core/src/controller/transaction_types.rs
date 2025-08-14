@@ -17,10 +17,10 @@ use ts_rs::TS;
   Import = 12,
 */
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone, TS)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, TS, PartialEq)]
 pub struct JsCellValueResult(pub String, pub u8);
 
-#[derive(Default, Debug, Serialize, Deserialize, TS)]
+#[derive(Default, Debug, Serialize, Deserialize, TS, PartialEq)]
 pub struct JsCodeResult {
     pub transaction_id: String,
     pub success: bool,

@@ -24,6 +24,12 @@ pub(crate) fn process_imports(py: &Python, code: &str) -> std::result::Result<()
 }
 
 /// Analyze code using AST to determine if the last statement is an expression
+///
+/// Returns a tuple of (setup_code, expr_code, has_expression)
+///
+/// setup_code: The code before the last expression
+/// expr_code: The last expression
+/// has_expression: True if the last statement is an expression
 pub(crate) fn analyze_code(
     py: &Python,
     code: &str,
