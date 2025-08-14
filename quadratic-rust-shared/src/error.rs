@@ -6,6 +6,7 @@
 //! Convert errors to responses.
 
 use serde::{Deserialize, Serialize};
+use strum_macros::{Display, EnumString};
 use thiserror::Error;
 
 pub type Result<T, E = SharedError> = std::result::Result<T, E>;
@@ -38,6 +39,9 @@ pub enum SharedError {
     #[error("Error communicating with the Quadratic API: {0}")]
     QuadraticApi(String),
 
+    #[error("Error with Protobuf: {0}")]
+    Protobuf(String),
+
     #[error("Error with Pubsub: {0}")]
     PubSub(String),
 
@@ -57,6 +61,23 @@ pub enum SharedError {
 
     #[error("Error with Uuid: {0}")]
     Uuid(String),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Display, EnumString)]
+pub enum ErrorLevel {
+    Error,
+    Warning,
+    Info,
+}
+
+impl ErrorLevel {
+    pub fn log(&self, msg: &str) {
+        match self {
+            ErrorLevel::Error => tracing::error!("{}", msg),
+            ErrorLevel::Warning => tracing::warn!("{}", msg),
+            ErrorLevel::Info => tracing::info!("{}", msg),
+        }
+    }
 }
 
 pub fn clean_errors(error: impl ToString) -> String {

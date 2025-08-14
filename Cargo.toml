@@ -3,6 +3,7 @@ resolver = "2"
 members = [
   "quadratic-connection",
   "quadratic-core",
+  "quadratic-core-cloud",
   "quadratic-files",
   "quadratic-multiplayer",
   "quadratic-rust-shared",
