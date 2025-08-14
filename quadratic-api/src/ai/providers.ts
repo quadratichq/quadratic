@@ -4,6 +4,7 @@ import { AnthropicVertex } from '@anthropic-ai/vertex-sdk';
 import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { GoogleGenAI } from '@google/genai';
 import { GoogleAuth } from 'google-auth-library';
+import { Agent } from 'node:https';
 import { AzureOpenAI, OpenAI } from 'openai';
 import {
   ANTHROPIC_API_KEY,
@@ -89,6 +90,9 @@ export const xai = new OpenAI({
 export const baseten = new OpenAI({
   apiKey: BASETEN_API_KEY,
   baseURL: 'https://inference.baseten.co/v1',
+  fetchOptions: {
+    agent: new Agent(),
+  },
 });
 
 export const fireworks = new OpenAI({
