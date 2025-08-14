@@ -60,10 +60,10 @@ export const AILightWeight = (props: Props) => {
         ref={ref}
         className="relative"
         style={{
-          margin: '4px',
           maxWidth: maxSize.maxWidth,
-          width: 'calc(100% - 12px)',
-          height: `min(${props.height}, ${maxSize.maxHeight})`,
+          width: 'calc(100% - 8px)',
+          maxHeight: maxSize.maxHeight,
+          height: props.height,
         }}
       >
         {app && <ScrollBars baseApp={app} uniqueName={props.uniqueName} rectangle={rectangle} />}

@@ -1,4 +1,4 @@
-import { aiConversationAtom } from '@/app/atoms/aiConversationAtom';
+import { aiViewAtom } from '@/app/atoms/gridSettingsAtom';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import { TopBarFileNameAndLocationMenu } from '@/app/ui/menus/TopBar/TopBarFileNameAndLocationMenu';
@@ -16,23 +16,12 @@ import {
 } from '@/shared/shadcn/ui/dropdown-menu';
 import { Label } from '@/shared/shadcn/ui/label';
 import { Switch } from '@/shared/shadcn/ui/switch';
-import { useCallback } from 'react';
 import { useRecoilState } from 'recoil';
 
 export const TopBar = () => {
   // TODO: what about embeddable view? should we show the file menu?
 
-  const [AIConversationState, setAIConversationState] = useRecoilState(aiConversationAtom);
-  const { show } = AIConversationState;
-  const onShowChanged = useCallback(
-    (checked: boolean) => {
-      setAIConversationState((prev) => ({
-        ...prev,
-        show: checked,
-      }));
-    },
-    [setAIConversationState]
-  );
+  const [aiView, setAIView] = useRecoilState(aiViewAtom);
 
   return (
     <div
@@ -89,8 +78,8 @@ export const TopBar = () => {
           WebkitAppRegion: 'no-drag',
         }}
       >
-        <Switch id="ai-conversation" checked={show} onCheckedChange={onShowChanged} />
-        <Label htmlFor="ai-conversation">AI Conversation</Label>
+        <Switch id="ai-view" checked={aiView} onCheckedChange={setAIView} />
+        <Label htmlFor="ai-view">AI View</Label>
         {!isEmbed && (
           <>
             <TopBarUsers />

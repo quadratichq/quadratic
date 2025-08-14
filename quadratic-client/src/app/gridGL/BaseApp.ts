@@ -10,6 +10,8 @@ import { sharedEvents } from '@/shared/sharedEvents';
 import { Renderer } from 'pixi.js';
 
 export abstract class BaseApp {
+  private observer?: ResizeObserver;
+
   canvas: HTMLCanvasElement;
   renderer: Renderer;
   viewport: Viewport;
@@ -45,7 +47,8 @@ export abstract class BaseApp {
   destroy() {
     this.destroyed = true;
     this.removeListeners();
-    // this.renderer.destroy(true);
+    this.renderer.destroy(false);
+    this.canvas.remove();
   }
 
   private createCanvas(): HTMLCanvasElement {
@@ -72,8 +75,9 @@ export abstract class BaseApp {
 
     const pixiApp = this.isPixiApp();
     if (pixiApp) {
-      pixiApp.cursor.dirty = true;
-      pixiApp.cellHighlights.setDirty();
+      // TODO!
+      // pixiApp.cursor.dirty = true;
+      // pixiApp.cellHighlights.setDirty();
     }
   };
 
@@ -98,11 +102,16 @@ export abstract class BaseApp {
   private setupListeners() {
     sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
     this.observer = new ResizeObserver(this.resize);
-    observer.observe(this.canvas);
+    this.observer.observe(this.canvas);
+    this.resize();
   }
 
   private removeListeners() {
     sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = undefined;
+    }
   }
 
   viewportChanged = () => {};
