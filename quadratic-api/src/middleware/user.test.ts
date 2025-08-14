@@ -22,6 +22,7 @@ beforeEach(async () => {
   const user1 = await dbClient.user.create({
     data: {
       auth0Id: 'user1',
+      email: 'user1@example.com',
     },
   });
 
@@ -97,11 +98,16 @@ describe('A user coming in to the system for the first time and accessing _any_ 
       expect(fileInvitesBefore.length).toBe(1);
 
       // Make request
-      await request(app)
-        .get('/v0/education')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken firstTimeUser`)
-        .expect(200);
+      try {
+        await request(app)
+          .get('/v0/education')
+          .set('Accept', 'application/json')
+          .set('Authorization', `Bearer ValidToken firstTimeUser`)
+          .expect(200);
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
 
       // State after
       const userAfter = await dbClient.user.findUnique({

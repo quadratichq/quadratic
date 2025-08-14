@@ -19,6 +19,7 @@ export async function createTeamOwner(): Promise<User> {
   return await dbClient.user.create({
     data: {
       auth0Id: TEAM_OWNER_AUTH0_ID,
+      email: `${TEAM_OWNER_AUTH0_ID}@test.com`,
     },
   });
 }

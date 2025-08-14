@@ -31,7 +31,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
     params: { uuid },
   } = parseRequest(req, schema);
   const {
-    user: { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id },
+    user: { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id, email: userMakingRequestEmail },
   } = req;
   const {
     team: { id: teamId, name: teamName },
@@ -69,8 +69,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Get the auth0 info (email/name) for the user making the request
-  const resultsById = await getUsers([{ id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id }]);
-  const { email: userMakingRequestEmail, name: userMakingRequestName } = resultsById[userMakingRequestId];
+  const resultsById = await getUsers([
+    { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id, email: userMakingRequestEmail },
+  ]);
+  const { name: userMakingRequestName } = resultsById[userMakingRequestId];
 
   // Stuff for sending email
   const emailTemplateArgs = {

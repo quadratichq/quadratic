@@ -8,11 +8,13 @@ beforeAll(async () => {
   const user_1 = await dbClient.user.create({
     data: {
       auth0Id: 'test_user_1',
+      email: 'test_user_1@test.com',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'test_user_2',
+      email: 'test_user_2@test.com',
     },
   });
 
@@ -191,7 +193,7 @@ describe('UPDATE - POST /v0/files/:uuid/thumbnail with auth and owned file updat
     const filePath = 'test_thumbnail.png';
 
     // update preview
-    const res = await request(app)
+    await request(app)
       .post('/v0/files/00000000-0000-4000-8000-000000000001/thumbnail')
       .attach('thumbnail', filePath)
       .set('Accept', 'application/json')

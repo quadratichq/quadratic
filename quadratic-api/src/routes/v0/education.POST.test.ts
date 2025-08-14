@@ -36,16 +36,19 @@ beforeAll(async () => {
   await dbClient.user.create({
     data: {
       auth0Id: 'userHarvard',
+      email: 'user@harvard.edu',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userEligible',
+      email: 'user@eligible-domain.com',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userIneligible',
+      email: 'user@ineligible-domain.com',
     },
   });
 });

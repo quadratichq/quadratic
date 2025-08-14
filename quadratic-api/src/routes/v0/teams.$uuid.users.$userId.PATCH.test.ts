@@ -9,31 +9,37 @@ beforeEach(async () => {
   const userOwner = await dbClient.user.create({
     data: {
       auth0Id: 'userOwner',
+      email: 'userOwner@test.com',
     },
   });
   const userEditor = await dbClient.user.create({
     data: {
       auth0Id: 'userEditor',
+      email: 'userEditor@test.com',
     },
   });
   const userEditor2 = await dbClient.user.create({
     data: {
       auth0Id: 'userEditor2',
+      email: 'userEditor2@test.com',
     },
   });
   const userViewer = await dbClient.user.create({
     data: {
       auth0Id: 'userViewer',
+      email: 'userViewer@test.com',
     },
   });
   const userViewer2 = await dbClient.user.create({
     data: {
       auth0Id: 'userViewer2',
+      email: 'userViewer2@test.com',
     },
   });
   const userOwner2 = await dbClient.user.create({
     data: {
       auth0Id: 'userOwner2',
+      email: 'userOwner2@test.com',
     },
   });
 

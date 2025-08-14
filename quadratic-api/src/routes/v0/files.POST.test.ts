@@ -9,16 +9,19 @@ beforeAll(async () => {
   const test_user_1 = await dbClient.user.create({
     data: {
       auth0Id: 'test_user_1',
+      email: 'test_user_1@test.com',
     },
   });
   const test_user_2 = await dbClient.user.create({
     data: {
       auth0Id: 'test_user_2',
+      email: 'test_user_2@test.com',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'test_user_3',
+      email: 'test_user_3@test.com',
     },
   });
   // Create a team

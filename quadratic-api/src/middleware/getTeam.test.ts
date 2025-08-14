@@ -7,7 +7,7 @@ jest.mock('auth0', () =>
     },
     {
       user_id: 'userNoTeam',
-      email: 'noteam@example.com',
+      email: 'userNoTeam@example.com',
     },
   ])
 );
@@ -22,11 +22,13 @@ beforeAll(async () => {
   const userOwner = await dbClient.user.create({
     data: {
       auth0Id: 'userOwner',
+      email: 'owner@example.com',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userNoTeam',
+      email: 'userNoTeam@example.com',
     },
   });
 

@@ -17,9 +17,12 @@ type AnalyticsAIChatData = Parameters<typeof dbClient.analyticsAIChat.create>[0]
  *
  */
 export async function createUser({ auth0Id }: Partial<UserData>) {
+  const id = auth0Id ?? randomUUID();
+  const email = `test-${id}@test.com`;
   const user = await dbClient.user.create({
     data: {
-      auth0Id: auth0Id ?? randomUUID(),
+      auth0Id: id,
+      email,
     },
   });
 

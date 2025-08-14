@@ -8,11 +8,13 @@ beforeEach(async () => {
   const userOwner = await dbClient.user.create({
     data: {
       auth0Id: 'userOwner',
+      email: 'userOwner@test.com',
     },
   });
   await dbClient.user.create({
     data: {
       auth0Id: 'userNoFileRole',
+      email: 'userNoFileRole@test.com',
     },
   });
   const team = await dbClient.team.create({
