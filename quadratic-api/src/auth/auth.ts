@@ -19,10 +19,10 @@ export type ByEmailUser = {
   user_id?: string;
 };
 
-export const getUsers = async (users: UsersRequest[], skipOnError = false): Promise<Record<number, User>> => {
+export const getUsers = async (users: UsersRequest[], skipMissing = false): Promise<Record<number, User>> => {
   switch (AUTH_TYPE) {
     case 'auth0':
-      return await getUsersFromAuth0(users, skipOnError);
+      return await getUsersFromAuth0(users, skipMissing);
     case 'ory':
       return await getUsersFromOry(users);
     default:
