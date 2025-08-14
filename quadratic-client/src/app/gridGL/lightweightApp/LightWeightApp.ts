@@ -74,6 +74,7 @@ export class LightWeightApp extends BaseApp {
   }
 
   update = () => {
+    if (this.destroyed) return;
     if (this.viewport.dirty) {
       this.render();
       this.viewport.dirty = false;

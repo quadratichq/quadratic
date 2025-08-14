@@ -30,13 +30,10 @@ import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetec
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
-import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, Rectangle } from 'pixi.js';
 
 export class PixiApp extends BaseApp {
@@ -75,8 +72,6 @@ export class PixiApp extends BaseApp {
 
   stage = new Container();
   loading = true;
-
-  accentColor = colors.cursorCell;
 
   // for testing purposes
   debug!: Graphics;
@@ -156,7 +151,6 @@ export class PixiApp extends BaseApp {
 
     // this is a hack to ensure that table column names appears over the column
     // headings, but under the row headings
-    // const gridHeadings = new GridHeadings();
     this.viewportContents.addChild(this.headings.gridHeadingsRows);
 
     this.boxCells = this.viewportContents.addChild(new BoxCells());
@@ -183,24 +177,22 @@ export class PixiApp extends BaseApp {
 
     this.update = new Update();
 
-    this.setupListeners();
+    this.setupPixiListeners();
   };
 
-  private setupListeners = () => {
-    sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
+  protected setupPixiListeners() {
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
     document.addEventListener('cut', cutToClipboardEvent);
-  };
+  }
 
-  private removeListeners = () => {
-    sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
+  protected removePixiListeners() {
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
     document.removeEventListener('cut', cutToClipboardEvent);
-  };
+  }
 
   // calculate sheet rectangle, without heading, factoring in scale
   getViewportRectangle = (): Rectangle => {
@@ -257,19 +249,8 @@ export class PixiApp extends BaseApp {
     this.update.destroy();
     this.renderer.destroy(true);
     this.viewport.destroy();
-    this.removeListeners();
+    this.removePixiListeners();
   }
-
-  setAccentColor = (): void => {
-    // Pull the value from the current value as defined in CSS
-    const accentColor = getCSSVariableTint('primary');
-    this.accentColor = accentColor;
-    this.gridLines.dirty = true;
-    this.headings.dirty = true;
-    this.cursor.dirty = true;
-    this.cellHighlights.setDirty();
-    this.render();
-  };
 
   resize = (): void => {
     if (!this.parent || this.destroyed) return;
