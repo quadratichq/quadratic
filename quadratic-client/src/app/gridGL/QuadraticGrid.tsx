@@ -70,7 +70,7 @@ export default function QuadraticGrid() {
       onKeyUp={onKeyUp}
     >
       <HTMLGridContainer parent={container} />
-      <ScrollBars baseApp={pixiApp} />
+      <ScrollBars baseApp={pixiApp} uniqueName="grid" />
       <Search />
       <ImportProgress />
     </div>

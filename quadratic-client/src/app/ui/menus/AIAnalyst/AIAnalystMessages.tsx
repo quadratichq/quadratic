@@ -162,8 +162,8 @@ export const AIAnalystMessages = memo(({ textareaRef }: AIAnalystMessagesProps) 
     if (LIGHTWEIGHT_DEMO) {
       return (
         <div className="flex flex-col gap-5">
-          <AILightWeight height={100} a1="B2:D5" />
-          <AILightWeight height={200} a1="Table1" />
+          <AILightWeight height={100} a1="B2:D5" uniqueName="1" />
+          <AILightWeight height={200} a1="Table1" uniqueName="2" />
         </div>
       );
     } else {

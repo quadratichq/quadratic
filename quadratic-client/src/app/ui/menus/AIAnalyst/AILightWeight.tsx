@@ -7,6 +7,9 @@ import { useCallback, useEffect, useState } from 'react';
 interface Props {
   height: number;
   a1: string;
+
+  // this is used as a key
+  uniqueName: string;
 }
 
 export const AILightWeight = (props: Props) => {
@@ -36,7 +39,7 @@ export const AILightWeight = (props: Props) => {
     <div className="border bg-blue-200">
       <div className="bold px-1">{props.a1}</div>
       <div ref={ref} style={{ margin: '4px', width: 'calc(100% - 12px)', height: props.height }}>
-        {app && <ScrollBars baseApp={app} />}
+        {app && <ScrollBars baseApp={app} uniqueName={props.uniqueName} />}
       </div>
     </div>
   );

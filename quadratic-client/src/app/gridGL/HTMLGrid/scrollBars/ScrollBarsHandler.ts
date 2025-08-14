@@ -18,6 +18,7 @@ export type Scrollbar = 'horizontal' | 'vertical' | undefined;
 export class ScrollBarsHandler {
   private baseApp: BaseApp;
   private dirty = true;
+  private key?: string;
 
   // we need to cache these values since we use the last non-dragged values
   // while dragging the scrollbar
@@ -39,8 +40,9 @@ export class ScrollBarsHandler {
 
   private dragging: 'horizontal' | 'vertical' | undefined;
 
-  constructor(baseApp: BaseApp) {
+  constructor(baseApp: BaseApp, key: string) {
     this.baseApp = baseApp;
+    this.key = key;
     events.on('sheetsInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('headingSize', this.setDirty);
@@ -117,8 +119,8 @@ export class ScrollBarsHandler {
 
   // Calculates the scrollbar positions and sizes
   private calculate = () => {
-    const verticalBar = document.querySelector('#grid-scrollbars-vertical') as HTMLDivElement;
-    const horizontalBar = document.querySelector('#grid-scrollbars-horizontal') as HTMLDivElement;
+    const verticalBar = document.querySelector(`#grid-scrollbars-vertical-${this.key}`) as HTMLDivElement;
+    const horizontalBar = document.querySelector(`#grid-scrollbars-horizontal-${this.key}`) as HTMLDivElement;
     if (!verticalBar || !horizontalBar) return;
 
     const viewport = this.baseApp.viewport;

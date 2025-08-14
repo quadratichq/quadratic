@@ -12,6 +12,9 @@ const SCROLLBAR_SIZE = 6;
 
 interface Props {
   baseApp: BaseApp;
+
+  // this is used as a key
+  uniqueName: string;
 }
 
 export const ScrollBars = (props: Props) => {
@@ -21,10 +24,10 @@ export const ScrollBars = (props: Props) => {
   const [state, setState] = useState<'horizontal' | 'vertical' | undefined>(undefined);
 
   const scrollBarsHandler = useMemo(() => {
-    const scrollBarsHandler = new ScrollBarsHandler(props.baseApp);
+    const scrollBarsHandler = new ScrollBarsHandler(props.baseApp, props.uniqueName);
     events.emit('scrollBarsHandler', scrollBarsHandler);
     return scrollBarsHandler;
-  }, [props.baseApp]);
+  }, [props.baseApp, props.uniqueName]);
 
   // Need to listen to pointermove and pointerup events on window to handle
   // mouse leaving the scrollbars
