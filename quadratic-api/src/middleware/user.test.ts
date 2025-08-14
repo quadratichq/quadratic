@@ -1,7 +1,20 @@
+import { auth0Mock } from '../tests/auth0Mock';
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'firstTimeUser',
+      email: 'johndoe@example.com',
+    },
+    {
+      user_id: 'user1',
+      email: 'user1@example.com',
+    },
+  ])
+);
+
 import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
-import { auth0Mock } from '../tests/auth0Mock';
 import { clearDb, createFile } from '../tests/testDataGenerator';
 
 beforeEach(async () => {
@@ -57,19 +70,6 @@ beforeEach(async () => {
 });
 
 afterEach(clearDb);
-
-jest.mock('auth0', () =>
-  auth0Mock([
-    {
-      user_id: 'firstTimeUser',
-      email: 'johndoe@example.com',
-    },
-    {
-      user_id: 'user1',
-      email: 'user1@example.com',
-    },
-  ])
-);
 
 describe('A user coming in to the system for the first time and accessing _any_ endpoint', () => {
   describe('user with outstanding invite to team/file', () => {
