@@ -116,13 +116,13 @@ export const ScrollBars = (props: Props) => {
   return (
     <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
       <div
-        id="grid-scrollbars-horizontal"
+        id={`grid-scrollbars-horizontal-${props.uniqueName}`}
         className="pointer-events-auto absolute bottom-1 rounded-md opacity-15"
         style={{ height: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 5 }}
         onPointerDown={pointerDownHorizontal}
       />
       <div
-        id="grid-scrollbars-vertical"
+        id={`grid-scrollbars-vertical-${props.uniqueName}`}
         className="pointer-events-auto absolute right-1 rounded-md opacity-15"
         style={{ width: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 5 }}
         onPointerDown={pointerDownVertical}
