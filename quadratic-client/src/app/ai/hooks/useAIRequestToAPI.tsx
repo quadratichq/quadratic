@@ -129,7 +129,7 @@ export function useAIRequestToAPI() {
           }
 
           // filter out tool calls that are not valid
-          responseMessage = {
+          const newResponseMessage = {
             ...responseMessage,
             toolCalls: responseMessage.toolCalls.filter((toolCall) => {
               try {
@@ -142,6 +142,8 @@ export function useAIRequestToAPI() {
               }
             }),
           };
+          setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
+          responseMessage = newResponseMessage;
 
           setIsOnPaidPlan(responseMessage.isOnPaidPlan);
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);
