@@ -57,7 +57,7 @@ const getAuth0 = () => {
  *     }
  *   }
  */
-export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[], skipMissing: boolean) => {
+export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[], skipMissing = false) => {
   // If we got nothing, we return an empty object
   if (users.length === 0) {
     return {};
