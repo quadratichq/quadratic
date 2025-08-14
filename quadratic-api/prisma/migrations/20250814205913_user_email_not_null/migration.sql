@@ -5,7 +5,7 @@
 
 */
 -- First update any NULL emails
-UPDATE "User" SET email = CONCAT('missing_email_-', "auth0_id", '@quadratichq.com') WHERE email IS NULL;
+UPDATE "User" SET email = CONCAT('missing_email_', "id", '@quadratichq.com') WHERE email IS NULL;
 
 -- AlterTable
 ALTER TABLE "User" ALTER COLUMN "email" SET NOT NULL;
