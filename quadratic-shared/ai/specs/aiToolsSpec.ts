@@ -1142,6 +1142,8 @@ Target position is the top left corner of the target position on the current ope
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 `,
     parameters: {
       type: 'object',
@@ -1163,6 +1165,8 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     prompt: `
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 You MUST NOT delete cells that are referenced by code cells. For example, if you write Python code that references cells, you MUST NOT delete the original cells or the Python code will stop working.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 delete_cells functions requires the current sheet name provided in the context, and a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 `,
   },
@@ -2156,6 +2160,7 @@ This tool sets the meta data for a table. One or more options can be changed on 
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
     parameters: {
       type: 'object',
@@ -2198,6 +2203,7 @@ In the parameters, include only columns that you want to change. The remaining c
     responseSchema: AIToolsArgsSchema[AITool.TableColumnSettings],
     prompt: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
 
