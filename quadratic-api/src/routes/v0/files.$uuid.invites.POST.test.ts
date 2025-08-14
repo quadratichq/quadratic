@@ -1,7 +1,40 @@
+import { auth0Mock } from '../../tests/auth0Mock';
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'userOwner',
+      email: 'owner@example.com',
+    },
+    {
+      user_id: 'userEditor',
+      email: 'editor@example.com',
+    },
+    {
+      user_id: 'userViewer',
+      email: 'userViewer@example.com',
+    },
+    {
+      user_id: 'userNoRole',
+      email: 'norole@example.com',
+    },
+    {
+      user_id: 'duplicate_emails_user_1',
+      email: 'duplicate@example.com',
+    },
+    {
+      user_id: 'duplicate_emails_user_2',
+      email: 'duplicate@example.com',
+    },
+    {
+      user_id: 'userNotYetInDb',
+      email: 'nodb@example.com',
+    },
+  ])
+);
+
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { auth0Mock } from '../../tests/auth0Mock';
 import { expectError } from '../../tests/helpers';
 import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
 
@@ -45,39 +78,6 @@ beforeEach(async () => {
 });
 
 afterEach(clearDb);
-
-// Mock auth0 client calls
-const auth0Users = [
-  {
-    user_id: 'userOwner',
-    email: 'owner@example.com',
-  },
-  {
-    user_id: 'userEditor',
-    email: 'editor@example.com',
-  },
-  {
-    user_id: 'userViewer',
-    email: 'userViewer@example.com',
-  },
-  {
-    user_id: 'userNoRole',
-    email: 'norole@example.com',
-  },
-  {
-    user_id: 'duplicate_emails_user_1',
-    email: 'duplicate@example.com',
-  },
-  {
-    user_id: 'duplicate_emails_user_2',
-    email: 'duplicate@example.com',
-  },
-  {
-    user_id: 'userNotYetInDb',
-    email: 'nodb@example.com',
-  },
-];
-jest.mock('auth0', () => auth0Mock(auth0Users));
 
 const expectUser = (res: request.Response) => {
   expect(typeof res.body.userId).toBe('number');
