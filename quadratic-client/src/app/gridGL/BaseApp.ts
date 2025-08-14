@@ -56,6 +56,13 @@ export abstract class BaseApp {
     return canvas;
   }
 
+  // this can be removed when BaseApp and PixiApp use the same components
+  private isPixiApp(): PixiApp | undefined {
+    if ('cursor' in this) {
+      return this as any as PixiApp;
+    }
+  }
+
   protected setAccentColor = () => {
     // Pull the value from the current value as defined in CSS
     const accentColor = getCSSVariableTint('primary');
@@ -63,16 +70,35 @@ export abstract class BaseApp {
     this.gridLines.dirty = true;
     this.headings.dirty = true;
 
-    // this can be removed when BaseApp and PixiApp use the same components
-    if ('cursor' in this) {
-      const pixiApp = this as any as PixiApp;
+    const pixiApp = this.isPixiApp();
+    if (pixiApp) {
       pixiApp.cursor.dirty = true;
       pixiApp.cellHighlights.setDirty();
     }
   };
 
+  resize = (): void => {
+    if (!this.canvas.parentNode || this.destroyed) return;
+    const width = (this.canvas.parentNode as HTMLElement).offsetWidth;
+    const height = (this.canvas.parentNode as HTMLElement).offsetHeight;
+    this.canvas.width = this.renderer.resolution * width;
+    this.canvas.height = this.renderer.resolution * height;
+    this.renderer.resize(width, height);
+    this.viewport.resize(width, height);
+    this.gridLines.dirty = true;
+    this.headings.dirty = true;
+    const pixiApp = this.isPixiApp();
+    if (pixiApp) {
+      pixiApp.cursor.dirty = true;
+      pixiApp.cellHighlights.setDirty();
+    }
+    this.setViewportDirty();
+  };
+
   private setupListeners() {
     sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
+    this.observer = new ResizeObserver(this.resize);
+    observer.observe(this.canvas);
   }
 
   private removeListeners() {

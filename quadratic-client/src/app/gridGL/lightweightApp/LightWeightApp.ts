@@ -29,7 +29,12 @@ export class LightWeightApp extends BaseApp {
     this.update();
   }
 
-  reposition(columnStart: number, rowStart: number, columnEnd: number, rowEnd: number) {
+  reposition(
+    columnStart: number,
+    rowStart: number,
+    columnEnd: number,
+    rowEnd: number
+  ): { width: number; height: number } {
     const start = sheets.sheet.getCellOffsets(columnStart, rowStart);
     const end = sheets.sheet.getCellOffsets(columnEnd, rowEnd);
     this.viewport.position.set(-start.x, -start.y);
@@ -40,10 +45,13 @@ export class LightWeightApp extends BaseApp {
       bottom: end.y + end.height,
       underflow: 'top-left',
     });
+    const maxWidth = end.x + end.width - start.x;
+    const maxHeight = end.y + end.height - start.y;
     this.viewport.clampZoom({
-      maxWidth: end.x + end.width - start.x,
-      maxHeight: end.y + end.height - start.y,
+      maxWidth,
+      maxHeight,
     });
+    return { width: maxWidth, height: maxHeight };
   }
 
   resize() {
