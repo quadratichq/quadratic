@@ -63,6 +63,7 @@ export const SetCellValues = memo(
         },
       });
     } catch {}
+
     return (
       <>
         <ToolCard
@@ -71,9 +72,7 @@ export const SetCellValues = memo(
           description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}
           className={className}
         />
-        {aiView && (
-          <AILightWeight height={100} a1={a1} uniqueName={`set-cell-values-${toolArgs.data.top_left_position}`} />
-        )}
+        {aiView && <AILightWeight height={100} a1={a1} />}
       </>
     );
   }

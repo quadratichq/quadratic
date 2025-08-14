@@ -180,9 +180,7 @@ export const SetCodeCellValue = memo(
           }
           className={className}
         />
-        {aiView && code_cell_name && (
-          <AILightWeight height={200} a1={code_cell_name} uniqueName={`set-code-cell-value-${code_cell_position}}`} />
-        )}
+        {aiView && code_cell_name && <AILightWeight height={200} a1={code_cell_name} />}
       </>
     );
   }

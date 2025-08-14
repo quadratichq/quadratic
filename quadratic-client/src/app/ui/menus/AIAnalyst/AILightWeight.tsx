@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { sheets } from '@/app/grid/controller/Sheets';
+import { ScrollBars } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBars';
 import { LightWeightApp } from '@/app/gridGL/lightweightApp/LightWeightApp';
 import { selectionToSheetRect } from '@/app/quadratic-core/quadratic_core';
 import { Rectangle } from 'pixi.js';
@@ -9,15 +10,12 @@ import { useCallback, useEffect, useState } from 'react';
 interface Props {
   height: number;
   a1: string;
-
-  // this is used as a key
-  uniqueName: string;
 }
 
 export const AILightWeight = (props: Props) => {
   const [app, setApp] = useState<LightWeightApp | null>(null);
   const [rectangle, setRectangle] = useState<Rectangle | undefined>();
-  const [maxSize, setMaxSize] = useState<{ maxWidth: number; maxHeight: number }>({ maxWidth: 0, maxHeight: 0 });
+  const [maxSize, setMaxSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
   const ref = useCallback(
     (div: HTMLDivElement) => {
@@ -40,7 +38,7 @@ export const AILightWeight = (props: Props) => {
             Number(range.max.y - range.min.y)
           )
         );
-        setMaxSize({ maxWidth: width, maxHeight: height });
+        setMaxSize({ width: width, height: height });
       } catch {}
     },
     [props.a1]
@@ -62,12 +60,12 @@ export const AILightWeight = (props: Props) => {
         className="relative"
         style={{
           // maxWidth: maxSize.maxWidth,
-          width: `min(calc(100% - 8px), ${maxSize.maxWidth}px)`,
+          width: maxSize.width,
           // maxHeight: maxSize.maxHeight,
-          height: `min(${props.height}px, ${maxSize.maxHeight}px)`,
+          height: `min(${props.height}px, ${maxSize.height}px)`,
         }}
       >
-        {/* {app && <ScrollBars baseApp={app} uniqueName={props.uniqueName} rectangle={rectangle} />} */}
+        {app && <ScrollBars baseApp={app} rectangle={rectangle} />}
       </div>
     </div>
   );

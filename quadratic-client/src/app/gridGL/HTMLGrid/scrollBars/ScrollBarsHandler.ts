@@ -45,9 +45,9 @@ export class ScrollBarsHandler {
 
   private dragging: 'horizontal' | 'vertical' | undefined;
 
-  constructor(options: ScrollBarsProps) {
+  constructor(options: ScrollBarsProps, key: string) {
     this.baseApp = options.baseApp;
-    this.key = options.uniqueName;
+    this.key = key;
     this.viewportRectangle = options.rectangle;
 
     events.on('sheetsInfo', this.setDirty);
