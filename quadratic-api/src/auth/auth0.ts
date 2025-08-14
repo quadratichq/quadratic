@@ -57,7 +57,7 @@ const getAuth0 = () => {
  *     }
  *   }
  */
-export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[], skipMissing = false) => {
+export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]) => {
   // If we got nothing, we return an empty object
   if (users.length === 0) {
     return {};
@@ -114,10 +114,6 @@ export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]
           auth0UserResult: auth0User,
         },
       });
-
-      if (skipMissing) {
-        return;
-      }
 
       throw new Error('Failed to retrieve all user info from Auth0');
     }
