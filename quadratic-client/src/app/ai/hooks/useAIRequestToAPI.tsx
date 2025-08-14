@@ -129,7 +129,7 @@ export function useAIRequestToAPI() {
           }
 
           // filter out tool calls that are not valid
-          const newResponseMessage = {
+          let newResponseMessage = {
             ...responseMessage,
             toolCalls: responseMessage.toolCalls.filter((toolCall) => {
               try {
@@ -142,6 +142,12 @@ export function useAIRequestToAPI() {
               }
             }),
           };
+          if (newResponseMessage.content.length === 0 && newResponseMessage.toolCalls.length === 0) {
+            newResponseMessage = {
+              ...newResponseMessage,
+              content: [{ type: 'text', text: 'Please try again.' }],
+            };
+          }
           setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
           responseMessage = newResponseMessage;
 
