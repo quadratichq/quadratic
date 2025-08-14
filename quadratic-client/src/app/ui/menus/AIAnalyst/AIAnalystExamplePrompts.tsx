@@ -29,13 +29,12 @@ export function AIAnalystExamplePrompts() {
   const { submitPrompt } = useSubmitAIAnalystPrompt();
 
   return (
-    <div className="flex flex-col items-center justify-center gap-2 px-2 pt-1">
+    <div className="flex flex-col justify-center gap-2 px-2 pt-1">
       <TypewriterHeader />
       {examples.map(({ title, description, icon, prompt }) => (
         <button
           key={title}
           className="flex items-center gap-3 rounded border border-border px-3 py-2 hover:bg-accent"
-          style={{ width: '30rem' }}
           onClick={() => {
             trackEvent('[AIAnalyst].submitExamplePrompt', { title });
             submitPrompt({
