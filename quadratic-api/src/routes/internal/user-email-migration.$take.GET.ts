@@ -59,7 +59,7 @@ router.get(
       }
       newUsers.forEach((user) => seenUsers.add(user.id));
 
-      const usersWithEmail = await getUsers(newUsers);
+      const usersWithEmail = await getUsers(newUsers, true);
       logger.info(`[user-email-migration] Found ${Object.values(usersWithEmail).length} auth0 users with an email`);
 
       const usersWithEmailNonEmpty = Object.values(usersWithEmail).filter((user) => !!user.email);
