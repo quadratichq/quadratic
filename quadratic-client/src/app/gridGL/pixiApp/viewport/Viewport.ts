@@ -181,6 +181,10 @@ export class Viewport extends PixiViewport {
 
   sendRenderViewport() {
     const bounds = this.getVisibleBounds();
+
+    // this is a hack to keep the viewport active when the AI view is active
+    if (bounds.width === 0 || bounds.height === 0) return;
+
     const scale = this.scale.x;
     renderWebWorker.updateViewport(sheets.current, bounds, scale);
   }

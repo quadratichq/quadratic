@@ -58,8 +58,8 @@ export const SetCellValues = memo(
           y: BigInt(start.y),
         },
         max: {
-          x: BigInt(start.x + rows - 1),
-          y: BigInt(start.y + cols - 1),
+          x: BigInt(start.x + cols - 1),
+          y: BigInt(start.y + rows - 1),
         },
       });
     } catch {}

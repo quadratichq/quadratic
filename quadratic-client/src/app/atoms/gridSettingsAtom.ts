@@ -37,7 +37,7 @@ const localStorageEffect: AtomEffect<GridSettings> = ({ setSelf, onSet }) => {
   const savedValue = localStorage.getItem(SETTINGS_KEY);
   if (savedValue != null) {
     const settings = JSON.parse(savedValue);
-    const newSettings = { ...settings, presentationMode: false };
+    const newSettings = { ...settings, presentationMode: false, aiView: false };
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(newSettings));
     if (debugFlag('debugGridSettings'))
       console.log('[gridSettings] initializing with values from localStorage', newSettings);

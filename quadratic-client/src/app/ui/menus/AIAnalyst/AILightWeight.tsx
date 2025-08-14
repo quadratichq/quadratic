@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
+
 import { sheets } from '@/app/grid/controller/Sheets';
-import { ScrollBars } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBars';
 import { LightWeightApp } from '@/app/gridGL/lightweightApp/LightWeightApp';
 import { selectionToSheetRect } from '@/app/quadratic-core/quadratic_core';
 import { Rectangle } from 'pixi.js';
@@ -54,19 +55,19 @@ export const AILightWeight = (props: Props) => {
   }, [app]);
 
   return (
-    <div className="border bg-blue-200">
-      <div className="bold px-1">{props.a1}</div>
+    <div className="w-fit border">
+      <div className="bold bg-blue-200 px-1">{props.a1}</div>
       <div
         ref={ref}
         className="relative"
         style={{
-          maxWidth: maxSize.maxWidth,
-          width: 'calc(100% - 8px)',
-          maxHeight: maxSize.maxHeight,
-          height: props.height,
+          // maxWidth: maxSize.maxWidth,
+          width: `min(calc(100% - 8px), ${maxSize.maxWidth}px)`,
+          // maxHeight: maxSize.maxHeight,
+          height: `min(${props.height}px, ${maxSize.maxHeight}px)`,
         }}
       >
-        {app && <ScrollBars baseApp={app} uniqueName={props.uniqueName} rectangle={rectangle} />}
+        {/* {app && <ScrollBars baseApp={app} uniqueName={props.uniqueName} rectangle={rectangle} />} */}
       </div>
     </div>
   );

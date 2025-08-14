@@ -1,8 +1,10 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
+import { aiViewAtom } from '@/app/atoms/gridSettingsAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { parseFullJson, parsePartialJson } from '@/app/shared/utils/SafeJsonParsing';
+import { AILightWeight } from '@/app/ui/menus/AIAnalyst/AILightWeight';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
@@ -11,13 +13,14 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
-import { useRecoilCallback } from 'recoil';
+import { useRecoilCallback, useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
 type SetCodeCellValueResponse = z.infer<(typeof aiToolsSpec)[AITool.SetCodeCellValue]['responseSchema']>;
 
 export const SetCodeCellValue = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
+    const aiView = useRecoilValue(aiViewAtom);
     const [toolArgs, setToolArgs] =
       useState<z.SafeParseReturnType<SetCodeCellValueResponse, SetCodeCellValueResponse>>();
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
@@ -133,49 +136,54 @@ export const SetCodeCellValue = memo(
 
     const { code_cell_name, code_cell_language, code_cell_position } = toolArgs.data;
     return (
-      <ToolCard
-        icon={<LanguageIcon language={code_cell_language} />}
-        label={code_cell_name || code_cell_language}
-        description={
-          `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
-        }
-        actions={
-          codeCellPos ? (
-            <div className="flex gap-1">
-              <TooltipPopover label={'Open diff in editor'}>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openDiffInEditor(toolArgs.data);
-                  }}
-                  disabled={!codeCellPos}
-                >
-                  <CodeIcon />
-                </Button>
-              </TooltipPopover>
+      <>
+        <ToolCard
+          icon={<LanguageIcon language={code_cell_language} />}
+          label={code_cell_name || code_cell_language}
+          description={
+            `${estimatedNumberOfLines} line` + (estimatedNumberOfLines === 1 ? '' : 's') + ` at ${code_cell_position}`
+          }
+          actions={
+            codeCellPos ? (
+              <div className="flex gap-1">
+                <TooltipPopover label={'Open diff in editor'}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      openDiffInEditor(toolArgs.data);
+                    }}
+                    disabled={!codeCellPos}
+                  >
+                    <CodeIcon />
+                  </Button>
+                </TooltipPopover>
 
-              <TooltipPopover label={'Apply'}>
-                <Button
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    saveAndRun(toolArgs.data);
-                  }}
-                  disabled={!codeCellPos}
-                >
-                  <SaveAndRunIcon />
-                </Button>
-              </TooltipPopover>
-            </div>
-          ) : undefined
-        }
-        className={className}
-      />
+                <TooltipPopover label={'Apply'}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      saveAndRun(toolArgs.data);
+                    }}
+                    disabled={!codeCellPos}
+                  >
+                    <SaveAndRunIcon />
+                  </Button>
+                </TooltipPopover>
+              </div>
+            ) : undefined
+          }
+          className={className}
+        />
+        {aiView && code_cell_name && (
+          <AILightWeight height={200} a1={code_cell_name} uniqueName={`set-code-cell-value-${code_cell_position}}`} />
+        )}
+      </>
     );
   }
 );

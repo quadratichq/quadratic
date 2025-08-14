@@ -247,6 +247,7 @@ export class PixiApp extends BaseApp {
     this.renderer.destroy(true);
     this.viewport.destroy();
     this.removePixiListeners();
+    console.log('destroyed...');
   }
 
   // called before and after a render

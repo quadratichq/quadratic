@@ -86,6 +86,9 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   cull(bounds: Rectangle): void {
+    // this is a hack to keep the viewport active when the AI view is active
+    if (bounds.width === 0 || bounds.height === 0) return;
+
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
     this.current.show(bounds);
   }
