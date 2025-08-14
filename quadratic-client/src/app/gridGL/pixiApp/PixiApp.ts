@@ -88,6 +88,8 @@ export class PixiApp extends BaseApp {
 
   constructor() {
     super();
+    this.canvas.id = 'QuadraticCanvasID';
+
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
     this.cellImages = new UICellImages();

@@ -46,11 +46,6 @@ export class LightWeightApp extends BaseApp {
     });
   }
 
-  destroy() {
-    super.destroy();
-    // this.renderer.destroy(true);
-  }
-
   resize() {
     if (!this.parent || this.destroyed) return;
     const width = this.parent.offsetWidth;

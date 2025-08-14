@@ -4,6 +4,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { BaseApp } from '@/app/gridGL/BaseApp';
 import { intersects } from '@/app/gridGL/helpers/intersects';
+import type { ScrollBarsProps } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBars';
 import type { PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import type { HeadingSize } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
@@ -35,14 +36,20 @@ export class ScrollBarsHandler {
   private horizontal: Rectangle | undefined;
   private vertical: Rectangle | undefined;
 
+  // used to force a specific size and placement for the viewport (default is
+  // the full viewport)
+  private viewportRectangle?: Rectangle;
+
   horizontalStart = 0;
   verticalStart = 0;
 
   private dragging: 'horizontal' | 'vertical' | undefined;
 
-  constructor(baseApp: BaseApp, key: string) {
-    this.baseApp = baseApp;
-    this.key = key;
+  constructor(options: ScrollBarsProps) {
+    this.baseApp = options.baseApp;
+    this.key = options.uniqueName;
+    this.viewportRectangle = options.rectangle;
+
     events.on('sheetsInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('headingSize', this.setDirty);
@@ -130,7 +137,7 @@ export class ScrollBarsHandler {
       headingSize = (this.baseApp as PixiApp).headings.headingSize;
     }
     const viewportBounds = viewport.getVisibleBounds();
-    const contentSize = sheets.sheet.getScrollbarBounds();
+    const contentSize = this.viewportRectangle ?? sheets.sheet.getScrollbarBounds();
     const dragging = this.dragging;
 
     const horizontal = this.calculateSize(

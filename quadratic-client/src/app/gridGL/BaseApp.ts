@@ -36,12 +36,12 @@ export abstract class BaseApp {
 
   destroy() {
     this.destroyed = true;
+    // this.renderer.destroy(true);
   }
 
   private createCanvas(): HTMLCanvasElement {
     const canvas = document.createElement('canvas');
     canvas.classList.add('dark-mode-hack');
-    canvas.id = 'QuadraticCanvasID';
     canvas.className = 'pixi_canvas';
     canvas.tabIndex = 0;
     return canvas;
