@@ -39,7 +39,11 @@ export const AIView = memo(() => {
           <AIAnalystHeader textareaRef={textareaRef} />
         </div>
 
-        {showChatHistory && <AIAnalystChatHistory />}
+        {showChatHistory && (
+          <div className="mx-auto w-[800px]">
+            <AIAnalystChatHistory />
+          </div>
+        )}
 
         {!showChatHistory && (
           <div className="mx-auto w-full flex-1 overflow-auto">
