@@ -456,7 +456,7 @@ export const MODELS_CONFIGURATION: {
     mode: 'fast',
     provider: 'baseten',
     promptCaching: true,
-    strictParams: false,
+    strictParams: true,
     imageSupport: false,
     rate_per_million_input_tokens: 0.38,
     rate_per_million_output_tokens: 1.53,

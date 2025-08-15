@@ -1,7 +1,6 @@
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { ensureRectVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
@@ -16,7 +15,6 @@ import type {
 } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
-import { dataUrlToMimeTypeAndData, isSupportedImageMimeType } from 'quadratic-shared/ai/helpers/files.helper';
 import type { AIToolsArgsSchema } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AISource, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
@@ -109,44 +107,19 @@ Move the code cell to a new position to avoid spilling. Make sure the new positi
   }
 
   if (tableCodeCell.is_html) {
-    const htmlCell = htmlCellsHandler.findCodeCell(sheetId, x, y);
-    const dataUrl = (await htmlCell?.getImageDataUrl()) ?? '';
-    if (dataUrl) {
-      const { mimeType, data } = dataUrlToMimeTypeAndData(dataUrl);
-      if (isSupportedImageMimeType(mimeType) && !!data) {
-        return [
-          {
-            type: 'data',
-            data,
-            mimeType,
-            fileName: tableCodeCell.name,
-          },
-          {
-            type: 'text',
-            text: 'Executed set code cell value tool successfully to create a plotly chart.',
-          },
-        ];
-      }
-    }
+    return [
+      {
+        type: 'text',
+        text: 'Executed set code cell value tool successfully to create a plotly chart.',
+      },
+    ];
   } else if (tableCodeCell.is_html_image) {
-    const image = pixiApp.cellsSheets.getById(sheetId)?.cellsImages.findCodeCell(x, y);
-    if (image?.dataUrl) {
-      const { mimeType, data } = dataUrlToMimeTypeAndData(image.dataUrl);
-      if (isSupportedImageMimeType(mimeType) && !!data) {
-        return [
-          {
-            type: 'data',
-            data,
-            mimeType,
-            fileName: tableCodeCell.name,
-          },
-          {
-            type: 'text',
-            text: 'Executed set code cell value tool successfully to create a javascript chart.',
-          },
-        ];
-      }
-    }
+    return [
+      {
+        type: 'text',
+        text: 'Executed set code cell value tool successfully to create a javascript chart.',
+      },
+    ];
   }
 
   return [

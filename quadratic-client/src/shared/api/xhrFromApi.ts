@@ -1,7 +1,7 @@
 import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { ApiError } from '@/shared/api/fetchFromApi';
-import * as Sentry from '@sentry/react';
+import { captureException } from '@sentry/react';
 import type z from 'zod';
 
 interface XhrRequestConfig {
@@ -69,7 +69,7 @@ export async function xhrFromApi<T>(
           reject(new ApiError('Unexpected response schema', xhr.status, method, JSON.stringify(result.error)));
         }
       } catch (error) {
-        Sentry.captureException(error);
+        captureException(error);
         reject(new ApiError('An unknown error occurred: response is not JSON.', xhr.status, method));
       }
     };
