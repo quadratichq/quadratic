@@ -5,7 +5,6 @@ import { AIAnalystGetChatName } from '@/app/ui/menus/AIAnalyst/AIAnalystGetChatN
 import { AIAnalystHeader } from '@/app/ui/menus/AIAnalyst/AIAnalystHeader';
 import { AIAnalystMessages } from '@/app/ui/menus/AIAnalyst/AIAnalystMessages';
 import { AIAnalystUserMessageForm } from '@/app/ui/menus/AIAnalyst/AIAnalystUserMessageForm';
-import { cn } from '@/shared/shadcn/utils';
 import { memo, useEffect, useRef } from 'react';
 import { useRecoilValue } from 'recoil';
 
@@ -31,40 +30,36 @@ export const AIView = memo(() => {
 
       <div
         ref={aiPanelRef}
-        className="relative hidden h-full w-full shrink-0 overflow-hidden md:block"
+        className="flex h-full w-full flex-col overflow-hidden"
         onCopy={(e) => e.stopPropagation()}
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
       >
-        <div className="h-full w-full overflow-auto">
-          <div
-            className={cn(
-              'mx-auto w-full',
-              showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
-            )}
-            style={{ maxWidth: '800px' }}
-          >
-            <AIAnalystHeader textareaRef={textareaRef} />
-
-            {showChatHistory ? (
-              <AIAnalystChatHistory />
-            ) : (
-              <>
-                <AIAnalystMessages textareaRef={textareaRef} />
-
-                <div className="px-2 py-0.5">
-                  <AIAnalystUserMessageForm
-                    ref={textareaRef}
-                    autoFocusRef={autoFocusRef}
-                    textareaRef={textareaRef}
-                    messageIndex={messagesCount}
-                  />
-                  <AIUserMessageFormDisclaimer />
-                </div>
-              </>
-            )}
-          </div>
+        <div className="mx-auto w-[800px]">
+          <AIAnalystHeader textareaRef={textareaRef} />
         </div>
+
+        {showChatHistory && <AIAnalystChatHistory />}
+
+        {!showChatHistory && (
+          <div className="mx-auto w-full flex-1 overflow-auto">
+            <div className="mx-auto max-w-[800px]">
+              <AIAnalystMessages textareaRef={textareaRef} />
+            </div>
+          </div>
+        )}
+
+        {!showChatHistory && (
+          <div className="mx-auto w-[800px] px-2 py-0.5">
+            <AIAnalystUserMessageForm
+              ref={textareaRef}
+              autoFocusRef={autoFocusRef}
+              textareaRef={textareaRef}
+              messageIndex={messagesCount}
+            />
+            <AIUserMessageFormDisclaimer />
+          </div>
+        )}
       </div>
     </>
   );
