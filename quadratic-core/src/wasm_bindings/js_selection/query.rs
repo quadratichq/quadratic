@@ -348,4 +348,9 @@ impl JsSelection {
             .map(|c| *c as u32)
             .collect()
     }
+
+    #[wasm_bindgen(js_name = "getTableNames")]
+    pub fn get_table_names(&self) -> JsValue {
+        serde_wasm_bindgen::to_value(&self.selection.table_refs()).unwrap_or(JsValue::UNDEFINED)
+    }
 }

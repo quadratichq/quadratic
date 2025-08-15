@@ -185,6 +185,10 @@ class HTMLCellsHandler {
   enable() {
     this.getCells().forEach((cell) => cell.reactivate());
   }
+
+  findHtmlCellByName(name: string): HtmlCell | undefined {
+    return this.getCells().find((cell) => cell.htmlCell.name === name);
+  }
 }
 
 export const htmlCellsHandler = new HTMLCellsHandler();

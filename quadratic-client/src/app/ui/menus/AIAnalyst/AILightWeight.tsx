@@ -1,11 +1,14 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
 import { sheets } from '@/app/grid/controller/Sheets';
+import { HtmlCell } from '@/app/gridGL/HTMLGrid/htmlCells/HtmlCell';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { ScrollBars } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBars';
 import { LightWeightApp } from '@/app/gridGL/lightweightApp/LightWeightApp';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { selectionToSheetRect } from '@/app/quadratic-core/quadratic_core';
 import { Rectangle } from 'pixi.js';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface Props {
   height: number;
@@ -17,9 +20,36 @@ export const AILightWeight = (props: Props) => {
   const [rectangle, setRectangle] = useState<Rectangle | undefined>();
   const [maxSize, setMaxSize] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
 
+  const htmlAnchorRef = useRef<HTMLDivElement>(null);
+  const [hasHTML, setHasHTML] = useState(false);
+
   const ref = useCallback(
     (div: HTMLDivElement) => {
       if (!div) return;
+
+      const selection = sheets.stringToSelection(props.a1, sheets.current);
+      const tableNames = selection.getTableNames();
+      if (tableNames.length > 0) {
+        const table = pixiApp.cellsSheet().tables.getTableFromName(tableNames[0]);
+        if (table?.codeCell.is_html) {
+          const cell = htmlCellsHandler.findHtmlCellByName(table.codeCell.name);
+          if (cell?.htmlCell) {
+            const htmlCell = new HtmlCell(cell.htmlCell);
+            if (htmlAnchorRef.current) {
+              while (htmlAnchorRef.current.firstChild) {
+                htmlAnchorRef.current.removeChild(htmlAnchorRef.current.firstChild);
+              }
+              htmlAnchorRef.current.appendChild(htmlCell.iframe);
+              htmlCell.iframe.style.pointerEvents = 'auto';
+              setHasHTML(true);
+              return;
+            } else {
+              throw new Error('htmlAnchorRef not found');
+            }
+          }
+        }
+      }
+
       const app = new LightWeightApp(div);
       setApp(app);
       try {
@@ -60,11 +90,12 @@ export const AILightWeight = (props: Props) => {
         className="relative"
         style={{
           // maxWidth: maxSize.maxWidth,
-          width: maxSize.width,
+          width: hasHTML ? 'auto' : maxSize.width,
           // maxHeight: maxSize.maxHeight,
-          height: `min(${props.height}px, ${maxSize.height}px)`,
+          height: hasHTML ? 'auto' : `min(${props.height}px, ${maxSize.height}px)`,
         }}
       >
+        <div className="h-full w-full" style={{ display: hasHTML ? 'block' : 'none' }} ref={htmlAnchorRef} />
         {app && <ScrollBars baseApp={app} rectangle={rectangle} />}
       </div>
     </div>

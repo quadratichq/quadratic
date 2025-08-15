@@ -335,17 +335,13 @@ export class Wheel extends Plugin {
     const adjust = { x: target.scrollLeft, y: target.scrollTop };
     const point = this.getPointerPosition(e, adjust);
     const bounds = this.parent.getVisibleBounds();
-    console.log({ bounds, point });
     if (!intersects.rectanglePoint(bounds, point)) {
-      console.log('not in bounds');
       return;
     }
-    console.log('in bounds');
     return this.wheelSpecial(e, adjust);
   };
 
   public wheelSpecial = (e: WheelEvent, adjust?: { x: number; y: number }): boolean => {
-    console.log('wheelSpecial');
     this.doubleCheckZoomKey(e);
 
     // If paused or both zoom and horizontal keys are pressed do nothing

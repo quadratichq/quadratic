@@ -474,9 +474,10 @@ impl A1Selection {
     /// there is one range, and the range is a single cell.
     pub fn try_to_pos(&self, a1_context: &A1Context) -> Option<Pos> {
         if self.ranges.len() == 1
-            && let Some(range) = self.ranges.first() {
-                return range.try_to_pos(a1_context);
-            }
+            && let Some(range) = self.ranges.first()
+        {
+            return range.try_to_pos(a1_context);
+        }
         None
     }
 
@@ -628,6 +629,20 @@ impl A1Selection {
         })
     }
 
+    /// Returns the names of all TableRef table names in the selection.
+    pub fn table_refs(&self) -> Vec<String> {
+        let mut names = Vec::new();
+        self.ranges.iter().for_each(|range| match range {
+            CellRefRange::Table { range } => {
+                names.push(range.table_name.clone());
+            }
+            _ => (),
+        });
+        names.sort();
+        names.dedup();
+        names
+    }
+
     /// Replaces all table references to a specific table w/sheet refs.
     pub fn replace_table_refs_table(
         &self,
@@ -693,9 +708,11 @@ impl A1Selection {
             return None;
         }
         if let Some(CellRefRange::Table { range }) = self.ranges.first()
-            && range.data && range.col_range == ColRange::All {
-                return Some(range.table_name.clone());
-            }
+            && range.data
+            && range.col_range == ColRange::All
+        {
+            return Some(range.table_name.clone());
+        }
         None
     }
 
