@@ -106,9 +106,10 @@ export const userOptionalMiddleware = async (req: Request, res: Response, next: 
     return next();
   }
 
-  const { user } = await getOrCreateUser(auth);
+  const { user, userCreated } = await getOrCreateUser(auth);
   if (user) {
     (req as RequestWithUser).user = user;
+    (req as RequestWithUser).userCreated = userCreated === true;
   }
 
   next();
