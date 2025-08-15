@@ -1,6 +1,7 @@
 //! Cloned from pixi-viewport Wheel plugin.
 
 import { events } from '@/app/events/events';
+import { intersects } from '@/app/gridGL/helpers/intersects';
 import { CELL_HEIGHT } from '@/shared/constants/gridConstants';
 import { isMac } from '@/shared/utils/isMac';
 import type { Viewport } from 'pixi-viewport';
@@ -140,6 +141,8 @@ export class Wheel extends Plugin {
     window.addEventListener('pointerdown', this.checkAndEmitZoomEnd);
     window.addEventListener('pointerout', this.checkAndEmitZoomEnd);
     window.addEventListener('pointerleave', this.checkAndEmitZoomEnd);
+
+    window.addEventListener('wheel', this.wheelHandler, { passive: false });
 
     events.on('headingSize', (width, height) => {
       this.headingSize = { width, height };
@@ -319,6 +322,30 @@ export class Wheel extends Plugin {
   }
 
   public wheel(e: WheelEvent, adjust?: { x: number; y: number }): boolean {
+    // on normal operation, skip the wheel handler as it's handled with a
+    // non-passive version in this object
+    if (adjust) {
+      return this.wheelSpecial(e, adjust);
+    }
+    return true;
+  }
+
+  public wheelHandler = (e: WheelEvent) => {
+    const target = e.target as HTMLElement;
+    const adjust = { x: target.scrollLeft, y: target.scrollTop };
+    const point = this.getPointerPosition(e, adjust);
+    const bounds = this.parent.getVisibleBounds();
+    console.log({ bounds, point });
+    if (!intersects.rectanglePoint(bounds, point)) {
+      console.log('not in bounds');
+      return;
+    }
+    console.log('in bounds');
+    return this.wheelSpecial(e, adjust);
+  };
+
+  public wheelSpecial = (e: WheelEvent, adjust?: { x: number; y: number }): boolean => {
+    console.log('wheelSpecial');
     this.doubleCheckZoomKey(e);
 
     // If paused or both zoom and horizontal keys are pressed do nothing
@@ -422,8 +449,10 @@ export class Wheel extends Plugin {
       this.parent.emit('wheel-scroll', this.parent);
       this.parent.emit('moved', { viewport: this.parent, type: 'wheel' });
     }
+    e.stopPropagation();
+    e.preventDefault();
     return !this.parent.options.passiveWheel;
-  }
+  };
 
   private getDecelerationFactor(value: number): number {
     // No deceleration needed if the value is less than or equal to 0

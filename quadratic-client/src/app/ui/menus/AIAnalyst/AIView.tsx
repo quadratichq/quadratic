@@ -36,32 +36,34 @@ export const AIView = memo(() => {
         onCut={(e) => e.stopPropagation()}
         onPaste={(e) => e.stopPropagation()}
       >
-        <div
-          className={cn(
-            'mx-auto h-full w-full',
-            showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
-          )}
-          style={{ maxWidth: '800px' }}
-        >
-          <AIAnalystHeader textareaRef={textareaRef} />
+        <div className="h-full w-full overflow-auto">
+          <div
+            className={cn(
+              'mx-auto w-full',
+              showChatHistory ? 'grid grid-rows-[auto_1fr]' : 'grid grid-rows-[auto_1fr_auto]'
+            )}
+            style={{ maxWidth: '800px' }}
+          >
+            <AIAnalystHeader textareaRef={textareaRef} />
 
-          {showChatHistory ? (
-            <AIAnalystChatHistory />
-          ) : (
-            <>
-              <AIAnalystMessages textareaRef={textareaRef} />
+            {showChatHistory ? (
+              <AIAnalystChatHistory />
+            ) : (
+              <>
+                <AIAnalystMessages textareaRef={textareaRef} />
 
-              <div className="px-2 py-0.5">
-                <AIAnalystUserMessageForm
-                  ref={textareaRef}
-                  autoFocusRef={autoFocusRef}
-                  textareaRef={textareaRef}
-                  messageIndex={messagesCount}
-                />
-                <AIUserMessageFormDisclaimer />
-              </div>
-            </>
-          )}
+                <div className="px-2 py-0.5">
+                  <AIAnalystUserMessageForm
+                    ref={textareaRef}
+                    autoFocusRef={autoFocusRef}
+                    textareaRef={textareaRef}
+                    messageIndex={messagesCount}
+                  />
+                  <AIUserMessageFormDisclaimer />
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </>

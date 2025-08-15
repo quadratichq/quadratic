@@ -1,8 +1,10 @@
 import { sheets } from '@/app/grid/controller/Sheets';
 import { BaseApp } from '@/app/gridGL/BaseApp';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { WHEEL_ZOOM_PERCENT } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
+import { isMobile } from 'react-device-detect';
 
 export class LightWeightApp extends BaseApp {
   private parent: HTMLElement;
@@ -12,7 +14,25 @@ export class LightWeightApp extends BaseApp {
     this.parent = parent;
     this.parent.appendChild(this.canvas);
 
-    this.viewport.drag().pinch();
+    // don't allow wheel event to bubble up to the parent (since this is
+    // embedded on a scrollable page)
+    this.canvas.addEventListener(
+      'wheel',
+      (e) => {
+        e.preventDefault();
+      },
+      { passive: false }
+    );
+
+    this.viewport.plugins.add(
+      'drag',
+      new Drag(this.viewport, {
+        pressDrag: true,
+        wheel: false, // handled by Wheel plugin below
+        keyToPress: isMobile ? undefined : ['Space'],
+      })
+    );
+    this.viewport.pinch();
     this.viewport.plugins.add(
       'wheel',
       new Wheel(this.viewport, {
