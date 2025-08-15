@@ -1,8 +1,11 @@
 import { getRowColSentence, ToolCard } from '@/app/ai/toolCards/ToolCard';
+import { aiViewAtom } from '@/app/atoms/gridSettingsAtom';
+import { AILightWeight } from '@/app/ui/menus/AIAnalyst/AILightWeight';
 import { TableIcon } from '@/shared/components/Icons';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useState } from 'react';
+import { useRecoilValue } from 'recoil';
 import type { z } from 'zod';
 
 type AddDataTableResponse = z.infer<(typeof aiToolsSpec)[AITool.AddDataTable]['responseSchema']>;
@@ -10,6 +13,7 @@ type AddDataTableResponse = z.infer<(typeof aiToolsSpec)[AITool.AddDataTable]['r
 export const AddDataTable = memo(
   ({ toolCall: { arguments: args, loading }, className }: { toolCall: AIToolCall; className: string }) => {
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<AddDataTableResponse, AddDataTableResponse>>();
+    const aiView = useRecoilValue(aiViewAtom);
 
     useEffect(() => {
       if (loading) {
@@ -43,16 +47,19 @@ export const AddDataTable = memo(
     const rows = table_data.length;
     const cols = table_data.reduce((max, row) => Math.max(max, row.length), 0);
     return (
-      <ToolCard
-        icon={icon}
-        label={
-          <span>
-            {label} <span className="ml-1 font-normal text-muted-foreground">{table_name}</span>
-          </span>
-        }
-        description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}
-        className={className}
-      />
+      <>
+        <ToolCard
+          icon={icon}
+          label={
+            <span>
+              {label} <span className="ml-1 font-normal text-muted-foreground">{table_name}</span>
+            </span>
+          }
+          description={`${getRowColSentence({ rows, cols })} at ${top_left_position}`}
+          className={className}
+        />
+        {aiView && <AILightWeight height={100} a1={table_name} />}
+      </>
     );
   }
 );
