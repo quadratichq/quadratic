@@ -2,7 +2,7 @@ import { downloadQuadraticFile } from '@/app/helpers/downloadFileInBrowser';
 import { ApiError, fetchFromApi } from '@/shared/api/fetchFromApi';
 import { xhrFromApi } from '@/shared/api/xhrFromApi';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 import { Buffer } from 'buffer';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 
@@ -211,7 +211,7 @@ export const apiClient = {
           await apiClient.files.thumbnail.update(newFileUuid, blob);
         } catch (err) {
           // Not a huge deal if it failed, just tell Sentry and move on
-          Sentry.captureEvent({
+          captureEvent({
             message: 'Failed to duplicate the thumbnail image when duplicating a file',
             level: 'info',
           });
@@ -448,7 +448,7 @@ export const apiClient = {
     const url = import.meta.env.VITE_QUADRATIC_API_URL;
     if (!url) {
       const message = 'VITE_QUADRATIC_API_URL env variable is not set.';
-      Sentry.captureEvent({
+      captureEvent({
         message,
         level: 'fatal',
       });
