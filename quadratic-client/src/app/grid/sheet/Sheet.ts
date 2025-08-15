@@ -109,7 +109,7 @@ export class Sheet {
 
   setName = (name: string): void => {
     if (name !== this.name) {
-      quadraticCore.setSheetName(this.id, name);
+      quadraticCore.setSheetName(this.id, name, false);
       this.name = name;
     }
   };
@@ -249,7 +249,7 @@ export class Sheet {
         message: '',
       },
     };
-    quadraticCore.updateValidation(validation);
+    quadraticCore.updateValidation(validation, false);
   }
 
   hasContent(col: number, row: number): boolean {

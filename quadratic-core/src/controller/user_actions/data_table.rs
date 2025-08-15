@@ -23,18 +23,19 @@ impl GridController {
         self.data_table_at(*sheet_pos).and_then(|dt| dt.code_run())
     }
 
-    pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>) {
+    pub fn flatten_data_table(&mut self, sheet_pos: SheetPos, cursor: Option<String>, is_ai: bool) {
         let ops = self.flatten_data_table_operations(sheet_pos);
-        self.start_user_transaction(ops, cursor, TransactionName::FlattenDataTable);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::FlattenDataTable, is_ai);
     }
 
     pub fn code_data_table_to_data_table(
         &mut self,
         sheet_pos: SheetPos,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<()> {
         let ops = self.code_data_table_to_data_table_operations(sheet_pos)?;
-        self.start_user_transaction(ops, cursor, TransactionName::SwitchDataTableKind);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::SwitchDataTableKind, is_ai);
 
         Ok(())
     }
@@ -45,11 +46,12 @@ impl GridController {
         table_name: Option<String>,
         first_row_is_header: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) -> Result<()> {
         let ops =
             self.grid_to_data_table_operations(sheet_rect, table_name, first_row_is_header)?;
 
-        self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::GridToDataTable, is_ai);
 
         Ok(())
     }
@@ -64,6 +66,7 @@ impl GridController {
         show_name: Option<Option<bool>>,
         show_columns: Option<Option<bool>>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.data_table_meta_operations(
             sheet_pos,
@@ -73,7 +76,7 @@ impl GridController {
             show_name,
             show_columns,
         );
-        self.start_user_transaction(ops, cursor, TransactionName::DataTableMeta);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMeta, is_ai);
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -88,6 +91,7 @@ impl GridController {
         flatten_on_delete: Option<bool>,
         swallow_on_insert: Option<bool>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.data_table_mutations_operations(
             sheet_pos,
@@ -99,9 +103,10 @@ impl GridController {
             flatten_on_delete,
             swallow_on_insert,
         );
-        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMutations, is_ai);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn data_table_insert_columns(
         &mut self,
         sheet_pos: SheetPos,
@@ -110,6 +115,7 @@ impl GridController {
         copy_formats_from: Option<u32>,
         copy_formats: Option<CopyFormats>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.data_table_insert_columns_operations(
             sheet_pos,
@@ -118,9 +124,10 @@ impl GridController {
             copy_formats_from,
             copy_formats,
         );
-        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMutations, is_ai);
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn data_table_insert_rows(
         &mut self,
         sheet_pos: SheetPos,
@@ -129,6 +136,7 @@ impl GridController {
         copy_formats_from: Option<u32>,
         copy_formats: Option<CopyFormats>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.data_table_insert_rows_operations(
             sheet_pos,
@@ -137,7 +145,7 @@ impl GridController {
             copy_formats_from,
             copy_formats,
         );
-        self.start_user_transaction(ops, cursor, TransactionName::DataTableMutations);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableMutations, is_ai);
     }
 
     pub fn sort_data_table(
@@ -145,9 +153,10 @@ impl GridController {
         sheet_pos: SheetPos,
         sort: Option<Vec<DataTableSort>>,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.sort_data_table_operations(sheet_pos, sort);
-        self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::GridToDataTable, is_ai);
     }
 
     pub fn data_table_first_row_as_header(
@@ -155,9 +164,15 @@ impl GridController {
         sheet_pos: SheetPos,
         first_row_is_header: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.data_table_first_row_as_header_operations(sheet_pos, first_row_is_header);
-        self.start_user_transaction(ops, cursor, TransactionName::DataTableFirstRowAsHeader);
+        self.start_user_ai_transaction(
+            ops,
+            cursor,
+            TransactionName::DataTableFirstRowAsHeader,
+            is_ai,
+        );
     }
 
     pub fn add_data_table(
@@ -167,9 +182,10 @@ impl GridController {
         values: Vec<Vec<String>>,
         first_row_is_header: bool,
         cursor: Option<String>,
+        is_ai: bool,
     ) {
         let ops = self.add_data_table_operations(sheet_pos, name, values, first_row_is_header);
-        self.start_user_transaction(ops, cursor, TransactionName::DataTableAddDataTable);
+        self.start_user_ai_transaction(ops, cursor, TransactionName::DataTableAddDataTable, is_ai);
     }
 }
 
@@ -238,7 +254,8 @@ mod tests {
             CellValue::Code(code_cell_value.clone()),
         );
 
-        gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
+        gc.code_data_table_to_data_table(sheet_pos, None, false)
+            .unwrap();
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 3));
         assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
@@ -277,6 +294,7 @@ mod tests {
             old_code.to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -302,6 +320,7 @@ mod tests {
             None,
             None,
             cursor,
+            false,
         );
 
         let updated_name = gc
@@ -342,6 +361,7 @@ mod tests {
             old_code.to_string(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
 
@@ -369,6 +389,7 @@ mod tests {
             None,
             None,
             cursor,
+            false,
         );
 
         let updated_name = gc
@@ -419,6 +440,7 @@ mod tests {
             flatten_on_delete,
             swallow_on_insert,
             cursor,
+            false,
         );
 
         print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 5, 15));
@@ -473,6 +495,7 @@ mod tests {
             values.to_owned(),
             true,
             None,
+            false,
         );
 
         // Verify the first data table
@@ -520,6 +543,7 @@ mod tests {
             SheetPos::from((pos![D1], sheet_id)),
             "Test value".into(),
             None,
+            false,
         );
 
         gc.add_data_table(
@@ -528,6 +552,7 @@ mod tests {
             values_no_header.to_owned(),
             false,
             None,
+            false,
         );
 
         // Verify the second data table
@@ -576,6 +601,7 @@ mod tests {
             table_3_values.to_owned(),
             false,
             None,
+            false,
         );
         // Verify the third data table
         {
@@ -665,6 +691,7 @@ mod tests {
             None,
             None,
             None,
+            false,
         );
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["2", "3"]);
 
@@ -694,6 +721,7 @@ mod tests {
             None,
             None,
             None,
+            false,
         );
         assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["", ""]);
 

@@ -106,7 +106,7 @@ export const useValidationData = (): ValidationData => {
       if (validation && 'rule' in validation && validation.rule) {
         if (!validate()) return;
         if (unsaved) {
-          quadraticCore.updateValidation(validation);
+          quadraticCore.updateValidation(validation, false);
         }
       }
     }

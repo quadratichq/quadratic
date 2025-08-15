@@ -28,7 +28,12 @@ pub fn test_set_values_with_values(
     let mut i = 0;
     for y in pos.y..pos.y + h {
         for x in pos.x..pos.x + w {
-            gc.set_cell_value(SheetPos::new(sheet_id, x, y), values[i].to_string(), None);
+            gc.set_cell_value(
+                SheetPos::new(sheet_id, x, y),
+                values[i].to_string(),
+                None,
+                false,
+            );
             i += 1;
         }
     }
@@ -50,7 +55,12 @@ pub fn test_set_values_rect(
     let mut i = 0;
     for y in y..y + h {
         for x in x..x + w {
-            gc.set_cell_value(SheetPos::new(sheet_id, x, y), values[i].to_string(), None);
+            gc.set_cell_value(
+                SheetPos::new(sheet_id, x, y),
+                values[i].to_string(),
+                None,
+                false,
+            );
             i += 1;
         }
     }

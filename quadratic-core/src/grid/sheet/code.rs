@@ -347,6 +347,7 @@ mod test {
             },
             "should cause spill".into(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -358,6 +359,7 @@ mod test {
             "{1, 2, 3}".to_string(),
             None,
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

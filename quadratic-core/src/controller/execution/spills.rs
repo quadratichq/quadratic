@@ -78,6 +78,7 @@ mod tests {
             "A1:A2".to_string(),
             None,
             None,
+            false,
         );
 
         // manually set a cell value and see if spill is changed
@@ -89,6 +90,7 @@ mod tests {
             },
             "3".into(),
             None,
+            false,
         );
 
         let sheet = gc.grid.try_sheet(sheet_id).unwrap();
@@ -116,6 +118,7 @@ mod tests {
             "A1:A2".to_string(),
             None,
             None,
+            false,
         );
 
         clear_js_calls();
@@ -132,6 +135,7 @@ mod tests {
             },
             "3".into(),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -146,6 +150,7 @@ mod tests {
             },
             "".into(),
             None,
+            false,
         );
         let sheet = gc.sheet_mut(sheet_id);
         assert_eq!(sheet.cell_value(Pos { x: 2, y: 2 }), None);
@@ -169,6 +174,7 @@ mod tests {
             },
             vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
+            false,
         );
 
         gc.set_code_cell(
@@ -181,6 +187,7 @@ mod tests {
             "B1:B4".into(),
             None,
             None,
+            false,
         );
 
         // cause a spill error
@@ -192,6 +199,7 @@ mod tests {
             },
             "hello".into(),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -212,6 +220,7 @@ mod tests {
             },
             "".into(),
             None,
+            false,
         );
 
         let sheet = gc.try_sheet(sheet_id).unwrap();
@@ -243,6 +252,7 @@ mod tests {
             },
             vec![vec!["1".into()], vec!["2".into()], vec!["3".into()]],
             None,
+            false,
         );
 
         // value to cause the spill
@@ -256,6 +266,7 @@ mod tests {
             "B1:B4".into(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -279,6 +290,7 @@ mod tests {
             "1 + 2".into(),
             None,
             None,
+            false,
         );
 
         // should be spilled because of the code_cell
@@ -306,6 +318,7 @@ mod tests {
                 vec!["7".into(), "8".into(), "9".into()],
             ],
             None,
+            false,
         );
 
         // copies values to copy to 10,10: column: 10-12, rows: 10="1", 11="2", 12="3"
@@ -319,6 +332,7 @@ mod tests {
             "A1:C3".into(),
             None,
             None,
+            false,
         );
 
         // output that is spilled column: 11, row: 9 creates a spill (since it's inside the other code_cell)
@@ -332,6 +346,7 @@ mod tests {
             "A1:A3".into(),
             None,
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -348,6 +363,7 @@ mod tests {
             },
             "".into(),
             None,
+            false,
         );
 
         let sheet = gc.sheet(sheet_id);
@@ -400,6 +416,7 @@ mod tests {
             },
             "hello".to_string(),
             None,
+            false,
         );
         gc.set_code_cell(
             SheetPos {
@@ -411,6 +428,7 @@ mod tests {
             "".into(),
             None,
             None,
+            false,
         );
         let transaction_id = gc.last_transaction().unwrap().id;
         let result = JsCodeResult {

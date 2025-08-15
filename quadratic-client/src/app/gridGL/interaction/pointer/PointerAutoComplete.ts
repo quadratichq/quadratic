@@ -217,7 +217,8 @@ export class PointerAutoComplete {
             newRectangle.left,
             newRectangle.top,
             newRectangle.right - 1,
-            newRectangle.bottom - 1
+            newRectangle.bottom - 1,
+            false
           );
         }
 
