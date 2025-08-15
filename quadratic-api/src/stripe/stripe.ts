@@ -224,7 +224,7 @@ const updateTeamStatus = async (
   if (statusChanged && updatedTeam.stripeSubscriptionStatus !== null) {
     // track the event
     trackEvent('[Stripe].statusChangedTo.' + updatedTeam.stripeSubscriptionStatus.toLowerCase(), {
-      distinctId: teamOwner.auth0Id,
+      distinct_id: teamOwner.auth0Id,
       teamId: updatedTeam.id,
       oldStatus: oldTeam?.stripeSubscriptionStatus?.toLowerCase(),
       newStatus: updatedTeam.stripeSubscriptionStatus?.toLowerCase(),

@@ -1,6 +1,6 @@
 {
   "name": "quadratic-client",
-  "version": "0.16.3",
+  "version": "0.16.4",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -79,7 +79,7 @@
     "pixi-viewport": "5.0.3",
     "pixi.js": "^7.4.3",
     "pyodide": "0.27.5",
-    "radix-ui": "^1.4.2",
+    "radix-ui": "^1.4.3",
     "react": "^18.3.1",
     "react-avatar-editor": "^14.0.0-beta.5",
     "react-color": "^2.19.3",

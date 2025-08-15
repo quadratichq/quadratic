@@ -35,12 +35,6 @@ export const getModelKey = async (
 
     const promptMessages = getPromptMessagesForAI(messages);
 
-    // if the last message is not a user prompt, use the last AI prompt message model key
-    const lastPromptMessage = promptMessages[promptMessages.length - 1];
-    if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
-      return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
-    }
-
     // if the model is the default free model, check if the user prompt contains an image file
     if (!isQuadraticModel(modelKey) && !MODELS_CONFIGURATION[modelKey].imageSupport) {
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
@@ -53,6 +47,12 @@ export const getModelKey = async (
     // if the model is not the model router model, return the model key
     if (!isQuadraticModel(modelKey)) {
       return modelKey;
+    }
+
+    // if the last message is not a user prompt, use the last AI prompt message model key
+    const lastPromptMessage = promptMessages[promptMessages.length - 1];
+    if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
+      return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
     }
 
     const userTextPrompt = lastPromptMessage.content
