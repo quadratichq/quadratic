@@ -1,7 +1,6 @@
 import type { Response } from 'express';
 import { sanityClient } from 'quadratic-shared/sanityClient';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
-import { getUsers } from '../../auth/auth';
 import universityDomains from '../../data/universityDomains';
 import dbClient from '../../dbClient';
 import { userMiddleware } from '../../middleware/user';
@@ -12,15 +11,11 @@ export default [validateAccessToken, userMiddleware, handler];
 
 async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/education.POST.response']>) {
   const {
-    user: { auth0Id, id, eduStatus: currentEduStatus },
+    user: { id, email, eduStatus: currentEduStatus },
   } = req;
 
   // We'll check whether the requesting user is eligible for education
   // and save that state to the DB.
-
-  // Get info about the user
-  const userById = await getUsers([{ id, auth0Id }]);
-  const email = userById[id].email;
 
   const enrollUser = async () => {
     const newEduStatus = 'ENROLLED';
@@ -32,7 +27,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
     return responseData;
   };
 
-  // First let's check out giant list of exisiting universities
+  // First let's check out giant list of existing universities
   const universityDomainMatches = universityDomains.filter((domain) => email.endsWith(domain));
   if (universityDomainMatches.length > 0) {
     const responseData = await enrollUser();

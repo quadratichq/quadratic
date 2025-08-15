@@ -30,7 +30,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
     params: { uuid },
   } = parseRequest(req, schema);
   const {
-    user: { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id },
+    user: { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id, email: userMakingRequestEmail },
   } = req;
   const {
     file: { id: fileId, name: fileName, ownerUserId },
@@ -49,7 +49,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   }
 
   // Are you trying to create an invite that already exists? That's a conflict
-  // (We don't want to figure out if you're updating the exisiting record or not)
+  // (We don't want to figure out if you're updating the existing record or not)
   const existingInvite = await dbClient.fileInvite.findUnique({
     where: {
       email_fileId: {
@@ -63,8 +63,10 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   }
 
   // Get the auth0 info (email/name) for the user making the request
-  const resultsById = await getUsers([{ id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id }]);
-  const { email: userMakingRequestEmail, name: userMakingRequestName } = resultsById[userMakingRequestId];
+  const resultsById = await getUsers([
+    { id: userMakingRequestId, auth0Id: userMakingRequestAuth0Id, email: userMakingRequestEmail },
+  ]);
+  const { name: userMakingRequestName } = resultsById[userMakingRequestId];
 
   // Are you trying to invite yourself as the owner? No dice.
   if (userMakingRequestId === ownerUserId && userMakingRequestEmail === email) {
@@ -104,7 +106,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   }
 
   // 2.
-  // If there is 1 user, they are an exisiting user of Quadratic. So we
+  // If there is 1 user, they are an existing user of Quadratic. So we
   // associate them with the file and send them an email.
   if (auth0Users.length === 1) {
     const { user_id: auth0Id } = auth0Users[0];

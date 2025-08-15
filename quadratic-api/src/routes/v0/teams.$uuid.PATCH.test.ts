@@ -1,30 +1,11 @@
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { clearDb } from '../../tests/testDataGenerator';
+import { clearDb, createUsers } from '../../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create some users & a team
-  const user_1 = await dbClient.user.create({
-    data: {
-      auth0Id: 'team_1_owner',
-    },
-  });
-  const user_2 = await dbClient.user.create({
-    data: {
-      auth0Id: 'team_1_editor',
-    },
-  });
-  const user_3 = await dbClient.user.create({
-    data: {
-      auth0Id: 'team_1_viewer',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'no_team',
-    },
-  });
+  const [user_1, user_2, user_3] = await createUsers(['team_1_owner', 'team_1_editor', 'team_1_viewer', 'no_team']);
 
   await dbClient.team.create({
     data: {

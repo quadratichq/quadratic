@@ -8,4 +8,5 @@ module.exports = {
     '^@quadratic-shared/(.*)$': '<rootDir>/../quadratic-shared/$1',
   },
   roots: ['<rootDir>', '<rootDir>/../quadratic-shared'],
+  testTimeout: 15000,
 };

@@ -11,7 +11,7 @@ datasource db {
 model User {
     id                  Int               @id @default(autoincrement())
     auth0Id             String            @unique @map("auth0_id")
-    email               String?           @unique @map("email")
+    email               String            @unique @map("email")
     eduStatus           EduStatus?        @map("edu_status")
     onboardingResponses Json?             @map("onboarding_responses")
     ownedFiles          File[]            @relation(name: "OwnerRelation")
