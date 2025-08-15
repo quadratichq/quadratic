@@ -22,6 +22,7 @@ import {
 export type UsersRequest = {
   id: number;
   auth0Id: string;
+  email: string;
 };
 
 export type User = {

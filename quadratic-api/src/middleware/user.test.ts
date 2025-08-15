@@ -3,11 +3,11 @@ jest.mock('auth0', () =>
   auth0Mock([
     {
       user_id: 'firstTimeUser',
-      email: 'johndoe@example.com',
+      email: 'firstTimeUser@test.com',
     },
     {
       user_id: 'user1',
-      email: 'user1@example.com',
+      email: 'user1@test.com',
     },
   ])
 );
@@ -15,15 +15,11 @@ jest.mock('auth0', () =>
 import request from 'supertest';
 import { app } from '../app';
 import dbClient from '../dbClient';
-import { clearDb, createFile } from '../tests/testDataGenerator';
+import { clearDb, createFile, createUser } from '../tests/testDataGenerator';
 
 beforeEach(async () => {
   // Create a user
-  const user1 = await dbClient.user.create({
-    data: {
-      auth0Id: 'user1',
-    },
-  });
+  const user1 = await createUser({ auth0Id: 'user1' });
 
   // Create a team with an invite
   const team = await dbClient.team.create({
@@ -41,7 +37,7 @@ beforeEach(async () => {
       TeamInvite: {
         create: [
           {
-            email: 'johndoe@example.com',
+            email: 'firstTimeUser@test.com',
             role: 'EDITOR',
           },
         ],
@@ -60,7 +56,7 @@ beforeEach(async () => {
       FileInvite: {
         create: [
           {
-            email: 'johndoe@example.com',
+            email: 'firstTimeUser@test.com',
             role: 'EDITOR',
           },
         ],
@@ -84,24 +80,29 @@ describe('A user coming in to the system for the first time and accessing _any_ 
 
       const teamInvitesBefore = await dbClient.teamInvite.findMany({
         where: {
-          email: 'johndoe@example.com',
+          email: 'firstTimeUser@test.com',
         },
       });
       expect(teamInvitesBefore.length).toBe(1);
 
       const fileInvitesBefore = await dbClient.fileInvite.findMany({
         where: {
-          email: 'johndoe@example.com',
+          email: 'firstTimeUser@test.com',
         },
       });
       expect(fileInvitesBefore.length).toBe(1);
 
       // Make request
-      await request(app)
-        .get('/v0/education')
-        .set('Accept', 'application/json')
-        .set('Authorization', `Bearer ValidToken firstTimeUser`)
-        .expect(200);
+      try {
+        await request(app)
+          .get('/v0/education')
+          .set('Accept', 'application/json')
+          .set('Authorization', `Bearer ValidToken firstTimeUser`)
+          .expect(200);
+      } catch (error) {
+        console.log(error);
+        throw error;
+      }
 
       // State after
       const userAfter = await dbClient.user.findUnique({
@@ -114,14 +115,14 @@ describe('A user coming in to the system for the first time and accessing _any_ 
 
       const teamInvitesAfter = await dbClient.teamInvite.findMany({
         where: {
-          email: 'johndoe@example.com',
+          email: 'firstTimeUser@test.com',
         },
       });
       expect(teamInvitesAfter.length).toBe(0);
 
       const fileInvitesAfter = await dbClient.fileInvite.findMany({
         where: {
-          email: 'johndoe@example.com',
+          email: 'firstTimeUser@test.com',
         },
       });
       expect(fileInvitesAfter.length).toBe(0);

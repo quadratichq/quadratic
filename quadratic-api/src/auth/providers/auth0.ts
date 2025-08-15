@@ -103,6 +103,7 @@ export const getUsersFromAuth0 = async (users: UsersRequest[]): Promise<Record<n
           auth0UserResult: auth0User,
         },
       });
+
       throw new Error('Failed to retrieve all user info from Auth0');
     }
 

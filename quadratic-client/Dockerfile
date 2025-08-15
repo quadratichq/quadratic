@@ -1,28 +1,44 @@
 ###########################################################################################
 # Builder 1 - Build core
 ###########################################################################################
-FROM node:24 AS core-builder
+FROM ubuntu:24.04 AS core-builder
 
 ARG CLIENT_DEV
 
-# Install build-essential, llvm, clang and protobuf-compiler
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
+# Install Node.js 24, build tools, and other dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  gnupg \
+  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+  && apt-get install -y --no-install-recommends \
+  nodejs \
+  build-essential \
+  llvm \
+  clang \
+  protobuf-compiler \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /quadratic
+
+# Copy rust-toolchain file first so rustup can read it
+COPY --link rust-toolchain.toml .
 
 # Install rustup
-RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# Set up Rust environment
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
 
+# Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
+RUN rustup show
+
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 RUN echo 'wasm-pack version:' && wasm-pack --version
-
-# Install wasm32-unknown-unknown target
-RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm32-unknown-unknown
-
-WORKDIR /quadratic
 
 # Copy required files for building core
 COPY --link package.json .
@@ -41,26 +57,42 @@ RUN if [ "$CLIENT_DEV" = "true" ]; then \
 ###########################################################################################
 # Builder 2 - Build TS/Rust types
 ###########################################################################################
-FROM node:24 AS ts-rust-types-builder
+FROM ubuntu:24.04 AS ts-rust-types-builder
 
-# Install build-essential, llvm, clang and protobuf-compiler
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential llvm clang protobuf-compiler
+# Install Node.js 24, build tools, and other dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  gnupg \
+  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+  && apt-get install -y --no-install-recommends \
+  nodejs \
+  build-essential \
+  llvm \
+  clang \
+  protobuf-compiler \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /quadratic
+
+# Copy rust-toolchain file first so rustup can read it
+COPY --link rust-toolchain.toml .
 
 # Install rustup
-RUN echo 'Installing rustup...' && curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+
+# Set up Rust environment
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV CARGO_TARGET_DIR=/quadratic/target/quadratic-core-types
 ENV CARGO_HOME=/quadratic/.cargo
 ENV CARGO_BUILD_JOBS=64
 
+# Trigger toolchain installation (this will read rust-toolchain.toml and install all components)
+RUN rustup show
+
 # Install wasm-pack
 RUN echo 'Installing wasm-pack...' && curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
 RUN echo 'wasm-pack version:' && wasm-pack --version
-
-# Install wasm32-unknown-unknown target
-RUN echo 'Installing wasm32-unknown-unknown target...' && rustup target add wasm32-unknown-unknown
-
-WORKDIR /quadratic
 
 # Copy required files for building ts/rust types
 COPY --link package.json .
@@ -75,20 +107,27 @@ RUN echo 'Building TS/Rust types...' && npm run export_types --workspace=quadrat
 ###########################################################################################
 # Builder 3 - Combine all builder files and build the client
 ###########################################################################################
-FROM node:24 AS vite-builder
+FROM ubuntu:24.04 AS vite-builder
+
+# Install Node.js 24 and other dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  ca-certificates \
+  gnupg \
+  && curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+  && apt-get install -y --no-install-recommends \
+  nodejs \
+  python-is-python3 \
+  python3-pip \
+  brotli \
+  pigz \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /quadratic
 
 # Copy files from core, ts/rust types, and rust client builders
 COPY --link --from=core-builder /quadratic/quadratic-client/src/app/quadratic-core/. ./quadratic-client/src/app/quadratic-core
 COPY --link --from=ts-rust-types-builder /quadratic/quadratic-client/src/app/quadratic-core-types/. ./quadratic-client/src/app/quadratic-core-types
-
-# Install system brotli instead of Rust version
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  python-is-python3 \
-  python3-pip \
-  brotli \
-  pigz
 
 # Copy all package.json files
 COPY --link package.json .

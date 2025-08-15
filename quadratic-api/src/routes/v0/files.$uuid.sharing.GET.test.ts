@@ -1,5 +1,4 @@
 import { auth0Mock } from '../../tests/auth0Mock';
-// Mock Auth0 getUser
 jest.mock('auth0', () =>
   auth0Mock([
     {
