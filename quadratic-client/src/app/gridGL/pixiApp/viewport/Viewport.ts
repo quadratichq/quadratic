@@ -60,12 +60,16 @@ export class Viewport extends PixiViewport {
     });
     this.plugins.add(
       'wheel',
-      new Wheel(this, {
-        trackpadPinch: true,
-        wheelZoom: true,
-        percent: WHEEL_ZOOM_PERCENT,
-        keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
-      })
+      new Wheel(
+        this,
+        {
+          trackpadPinch: true,
+          wheelZoom: true,
+          percent: WHEEL_ZOOM_PERCENT,
+          keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
+        },
+        gridApp.canvas
+      )
     );
     if (!isMobile) {
       this.plugins.add(

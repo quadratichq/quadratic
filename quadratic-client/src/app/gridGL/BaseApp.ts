@@ -47,8 +47,8 @@ export abstract class BaseApp {
   destroy() {
     this.destroyed = true;
     this.removeListeners();
-    this.renderer.destroy(false);
-    this.canvas.remove();
+    this.renderer.destroy(true);
+    this.viewport.destroy();
   }
 
   private createCanvas(): HTMLCanvasElement {

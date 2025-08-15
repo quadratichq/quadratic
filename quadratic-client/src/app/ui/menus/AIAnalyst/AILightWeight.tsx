@@ -96,7 +96,7 @@ export const AILightWeight = (props: Props) => {
         }}
       >
         <div className="h-full w-full" style={{ display: hasHTML ? 'block' : 'none' }} ref={htmlAnchorRef} />
-        {app && <ScrollBars baseApp={app} rectangle={rectangle} />}
+        {app && !hasHTML && <ScrollBars baseApp={app} rectangle={rectangle} />}
       </div>
     </div>
   );

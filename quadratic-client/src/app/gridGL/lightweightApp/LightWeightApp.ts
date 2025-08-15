@@ -35,12 +35,16 @@ export class LightWeightApp extends BaseApp {
     this.viewport.pinch();
     this.viewport.plugins.add(
       'wheel',
-      new Wheel(this.viewport, {
-        trackpadPinch: true,
-        wheelZoom: true,
-        percent: WHEEL_ZOOM_PERCENT,
-        keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
-      })
+      new Wheel(
+        this.viewport,
+        {
+          trackpadPinch: true,
+          wheelZoom: true,
+          percent: WHEEL_ZOOM_PERCENT,
+          keyToPress: [...ZOOM_KEY, ...HORIZONTAL_SCROLL_KEY],
+        },
+        this.canvas
+      )
     );
 
     this.viewport.addChild(this.gridLines);
