@@ -28,7 +28,7 @@ import {
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import type { ConnectionList, ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { Fragment, useCallback, useState } from 'react';
+import { Fragment, memo, useCallback, useMemo, useState } from 'react';
 import { useFetchers, useSearchParams, useSubmit } from 'react-router';
 
 export type ConnectionsListConnection = ConnectionList[0] & {
@@ -169,7 +169,10 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     setActiveConnectionState({ view: 'new' });
   }, []);
 
-  const connectionsBreadcrumb = { label: 'Connections', onClick: handleNavigateToListView };
+  const connectionsBreadcrumb = useMemo(
+    () => ({ label: 'Connections', onClick: handleNavigateToListView }),
+    [handleNavigateToListView]
+  );
 
   return (
     <div className={'grid-cols-12 gap-12 md:grid'}>
@@ -271,37 +274,39 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
   );
 };
 
-function ConnectionBreadcrumbs({
-  breadcrumbs,
-  Logo,
-}: {
-  breadcrumbs: Array<{ label: string; onClick?: () => void }>;
-  Logo?: React.ComponentType;
-}) {
-  return (
-    <div className="flex items-center gap-2 pb-5 pt-0.5">
-      <Breadcrumb>
-        <BreadcrumbList>
-          {breadcrumbs.map(({ label, onClick }, i) =>
-            i === breadcrumbs.length - 1 ? (
-              <BreadcrumbPage key={label + i}>{label}</BreadcrumbPage>
-            ) : (
-              <Fragment key={label + i}>
-                <BreadcrumbItem>
-                  <BreadcrumbLink onClick={onClick} className="cursor-pointer">
-                    {label}
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                <BreadcrumbSeparator />
-              </Fragment>
-            )
-          )}
-        </BreadcrumbList>
-      </Breadcrumb>
-      <div className="ml-auto h-8">{Logo && <Logo />}</div>
-    </div>
-  );
-}
+const ConnectionBreadcrumbs = memo(
+  ({
+    breadcrumbs,
+    Logo,
+  }: {
+    breadcrumbs: Array<{ label: string; onClick?: () => void }>;
+    Logo?: React.ComponentType;
+  }) => {
+    return (
+      <div className="flex items-center gap-2 pb-5 pt-0.5">
+        <Breadcrumb>
+          <BreadcrumbList>
+            {breadcrumbs.map(({ label, onClick }, i) =>
+              i === breadcrumbs.length - 1 ? (
+                <BreadcrumbPage key={label + i}>{label}</BreadcrumbPage>
+              ) : (
+                <Fragment key={label + i}>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink onClick={onClick} className="cursor-pointer">
+                      {label}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                </Fragment>
+              )
+            )}
+          </BreadcrumbList>
+        </Breadcrumb>
+        <div className="ml-auto h-8">{Logo && <Logo />}</div>
+      </div>
+    );
+  }
+);
 
 function getInitialConnectionState(searchParams: URLSearchParams): ConnectionState {
   const type = searchParams.get('initial-connection-type');

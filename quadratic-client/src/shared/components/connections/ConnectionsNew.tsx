@@ -31,7 +31,7 @@ export const ConnectionsNew = ({
           <Logo className="h-[40px] w-[160px]" />
         </Button>
       ))}
-      {Object.entries(potentialConnectionsByType).map(([type, { name, Logo }]) => (
+      {Object.entries(potentialConnectionsByType).map(([type, { Logo }]) => (
         <Button
           data-testid={`new-connection-${type}`}
           key={type}

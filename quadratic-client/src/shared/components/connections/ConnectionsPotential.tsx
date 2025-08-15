@@ -1,11 +1,11 @@
-import { authClient } from '@/auth/auth';
+import { useRootRouteLoaderData } from '@/routes/_root';
 import { apiClient } from '@/shared/api/apiClient';
 import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
-import * as Sentry from '@sentry/react';
-import { useState } from 'react';
+import { captureException } from '@sentry/react';
+import { useCallback, useState } from 'react';
 
 export function ConnectionsPotential({
   handleNavigateToListView,
@@ -14,29 +14,35 @@ export function ConnectionsPotential({
   handleNavigateToListView: () => void;
   connectionType: string;
 }) {
+  const { loggedInUser } = useRootRouteLoaderData();
+
   const [feedback, setFeedback] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { addGlobalSnackbar } = useGlobalSnackbar();
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
 
-    try {
-      setIsSubmitting(true);
-      const payload = {
-        feedback,
-        userEmail: (await authClient.user())?.email,
-        context: `Connection request: ${connectionType}`,
-      };
-      await apiClient.postFeedback(payload);
-      handleNavigateToListView();
-      addGlobalSnackbar('Feedback submitted');
-    } catch (e) {
-      setIsSubmitting(false);
-      Sentry.captureException(e);
-      addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
-    }
-  };
+      try {
+        setIsSubmitting(true);
+        const payload = {
+          feedback,
+          userEmail: loggedInUser?.email,
+          context: `Connection request: ${connectionType}`,
+        };
+        await apiClient.postFeedback(payload);
+        handleNavigateToListView();
+        addGlobalSnackbar('Feedback submitted');
+      } catch (e) {
+        setIsSubmitting(false);
+        captureException(e);
+        addGlobalSnackbar('Failed to submit feedback. Please try again.', { severity: 'error' });
+      }
+    },
+    [addGlobalSnackbar, connectionType, feedback, handleNavigateToListView, loggedInUser?.email]
+  );
+
   return (
     <div className="flex flex-col gap-2">
       <p className="text-sm">
