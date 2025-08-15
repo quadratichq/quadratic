@@ -27,7 +27,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/educati
     return responseData;
   };
 
-  // First let's check out giant list of exisiting universities
+  // First let's check out giant list of existing universities
   const universityDomainMatches = universityDomains.filter((domain) => email.endsWith(domain));
   if (universityDomainMatches.length > 0) {
     const responseData = await enrollUser();

@@ -2,90 +2,62 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError, getUserIdByAuth0Id } from '../../tests/helpers';
-import { clearDb } from '../../tests/testDataGenerator';
-
-beforeEach(async () => {
-  // Create some users
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-      email: 'userOwner@test.com',
-    },
-  });
-  const userEditor = await dbClient.user.create({
-    data: {
-      auth0Id: 'userEditor',
-      email: 'userEditor@test.com',
-    },
-  });
-  const userEditor2 = await dbClient.user.create({
-    data: {
-      auth0Id: 'userEditor2',
-      email: 'userEditor2@test.com',
-    },
-  });
-  const userViewer = await dbClient.user.create({
-    data: {
-      auth0Id: 'userViewer',
-      email: 'userViewer@test.com',
-    },
-  });
-  const userViewer2 = await dbClient.user.create({
-    data: {
-      auth0Id: 'userViewer2',
-      email: 'userViewer2@test.com',
-    },
-  });
-  const userOwner2 = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner2',
-      email: 'userOwner2@test.com',
-    },
-  });
-
-  // Create a team with one owner and one with two
-  await dbClient.team.create({
-    data: {
-      name: 'Test Team 1',
-      uuid: '00000000-0000-4000-8000-000000000001',
-      UserTeamRole: {
-        create: [
-          {
-            userId: userOwner.id,
-            role: 'OWNER',
-          },
-          { userId: userEditor.id, role: 'EDITOR' },
-          { userId: userEditor2.id, role: 'EDITOR' },
-          { userId: userViewer.id, role: 'VIEWER' },
-          { userId: userViewer2.id, role: 'VIEWER' },
-        ],
-      },
-    },
-  });
-  await dbClient.team.create({
-    data: {
-      name: 'Test Team 2',
-      uuid: '00000000-0000-4000-8000-000000000002',
-      UserTeamRole: {
-        create: [
-          {
-            userId: userOwner.id,
-            role: 'OWNER',
-          },
-          { userId: userOwner2.id, role: 'OWNER' },
-        ],
-      },
-    },
-  });
-});
-
-afterEach(clearDb);
+import { clearDb, createUsers } from '../../tests/testDataGenerator';
 
 const expectRole = (role: string) => (res: any) => {
   expect(res.body.role).toBe(role);
 };
 
 describe('PATCH /v0/teams/:uuid/users/:userId', () => {
+  beforeEach(async () => {
+    // Create some users
+    const [userOwner, userEditor, userEditor2, userViewer, userViewer2, userOwner2] = await createUsers([
+      'userOwner',
+      'userEditor',
+      'userEditor2',
+      'userViewer',
+      'userViewer2',
+      'userOwner2',
+    ]);
+
+    // Create a team with one owner and one with two
+    await dbClient.team.create({
+      data: {
+        name: 'Test Team 1',
+        uuid: '00000000-0000-4000-8000-000000000001',
+        UserTeamRole: {
+          create: [
+            {
+              userId: userOwner.id,
+              role: 'OWNER',
+            },
+            { userId: userEditor.id, role: 'EDITOR' },
+            { userId: userEditor2.id, role: 'EDITOR' },
+            { userId: userViewer.id, role: 'VIEWER' },
+            { userId: userViewer2.id, role: 'VIEWER' },
+          ],
+        },
+      },
+    });
+    await dbClient.team.create({
+      data: {
+        name: 'Test Team 2',
+        uuid: '00000000-0000-4000-8000-000000000002',
+        UserTeamRole: {
+          create: [
+            {
+              userId: userOwner.id,
+              role: 'OWNER',
+            },
+            { userId: userOwner2.id, role: 'OWNER' },
+          ],
+        },
+      },
+    });
+  });
+
+  afterEach(clearDb);
+
   describe('bad request', () => {
     it('responds with a 400 for an invalid user', async () => {
       await request(app)

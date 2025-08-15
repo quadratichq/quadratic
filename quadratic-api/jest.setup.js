@@ -5,10 +5,13 @@ const { multerS3Storage } = require('./src/storage/s3');
 jest.mock('./src/middleware/validateAccessToken', () => {
   return {
     validateAccessToken: jest.fn().mockImplementation(async (req, res, next) => {
-      // expected format is `Bearer ValidToken {user.sub}`
+      // expected format is `Bearer ValidToken {user.sub} {user.email}`
       if (req.headers.authorization?.substring(0, 17) === 'Bearer ValidToken') {
+        const sub_email = req.headers.authorization?.substring(18); // Extract user.sub from the Authorization header
+        const [sub, email] = sub_email.split(' ');
         req.auth = {
-          sub: req.headers.authorization?.substring(18), // Extract user.sub from the Authorization header
+          sub,
+          email: email ? email : `${sub}@test.com`,
         };
         return next();
       } else {

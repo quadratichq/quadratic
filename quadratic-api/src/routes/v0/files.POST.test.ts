@@ -2,50 +2,7 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb } from '../../tests/testDataGenerator';
-
-beforeAll(async () => {
-  // Create a test user
-  const test_user_1 = await dbClient.user.create({
-    data: {
-      auth0Id: 'test_user_1',
-      email: 'test_user_1@test.com',
-    },
-  });
-  const test_user_2 = await dbClient.user.create({
-    data: {
-      auth0Id: 'test_user_2',
-      email: 'test_user_2@test.com',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'test_user_3',
-      email: 'test_user_3@test.com',
-    },
-  });
-  // Create a team
-  await dbClient.team.create({
-    data: {
-      name: 'test_team_1',
-      uuid: '00000000-0000-4000-8000-000000000001',
-      UserTeamRole: {
-        create: [
-          {
-            userId: test_user_1.id,
-            role: 'OWNER',
-          },
-          {
-            userId: test_user_2.id,
-            role: 'VIEWER',
-          },
-        ],
-      },
-    },
-  });
-});
-
-afterAll(clearDb);
+import { clearDb, createUsers } from '../../tests/testDataGenerator';
 
 const validPayload = {
   name: 'new_file_with_name',
@@ -62,6 +19,32 @@ const createFile = (payload: any, user: string = 'test_user_1') =>
   request(app).post('/v0/files').send(payload).set('Authorization', `Bearer ValidToken ${user}`);
 
 describe('POST /v0/files', () => {
+  beforeAll(async () => {
+    // Create a test user
+    const [test_user_1, test_user_2] = await createUsers(['test_user_1', 'test_user_2', 'test_user_3']);
+    // Create a team
+    await dbClient.team.create({
+      data: {
+        name: 'test_team_1',
+        uuid: '00000000-0000-4000-8000-000000000001',
+        UserTeamRole: {
+          create: [
+            {
+              userId: test_user_1.id,
+              role: 'OWNER',
+            },
+            {
+              userId: test_user_2.id,
+              role: 'VIEWER',
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  afterAll(clearDb);
+
   describe('bad requests', () => {
     it('rejects unauthorized request', async () => {
       await request(app).post('/v0/files/').send(validPayload).expect(401).expect(expectError);

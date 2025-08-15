@@ -106,7 +106,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/files/:
   }
 
   // 2.
-  // If there is 1 user, they are an exisiting user of Quadratic. So we
+  // If there is 1 user, they are an existing user of Quadratic. So we
   // associate them with the file and send them an email.
   if (auth0Users.length === 1) {
     const { user_id: auth0Id } = auth0Users[0];

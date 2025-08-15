@@ -55,7 +55,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
   }
 
   // Are you trying to create an invite that already exists? That's a conflict
-  // (We don't want to figure out if you're updating the exisiting record or not)
+  // (We don't want to figure out if you're updating the existing record or not)
   const existingInvite = await dbClient.teamInvite.findUnique({
     where: {
       email_teamId: {

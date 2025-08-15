@@ -2,85 +2,67 @@ import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
 import { expectError } from '../../tests/helpers';
-import { clearDb, createFile } from '../../tests/testDataGenerator';
-
-beforeAll(async () => {
-  const userOwner = await dbClient.user.create({
-    data: {
-      auth0Id: 'userOwner',
-      email: 'userOwner@test.com',
-    },
-  });
-  const userViewer = await dbClient.user.create({
-    data: {
-      auth0Id: 'userViewer',
-      email: 'userViewer@test.com',
-    },
-  });
-  await dbClient.user.create({
-    data: {
-      auth0Id: 'userNoTeam',
-      email: 'userNoTeam@test.com',
-    },
-  });
-
-  const team = await dbClient.team.create({
-    data: {
-      name: 'team1',
-      UserTeamRole: {
-        create: [
-          {
-            userId: userOwner.id,
-            role: 'OWNER',
-          },
-          {
-            userId: userViewer.id,
-            role: 'VIEWER',
-          },
-        ],
-      },
-    },
-  });
-  await createFile({
-    data: {
-      creatorUserId: userOwner.id,
-      ownerUserId: userOwner.id,
-      ownerTeamId: team.id,
-      name: 'private_file',
-      contents: Buffer.from('contents_1'),
-      uuid: '00000000-0000-4000-8000-000000000001',
-      publicLinkAccess: 'READONLY',
-    },
-  });
-  await createFile({
-    data: {
-      creatorUserId: userOwner.id,
-      ownerTeamId: team.id,
-      name: 'public_file',
-      contents: Buffer.from('contents_1'),
-      uuid: '00000000-0000-4000-8000-000000000002',
-      publicLinkAccess: 'READONLY',
-    },
-  });
-
-  await dbClient.team.create({
-    data: {
-      name: 'team2',
-      UserTeamRole: {
-        create: [
-          {
-            userId: userOwner.id,
-            role: 'OWNER',
-          },
-        ],
-      },
-    },
-  });
-});
-
-afterAll(clearDb);
+import { clearDb, createFile, createUsers } from '../../tests/testDataGenerator';
 
 describe('PATCH /v0/files/:uuid', () => {
+  beforeAll(async () => {
+    const [userOwner, userViewer] = await createUsers(['userOwner', 'userViewer', 'userNoTeam']);
+    const team = await dbClient.team.create({
+      data: {
+        name: 'team1',
+        UserTeamRole: {
+          create: [
+            {
+              userId: userOwner.id,
+              role: 'OWNER',
+            },
+            {
+              userId: userViewer.id,
+              role: 'VIEWER',
+            },
+          ],
+        },
+      },
+    });
+    await createFile({
+      data: {
+        creatorUserId: userOwner.id,
+        ownerUserId: userOwner.id,
+        ownerTeamId: team.id,
+        name: 'private_file',
+        contents: Buffer.from('contents_1'),
+        uuid: '00000000-0000-4000-8000-000000000001',
+        publicLinkAccess: 'READONLY',
+      },
+    });
+    await createFile({
+      data: {
+        creatorUserId: userOwner.id,
+        ownerTeamId: team.id,
+        name: 'public_file',
+        contents: Buffer.from('contents_1'),
+        uuid: '00000000-0000-4000-8000-000000000002',
+        publicLinkAccess: 'READONLY',
+      },
+    });
+
+    await dbClient.team.create({
+      data: {
+        name: 'team2',
+        UserTeamRole: {
+          create: [
+            {
+              userId: userOwner.id,
+              role: 'OWNER',
+            },
+          ],
+        },
+      },
+    });
+  });
+
+  afterAll(clearDb);
+
   describe('bad request', () => {
     it('rejects unauthenticated request', async () => {
       await request(app).patch('/v0/files/00000000-0000-0000-0000-000000000000').expect(401).expect(expectError);

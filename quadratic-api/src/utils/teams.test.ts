@@ -1,27 +1,22 @@
 import type { Team, User } from '@prisma/client';
 import dbClient from '../dbClient';
-import { clearDb } from '../tests/testDataGenerator';
+import { clearDb, createUser } from '../tests/testDataGenerator';
 import { createTeam, decryptSshKeys, getDecryptedTeam } from './teams';
 
 const TEAM_ID = '00000000-0000-9000-8000-000000000001';
 export const TEAM_OWNER_AUTH0_ID = 'teamOwner';
 
 /**
- * TEAM TEST UTLITIES
+ * TEAM TEST UTILITIES
  */
-export async function getTeam(teamId: string): Promise<Team | null> {
-  return await dbClient.team.findUnique({
+export function getTeam(teamId: string): Promise<Team | null> {
+  return dbClient.team.findUnique({
     where: { uuid: teamId },
   });
 }
 
-export async function createTeamOwner(): Promise<User> {
-  return await dbClient.user.create({
-    data: {
-      auth0Id: TEAM_OWNER_AUTH0_ID,
-      email: `${TEAM_OWNER_AUTH0_ID}@test.com`,
-    },
-  });
+export function createTeamOwner(): Promise<User> {
+  return createUser({ auth0Id: TEAM_OWNER_AUTH0_ID });
 }
 
 export async function createTeamWithOwner(name: string, teamId: string): Promise<User> {
