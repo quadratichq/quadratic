@@ -4,6 +4,7 @@ import { useGlobalSnackbar } from '@/shared/components/GlobalSnackbarProvider';
 import { SpinnerIcon } from '@/shared/components/Icons';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Textarea } from '@/shared/shadcn/ui/textarea';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { captureException } from '@sentry/react';
 import { useCallback, useState } from 'react';
 
@@ -26,6 +27,7 @@ export function ConnectionsPotential({
 
       try {
         setIsSubmitting(true);
+        trackEvent('[Connections].submit-potential-connection', { type: connectionType, feedback });
         const payload = {
           feedback,
           userEmail: loggedInUser?.email,
