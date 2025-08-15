@@ -89,7 +89,6 @@ export const xai = new OpenAI({
 export const baseten = new OpenAI({
   apiKey: BASETEN_API_KEY,
   baseURL: 'https://inference.baseten.co/v1',
-  fetch: (url: string | URL | Request, init?: RequestInit) => fetch(url, { ...init, keepalive: false }),
 });
 
 export const fireworks = new OpenAI({
