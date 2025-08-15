@@ -131,8 +131,6 @@ export const Component = () => {
 
   const isLoading = revalidator.state !== 'idle' || navigation.state !== 'idle';
 
-  useRemoveInitialLoadingUI();
-
   // When the location changes, close the menu (if it's already open) and reset scroll
   useEffect(() => {
     setIsOpen((prevIsOpen) => (prevIsOpen ? false : prevIsOpen));
@@ -152,6 +150,8 @@ export const Component = () => {
       window.removeEventListener('pageshow', handlePageShow);
     };
   }, [revalidator]);
+
+  useRemoveInitialLoadingUI();
 
   return (
     <RecoilRoot>

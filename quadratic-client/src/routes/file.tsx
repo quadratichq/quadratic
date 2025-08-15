@@ -6,7 +6,7 @@ import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isWASMSupported } from '@/shared/utils/isWASMSupported';
 import { isWebGLSupported } from '@pixi/utils';
 import { ExclamationTriangleIcon, InfoCircledIcon } from '@radix-ui/react-icons';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 import { useEffect, useState } from 'react';
 import { engineName, isDesktop } from 'react-device-detect';
 import { Outlet } from 'react-router';
@@ -24,7 +24,7 @@ export function Component() {
         isWebGLSupported,
       });
 
-      Sentry.captureEvent({
+      captureEvent({
         message: 'Browser does not support WebGL or WASM',
         level: 'info',
       });

@@ -8,12 +8,6 @@ import { sendAnalyticsError } from '@/shared/utils/error';
 import { useEffect, useState } from 'react';
 import { useSubmit } from 'react-router';
 
-type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
-  showLoggedInUser?: boolean;
-  error?: unknown;
-  source?: string;
-};
-
 const emptyPageSendAnalyticsError = (from: string, error: Error | unknown, description?: string) => {
   sendAnalyticsError('Empty', from, error, description);
 };
@@ -22,14 +16,15 @@ const emptyPageSendAnalyticsError = (from: string, error: Error | unknown, descr
  * For use in routes when errors occur or when there is no data to display.
  * Will displays context on the logged in user (if applicable/available)
  */
+type EmptyPageProps = Exclude<EmptyStateProps, 'isError'> & {
+  showLoggedInUser?: boolean;
+  error?: unknown;
+  source?: string;
+};
 export function EmptyPage(props: EmptyPageProps) {
   const { error, title, description, source, Icon, actions, showLoggedInUser } = props;
   const [loggedInUser, setLoggedInUser] = useState<User | undefined>(undefined);
   const submit = useSubmit();
-
-  // Remove the initial loading UI, as these empty pages are alternative rendering
-  // paths to the primary routes
-  useRemoveInitialLoadingUI();
 
   // Get the logged in user from the auth client for display
   useEffect(() => {
@@ -46,6 +41,10 @@ export function EmptyPage(props: EmptyPageProps) {
       emptyPageSendAnalyticsError(sourceTitle, error, typeof description === 'string' ? description : undefined);
     }
   }, [error, title, description, source]);
+
+  // Remove the initial loading UI, as these empty pages are alternative rendering
+  // paths to the primary routes
+  useRemoveInitialLoadingUI();
 
   // Content is centered on the page (should always be rendered in the root layout)
   return (

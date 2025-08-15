@@ -1,6 +1,6 @@
 import { authClient } from '@/auth/auth';
 import { resetEventAnalytics } from '@/shared/utils/analyticsEvents';
-import { redirect } from 'react-router';
+import { redirectDocument } from 'react-router';
 
 // If you visit `/logout` directly in your browser, we'll log you out.
 // But user log outs from the app should be done via a POST request to `/logout`.
@@ -13,5 +13,5 @@ async function logout() {
   localStorage.clear();
   resetEventAnalytics();
   await authClient.logout();
-  return redirect('/');
+  return redirectDocument('/');
 }

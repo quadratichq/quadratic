@@ -23,7 +23,7 @@ import { Link, useNavigate } from 'react-router';
 const CONNECTIONS_DISPLAY_LIMIT = 3;
 const stateToInsertAndRun = { language: 'Python', codeString: SNIPPET_PY_API } as const;
 
-export default function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
+export function NewFileButton({ isPrivate }: { isPrivate: boolean }) {
   const {
     activeTeam: {
       connections,

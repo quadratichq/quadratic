@@ -211,7 +211,7 @@ pub(crate) async fn serve() -> Result<()> {
         .init();
 
     let config = config()?;
-    let jwks = get_jwks(&config.auth0_jwks_uri).await?;
+    let jwks = get_jwks(&config.jwks_uri).await?;
     let state = State::new(&config, Some(jwks.clone()))?;
     let app = app(state.clone())?;
 

@@ -1,9 +1,9 @@
 import type { AuthClient } from '@/auth/auth';
 import { parseDomain, waitForAuthClientToRedirect } from '@/auth/auth.helper';
-import { ROUTES } from '@/shared/constants/routes';
+import { ROUTES, SEARCH_PARAMS } from '@/shared/constants/routes';
 import type { Auth0Client } from '@auth0/auth0-spa-js';
 import { createAuth0Client } from '@auth0/auth0-spa-js';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 
 const AUTH0_DOMAIN = import.meta.env.VITE_AUTH0_DOMAIN || '';
 const AUTH0_CLIENT_ID = import.meta.env.VITE_AUTH0_CLIENT_ID || '';
@@ -13,7 +13,7 @@ const AUTH0_ISSUER = import.meta.env.VITE_AUTH0_ISSUER;
 // verify all AUTH0 env variables are set
 if (!(AUTH0_DOMAIN && AUTH0_CLIENT_ID && AUTH0_AUDIENCE && AUTH0_ISSUER)) {
   const message = 'Auth0 variables are not configured correctly.';
-  Sentry.captureEvent({
+  captureEvent({
     message,
     level: 'fatal',
   });
@@ -41,9 +41,7 @@ async function getClient() {
   return auth0Client;
 }
 
-type Auth0AuthClient = AuthClient;
-
-export const auth0Client: Auth0AuthClient = {
+export const auth0Client: AuthClient = {
   async isAuthenticated() {
     const client = await getClient();
     const isAuthenticated = await client.isAuthenticated();
@@ -54,23 +52,23 @@ export const auth0Client: Auth0AuthClient = {
     const user = await client.getUser();
     return user;
   },
-  async login(redirectTo: string, isSignupFlow: boolean = false) {
+  async login(args: { redirectTo: string; isSignupFlow?: boolean; href: string }) {
     const client = await getClient();
     await client.loginWithRedirect({
       authorizationParams: {
-        screen_hint: isSignupFlow ? 'signup' : 'login',
+        screen_hint: args.isSignupFlow ? 'signup' : 'login',
         redirect_uri:
           window.location.origin +
           ROUTES.LOGIN_RESULT +
           '?' +
-          new URLSearchParams([['redirectTo', redirectTo]]).toString(),
+          new URLSearchParams([[SEARCH_PARAMS.REDIRECT_TO.KEY, args.redirectTo]]).toString(),
       },
     });
     await waitForAuthClientToRedirect();
   },
-  async handleSigninRedirect() {
-    const query = window.location.search;
-    if (query.includes('code=') && query.includes('state=')) {
+  async handleSigninRedirect(href: string) {
+    const { searchParams } = new URL(href);
+    if (searchParams.get('code') && searchParams.get('state')) {
       const client = await getClient();
       await client.handleRedirectCallback();
     }
@@ -86,15 +84,42 @@ export const auth0Client: Auth0AuthClient = {
    * it will fail and we will manually redirect the user to auth0 to re-authenticate
    * and get a new token.
    */
-  async getTokenOrRedirect() {
-    const client = await getClient();
+  async getTokenOrRedirect(skipRedirect?: boolean) {
     try {
+      const client = await getClient();
       const token = await client.getTokenSilently();
       return token;
     } catch (e) {
-      const { pathname, search } = new URL(window.location.href);
-      await this.login(pathname + search);
+      if (!skipRedirect) {
+        const { pathname, search } = new URL(window.location.href);
+        await this.login({ redirectTo: pathname + search, href: window.location.href });
+      }
       return '';
     }
+  },
+
+  async loginWithPassword(_) {
+    throw new Error('loginWithPassword called in Auth0');
+  },
+  async loginWithOAuth(_) {
+    throw new Error('loginWithOAuth called in Auth0');
+  },
+  async signupWithPassword(_) {
+    throw new Error('signupWithPassword called in Auth0');
+  },
+  async verifyEmail(_) {
+    throw new Error('verifyEmail called in Auth0');
+  },
+  async sendResetPassword(_) {
+    throw new Error('sendResetPassword called in Auth0');
+  },
+  async resetPassword(_) {
+    throw new Error('resetPassword called in Auth0');
+  },
+  async sendMagicAuthCode(_) {
+    throw new Error('sendMagicAuthCode called in Auth0');
+  },
+  async authenticateWithMagicCode(_) {
+    throw new Error('authenticateWithMagicCode called in Auth0');
   },
 };
