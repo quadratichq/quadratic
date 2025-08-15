@@ -27,9 +27,12 @@ export const getUsersFromWorkos = async (users: UsersRequest[]): Promise<Record<
   // Map the users we found by their Quadratic ID
   const usersById: Record<number, User> = {};
 
-  const promises = users.map(async ({ id, auth0Id }) => {
+  const promises = users.map(async ({ id, auth0Id, email }) => {
     try {
-      const workosUser = await getWorkos().userManagement.getUser(auth0Id);
+      const workosUser = (await getWorkos().userManagement.listUsers({ email }))?.data?.[0];
+      if (!workosUser) {
+        throw new Error(`User ${email} not found in Workos`);
+      }
 
       usersById[id] = {
         id,
@@ -40,12 +43,16 @@ export const getUsersFromWorkos = async (users: UsersRequest[]): Promise<Record<
       };
     } catch (error) {
       // if user is not found, log the error
-      logger.error('Error in getUsersFromWorkos', error);
+      logger.error('Error in getUsersFromWorkos', error, {
+        email,
+        auth0Id,
+      });
       Sentry.captureException({
         message: 'Failed to retrieve users from Workos',
         level: 'error',
         extra: {
-          auth0IdInOurDb: auth0Id,
+          email,
+          auth0Id,
           workosError: error,
         },
       });
