@@ -26,29 +26,30 @@ export const AILightWeight = (props: Props) => {
   const ref = useCallback(
     (div: HTMLDivElement) => {
       if (!div) return;
-
-      const selection = sheets.stringToSelection(props.a1, sheets.current);
-      const tableNames = selection.getTableNames();
-      if (tableNames.length > 0) {
-        const table = pixiApp.cellsSheet().tables.getTableFromName(tableNames[0]);
-        if (table?.codeCell.is_html) {
-          const cell = htmlCellsHandler.findHtmlCellByName(table.codeCell.name);
-          if (cell?.htmlCell) {
-            const htmlCell = new HtmlCell(cell.htmlCell);
-            if (htmlAnchorRef.current) {
-              while (htmlAnchorRef.current.firstChild) {
-                htmlAnchorRef.current.removeChild(htmlAnchorRef.current.firstChild);
+      try {
+        const selection = sheets.stringToSelection(props.a1, sheets.current);
+        const tableNames = selection.getTableNames();
+        if (tableNames.length > 0) {
+          const table = pixiApp.cellsSheet().tables.getTableFromName(tableNames[0]);
+          if (table?.codeCell.is_html) {
+            const cell = htmlCellsHandler.findHtmlCellByName(table.codeCell.name);
+            if (cell?.htmlCell) {
+              const htmlCell = new HtmlCell(cell.htmlCell);
+              if (htmlAnchorRef.current) {
+                while (htmlAnchorRef.current.firstChild) {
+                  htmlAnchorRef.current.removeChild(htmlAnchorRef.current.firstChild);
+                }
+                htmlAnchorRef.current.appendChild(htmlCell.iframe);
+                htmlCell.iframe.style.pointerEvents = 'auto';
+                setHasHTML(true);
+                return;
+              } else {
+                throw new Error('htmlAnchorRef not found');
               }
-              htmlAnchorRef.current.appendChild(htmlCell.iframe);
-              htmlCell.iframe.style.pointerEvents = 'auto';
-              setHasHTML(true);
-              return;
-            } else {
-              throw new Error('htmlAnchorRef not found');
             }
           }
         }
-      }
+      } catch {}
 
       const app = new LightWeightApp(div);
       setApp(app);
