@@ -173,6 +173,10 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
     () => ({ label: 'Connections', onClick: handleNavigateToListView }),
     [handleNavigateToListView]
   );
+  const connectionsNewBreadcrumb = useMemo(
+    () => ({ label: 'New', onClick: handleNavigateToNewView }),
+    [handleNavigateToNewView]
+  );
 
   return (
     <div className={'grid-cols-12 gap-12 md:grid'}>
@@ -229,7 +233,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
             <ConnectionBreadcrumbs
               breadcrumbs={[
                 connectionsBreadcrumb,
-                { label: `New`, onClick: handleNavigateToNewView },
+                connectionsNewBreadcrumb,
                 { label: connectionsByType[activeConnectionState.type].name },
               ]}
               Logo={connectionsByType[activeConnectionState.type].Logo}
@@ -238,6 +242,7 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
               teamUuid={teamUuid}
               type={activeConnectionState.type}
               handleNavigateToListView={handleNavigateToListView}
+              handleNavigateToNewView={handleNavigateToNewView}
             />
           </>
         ) : activeConnectionState.view === 'create-potential' ? (
@@ -245,13 +250,13 @@ export const Connections = ({ connections, connectionsAreLoading, teamUuid, stat
             <ConnectionBreadcrumbs
               breadcrumbs={[
                 connectionsBreadcrumb,
-                { label: `New`, onClick: handleNavigateToNewView },
+                connectionsNewBreadcrumb,
                 { label: potentialConnectionsByType[activeConnectionState.type].name },
               ]}
               Logo={potentialConnectionsByType[activeConnectionState.type].Logo}
             />
             <ConnectionsPotential
-              handleNavigateToListView={handleNavigateToListView}
+              handleNavigateToNewView={handleNavigateToNewView}
               connectionType={activeConnectionState.type}
             />
           </>

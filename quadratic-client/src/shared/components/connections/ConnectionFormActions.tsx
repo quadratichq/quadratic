@@ -15,12 +15,14 @@ export function ConnectionFormActions({
   connectionType,
   connectionUuid,
   form,
+  handleCancelForm,
   handleNavigateToListView,
   teamUuid,
 }: {
   connectionType: ConnectionType;
   connectionUuid: string | undefined;
   form: UseFormReturn<any>;
+  handleCancelForm: () => void;
   handleNavigateToListView: () => void;
   teamUuid: string;
 }) {
@@ -68,7 +70,7 @@ export function ConnectionFormActions({
             )}
           </div>
           {isSubmitting && <SpinnerIcon className="mr-2 text-primary" />}
-          <Button variant="outline" onClick={handleNavigateToListView} type="button" disabled={isSubmitting}>
+          <Button variant="outline" onClick={handleCancelForm} type="button" disabled={isSubmitting}>
             Cancel
           </Button>
 

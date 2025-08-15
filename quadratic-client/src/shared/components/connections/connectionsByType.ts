@@ -23,6 +23,7 @@ import MssqlLogo from './logo-mssql.svg?react';
 import MysqlLogo from './logo-mysql.svg?react';
 import NeonLogo from './logo-neon.svg?react';
 import OracleLogo from './logo-oracle.svg?react';
+import OtherLogo from './logo-other.svg?react';
 import PostgresLogo from './logo-postgres.svg?react';
 import RedshiftLogo from './logo-redshift.svg?react';
 import S3Logo from './logo-s3.svg?react';
@@ -125,7 +126,8 @@ export type PotentialConnectionType =
   | 'CASSANDRA'
   | 'CLICKHOUSE'
   | 'MONGODB'
-  | 'ORACLE';
+  | 'ORACLE'
+  | 'OTHER';
 export const potentialConnectionsByType: Record<
   PotentialConnectionType,
   {
@@ -168,5 +170,9 @@ export const potentialConnectionsByType: Record<
   ORACLE: {
     name: 'Oracle',
     Logo: OracleLogo,
+  },
+  OTHER: {
+    name: 'Other',
+    Logo: OtherLogo,
   },
 };

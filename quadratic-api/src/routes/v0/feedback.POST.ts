@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type express from 'express';
-import { z } from 'zod';
+import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
+import type { z } from 'zod';
 import dbClient from '../../dbClient';
 import { NODE_ENV, SLACK_FEEDBACK_URL } from '../../env-vars';
 import { userMiddleware } from '../../middleware/user';
@@ -8,11 +9,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import type { RequestWithUser } from '../../types/Request';
 import logger from '../../utils/logger';
 
-const RequestBodySchema = z.object({
-  feedback: z.string(),
-  userEmail: z.string().optional(),
-  context: z.string().optional(),
-});
+const RequestBodySchema = ApiSchemas['/v0/feedback.POST.request'];
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
 export default [validateAccessToken, userMiddleware, handler];
@@ -47,9 +44,6 @@ async function handler(req: RequestWithUser, res: express.Response) {
     },
   });
 
-  // If there's no context, we assume it's in-app feedback as that's the first
-  // kind we used.
-  const slackContext = context ? context : 'In-app';
   const payingUser = userPaidTeams.length > 0 ? '*💰 Paying user*' : '';
 
   // Post to Slack
@@ -60,7 +54,7 @@ async function handler(req: RequestWithUser, res: express.Response) {
       text: [
         `📣 ${NODE_ENV === 'production' ? '' : '[STAGING]'} New product feedback`,
         `*From:* ${userEmail ? userEmail : `[no email]`} (${req.user.auth0Id}) ${payingUser}`,
-        `*Context:* ${slackContext}`,
+        `*Context:* ${context}`,
         '*Message*:',
         feedback,
       ].join('\n\n'),
