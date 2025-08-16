@@ -614,6 +614,7 @@ This name should be from user's perspective, not the assistant's.\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
@@ -648,6 +649,7 @@ The string representation (in a1 notation) of the selection of cells to get the 
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
@@ -660,7 +662,7 @@ IMPORTANT: If the results include page information:\n
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: [],
     description: `
 This tool checks if the cells in the chosen selection have any data.
 Use MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
@@ -749,6 +751,7 @@ Don't attempt to add formulas or code to data tables.\n`,
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
@@ -785,6 +788,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
 You should use the set_cell_values function to set the values of a sheet to a 2d array of strings.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use this function to add data to a sheet. Don't use code cell for adding data. Always add data using this function.\n\n
 CRITICALLY IMPORTANT: you MUST insert column headers ABOVE the first row of data.\n
 When setting cell values, follow these rules for headers:\n
