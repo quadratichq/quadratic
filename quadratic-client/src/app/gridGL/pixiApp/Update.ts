@@ -1,5 +1,6 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
+import type { BaseApp } from '@/app/gridGL/BaseApp';
 import {
   debugRendererLight,
   debugShowChildren,
@@ -15,7 +16,7 @@ export class Update {
   private raf?: number;
   private fps?: FPS;
 
-  private scrollBarsHandler?: ScrollBarsHandler;
+  private scrollBarsHandlers: Record<string, { handler: ScrollBarsHandler; baseApp: BaseApp }> = {};
 
   firstRenderComplete = false;
 
@@ -26,8 +27,12 @@ export class Update {
     events.on('scrollBarsHandler', this.setScrollBarsHandler);
   }
 
-  private setScrollBarsHandler = (scrollBarsHandler: ScrollBarsHandler) => {
-    this.scrollBarsHandler = scrollBarsHandler;
+  private setScrollBarsHandler = (name: string, baseApp?: BaseApp, handler?: ScrollBarsHandler) => {
+    if (!baseApp || !handler) {
+      delete this.scrollBarsHandlers[name];
+    } else {
+      this.scrollBarsHandlers[name] = { baseApp, handler };
+    }
   };
 
   start() {
@@ -41,8 +46,8 @@ export class Update {
       cancelAnimationFrame(this.raf);
       this.raf = undefined;
     }
+    this.scrollBarsHandlers = {};
     events.off('scrollBarsHandler', this.setScrollBarsHandler);
-    this.scrollBarsHandler = undefined;
   }
 
   private lastFocusElement?: HTMLElement;
@@ -139,7 +144,10 @@ export class Update {
     debugTimeCheck('[Update] backgrounds');
     pixiApp.copy.update();
     debugTimeCheck('[Update] copy');
-    this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
+    for (const key in this.scrollBarsHandlers) {
+      const { baseApp, handler } = this.scrollBarsHandlers[key];
+      handler.update(baseApp.viewport.dirty);
+    }
     debugTimeCheck('[Update] scrollbars');
     pixiApp.singleCellOutlines.update(viewportChanged);
     debugTimeCheck('[Update] singleCellOutlines');

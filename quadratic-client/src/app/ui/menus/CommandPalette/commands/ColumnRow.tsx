@@ -15,7 +15,7 @@ export const columnCommandGroup: CommandGroup = {
         return (
           <CommandPaletteListItem
             {...props}
-            action={() => pixiApp.pointer.pointerHeading.autoResizeColumn(sheets.sheet.cursor.position.x)}
+            action={() => pixiApp.pointer?.pointerHeading.autoResizeColumn(sheets.sheet.cursor.position.x)}
           />
         );
       },

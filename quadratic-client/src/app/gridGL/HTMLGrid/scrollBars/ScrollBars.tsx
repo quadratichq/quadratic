@@ -2,24 +2,40 @@
 
 import { showScrollbarsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
+import type { BaseApp } from '@/app/gridGL/BaseApp';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
+import type { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useMemo, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useRecoilValue } from 'recoil';
 
 const SCROLLBAR_SIZE = 6;
 
-export const ScrollBars = () => {
+export interface ScrollBarsProps {
+  baseApp: BaseApp;
+
+  // used to force a specific size (instead of the viewport size)
+  rectangle?: Rectangle;
+}
+
+export const ScrollBars = (props: ScrollBarsProps) => {
   const showScrollbars = useRecoilValue(showScrollbarsAtom);
   const [down, setDown] = useState<{ x: number; y: number } | undefined>(undefined);
   const [start, setStart] = useState<number | undefined>(undefined);
   const [state, setState] = useState<'horizontal' | 'vertical' | undefined>(undefined);
 
-  const scrollBarsHandler = useMemo(() => {
-    const scrollBarsHandler = new ScrollBarsHandler();
-    events.emit('scrollBarsHandler', scrollBarsHandler);
-    return scrollBarsHandler;
-  }, []);
+  const key = useMemo(() => Math.random().toString(), []);
+
+  const [scrollBarsHandler, setScrollbarsHandler] = useState<ScrollBarsHandler | undefined>();
+  useEffect(() => {
+    const handler = new ScrollBarsHandler(props, key);
+    setScrollbarsHandler(handler);
+
+    return () => {
+      setScrollbarsHandler(undefined);
+      handler.destroy();
+    };
+  }, [props, key]);
 
   // Need to listen to pointermove and pointerup events on window to handle
   // mouse leaving the scrollbars
@@ -47,6 +63,7 @@ export const ScrollBars = () => {
 
   const pointerDownHorizontal = useCallback(
     (e: ReactPointerEvent<HTMLDivElement> | PointerEvent) => {
+      if (!scrollBarsHandler) return;
       e.preventDefault();
       e.stopPropagation();
 
@@ -61,6 +78,7 @@ export const ScrollBars = () => {
 
   const pointerMoveHorizontal = useCallback(
     (e: PointerEvent) => {
+      if (!scrollBarsHandler) return;
       if (state === 'horizontal' && down !== undefined && start !== undefined) {
         const delta = e.clientX - down.x;
         const actualDelta = scrollBarsHandler.adjustHorizontal(delta);
@@ -80,6 +98,7 @@ export const ScrollBars = () => {
 
   const pointerDownVertical = useCallback(
     (e: ReactPointerEvent<HTMLDivElement> | PointerEvent) => {
+      if (!scrollBarsHandler) return;
       e.preventDefault();
       e.stopPropagation();
 
@@ -94,6 +113,7 @@ export const ScrollBars = () => {
 
   const pointerMoveVertical = useCallback(
     (e: PointerEvent) => {
+      if (!scrollBarsHandler) return;
       if (state === 'vertical' && down !== undefined && start !== undefined) {
         const delta = e.clientY - down.y;
         const actualDelta = scrollBarsHandler.adjustVertical(delta);
@@ -108,13 +128,13 @@ export const ScrollBars = () => {
   return (
     <div className="pointer-events-none absolute left-0 top-0 h-full w-full">
       <div
-        id="grid-scrollbars-horizontal"
+        id={`grid-scrollbars-horizontal-${key}`}
         className="pointer-events-auto absolute bottom-1 rounded-md opacity-15"
         style={{ height: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 5 }}
         onPointerDown={pointerDownHorizontal}
       />
       <div
-        id="grid-scrollbars-vertical"
+        id={`grid-scrollbars-vertical-${key}`}
         className="pointer-events-auto absolute right-1 rounded-md opacity-15"
         style={{ width: SCROLLBAR_SIZE, backgroundColor: 'hsl(var(--foreground))', zIndex: 5 }}
         onPointerDown={pointerDownVertical}

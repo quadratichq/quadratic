@@ -289,6 +289,7 @@ export class Cursor extends Container {
   }
 
   private drawUnselectDown() {
+    if (!pixiApp.pointer) return;
     const { unselectDown } = pixiApp.pointer.pointerDown;
     if (!unselectDown) return;
     const foreground = pixiApp.accentColor;
@@ -382,7 +383,7 @@ export class Cursor extends Container {
 
     this.drawTableCornerIndicator();
 
-    if (pixiApp.pointer.pointerDown.unselectDown) {
+    if (pixiApp.pointer?.pointerDown.unselectDown) {
       this.drawUnselectDown();
     }
 

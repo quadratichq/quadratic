@@ -1,8 +1,8 @@
 use std::str::FromStr;
 
 use crate::{
-    SheetRect,
-    a1::{A1Selection, CellRefRange, RefRangeBounds, column_from_name},
+    Rect, SheetRect,
+    a1::{A1Context, A1Selection, CellRefRange, RefRangeBounds, column_from_name},
     grid::SheetId,
     wasm_bindings::js_selection::JsSelection,
 };

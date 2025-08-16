@@ -8,10 +8,10 @@ import {
   pasteFromClipboardEvent,
 } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { BaseApp } from '@/app/gridGL/BaseApp';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { Background } from '@/app/gridGL/UI/Background';
 import { Cursor } from '@/app/gridGL/UI/Cursor';
-import { GridLines } from '@/app/gridGL/UI/GridLines';
 import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
 import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
@@ -21,7 +21,6 @@ import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
-import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
@@ -31,17 +30,13 @@ import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetec
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
-import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
-import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { sharedEvents } from '@/shared/sharedEvents';
-import { Container, Graphics, Rectangle, Renderer } from 'pixi.js';
+import { Container, Graphics, Rectangle } from 'pixi.js';
 
-export class PixiApp {
+export class PixiApp extends BaseApp {
   private parent?: HTMLDivElement;
   private update!: Update;
 
@@ -52,9 +47,6 @@ export class PixiApp {
 
   // todo: UI should be pulled out and separated into its own class
 
-  canvas!: HTMLCanvasElement;
-  viewport!: Viewport;
-  gridLines: GridLines;
   background: Background;
   cursor!: Cursor;
   cellHighlights!: CellHighlights;
@@ -68,10 +60,8 @@ export class PixiApp {
   hoverTableColumnsSelection: Graphics;
 
   cellMoving!: UICellMoving;
-  headings!: GridHeadings;
   boxCells!: BoxCells;
   cellsSheets: CellsSheets;
-  pointer!: Pointer;
   viewportContents!: Container;
   htmlPlaceholders!: HtmlPlaceholders;
   imagePlaceholders!: Container;
@@ -80,13 +70,8 @@ export class PixiApp {
   copy: UICopy;
   singleCellOutlines: UISingleCellOutlines;
 
-  renderer: Renderer;
-  momentumDetector: MomentumScrollDetector;
   stage = new Container();
   loading = true;
-  destroyed = false;
-
-  accentColor = colors.cursorCell;
 
   // for testing purposes
   debug!: Graphics;
@@ -97,23 +82,17 @@ export class PixiApp {
   copying = false;
 
   constructor() {
+    super();
+    this.canvas.id = 'QuadraticCanvasID';
+
     // This is created first so it can listen to messages from QuadraticCore.
     this.cellsSheets = new CellsSheets();
-    this.gridLines = new GridLines();
     this.cellImages = new UICellImages();
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
     this.hoverTableColumnsSelection = new Graphics();
     this.singleCellOutlines = new UISingleCellOutlines();
 
-    this.canvas = document.createElement('canvas');
-    this.renderer = new Renderer({
-      view: this.canvas,
-      resolution: Math.max(2, window.devicePixelRatio),
-      antialias: true,
-      backgroundColor: 0xffffff,
-    });
-    this.viewport = new Viewport(this);
     this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();
@@ -157,13 +136,6 @@ export class PixiApp {
   };
 
   private initCanvas = () => {
-    this.canvas.id = 'QuadraticCanvasID';
-    this.canvas.className = 'pixi_canvas';
-    this.canvas.tabIndex = 0;
-
-    const observer = new ResizeObserver(this.resize);
-    observer.observe(this.canvas);
-
     this.stage.addChild(this.viewport);
 
     // this holds the viewport's contents
@@ -176,8 +148,7 @@ export class PixiApp {
 
     // this is a hack to ensure that table column names appears over the column
     // headings, but under the row headings
-    const gridHeadings = new GridHeadings();
-    this.viewportContents.addChild(gridHeadings.gridHeadingsRows);
+    this.viewportContents.addChild(this.headings.gridHeadingsRows);
 
     this.boxCells = this.viewportContents.addChild(new BoxCells());
     this.cellImages = this.viewportContents.addChild(this.cellImages);
@@ -192,7 +163,7 @@ export class PixiApp {
     this.singleCellOutlines = this.viewportContents.addChild(this.singleCellOutlines);
     this.viewportContents.addChild(this.hoverTableHeaders);
     this.viewportContents.addChild(this.hoverTableColumnsSelection);
-    this.headings = this.viewportContents.addChild(gridHeadings);
+    this.viewportContents.addChild(this.headings);
 
     // useful for debugging at viewport locations
     this.viewportContents.addChild(this.debug);
@@ -203,24 +174,22 @@ export class PixiApp {
 
     this.update = new Update();
 
-    this.setupListeners();
+    this.setupPixiListeners();
   };
 
-  private setupListeners = () => {
-    sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
+  protected setupPixiListeners() {
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
     document.addEventListener('cut', cutToClipboardEvent);
-  };
+  }
 
-  private removeListeners = () => {
-    sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
+  protected removePixiListeners() {
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
     document.removeEventListener('cut', cutToClipboardEvent);
-  };
+  }
 
   // calculate sheet rectangle, without heading, factoring in scale
   getViewportRectangle = (): Rectangle => {
@@ -262,7 +231,6 @@ export class PixiApp {
     if (!this.canvas) return;
 
     this.parent = parent;
-    this.canvas.classList.add('dark-mode-hack');
     parent.appendChild(this.canvas);
     this.resize();
     this.update.start();
@@ -273,39 +241,14 @@ export class PixiApp {
     this.setViewportDirty();
   };
 
-  destroy = (): void => {
+  destroy() {
+    super.destroy();
     this.update.destroy();
     this.renderer.destroy(true);
     this.viewport.destroy();
-    this.removeListeners();
-    this.destroyed = true;
-  };
-
-  setAccentColor = (): void => {
-    // Pull the value from the current value as defined in CSS
-    const accentColor = getCSSVariableTint('primary');
-    this.accentColor = accentColor;
-    this.gridLines.dirty = true;
-    this.headings.dirty = true;
-    this.cursor.dirty = true;
-    this.cellHighlights.setDirty();
-    this.render();
-  };
-
-  resize = (): void => {
-    if (!this.parent || this.destroyed) return;
-    const width = this.parent.offsetWidth;
-    const height = this.parent.offsetHeight;
-    this.canvas.width = this.renderer.resolution * width;
-    this.canvas.height = this.renderer.resolution * height;
-    this.renderer.resize(width, height);
-    this.viewport.resize(width, height);
-    this.gridLines.dirty = true;
-    this.headings.dirty = true;
-    this.cursor.dirty = true;
-    this.cellHighlights.setDirty();
-    this.render();
-  };
+    this.removePixiListeners();
+    console.log('destroyed...');
+  }
 
   // called before and after a render
   prepareForCopying = async (options: {
