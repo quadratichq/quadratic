@@ -22,7 +22,6 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -35,6 +34,7 @@ import type {
   ToolResultContent,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): ContentBlock[] {
   return content
@@ -146,7 +146,7 @@ export function getBedrockApiArgs(
 }
 
 function getBedrockTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
     if (!toolSpec.aiModelModes.includes(aiModelMode)) {
       return false;
     }

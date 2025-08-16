@@ -61,7 +61,4 @@ You can reference cells in other sheets by using the sheet name as part of the r
 - Sheet1!A1:C3,Sheet2!D5:F7
 - Sheet1!A1:C3,Sheet2!D5:F7,Sheet3!G9:I11
 - Table1[Column 2],Sheet2!A1:C3
-
-
-
- `;
+`;

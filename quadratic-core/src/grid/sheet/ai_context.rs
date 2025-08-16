@@ -3,28 +3,38 @@ use std::collections::HashSet;
 use crate::{
     CellValue, Rect,
     a1::{A1Context, A1Selection},
-    grid::js_types::{
-        JsCellValuePosContext, JsChartContext, JsChartSummaryContext, JsCodeCell,
-        JsCodeTableContext, JsDataTableContext, JsSelectionContext, JsTableSummaryContext,
-        JsTableType, JsTablesContext,
+    grid::{
+        CodeCellLanguage,
+        js_types::{
+            JsCellValueDescription, JsChartContext, JsChartSummaryContext, JsCodeCell,
+            JsCodeErrorContext, JsCodeTableContext, JsDataTableContext, JsSelectionContext,
+            JsTableSummaryContext, JsTableType, JsTablesContext,
+        },
     },
 };
 
 use super::Sheet;
 
 impl Sheet {
+    #[allow(clippy::too_many_arguments)]
     pub fn get_ai_selection_context(
         &self,
         selection: A1Selection,
         max_rects: Option<usize>,
+        max_rows: Option<usize>,
         include_errored_code_cells: bool,
         include_tables_summary: bool,
         include_charts_summary: bool,
+        include_data_rects_summary: bool,
         a1_context: &A1Context,
     ) -> JsSelectionContext {
         JsSelectionContext {
             sheet_name: self.name.clone(),
-            data_rects: self.get_data_rects_in_selection(&selection, max_rects, a1_context),
+            data_rects: if include_data_rects_summary {
+                self.get_data_rects_in_selection(&selection, max_rects, max_rows, a1_context)
+            } else {
+                vec![]
+            },
             errored_code_cells: include_errored_code_cells
                 .then(|| self.get_errored_code_cells_in_selection(&selection, a1_context)),
             tables_summary: include_tables_summary
@@ -39,21 +49,15 @@ impl Sheet {
         &self,
         selection: &A1Selection,
         max_rects: Option<usize>,
+        max_rows: Option<usize>,
         a1_context: &A1Context,
-    ) -> Vec<JsCellValuePosContext> {
+    ) -> Vec<JsCellValueDescription> {
         let mut data_rects = Vec::new();
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let tabular_data_rects =
             self.find_tabular_data_rects_in_selection_rects(selection_rects, max_rects);
         for tabular_data_rect in tabular_data_rects {
-            let cell_value_pos = JsCellValuePosContext {
-                sheet_name: self.name.clone(),
-                rect_origin: tabular_data_rect.min.a1_string(),
-                rect_width: tabular_data_rect.width(),
-                rect_height: tabular_data_rect.height(),
-                starting_rect_values: self.js_cell_value_pos_in_rect(tabular_data_rect, Some(3)),
-            };
-            data_rects.push(cell_value_pos);
+            data_rects.push(self.js_cell_value_description(tabular_data_rect, max_rows));
         }
         data_rects
     }
@@ -64,33 +68,24 @@ impl Sheet {
         selection: &A1Selection,
         a1_context: &A1Context,
     ) -> Vec<JsCodeCell> {
-        let mut code_cells = Vec::new();
+        let mut errored_code_cells = Vec::new();
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
-        for selection_rect in selection_rects {
-            for x in selection_rect.x_range() {
-                if let Some(column) = self.get_column(x) {
-                    for y in selection_rect.y_range() {
-                        // check if there is a code cell
-                        if let Some(CellValue::Code(_)) = column.values.get(&y) {
-                            // if there is a code cell, then check if it has an error
-                            if self
-                                .data_table_at(&(x, y).into())
-                                .map(|code_run| code_run.has_error())
-                                .unwrap_or(false)
-                            {
-                                // if there is an error, then add the code cell to the vec
-                                if let Some(code_cell) =
-                                    self.edit_code_value((x, y).into(), a1_context)
-                                {
-                                    code_cells.push(code_cell);
-                                }
-                            }
-                        }
+        let mut seen_tables = HashSet::new();
+        for rect in selection_rects {
+            for (_, pos, table) in self.data_tables.get_in_rect(rect, false) {
+                if !seen_tables.insert(pos) {
+                    continue;
+                }
+
+                if table.has_error() {
+                    // if there is an error, then add the code cell to the vec
+                    if let Some(code_cell) = self.edit_code_value(pos, a1_context) {
+                        errored_code_cells.push(code_cell);
                     }
                 }
             }
         }
-        code_cells
+        errored_code_cells
     }
 
     fn get_tables_summary_in_selection(
@@ -102,31 +97,42 @@ impl Sheet {
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
-            let tables_summary_in_rect = self
-                .data_tables
-                .get_in_rect(rect, false)
-                .filter_map(|(_, pos, table)| {
-                    if !seen_tables.insert(pos) {
-                        return None;
-                    }
+            for (_, pos, table) in self.data_tables.get_in_rect(rect, false) {
+                if !seen_tables.insert(pos) {
+                    continue;
+                }
 
-                    if table.is_html_or_image() || table.is_single_value() {
-                        return None;
-                    }
+                if table.is_html_or_image() || table.is_formula_table() || table.is_single_value() {
+                    continue;
+                }
 
-                    Some(JsTableSummaryContext {
-                        sheet_name: self.name.clone(),
-                        table_name: table.name().to_string(),
-                        table_type: match self.cell_value_ref(pos.to_owned()) {
-                            Some(CellValue::Code(_)) => JsTableType::CodeTable,
-                            Some(CellValue::Import(_)) => JsTableType::DataTable,
-                            _ => return None,
-                        },
-                        bounds: table.output_rect(pos, false).a1_string(),
-                    })
-                })
-                .collect::<Vec<JsTableSummaryContext>>();
-            tables_summary.extend(tables_summary_in_rect);
+                let mut connection_name = None;
+                let mut connection_id = None;
+                let table_type = match self.cell_value_ref(pos.to_owned()) {
+                    Some(CellValue::Code(code)) => match &code.language {
+                        CodeCellLanguage::Python => JsTableType::Python,
+                        CodeCellLanguage::Javascript => JsTableType::Javascript,
+                        CodeCellLanguage::Formula => JsTableType::Formula,
+                        CodeCellLanguage::Connection { id, kind } => {
+                            connection_name = Some(kind.to_string());
+                            connection_id = Some(id.clone());
+                            JsTableType::Connection
+                        }
+                        CodeCellLanguage::Import => JsTableType::DataTable,
+                    },
+                    Some(CellValue::Import(_)) => JsTableType::DataTable,
+                    _ => continue,
+                };
+
+                tables_summary.push(JsTableSummaryContext {
+                    sheet_name: self.name.clone(),
+                    table_name: table.name().to_string(),
+                    table_type,
+                    bounds: table.output_rect(pos, false).a1_string(),
+                    connection_name,
+                    connection_id,
+                });
+            }
         }
         tables_summary
     }
@@ -140,32 +146,27 @@ impl Sheet {
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let mut seen_tables = HashSet::new();
         for rect in selection_rects {
-            let charts_summary_in_rect = self
-                .data_tables
-                .get_in_rect(rect, false)
-                .filter_map(|(_, pos, table)| {
-                    if !seen_tables.insert(pos) {
-                        return None;
-                    }
+            for (_, pos, table) in self.data_tables.get_in_rect(rect, false) {
+                if !seen_tables.insert(pos) {
+                    continue;
+                }
 
-                    if !table.is_html_or_image() || table.has_spill() {
-                        return None;
-                    }
+                if !table.is_html_or_image() || table.has_spill() {
+                    continue;
+                }
 
-                    Some(JsChartSummaryContext {
-                        sheet_name: self.name.clone(),
-                        chart_name: table.name().to_string(),
-                        bounds: table.output_rect(pos, false).a1_string(),
-                    })
-                })
-                .collect::<Vec<JsChartSummaryContext>>();
-            charts_summary.extend(charts_summary_in_rect);
+                charts_summary.push(JsChartSummaryContext {
+                    sheet_name: self.name.clone(),
+                    chart_name: table.name().to_string(),
+                    bounds: table.output_rect(pos, false).a1_string(),
+                });
+            }
         }
         charts_summary
     }
 
     /// Returns JsTablesContext for all tables (data, code, charts) in the sheet
-    pub fn get_ai_tables_context(&self) -> Option<JsTablesContext> {
+    pub fn get_ai_tables_context(&self, sample_rows: usize) -> Option<JsTablesContext> {
         let mut tables_context = JsTablesContext {
             sheet_name: self.name.clone(),
             data_tables: Vec::new(),
@@ -200,25 +201,32 @@ impl Sheet {
                 continue;
             }
 
-            let first_row_rect = Rect::from_numbers(
+            let first_row_rect = Rect::new(
                 bounds.min.x,
                 bounds.min.y + table.y_adjustment(false),
-                bounds.width() as i64,
-                1,
+                bounds.max.x,
+                bounds.min.y + (bounds.height() as i64).min(sample_rows as i64) - 1,
             );
-            let first_row_visible_values = self
-                .js_cell_value_pos_in_rect(first_row_rect, Some(1))
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>();
+            let first_rows_visible_values =
+                self.js_cell_value_description(first_row_rect, Some(sample_rows));
 
-            let last_row_rect =
-                Rect::from_numbers(bounds.min.x, bounds.max.y, bounds.width() as i64, 1);
-            let last_row_visible_values = self
-                .js_cell_value_pos_in_rect(last_row_rect, Some(1))
-                .into_iter()
-                .flatten()
-                .collect::<Vec<_>>();
+            let mut starting_last_row = bounds.max.y - sample_rows as i64 + 1;
+            if starting_last_row < first_row_rect.max.y {
+                starting_last_row = first_row_rect.max.y + 1;
+            }
+            let last_rows_rect = if starting_last_row > bounds.max.y {
+                None
+            } else {
+                Some(Rect::new(
+                    bounds.min.x,
+                    starting_last_row,
+                    bounds.max.x,
+                    bounds.max.y,
+                ))
+            };
+
+            let last_rows_visible_values =
+                last_rows_rect.map(|rect| self.js_cell_value_description(rect, Some(sample_rows)));
 
             if let CellValue::Code(code_cell_value) = cell_value {
                 let Some(code_run) = table.code_run() else {
@@ -230,8 +238,8 @@ impl Sheet {
                     code_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
-                    first_row_visible_values,
-                    last_row_visible_values,
+                    first_rows_visible_values,
+                    last_rows_visible_values,
                     bounds: bounds.a1_string(),
                     intended_bounds: intended_bounds.a1_string(),
                     show_name: table.get_show_name(),
@@ -248,8 +256,8 @@ impl Sheet {
                     data_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
-                    first_row_visible_values,
-                    last_row_visible_values,
+                    first_rows_visible_values,
+                    last_rows_visible_values,
                     bounds: bounds.a1_string(),
                     intended_bounds: intended_bounds.a1_string(),
                     show_name: table.get_show_name(),
@@ -268,6 +276,50 @@ impl Sheet {
             Some(tables_context)
         }
     }
+
+    /// Returns all code cells with errors or spills in all sheets.
+    pub fn get_ai_code_errors(&self, max_errors: usize) -> Vec<JsCodeErrorContext> {
+        let mut errors = vec![];
+
+        for (pos, table) in self.data_tables.expensive_iter() {
+            if (table.has_spill() || table.has_error_include_single_formula_error())
+                && let Some(code_run) = table.code_run()
+            {
+                if table.has_error_include_single_formula_error() {
+                    let error = if let Some(error) = table.get_error() {
+                        error.to_string()
+                    } else if let Ok(CellValue::Error(error)) = &table.value.as_cell_value() {
+                        error.to_string()
+                    } else {
+                        "Unknown error".to_string()
+                    };
+                    errors.push(JsCodeErrorContext {
+                        sheet_name: self.name.clone(),
+                        pos: pos.a1_string(),
+                        name: table.name().to_string(),
+                        language: code_run.language.clone(),
+                        error: Some(error),
+                        is_spill: false,
+                        expected_bounds: None,
+                    });
+                } else if table.has_spill() {
+                    errors.push(JsCodeErrorContext {
+                        sheet_name: self.name.clone(),
+                        pos: pos.a1_string(),
+                        name: table.name().to_string(),
+                        language: code_run.language.clone(),
+                        error: None,
+                        is_spill: true,
+                        expected_bounds: Some(table.output_rect(pos.to_owned(), true).a1_string()),
+                    });
+                }
+                if errors.len() >= max_errors {
+                    break;
+                }
+            }
+        }
+        errors
+    }
 }
 
 #[cfg(test)]
@@ -278,8 +330,9 @@ mod tests {
         a1::A1Selection,
         grid::{
             CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind,
-            js_types::{JsCellValuePosContext, JsCodeCell, JsReturnInfo},
+            js_types::{JsCodeCell, JsReturnInfo},
         },
+        test_util::*,
     };
 
     use super::Sheet;
@@ -334,37 +387,25 @@ mod tests {
         let selection = A1Selection::from_rect(SheetRect::new(1, 1, 50, 300, sheet.id));
         let a1_context = sheet.expensive_make_a1_context();
         let data_rects_in_selection =
-            sheet.get_data_rects_in_selection(&selection, None, &a1_context);
+            sheet.get_data_rects_in_selection(&selection, None, Some(3), &a1_context);
 
         let max_rows = 3;
 
         let expected_data_rects_in_selection = vec![
-            JsCellValuePosContext {
-                sheet_name: sheet.name.clone(),
-                rect_origin: Pos { x: 1, y: 1 }.a1_string(),
-                rect_width: 10,
-                rect_height: 100,
-                starting_rect_values: sheet.js_cell_value_pos_in_rect(
-                    Rect {
-                        min: Pos { x: 1, y: 1 },
-                        max: Pos { x: 10, y: 100 },
-                    },
-                    Some(max_rows),
-                ),
-            },
-            JsCellValuePosContext {
-                sheet_name: sheet.name.clone(),
-                rect_origin: Pos { x: 31, y: 101 }.a1_string(),
-                rect_width: 10,
-                rect_height: 100,
-                starting_rect_values: sheet.js_cell_value_pos_in_rect(
-                    Rect {
-                        min: Pos { x: 31, y: 101 },
-                        max: Pos { x: 40, y: 200 },
-                    },
-                    Some(max_rows),
-                ),
-            },
+            sheet.js_cell_value_description(
+                Rect {
+                    min: Pos { x: 1, y: 1 },
+                    max: Pos { x: 10, y: 100 },
+                },
+                Some(max_rows),
+            ),
+            sheet.js_cell_value_description(
+                Rect {
+                    min: Pos { x: 31, y: 101 },
+                    max: Pos { x: 40, y: 200 },
+                },
+                Some(max_rows),
+            ),
         ];
 
         assert_eq!(data_rects_in_selection, expected_data_rects_in_selection);
@@ -527,5 +568,32 @@ mod tests {
         ];
 
         assert_eq!(js_errored_code_cells, expected_js_errored_code_cells);
+    }
+
+    #[test]
+    fn test_get_ai_code_errors() {
+        let mut gc = test_create_gc();
+        let sheet1_id = first_sheet_id(&gc);
+
+        // Create a formula with division by zero error on first sheet
+        test_create_formula(&mut gc, pos![sheet1_id!A1], "1/0");
+
+        // add a spill target
+        test_set_values(&mut gc, sheet1_id, pos![B2], 3, 3);
+
+        // spill a formula
+        test_create_formula(&mut gc, pos![sheet1_id!B1], "{1;2;3}");
+
+        let sheet1 = gc.sheet(sheet1_id);
+        let errors = sheet1.get_ai_code_errors(10);
+
+        assert_eq!(errors.len(), 2);
+        assert_eq!(errors[0].name, "Formula1");
+        assert!(errors[0].error.is_some());
+        assert!(!errors[0].is_spill);
+        assert_eq!(errors[1].name, "Formula2");
+        assert!(errors[1].error.is_none());
+        assert!(errors[1].is_spill);
+        assert_eq!(errors[1].expected_bounds, Some("B1:B3".to_string()));
     }
 }

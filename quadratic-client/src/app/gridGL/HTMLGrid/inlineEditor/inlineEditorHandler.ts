@@ -223,10 +223,10 @@ class InlineEditorHandler {
 
           const jsCellValue = await quadraticCore.getCellValue(this.location.sheetId, this.location.x, this.location.y);
           if (jsCellValue) {
-            if (jsCellValue.kind === 'number') {
+            if (jsCellValue.kind === 'Number') {
               this.formatSummary.align = this.formatSummary.align ?? 'right';
             }
-            value = jsCellValue.kind === 'number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
+            value = jsCellValue.kind === 'Number' ? new BigNumber(jsCellValue.value).toString() : jsCellValue.value;
             if (this.formatSummary?.numericFormat?.type === 'PERCENTAGE') {
               try {
                 const number = new BigNumber(value).multipliedBy(100).toString();
@@ -238,7 +238,7 @@ class InlineEditorHandler {
             if (['date', 'date time'].includes(jsCellValue.kind)) {
               pixiAppSettings.setEditorInteractionState?.({
                 ...pixiAppSettings.editorInteractionState,
-                annotationState: `calendar${jsCellValue.kind === 'date time' ? '-time' : ''}`,
+                annotationState: `calendar${jsCellValue.kind === 'DateTime' ? '-time' : ''}`,
               });
             }
           } else {

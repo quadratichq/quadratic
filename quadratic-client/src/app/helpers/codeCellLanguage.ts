@@ -107,3 +107,13 @@ export const getConnectionKind = (language?: CodeCellLanguage): string | undefin
 
   return undefined;
 };
+
+export const translateLanguageForAI = (language: CodeCellLanguage): string => {
+  if (typeof language === 'string') {
+    return language;
+  } else if (typeof language === 'object') {
+    return `a connection cell of type ${language.Connection.kind}`;
+  }
+
+  return 'Python';
+};
