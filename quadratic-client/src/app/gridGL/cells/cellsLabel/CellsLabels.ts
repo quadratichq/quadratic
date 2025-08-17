@@ -200,7 +200,7 @@ export class CellsLabels extends Container {
     if (hash) {
       hash.special.clickedToCell(column, row, world);
     }
-    pixiApp.validations.clickedToCell(column, row, world);
+    pixiApp.validations?.clickedToCell(column, row, world);
   };
 
   renderValidationUpdates(validationWarnings: JsValidationWarning[]) {

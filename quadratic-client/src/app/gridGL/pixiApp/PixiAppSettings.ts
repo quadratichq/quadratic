@@ -120,7 +120,7 @@ export class PixiAppSettings {
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
       pixiApp.setViewportDirty();
-      pixiApp.singleCellOutlines.setDirty();
+      pixiApp.singleCellOutlines?.setDirty();
     }
     this.lastSettings = this.settings;
   };
@@ -216,18 +216,6 @@ export class PixiAppSettings {
     return !this.settings.presentationMode && this.settings.showCodePeek;
   }
 
-  setDirty(dirty: { cursor?: boolean; headings?: boolean; gridLines?: boolean }): void {
-    if (dirty.cursor) {
-      pixiApp.cursor.dirty = true;
-    }
-    if (dirty.headings) {
-      pixiApp.headings.dirty = true;
-    }
-    if (dirty.gridLines) {
-      pixiApp.gridLines.dirty = true;
-    }
-  }
-
   changeInput(input: boolean, initialValue?: string, cursorMode?: CursorMode) {
     if (input === false) {
       multiplayer.sendEndCellEdit();
@@ -252,7 +240,7 @@ export class PixiAppSettings {
     } else {
       this._input = { show: false };
     }
-    this.setDirty({ cursor: true });
+    pixiApp.setCursorDirty({ cursor: true });
 
     // this is used by CellInput to control visibility
     events.emit('changeInput', input, initialValue, cursorMode);

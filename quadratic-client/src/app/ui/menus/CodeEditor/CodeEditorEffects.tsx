@@ -86,7 +86,7 @@ export const CodeEditorEffects = memo(() => {
             waitingForEditorClose: undefined,
             showCodeEditor: false,
           }));
-          pixiApp.cellHighlights.clear();
+          pixiApp.cellHighlights?.clear();
         } else {
           setShowCellTypeMenu(waitingForEditorClose.showCellTypeMenu);
           setCodeEditorState((prev) => ({
@@ -96,7 +96,7 @@ export const CodeEditorEffects = memo(() => {
             initialCode: waitingForEditorClose.initialCode,
             waitingForEditorClose: undefined,
           }));
-          pixiApp.cellHighlights.clear();
+          pixiApp.cellHighlights?.clear();
         }
       }
     }

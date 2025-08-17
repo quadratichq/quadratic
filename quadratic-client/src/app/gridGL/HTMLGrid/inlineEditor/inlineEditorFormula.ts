@@ -29,7 +29,7 @@ class InlineEditorFormula {
       this.clearDecorations();
       return;
     }
-    pixiApp.cellHighlights.fromCellsAccessed(parseResult.cells_accessed, false);
+    pixiApp.cellHighlights?.fromCellsAccessed(parseResult.cells_accessed, false);
 
     const newDecorations: monaco.editor.IModelDeltaDecoration[] = [];
     const cellColorReferences = new Map<string, number>();
@@ -62,7 +62,7 @@ class InlineEditorFormula {
       const editorCursorPosition = inlineEditorMonaco.getPosition();
 
       if (editorCursorPosition && range.containsPosition(editorCursorPosition)) {
-        pixiApp.cellHighlights.setSelectedCell(index);
+        pixiApp.cellHighlights?.setSelectedCell(index);
       }
     });
 
@@ -77,7 +77,7 @@ class InlineEditorFormula {
 
   clearDecorations() {
     this.decorations?.clear();
-    pixiApp.cellHighlights.clear();
+    pixiApp.cellHighlights?.clear();
   }
 
   removeInsertingCells() {

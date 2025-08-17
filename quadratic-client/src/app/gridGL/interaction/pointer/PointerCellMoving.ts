@@ -81,7 +81,9 @@ export class PointerCellMoving {
   private reset = () => {
     this.movingCells = undefined;
     if (this.state === 'move') {
-      pixiApp.cellMoving.dirty = true;
+      if (pixiApp.cellMoving) {
+        pixiApp.cellMoving.dirty = true;
+      }
       events.emit('cellMoving', false);
       pixiApp.viewport.disableMouseEdges();
       htmlCellsHandler.enable();
@@ -98,7 +100,9 @@ export class PointerCellMoving {
     const position = sheets.sheet.getColumnRowFromScreen(world.x, world.y);
     this.movingCells.toColumn = Math.max(1, position.column + this.movingCells.offset.x);
     this.movingCells.toRow = Math.max(1, position.row + this.movingCells.offset.y);
-    pixiApp.cellMoving.dirty = true;
+    if (pixiApp.cellMoving) {
+      pixiApp.cellMoving.dirty = true;
+    }
   };
 
   // Checks if mouse overlaps the selection rectangle. We do not check the
@@ -110,6 +114,7 @@ export class PointerCellMoving {
     cols: boolean,
     rows: boolean
   ): false | 'corner' | 'top' | 'bottom' | 'left' | 'right' => {
+    if (!pixiApp.cursor) return false;
     const cursorRectangle = pixiApp.cursor.cursorRectangle;
     if (!cursorRectangle) return false;
 
@@ -216,6 +221,7 @@ export class PointerCellMoving {
     const overlap = this.moveOverlaps(world, !!colsHover, !!rowsHover);
     if (overlap) {
       this.state = 'hover';
+      if (!pixiApp.cursor) return false;
       const screenRectangle = pixiApp.cursor.cursorRectangle;
       if (!screenRectangle) return false;
 

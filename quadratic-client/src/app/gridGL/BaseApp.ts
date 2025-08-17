@@ -1,13 +1,25 @@
+import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
 import type { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { MomentumScrollDetector } from '@/app/gridGL/pixiApp/MomentumScrollDetector';
 import type { PixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
+import type { Background } from '@/app/gridGL/UI/Background';
+import type { BoxCells } from '@/app/gridGL/UI/boxCells';
+import type { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
+import type { Cursor } from '@/app/gridGL/UI/Cursor';
 import { GridHeadings } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
 import { GridLines } from '@/app/gridGL/UI/GridLines';
+import type { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
+import type { UICellImages } from '@/app/gridGL/UI/UICellImages';
+import type { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
+import type { UICopy } from '@/app/gridGL/UI/UICopy';
+import type { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
+import type { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
+import type { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { colors } from '@/app/theme/colors';
 import { sharedEvents } from '@/shared/sharedEvents';
-import { Renderer } from 'pixi.js';
+import { Container, Renderer } from 'pixi.js';
 
 export abstract class BaseApp {
   private observer?: ResizeObserver;
@@ -17,6 +29,11 @@ export abstract class BaseApp {
   viewport: Viewport;
   headings: GridHeadings;
 
+  background?: Background;
+  cursor?: Cursor;
+  multiplayerCursor?: UIMultiPlayerCursor;
+  cellHighlights?: CellHighlights;
+
   gridLines: GridLines;
   pointer?: Pointer;
 
@@ -25,6 +42,17 @@ export abstract class BaseApp {
   accentColor = colors.cursorCell;
 
   destroyed = false;
+
+  cellMoving?: UICellMoving;
+  boxCells?: BoxCells;
+  cellsSheets: CellsSheets;
+  viewportContents: Container;
+  htmlPlaceholders?: HtmlPlaceholders;
+  imagePlaceholders?: Container;
+  cellImages?: UICellImages;
+  validations?: UIValidations;
+  copy?: UICopy;
+  singleCellOutlines?: UISingleCellOutlines;
 
   constructor() {
     this.canvas = this.createCanvas();
@@ -40,6 +68,8 @@ export abstract class BaseApp {
 
     this.gridLines = new GridLines();
     this.headings = new GridHeadings(this);
+    this.viewportContents = new Container();
+    this.cellsSheets = new CellsSheets();
 
     this.setupListeners();
   }
@@ -91,10 +121,11 @@ export abstract class BaseApp {
     this.viewport.resize(width, height);
     this.gridLines.dirty = true;
     this.headings.dirty = true;
-    const pixiApp = this.isPixiApp();
-    if (pixiApp) {
-      pixiApp.cursor.dirty = true;
-      pixiApp.cellHighlights.setDirty();
+    if (this.cursor) {
+      this.cursor.dirty = true;
+    }
+    if (this.cellHighlights) {
+      this.cellHighlights.setDirty();
     }
     this.setViewportDirty();
   };
@@ -118,5 +149,14 @@ export abstract class BaseApp {
 
   setViewportDirty = () => {
     this.viewport.dirty = true;
+  };
+
+  setCursorDirty = (dirty?: { cursor?: boolean; multiplayerCursor?: boolean }) => {
+    if (this.cursor && (!dirty || dirty.cursor)) {
+      this.cursor.dirty = true;
+    }
+    if (this.multiplayerCursor && (!dirty || dirty.multiplayerCursor)) {
+      this.multiplayerCursor.dirty = true;
+    }
   };
 }

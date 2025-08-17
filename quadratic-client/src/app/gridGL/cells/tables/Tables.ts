@@ -227,7 +227,7 @@ export class Tables extends Container<Table> {
     }
 
     this.cursorPosition(true);
-    pixiApp.singleCellOutlines.setDirty();
+    pixiApp.singleCellOutlines?.setDirty();
     pixiApp.setViewportDirty();
   };
 
@@ -555,7 +555,7 @@ export class Tables extends Container<Table> {
       this.dataTablesCache?.free();
       this.dataTablesCache = dataTablesCache;
       if (sheetId === sheets.current) {
-        pixiApp.singleCellOutlines.setDirty();
+        pixiApp.singleCellOutlines?.setDirty();
       }
     }
   };

@@ -4,10 +4,12 @@ import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { Drag } from '@/app/gridGL/pixiApp/viewport/Drag';
 import { WHEEL_ZOOM_PERCENT } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { HORIZONTAL_SCROLL_KEY, Wheel, ZOOM_KEY } from '@/app/gridGL/pixiApp/viewport/Wheel';
+import { Rectangle } from 'pixi.js';
 import { isMobile } from 'react-device-detect';
 
 export class LightWeightApp extends BaseApp {
   private parent: HTMLElement;
+  private bounds?: Rectangle;
 
   constructor(parent: HTMLElement) {
     super();
@@ -61,6 +63,7 @@ export class LightWeightApp extends BaseApp {
   ): { width: number; height: number } {
     const start = sheets.sheet.getCellOffsets(columnStart, rowStart);
     const end = sheets.sheet.getCellOffsets(columnEnd, rowEnd);
+    this.bounds = new Rectangle(start.x, start.y, end.x + end.width - start.x, end.y + end.height - start.y);
     this.viewport.position.set(-start.x, -start.y);
     this.viewport.clamp({
       left: start.x,
@@ -78,14 +81,24 @@ export class LightWeightApp extends BaseApp {
     return { width: maxWidth, height: maxHeight };
   }
 
-  render() {
+  async render() {
+    if (!this.bounds) return;
     const cellSheet = pixiApp.cellsSheet();
     const oldParent = cellSheet.parent;
+    const destroyed = pixiApp.destroyed;
 
+    await pixiApp.prepareForCopying({ sheetId: sheets.current, cull: this.bounds });
     this.viewport.addChild(cellSheet);
 
-    this.gridLines.update(this.viewport.getVisibleBounds(), this.viewport.scale.x, true);
-    this.renderer.render(this.viewport);
+    pixiApp.forceUpdate();
+    this.renderer.render(pixiApp.viewportContents);
+
+    pixiApp.cleanUpAfterCopying();
+
+    pixiApp.destroyed = destroyed;
+
+    // force a pixiApp rerender to clean up interactions (I think)
+    pixiApp.setViewportDirty();
 
     oldParent.addChild(cellSheet);
   }

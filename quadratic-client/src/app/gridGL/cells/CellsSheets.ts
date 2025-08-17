@@ -144,7 +144,7 @@ export class CellsSheets extends Container<CellsSheet> {
         sheet?.show(pixiApp.viewport.getVisibleBounds());
       }
       pixiApp.gridLines.dirty = true;
-      pixiApp.cursor.dirty = true;
+      pixiApp.setCursorDirty({ cursor: true });
       pixiApp.headings.dirty = true;
     }
   }
