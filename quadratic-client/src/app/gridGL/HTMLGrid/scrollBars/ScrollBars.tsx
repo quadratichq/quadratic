@@ -1,4 +1,4 @@
-//! Adjusts scrollbars for any BaseApp.
+//! Renders and controls scrollbars for any BaseApp.
 
 import { showScrollbarsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
@@ -6,7 +6,6 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { BaseApp } from '@/app/gridGL/BaseApp';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
-import type { HeadingSize } from '@/app/gridGL/UI/gridHeadings/GridHeadings';
 import { Rectangle } from 'pixi.js';
 import { useCallback, useEffect, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import { useRecoilValue } from 'recoil';
@@ -215,7 +214,6 @@ export const ScrollBars = (props: ScrollBarsProps) => {
         // content is larger than the viewport
         size = viewportSize / contentSize;
       }
-
       return { start, size };
     },
     [props.baseApp.viewport.scaled, state]
@@ -225,8 +223,7 @@ export const ScrollBars = (props: ScrollBarsProps) => {
   const calculate = useCallback(() => {
     const viewport = props.baseApp.viewport;
     const { screenWidth, screenHeight } = viewport;
-    let headingSize: HeadingSize = { width: 0, height: 0, unscaledWidth: 0, unscaledHeight: 0 };
-    headingSize = props.baseApp.headings.headingSize;
+    const headingSize = props.baseApp.headings.headingSize;
     const viewportBounds = viewport.getVisibleBounds();
     const contentSize = props.sheetBounds ?? sheets.sheet.getScrollbarBounds();
 
@@ -237,14 +234,7 @@ export const ScrollBars = (props: ScrollBarsProps) => {
       headingSize.width
     );
     let newLastViewport: LastViewport = {
-      scrollbarAreaWidth: 0,
-      scrollbarAreaHeight: 0,
-      horizontalBarWidth: 0,
-      verticalBarHeight: 0,
-      scrollbarScaleX: 0,
-      scrollbarScaleY: 0,
-      right: 0,
-      bottom: 0,
+      ...lastViewport,
     };
     // don't change the visibility of the horizontal scrollbar when dragging
     if (horizontal) {
@@ -292,7 +282,7 @@ export const ScrollBars = (props: ScrollBarsProps) => {
       const verticalY = Math.max(start, start + vertical.start * newLastViewport.scrollbarAreaHeight);
       let verticalHeight: number;
       if (state === 'vertical') {
-        verticalHeight = newLastViewport.verticalBarHeight;
+        verticalHeight = lastViewport.verticalBarHeight;
       } else {
         setVerticalStart(start + vertical.start * newLastViewport.scrollbarAreaHeight);
         const bottomClamp = screenHeight - verticalY - SCROLLBAR_PADDING - SCROLLBAR_SIZE;
@@ -319,16 +309,7 @@ export const ScrollBars = (props: ScrollBarsProps) => {
     if (horizontal !== undefined || vertical !== undefined) {
       setLastViewport(newLastViewport);
     }
-  }, [
-    calculateSize,
-    lastViewport.bottom,
-    lastViewport.horizontalBarWidth,
-    lastViewport.right,
-    props.baseApp.headings.headingSize,
-    props.baseApp.viewport,
-    props.sheetBounds,
-    state,
-  ]);
+  }, [calculateSize, lastViewport, props.baseApp, props.sheetBounds, state]);
 
   useEffect(() => {
     const update = () => {
