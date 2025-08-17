@@ -1,9 +1,7 @@
 import type { ContextMenuState } from '@/app/atoms/contextMenuAtom';
-import type { BaseApp } from '@/app/gridGL/BaseApp';
 import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
 import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
 import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorKeyboard';
-import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import type {
   JsBordersSheet,
   JsHashValidationWarnings,
@@ -151,9 +149,6 @@ interface EventTypes {
   gridLinesDirty: () => void;
 
   coreError: (from: string, error: Error | unknown) => void;
-
-  scrollBarsHandler: (name: string, baseApp?: BaseApp, handler?: ScrollBarsHandler) => void;
-  scrollBar: (state: 'horizontal' | 'vertical' | undefined) => void;
 
   bitmapFontsLoaded: () => void;
 

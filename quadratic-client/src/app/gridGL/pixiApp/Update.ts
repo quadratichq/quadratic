@@ -1,6 +1,5 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
-import type { BaseApp } from '@/app/gridGL/BaseApp';
 import {
   debugRendererLight,
   debugShowChildren,
@@ -8,7 +7,6 @@ import {
   debugTimeReset,
 } from '@/app/gridGL/helpers/debugPerformance';
 import { FPS } from '@/app/gridGL/helpers/Fps';
-import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 
@@ -16,7 +14,7 @@ export class Update {
   private raf?: number;
   private fps?: FPS;
 
-  private scrollBarsHandlers: Record<string, { handler: ScrollBarsHandler; baseApp: BaseApp }> = {};
+  // private scrollBarsHandlers: Record<string, { handler: ScrollBarsHandler; baseApp: BaseApp }> = {};
 
   firstRenderComplete = false;
 
@@ -24,16 +22,16 @@ export class Update {
     if (debugFlag('debugShowFPS')) {
       this.fps = new FPS();
     }
-    events.on('scrollBarsHandler', this.setScrollBarsHandler);
+    // events.on('scrollBarsHandler', this.setScrollBarsHandler);
   }
 
-  private setScrollBarsHandler = (name: string, baseApp?: BaseApp, handler?: ScrollBarsHandler) => {
-    if (!baseApp || !handler) {
-      delete this.scrollBarsHandlers[name];
-    } else {
-      this.scrollBarsHandlers[name] = { baseApp, handler };
-    }
-  };
+  // private setScrollBarsHandler = (name: string, baseApp?: BaseApp, handler?: ScrollBarsHandler) => {
+  //   if (!baseApp || !handler) {
+  //     delete this.scrollBarsHandlers[name];
+  //   } else {
+  //     this.scrollBarsHandlers[name] = { baseApp, handler };
+  //   }
+  // };
 
   start() {
     if (!this.raf) {
@@ -46,8 +44,8 @@ export class Update {
       cancelAnimationFrame(this.raf);
       this.raf = undefined;
     }
-    this.scrollBarsHandlers = {};
-    events.off('scrollBarsHandler', this.setScrollBarsHandler);
+    // this.scrollBarsHandlers = {};
+    // events.off('scrollBarsHandler', this.setScrollBarsHandler);
   }
 
   private lastFocusElement?: HTMLElement;
@@ -144,10 +142,10 @@ export class Update {
     debugTimeCheck('[Update] backgrounds');
     pixiApp.copy.update();
     debugTimeCheck('[Update] copy');
-    for (const key in this.scrollBarsHandlers) {
-      const { baseApp, handler } = this.scrollBarsHandlers[key];
-      handler.update(baseApp.viewport.dirty);
-    }
+    // for (const key in this.scrollBarsHandlers) {
+    //   const { baseApp, handler } = this.scrollBarsHandlers[key];
+    //   handler.update(baseApp.viewport.dirty);
+    // }
     debugTimeCheck('[Update] scrollbars');
     pixiApp.singleCellOutlines.update(viewportChanged);
     debugTimeCheck('[Update] singleCellOutlines');

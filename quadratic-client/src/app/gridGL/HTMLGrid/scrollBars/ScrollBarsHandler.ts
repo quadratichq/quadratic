@@ -48,13 +48,13 @@ export class ScrollBarsHandler {
   constructor(options: ScrollBarsProps, key: string) {
     this.baseApp = options.baseApp;
     this.key = key;
-    this.viewportRectangle = options.rectangle;
+    this.viewportRectangle = options.sheetBounds;
 
     events.on('sheetsInfo', this.setDirty);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('headingSize', this.setDirty);
     events.on('changeSheet', this.setDirty);
-    events.on('scrollBar', this.setDragging);
+    // events.on('scrollBar', this.setDragging);
     window.addEventListener('resize', this.setDirty);
   }
 
@@ -63,7 +63,7 @@ export class ScrollBarsHandler {
     events.off('sheetInfoUpdate', this.setDirty);
     events.off('headingSize', this.setDirty);
     events.off('changeSheet', this.setDirty);
-    events.off('scrollBar', this.setDragging);
+    // events.off('scrollBar', this.setDragging);
     window.removeEventListener('resize', this.setDirty);
   }
 
