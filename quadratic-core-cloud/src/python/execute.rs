@@ -40,11 +40,6 @@ pub(crate) fn execute(
 
         println!("has_expression: {:?}", has_expression);
 
-        // // if there's no expression, return an empty result
-        // if !has_expression {
-        //     return Ok(empty_result);
-        // }
-
         // create a globals dict to capture q.cells("A1") call early
         let globals = pyo3::types::PyDict::new(py);
 
@@ -72,9 +67,6 @@ pub(crate) fn execute(
                 .collect::<Vec<_>>()
                 .join("\n")
         };
-
-        println!("setup_code: {:?}", setup_code);
-        println!("expr_code: {:?}", expr_code);
 
         let async_code = if let Some(setup_code) = setup_code {
             let indented_setup = indent_code(&setup_code);
@@ -126,34 +118,6 @@ with redirect_stdout(__quadratic_std_out__):
         let output_type = processed_result.get_item("output_type")?.extract()?;
         let has_headers = processed_result.get_item("has_headers")?.extract()?;
 
-        println!("output_type: {:?}", output_type);
-
-        // if output_type == "NoneType" {
-        //     // capture std_out from python even for NoneType
-        //     let c_std_out = c_string("__quadratic_std_out__")?;
-        //     let std_out_value = py.eval(&c_std_out, Some(&globals), None)?;
-        //     let std_out_string = std_out_value.extract::<String>()?;
-
-        //     let std_out = if std_out_string.is_empty() {
-        //         None
-        //     } else {
-        //         Some(std_out_string)
-        //     };
-
-        //     return Ok(JsCodeResult {
-        //         transaction_id: transaction_id.to_string(),
-        //         success: false, // NoneType returns empty result
-        //         std_out,
-        //         std_err: None,
-        //         line_number: None,
-        //         output_value: None,
-        //         output_array: None,
-        //         output_display_type: None,
-        //         chart_pixel_output: None,
-        //         has_headers: false,
-        //     });
-        // }
-
         // convert to JsCellValueResult format (tuple struct with value, type_id)
         let output_value = processed_result
             .get_item("output_value")?
@@ -194,21 +158,13 @@ with redirect_stdout(__quadratic_std_out__):
         let c_std_out = c_string("__quadratic_std_out__.getvalue()")?;
         let std_out_value = py.eval(&c_std_out, Some(&globals), None)?;
         let std_out_string = std_out_value.extract::<String>()?;
-        let std_out = if std_out_string.is_empty() {
-            None
-        } else {
-            Some(std_out_string)
-        };
+        let std_out = std_out_string.is_empty().then_some(std_out_string);
 
         // capture std_err from python
         let c_std_err = c_string("__quadratic_std_err__.getvalue()")?;
         let std_err_value = py.eval(&c_std_err, Some(&globals), None)?;
         let std_err_string = std_err_value.extract::<String>()?;
-        let std_err = if std_err_string.is_empty() {
-            None
-        } else {
-            Some(std_err_string)
-        };
+        let std_err = std_err_string.is_empty().then_some(std_err_string);
 
         Ok(JsCodeResult {
             transaction_id: transaction_id.to_string(),
