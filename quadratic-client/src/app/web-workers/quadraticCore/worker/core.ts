@@ -57,20 +57,15 @@ import {
   posToPos,
   toSheetPos,
 } from '@/app/web-workers/quadraticCore/worker/rustConversions';
-import * as Sentry from '@sentry/react';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { Buffer } from 'buffer';
-import mixpanel from 'mixpanel-browser';
 
 class Core {
   gridController?: GridController;
   teamUuid?: string;
 
   private sendAnalyticsError = (from: string, error: Error | unknown) => {
-    console.error(error);
-    mixpanel.track(`[core] ${from} error`, {
-      error,
-    });
-    Sentry.captureException(error);
+    sendAnalyticsError('core', from, error);
   };
 
   private handleCoreError = (from: string, error: Error | unknown) => {
@@ -247,7 +242,7 @@ class Core {
         typeof data.operations === 'string' ? new Uint8Array(Buffer.from(data.operations, 'base64')) : data.operations;
 
       this.gridController.multiplayerTransaction(data.id, data.sequence_num, operations);
-      offline.markTransactionSent(data.id);
+      await offline.markTransactionSent(data.id);
 
       // update the multiplayer state
       await this.updateMultiplayerState();
@@ -261,7 +256,7 @@ class Core {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       this.gridController.receiveMultiplayerTransactionAck(transaction_id, sequence_num);
-      offline.markTransactionSent(transaction_id);
+      await offline.markTransactionSent(transaction_id);
 
       // sends multiplayer synced to the client, to proceed from file loading screen
       coreClient.sendMultiplayerSynced();

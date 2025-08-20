@@ -1,6 +1,8 @@
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { core } from '@/app/web-workers/quadraticCore/worker/core';
 import { coreClient } from '@/app/web-workers/quadraticCore/worker/coreClient';
+import { sendAnalyticsError } from '@/shared/utils/error';
+import { Dexie, type Table } from 'dexie';
 
 const DB_NAME = 'Quadratic-Offline';
 const DB_VERSION = 1;
@@ -20,6 +22,9 @@ interface OfflineEntry {
   timestamp: number;
 }
 
+// [fileId, transactionId, index]
+type OfflineEntryKey = [string, string, number];
+
 interface OfflineStats {
   transactions: number;
   operations: number;
@@ -27,7 +32,8 @@ interface OfflineStats {
 }
 
 class Offline {
-  private db: IDBDatabase | undefined;
+  private db?: Dexie;
+  private transactionsTable?: Table<OfflineEntry, OfflineEntryKey>;
   private index = 0;
   fileId?: string;
 
@@ -36,168 +42,186 @@ class Offline {
   // messages with separate operations to get good progress information.
   stats: OfflineStats = { transactions: 0, operations: 0, timestamps: [] };
 
-  // Creates a connection to the indexedDb database
-  init = (fileId: string): Promise<undefined> => {
-    return new Promise((resolve) => {
-      this.fileId = fileId;
-      const request = self.indexedDB.open(DB_NAME, DB_VERSION);
-      request.onerror = (event) => {
-        console.error('Error opening indexedDB', event);
-      };
-
-      request.onsuccess = () => {
-        this.db = request.result;
-        self.addUnsentTransaction = this.addUnsentTransaction;
-        resolve(undefined);
-      };
-
-      request.onupgradeneeded = () => {
-        const db = request.result;
-        // creates an Object store that holds operations for a given key
-        const objectStore = db.createObjectStore(DB_STORE, {
-          keyPath: ['fileId', 'transactionId', 'index'],
-        });
-        objectStore.createIndex('fileId', 'fileId');
-        objectStore.createIndex('transactionId', 'transactionId');
-      };
-    });
+  private sendAnalyticsError = (from: string, error: Error | unknown) => {
+    sendAnalyticsError('Offline', from, error);
   };
 
-  // gets a file index from the indexedDb
-  private getFileIndex(readOnly: boolean, index: string): IDBIndex {
-    if (!this.db) throw new Error('Expected db to be initialized in getFileIndex');
-    const tx = this.db.transaction(DB_STORE, readOnly ? 'readonly' : 'readwrite');
-    return tx.objectStore(DB_STORE).index(index);
-  }
+  // Creates a connection to the indexedDb database
+  init = async (fileId: string): Promise<undefined> => {
+    try {
+      this.fileId = fileId;
 
-  // gets an object store from the indexedDb
-  private getObjectStore(readOnly: boolean): IDBObjectStore {
-    if (!this.db) throw new Error('Expected db to be initialized in getObjectStore');
-    const tx = this.db.transaction(DB_STORE, readOnly ? 'readonly' : 'readwrite');
-    return tx.objectStore(DB_STORE);
-  }
+      this.db = new Dexie(DB_NAME);
+      this.db.version(DB_VERSION).stores({
+        [DB_STORE]: '[fileId+transactionId+index], fileId, transactionId',
+      });
+
+      this.transactionsTable = this.db.table(DB_STORE);
+
+      await this.db.open();
+
+      self.addUnsentTransaction = this.addUnsentTransaction;
+
+      return undefined;
+    } catch (error) {
+      this.sendAnalyticsError('init', error);
+      return undefined;
+    }
+  };
+
+  // Helper method to validate required properties
+  private validateState = (methodName: string) => {
+    if (!this.db || !this.transactionsTable || !this.fileId) {
+      throw new Error(`Expected db, transactionsTable and fileId to be set in ${methodName} method.`);
+    }
+
+    return {
+      db: this.db,
+      transactionsTable: this.transactionsTable,
+      fileId: this.fileId,
+    };
+  };
 
   // Loads the unsent transactions for this file from indexedDb
-  async load(): Promise<{ transactionId: string; transactions: string; timestamp?: number }[] | undefined> {
-    if (!this.fileId) return undefined;
-    return new Promise((resolve) => {
-      const store = this.getFileIndex(true, 'fileId');
-      const keyRange = IDBKeyRange.only(this.fileId);
-      const getAll = store.getAll(keyRange);
-      getAll.onsuccess = () => {
-        const results = getAll.result
-          .sort((a, b) => a.index - b.index)
-          .map((r) => {
-            return {
-              transactionId: r.transactionId,
-              transactions: r.transaction,
-              operations: r.operations ?? 0,
-              timestamp: r.timestamp,
-            };
-          });
-        // set the index to the length of the results so that we can add new transactions to the end
-        this.index = results.length;
-        this.stats = {
-          transactions: results.length,
-          operations: results.reduce((acc, r) => acc + r.operations, 0),
-          timestamps: results.flatMap((r) => (r.timestamp ? [r.timestamp] : [])).sort((a, b) => a - b),
-        };
-        coreClient.sendOfflineTransactionStats();
-        resolve(results);
+  load = async (): Promise<{ transactionId: string; transactions: string; timestamp?: number }[]> => {
+    try {
+      const { transactionsTable, fileId } = this.validateState('load');
+
+      const results = await transactionsTable.where('fileId').equals(fileId).toArray();
+
+      const sortedResults = results
+        .sort((a, b) => a.index - b.index)
+        .map((r) => {
+          return {
+            transactionId: r.transactionId,
+            transactions: r.transaction,
+            operations: r.operations ?? 0,
+            timestamp: r.timestamp,
+          };
+        });
+
+      // set the index to the length of the results so that we can add new transactions to the end
+      this.index = sortedResults.length;
+      this.stats = {
+        transactions: sortedResults.length,
+        operations: sortedResults.reduce((acc, r) => acc + r.operations, 0),
+        timestamps: sortedResults.flatMap((r) => (r.timestamp ? [r.timestamp] : [])).sort((a, b) => a - b),
       };
-    });
-  }
+
+      coreClient.sendOfflineTransactionStats();
+
+      return sortedResults;
+    } catch (error) {
+      this.sendAnalyticsError('load', error);
+      return [];
+    }
+  };
 
   // Adds the transaction to the unsent transactions list.
-  addUnsentTransaction = (transactionId: string, transaction: string, operations: number) => {
-    const store = this.getObjectStore(false);
-    if (!this.fileId) throw new Error("Expected fileId to be set in 'addUnsentTransaction' method.");
-    const offlineEntry: OfflineEntry = {
-      fileId: this.fileId,
-      transactionId,
-      transaction,
-      operations,
-      index: this.index++,
-      timestamp: Date.now(),
-    };
-    store.add(offlineEntry);
-    this.stats.transactions++;
-    this.stats.operations += operations;
-    coreClient.sendOfflineTransactionStats();
-    if (debugFlag('debugOffline')) {
-      console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
+  addUnsentTransaction = async (transactionId: string, transaction: string, operations: number) => {
+    try {
+      const { transactionsTable, fileId } = this.validateState('addUnsentTransaction');
+
+      const offlineEntry: OfflineEntry = {
+        fileId,
+        transactionId,
+        transaction,
+        operations,
+        index: this.index++,
+        timestamp: Date.now(),
+      };
+
+      await transactionsTable.add(offlineEntry);
+
+      this.stats.transactions++;
+      this.stats.operations += operations;
+
+      coreClient.sendOfflineTransactionStats();
+
+      if (debugFlag('debugOffline')) {
+        console.log(`[Offline] Added transaction ${transactionId} to indexedDB.`);
+      }
+    } catch (error) {
+      this.sendAnalyticsError('addUnsentTransaction', error);
     }
   };
 
   // Removes the transaction from the unsent transactions list.
-  markTransactionSent(transactionId: string) {
-    const index = this.getFileIndex(false, 'transactionId');
-    index.openCursor(IDBKeyRange.only(transactionId)).onsuccess = (event) => {
-      const cursor = (event.target as IDBRequest<IDBCursorWithValue>).result;
-      if (cursor) {
+  markTransactionSent = async (transactionId: string) => {
+    try {
+      const { transactionsTable } = this.validateState('markTransactionSent');
+
+      const transaction = await transactionsTable.where('transactionId').equals(transactionId).toArray();
+      const keys = transaction.map<OfflineEntryKey>((entry) => [entry.fileId, entry.transactionId, entry.index]);
+      await transactionsTable.bulkDelete(keys);
+
+      // Update stats
+      transaction.forEach((entry) => {
         this.stats.transactions--;
-        this.stats.operations -= cursor.value.operations;
-        coreClient.sendOfflineTransactionStats();
-        cursor.delete();
-        if (debugFlag('debugOffline')) {
-          console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);
-        }
-      } else {
-        if (debugFlag('debugOffline')) {
-          console.log(`[Offline] Failed to remove transaction ${transactionId} from indexedDB (might not exist).`);
-        }
+        this.stats.operations -= entry.operations;
+      });
+
+      coreClient.sendOfflineTransactionStats();
+
+      if (debugFlag('debugOffline')) {
+        console.log(`[Offline] Removed transaction ${transactionId} from indexedDB.`);
       }
-    };
-  }
+    } catch (error) {
+      this.sendAnalyticsError('markTransactionSent', error);
+    }
+  };
 
   // Checks whether there are any unsent transactions in the indexedDb (ie, whether we have transactions sent to the server but not received back).
-  async unsentTransactionsCount(): Promise<number> {
-    return new Promise((resolve) => {
-      const store = this.getFileIndex(true, 'fileId');
-      const keyRange = IDBKeyRange.only(this.fileId);
-      const request = store.getAllKeys(keyRange);
-      request.onsuccess = () => {
-        resolve(request.result.length);
-      };
-      request.onerror = () => {
-        resolve(0);
-      };
-    });
-  }
+  unsentTransactionsCount = async (): Promise<number> => {
+    try {
+      const { transactionsTable, fileId } = this.validateState('unsentTransactionsCount');
+
+      return await transactionsTable.where('fileId').equals(fileId).count();
+    } catch (error) {
+      this.sendAnalyticsError('unsentTransactionsCount', error);
+      return 0;
+    }
+  };
 
   // Loads unsent transactions and applies them to the grid. This is called twice: once after the grid and pixi loads;
   // and a second time when the socket server connects.
-  async loadTransactions() {
-    const unsentTransactions = await this.load();
-    if (debugFlag('debugShowOfflineTransactions')) {
-      console.log(JSON.stringify(unsentTransactions));
-    }
-    if (debugFlag('debugOffline')) {
-      if (unsentTransactions?.length) {
-        console.log(`[Offline] Loading ${unsentTransactions.length} unsent transactions from indexedDB.`);
-      } else {
-        console.log('[Offline] No unsent transactions in indexedDB.');
+  loadTransactions = async () => {
+    try {
+      const unsentTransactions = await this.load();
+      if (debugFlag('debugShowOfflineTransactions')) {
+        console.log(JSON.stringify(unsentTransactions));
       }
-    }
 
-    if (unsentTransactions?.length) {
-      unsentTransactions.forEach((tx) => {
-        // we remove the transaction is there was a problem applying it (eg, if
-        // the schema has changed since it was saved offline)
-        if (!core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions)) {
-          this.markTransactionSent(tx.transactionId);
+      if (debugFlag('debugOffline')) {
+        if (unsentTransactions?.length) {
+          console.log(`[Offline] Loading ${unsentTransactions.length} unsent transactions from indexedDB.`);
+        } else {
+          console.log('[Offline] No unsent transactions in indexedDB.');
         }
-      });
-    }
+      }
 
-    coreClient.sendOfflineTransactionsApplied(this.stats.timestamps);
-  }
+      if (unsentTransactions?.length) {
+        unsentTransactions.forEach((tx) => {
+          // we remove the transaction is there was a problem applying it (eg, if
+          // the schema has changed since it was saved offline)
+          if (!core.applyOfflineUnsavedTransaction(tx.transactionId, tx.transactions)) {
+            this.markTransactionSent(tx.transactionId);
+          }
+        });
+      }
+
+      coreClient.sendOfflineTransactionsApplied(this.stats.timestamps);
+    } catch (error) {
+      this.sendAnalyticsError('loadTransactions', error);
+    }
+  };
 
   // Used by tests to clear all entries from the indexedDb for this fileId
-  testClear() {
-    const store = this.getObjectStore(false);
-    store.clear();
-  }
+  testClear = async () => {
+    const { transactionsTable } = this.validateState('testClear');
+
+    await transactionsTable.clear();
+  };
 }
 
 export const offline = new Offline();

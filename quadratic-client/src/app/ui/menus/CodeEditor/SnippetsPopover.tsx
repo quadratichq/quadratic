@@ -20,7 +20,7 @@ import {
 } from '@/shared/shadcn/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/shadcn/ui/popover';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type * as monaco from 'monaco-editor';
 import type { ReactNode } from 'react';
 import { useEffect, useMemo } from 'react';
@@ -36,7 +36,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
 
   useEffect(() => {
     if (showSnippetsPopover === true) {
-      mixpanel.track('[Snippets].opened');
+      trackEvent('[Snippets].opened');
     }
   }, [showSnippetsPopover]);
 
@@ -92,7 +92,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
                   value={label}
                   keywords={keywords ? [keywords] : []}
                   onSelect={() => {
-                    mixpanel.track('[Snippets].selected', { label });
+                    trackEvent('[Snippets].selected', { label });
 
                     if (editorInst) {
                       const selection = editorInst.getSelection();
@@ -118,7 +118,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
                 <ExternalLink
                   href={WEBSITE_CONNECTIONS}
                   onClick={() => {
-                    mixpanel.track('[Snippets].clickConnections');
+                    trackEvent('[Snippets].clickConnections');
                   }}
                 >
                   Connections
@@ -127,7 +127,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
                 <ExternalLink
                   href={WEBSITE_EXAMPLES}
                   onClick={() => {
-                    mixpanel.track('[Snippets].clickExamples');
+                    trackEvent('[Snippets].clickExamples');
                   }}
                 >
                   Examples
@@ -136,7 +136,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
                 <ExternalLink
                   href={WEBSITE_CHANGELOG}
                   onClick={() => {
-                    mixpanel.track('[Snippets].clickChangelog');
+                    trackEvent('[Snippets].clickChangelog');
                   }}
                 >
                   Changelog
@@ -149,7 +149,7 @@ export function SnippetsPopover({ editorInst }: SnippetsPopoverProps) {
         <ExternalLink
           href={documentationLink}
           onClick={() => {
-            mixpanel.track('[Snippets].clickDocs');
+            trackEvent('[Snippets].clickDocs');
           }}
           className="flex w-full items-center justify-between gap-4 border-t border-border px-3 py-2 text-sm text-muted-foreground hover:underline"
         >

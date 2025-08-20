@@ -123,23 +123,20 @@ impl OldSelection {
             return true;
         }
 
-        if let Some(columns) = self.columns.as_ref() {
-            if columns.contains(&pos.x) {
+        if let Some(columns) = self.columns.as_ref()
+            && columns.contains(&pos.x) {
                 return true;
             }
-        }
 
-        if let Some(rows) = self.rows.as_ref() {
-            if rows.contains(&pos.y) {
+        if let Some(rows) = self.rows.as_ref()
+            && rows.contains(&pos.y) {
                 return true;
             }
-        }
 
-        if let Some(rects) = self.rects.as_ref() {
-            if rects.iter().any(|rect| rect.contains(pos)) {
+        if let Some(rects) = self.rects.as_ref()
+            && rects.iter().any(|rect| rect.contains(pos)) {
                 return true;
             }
-        }
         false
     }
 

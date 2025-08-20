@@ -1,7 +1,7 @@
 import type { GenericAction } from '@/app/actions';
 import type { Action } from '@/app/actions/actions';
 import { CommandItem, CommandShortcut } from '@/shared/shadcn/ui/command';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { JSX } from 'react';
 
 export type CommandGroup = {
@@ -51,7 +51,7 @@ export const CommandPaletteListItem = (props: CommandPaletteListItemProps) => {
     <CommandItem
       value={value}
       onSelect={() => {
-        mixpanel.track('[CommandPalette].run', { label });
+        trackEvent('[CommandPalette].run', { label });
         closeCommandPalette();
         action();
       }}

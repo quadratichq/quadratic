@@ -26,8 +26,8 @@ import type {
   AzureOpenAIModelKey,
   BasetenModelKey,
   Content,
+  FireworksModelKey,
   ImageContent,
-  OpenAIModelKey,
   OpenRouterModelKey,
   ParsedAIResponse,
   TextContent,
@@ -41,7 +41,7 @@ function convertContent(content: Content, imageSupport: boolean): Array<ChatComp
     .filter((content) => !('text' in content) || !!content.text.trim())
     .filter(
       (content): content is TextContent | ImageContent =>
-        (imageSupport && isContentImage(content)) || (isContentText(content) && !!content.text.trim())
+        (imageSupport && isContentImage(content)) || isContentText(content)
     )
     .map((content) => {
       if (isContentText(content)) {
@@ -59,14 +59,15 @@ function convertContent(content: Content, imageSupport: boolean): Array<ChatComp
 
 function convertToolResultContent(content: ToolResultContent): Array<ChatCompletionContentPartText> {
   return content
-    .filter((content): content is TextContent => isContentText(content) && !!content.text.trim())
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content): content is TextContent => isContentText(content))
     .map((content) => ({
       type: 'text' as const,
       text: content.text.trim(),
     }));
 }
 
-export function getOpenAIApiArgs(
+export function getOpenAIChatCompletionsApiArgs(
   args: AIRequestHelperArgs,
   strictParams: boolean,
   imageSupport: boolean
@@ -171,9 +172,9 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
   return name === undefined ? 'auto' : { type: 'function', function: { name } };
 }
 
-export async function parseOpenAIStream(
+export async function parseOpenAIChatCompletionsStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey: AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | FireworksModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -208,7 +209,7 @@ export async function parseOpenAIStream(
     if (!response?.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
-        if (chunk.choices[0].delta.content?.trim()) {
+        if (chunk.choices[0].delta.content) {
           const currentContent = {
             ...(responseMessage.content.pop() ?? {
               type: 'text',
@@ -295,9 +296,9 @@ export async function parseOpenAIStream(
   return { responseMessage, usage };
 }
 
-export function parseOpenAIResponse(
+export function parseOpenAIChatCompletionsResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey: AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | FireworksModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
