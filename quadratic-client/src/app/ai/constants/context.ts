@@ -1,2 +1,2 @@
-export const maxRects = 10;
-export const maxRows = 30;
+export const MAX_RECTS = 10;
+export const MAX_ROWS = 10;

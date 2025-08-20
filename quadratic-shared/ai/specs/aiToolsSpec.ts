@@ -613,6 +613,7 @@ This name should be from user's perspective, not the assistant's.\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Do NOT use this tool if you already have the information in your context. We provide a lot of data from tables and the sheet in context. Check there first before calling this.
 Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
@@ -644,7 +645,8 @@ The string representation (in a1 notation) of the selection of cells to get the 
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
-This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.
+You MUST NOT use this tool if you already have the data in your context. We provide a lot of data from tables and the sheet in context. Check there first before calling this.
 Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
@@ -688,7 +690,7 @@ Use MUST use this tool before creating or moving tables, code, connections, or c
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
-Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
+You MUST NOT use this tool if you already have the data in your context. We provide a lot of data from tables and the sheet in context. Check there first before calling this.
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
 Data tables are best for adding new tabular data to the sheet.\n\n

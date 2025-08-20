@@ -39,7 +39,8 @@ const convertJsCellValue = (cell: JsCellValueCode, showLanguage: boolean): strin
 
 /// Converts a jsGetAICellResult to markdown
 export const AICellsToMarkdown = (description: JsCellValueDescription, showLanguage: boolean): string => {
-  return `
+  if (description.values) {
+    return `
 \`\`\`json
 {
   "total_range": "${description.total_range}",
@@ -49,6 +50,10 @@ ${description.values.map((row) => `      [${row.map((cell) => convertJsCellValue
   ]
 }
 \`\`\`
+`;
+  }
+  return `
+Bounds: ${description.total_range}.
 `;
 };
 

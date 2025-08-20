@@ -131,7 +131,7 @@ impl Sheet {
         JsCellValueDescription {
             total_range: total_range.a1_string(),
             range: rect.a1_string(),
-            values,
+            values: Some(values),
         }
     }
 

@@ -24,7 +24,6 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { debugAIContext } from '@/app/ui/menus/AIAnalyst/hooks/debugContext';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
@@ -80,12 +79,8 @@ export function useSubmitAIAnalystPrompt() {
   const aiModel = useAIModel();
   const { handleAIRequestToAPI } = useAIRequestToAPI();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
-  // const { getOtherSheetsContext } = useOtherSheetsContextMessages();
-  // const { getSheetInfoContext } = useSheetInfoMessages();
   const { getSummaryContext } = useSummaryContextMessages();
   const { getCodeErrorContext } = useCodeErrorMessages();
-  // const { getTablesContext } = useTablesContextMessages();
-  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
@@ -96,36 +91,18 @@ export function useSubmitAIAnalystPrompt() {
   const updateInternalContext = useRecoilCallback(
     () =>
       async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
-        const [
-          sqlContext,
-          filesContext,
-          // sheetInfoContext,
-          // otherSheetsContext,
-          // tablesContext,
-          // currentSheetContext,
-          visibleContext,
-          summaryContext,
-          codeErrorContext,
-        ] = await Promise.all([
+        const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext] = await Promise.all([
           getSqlContext(),
           getFilesContext({ chatMessages }),
-          // getSheetInfoContext({ sheets: sheets.sheets }),
-          // getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-          // getTablesContext(),
-          // getCurrentSheetContext({ currentSheetName: context.currentSheet }),
           getVisibleContext(),
-          getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
+          getSummaryContext(),
           getCodeErrorContext(),
         ]);
 
         const messagesWithContext: ChatMessage[] = [
           ...sqlContext,
           ...filesContext,
-          // ...sheetInfoContext,
-          // ...otherSheetsContext,
-          // ...tablesContext,
           ...getCurrentDateTimeContext(),
-          // ...currentSheetContext,
           ...visibleContext,
           ...summaryContext,
           ...codeErrorContext,
@@ -134,17 +111,7 @@ export function useSubmitAIAnalystPrompt() {
 
         return messagesWithContext;
       },
-    [
-      getCurrentDateTimeContext,
-      // getOtherSheetsContext,
-      getSummaryContext,
-      // getTablesContext,
-      // getCurrentSheetContext,
-      getVisibleContext,
-      getFilesContext,
-      // getSheetInfoContext,
-      getSqlContext,
-    ]
+    [getCurrentDateTimeContext, getSummaryContext, getVisibleContext, getFilesContext, getSqlContext]
   );
 
   const submitPrompt = useRecoilCallback(

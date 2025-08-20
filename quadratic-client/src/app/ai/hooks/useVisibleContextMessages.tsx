@@ -1,4 +1,4 @@
-import { maxRects, maxRows } from '@/app/ai/constants/context';
+import { MAX_ROWS } from '@/app/ai/constants/context';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
@@ -21,8 +21,7 @@ export function useVisibleContextMessages() {
       ? undefined
       : await quadraticCore.getAISelectionContexts({
           selections: [visibleRectSelection],
-          maxRects,
-          maxRows,
+          maxRows: MAX_ROWS,
           includeErroredCodeCells: true,
           includeTablesSummary: true,
           includeChartsSummary: true,
