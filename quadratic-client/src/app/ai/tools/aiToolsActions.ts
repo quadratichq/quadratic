@@ -123,8 +123,9 @@ The code cell has spilled, because the output overlaps with existing data on the
 \`\`\`json\n
 ${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
 \`\`\`
-Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.
-Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet. Do not attempt the same location repeatedly. If it failed once, it will fail again.
+Output size when not spilled will be ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.\n
+Use the move tool to move just the single anchor cell of the code you attempted to place to a new position.\n
+Move the code cell to a new position that will avoid spilling. Make sure the new position is not overlapping with existing data on the sheet. Do not attempt the same location repeatedly. If it failed once, it will fail again.
 `
       ),
     ];
