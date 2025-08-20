@@ -1097,6 +1097,7 @@ Examples:
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
 IMPORTANT: Before moving a table, code, or a chart, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
@@ -1128,6 +1129,7 @@ Target location is the top left corner of the target location on the current ope
     prompt: `
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
