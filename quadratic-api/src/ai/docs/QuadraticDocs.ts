@@ -10,6 +10,8 @@ Files can be imported by drag and dropping into the sheet, those supported file 
 
 Data can be exported by following these steps: 1. highlight the data 2. right-click the highlighted data 3. select export to csv
 
+You can also export via the file menu. File > Download > choose file type. You can export to Quadratic file type .grid, Excel as .xlsx, and CSV. 
+
 Files can be shared with other users by selecting the share button in the top right. Quadratic .grid files can be download from the file menu.
 
 The AI chat can import PDFs and images. To add PDFs and images to the chat, use the paperclip attach button to attach your file from the chat box. You can also paste PDFs and images into the chat box or drag and drop.
