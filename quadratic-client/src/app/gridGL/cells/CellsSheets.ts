@@ -2,6 +2,7 @@ import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
+import type { Content } from '@/app/gridGL/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SheetInfo } from '@/app/quadratic-core-types';
 import type {
@@ -15,9 +16,11 @@ import { Container } from 'pixi.js';
 
 export class CellsSheets extends Container<CellsSheet> {
   current?: CellsSheet;
+  content: Content;
 
-  constructor() {
+  constructor(content: Content) {
     super();
+    this.content = content;
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
   }
@@ -35,7 +38,7 @@ export class CellsSheets extends Container<CellsSheet> {
       const child = this.addChild(new CellsSheet(sheet.id));
       if (sheet.id === sheets.current) {
         this.current = child;
-        pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+        this.content.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
       }
     }
     renderWebWorker.pixiIsReady(sheets.current, pixiApp.viewport.getVisibleBounds(), pixiApp.viewport.scale.x);
@@ -56,20 +59,20 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet.destroy();
   };
 
-  // used to render all cellsTextHashes to warm up the GPU
-  showAll(id: string) {
-    this.children.forEach((child) => {
-      if (child.sheetId === id) {
-        if (this.current?.sheetId !== child?.sheetId) {
-          this.current = child;
-          child.show(pixiApp.viewport.getVisibleBounds());
-          pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-        }
-      } else {
-        child.hide();
-      }
-    });
-  }
+  // // used to render all cellsTextHashes to warm up the GPU
+  // showAll(id: string) {
+  //   this.children.forEach((child) => {
+  //     if (child.sheetId === id) {
+  //       if (this.current?.sheetId !== child?.sheetId) {
+  //         this.current = child;
+  //         child.show(pixiApp.viewport.getVisibleBounds());
+  //         pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
+  //       }
+  //     } else {
+  //       child.hide();
+  //     }
+  //   });
+  // }
 
   show(id: string): void {
     this.children.forEach((child) => {
@@ -104,7 +107,7 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     cellsSheet.cellsLabels.clearCellsTextHash(message);
     if (debugFlag('debugShowCellsHashBoxes') && sheets.current === message.sheetId) {
-      pixiApp.setViewportDirty();
+      this.content.setDirty();
     }
 
     const sheet = sheets.getById(message.sheetId);
@@ -124,7 +127,7 @@ export class CellsSheets extends Container<CellsSheet> {
     }
     cellsSheet.cellsLabels.addLabelMeshEntry(message);
     if (sheets.sheet?.id === message.sheetId) {
-      pixiApp.setViewportDirty();
+      this.content.setDirty();
     }
   }
 
@@ -143,9 +146,7 @@ export class CellsSheets extends Container<CellsSheet> {
         const sheet = this.getById(sheetId);
         sheet?.show(pixiApp.viewport.getVisibleBounds());
       }
-      pixiApp.gridLines.dirty = true;
-      pixiApp.setCursorDirty({ cursor: true });
-      pixiApp.headings.dirty = true;
+      this.content.setDirty({ gridLines: true, headings: true, cursor: true });
     }
   }
 

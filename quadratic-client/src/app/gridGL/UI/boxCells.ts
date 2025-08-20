@@ -1,7 +1,7 @@
 //! Used to draw autocomplete box.
 
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import type { Content } from '@/app/gridGL/Content';
 import { colors } from '@/app/theme/colors';
 import type { Rectangle } from 'pixi.js';
 import { Graphics } from 'pixi.js';
@@ -9,11 +9,17 @@ import { Graphics } from 'pixi.js';
 const thickness = 3;
 
 export class BoxCells extends Graphics {
+  private content: Content;
   private gridRectangle?: Rectangle;
   private horizontalDelete = false;
   private verticalDelete = false;
   private deleteRectangles?: Rectangle[];
   dirty = false;
+
+  constructor(content: Content) {
+    super();
+    this.content = content;
+  }
 
   /**
    * @param rectangle in grid coordinates
@@ -38,7 +44,7 @@ export class BoxCells extends Graphics {
     this.horizontalDelete = false;
     this.verticalDelete = false;
     this.deleteRectangles = undefined;
-    pixiApp.setViewportDirty();
+    this.content.setDirty();
   }
 
   private drawRectangle(): void {
@@ -47,7 +53,7 @@ export class BoxCells extends Graphics {
     this.dirty = false;
     this.clear();
     this.lineStyle({
-      color: pixiApp.accentColor,
+      color: this.content.accentColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });
@@ -56,7 +62,7 @@ export class BoxCells extends Graphics {
     this.moveTo(screenRectangle.x + screenRectangle.width, screenRectangle.y);
     this.lineTo(screenRectangle.x + screenRectangle.width, screenRectangle.y + screenRectangle.height);
     this.lineStyle({
-      color: pixiApp.accentColor,
+      color: this.content.accentColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });

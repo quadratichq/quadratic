@@ -83,24 +83,18 @@ export class LightWeightApp extends BaseApp {
 
   async render() {
     if (!this.bounds) return;
-    const cellSheet = pixiApp.cellsSheet();
-    const oldParent = cellSheet.parent;
-    const destroyed = pixiApp.destroyed;
 
     await pixiApp.prepareForCopying({ sheetId: sheets.current, cull: this.bounds });
-    this.viewport.addChild(cellSheet);
+    this.viewport.addChild(pixiApp.viewportContents);
 
     pixiApp.forceUpdate();
-    this.renderer.render(pixiApp.viewportContents);
+    this.renderer.render(this.viewport);
 
+    pixiApp.viewport.addChild(pixiApp.viewportContents);
     pixiApp.cleanUpAfterCopying();
-
-    pixiApp.destroyed = destroyed;
 
     // force a pixiApp rerender to clean up interactions (I think)
     pixiApp.setViewportDirty();
-
-    oldParent.addChild(cellSheet);
   }
 
   update = () => {

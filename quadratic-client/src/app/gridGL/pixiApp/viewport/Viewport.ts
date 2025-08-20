@@ -96,10 +96,6 @@ export class Viewport extends PixiViewport {
     this.on('mouse-edge-move', this.handleMouseEdgeMove);
   }
 
-  private turnOffDecelerate = () => {
-    this.plugins.remove('decelerate');
-  };
-
   private turnOnDecelerate = () => {
     this.plugins.add('decelerate', new Decelerate(this));
   };

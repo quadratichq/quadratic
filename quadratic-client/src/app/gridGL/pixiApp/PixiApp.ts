@@ -10,16 +10,9 @@ import {
 import { sheets } from '@/app/grid/controller/Sheets';
 import { BaseApp } from '@/app/gridGL/BaseApp';
 import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
-import { Background } from '@/app/gridGL/UI/Background';
 import { Cursor } from '@/app/gridGL/UI/Cursor';
-import { HtmlPlaceholders } from '@/app/gridGL/UI/HtmlPlaceholders';
-import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
-import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
-import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
-import { UIValidations } from '@/app/gridGL/UI/UIValidations';
-import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
@@ -33,7 +26,8 @@ import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { Container, Graphics, Rectangle } from 'pixi.js';
+import type { Graphics } from 'pixi.js';
+import { Container, Rectangle } from 'pixi.js';
 
 export class PixiApp extends BaseApp {
   private update: Update;
@@ -43,14 +37,6 @@ export class PixiApp extends BaseApp {
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
 
-  // this is used to display content over the headings (table name and columns
-  // when off the screen)
-  private hoverTableHeaders: Container;
-
-  // used to draw selection (via Cursor.ts) for hoverTableHeaders content
-  hoverTableColumnsSelection: Graphics;
-
-  stage = new Container();
   loading = true;
 
   // for testing purposes
@@ -65,22 +51,7 @@ export class PixiApp extends BaseApp {
     super();
     this.canvas.id = 'QuadraticCanvasID';
 
-    // This is created first so it can listen to messages from QuadraticCore.
-    this.cellImages = new UICellImages();
-    this.validations = new UIValidations();
-    this.hoverTableHeaders = new Container();
-    this.hoverTableColumnsSelection = new Graphics();
-    this.singleCellOutlines = new UISingleCellOutlines();
-    this.htmlPlaceholders = new HtmlPlaceholders();
-    this.boxCells = new BoxCells();
-    this.cellImages = new UICellImages();
-    this.cellHighlights = new CellHighlights();
-    this.cellMoving = new UICellMoving();
-
-    this.background = new Background();
     this.momentumDetector = new MomentumScrollDetector();
-    this.copy = new UICopy();
-    this.debug = new Graphics();
 
     this.update = new Update();
 
@@ -113,7 +84,7 @@ export class PixiApp extends BaseApp {
     if (this.waitingForFirstRender) {
       // perform a render to warm up the GPU
       this.cellsSheets.showAll(sheets.current);
-      this.renderer.render(this.stage);
+      this.renderer.render(this.viewport);
       this.waitingForFirstRender();
       this.waitingForFirstRender = undefined;
     } else {
@@ -138,8 +109,6 @@ export class PixiApp extends BaseApp {
       console.warn('Expected pixiApp to properly be defined in initCanvas');
       return;
     }
-    this.stage.addChild(this.viewport);
-
     // this holds the viewport's contents
     this.viewport.addChild(this.viewportContents);
 

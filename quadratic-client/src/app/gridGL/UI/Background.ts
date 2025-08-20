@@ -1,17 +1,17 @@
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { colors } from '@/app/theme/colors';
+import type { Viewport } from 'pixi-viewport';
 import { Graphics } from 'pixi.js';
 
 export class Background extends Graphics {
-  update = (dirty: boolean) => {
-    if (!dirty) {
+  update = (viewport: Viewport) => {
+    if (!viewport.dirty) {
       return;
     }
 
     this.clear();
     const clamp = sheets.sheet.clamp;
-    const bounds = pixiApp.viewport.getVisibleBounds();
+    const bounds = viewport.getVisibleBounds();
     const left = Math.max(bounds.left, clamp.left);
     const top = Math.max(bounds.top, clamp.top);
     const right = Math.min(bounds.right, clamp.right);

@@ -1,8 +1,9 @@
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { BaseApp } from '@/app/gridGL/BaseApp';
+import type { Content } from '@/app/gridGL/Content';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
+import type { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { getColumnA1Notation } from '@/app/gridGL/UI/gridHeadings/getA1Notation';
 import { GridHeadingsLabels } from '@/app/gridGL/UI/gridHeadings/GridHeadingsLabels';
 import { GridHeadingRows } from '@/app/gridGL/UI/gridHeadings/GridHeadingsRows';
@@ -36,7 +37,7 @@ const GRID_HEADING_RESIZE_TOLERANCE = 3;
 export const LABEL_DIGITS_TO_CALCULATE_SKIP = 3;
 
 export class GridHeadings extends Container {
-  private baseApp: BaseApp;
+  private content: Content;
 
   private characterSize?: Size;
   private headingsGraphics: Graphics;
@@ -61,9 +62,9 @@ export class GridHeadings extends Container {
 
   dirty = true;
 
-  constructor(baseApp: BaseApp) {
+  constructor(content: Content) {
     super();
-    this.baseApp = baseApp;
+    this.content = content;
     this.headingsGraphics = this.addChild(new Graphics());
     this.labels = this.addChild(new GridHeadingsLabels());
     this.corner = this.addChild(new Graphics());
@@ -99,8 +100,7 @@ export class GridHeadings extends Container {
   }
 
   // Fills horizontal bar based on selection.
-  private drawHorizontalBar() {
-    const viewport = this.baseApp.viewport;
+  private drawHorizontalBar(viewport: Viewport) {
     const bounds = viewport.getVisibleBounds();
     const scale = viewport.scaled;
     const cellHeight = CELL_HEIGHT / scale;
@@ -118,7 +118,7 @@ export class GridHeadings extends Container {
     const left = Math.max(bounds.left, clamp.left);
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
-    this.headingsGraphics.beginFill(this.baseApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    this.headingsGraphics.beginFill(this.content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
     this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
@@ -136,10 +136,9 @@ export class GridHeadings extends Container {
   }
 
   // Adds horizontal labels
-  private horizontalLabels() {
+  private horizontalLabels(viewport: Viewport) {
     if (!this.characterSize) return;
 
-    const viewport = this.baseApp.viewport;
     const bounds = viewport.getVisibleBounds();
     const scale = viewport.scaled;
     const offsets = sheets.sheet.offsets;
@@ -200,7 +199,7 @@ export class GridHeadings extends Container {
         if (
           scale < 0.2 || // this fixes a bug where multi letter labels were not showing when zoomed out
           currentWidth > charactersWidth ||
-          this.baseApp.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
+          this.content.gridLines.alpha < colors.headerSelectedRowColumnBackgroundColorAlpha
         ) {
           // don't show numbers if it overlaps with the selected value (eg, hides B if selected A overlaps it)
           let xPosition = x + currentWidth / 2;
@@ -243,25 +242,23 @@ export class GridHeadings extends Container {
     }
   }
 
-  private drawHorizontal() {
-    this.drawHorizontalBar();
-    this.horizontalLabels();
+  private drawHorizontal(viewport: Viewport) {
+    this.drawHorizontalBar(viewport);
+    this.horizontalLabels(viewport);
   }
 
-  private calculateRowWidth(bottomNumberLength: number): number {
+  private calculateRowWidth(viewport: Viewport, bottomNumberLength: number): number {
     if (!this.characterSize) {
       throw new Error('Expected characterSize to be defined');
     }
-    const { viewport } = this.baseApp;
     let rowWidth =
       (bottomNumberLength * this.characterSize.width) / viewport.scale.x + (LABEL_PADDING_ROWS / viewport.scale.x) * 2;
     return Math.max(rowWidth, CELL_HEIGHT / viewport.scale.x);
   }
 
-  private drawVerticalBar() {
+  private drawVerticalBar(viewport: Viewport) {
     if (!this.characterSize) return;
 
-    const viewport = this.baseApp.viewport;
     const bounds = viewport.getVisibleBounds();
     const sheet = sheets.sheet;
     const cursor = sheet.cursor;
@@ -271,7 +268,7 @@ export class GridHeadings extends Container {
     const end = offsets.getYPlacement(bounds.bottom);
     const bottomOffset = end.position + end.size;
     const bottomNumberLength = Math.round(bottomOffset / CELL_HEIGHT - 1).toString().length;
-    this.rowWidth = this.calculateRowWidth(bottomNumberLength);
+    this.rowWidth = this.calculateRowWidth(viewport, bottomNumberLength);
 
     // draw background of vertical bar
     this.headingsGraphics.lineStyle(0);
@@ -286,7 +283,7 @@ export class GridHeadings extends Container {
     const top = Math.max(bounds.top, clamp.top);
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
-    this.headingsGraphics.beginFill(this.baseApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    this.headingsGraphics.beginFill(this.content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
     this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
     for (let i = 0; i < this.selectedRows.length; i += 2) {
@@ -304,11 +301,10 @@ export class GridHeadings extends Container {
     this.headingsGraphics.endFill();
   }
 
-  private verticalLabels() {
+  private verticalLabels(viewport: Viewport) {
     if (!this.characterSize) return;
 
-    const viewport = this.baseApp.viewport;
-    const scale = viewport.scaled;
+    const scale = viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
     const offsets = sheets.sheet.offsets;
     const cellHeight = CELL_HEIGHT / scale;
@@ -403,13 +399,12 @@ export class GridHeadings extends Container {
     }
   }
 
-  private drawVertical() {
-    this.drawVerticalBar();
-    this.verticalLabels();
+  private drawVertical(viewport: Viewport) {
+    this.drawVerticalBar(viewport);
+    this.verticalLabels(viewport);
   }
 
-  private drawCorner() {
-    const { viewport } = this.baseApp;
+  private drawCorner(viewport: Viewport) {
     const bounds = viewport.getVisibleBounds();
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     this.corner.clear();
@@ -425,8 +420,7 @@ export class GridHeadings extends Container {
   }
 
   // draws the lines under and to the right of the headings
-  private drawHeadingLines() {
-    const { viewport } = this.baseApp;
+  private drawHeadingLines(viewport: Viewport) {
     const cellHeight = CELL_HEIGHT / viewport.scale.x;
     const bounds = viewport.getVisibleBounds();
     this.headingsGraphics.lineStyle(1, colors.gridLines, colors.headerSelectedRowColumnBackgroundColorAlpha, 0.5, true);
@@ -442,16 +436,10 @@ export class GridHeadings extends Container {
     this.headingsGraphics.lineTo(bounds.right, bounds.top + cellHeight);
   }
 
-  update = (viewportDirty: boolean) => {
+  update = (viewport: Viewport) => {
     // update only if dirty or if viewport is dirty and there is a column or row
     // selection (which requires a redraw)
-    if (
-      !this.dirty &&
-      !viewportDirty
-
-      // todo....
-      // !(viewportDirty && (sheets.sheet.cursor.columnRow?.columns || sheets.sheet.cursor.columnRow?.rows))
-    ) {
+    if (!this.dirty && !viewport.dirty) {
       return;
     }
     this.dirty = false;
@@ -467,7 +455,7 @@ export class GridHeadings extends Container {
       this.columnRect = undefined;
       this.headingSize = { width: 0, height: 0, unscaledWidth: 0, unscaledHeight: 0 };
       events.emit('headingSize', this.headingSize.width, this.headingSize.height);
-      this.baseApp.setViewportDirty();
+      this.content.setDirty();
       return;
     }
     this.visible = true;
@@ -475,17 +463,17 @@ export class GridHeadings extends Container {
       this.calculateCharacterSize();
     }
 
-    this.drawVertical();
-    this.drawHorizontal();
-    this.drawHeadingLines();
+    this.drawVertical(viewport);
+    this.drawHorizontal(viewport);
+    this.drawHeadingLines(viewport);
     this.labels.update();
-    this.drawCorner();
+    this.drawCorner(viewport);
 
     this.headingSize = {
-      width: this.rowWidth * this.baseApp.viewport.scale.x,
+      width: this.rowWidth * viewport.scale.x,
       height: CELL_HEIGHT,
       unscaledWidth: this.rowWidth,
-      unscaledHeight: CELL_HEIGHT / this.baseApp.viewport.scale.y,
+      unscaledHeight: CELL_HEIGHT / viewport.scale.y,
     };
     events.emit('headingSize', this.headingSize.width, this.headingSize.height);
   };
@@ -508,12 +496,13 @@ export class GridHeadings extends Container {
 
   // whether the point is on the heading gridLine (with tolerance)
   intersectsHeadingGridLine(
+    viewport: Viewport,
     world: Point
   ): { start: number; column: number | null; row: number | null; width?: number; height?: number } | undefined {
     if (!this.columnRect || !this.rowRect) return;
 
     const offsets = sheets.sheet.offsets;
-    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / this.baseApp.viewport.scale.x;
+    const tolerance = GRID_HEADING_RESIZE_TOLERANCE / viewport.scale.x;
 
     if (intersects.rectanglePoint(this.columnRect, world)) {
       for (const line of this.gridLinesColumns) {
@@ -535,11 +524,10 @@ export class GridHeadings extends Container {
   }
 
   /// Returns future sizes based on a new viewport position (top left)
-  getFutureSizes = (viewportTopY: number): HeadingSize => {
+  getFutureSizes = (viewport: Viewport, viewportTopY: number): HeadingSize => {
     if (!this.characterSize) {
       throw new Error('Expected characterSize to be defined');
     }
-    const { viewport } = this.baseApp;
     const bounds = viewport.getVisibleBounds();
     const viewportHeight = bounds.height;
 
@@ -548,13 +536,13 @@ export class GridHeadings extends Container {
     const screenBottom = viewportTopY + viewportHeight;
     const cellBottom = sheet.getRowFromScreen(screenBottom);
     const bottomNumberLength = cellBottom.toString().length;
-    const rowWidth = this.calculateRowWidth(bottomNumberLength);
+    const rowWidth = this.calculateRowWidth(viewport, bottomNumberLength);
 
     return {
-      width: rowWidth * this.baseApp.viewport.scale.x,
+      width: rowWidth * viewport.scale.x,
       height: CELL_HEIGHT,
       unscaledWidth: rowWidth,
-      unscaledHeight: CELL_HEIGHT / this.baseApp.viewport.scale.y,
+      unscaledHeight: CELL_HEIGHT / viewport.scale.y,
     };
   };
 }
