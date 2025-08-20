@@ -1,4 +1,3 @@
-import { AICellsToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
@@ -38,22 +37,18 @@ export function useVisibleContextMessages() {
       if (sheetContext.data_tables && sheetContext.data_tables.length > 0) {
         text += `
 ## Data Tables in the visible area
+
 `;
-
         for (const table of sheetContext.data_tables) {
-          text += `
-    #### ${table.data_table_name}
-
-    '${table.data_table_name}' has bounds of (${table.bounds}).
-    `;
+          text += `- '${table.data_table_name}' has bounds of (${table.bounds})\n`;
         }
       }
 
       if (sheetContext.code_tables && sheetContext.code_tables.length > 0) {
         text += `
 ### Code tables in the visible area
-`;
 
+`;
         for (const table of sheetContext.code_tables) {
           text += `- '${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}\n`;
         }
@@ -62,32 +57,34 @@ export function useVisibleContextMessages() {
       if (sheetContext.connections && sheetContext.connections.length > 0) {
         text += `
 ### Connections in the visible area
+
 `;
         for (const table of sheetContext.connections) {
           if (typeof table.language !== 'object' || !table.language.Connection) {
             console.warn('Unexpected non-connection table in useSummaryContextMessages');
             break;
           }
-
-          text += `-'${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}\n`;
+          text += `- '${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}\n`;
         }
       }
 
       if (sheetContext.charts && sheetContext.charts.length > 0) {
         text += `
 ### Charts in the visible area
+
 `;
         for (const chart of sheetContext.charts) {
-          text += `'${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}\n`;
+          text += `- '${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}\n`;
         }
       }
 
       if (sheetContext.data_rects && sheetContext.data_rects.length > 0) {
         text += `
 ### Flat data in the visible area
+
 `;
         for (const data of sheetContext.data_rects) {
-          text += `${AICellsToMarkdown(data, true)}\n`;
+          text += `- data on the sheet at ${data.total_range}\n`;
         }
       }
     }

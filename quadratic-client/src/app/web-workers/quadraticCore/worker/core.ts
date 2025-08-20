@@ -25,10 +25,10 @@ import type {
   JsDataTableColumnHeader,
   JsResponse,
   JsRowHeight,
-  JsSelectionContext,
   JsSheetNameToColor,
   JsSheetPosText,
   JsSummarizeSelectionResult,
+  JsSummaryContext,
   Pos,
   SearchOptions,
   SheetPos,
@@ -1067,24 +1067,10 @@ class Core {
     }
   }
 
-  getAISelectionContexts(args: {
-    selections: string[];
-    maxRows: number;
-    includeErroredCodeCells: boolean;
-    includeTablesSummary: boolean;
-    includeChartsSummary: boolean;
-    includeDataRectsSummary: boolean;
-  }): JsSelectionContext[] | undefined {
+  getAISelectionContexts(args: { selections: string[]; maxRows: number | undefined }): JsSummaryContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.getAISelectionContexts(
-        args.selections,
-        args.maxRows,
-        args.includeErroredCodeCells,
-        args.includeTablesSummary,
-        args.includeChartsSummary,
-        args.includeDataRectsSummary
-      );
+      return this.gridController.getAISelectionContexts(args.selections, args.maxRows);
     } catch (e) {
       this.handleCoreError('getAISelectionContexts', e);
       return undefined;

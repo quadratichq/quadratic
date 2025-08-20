@@ -6,12 +6,11 @@ import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessa
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, Context, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -20,9 +19,6 @@ type PDFImportResponse = z.infer<(typeof aiToolsSpec)[AITool.PDFImport]['respons
 
 export const useAnalystPDFImport = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  // const { getOtherSheetsContext } = useOtherSheetsContextMessages();
-  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
-  // const { getTablesContext } = useTablesContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
   const { getSummaryContext } = useSummaryContextMessages();
 
@@ -30,11 +26,9 @@ export const useAnalystPDFImport = () => {
     ({ set }) =>
       async ({
         pdfImportArgs,
-        context,
         chatMessages,
       }: {
         pdfImportArgs: PDFImportResponse;
-        context: Context;
         chatMessages: ChatMessage[];
       }): Promise<ToolResultContent> => {
         let importPDFResult = '';
@@ -49,7 +43,7 @@ export const useAnalystPDFImport = () => {
             // getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
             // getTablesContext(),
             // getCurrentSheetContext({ currentSheetName: context.currentSheet }),
-            getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
+            getSummaryContext(),
             getVisibleContext(),
           ]);
 

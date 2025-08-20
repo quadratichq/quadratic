@@ -56,14 +56,13 @@ export function useSummaryContextMessages() {
         return 0;
       }
     });
-    console.log(sheetsContext);
 
     const sheetCount = sheets.sheets.length;
     let text = `# File Summary
 
-      ## Sheets
+## Sheets
 
-      File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({ arr: sheets.sheets.map((sheet) => `'${sheet.name}'`), conjunction: 'and' })}.
+File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({ arr: sheets.sheets.map((sheet) => `'${sheet.name}'`), conjunction: 'and' })}.
 `;
 
     for (const sheetContext of sheetsContext) {
@@ -71,7 +70,7 @@ export function useSummaryContextMessages() {
       if (!sheet) continue;
 
       text += `
-      ## '${sheetContext.sheet_name}' summary\n`;
+## '${sheetContext.sheet_name}' summary\n\n`;
       if (sheetContext.sheet_name === sheets.sheet.name) {
         text += `- user's current sheet\n`;
       }
@@ -95,7 +94,7 @@ export function useSummaryContextMessages() {
       // -----------
       if (sheetContext.data_tables && sheetContext.data_tables.length > 0) {
         text += `
-    ### '${sheetContext.sheet_name}' Data tables:
+### '${sheetContext.sheet_name}' Data tables:
     `;
 
         for (const table of sheetContext.data_tables) {
@@ -185,7 +184,7 @@ ${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
       // ------
       if (sheetContext.charts && sheetContext.charts.length > 0) {
         text += `
-        ### '${sheet.name}' Charts
+### '${sheet.name}' Charts
 
 These are the charts on the sheet:
 `;
