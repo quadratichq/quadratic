@@ -57,195 +57,162 @@ export function useSummaryContextMessages() {
       }
     });
     console.log(sheetsContext);
-    //       // Categorize tables by sheet
-    //       const currentSheetTables = dataTables.filter((table) => table.sheet_name === currentSheetName);
-    //       const currentSheetCodeTables = codeTables.filter(
-    //         (table) =>
-    //           table.sheet_name === currentSheetName && !(typeof table.language === 'object' && table.language.Connection)
-    //       );
-    //       const currentSheetConnectionTables = codeTables.filter(
-    //         (table) =>
-    //           table.sheet_name === currentSheetName && typeof table.language === 'object' && table.language.Connection
-    //       );
-    //       const currentSheetCharts = charts.filter((chart) => chart.sheet_name === currentSheetName);
-
-    //       // Build summary text
-    //       const sheetCount = allSheets.length;
-    //       // const dataSheetCount = (hasCurrentSheetData ? 1 : 0) + otherSheetsWithData.length; // only count current if it has data
 
     const sheetCount = sheets.sheets.length;
-    let summary = `# File Summary
+    let text = `# File Summary
 
       ## Sheets
 
       File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({ arr: sheets.sheets.map((sheet) => `'${sheet.name}'`), conjunction: 'and' })}.
 `;
 
-    let rects = 0;
     for (const sheetContext of sheetsContext) {
       let sheet = sheets.getSheetByName(sheetContext.sheet_name);
       if (!sheet) continue;
 
-      summary += `
-      ## '${sheetContext.sheet_name}' summary
-      `;
+      text += `
+      ## '${sheetContext.sheet_name}' summary\n`;
       if (sheetContext.sheet_name === sheets.sheet.name) {
-        summary += `- user's current sheet`;
+        text += `- user's current sheet\n`;
       }
-      summary += `
-- ${sheets.getAISheetBounds(sheetContext.sheet_name)}`;
+      text += `- ${sheets.getAISheetBounds(sheetContext.sheet_name)}\n`;
 
       if (sheetContext.data_tables && sheetContext.data_tables.length > 0) {
-        summary += `- ${sheetContext.data_tables.length} data ${pluralize('table', sheetContext.data_tables.length)}`;
+        text += `- ${sheetContext.data_tables.length} data ${pluralize('table', sheetContext.data_tables.length)}\n`;
       }
       if (sheetContext.code_tables && sheetContext.code_tables.length > 0) {
-        summary += `
-    - ${sheetContext.code_tables.length} code ${pluralize('table', sheetContext.code_tables.length)}`;
+        text += `- ${sheetContext.code_tables.length} code ${pluralize('table', sheetContext.code_tables.length)}\n`;
       }
       if (sheetContext.charts && sheetContext.charts.length > 0) {
-          summary += `
-    - ${sheetContext.charts.length} ${pluralize('chart', sheetContext.charts.length)}`;
-        }
-        if (sheetContext.connections && sheetContext.connections.length > 0) {
-          summary += `
-    - ${sheetContext.connections.length} connection ${pluralize('table', sheetContext.connections.length)}`;
-        }
-        summary += '\n';
+        text += `- ${sheetContext.charts.length} ${pluralize('chart', sheetContext.charts.length)}\n`;
+      }
+      if (sheetContext.connections && sheetContext.connections.length > 0) {
+        text += `- ${sheetContext.connections.length} connection ${pluralize('table', sheetContext.connections.length)}\n`;
+      }
+      text += '\n';
 
+      // Data Tables
+      // -----------
       if (sheetContext.data_tables && sheetContext.data_tables.length > 0) {
-        summary += `
+        text += `
     ### '${sheetContext.sheet_name}' Data tables:
     `;
 
-        sheetContext.data_tables.forEach((table) => {
-          summary += `
-    #### ${table.data_table_name}
+        for (const table of sheetContext.data_tables) {
+          text += `
+#### ${table.data_table_name}
 
-    '${table.data_table_name}' has bounds of (${table.bounds}).
+'${table.data_table_name}' has bounds of (${table.bounds}).
+`;
+          // add data if available
+          if (table.first_rows_visible_values) {
+            text += `
+First rows of '${table.data_table_name}' (limited to ${MAX_ROWS} rows):
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
 
-    First rows of '${table.data_table_name}' (limited to ${MAX_ROWS} rows):
-    ${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
-          if (table.last_rows_visible_values) {
-            summary += `
-    Last rows of '${table.data_table_name}' (limited to ${MAX_ROWS} rows):
-    ${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
+            if (table.last_rows_visible_values) {
+              text += `
+Last rows of '${table.data_table_name}' (limited to ${MAX_ROWS} rows):
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
+            }
           }
-        });
+        }
       }
-    //         if (currentSheetCodeTables.length > 0) {
-    //           summary += `
-    // ### '${currentSheetName}' Code tables
 
-    // These are the code tables that output more than one cell on the sheet:
-    // `;
+      // Code Tables
+      // -----------
+      if (sheetContext.code_tables && sheetContext.code_tables.length > 0) {
+        text += `
+### '${sheet.name}' Code tables
 
-    //           currentSheetCodeTables.forEach((table) => {
-    //             summary += `
-    // #### ${table.code_table_name}
+These are the code tables that output more than one cell on the sheet:
+        `;
 
-    // '${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}.
+        for (const table of sheetContext.code_tables) {
+          text += `
+#### ${table.code_table_name}
 
-    // First rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-    // ${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
-    //             if (table.last_rows_visible_values) {
-    //               summary += `
-    // Last rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-    // ${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
-    //             }
-    //           });
-    //         }
+'${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}.
+`;
+          // add data if available
+          if (table.first_rows_visible_values) {
+            text += `
+First rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
 
-    //         if (currentSheetConnectionTables.length > 0) {
-    //           summary += `
-    // ### '${currentSheetName}' Connection tables
+            if (table.last_rows_visible_values) {
+              text += `
+Last rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
+            }
+          }
+        }
+      }
 
-    // These are the connection tables on the sheet:
-    // `;
+      // Connection Tables
+      // -----------------
+      if (sheetContext.connections && sheetContext.connections.length > 0) {
+        text += `
+### '${sheet.name}' Connection tables
 
-    //           currentSheetConnectionTables.forEach((table) => {
-    //             if (typeof table.language !== 'object' || !table.language.Connection) return;
-    //             summary += `
-    // #### ${table.code_table_name}
+These are the connection tables on the sheet:
+`;
 
-    // '${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}.
+        for (const table of sheetContext.connections) {
+          if (typeof table.language !== 'object' || !table.language.Connection) {
+            console.warn('Unexpected non-connection table in useSummaryContextMessages');
+            break;
+          }
+          text += `
+#### ${table.code_table_name}
 
-    // First rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-    // ${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
-    //             if (table.last_rows_visible_values) {
-    //               summary += `
-    // Last rows of '${table.code_table_name}' (limited to ${maxRows} rows):
-    // ${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
-    //             }
-    //           });
-    //         }
+'${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}.
+`;
+          if (table.first_rows_visible_values) {
+            text += `
+First rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
+${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
+            if (table.last_rows_visible_values) {
+              text += `
+Last rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
+${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
+            }
+          }
+        }
+      }
 
-    //         if (currentSheetCharts.length > 0) {
-    //           summary += `
-    // ### '${currentSheetName}' Charts
+      // Charts
+      // ------
+      if (sheetContext.charts && sheetContext.charts.length > 0) {
+        text += `
+        ### '${sheet.name}' Charts
 
-    // These are the charts on the sheet:
-    // `;
+These are the charts on the sheet:
+`;
 
-    //           currentSheetCharts.forEach((chart) => {
-    //             summary += `
-    // #### ${chart.chart_name}
+        for (const chart of sheetContext.charts) {
+          text += `
+#### ${chart.chart_name}
 
-    // '${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}.
-    // `;
-    //           });
-    //         }
+'${chart.chart_name}' is a code cell of type ${chart.language} that creates a chart with bounds of ${chart.bounds}.
+    `;
+        }
+      }
 
-    //         if (flatDataRects.length > 0) {
-    //           summary += `
-    // ### '${currentSheetName}' Flat data
+      // Flat Data
+      if (sheetContext.data_rects && sheetContext.data_rects.length > 0) {
+        text += `
+### '${sheet.name}' Flat data
 
-    // This is the flat data on the sheet (limited to ${maxRows} rows each):
-    // `;
+This is the flat data on the sheet (limited to ${MAX_ROWS} rows each):
+`;
 
-    //           flatDataRects.forEach((description) => {
-    //             summary += `
-    // ${AICellsToMarkdown(description, true)}`;
-    //           });
-    //         }
-
-    //         const sheetList = sheets.sheets.flatMap((sheet) => {
-    //           if (sheet.name === currentSheetName) {
-    //             return [];
-    //           }
-    //           return [sheet.name];
-    //         });
-
-    //         if (sheetList.length > 0) {
-    //           summary += `
-    // ## Other sheets
-
-    // Use get_cell_data tool to get more information about the data in these sheets.
-    // `;
-    //         }
-
-    //         for (const sheet of sheetList) {
-    //           summary += `
-    // ### ${sheet}
-
-    // - ${sheets.getAISheetBounds(sheet)}`;
-    //           const sheetDataTables = dataTables.filter((table) => table.sheet_name === sheet);
-    //           const sheetCodeTables = codeTables.filter((table) => table.sheet_name === sheet);
-    //           const sheetCharts = charts.filter((chart) => chart.sheet_name === sheet);
-    //           if (sheetDataTables.length > 0) {
-    //             summary += `
-    // - ${sheetDataTables.length} data ${pluralize('table', sheetDataTables.length)}, named ${joinListWith({ arr: sheetDataTables.map((table) => `'${table.data_table_name}' (${table.bounds})`), conjunction: 'and' })}`;
-    //           }
-    //           if (sheetCodeTables.length > 0) {
-    //             summary += `
-    // - ${sheetCodeTables.length} code ${pluralize('table', sheetCodeTables.length)}, named ${joinListWith({ arr: sheetCodeTables.map((table) => `'${table.code_table_name}' (${table.bounds})`), conjunction: 'and' })}`;
-    //           }
-    //           if (sheetCharts.length > 0) {
-    //             summary += `
-    // - ${sheetCharts.length} ${pluralize('chart', sheetCharts.length)}, named ${joinListWith({ arr: sheetCharts.map((chart) => `'${chart.chart_name}' (${chart.bounds})`), conjunction: 'and' })}`;
-    //           }
-    //           summary += `\n`;
-    //         }
-    //       }
+        for (const data of sheetContext.data_rects) {
+          text += `${AICellsToMarkdown(data, true)}\n`;
+        }
+      }
+      text += `\n`;
+    }
 
     return [
       {
@@ -253,7 +220,7 @@ export function useSummaryContextMessages() {
         content: [
           {
             type: 'text',
-            text: summary,
+            text,
           },
         ],
         contextType: 'fileSummary',
