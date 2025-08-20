@@ -59,7 +59,7 @@ export const AICellResultToMarkdown = (result: JsGetAICellResult): string => {
     let output = '';
     if (result.page !== result.total_pages) {
       output += `
-IMPORTANT: There are ${result.total_pages} pages in this result. Use this tool again with page = ${result.page + 1} for the next page. After performing an operation on this data, you MUST use this tool again to get additional pages of data.\n\n`;
+IMPORTANT: There are ${result.total_pages} pages in this result. Use this tool again with page = ${result.page + 1} for the next page, only if needed for solving the user's request.\n\n`;
     } else if (result.page !== 0 || result.total_pages !== 0) {
       output += `
 The selection ${result.selection} for page = ${result.page + 1} (out of ${result.total_pages + 1}) has: `;

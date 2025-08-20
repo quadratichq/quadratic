@@ -6,7 +6,6 @@ import type {
   ModelMode,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
-import { CLEAN_UP_TOOL_CALLS_AFTER } from '../helpers/message.helper';
 
 // This provides a list of AI Tools in the order that they will be sent to the
 // AI model. If you want to change order, change it here instead of the spec
@@ -620,9 +619,6 @@ You should use the get_cell_data function to get the values of the cells when yo
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-IMPORTANT: If the results include page information:\n
-- if the user requests too much data, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because only the last ${CLEAN_UP_TOOL_CALLS_AFTER} will be kept between AI tool calls.\n
 `,
     parameters: {
       type: 'object',
@@ -655,9 +651,6 @@ You should use the get_cell_data function to get the values of the cells when yo
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-IMPORTANT: If the results include page information:\n
-- if the user requests too much data, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because only the last ${CLEAN_UP_TOOL_CALLS_AFTER} will be kept between AI tool calls.\n
 `,
   },
   [AITool.HasCellData]: {
@@ -1243,9 +1236,9 @@ The get_text_formats tool returns the text formatting information of a selection
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
 It should be used to find formatting within a sheet's formatting bounds.\n
 It returns a string representation of the formatting information of the cells in the selection.\n
-CRITICALLY IMPORTANT: If too large, the results will include page information:\n
-- if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
-- ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
+If too large, the results will include page information:\n
+- If page information is provided, perform actions on the current page's results before requesting the next page of results.\n
+- Always review all pages of results; as you get each page, immediately perform any actions before moving to the next page.\n
 `,
   },
   [AITool.SetTextFormats]: {
