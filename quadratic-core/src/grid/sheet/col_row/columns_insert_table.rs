@@ -7,7 +7,7 @@
 //! CopyFormats::Before. This is important to keep in mind for table operations.
 
 use crate::{
-    CopyFormats, Pos, Rect,
+    CopyFormats, Pos,
     controller::active_transactions::pending_transaction::PendingTransaction,
     grid::{DataTable, Sheet},
 };
@@ -37,12 +37,7 @@ impl Sheet {
     }
 
     /// Returns true if the column is left of the table.
-    fn is_column_before_table(
-        column: i64,
-        pos: Pos,
-        dt: &DataTable,
-        copy_formats: CopyFormats,
-    ) -> bool {
+    fn is_column_before_table(column: i64, pos: Pos, copy_formats: CopyFormats) -> bool {
         if copy_formats == CopyFormats::After {
             column < pos.x
         } else {
@@ -59,35 +54,6 @@ impl Sheet {
             column - 1 == pos.x
         }
     }
-
-    // fn is_column_in_first_anchor_column(
-    //     column: i64,
-    //     pos: Pos,
-    //     dt: &DataTable,
-    //     copy_formats: CopyFormats,
-    // ) -> bool {
-    //     if copy_formats == CopyFormats::After {
-    //         column == pos.x
-    //     } else {
-    //         // CopyFormats::Before
-    //         column - 1 == pos.x
-    //     }
-    // }
-
-    // // Returns true if the column should be inserted before the table.
-    // fn column_is_before_table(column: i64, pos: Pos) -> bool {
-    //     column - 1 < pos.x
-    // }
-
-    // /// Returns true if the column should be inserted after the table.
-    // fn column_is_after_table(
-    //     column: i64,
-    //     pos: Pos,
-    //     output_rect: Rect,
-    //     copy_formats: CopyFormats,
-    // ) -> bool {
-    //     column > pos.x + output_rect.width() as i64
-    // }
 
     /// Insert columns in data tables that overlap the inserted column.
     pub(crate) fn check_insert_tables_columns(
@@ -107,16 +73,12 @@ impl Sheet {
                 let output_rect = dt.output_rect(pos, false);
                 // if html or image, then we need to change the width
                 if dt.is_html_or_image() {
-                    if let Some((width, height)) = dt.chart_output {
-                        if column >= pos.x && column < pos.x + output_rect.width() as i64 {
-                            dt.chart_output = Some((width + 1, height));
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                        }
+                    if let Some((width, height)) = dt.chart_output
+                        && column >= pos.x
+                        && column < pos.x + output_rect.width() as i64
+                    {
+                        dt.chart_output = Some((width + 1, height));
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
                     }
                 } else {
                     // Adds columns to data tables if the column is inserted inside the
@@ -150,7 +112,6 @@ impl Sheet {
                         }
                     }
                 }
-
                 Ok(())
             }) {
                 transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
@@ -173,7 +134,7 @@ impl Sheet {
             .into_iter()
             .filter(|(_, pos)| {
                 self.data_table_at(pos)
-                    .is_some_and(|dt| Self::is_column_before_table(column, *pos, dt))
+                    .is_some_and(|_| Self::is_column_before_table(column, *pos, copy_formats))
             })
             .collect::<Vec<_>>();
 
@@ -457,9 +418,6 @@ mod tests {
 
     #[test]
     fn test_column_is_in_anchor_cell() {
-        let mut gc = test_create_gc();
-        let sheet_id = first_sheet_id(&gc);
-
         let check = |column: i64, copy_formats: CopyFormats, expected: bool| {
             assert!(Sheet::is_column_in_anchor_cell(column, pos![C1], copy_formats) == expected);
             assert!(Sheet::is_column_in_anchor_cell(column, pos![C7], copy_formats) == expected);

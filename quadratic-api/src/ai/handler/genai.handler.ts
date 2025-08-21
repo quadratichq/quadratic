@@ -19,7 +19,7 @@ export const handleGenAIRequest = async (
 ): Promise<ParsedAIResponse | undefined> => {
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
-  const { system, messages, tools, tool_choice } = getGenAIApiArgs(args);
+  const { system, messages, tools, tool_choice } = getGenAIApiArgs(args, options.aiModelMode);
 
   const apiArgs: GenerateContentParameters = {
     model,

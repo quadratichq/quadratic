@@ -2,7 +2,7 @@ import { AppearanceDarkModeIcon, AppearanceLightModeIcon, AppearanceSystemModeIc
 import { appearanceModes, useThemeAppearanceMode } from '@/shared/hooks/useThemeAppearanceMode';
 import { Button } from '@/shared/shadcn/ui/button';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 
 export function ThemeAppearanceModes() {
   const [appearanceMode, setAppearanceMode] = useThemeAppearanceMode();
@@ -14,7 +14,7 @@ export function ThemeAppearanceModes() {
       className={cn(mode === appearanceMode && 'border-2 border-foreground', 'justify-start gap-1 capitalize')}
       onClick={() => {
         setAppearanceMode(mode);
-        mixpanel.track('[Theme].changeAppearanceMode', {
+        trackEvent('[Theme].changeAppearanceMode', {
           appearanceMode: mode,
         });
       }}

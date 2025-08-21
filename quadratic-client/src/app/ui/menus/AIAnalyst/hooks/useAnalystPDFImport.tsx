@@ -1,7 +1,8 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
-import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
-import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
-import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
+import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessages';
+// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
+// import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
+// import { useTablesContextMessages } from '@/app/ai/hooks/useTablesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
@@ -9,7 +10,7 @@ import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEd
 import { getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, Context, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -18,20 +19,16 @@ type PDFImportResponse = z.infer<(typeof aiToolsSpec)[AITool.PDFImport]['respons
 
 export const useAnalystPDFImport = () => {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  const { getOtherSheetsContext } = useOtherSheetsContextMessages();
-  const { getTablesContext } = useTablesContextMessages();
-  const { getCurrentSheetContext } = useCurrentSheetContextMessages();
   const { getVisibleContext } = useVisibleContextMessages();
+  const { getSummaryContext } = useSummaryContextMessages();
 
   const importPDF = useRecoilCallback(
     ({ set }) =>
       async ({
         pdfImportArgs,
-        context,
         chatMessages,
       }: {
         pdfImportArgs: PDFImportResponse;
-        context: Context;
         chatMessages: ChatMessage[];
       }): Promise<ToolResultContent> => {
         let importPDFResult = '';
@@ -42,10 +39,11 @@ export const useAnalystPDFImport = () => {
             return [{ type: 'text', text: `File with name ${file_name} not found` }];
           }
 
-          const [otherSheetsContext, tablesContext, currentSheetContext, visibleContext] = await Promise.all([
-            getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
-            getTablesContext(),
-            getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+          const [visibleContext, summaryContext] = await Promise.all([
+            // getOtherSheetsContext({ sheetNames: context.sheets.filter((sheet) => sheet !== context.currentSheet) }),
+            // getTablesContext(),
+            // getCurrentSheetContext({ currentSheetName: context.currentSheet }),
+            getSummaryContext(),
             getVisibleContext(),
           ]);
 
@@ -84,10 +82,11 @@ How can I help you?`,
               ],
               contextType: 'files',
             },
-            ...otherSheetsContext,
-            ...tablesContext,
-            ...currentSheetContext,
+            // ...otherSheetsContext,
             ...visibleContext,
+            ...summaryContext,
+            // ...tablesContext,
+            // ...currentSheetContext,
             {
               role: 'user',
               content: [
@@ -129,7 +128,7 @@ How can I help you?`,
           for (const toolCall of addDataTableToolCalls) {
             try {
               inlineEditorHandler.close({ skipFocusGrid: true });
-              const argsObject = JSON.parse(toolCall.arguments);
+              const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const args = aiToolsSpec[AITool.AddDataTable].responseSchema.parse(argsObject);
               await aiToolsActions[AITool.AddDataTable](args, {
                 source: 'PDFImport',
@@ -151,7 +150,11 @@ How can I help you?`,
         }
         return [{ type: 'text', text: importPDFResult }];
       },
-    [handleAIRequestToAPI, getOtherSheetsContext, getTablesContext, getCurrentSheetContext, getVisibleContext]
+    [
+      handleAIRequestToAPI,
+      getVisibleContext,
+      getSummaryContext /* getTablesContext, getCurrentSheetContext, getOtherSheetsContext, */,
+    ]
   );
 
   return { importPDF };

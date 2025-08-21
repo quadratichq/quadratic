@@ -20,7 +20,7 @@ import { ShowAfter } from '@/shared/components/ShowAfter';
 import { Toggle } from '@/shared/shadcn/ui/toggle';
 import { Tooltip, TooltipContent, TooltipPortal, TooltipTrigger } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import React from 'react';
 import { Link } from 'react-router';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
@@ -130,7 +130,7 @@ export const SidebarTooltip = React.forwardRef(
       <TooltipTrigger
         asChild
         onClick={() => {
-          mixpanel.track('[QuadraticSidebar].button', { label });
+          trackEvent('[QuadraticSidebar].button', { label });
         }}
       >
         {children}

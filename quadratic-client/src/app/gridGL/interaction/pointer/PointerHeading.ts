@@ -332,16 +332,14 @@ export class PointerHeading {
             sheets.current,
             this.movingColRows.indicies[0],
             this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
-            this.movingColRows.place - this.movingColRows.offset,
-            sheets.getCursorPosition()
+            this.movingColRows.place - this.movingColRows.offset
           );
         } else {
           quadraticCore.moveRows(
             sheets.current,
             this.movingColRows.indicies[0],
             this.movingColRows.indicies[this.movingColRows.indicies.length - 1],
-            this.movingColRows.place - this.movingColRows.offset,
-            sheets.getCursorPosition()
+            this.movingColRows.place - this.movingColRows.offset
           );
         }
       }
@@ -384,11 +382,11 @@ export class PointerHeading {
         } else if (this.resizing.column && columns.length !== 1 && this.resizing.width !== undefined) {
           const size = this.resizing.width;
           const columnSizes = columns.map((column) => ({ index: column, size }));
-          quadraticCore.resizeColumns(sheets.current, columnSizes, sheets.getCursorPosition());
+          quadraticCore.resizeColumns(sheets.current, columnSizes);
         } else if (this.resizing.row && rows.length !== 1 && this.resizing.height !== undefined) {
           const size = this.resizing.height;
           const rowSizes = rows.map((row) => ({ index: row, size }));
-          quadraticCore.resizeRows(sheets.current, rowSizes, sheets.getCursorPosition());
+          quadraticCore.resizeRows(sheets.current, rowSizes);
         }
 
         // otherwise work with the transient resize (if available)
@@ -438,7 +436,7 @@ export class PointerHeading {
     }
     if (resizing.length) {
       const sheetId = sheets.current;
-      quadraticCore.resizeColumns(sheetId, resizing, sheets.getCursorPosition());
+      quadraticCore.resizeColumns(sheetId, resizing);
     }
   }
 
@@ -458,7 +456,7 @@ export class PointerHeading {
     }
     if (resizing.length) {
       const sheetId = sheets.current;
-      quadraticCore.resizeRows(sheetId, resizing, sheets.getCursorPosition());
+      quadraticCore.resizeRows(sheetId, resizing);
     }
   }
 }

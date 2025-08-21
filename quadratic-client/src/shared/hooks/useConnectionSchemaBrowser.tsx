@@ -1,5 +1,5 @@
 import type { connectionClient } from '@/shared/api/connectionClient';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useCallback, useEffect, useMemo } from 'react';
 import { useFetcher } from 'react-router';
 
@@ -55,8 +55,8 @@ export const useConnectionSchemaBrowser = ({
   const isLoading = useMemo(() => fetcher.state !== 'idle', [fetcher.state]);
 
   const reloadSchema = useCallback(() => {
-    mixpanel.track('[Connections].schemaViewer.refresh');
-    fetcher.load(fetcherUrl);
+    trackEvent('[Connections].schemaViewer.refresh');
+    fetcher.load(`${fetcherUrl}?forceCacheRefresh=true`);
   }, [fetcher, fetcherUrl]);
 
   return {

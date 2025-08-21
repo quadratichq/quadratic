@@ -1,6 +1,6 @@
 {
   "name": "quadratic",
-  "version": "0.15.2",
+  "version": "0.16.1",
   "author": {
     "name": "David Kircos",
     "email": "david@quadratichq.com",
@@ -67,7 +67,6 @@
     "gen:pyright:worker": "npm run gen:pyright:worker --workspace=quadratic-kernels/python-wasm",
     "docker:base": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile base --env-file .env.docker up",
     "docker:connection": "ECR_OR_BUILD=build docker compose --profile base --profile quadratic-connection-db --env-file .env.docker up",
-    "docker:dev": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose --profile dev --env-file .env.docker up -d && docker attach quadratic-dev",
     "docker:build": "ECR_OR_BUILD=build CLIENT_DEV=false docker compose --profile all --env-file .env.docker up",
     "docker:build:dev": "ECR_OR_BUILD=build CLIENT_DEV=true docker compose --profile all --env-file .env.docker up",
     "docker:ecr": "ECR_OR_BUILD=ecr CLIENT_DEV=false docker compose --profile all --env-file .env.docker up",

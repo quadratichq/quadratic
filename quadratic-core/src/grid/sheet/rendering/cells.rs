@@ -265,7 +265,7 @@ impl Sheet {
 
         // Populate validations for cells that are not yet in the render_cells
         self.validations
-            .in_rect(rect, a1_context)
+            .in_rect_unbounded(rect, a1_context)
             .iter()
             .rev() // we need to reverse to ensure that later rules overwrite earlier ones
             .for_each(|validation| {
@@ -275,8 +275,12 @@ impl Sheet {
                         .ranges
                         .iter()
                         .for_each(|validations_range| {
-                            if let Some(validation_rect) = validations_range.to_rect(a1_context) {
-                                validation_rect
+                            if let Some(validation_rect) =
+                                validations_range.to_rect_unbounded(a1_context)
+                                && let Some(validation_intersect) =
+                                    validation_rect.intersection(&rect)
+                            {
+                                validation_intersect
                                     .iter()
                                     .filter(|pos| rect.contains(*pos))
                                     .for_each(|pos| {
@@ -303,11 +307,9 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-
     use crate::grid::js_types::JsHashRenderCells;
     use crate::grid::sheet::validations::rules::ValidationRule;
-    use crate::grid::sheet::validations::validation::Validation;
+    use crate::grid::sheet::validations::validation::ValidationUpdate;
     use crate::test_util::*;
     use crate::{
         SheetPos, Value,
@@ -647,8 +649,8 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![b2], 3, 3);
 
         gc.update_validation(
-            Validation {
-                id: Uuid::new_v4(),
+            ValidationUpdate {
+                id: None,
                 selection: A1Selection::test_a1_context("test_table[Column 1]", gc.a1_context()),
                 rule: ValidationRule::Logical(Default::default()),
                 message: Default::default(),

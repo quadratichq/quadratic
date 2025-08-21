@@ -48,14 +48,7 @@ const insertColumnLeft: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const columnsSelected = getColumnsSelected();
-    console.log(`insert column left: column: ${sheets.sheet.cursor.position.x}, right: true`);
-    quadraticCore.insertColumns(
-      sheets.current,
-      sheets.sheet.cursor.position.x,
-      columnsSelected,
-      true,
-      sheets.getCursorPosition()
-    );
+    quadraticCore.insertColumns(sheets.current, sheets.sheet.cursor.position.x, columnsSelected, true);
     focusGrid();
   },
 };
@@ -78,8 +71,7 @@ const insertColumnRight: ActionSpec<void> = {
       sheets.current,
       sheets.sheet.cursor.position.x + columnsSelected,
       columnsSelected,
-      false,
-      sheets.getCursorPosition()
+      false
     );
     focusGrid();
   },
@@ -98,7 +90,7 @@ const deleteColumns: ActionSpec<void> = {
     pixiAppSettings.setContextMenu?.({});
 
     const columns = sheets.sheet.cursor.getColumnsWithSelectedCells();
-    quadraticCore.deleteColumns(sheets.current, columns, sheets.getCursorPosition());
+    quadraticCore.deleteColumns(sheets.current, columns);
     focusGrid();
   },
 };
@@ -116,13 +108,7 @@ const insertRowAbove: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const rowsSelected = getRowsSelected();
-    quadraticCore.insertRows(
-      sheets.current,
-      sheets.sheet.cursor.position.y,
-      rowsSelected,
-      true,
-      sheets.getCursorPosition()
-    );
+    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y, rowsSelected, true);
     focusGrid();
   },
 };
@@ -140,13 +126,7 @@ const insertRowBelow: ActionSpec<void> = {
   run: () => {
     pixiAppSettings.setContextMenu?.({});
     const rowsSelected = getRowsSelected();
-    quadraticCore.insertRows(
-      sheets.current,
-      sheets.sheet.cursor.position.y + rowsSelected,
-      rowsSelected,
-      false,
-      sheets.getCursorPosition()
-    );
+    quadraticCore.insertRows(sheets.current, sheets.sheet.cursor.position.y + rowsSelected, rowsSelected, false);
     focusGrid();
   },
 };
@@ -164,7 +144,7 @@ const deleteRows: ActionSpec<void> = {
     pixiAppSettings.setContextMenu?.({});
 
     const rows = sheets.sheet.cursor.getRowsWithSelectedCells();
-    quadraticCore.deleteRows(sheets.current, rows, sheets.getCursorPosition());
+    quadraticCore.deleteRows(sheets.current, rows);
     focusGrid();
   },
 };

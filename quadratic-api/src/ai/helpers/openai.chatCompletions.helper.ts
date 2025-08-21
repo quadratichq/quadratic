@@ -17,7 +17,6 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -26,8 +25,9 @@ import type {
   AzureOpenAIModelKey,
   BasetenModelKey,
   Content,
+  FireworksModelKey,
   ImageContent,
-  OpenAIModelKey,
+  ModelMode,
   OpenRouterModelKey,
   ParsedAIResponse,
   TextContent,
@@ -35,13 +35,14 @@ import type {
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
     .filter((content) => !('text' in content) || !!content.text.trim())
     .filter(
       (content): content is TextContent | ImageContent =>
-        (imageSupport && isContentImage(content)) || (isContentText(content) && !!content.text.trim())
+        (imageSupport && isContentImage(content)) || isContentText(content)
     )
     .map((content) => {
       if (isContentText(content)) {
@@ -59,15 +60,17 @@ function convertContent(content: Content, imageSupport: boolean): Array<ChatComp
 
 function convertToolResultContent(content: ToolResultContent): Array<ChatCompletionContentPartText> {
   return content
-    .filter((content): content is TextContent => isContentText(content) && !!content.text.trim())
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .filter((content): content is TextContent => isContentText(content))
     .map((content) => ({
       type: 'text' as const,
       text: content.text.trim(),
     }));
 }
 
-export function getOpenAIApiArgs(
+export function getOpenAIChatCompletionsApiArgs(
   args: AIRequestHelperArgs,
+  aiModelMode: ModelMode,
   strictParams: boolean,
   imageSupport: boolean
 ): {
@@ -130,7 +133,7 @@ export function getOpenAIApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
@@ -138,10 +141,14 @@ export function getOpenAIApiArgs(
 
 function getOpenAITools(
   source: AISource,
+  aiModelMode: ModelMode,
   toolName: AITool | undefined,
   strictParams: boolean
 ): ChatCompletionTool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }
@@ -171,9 +178,9 @@ function getOpenAIToolChoice(name?: AITool): ChatCompletionToolChoiceOption {
   return name === undefined ? 'auto' : { type: 'function', function: { name } };
 }
 
-export async function parseOpenAIStream(
+export async function parseOpenAIChatCompletionsStream(
   chunks: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey: AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | FireworksModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response
@@ -208,7 +215,7 @@ export async function parseOpenAIStream(
     if (!response?.writableEnded) {
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
-        if (chunk.choices[0].delta.content?.trim()) {
+        if (chunk.choices[0].delta.content) {
           const currentContent = {
             ...(responseMessage.content.pop() ?? {
               type: 'text',
@@ -295,9 +302,9 @@ export async function parseOpenAIStream(
   return { responseMessage, usage };
 }
 
-export function parseOpenAIResponse(
+export function parseOpenAIChatCompletionsResponse(
   result: OpenAI.Chat.Completions.ChatCompletion,
-  modelKey: OpenAIModelKey | AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | OpenRouterModelKey,
+  modelKey: AzureOpenAIModelKey | XAIModelKey | BasetenModelKey | FireworksModelKey | OpenRouterModelKey,
   isOnPaidPlan: boolean,
   exceededBillingLimit: boolean,
   response?: Response

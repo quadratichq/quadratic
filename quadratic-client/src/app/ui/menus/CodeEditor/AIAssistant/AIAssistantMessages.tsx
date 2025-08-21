@@ -13,6 +13,7 @@ import { GoogleSearchSources } from '@/app/ui/menus/CodeEditor/AIAssistant/Googl
 import { cn } from '@/shared/shadcn/utils';
 import {
   isContentGoogleSearchInternal,
+  isContentThinking,
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
@@ -145,7 +146,7 @@ export const AIAssistantMessages = memo(({ textareaRef }: AIAssistantMessagesPro
             ) : (
               <>
                 {message.content.map((item, contentIndex) =>
-                  item.type === 'anthropic_thinking' || item.type === 'google_thinking' ? (
+                  isContentThinking(item) ? (
                     <ThinkingBlock
                       key={`${index}-${contentIndex}-${item.type}`}
                       isCurrentMessage={isCurrentMessage && contentIndex === message.content.length - 1}

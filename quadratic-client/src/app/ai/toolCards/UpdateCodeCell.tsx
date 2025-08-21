@@ -1,14 +1,13 @@
 import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom, codeEditorCodeCellAtom, codeEditorEditorContentAtom } from '@/app/atoms/codeEditorAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { getLanguage, getLanguageForMonaco } from '@/app/helpers/codeCellLanguage';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CollapseIcon, CopyIcon, ExpandIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { Editor } from '@monaco-editor/react';
-import mixpanel from 'mixpanel-browser';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useCallback, useEffect, useMemo, useState } from 'react';
@@ -31,7 +30,7 @@ export const UpdateCodeCell = memo(
           return;
         }
 
-        mixpanel.track('[AI].UpdateCodeCell.copy', { language: getLanguage(codeCell.language) });
+        trackEvent('[AI].UpdateCodeCell.copy', { language: getLanguage(codeCell.language) });
         navigator.clipboard.writeText(toolArgs.data.code_string);
       },
       [codeCell.language, toolArgs?.data]
@@ -69,23 +68,23 @@ export const UpdateCodeCell = memo(
             y: codeCell.pos.y,
             codeString: code_string ?? '',
             language: codeCell.language,
-            cursor: sheets.getCursorPosition(),
           });
         },
       [toolArgs]
     );
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.UpdateCodeCell].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[UpdateCodeCell] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.UpdateCodeCell].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[UpdateCodeCell] Failed to parse args: ', error);
       }
     }, [args, loading]);
 

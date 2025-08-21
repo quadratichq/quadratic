@@ -73,25 +73,37 @@ impl GridController {
     }
 
     #[wasm_bindgen(js_name = "resizeColumns")]
-    pub fn js_resize_columns(&mut self, sheet_id: String, columns: String, cursor: Option<String>) {
-        if let (Ok(sheet_id), Ok(columns)) =
-            (SheetId::from_str(&sheet_id), serde_json::from_str(&columns))
-        {
+    pub fn js_resize_columns(
+        &mut self,
+        sheet_id: String,
+        columns: String,
+        cursor: Option<String>,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let columns = serde_json::from_str(&columns)
+                .map_err(|e| format!("Unable to parse columns: {e}"))?;
             self.resize_columns(sheet_id, columns, cursor);
-        } else {
-            dbgjs!("Failed to parse values in resizeColumns");
-        }
+            Ok(None)
+        })
     }
 
     #[wasm_bindgen(js_name = "resizeRows")]
-    pub fn js_resize_rows(&mut self, sheet_id: String, rows: String, cursor: Option<String>) {
-        if let (Ok(sheet_id), Ok(rows)) =
-            (SheetId::from_str(&sheet_id), serde_json::from_str(&rows))
-        {
+    pub fn js_resize_rows(
+        &mut self,
+        sheet_id: String,
+        rows: String,
+        cursor: Option<String>,
+    ) -> JsValue {
+        capture_core_error(|| {
+            let sheet_id = SheetId::from_str(&sheet_id)
+                .map_err(|e| format!("Unable to parse SheetId: {e}"))?;
+            let rows =
+                serde_json::from_str(&rows).map_err(|e| format!("Unable to parse rows: {e}"))?;
             self.resize_rows(sheet_id, rows, cursor);
-        } else {
-            dbgjs!("Failed to parse values in resizeRows");
-        }
+            Ok(None)
+        })
     }
 
     #[wasm_bindgen(js_name = "resizeAllColumns")]

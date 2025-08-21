@@ -9,7 +9,7 @@ import { SheetBarTab } from '@/app/ui/menus/SheetBar/SheetBarTab';
 import { AddIcon, ChevronLeftIcon, ChevronRightIcon } from '@/shared/components/Icons';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
 import { useUpdateQueryStringValueWithoutNavigation } from '@/shared/hooks/useUpdateQueryStringValueWithoutNavigation';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import type { JSX } from 'react';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { isMobile } from 'react-device-detect';
@@ -46,8 +46,12 @@ export const SheetBar = memo((): JSX.Element => {
     };
 
     events.on('changeSheet', updateSheet);
+    events.on('deleteSheet', updateSheet);
+    events.on('sheetInfoUpdate', updateSheet);
     return () => {
       events.off('changeSheet', updateSheet);
+      events.off('deleteSheet', updateSheet);
+      events.off('sheetInfoUpdate', updateSheet);
     };
   }, []);
 
@@ -402,7 +406,7 @@ export const SheetBar = memo((): JSX.Element => {
       {hasPermission && (
         <SheetBarButton
           onClick={() => {
-            mixpanel.track('[Sheets].add');
+            trackEvent('[Sheets].add');
             sheets.userAddSheet();
             focusGrid();
           }}
@@ -424,8 +428,13 @@ export const SheetBar = memo((): JSX.Element => {
       >
         {sheets.map((sheet) => (
           <SheetBarTab
+            data-testid={`sheet-${sheet.name}`}
             key={sheet.id}
-            order={getOrderIndex(sheet.order).toString()}
+            id={sheet.id}
+            color={sheet.color}
+            name={sheet.name}
+            order={sheet.order}
+            calculatedOrder={getOrderIndex(sheet.order).toString()}
             onPointerDown={handlePointerDown}
             active={activeSheet === sheet.id}
             sheet={sheet}

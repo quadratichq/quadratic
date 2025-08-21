@@ -2,12 +2,14 @@ import type {
   AIMessagePrompt,
   AIModelKey,
   AIResponseContent,
+  AIResponseThinkingContent,
   ChatMessage,
   Content,
   GoogleSearchContent,
   GoogleSearchGroundingMetadata,
   ImageContent,
   InternalMessage,
+  OpenAIReasoningContent,
   PdfFileContent,
   SystemMessage,
   TextContent,
@@ -18,6 +20,8 @@ import type {
   UserPromptContextType,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { isQuadraticModel } from './model.helper';
+
+export const CLEAN_UP_TOOL_CALLS_AFTER = 3;
 
 const getSystemMessages = (messages: ChatMessage[]): string[] => {
   const systemMessages: SystemMessage[] = messages.filter<SystemMessage>(
@@ -147,6 +151,20 @@ export const isContentText = (content: Content[number] | AIResponseContent[numbe
   return content.type === 'text';
 };
 
+export const isContentThinking = (
+  content: Content[number] | AIResponseContent[number]
+): content is AIResponseThinkingContent => {
+  return ['anthropic_thinking', 'google_thinking', 'openai_reasoning_summary', 'openai_reasoning_content'].includes(
+    content.type
+  );
+};
+
+export const isContentOpenAIReasoning = (
+  content: Content[number] | AIResponseContent[number]
+): content is OpenAIReasoningContent => {
+  return ['openai_reasoning_summary', 'openai_reasoning_content'].includes(content.type);
+};
+
 export const isContentImage = (content: Content[number] | AIResponseContent[number]): content is ImageContent => {
   return content.type === 'data' && ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(content.mimeType);
 };
@@ -197,7 +215,6 @@ export const getPdfFileFromChatMessages = (fileName: string, messages: ChatMessa
 export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessage[] => {
   const CLEAN_UP_MESSAGE =
     'NOTE: the results from this tool call have been removed from the context. If you need to use them, you MUST use Python.';
-  const CLEAN_UP_AFTER = 3;
 
   const getToolIds = new Set();
   messages.forEach((message) => {
@@ -218,7 +235,7 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
         ...message,
         content: message.content.map((toolResult) => {
           if (getToolIds.has(toolResult.id)) {
-            if (i < messages.length - CLEAN_UP_AFTER) {
+            if (i < messages.length - CLEAN_UP_TOOL_CALLS_AFTER) {
               return {
                 id: toolResult.id,
                 content: [
@@ -253,4 +270,11 @@ export const replaceOldGetToolCallResults = (messages: ChatMessage[]): ChatMessa
       return message;
     }
   });
+};
+
+export const createTextContent = (text: string): TextContent => {
+  return {
+    type: 'text' as const,
+    text,
+  };
 };

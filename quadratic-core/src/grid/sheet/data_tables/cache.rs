@@ -124,11 +124,9 @@ impl SheetDataTablesCache {
                     for table_pos in tables.iter().flatten() {
                         if let Some(table) =
                             context.table_from_pos(table_pos.to_sheet_pos(sheet_id))
-                        {
-                            if table.language != CodeCellLanguage::Import {
+                            && table.language != CodeCellLanguage::Import {
                                 return true;
                             }
-                        }
                     }
                 }
             }
@@ -162,6 +160,10 @@ impl SheetDataTablesCache {
                     .nondefault_rects_in_rect(rect)
                     .map(|(rect, _)| rect),
             )
+    }
+
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.single_cell_tables.intersects(rect) || self.multi_cell_tables.has_content(rect)
     }
 }
 
@@ -352,6 +354,10 @@ impl MultiCellTablesCache {
     /// Returns true if the cell has an empty value
     pub fn has_empty_value(&self, pos: Pos) -> bool {
         self.multi_cell_tables_empty.get(pos).is_some()
+    }
+
+    pub fn has_content(&self, rect: Rect) -> bool {
+        self.multi_cell_tables.intersects(rect)
     }
 }
 

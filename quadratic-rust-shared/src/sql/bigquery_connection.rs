@@ -71,6 +71,15 @@ impl BigqueryConnection {
         })
     }
 
+    pub async fn new_from_config(config: BigqueryConfig) -> Result<Self> {
+        BigqueryConnection::new(
+            config.service_account_configuration,
+            config.project_id,
+            config.dataset,
+        )
+        .await
+    }
+
     pub async fn raw_query(
         &mut self,
         sql: &str,
@@ -86,16 +95,15 @@ impl BigqueryConnection {
             Ok(response) => response,
             Err(e) => {
                 // Check if the error is due to bytes billed limit exceeded
-                if let BigqueryError::Response(error) = &e {
-                    if error
+                if let BigqueryError::Response(error) = &e
+                    && error
                         .errors
                         .as_ref()
                         .and_then(|e| e.first().map(|e| e.reason.to_owned()))
                         .unwrap_or_default()
                         == "bytesBilledLimitExceeded"
-                    {
-                        return Ok((Vec::new(), true, 0));
-                    }
+                {
+                    return Ok((Vec::new(), true, 0));
                 };
 
                 return Err(query_error(e));
@@ -479,13 +487,7 @@ pub mod tests {
     pub async fn new_connection() -> BigqueryConnection {
         let config = new_config().await;
 
-        BigqueryConnection::new(
-            config.service_account_configuration,
-            config.project_id,
-            config.dataset,
-        )
-        .await
-        .unwrap()
+        BigqueryConnection::new_from_config(config).await.unwrap()
     }
 
     pub fn expected_bigquery_schema() -> Vec<SchemaColumn> {

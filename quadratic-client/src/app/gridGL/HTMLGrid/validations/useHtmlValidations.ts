@@ -4,7 +4,9 @@ import { hasPermissionToEditFile } from '@/app/actions';
 import { editorInteractionStatePermissionsAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
-import type { JsCoordinate, Validation } from '@/app/quadratic-core-types';
+import type { ErrorValidation } from '@/app/gridGL/cells/CellsSheet';
+import type { EditingCell } from '@/app/gridGL/HTMLGrid/hoverCell/HoverCell';
+import type { JsCoordinate, JsRenderCodeCell, Validation } from '@/app/quadratic-core-types';
 import type { ValidationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { validationRuleSimple } from '@/app/ui/menus/Validations/Validation/validationType';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
@@ -28,11 +30,20 @@ export const useHtmlValidations = (): HtmlValidationsData => {
   const [validation, setValidation] = useState<Validation | undefined>();
   const [validationType, setValidationType] = useState<ValidationRuleSimple>('');
   const [location, setLocation] = useState<JsCoordinate | undefined>();
+  const [hoverCell, setHoverCell] = useState(false);
+
+  useEffect(() => {
+    const updateHoverCell = (cell?: JsRenderCodeCell | EditingCell | ErrorValidation) => setHoverCell(!!cell);
+    events.on('hoverCell', updateHoverCell);
+    return () => {
+      events.off('hoverCell', updateHoverCell);
+    };
+  }, []);
 
   // Change in cursor position triggers update of validation
   useEffect(() => {
     const updateCursor = async () => {
-      if (sheets.sheet.cursor.isMultiCursor()) {
+      if (hoverCell || sheets.sheet.cursor.isMultiCursor()) {
         setValidation(undefined);
         setValidationType('');
         return;
@@ -77,7 +88,7 @@ export const useHtmlValidations = (): HtmlValidationsData => {
       events.off('setCursor', updateCursor);
       events.off('validationWarnings', updateCursor);
     };
-  }, []);
+  }, [hoverCell]);
 
   return {
     offsets,
