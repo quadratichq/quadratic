@@ -144,7 +144,7 @@ These are the connection tables on the sheet:
         for (const table of sheetContext.connections) {
           if (typeof table.language !== 'object' || !table.language.Connection) {
             console.warn('Unexpected non-connection table in useSummaryContextMessages');
-            break;
+            continue;
           }
           text += `
 #### ${table.code_table_name}
