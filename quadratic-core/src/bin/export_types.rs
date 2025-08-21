@@ -22,8 +22,9 @@ use quadratic_core::grid::JsCellsAccessed;
 use quadratic_core::grid::formats::Format;
 use quadratic_core::grid::formats::FormatUpdate;
 use quadratic_core::grid::js_types::JsCellValueCode;
-use quadratic_core::grid::js_types::JsCellValueDescription;
 use quadratic_core::grid::js_types::JsCellValueKind;
+use quadratic_core::grid::js_types::JsCellValueRanges;
+use quadratic_core::grid::js_types::JsCellValueSummary;
 use quadratic_core::grid::js_types::JsChartContext;
 use quadratic_core::grid::js_types::JsCodeErrorContext;
 use quadratic_core::grid::js_types::JsCodeTableContext;
@@ -138,9 +139,10 @@ fn main() {
         JsCellsA1Values,
         JsCellValue,
         JsCellValueCode,
-        JsCellValueDescription,
+        JsCellValueSummary,
         JsCellValueKind,
         JsCellValuePos,
+        JsCellValueRanges,
         JsCellValueResult,
         JsChartContext,
         JsClipboard,

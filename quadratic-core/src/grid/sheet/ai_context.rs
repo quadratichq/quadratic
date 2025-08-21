@@ -1,13 +1,13 @@
 use std::collections::HashSet;
 
 use crate::{
-    CellValue, Rect,
+    CellValue,
     a1::{A1Context, A1Selection},
     grid::{
         CodeCellLanguage,
         js_types::{
-            JsCellValueDescription, JsChartContext, JsCodeCell, JsCodeErrorContext,
-            JsCodeTableContext, JsDataTableContext, JsSummaryContext,
+            JsCellValueSummary, JsChartContext, JsCodeCell, JsCodeErrorContext, JsCodeTableContext,
+            JsDataTableContext, JsSummaryContext,
         },
     },
 };
@@ -53,12 +53,13 @@ impl Sheet {
         selection: &A1Selection,
         max_rows: Option<usize>,
         a1_context: &A1Context,
-    ) -> Vec<JsCellValueDescription> {
+    ) -> Vec<JsCellValueSummary> {
         let mut data_rects = Vec::new();
         let selection_rects = self.selection_to_rects(selection, false, false, true, a1_context);
         let tabular_data_rects = self.find_tabular_data_rects_in_selection_rects(selection_rects);
         for tabular_data_rect in tabular_data_rects {
-            data_rects.push(self.js_cell_value_description(tabular_data_rect, max_rows));
+            let values = self.js_cell_value_description(tabular_data_rect, max_rows);
+            data_rects.push(values);
         }
         data_rects
     }
@@ -139,36 +140,9 @@ impl Sheet {
                 continue;
             }
 
-            let mut first_rows_visible_values = None;
-            let mut last_rows_visible_values = None;
-            if let Some(sample_rows) = sample_rows {
-                let first_row_rect = Rect::new(
-                    bounds.min.x,
-                    bounds.min.y + table.y_adjustment(false),
-                    bounds.max.x,
-                    bounds.min.y + (bounds.height() as i64).min(sample_rows as i64) - 1,
-                );
-                first_rows_visible_values =
-                    Some(self.js_cell_value_description(first_row_rect, Some(sample_rows)));
+            let values = sample_rows
+                .map(|sample_rows| self.js_cell_value_description(bounds, Some(sample_rows)));
 
-                let mut starting_last_row = bounds.max.y - sample_rows as i64 + 1;
-                if starting_last_row < first_row_rect.max.y {
-                    starting_last_row = first_row_rect.max.y + 1;
-                }
-                let last_rows_rect = if starting_last_row > bounds.max.y {
-                    None
-                } else {
-                    Some(Rect::new(
-                        bounds.min.x,
-                        starting_last_row,
-                        bounds.max.x,
-                        bounds.max.y,
-                    ))
-                };
-
-                last_rows_visible_values = last_rows_rect
-                    .map(|rect| self.js_cell_value_description(rect, Some(sample_rows)));
-            }
             if let CellValue::Code(code_cell_value) = cell_value {
                 let Some(code_run) = table.code_run() else {
                     continue;
@@ -185,8 +159,7 @@ impl Sheet {
                         spill: table.has_spill(),
                         all_columns: table.columns_map(true),
                         visible_columns: table.columns_map(false),
-                        first_rows_visible_values,
-                        last_rows_visible_values,
+                        values,
                         show_name: table.get_show_name(),
                         show_columns: table.get_show_columns(),
                         std_err: code_run.std_err.to_owned(),
@@ -198,8 +171,7 @@ impl Sheet {
                         code_table_name: table.name().to_string(),
                         all_columns: table.columns_map(true),
                         visible_columns: table.columns_map(false),
-                        first_rows_visible_values,
-                        last_rows_visible_values,
+                        values,
                         bounds: bounds.a1_string(),
                         intended_bounds: intended_bounds.a1_string(),
                         show_name: table.get_show_name(),
@@ -217,8 +189,7 @@ impl Sheet {
                     data_table_name: table.name().to_string(),
                     all_columns: table.columns_map(true),
                     visible_columns: table.columns_map(false),
-                    first_rows_visible_values,
-                    last_rows_visible_values,
+                    values,
                     bounds: bounds.a1_string(),
                     intended_bounds: intended_bounds.a1_string(),
                     show_name: table.get_show_name(),
@@ -351,24 +322,66 @@ mod tests {
         let data_rects_in_selection =
             sheet.get_data_rects_in_selection(&selection, Some(max_rows), &a1_context);
 
-        let expected_data_rects_in_selection = vec![
-            sheet.js_cell_value_description(
-                Rect {
-                    min: Pos { x: 1, y: 1 },
-                    max: Pos { x: 10, y: 100 },
-                },
-                Some(max_rows),
-            ),
-            sheet.js_cell_value_description(
-                Rect {
-                    min: Pos { x: 31, y: 101 },
-                    max: Pos { x: 40, y: 200 },
-                },
-                Some(max_rows),
-            ),
-        ];
+        assert_eq!(data_rects_in_selection.len(), 2);
+        assert_eq!(data_rects_in_selection[0].total_range, "A1:J100");
+        assert_eq!(
+            data_rects_in_selection[0].start_range,
+            Some("A1:J3".to_string())
+        );
+        assert_eq!(
+            data_rects_in_selection[0]
+                .start_values
+                .as_ref()
+                .unwrap()
+                .iter()
+                .flatten()
+                .count(),
+            max_rows * 10
+        );
+        assert_eq!(
+            data_rects_in_selection[0]
+                .end_values
+                .as_ref()
+                .unwrap()
+                .iter()
+                .flatten()
+                .count(),
+            max_rows * 10
+        );
+        assert_eq!(
+            data_rects_in_selection[0].end_range,
+            Some("A98:J100".to_string())
+        );
 
-        assert_eq!(data_rects_in_selection, expected_data_rects_in_selection);
+        assert_eq!(data_rects_in_selection[1].total_range, "AE101:AN200");
+        assert_eq!(
+            data_rects_in_selection[1].start_range,
+            Some("AE101:AN103".to_string())
+        );
+        assert_eq!(
+            data_rects_in_selection[1]
+                .start_values
+                .as_ref()
+                .unwrap()
+                .iter()
+                .flatten()
+                .count(),
+            max_rows * 10
+        );
+        assert_eq!(
+            data_rects_in_selection[1]
+                .end_values
+                .as_ref()
+                .unwrap()
+                .iter()
+                .flatten()
+                .count(),
+            max_rows * 10
+        );
+        assert_eq!(
+            data_rects_in_selection[1].end_range,
+            Some("AE198:AN200".to_string())
+        );
     }
 
     #[test]

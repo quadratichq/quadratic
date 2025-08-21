@@ -111,7 +111,7 @@ pub struct JsCellValuePos {
 #[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsSummaryContext {
     pub sheet_name: String,
-    pub data_rects: Vec<JsCellValueDescription>,
+    pub data_rects: Vec<JsCellValueSummary>,
     pub errored_code_cells: Option<Vec<JsCodeCell>>,
     pub data_tables: Option<Vec<JsDataTableContext>>,
     pub code_tables: Option<Vec<JsCodeTableContext>>,
@@ -136,8 +136,7 @@ pub struct JsDataTableContext {
     pub data_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_rows_visible_values: Option<JsCellValueDescription>,
-    pub last_rows_visible_values: Option<JsCellValueDescription>,
+    pub values: Option<JsCellValueSummary>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -151,8 +150,7 @@ pub struct JsCodeTableContext {
     pub code_table_name: String,
     pub all_columns: Vec<String>,
     pub visible_columns: Vec<String>,
-    pub first_rows_visible_values: Option<JsCellValueDescription>,
-    pub last_rows_visible_values: Option<JsCellValueDescription>,
+    pub values: Option<JsCellValueSummary>,
     pub bounds: String,
     pub intended_bounds: String,
     pub show_name: bool,
@@ -580,7 +578,18 @@ pub struct JsCellValueCode {
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
-pub struct JsCellValueDescription {
+pub struct JsCellValueSummary {
+    pub total_range: String,
+
+    pub start_range: Option<String>,
+    pub end_range: Option<String>,
+
+    pub start_values: Option<Vec<Vec<JsCellValueCode>>>,
+    pub end_values: Option<Vec<Vec<JsCellValueCode>>>,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq, TS)]
+pub struct JsCellValueRanges {
     pub total_range: String,
     pub range: String,
     pub values: Option<Vec<Vec<JsCellValueCode>>>,
@@ -591,5 +600,6 @@ pub struct JsGetAICellResult {
     pub selection: String,
     pub page: i32,
     pub total_pages: i32,
-    pub values: Vec<JsCellValueDescription>,
+
+    pub values: Vec<JsCellValueRanges>,
 }

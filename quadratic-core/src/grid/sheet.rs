@@ -16,7 +16,7 @@ use super::js_types::{JsCellValue, JsCellValuePos};
 use super::resize::ResizeMap;
 use super::{CellWrap, Format, NumericFormatKind, SheetFormatting};
 use crate::a1::{A1Context, UNBOUNDED};
-use crate::grid::js_types::JsCellValueDescription;
+use crate::grid::js_types::{JsCellValueCode, JsCellValueSummary};
 use crate::number::normalize;
 use crate::sheet_offsets::SheetOffsets;
 use crate::{CellValue, Pos, Rect};
@@ -240,29 +240,47 @@ impl Sheet {
         })
     }
 
-    /// Returns the description of cell values in a rect for ai context.
+    /// Returns the first and last rows of visible cell values in a rect for ai context.
     pub fn js_cell_value_description(
         &self,
-        rect: Rect,
+        bounds: Rect,
         max_rows: Option<usize>,
-    ) -> JsCellValueDescription {
-        let limited_rect = Rect::new(
-            rect.min.x,
-            rect.min.y,
-            rect.max.x,
-            rect.min.y
-                + max_rows
-                    .unwrap_or(rect.height() as usize)
-                    .min(rect.height() as usize) as i64
-                - 1,
-        );
-        if max_rows.is_some() {
-            self.cells_as_string(limited_rect, rect)
+    ) -> JsCellValueSummary {
+        if let Some(max_rows) = max_rows {
+            let start_range = Rect::new(
+                bounds.min.x,
+                bounds.min.y,
+                bounds.max.x,
+                bounds.min.y + (bounds.height() as i64).min(max_rows as i64) - 1,
+            );
+            let start_values = self.cells_as_string(start_range);
+
+            let mut starting_last_row = bounds.max.y - max_rows as i64 + 1;
+            if starting_last_row < start_range.max.y {
+                starting_last_row = start_range.max.y + 1;
+            }
+            let mut end_values: Option<Vec<Vec<JsCellValueCode>>> = None;
+            let mut end_range: Option<Rect> = None;
+            if starting_last_row <= bounds.max.y {
+                let end_range_rect =
+                    Rect::new(bounds.min.x, starting_last_row, bounds.max.x, bounds.max.y);
+                end_values = Some(self.cells_as_string(end_range_rect));
+                end_range = Some(end_range_rect);
+            }
+            JsCellValueSummary {
+                total_range: bounds.a1_string(),
+                start_range: Some(start_range.a1_string()),
+                end_range: end_range.map(|r| r.a1_string()),
+                start_values: Some(start_values),
+                end_values,
+            }
         } else {
-            JsCellValueDescription {
-                total_range: rect.a1_string(),
-                range: "".to_string(),
-                values: None,
+            JsCellValueSummary {
+                total_range: bounds.a1_string(),
+                start_range: None,
+                end_range: None,
+                start_values: None,
+                end_values: None,
             }
         }
     }
@@ -1016,9 +1034,14 @@ mod test {
         );
 
         assert_eq!(result.total_range, "A1:J1000");
-        assert_eq!(result.range, "A1:J3");
+        assert_eq!(result.start_range, Some("A1:J3".to_string()));
         assert_eq!(
-            result.values.unwrap().iter().flatten().count(),
+            result.start_values.unwrap().iter().flatten().count(),
+            max_rows * 10
+        );
+        assert_eq!(result.end_range, Some("A998:J1000".to_string()));
+        assert_eq!(
+            result.end_values.unwrap().iter().flatten().count(),
             max_rows * 10
         );
     }

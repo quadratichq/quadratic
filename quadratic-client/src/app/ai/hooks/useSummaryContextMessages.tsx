@@ -1,5 +1,5 @@
 import { MAX_ROWS } from '@/app/ai/constants/context';
-import { AICellsToMarkdown } from '@/app/ai/utils/aiToMarkdown';
+import { getAICellSummaryToMarkdown } from '@/app/ai/utils/aiToMarkdown';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { pluralize } from '@/app/helpers/pluralize';
@@ -104,16 +104,8 @@ File has ${sheetCount} ${pluralize('sheet', sheetCount)}, named ${joinListWith({
 '${table.data_table_name}' has bounds of (${table.bounds}).
 `;
           // add data if available
-          if (table.first_rows_visible_values) {
-            text += `
-First rows of '${table.data_table_name}' (limited to ${MAX_ROWS} rows):
-${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
-
-            if (table.last_rows_visible_values) {
-              text += `
-Last rows of '${table.data_table_name}' (limited to ${MAX_ROWS} rows):
-${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
-            }
+          if (table.values) {
+            text += getAICellSummaryToMarkdown(table.data_table_name, table.values);
           }
         }
       }
@@ -134,16 +126,8 @@ These are the code tables that output more than one cell on the sheet:
 '${table.code_table_name}' is a ${table.language} table with bounds of ${table.bounds}.
 `;
           // add data if available
-          if (table.first_rows_visible_values) {
-            text += `
-First rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
-${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
-
-            if (table.last_rows_visible_values) {
-              text += `
-Last rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
-${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
-            }
+          if (table.values) {
+            text += getAICellSummaryToMarkdown(table.code_table_name, table.values);
           }
         }
       }
@@ -167,15 +151,8 @@ These are the connection tables on the sheet:
 
 '${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}.
 `;
-          if (table.first_rows_visible_values) {
-            text += `
-First rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
-${AICellsToMarkdown(table.first_rows_visible_values, false)}`;
-            if (table.last_rows_visible_values) {
-              text += `
-Last rows of '${table.code_table_name}' (limited to ${MAX_ROWS} rows):
-${AICellsToMarkdown(table.last_rows_visible_values, false)}`;
-            }
+          if (table.values) {
+            text += getAICellSummaryToMarkdown(table.code_table_name, table.values);
           }
         }
       }
@@ -207,7 +184,7 @@ This is the flat data on the sheet (limited to ${MAX_ROWS} rows each):
 `;
 
         for (const data of sheetContext.data_rects) {
-          text += `${AICellsToMarkdown(data, true)}\n`;
+          text += getAICellSummaryToMarkdown(data.total_range, data);
         }
       }
       text += `\n`;

@@ -3,9 +3,7 @@ use crate::{
     a1::A1Context,
     cell_values::CellValues,
     controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::js_types::{
-        JsCellValueCode, JsCellValueDescription, JsCellValueKind, JsValidationWarning,
-    },
+    grid::js_types::{JsCellValueCode, JsCellValueKind, JsValidationWarning},
 };
 
 use super::Sheet;
@@ -99,7 +97,7 @@ impl Sheet {
     }
 
     /// Returns the rendered value of the cells in a given rect.
-    pub fn cells_as_string(&self, rect: Rect, total_range: Rect) -> JsCellValueDescription {
+    pub fn cells_as_string(&self, rect: Rect) -> Vec<Vec<JsCellValueCode>> {
         let mut values = Vec::new();
         for y in rect.min.y..=rect.max.y {
             let mut row = Vec::new();
@@ -128,11 +126,7 @@ impl Sheet {
             }
             values.push(row);
         }
-        JsCellValueDescription {
-            total_range: total_range.a1_string(),
-            range: rect.a1_string(),
-            values: Some(values),
-        }
+        values
     }
 
     /// Returns the rendered formats of the cells in a given rect.

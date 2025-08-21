@@ -15,7 +15,7 @@ use crate::{
     Rect,
     a1::{A1Error, A1Selection},
     controller::GridController,
-    grid::js_types::JsGetAICellResult,
+    grid::js_types::{JsCellValueRanges, JsGetAICellResult},
 };
 
 use super::GridBounds;
@@ -60,11 +60,12 @@ impl GridController {
     ) -> Result<JsGetAICellResult, A1Error> {
         let mut count = 0;
         let mut in_page = 0;
-        let mut values = vec![];
+        let mut values = Vec::new();
 
         if let Some(sheet) = self.try_sheet(selection.sheet_id)
             && let GridBounds::NonEmpty(bounds) = sheet.bounds(true)
         {
+            let total_range = selection.to_string(None, self.a1_context());
             for range in &selection.ranges {
                 if let Some(rect) = range.to_rect(self.a1_context())
                     && let Some(rect) = rect.intersection(&bounds)
@@ -75,7 +76,12 @@ impl GridController {
                     for rect in rects {
                         if page == in_page {
                             if sheet.has_content_in_rect(rect) {
-                                values.push(sheet.cells_as_string(rect, rect));
+                                let value = JsCellValueRanges {
+                                    total_range: total_range.clone(),
+                                    range: rect.a1_string(),
+                                    values: Some(sheet.cells_as_string(rect)),
+                                };
+                                values.push(value);
                             } else {
                                 page += 1;
                             }
