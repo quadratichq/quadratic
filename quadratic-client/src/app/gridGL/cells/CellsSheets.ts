@@ -23,11 +23,13 @@ export class CellsSheets extends Container<CellsSheet> {
     this.content = content;
     events.on('addSheet', this.addSheet);
     events.on('deleteSheet', this.deleteSheet);
+    events.on('showLabel', this.showLabel);
   }
 
   destroy() {
     events.off('addSheet', this.addSheet);
     events.off('deleteSheet', this.deleteSheet);
+    events.off('showLabel', this.showLabel);
     super.destroy();
   }
 
@@ -170,10 +172,10 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet?.cellsImages.reposition(sheetId);
   }
 
-  showLabel(x: number, y: number, sheetId: string, show: boolean) {
+  private showLabel = (x: number, y: number, sheetId: string, show: boolean) => {
     const cellsSheet = this.getById(sheetId);
     cellsSheet?.showLabel(x, y, show);
-  }
+  };
 
   unload(options: { sheetId: string; hashX: number; hashY: number }): void {
     const { sheetId, hashX, hashY } = options;

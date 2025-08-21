@@ -226,7 +226,8 @@ export class PixiAppSettings {
       this._input.y !== undefined &&
       this._input.sheetId !== undefined
     ) {
-      pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
+      events.emit('showLabel', this._input.x, this._input.y, this._input.sheetId, true);
+      // pixiApp.cellsSheets.showLabel(this._input.x, this._input.y, this._input.sheetId, true);
     }
     if (input === true) {
       const x = sheets.sheet.cursor.position.x;
@@ -235,7 +236,8 @@ export class PixiAppSettings {
         this._input = { show: false };
       } else {
         this._input = { show: input, initialValue, x, y, sheetId: sheets.current };
-        pixiApp.cellsSheets.showLabel(x, y, sheets.current, false);
+        // pixiApp.cellsSheets.showLabel(x, y, sheets.current, false);
+        events.emit('showLabel', x, y, sheets.current, false);
       }
     } else {
       this._input = { show: false };

@@ -156,6 +156,8 @@ interface EventTypes {
   contentCache: (sheetId: string, contentCache: SheetContentCache) => void;
 
   debugFlags: () => void;
+
+  showLabel: (x: number, y: number, sheetId: string, show: boolean) => void;
 }
 
 export const events = new EventEmitter<EventTypes>();

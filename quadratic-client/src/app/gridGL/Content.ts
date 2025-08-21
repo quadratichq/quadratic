@@ -159,7 +159,7 @@ export class Content extends Container {
     debugTimeReset();
     this.gridLines.update();
     debugTimeCheck('[Update] gridLines');
-    this.headings.update(viewport.dirty);
+    this.headings.update(viewport);
     debugTimeCheck('[Update] headings');
     this.boxCells?.update();
     debugTimeCheck('[Update] boxCells');
