@@ -186,3 +186,5 @@ export class Content extends Container {
     return !!rendererDirty;
   }
 }
+
+export const content = new Content();

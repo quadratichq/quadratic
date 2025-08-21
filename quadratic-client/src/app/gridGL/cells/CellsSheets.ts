@@ -61,21 +61,6 @@ export class CellsSheets extends Container<CellsSheet> {
     cellsSheet.destroy();
   };
 
-  // // used to render all cellsTextHashes to warm up the GPU
-  // showAll(id: string) {
-  //   this.children.forEach((child) => {
-  //     if (child.sheetId === id) {
-  //       if (this.current?.sheetId !== child?.sheetId) {
-  //         this.current = child;
-  //         child.show(pixiApp.viewport.getVisibleBounds());
-  //         pixiApp.changeHoverTableHeaders(this.current.tables.hoverTableHeaders);
-  //       }
-  //     } else {
-  //       child.hide();
-  //     }
-  //   });
-  // }
-
   show(id: string): void {
     this.children.forEach((child) => {
       if (child.sheetId === id) {
@@ -91,9 +76,6 @@ export class CellsSheets extends Container<CellsSheet> {
   }
 
   cull(bounds: Rectangle): void {
-    // this is a hack to keep the viewport active when the AI view is active
-    if (bounds.width === 0 || bounds.height === 0) return;
-
     if (!this.current) throw new Error('Expected current to be defined in CellsSheets');
     this.current.show(bounds);
   }
