@@ -231,14 +231,32 @@ mod tests {
         assert_eq!(result.page, 0);
         assert_eq!(result.total_pages, 1);
         assert_eq!(result.values[0].range, "A1:J100");
-        assert_eq!(result.values[0].values.iter().flatten().count(), 1000);
+        assert_eq!(
+            result.values[0]
+                .values
+                .as_ref()
+                .unwrap()
+                .iter()
+                .flatten()
+                .count(),
+            1000
+        );
         assert_eq!(result.selection, "'Sheet 1'!A1:J190".to_string());
 
         let result = gc.get_ai_cells(selection, 1).unwrap();
         assert_eq!(result.page, 1);
         assert_eq!(result.total_pages, 1);
         assert_eq!(result.values[0].range, "A101:J190");
-        assert_eq!(result.values[0].values.iter().flatten().count(), 900);
+        assert_eq!(
+            result.values[0]
+                .values
+                .as_ref()
+                .unwrap()
+                .iter()
+                .flatten()
+                .count(),
+            900
+        );
         assert_eq!(result.selection, "'Sheet 1'!A1:J190".to_string());
     }
 

@@ -1017,7 +1017,10 @@ mod test {
 
         assert_eq!(result.total_range, "A1:J1000");
         assert_eq!(result.range, "A1:J3");
-        assert_eq!(result.values.iter().flatten().count(), 10 * max_rows);
+        assert_eq!(
+            result.values.unwrap().iter().flatten().count(),
+            max_rows * 10
+        );
     }
 
     #[test]
