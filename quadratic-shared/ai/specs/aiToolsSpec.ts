@@ -6,7 +6,6 @@ import type {
   ModelMode,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
-import { CLEAN_UP_TOOL_CALLS_AFTER } from '../helpers/message.helper';
 
 // This provides a list of AI Tools in the order that they will be sent to the
 // AI model. If you want to change order, change it here instead of the spec
@@ -614,14 +613,12 @@ This name should be from user's perspective, not the assistant's.\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-IMPORTANT: If the results include page information:\n
-- if the user requests too much data, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because only the last ${CLEAN_UP_TOOL_CALLS_AFTER} will be kept between AI tool calls.\n
 `,
     parameters: {
       type: 'object',
@@ -648,19 +645,17 @@ The string representation (in a1 notation) of the selection of cells to get the 
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-IMPORTANT: If the results include page information:\n
-- if the user requests too much data, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because only the last ${CLEAN_UP_TOOL_CALLS_AFTER} will be kept between AI tool calls.\n
 `,
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: [],
     description: `
 This tool checks if the cells in the chosen selection have any data.
 Use MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
@@ -749,6 +744,7 @@ Don't attempt to add formulas or code to data tables.\n`,
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
@@ -785,6 +781,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
 You should use the set_cell_values function to set the values of a sheet to a 2d array of strings.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use this function to add data to a sheet. Don't use code cell for adding data. Always add data using this function.\n\n
 CRITICALLY IMPORTANT: you MUST insert column headers ABOVE the first row of data.\n
 When setting cell values, follow these rules for headers:\n
@@ -1100,6 +1097,7 @@ Examples:
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
 IMPORTANT: Before moving a table, code, or a chart, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
@@ -1131,6 +1129,7 @@ Target location is the top left corner of the target location on the current ope
     prompt: `
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
@@ -1142,6 +1141,8 @@ Target position is the top left corner of the target position on the current ope
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 `,
     parameters: {
       type: 'object',
@@ -1163,6 +1164,8 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     prompt: `
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 You MUST NOT delete cells that are referenced by code cells. For example, if you write Python code that references cells, you MUST NOT delete the original cells or the Python code will stop working.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 delete_cells functions requires the current sheet name provided in the context, and a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 `,
   },
@@ -1235,9 +1238,9 @@ The get_text_formats tool returns the text formatting information of a selection
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
 It should be used to find formatting within a sheet's formatting bounds.\n
 It returns a string representation of the formatting information of the cells in the selection.\n
-CRITICALLY IMPORTANT: If too large, the results will include page information:\n
-- if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
-- ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
+If too large, the results will include page information:\n
+- If page information is provided, perform actions on the current page's results before requesting the next page of results.\n
+- Always review all pages of results; as you get each page, immediately perform any actions before moving to the next page.\n
 `,
   },
   [AITool.SetTextFormats]: {
@@ -2156,6 +2159,7 @@ This tool sets the meta data for a table. One or more options can be changed on 
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
     parameters: {
       type: 'object',
@@ -2198,6 +2202,7 @@ In the parameters, include only columns that you want to change. The remaining c
     responseSchema: AIToolsArgsSchema[AITool.TableColumnSettings],
     prompt: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
 

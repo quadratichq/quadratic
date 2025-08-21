@@ -265,7 +265,7 @@ Use get_cell_data tool to get more information about the data in these sheets.
           content: [
             {
               type: 'text',
-              text: `I understand the file structure summary. If asked to solve a data problem, I will first use get_cell_data tool to view complete data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`,
+              text: `I understand the file structure summary. If asked to solve a data problem, I will check this context, and if I'm missing data, use get_cell_data tool to view more data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`,
             },
           ],
           contextType: 'fileSummary',
