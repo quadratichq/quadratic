@@ -1,0 +1,26 @@
+import { Checkbox } from '@/shared/shadcn/ui/checkbox';
+import { Label } from '@/shared/shadcn/ui/label';
+import { cn } from '@/shared/shadcn/utils';
+
+export function ConnectionFormAICheckbox({
+  value,
+  setValue,
+  showError,
+}: {
+  value: boolean;
+  setValue: (value: boolean) => void;
+  showError: boolean;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex flex-row items-start gap-2 rounded-md border border-border p-3 shadow-sm">
+        <Checkbox id="ai-checkbox" className="mt-0.5" checked={value} onCheckedChange={setValue} />
+        <Label htmlFor="ai-checkbox" className={cn('flex flex-col leading-5', showError && 'text-destructive')}>
+          I acknowledge that I should use a read-only user. Without it, users or the AI agent could execute write
+          queries on my database.
+        </Label>
+      </div>
+      {showError && <p className="text-xs font-medium text-destructive">Required</p>}
+    </div>
+  );
+}
