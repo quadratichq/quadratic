@@ -613,7 +613,6 @@ This name should be from user's perspective, not the assistant's.\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
-Do NOT use this tool if you already have the information in your context. We provide a lot of data from tables and the sheet in context. Check there first before calling this.
 Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
@@ -645,8 +644,7 @@ The string representation (in a1 notation) of the selection of cells to get the 
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
-This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.
-You MUST NOT use this tool if you already have the data in your context. We provide a lot of data from tables and the sheet in context. Check there first before calling this.
+This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
 Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
@@ -690,7 +688,7 @@ Use MUST use this tool before creating or moving tables, code, connections, or c
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Adds a data table to the sheet with sheet_name, requires the sheet name, top left cell position (in a1 notation), the name of the data table and the data to add. The data should be a 2d array of strings, where each sub array represents a row of values.\n
-You MUST NOT use this tool if you already have the data in your context. We provide a lot of data from tables and the sheet in context. Check there first before calling this.
+Do NOT use this tool if you want to convert existing data to a data table. Use convert_to_table instead.\n
 The first row of the data table is considered to be the header row, and the data table will be created with the first row as the header row.\n
 All rows in the 2d array of values should be of the same length. Use empty strings for missing values but always use the same number of columns for each row.\n
 Data tables are best for adding new tabular data to the sheet.\n\n
@@ -834,7 +832,6 @@ Use this code to fix errors or make improvements by updating it using the set_co
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
-You MUST use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.
 You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
@@ -842,7 +839,6 @@ Note: only name the code cell if it is new.\n
 If this tool created a spill you MUST delete the original code cell and recreate it at a different location to avoid multiple code cells in the sheet.
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -895,7 +891,6 @@ If this tool created a spill you MUST delete the original code cell and recreate
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 
 Code cell (Python and Javascript) placement instructions:\n
@@ -950,7 +945,6 @@ Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet
 Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
 
 For SQL Connection code cells:\n
@@ -961,10 +955,8 @@ For SQL Connection code cells:\n
 
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
-- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
-- Cursor location should not impact placement decisions.\n
 - If the sheet is empty, place the code cell at A1.\n
+- Use the existing SQL cell location if editing existing SQL code cell.\n
 `,
     parameters: {
       type: 'object',
@@ -1024,12 +1016,8 @@ For SQL Connection code cells:\n
 
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
-- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
-- Cursor location should not impact placement decisions.\n
 - If the sheet is empty, place the code cell at A1.\n
-
-Think carefully about the placement rules and examples. For SQL code cells, ensure the code cell is placed all the way right of the last column of existing data in the sheet to avoid creating spill errors.
+- Use the existing SQL cell location if editing existing SQL code cell.\n
 `,
   },
 
@@ -1073,7 +1061,6 @@ Never use set_formula_cell_value function to set the value of a cell to a value 
 set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
-Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
 Don't prefix formulas with \`=\` in formula cells.\n
 
 Formulas placement instructions:\n
@@ -1099,10 +1086,9 @@ Examples:
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
 You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
-When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
-IMPORTANT: Before moving a table, code, or a chart, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
