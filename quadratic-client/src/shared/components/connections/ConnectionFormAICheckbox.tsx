@@ -14,7 +14,13 @@ export function ConnectionFormAICheckbox({
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-row items-start gap-2 rounded-md border border-border p-3 shadow-sm">
-        <Checkbox id="ai-checkbox" className="mt-0.5" checked={value} onCheckedChange={setValue} />
+        <Checkbox
+          data-testid="ai-checkbox"
+          id="ai-checkbox"
+          className="mt-0.5"
+          checked={value}
+          onCheckedChange={setValue}
+        />
         <Label
           htmlFor="ai-checkbox"
           className={cn('flex flex-col font-normal leading-5', showError && 'text-destructive')}
