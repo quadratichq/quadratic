@@ -15,6 +15,7 @@ import { useFetcher, useSubmit } from 'react-router';
 
 export type ConnectionFormProps = {
   handleNavigateToListView: () => void;
+  handleCancelForm: () => void;
   handleSubmitForm: (formValues: ConnectionFormValues) => void;
   connection?: ApiTypes['/v0/teams/:uuid/connections/:connectionUuid.GET.response'];
 };
@@ -23,10 +24,12 @@ export function ConnectionFormCreate({
   teamUuid,
   type,
   handleNavigateToListView,
+  handleNavigateToNewView,
 }: {
   teamUuid: string;
   type: ConnectionType;
   handleNavigateToListView: () => void;
+  handleNavigateToNewView: () => void;
 }) {
   const submit = useSubmit();
 
@@ -40,6 +43,7 @@ export function ConnectionFormCreate({
 
   const props: ConnectionFormProps = {
     handleNavigateToListView,
+    handleCancelForm: () => handleNavigateToNewView(),
     handleSubmitForm,
   };
 
@@ -82,6 +86,7 @@ export function ConnectionFormEdit({
       props={{
         connection: fetcher.data.connection,
         handleNavigateToListView,
+        handleCancelForm: () => handleNavigateToListView(),
         handleSubmitForm,
       }}
     />
@@ -151,6 +156,7 @@ function ConnectionFormWrapper({
 
       <ConnectionFormActions
         form={form}
+        handleCancelForm={props.handleCancelForm}
         handleNavigateToListView={props.handleNavigateToListView}
         connectionUuid={props.connection?.uuid}
         connectionType={type}

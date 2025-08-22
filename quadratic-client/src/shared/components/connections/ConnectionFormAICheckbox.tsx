@@ -19,7 +19,7 @@ export function ConnectionFormAICheckbox({
           id="ai-checkbox"
           className="mt-0.5"
           checked={value}
-          onCheckedChange={setValue}
+          onCheckedChange={(checked) => setValue(!!checked)}
         />
         <Label
           htmlFor="ai-checkbox"
