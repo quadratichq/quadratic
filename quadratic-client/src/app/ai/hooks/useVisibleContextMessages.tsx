@@ -12,7 +12,6 @@ export function useVisibleContextMessages() {
     const visibleRect = sheets.getVisibleRect();
     const visibleRectSelection = getRectSelection(sheets.current, visibleRect);
     const jsSelection = sheets.A1SelectionStringToSelection(visibleRectSelection);
-    const visibleA1String = jsSelection.toA1String(sheets.current, sheets.jsA1Context);
     jsSelection.free();
 
     const sheetBounds = sheets.sheet.boundsWithoutFormatting;
@@ -29,7 +28,6 @@ export function useVisibleContextMessages() {
 # What the user can see
 
 - the user is in sheet '${sheetName}'
-- they see cells in ${visibleA1String}
 - their cursor is located at ${sheets.sheet.cursor.a1String()}
 - their selection is ${sheets.getA1String(sheets.current)}
 `;
