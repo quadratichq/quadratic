@@ -55,7 +55,9 @@ export class Content extends Container {
   private debug = new Graphics();
 
   /// Initializes the content.
-  init() {
+  constructor() {
+    super();
+
     // z-order for the content
     this.addChild(
       this.background,
