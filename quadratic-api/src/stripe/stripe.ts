@@ -244,6 +244,12 @@ export const handleSubscriptionWebhookEvent = async (event: Stripe.Subscription)
   updateTeamStatus(stripeSubscriptionId, status, customer, new Date(event.current_period_end * 1000));
 };
 
+export const getIsMonthlySubscription = async (stripeSubscriptionId: string): Promise<boolean> => {
+  const subscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const isMonthly = subscription.items.data[0]?.price?.recurring?.interval === 'month';
+  return isMonthly;
+};
+
 export const updateBilling = async (team: Team | DecryptedTeam) => {
   if (!team.stripeCustomerId) {
     return;

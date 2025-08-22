@@ -1,3 +1,4 @@
+import { CancellationDialog } from '@/components/CancellationDialog';
 import { DashboardHeader } from '@/dashboard/components/DashboardHeader';
 import { SettingControl } from '@/dashboard/components/SettingControl';
 import { useDashboardRouteLoaderData } from '@/routes/_dashboard';
@@ -83,6 +84,12 @@ export const Component = () => {
     },
     [submit, team.uuid]
   );
+
+  const handleNavigateToStripePortal = useCallback(() => {
+    return apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
+      window.location.href = data.url;
+    });
+  }, [team.uuid]);
 
   // If for some reason it failed, display an error
   useEffect(() => {
@@ -204,21 +211,27 @@ export const Component = () => {
                         Upgrade to Pro
                       </Button>
                     ) : (
-                      <Button
-                        disabled={!canManageBilling}
-                        variant="secondary"
-                        className="mt-4 w-full"
-                        onClick={() => {
-                          trackEvent('[TeamSettings].manageBillingClicked', {
-                            team_uuid: team.uuid,
-                          });
-                          apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
-                            window.location.href = data.url;
-                          });
-                        }}
-                      >
-                        Manage billing
-                      </Button>
+                      <div className="mt-4 space-y-2">
+                        <Button
+                          disabled={!canManageBilling}
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            trackEvent('[TeamSettings].manageBillingClicked', {
+                              team_uuid: team.uuid,
+                            });
+                            handleNavigateToStripePortal();
+                          }}
+                        >
+                          Manage subscription
+                        </Button>
+                        {canManageBilling && (
+                          <CancellationDialog
+                            teamUuid={team.uuid}
+                            handleNavigateToStripePortal={handleNavigateToStripePortal}
+                          />
+                        )}
+                      </div>
                     )}
                     {!canManageBilling && (
                       <p className="mt-2 text-center text-xs text-muted-foreground">
