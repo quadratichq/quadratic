@@ -947,7 +947,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
 
-IMPORTANT: If user wants queries that make sense as edits to an existing SQL code cell, edit the existing code cell instead of creating a new one. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
@@ -958,7 +958,7 @@ For SQL Connection code cells:\n
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - If the sheet is empty, place the code cell at A1.\n
-- Use the existing SQL cell location if editing existing SQL code cell.\n
+- Use the existing SQL cell location if editing existing SQL code cell. Queries that are on a table that already exists in the sheet should be edits to existing code tables, not new tables unless the user specifically asks for a new table.\n
 `,
     parameters: {
       type: 'object',
@@ -1010,7 +1010,7 @@ Note: only name the code cell if it is new.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
 This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
-IMPORTANT: If user wants queries that make sense as edits to an existing SQL code cell, edit the existing code cell instead of creating a new one. 
+IMPORTANT: if you've already created a table and user wants to make subsequent queries on that same table, use the existing code cell instead of creating a new query. 
 
 For SQL Connection code cells:\n
 - Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
@@ -1021,7 +1021,7 @@ For SQL Connection code cells:\n
 SQL code cell placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
 - If the sheet is empty, place the code cell at A1.\n
-- Use the existing SQL cell location if editing existing SQL code cell.\n
+- Use the existing SQL cell location if editing existing SQL code cell. Queries that are on a table that already exists in the sheet should be edits to existing code tables, not new tables unless the user specifically asks for a new table.\n
 `,
   },
 
