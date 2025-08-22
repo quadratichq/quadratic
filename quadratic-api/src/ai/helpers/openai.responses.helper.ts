@@ -33,6 +33,7 @@ import type {
   AIUsage,
   Content,
   ImageContent,
+  ModelMode,
   OpenAIModelKey,
   ParsedAIResponse,
   TextContent,
@@ -73,6 +74,7 @@ function convertInputContent(content: Content | ToolResultContent, imageSupport:
 
 export function getOpenAIResponsesApiArgs(
   args: AIRequestHelperArgs,
+  aiModelMode: ModelMode,
   strictParams: boolean,
   imageSupport: boolean
 ): {
@@ -182,14 +184,22 @@ export function getOpenAIResponsesApiArgs(
     ...messages,
   ];
 
-  const tools = getOpenAITools(source, toolName, strictParams);
+  const tools = getOpenAITools(source, aiModelMode, toolName, strictParams);
   const tool_choice = tools?.length ? getOpenAIToolChoice(toolName) : undefined;
 
   return { messages: openaiMessages, tools, tool_choice };
 }
 
-function getOpenAITools(source: AISource, toolName: AITool | undefined, strictParams: boolean): Tool[] | undefined {
+function getOpenAITools(
+  source: AISource,
+  aiModelMode: ModelMode,
+  toolName: AITool | undefined,
+  strictParams: boolean
+): Tool[] | undefined {
   const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+    if (!toolSpec.aiModelModes.includes(aiModelMode)) {
+      return false;
+    }
     if (toolName === undefined) {
       return toolSpec.sources.includes(source);
     }

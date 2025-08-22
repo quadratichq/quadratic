@@ -23,7 +23,12 @@ export const handleOpenAIResponsesRequest = async (
   const model = getModelFromModelKey(modelKey);
   const options = getModelOptions(modelKey, args);
 
-  const { messages, tools, tool_choice } = getOpenAIResponsesApiArgs(args, options.strictParams, options.imageSupport);
+  const { messages, tools, tool_choice } = getOpenAIResponsesApiArgs(
+    args,
+    options.aiModelMode,
+    options.strictParams,
+    options.imageSupport
+  );
 
   const apiArgs: ResponseCreateParamsStreaming | ResponseCreateParamsNonStreaming = {
     model,
