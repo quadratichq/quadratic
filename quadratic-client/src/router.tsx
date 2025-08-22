@@ -25,6 +25,7 @@ import { Navigate, Route, createBrowserRouter, createRoutesFromElements } from '
  *  - *.quadratichq.com/logout
  *  - *.quadratichq.com/education
  *  - *.quadratichq.com/onboarding
+ *  - *.quadratichq.com/iframe-indexeddb
  *
  *  To add a new route:
  *  1. go to the respective cloudflare account (QA / Prod)
@@ -143,6 +144,11 @@ export const router = createBrowserRouter(
         Component={EmptyComponent}
         HydrateFallback={EmptyComponent}
       />
+      <Route
+        path={ROUTES.IFRAME_INDEXEDDB}
+        lazy={() => import('./routes/iframe-indexeddb')}
+        HydrateFallback={EmptyComponent}
+      />
     </>
   ),
   {}
@@ -161,7 +167,7 @@ function dontRevalidateDialogs({ currentUrl, nextUrl }: ShouldRevalidateFunction
 // Because our `index.html` starts with a loading state, which we remove when
 // the app loads, we're fine rendering an empty component in various places.
 // This is an explicit way to say what's implicitly happening.
-// Otherwise, if we don't include thise, we get a bunch of console.warn()
+// Otherwise, if we don't include these, we get a bunch of console.warn()
 // messages like "No HydrateFallback provided" or
 // "Matched leaf route at location ... does not have an element..." which
 // blog up sentry.

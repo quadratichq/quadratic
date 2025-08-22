@@ -89,47 +89,6 @@ pub(crate) mod indexmap_serde {
     }
 }
 
-pub(crate) mod hashmap_serde {
-    use std::collections::HashMap;
-    use std::hash::Hash;
-
-    use serde::ser::SerializeMap;
-    use serde::{Deserialize, Deserializer, Serialize, Serializer};
-
-    pub fn serialize<S: Serializer, K: Serialize, V: Serialize>(
-        map: &HashMap<K, V>,
-        s: S,
-    ) -> Result<S::Ok, S::Error> {
-        let mut m = s.serialize_map(Some(map.len()))?;
-        for (k, v) in map {
-            if let Ok(key) = serde_json::to_string(k) {
-                m.serialize_entry(&key, v)?;
-            }
-        }
-        m.end()
-    }
-
-    pub fn deserialize<
-        'de,
-        D: Deserializer<'de>,
-        K: for<'k> Deserialize<'k> + Eq + Hash,
-        V: Deserialize<'de>,
-    >(
-        d: D,
-    ) -> Result<HashMap<K, V>, D::Error> {
-        Ok(HashMap::<String, V>::deserialize(d)?
-            .into_iter()
-            .filter_map(|(k, v)| {
-                if let Ok(key) = serde_json::from_str(&k) {
-                    Some((key, v))
-                } else {
-                    None
-                }
-            })
-            .collect())
-    }
-}
-
 /// Converts a column name to a number.
 #[allow(unused)]
 macro_rules! col {
@@ -148,7 +107,7 @@ macro_rules! row {
 
 /// Parses a cell position in A1 notation.
 ///
-/// Expressions evalulating to sheet IDs are allowed but must be surrounded in
+/// Expressions evaluating to sheet IDs are allowed but must be surrounded in
 /// parentheses if they are anything other than a single identifier.
 ///
 /// # Examples
@@ -170,6 +129,8 @@ macro_rules! row {
 macro_rules! pos {
     [$sheet_id:ident ! $s:ident] => { pos![($sheet_id) ! $s] };
     [($sheet_id:expr) ! $s:ident] => { pos![$s].to_sheet_pos($sheet_id) };
+    [$sheet_id:ident ! $x:expr, $y:expr] => { pos![$x, $y].to_sheet_pos($sheet_id) };
+    [$col:expr, $row:expr] => { $crate::Pos::new($col, $row) };
     [$s:ident] => {{
         #[allow(unused_assignments, unused_variables)]
         let pos = $crate::formulas::legacy_cell_ref::CellRef::parse_a1(stringify!($s), $crate::Pos::ORIGIN)
@@ -206,7 +167,7 @@ macro_rules! rect {
 ///     start: CellRefRangeEnd::new_relative_xy(1, 1),
 ///     end: CellRefRangeEnd {
 ///         col: CellRefCoord::new_abs(3),
-///         row: CellRefCoord::UNBOUNDED,
+///         row: CellRefCoord::ABS_UNBOUNDED,
 ///     },
 /// });
 /// ```
@@ -323,8 +284,8 @@ pub fn unique_name<'a>(
     let mut name = String::from("");
 
     while name.is_empty() {
-        let new_name = format!("{}{}", base, num);
-        let new_name_alt = format!("{} {}", base, num);
+        let new_name = format!("{base}{num}");
+        let new_name_alt = format!("{base} {num}");
         let new_names = [new_name.as_str(), new_name_alt.as_str()];
 
         if new_names.iter().all(|name| check_name(name)) {
@@ -442,7 +403,7 @@ pub fn sort_bounds(a: i64, b: Option<i64>) -> (i64, Option<i64>) {
 macro_rules! print_sheet {
     ($gc:expr, $sheet_id:expr) => {
         let sheet = $gc.try_sheet($sheet_id).unwrap();
-        $crate::test_util::print_sheet::print_sheet(&sheet);
+        $crate::test_util::print_sheet::print_sheet(sheet);
     };
 }
 
@@ -450,7 +411,7 @@ macro_rules! print_sheet {
 macro_rules! print_first_sheet {
     ($gc:expr) => {
         let sheet = $gc.try_sheet($gc.sheet_ids()[0]).unwrap();
-        $crate::test_util::print_sheet::print_sheet(&sheet);
+        $crate::test_util::print_sheet::print_sheet(sheet);
     };
 }
 
@@ -461,12 +422,14 @@ pub(crate) fn assert_f64_approx_eq(expected: f64, actual: f64, message: &str) {
 
     assert!(
         (expected - actual).abs() < EPSILON,
-        "{}: expected {expected} but got {actual}",
-        message
+        "{message}: expected {expected} but got {actual}"
     );
 }
 #[cfg(test)]
 mod tests {
+    use crate::a1::{CellRefCoord, CellRefRangeEnd, RefRangeBounds};
+    use crate::ref_range_bounds;
+
     use super::*;
 
     #[test]
@@ -501,5 +464,19 @@ mod tests {
         assert_eq!(unused_name("Sheet", &used), "Sheet 3");
         let used = ["Sheet 2", "Sheet 3"];
         assert_eq!(unused_name("Sheet", &used), "Sheet 4");
+    }
+
+    #[test]
+    fn test_ref_range_bounds() {
+        assert_eq!(
+            ref_range_bounds![:$C],
+            RefRangeBounds {
+                start: CellRefRangeEnd::new_relative_xy(1, 1),
+                end: CellRefRangeEnd {
+                    col: CellRefCoord::new_abs(3),
+                    row: CellRefCoord::ABS_UNBOUNDED,
+                },
+            }
+        );
     }
 }

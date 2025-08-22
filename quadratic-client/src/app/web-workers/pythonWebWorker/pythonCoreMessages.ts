@@ -9,7 +9,6 @@ export interface CorePythonRun {
 
 export interface PythonCoreResults {
   type: 'pythonCoreResults';
-  transactionId: string;
   jsCodeResultBuffer: ArrayBuffer;
 }
 

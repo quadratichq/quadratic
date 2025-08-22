@@ -278,7 +278,7 @@ pub(crate) async fn integration_test_send(
         ))
         .await
     {
-        println!("Error sending message: {:?}", e);
+        println!("Error sending message: {e:?}");
     };
 }
 
@@ -311,16 +311,16 @@ pub(crate) async fn integration_test_receive(
                         match descriptor.full_name() {
                             "quadratic.SendTransactions" => {
                                 let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::SendTransactions::decode(&msg[..]).unwrap();
-                                println!("SendTransaction: {:?}", decoded);
+                                println!("SendTransaction: {decoded:?}");
                                 // });
                             }
                             "quadratic.SendGetTransactions" => {
                                 let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::SendGetTransactions::decode(&msg[..]).unwrap();
-                                println!("SendGetTransactions: {:?}", decoded);
+                                println!("SendGetTransactions: {decoded:?}");
                             }
                             "quadratic.ReceiveTransaction" => {
                                 let decoded = quadratic_rust_shared::protobuf::quadratic::transaction::ReceiveTransaction::decode(&msg[..]).unwrap();
-                                println!("ReceiveTransaction: {:?}", decoded);
+                                println!("ReceiveTransaction: {decoded:?}");
                             }
                             _ => println!("Unknown message type: {}", descriptor.full_name()),
                         }

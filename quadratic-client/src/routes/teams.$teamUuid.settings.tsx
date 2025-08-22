@@ -13,9 +13,9 @@ import { Button } from '@/shared/shadcn/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/shared/shadcn/ui/dialog';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { isJsonObject } from '@/shared/utils/isJsonObject';
 import { InfoCircledIcon, PieChartIcon } from '@radix-ui/react-icons';
-import mixpanel from 'mixpanel-browser';
 import type { TeamSettings } from 'quadratic-shared/typesAndSchemas';
 import type { ReactNode } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -192,7 +192,7 @@ export const Component = () => {
                       <Button
                         disabled={!canManageBilling}
                         onClick={() => {
-                          mixpanel.track('[TeamSettings].upgradeToProClicked', {
+                          trackEvent('[TeamSettings].upgradeToProClicked', {
                             team_uuid: team.uuid,
                           });
                           apiClient.teams.billing.getCheckoutSessionUrl(team.uuid).then((data) => {
@@ -209,7 +209,7 @@ export const Component = () => {
                         variant="secondary"
                         className="mt-4 w-full"
                         onClick={() => {
-                          mixpanel.track('[TeamSettings].manageBillingClicked', {
+                          trackEvent('[TeamSettings].manageBillingClicked', {
                             team_uuid: team.uuid,
                           });
                           apiClient.teams.billing.getPortalSessionUrl(team.uuid).then((data) => {
@@ -335,7 +335,15 @@ export const Component = () => {
                   When using AI features your data is sent to our AI providers:
                 </p>
                 <ul className="mt-2 space-y-2">
-                  {['OpenAI', 'Anthropic', 'AWS Bedrock', 'Google Cloud'].map((item, i) => (
+                  {[
+                    'OpenAI',
+                    'Anthropic',
+                    'AWS Bedrock',
+                    'Google Cloud Vertex AI',
+                    'Microsoft Azure AI',
+                    'Baseten',
+                    'Fireworks',
+                  ].map((item, i) => (
                     <li className="flex items-center gap-2 text-sm text-muted-foreground" key={i}>
                       <CheckIcon className="h-4 w-4" /> <span className="font-medium">{item}:</span> zero-day data
                       retention

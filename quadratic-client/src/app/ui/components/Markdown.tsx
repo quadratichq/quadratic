@@ -1,13 +1,30 @@
+import { Textarea } from '@/shared/shadcn/ui/textarea';
 import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import './Markdown.scss';
 
-interface Props {
-  children: string;
+interface MarkdownProps {
+  text: string;
+  onChange?: (text: string) => void;
 }
+export const Markdown = memo(({ text, onChange }: MarkdownProps) => {
+  if (!!onChange) {
+    return (
+      <Textarea
+        autoComplete="off"
+        value={text}
+        onChange={(e) => {
+          e.stopPropagation();
+          onChange(e.target.value);
+        }}
+        onKeyDown={(e) => e.stopPropagation()}
+        autoHeight={true}
+        className="overflow-hidden p-0"
+      />
+    );
+  }
 
-export const Markdown = memo(({ children }: Props) => {
   return (
     <div className="markdown">
       <ReactMarkdown
@@ -20,7 +37,7 @@ export const Markdown = memo(({ children }: Props) => {
           ),
         }}
       >
-        {children}
+        {text}
       </ReactMarkdown>
     </div>
   );

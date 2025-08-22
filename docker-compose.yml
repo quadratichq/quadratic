@@ -85,7 +85,6 @@ services:
       VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
       VITE_QUADRATIC_MULTIPLAYER_URL: ${QUADRATIC_MULTIPLAYER_URL_EXTERNAL}
       VITE_QUADRATIC_CONNECTION_URL: ${QUADRATIC_CONNECTION_URL_EXTERNAL}
-      VITE_STORAGE_TYPE: ${STORAGE_TYPE}
       VITE_AUTH_TYPE: ${AUTH_TYPE}
       VITE_AUTH0_ISSUER: ${AUTH0_ISSUER}
       VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
@@ -138,10 +137,14 @@ services:
       GCP_PROJECT_ID: ${GCP_PROJECT_ID}
       GCP_CLIENT_EMAIL: ${GCP_CLIENT_EMAIL}
       GCP_PRIVATE_KEY: ${GCP_PRIVATE_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY}
       XAI_API_KEY: ${XAI_API_KEY}
-      EXA_API_KEY: ${EXA_API_KEY}
+      BASETEN_API_KEY: ${BASETEN_API_KEY}
+      FIREWORKS_API_KEY: ${FIREWORKS_API_KEY}
+      OPEN_ROUTER_API_KEY: ${OPEN_ROUTER_API_KEY}
       AWS_S3_REGION: ${AWS_S3_REGION}
       AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
       AWS_S3_ANALYTICS_BUCKET_NAME: ${AWS_S3_ANALYTICS_BUCKET_NAME}
@@ -165,7 +168,7 @@ services:
     restart: "always"
     ports:
       - "8000:8000"
-    command: bash -c "npx prisma migrate deploy --schema quadratic-api/prisma/schema.prisma && npm run start:prod --workspace=quadratic-api"
+    command: bash -c "npm run prisma:migrate:deploy --workspace=quadratic-api && npm run start:prod --workspace=quadratic-api"
     depends_on:
       postgres:
         condition: service_healthy
@@ -298,140 +301,6 @@ services:
       - host
     extra_hosts:
       - "host.docker.internal:host-gateway"
-
-  quadratic-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    container_name: quadratic-dev
-    environment:
-      # common
-      RUST_LOG: ${RUST_LOG}
-      # client
-      VITE_DEBUG: 1
-      VITE_QUADRATIC_API_URL: ${QUADRATIC_API_URL_EXTERNAL}
-      VITE_QUADRATIC_MULTIPLAYER_URL: ${QUADRATIC_MULTIPLAYER_URL_EXTERNAL}
-      VITE_QUADRATIC_CONNECTION_URL: ${QUADRATIC_CONNECTION_URL_EXTERNAL}
-      VITE_STORAGE_TYPE: ${STORAGE_TYPE}
-      VITE_AUTH_TYPE: ${AUTH_TYPE}
-      VITE_AUTH0_ISSUER: ${AUTH0_ISSUER}
-      VITE_AUTH0_DOMAIN: ${VITE_AUTH0_DOMAIN}
-      VITE_AUTH0_CLIENT_ID: ${VITE_AUTH0_CLIENT_ID}
-      VITE_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-      VITE_ORY_HOST: ${KRATOS_URL_EXTERNAL}
-      VITE_SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN}
-      # api
-      CORS: "*"
-      DATABASE_URL: ${DATABASE_DSN}
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
-      BILLING_AI_USAGE_LIMIT: ${BILLING_AI_USAGE_LIMIT}
-      GCP_REGION: ${GCP_REGION}
-      GCP_REGION_ANTHROPIC: ${GCP_REGION_ANTHROPIC}
-      GCP_PROJECT_ID: ${GCP_PROJECT_ID}
-      GCP_CLIENT_EMAIL: ${GCP_CLIENT_EMAIL}
-      GCP_PRIVATE_KEY: ${GCP_PRIVATE_KEY}
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
-      XAI_API_KEY: ${XAI_API_KEY}
-      EXA_API_KEY: ${EXA_API_KEY}
-      AWS_S3_REGION: ${AWS_S3_REGION}
-      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
-      AWS_S3_ANALYTICS_BUCKET_NAME: ${AWS_S3_ANALYTICS_BUCKET_NAME}
-      AWS_S3_ACCESS_KEY_ID: ${AWS_S3_ACCESS_KEY_ID}
-      AWS_S3_SECRET_ACCESS_KEY: ${AWS_S3_SECRET_ACCESS_KEY}
-      M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
-      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
-      AUTH_TYPE: ${AUTH_TYPE}
-      AUTH0_JWKS_URI: ${JWKS_URI}
-      AUTH0_ISSUER: ${AUTH0_ISSUER}
-      AUTH0_DOMAIN: ${AUTH0_DOMAIN}
-      AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID}
-      AUTH0_CLIENT_SECRET: ${AUTH0_CLIENT_SECRET}
-      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE}
-      ORY_JWKS_URI: ${JWKS_URI}
-      ORY_ADMIN_HOST: ${ORY_ADMIN_HOST}
-      STORAGE_TYPE: ${STORAGE_TYPE}
-      QUADRATIC_FILE_URI: ${QUADRATIC_FILES_URL_INTERNAL}
-      QUADRATIC_FILE_URI_PUBLIC: ${QUADRATIC_FILES_URL_EXTERNAL}
-      LICENSE_KEY: ${LICENSE_KEY}
-      # multiplayer
-      MULTIPLAYER__HOST: ${QUADRATIC_MULTIPLAYER_HOST}
-      MULTIPLAYER__PORT: ${QUADRATIC_MULTIPLAYER_PORT}
-      MULTIPLAYER__HEARTBEAT_CHECK_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_CHECK_S}
-      MULTIPLAYER__HEARTBEAT_TIMEOUT_S: ${QUADRATIC_MULTIPLAYER_HEARTBEAT_TIMEOUT_S}
-      MULTIPLAYER__QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
-      MULTIPLAYER__M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
-      MULTIPLAYER__ENVIRONMENT: ${ENVIRONMENT}
-      MULTIPLAYER__PUBSUB_HOST: ${PUBSUB_HOST}
-      MULTIPLAYER__PUBSUB_PORT: ${PUBSUB_PORT}
-      MULTIPLAYER__PUBSUB_PASSWORD: ${PUBSUB_PASSWORD}
-      MULTIPLAYER__PUBSUB_ACTIVE_CHANNELS: ${PUBSUB_ACTIVE_CHANNELS}
-      MULTIPLAYER__AUTH0_JWKS_URI: ${JWKS_URI}
-      MULTIPLAYER__AUTHENTICATE_JWT: true
-      # files
-      FILES__HOST: ${QUADRATIC_FILES_HOST}
-      FILES__PORT: ${QUADRATIC_FILES_PORT}
-      FILES__FILE_CHECK_S: ${QUADRATIC_FILES_FILE_CHECK_S}
-      FILES__FILES_PER_CHECK: ${QUADRATIC_FILES_FILES_PER_CHECK}
-      FILES__TRUNCATE_FILE_CHECK_S: ${QUADRATIC_FILES_TRUNCATE_FILE_CHECK_S}
-      FILES__TRUNCATE_TRANSACTION_AGE_DAYS: ${QUADRATIC_FILES_TRUNCATE_TRANSACTION_AGE_DAYS}
-      FILES__ENVIRONMENT: ${ENVIRONMENT}
-      FILES__AUTH0_JWKS_URI: ${JWKS_URI}
-      FILES__QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
-      FILES__M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
-      FILES__PUBSUB_HOST: ${PUBSUB_HOST}
-      FILES__PUBSUB_PORT: ${PUBSUB_PORT}
-      FILES__PUBSUB_PASSWORD: ${PUBSUB_PASSWORD}
-      FILES__PUBSUB_ACTIVE_CHANNELS: ${PUBSUB_ACTIVE_CHANNELS}
-      FILES__PUBSUB_PROCESSED_TRANSACTIONS_CHANNEL: ${PUBSUB_PROCESSED_TRANSACTIONS_CHANNEL}
-      FILES__STORAGE_TYPE: ${STORAGE_TYPE}
-      FILES__AWS_S3_REGION: ${AWS_S3_REGION}
-      FILES__AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
-      FILES__AWS_S3_ACCESS_KEY_ID: ${AWS_S3_ACCESS_KEY_ID}
-      FILES__AWS_S3_SECRET_ACCESS_KEY: ${AWS_S3_SECRET_ACCESS_KEY}
-      FILES__STORAGE_DIR: ${STORAGE_DIR}
-      FILES__STORAGE_ENCRYPTION_KEYS: ${ENCRYPTION_KEY}
-      # connection
-      CONNECTION__HOST: ${QUADRATIC_CONNECTION_HOST}
-      CONNECTION__PORT: ${QUADRATIC_CONNECTION_PORT}
-      CONNECTION__ENVIRONMENT: ${ENVIRONMENT}
-      CONNECTION__AUTH0_JWKS_URI: ${JWKS_URI}
-      CONNECTION__QUADRATIC_API_URI: ${QUADRATIC_API_URL_INTERNAL}
-      CONNECTION__M2M_AUTH_TOKEN: ${M2M_AUTH_TOKEN}
-      CONNECTION__MAX_RESPONSE_BYTES: ${QUADRATIC_CONNECTION_MAX_RESPONSE_BYTES}
-      CONNECTION__STATIC_IPS: ${QUADRATIC_CONNECTION_STATIC_IPS}
-    ports:
-      - "3000:3000"
-      - "8000:8000"
-      - "3001:3001"
-      - "3002:3002"
-      - "3003:3003"
-    volumes:
-      - ./:/quadratic:rw
-      - ./docker/file-storage:/file-storage:rw
-    depends_on:
-      redis:
-        condition: service_healthy
-      postgres:
-        condition: service_healthy
-      ory-auth:
-        condition: service_started
-      ory-auth-migrate:
-        condition: service_started
-      ory-auth-node:
-        condition: service_started
-      ory-auth-mail:
-        condition: service_started
-    profiles:
-      - quadratic-dev
-      - dev
-    networks:
-      - host
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    tty: true
-    stdin_open: true
 
   # auth service - ory
 
@@ -618,7 +487,32 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mysql-ssh
 
-  # This service covers non-ssh mssql connections as well since it's a complex build
+  mariadb-connection:
+    image: mariadb:latest
+    restart: always
+    container_name: mariadb-connection
+    ports:
+      - 13306:3306
+    environment:
+      MARIADB_DATABASE: mariadb-connection
+      MARIADB_USER: user
+      MARIADB_PASSWORD: password
+      MARIADB_ROOT_PASSWORD: password
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/mariadb-connection/data:/var/lib/mysql
+      - ./docker/mariadb-connection/scripts:/docker-entrypoint-initdb.d
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-mariadb
+
+      # This service covers non-ssh mssql connections as well since it's a complex build
   ssh-mssql-connection:
     build:
       context: .
@@ -641,6 +535,48 @@ services:
       - quadratic-connection-db
       - quadratic-connection-db-mssql
       - quadratic-connection-db-mssql-ssh
+
+  bigquery-connection:
+    image: ghcr.io/goccy/bigquery-emulator:latest
+    platform: linux/x86_64
+    restart: always
+    container_name: bigquery-connection
+    command: |
+      --project=test --data-from-yaml=/work/data.yaml
+    ports:
+      - "9050:9050"
+      - "9060:9060"
+    volumes:
+      - ./docker/bigquery-connection/setup:/work
+    working_dir: /work
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-bigquery
+
+  cockraochdb-connection:
+    image: cockroachdb/cockroach:latest
+    restart: always
+    container_name: cockroachdb-connection
+    environment:
+      COCKROACH_DATABASE: cockroachdb_connection
+      # COCKROACH_USER: user
+      # COCKROACH_PASSWORD: password
+    ports:
+      - "26257:26257"
+    command: start-single-node --insecure
+    healthcheck:
+      test: ["CMD", "cockroach", "node", "status", "--insecure"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - ./docker/cockroachdb-connection/data:/cockroach/cockroach-data
+      - ./docker/cockroachdb-connection/scripts:/docker-entrypoint-initdb.d
+    profiles:
+      - quadratic-connection
+      - quadratic-connection-db
+      - quadratic-connection-db-cockroachdb
 
 networks:
   host:

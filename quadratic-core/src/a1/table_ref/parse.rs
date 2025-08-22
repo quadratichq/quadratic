@@ -14,12 +14,11 @@ impl TableRef {
     /// Parses the table name using a regex from the start of the string.
     /// Returns the table name and the remaining string.
     fn parse_table_name(s: &str) -> Result<(String, &str), A1Error> {
-        if let Some(captures) = TABLE_NAME_PATTERN.captures(s) {
-            if let Some(name) = captures.get(1) {
+        if let Some(captures) = TABLE_NAME_PATTERN.captures(s)
+            && let Some(name) = captures.get(1) {
                 let remaining = captures.get(2).map_or("", |m| m.as_str()).trim();
                 return Ok((name.as_str().to_string(), remaining));
             }
-        }
         Err(A1Error::InvalidTableRef("Invalid table name".into()))
     }
 
@@ -148,7 +147,7 @@ mod tests {
     #[test]
     fn test_table_name_case_insensitive() {
         let context = A1Context::test(&[], &[("Table1", &["A", "B"], Rect::test_a1("A1:B2"))]);
-        println!("context: {:?}", context);
+        println!("context: {context:?}");
         let table_ref = TableRef::parse("table1", &context).unwrap();
         assert_eq!(table_ref.table_name, "Table1");
     }

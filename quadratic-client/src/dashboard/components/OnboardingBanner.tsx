@@ -20,6 +20,7 @@ import {
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { cn } from '@/shared/shadcn/utils';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
   ArrowDownIcon,
   CheckCircledIcon,
@@ -30,7 +31,6 @@ import {
   RocketIcon,
 } from '@radix-ui/react-icons';
 import * as Tabs from '@radix-ui/react-tabs';
-import mixpanel from 'mixpanel-browser';
 import { UserTeamRoleSchema } from 'quadratic-shared/typesAndSchemas';
 import type { FormEvent } from 'react';
 import { useEffect, useRef, useState } from 'react';
@@ -51,7 +51,7 @@ export function OnboardingBanner() {
   } = useDashboardRouteLoaderData();
   const handleFileImport = useFileImport();
   const onClickImport = () => {
-    mixpanel.track('[OnboardingBanner].newFileFromImport');
+    trackEvent('[OnboardingBanner].newFileFromImport');
     handleFileImport({ isPrivate: false, teamUuid });
   };
   const newApiFileToLink = useNewFileFromStatePythonApi({ isPrivate: false, teamUuid });
@@ -66,7 +66,7 @@ export function OnboardingBanner() {
   }, [initialValueOfShowBanner]);
 
   const trackCreateConnection = () => {
-    mixpanel.track('[OnboardingBanner].createConnection');
+    trackEvent('[OnboardingBanner].createConnection');
   };
   const tabContentClassName = 'flex flex-col gap-2';
   const contentBtnClassName = 'min-w-40 flex-shrink-0';
@@ -84,7 +84,7 @@ export function OnboardingBanner() {
                 to={ROUTES.CREATE_FILE(teamUuid)}
                 reloadDocument
                 onClick={() => {
-                  mixpanel.track('[OnboardingBanner].newFileBlank');
+                  trackEvent('[OnboardingBanner].newFileBlank');
                 }}
               >
                 <PlusIcon className="mr-1" /> Create blank file
@@ -95,7 +95,7 @@ export function OnboardingBanner() {
               <Link
                 to={ROUTES.EXAMPLES}
                 onClick={() => {
-                  mixpanel.track('[OnboardingBanner].newFileFromExample');
+                  trackEvent('[OnboardingBanner].newFileFromExample');
                 }}
               >
                 <MixIcon className="mr-1" /> Explore example files
@@ -108,7 +108,7 @@ export function OnboardingBanner() {
               <Link
                 to={newApiFileToLink}
                 onClick={() => {
-                  mixpanel.track('[OnboardingBanner].newFileFromApi');
+                  trackEvent('[OnboardingBanner].newFileFromApi');
                 }}
               >
                 <RocketIcon className="mr-1" /> Fetch data from an API
@@ -123,7 +123,7 @@ export function OnboardingBanner() {
     },
     {
       label: 'Create a connection',
-      completed: connections.length > 0,
+      completed: connections.filter((c) => !c.isDemo).length > 0,
       content: (
         <>
           {/* TODO: (enhancement) set this up
@@ -155,6 +155,31 @@ export function OnboardingBanner() {
                 <LanguageIcon language="SNOWFLAKE" /> Snowflake
               </Link>
             </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'COCKROACHDB')} onClick={trackCreateConnection}>
+                <LanguageIcon language="COCKROACHDB" /> CockroachDB
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'BIGQUERY')} onClick={trackCreateConnection}>
+                <LanguageIcon language="BIGQUERY" /> BigQuery
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'MARIADB')} onClick={trackCreateConnection}>
+                <LanguageIcon language="MARIADB" /> MariaDB
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'SUPABASE')} onClick={trackCreateConnection}>
+                <LanguageIcon language="SUPABASE" /> Supabase
+              </Link>
+            </Button>
+            <Button variant="outline" className={contentBtnClassName + ' gap-2'} asChild>
+              <Link to={ROUTES.TEAM_CONNECTION_CREATE(teamUuid, 'NEON')} onClick={trackCreateConnection}>
+                <LanguageIcon language="NEON" /> Neon
+              </Link>
+            </Button>
           </div>
         </>
       ),
@@ -164,7 +189,7 @@ export function OnboardingBanner() {
       completed: users.length > 1 || invites.length > 0,
       content: (
         <>
-          <p>Invite a collaborator to Quadratic — it’s free.</p>
+          <p>Invite a collaborator to Quadratic.</p>
 
           <InviteForm teamUuid={teamUuid} />
           <p className="text-muted-foreground">
@@ -287,7 +312,7 @@ export function OnboardingBanner() {
               onClick={() => {
                 setIsOpenConfirmDismiss(false);
                 handleDismiss();
-                mixpanel.track('[OnboardingBanner].dismissOverride');
+                trackEvent('[OnboardingBanner].dismissOverride');
               }}
             >
               Dismiss
@@ -336,7 +361,7 @@ function InviteForm({ teamUuid }: { teamUuid: string }) {
     }, 3000);
 
     // Track it
-    mixpanel.track('[OnboardingBanner].inviteSent');
+    trackEvent('[OnboardingBanner].inviteSent');
 
     // Reset the email input & focus it
     if (inputRef.current) {

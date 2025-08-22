@@ -12,6 +12,8 @@ import {
   UserFileRoleSchema,
   UserTeamRoleSchema,
 } from 'quadratic-shared/typesAndSchemas';
+import logger from './logger';
+
 const { TEAM_EDIT, TEAM_VIEW, TEAM_MANAGE } = TeamPermissionSchema.enum;
 const { FILE_VIEW, FILE_EDIT, FILE_MOVE, FILE_DELETE } = FilePermissionSchema.enum;
 
@@ -131,7 +133,7 @@ export const getFilePermissions = ({
   }
 
   // Note: we should never reach here
-  console.warn('This code path should never be reached');
+  logger.warn('This code path should never be reached');
   Sentry.captureEvent({
     message: 'Invalid combination of arguments to `getFilePermissions`. This code path should never be reached.',
     extra: { publicLinkAccess, userFileRelationship },

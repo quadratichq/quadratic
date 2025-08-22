@@ -27,14 +27,13 @@ impl Sheet {
         };
 
         for validation in self.validations.validations.iter() {
-            if validation.render_special().is_some() {
-                if let Some(rect) =
+            if validation.render_special().is_some()
+                && let Some(rect) =
                     self.selection_bounds(&validation.selection, false, false, true, a1_context)
                 {
                     self.data_bounds.add(rect.min);
                     self.data_bounds.add(rect.max);
                 }
-            }
         }
         for (&pos, _) in self.validations.warnings.iter() {
             self.data_bounds.add(pos);
@@ -53,6 +52,11 @@ impl Sheet {
         self.data_bounds.is_empty() && self.format_bounds.is_empty()
     }
 
+    /// Returns the bounds of the sheet, including borders.
+    pub fn all_bounds(&self) -> GridBounds {
+        GridBounds::merge(self.bounds(false), self.border_bounds())
+    }
+
     /// Returns the bounds of the sheet.
     ///
     /// If `ignore_formatting` is `true`, only data is considered; if it is
@@ -66,8 +70,17 @@ impl Sheet {
         }
     }
 
+    /// Returns the bounds of the formatting.
     pub fn format_bounds(&self) -> GridBounds {
         self.format_bounds
+    }
+
+    /// Returns the bounds of the borders.
+    pub fn border_bounds(&self) -> GridBounds {
+        self.borders
+            .finite_bounds()
+            .map(|rect| rect.into())
+            .unwrap_or(GridBounds::Empty)
     }
 
     /// Returns the lower and upper bounds of a column, or `None` if the column
@@ -285,8 +298,7 @@ impl Sheet {
                     let rect_range = rect_start_x..(rect_start_x + rect.width() as i64);
                     for x in rect_range {
                         if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
-                        {
-                            if (next_row_with_content - row) < rect.height() as i64 {
+                            && (next_row_with_content - row) < rect.height() as i64 {
                                 rect_start_x = if !reverse {
                                     x + 1
                                 } else {
@@ -295,7 +307,6 @@ impl Sheet {
                                 is_valid = false;
                                 break;
                             }
-                        }
                     }
                     if is_valid {
                         return rect_start_x;
@@ -330,8 +341,7 @@ impl Sheet {
                     for y in rect_range {
                         if let Some(next_column_with_content) =
                             self.find_next_column(column, y, false, true)
-                        {
-                            if (next_column_with_content - column) < rect.width() as i64 {
+                            && (next_column_with_content - column) < rect.width() as i64 {
                                 rect_start_y = if !reverse {
                                     y + 1
                                 } else {
@@ -340,7 +350,6 @@ impl Sheet {
                                 is_valid = false;
                                 break;
                             }
-                        }
                     }
                     if is_valid {
                         return rect_start_y;
@@ -381,7 +390,7 @@ impl Sheet {
                         continue;
                     }
 
-                    let is_table_cell = self.data_table_pos_that_contains(&pos).is_ok();
+                    let is_table_cell = self.data_table_pos_that_contains_result(pos).is_ok();
                     if is_table_cell {
                         continue;
                     }

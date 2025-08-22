@@ -1,11 +1,9 @@
-use std::collections::{HashMap, HashSet};
-
 use self::{active_transactions::ActiveTransactions, transaction::Transaction};
 use crate::{
-    Pos, Rect, SheetPos,
+    SheetPos,
     a1::A1Context,
-    grid::{CodeCellLanguage, Grid, SheetId},
-    grid::{DataTable, RegionMap},
+    controller::active_transactions::pending_transaction::PendingTransaction,
+    grid::{DataTable, Grid, RegionMap, SheetId},
     viewport::ViewportBuffer,
 };
 use wasm_bindgen::prelude::*;
@@ -106,11 +104,8 @@ impl GridController {
         &self.cells_accessed_cache
     }
 
-    pub(crate) fn update_a1_context_table_map(
-        &mut self,
-        code_cells_a1_context: HashMap<SheetId, HashSet<Pos>>,
-        sort: bool,
-    ) {
+    pub(crate) fn update_a1_context_table_map(&mut self, transaction: &mut PendingTransaction) {
+        let code_cells_a1_context = std::mem::take(&mut transaction.code_cells_a1_context);
         for (sheet_id, positions) in code_cells_a1_context.into_iter() {
             let Some(sheet) = self.grid.try_sheet(sheet_id) else {
                 self.a1_context.table_map.remove_sheet(sheet_id);
@@ -135,7 +130,7 @@ impl GridController {
             }
         }
 
-        if sort {
+        if transaction.complete {
             self.a1_context.table_map.sort();
         }
     }
@@ -149,16 +144,6 @@ impl GridController {
                 .sheet_map
                 .insert_parts(&sheet_name, sheet_id);
         }
-    }
-
-    pub(crate) fn a1_context_sheet_table_bounds(&mut self, sheet_id: SheetId) -> Vec<Rect> {
-        self.a1_context()
-            .iter_tables()
-            .filter(|table| {
-                table.sheet_id == sheet_id && table.language == CodeCellLanguage::Import
-            })
-            .map(|table| table.bounds)
-            .collect::<Vec<_>>()
     }
 
     pub(crate) fn update_cells_accessed_cache(
@@ -197,34 +182,5 @@ impl GridController {
     /// Returns the redo stack for testing purposes
     pub fn redo_stack(&self) -> &Vec<Transaction> {
         &self.redo_stack
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use itertools::Itertools;
-
-    #[test]
-    fn test_a1_context_sheet_table_bounds() {
-        let mut grid_controller = GridController::new();
-        let sheet_id = SheetId::TEST;
-        grid_controller.a1_context = A1Context::test(
-            &[("Sheet1", SheetId::TEST)],
-            &[
-                ("Table1", &["col1", "col2"], Rect::test_a1("A1:B3")),
-                ("Table2", &["col3", "col4"], Rect::test_a1("D1:E3")),
-            ],
-        );
-        let table_bounds = grid_controller.a1_context_sheet_table_bounds(sheet_id);
-
-        assert_eq!(table_bounds.len(), 2);
-        // table bounds can be in any order
-        let table_bounds_sorted = table_bounds
-            .into_iter()
-            .sorted_by_key(|rect| rect.min.x)
-            .collect::<Vec<_>>();
-        assert_eq!(table_bounds_sorted[0], Rect::test_a1("A1:B3"));
-        assert_eq!(table_bounds_sorted[1], Rect::test_a1("D1:E3"));
     }
 }

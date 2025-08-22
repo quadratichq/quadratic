@@ -1,4 +1,4 @@
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { CodeRun } from '@/app/web-workers/CodeRun';
 import type { LanguageState } from '@/app/web-workers/languageTypes';
 import type {
@@ -26,7 +26,7 @@ class PythonClient {
 
   start() {
     self.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[pythonClient] initialized.');
+    if (debugFlag('debugWebWorkers')) console.log('[pythonClient] initialized.');
   }
 
   private send(message: PythonClientMessage, transfer?: Transferable[]) {
@@ -38,7 +38,7 @@ class PythonClient {
   }
 
   private handleMessage = async (e: MessageEvent<ClientPythonMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[pythonClient] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[pythonClient] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'clientPythonCoreChannel':

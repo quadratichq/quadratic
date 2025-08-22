@@ -3,15 +3,14 @@
 //! This entire file feels really janky and awful but this is my best attempt at
 //! mimicking the behavior Excel has.
 
-use std::str::FromStr;
-
-use bigdecimal::{BigDecimal, Zero};
 use itertools::Itertools;
 use regex::Regex;
+use rust_decimal::prelude::*;
 
 use super::wildcard_pattern_to_regex;
 use crate::{
     Array, CellValue, CodeResult, CoerceInto, RunError, RunErrorMsg, SpannableIterExt, Spanned,
+    number::decimal_from_str,
 };
 
 #[derive(Debug, Clone)]
@@ -35,7 +34,7 @@ impl TryFrom<Spanned<&CellValue>> for Criterion {
                     CellValue::Logical(true)
                 } else if rhs_string.eq_ignore_ascii_case("FALSE") {
                     CellValue::Logical(false)
-                } else if let Ok(n) = BigDecimal::from_str(rhs_string) {
+                } else if let Ok(n) = decimal_from_str(rhs_string) {
                     CellValue::Number(n)
                 } else if compare_fn == CompareFn::Eql && rhs_string.contains(['?', '*']) {
                     // If the string doesn't contain any `?` or `*`, then Excel
@@ -76,7 +75,7 @@ impl Criterion {
     fn compare(compare_fn: CompareFn, lhs: &CellValue, rhs: &CellValue) -> bool {
         match rhs {
             CellValue::Blank => match lhs {
-                CellValue::Number(lhs) => compare_fn.compare(lhs, &BigDecimal::zero()),
+                CellValue::Number(lhs) => compare_fn.compare(lhs, &Decimal::zero()),
                 _ => false,
             },
             CellValue::Text(rhs) => compare_fn.compare(&lhs.to_string().to_ascii_lowercase(), rhs),
@@ -122,15 +121,14 @@ impl Criterion {
         eval_range: &'a Spanned<Array>,
         output_values_range: Option<&'a Spanned<Array>>,
     ) -> CodeResult<impl 'a + Iterator<Item = Spanned<&'a CellValue>>> {
-        if let Some(range) = output_values_range {
-            if range.inner.size() != eval_range.inner.size() {
+        if let Some(range) = output_values_range
+            && range.inner.size() != eval_range.inner.size() {
                 return Err(RunErrorMsg::ExactArraySizeMismatch {
                     expected: eval_range.inner.size(),
                     got: range.inner.size(),
                 }
                 .with_span(range.span));
             }
-        }
         let output_values_range = output_values_range.unwrap_or(eval_range);
 
         Ok(std::iter::zip(

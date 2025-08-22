@@ -1,12 +1,14 @@
 import type { Response } from 'express';
-import { getLastAIPromptMessageIndex, getLastPromptMessageType } from 'quadratic-shared/ai/helpers/message.helper';
-import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
+import { getLastAIPromptMessageIndex, getLastUserMessageType } from 'quadratic-shared/ai/helpers/message.helper';
+import { getModelFromModelKey, getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { ApiSchemas } from 'quadratic-shared/typesAndSchemas';
 import { z } from 'zod';
 import { handleAIRequest } from '../../ai/handler/ai.handler';
+import { getQuadraticContext, getToolUseContext } from '../../ai/helpers/context.helper';
 import { getModelKey } from '../../ai/helpers/modelRouter.helper';
 import { ai_rate_limiter } from '../../ai/middleware/aiRateLimiter';
+import { BillingAIUsageLimitExceeded, BillingAIUsageMonthlyForUserInTeam } from '../../billing/AIUsageHelpers';
 import dbClient from '../../dbClient';
 import { STORAGE_TYPE } from '../../env-vars';
 import { getFile } from '../../middleware/getFile';
@@ -16,6 +18,9 @@ import { parseRequest } from '../../middleware/validateRequestSchema';
 import { getBucketName, S3Bucket } from '../../storage/s3';
 import { uploadFile } from '../../storage/storage';
 import type { RequestWithUser } from '../../types/Request';
+import { ApiError } from '../../utils/ApiError';
+import { getIsOnPaidPlan } from '../../utils/billing';
+import logger from '../../utils/logger';
 
 export default [validateAccessToken, ai_rate_limiter, userMiddleware, handler];
 
@@ -28,32 +33,89 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
     user: { id: userId },
   } = req;
 
-  // const usage = await BillingAIUsageMonthlyForUser(userId);
-  // const exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
-
-  // if (exceededBillingLimit) {
-  //   //@ts-expect-error
-  //   return res.status(402).json({ error: 'Billing limit exceeded' });
-  // }
+  const jwt = req.header('Authorization');
+  if (!jwt) {
+    throw new ApiError(403, 'User does not have a valid JWT.');
+  }
 
   const { body } = parseRequest(req, schema);
-  const { chatId, fileUuid, modelKey: clientModelKey, ...args } = body;
-
-  const source = args.source;
-  const modelKey = await getModelKey(clientModelKey, args);
-
-  const parsedResponse = await handleAIRequest(modelKey, args, res);
-  if (parsedResponse) {
-    args.messages.push(parsedResponse.responseMessage);
-  }
+  const { chatId, fileUuid, messageSource, modelKey: clientModelKey, ...args } = body;
 
   const {
     file: { id: fileId, ownerTeam },
   } = await getFile({ uuid: fileUuid, userId });
 
+  // Check if the file's owner team is on a paid plan
+  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
+
+  // Get the user's role in this owner team
+  const userTeamRole = await dbClient.userTeamRole.findUnique({
+    where: {
+      userId_teamId: {
+        userId,
+        teamId: ownerTeam.id,
+      },
+    },
+  });
+
+  let exceededBillingLimit = false;
+
+  const messageType = getLastUserMessageType(args.messages);
+
+  // Either team is not on a paid plan or user is not a member of the team
+  // and the message is a user prompt, not a tool result
+  if ((!isOnPaidPlan || !userTeamRole) && messageType === 'userPrompt') {
+    const usage = await BillingAIUsageMonthlyForUserInTeam(userId, ownerTeam.id);
+    exceededBillingLimit = BillingAIUsageLimitExceeded(usage);
+
+    if (exceededBillingLimit) {
+      const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
+        role: 'assistant',
+        content: [],
+        contextType: 'userPrompt',
+        toolCalls: [],
+        modelKey: clientModelKey,
+        isOnPaidPlan,
+        exceededBillingLimit,
+      };
+
+      const { stream } = getModelOptions(clientModelKey, args);
+
+      if (stream) {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
+        res.end();
+        return;
+      } else {
+        res.status(200).json(responseMessage);
+      }
+
+      return;
+    }
+  }
+
+  const source = args.source;
+  const modelKey = await getModelKey(clientModelKey, args, isOnPaidPlan, exceededBillingLimit);
+
+  if (args.useToolsPrompt) {
+    const toolUseContext = getToolUseContext(args.source);
+    args.messages = [...toolUseContext, ...args.messages];
+  }
+
+  if (args.useQuadraticContext) {
+    const quadraticContext = getQuadraticContext(args.language);
+    args.messages = [...quadraticContext, ...args.messages];
+  }
+
+  const parsedResponse = await handleAIRequest(modelKey, args, isOnPaidPlan, exceededBillingLimit, res);
+  if (parsedResponse) {
+    args.messages.push(parsedResponse.responseMessage);
+  }
+
   const model = getModelFromModelKey(modelKey);
-  const messageIndex = getLastAIPromptMessageIndex(args.messages);
-  const messageType = getLastPromptMessageType(args.messages);
+  const messageIndex = getLastAIPromptMessageIndex(args.messages) + (parsedResponse ? 0 : 1);
 
   const chat = await dbClient.analyticsAIChat.upsert({
     where: {
@@ -69,6 +131,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           model,
           messageIndex,
           messageType,
+          source: messageSource,
           inputTokens: parsedResponse?.usage.inputTokens,
           outputTokens: parsedResponse?.usage.outputTokens,
           cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
@@ -82,6 +145,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
           model,
           messageIndex,
           messageType,
+          source: messageSource,
           inputTokens: parsedResponse?.usage.inputTokens,
           outputTokens: parsedResponse?.usage.outputTokens,
           cacheReadTokens: parsedResponse?.usage.cacheReadTokens,
@@ -103,11 +167,6 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         return;
       }
 
-      const jwt = req.header('Authorization');
-      if (!jwt) {
-        return;
-      }
-
       const contents = Buffer.from(JSON.stringify(args)).toString('base64');
       const response = await uploadFile(key, contents, jwt, S3Bucket.ANALYTICS);
       const s3Key = response.key;
@@ -119,7 +178,7 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/ai/chat
         data: { s3Key },
       });
     }
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    logger.error('Error in ai.chat.POST handler', error);
   }
 }

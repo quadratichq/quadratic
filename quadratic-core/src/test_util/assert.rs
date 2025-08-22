@@ -18,7 +18,7 @@ pub fn assert_vec_eq_unordered<T: PartialEq + std::fmt::Debug>(a: &[T], b: &[T])
             }
         }
         if !found {
-            panic!("Item {:?} not found in second vector", item);
+            panic!("Item {item:?} not found in second vector");
         }
     }
 }

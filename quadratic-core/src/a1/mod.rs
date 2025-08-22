@@ -5,7 +5,6 @@ mod cell_ref_end;
 mod cell_ref_range;
 mod column_names;
 mod error;
-pub mod js_selection;
 mod ref_range_bounds;
 mod sheet_cell_ref_range;
 mod sheet_name;

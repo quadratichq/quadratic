@@ -16,3 +16,7 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     return { ok: false };
   }
 };
+
+export const Component = () => {
+  return null;
+};

@@ -62,5 +62,5 @@ export const BillingAIUsageForCurrentMonth = (monthlyUsage: AIMessageUsage[]) =>
  * @returns True if the user has exceeded the limit, false otherwise
  */
 export const BillingAIUsageLimitExceeded = (monthlyUsage: AIMessageUsage[]) => {
-  return BillingAIUsageForCurrentMonth(monthlyUsage) > (BILLING_AI_USAGE_LIMIT ?? Infinity);
+  return BillingAIUsageForCurrentMonth(monthlyUsage) >= (BILLING_AI_USAGE_LIMIT ?? Infinity);
 };

@@ -1,26 +1,23 @@
-import { hasPermissionToEditFile } from '@/app/actions';
 import {
   editorInteractionStateFileUuidAtom,
-  editorInteractionStatePermissionsAtom,
   editorInteractionStateUserAtom,
 } from '@/app/atoms/editorInteractionStateAtom';
+import { gridSettingsAtom } from '@/app/atoms/gridSettingsAtom';
 import { events } from '@/app/events/events';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import QuadraticUIContext from '@/app/ui/QuadraticUIContext';
-import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import type { MultiplayerState } from '@/app/web-workers/multiplayerWebWorker/multiplayerClientMessages';
-import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { isMobile } from 'react-device-detect';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { useRecoilValue } from 'recoil';
+import { useRecoilValue, useSetRecoilState } from 'recoil';
 import { v4 } from 'uuid';
 
 export function QuadraticApp() {
-  const didMount = useRef<boolean>(false);
-  const permissions = useRecoilValue(editorInteractionStatePermissionsAtom);
+  // ensure GridSettings are loaded before app starts
+  useSetRecoilState(gridSettingsAtom);
+
   const loggedInUser = useRecoilValue(editorInteractionStateUserAtom);
   const fileUuid = useRecoilValue(editorInteractionStateFileUuidAtom);
   const [searchParams] = useSearchParams();
@@ -29,19 +26,6 @@ export function QuadraticApp() {
   // Loading states
   const [offlineLoading, setOfflineLoading] = useState(true);
   const [multiplayerLoading, setMultiplayerLoading] = useState(true);
-
-  // Initialize loading of critical assets
-  useEffect(() => {
-    // Ensure this only runs once
-    if (didMount.current) return;
-    didMount.current = true;
-
-    // Load python and populate web workers (if supported)
-    if (!isMobile && hasPermissionToEditFile(permissions)) {
-      pythonWebWorker.init();
-      javascriptWebWorker.init();
-    }
-  }, [permissions]);
 
   useEffect(() => {
     if (fileUuid && !pixiApp.initialized) {

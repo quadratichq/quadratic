@@ -58,7 +58,7 @@ impl Sheet {
 
     // Returns data for rendering a code cell.
     fn render_code_cell(&self, pos: Pos, data_table: &DataTable) -> Option<JsRenderCodeCell> {
-        let code = self.cell_value(pos)?;
+        let code = self.cell_value_ref(pos)?;
         let output_size = data_table.output_size();
         let (state, w, h, spill_error) = if data_table.has_spill() {
             let reasons = self.find_spill_error_reasons(&data_table.output_rect(pos, true), pos);
@@ -89,7 +89,7 @@ impl Sheet {
             && data_table.alternating_colors;
 
         let language = match code {
-            CellValue::Code(code) => code.language,
+            CellValue::Code(code) => code.language.to_owned(),
             CellValue::Import(_) => CodeCellLanguage::Import,
             _ => return None,
         };
@@ -134,11 +134,10 @@ impl Sheet {
             .filter_map(|(pos, data_table)| self.render_code_cell(*pos, data_table))
             .collect::<Vec<_>>();
 
-        if !code.is_empty() {
-            if let Ok(render_code_cells) = serde_json::to_vec(&code) {
+        if !code.is_empty()
+            && let Ok(render_code_cells) = serde_json::to_vec(&code) {
                 crate::wasm_bindings::js::jsSheetCodeCells(self.id.to_string(), render_code_cells);
             }
-        }
     }
 
     /// Send images in this sheet to the client. Note: we only have images
@@ -174,8 +173,8 @@ impl Sheet {
         }
 
         let mut sent = false;
-        if let Some(table) = self.data_table_at(&pos) {
-            if let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
+        if let Some(table) = self.data_table_at(&pos)
+            && let Some(CellValue::Image(image)) = table.cell_value_at(0, 0) {
                 let output_size = table.chart_output;
                 crate::wasm_bindings::js::jsSendImage(
                     self.id.to_string(),
@@ -187,7 +186,6 @@ impl Sheet {
                 );
                 sent = true;
             }
-        }
         if !sent {
             crate::wasm_bindings::js::jsSendImage(
                 self.id.to_string(),

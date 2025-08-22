@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   test_rust:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -48,11 +48,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy, llvm-tools-preview
-          override: true
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -78,6 +74,7 @@ jobs:
           RUSTFLAGS: -Cinstrument-coverage
           RUSTC_BOOTSTRAP: 1
           CARGO_BUILD_JOBS: 4
+          BIGQUERY_CREDENTIALS: "${{ secrets.BIGQUERY_CREDENTIALS }}"
         run: |
           cd quadratic-${{ matrix.package }}
           ${{ matrix.test_command }}
@@ -107,7 +104,7 @@ jobs:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   perf_core:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     steps:
       - name: Checkout code
@@ -119,11 +116,9 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@nightly
         with:
-          toolchain: nightly
-          components: clippy, llvm-tools-preview
-          override: true
+          components: clippy, rustfmt, llvm-tools-preview
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -140,7 +135,7 @@ jobs:
           npm run bench:run import_excel
 
   test_client:
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -172,11 +167,7 @@ jobs:
           cache: "pip"
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          target: wasm32-unknown-unknown
-          override: true
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -204,7 +195,7 @@ jobs:
           npm run test:ts
 
   test_python:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -227,7 +218,7 @@ jobs:
           npm run test
 
   test_api:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -245,18 +236,19 @@ jobs:
           npm run docker:test:ci
 
   lint_rust:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
+      - name: Setup Node
+        uses: useblacksmith/setup-node@v5
         with:
-          toolchain: stable
-          components: clippy
-          override: true
+          node-version: 24
+
+      - name: Set up Rust
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -264,13 +256,12 @@ jobs:
       - name: Rust Cache
         uses: useblacksmith/rust-cache@v3
 
-      - name: Run cargo clippy in quadratic-core
+      - name: Run cargo clippy
         run: |
-          cd quadratic-core
-          cargo clippy -- -D warnings
+          npm run lint:clippy
 
   lint_typescript:
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     timeout-minutes: 30
     steps:
       - name: Checkout code
@@ -287,12 +278,7 @@ jobs:
           node-version: 24
 
       - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          components: clippy
-          target: wasm32-unknown-unknown
-          override: true
+        run: rustup toolchain install
 
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
@@ -320,7 +306,7 @@ jobs:
           npm run lint:ts
 
   check-version-increment:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     # If we are merging into main, but not pushed on main
     if: github.base_ref == 'main' && github.ref != 'refs/heads/main'
@@ -359,7 +345,7 @@ jobs:
           fi
 
   check-versions-match:
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
 
     steps:

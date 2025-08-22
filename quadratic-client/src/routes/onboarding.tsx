@@ -3,8 +3,8 @@ import { getPrompt } from '@/dashboard/onboarding/getPrompt';
 import { OnboardingResponseV1Schema, Questions, questionStackIdsByUse } from '@/dashboard/onboarding/Questions';
 import { apiClient } from '@/shared/api/apiClient';
 import { useRemoveInitialLoadingUI } from '@/shared/hooks/useRemoveInitialLoadingUI';
-import * as Sentry from '@sentry/react';
-import mixpanel from 'mixpanel-browser';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
+import { captureException, flush } from '@sentry/react';
 import { useEffect } from 'react';
 import { redirectDocument, useLoaderData, type ActionFunctionArgs, type LoaderFunctionArgs } from 'react-router';
 import { RecoilRoot } from 'recoil';
@@ -58,7 +58,7 @@ export const Component = () => {
   useRemoveInitialLoadingUI();
 
   useEffect(() => {
-    mixpanel.track('[Onboarding].loaded');
+    trackEvent('[Onboarding].loaded');
   }, []);
 
   return (
@@ -107,54 +107,50 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     prompt = getPrompt(result.data);
     try {
       const uploadToServerPromise = apiClient.user.update({ onboardingResponses: result.data });
-      const uploadToMixpanelPromise = new Promise((resolve, reject) => {
-        mixpanel.track('[Onboarding].submit', result.data, () => {
-          resolve(true);
-        });
-      });
+      const uploadToMixpanelPromise = trackEvent('[Onboarding].submit', result.data);
       const [serverResult, mixpanelResult] = await Promise.allSettled([uploadToServerPromise, uploadToMixpanelPromise]);
 
       if (serverResult.status === 'rejected') {
-        Sentry.captureException({
+        captureException({
           message: 'Failed to upload user onboarding responses to server',
           level: 'error',
           extra: {
             error: serverResult.reason,
           },
         });
-        sentryPromises.push(Sentry.flush(2000));
+        sentryPromises.push(flush(2000));
       }
 
       if (mixpanelResult.status === 'rejected') {
-        Sentry.captureException({
+        captureException({
           message: 'Failed to upload user onboarding responses to Mixpanel',
           level: 'error',
           extra: {
             error: mixpanelResult.reason,
           },
         });
-        sentryPromises.push(Sentry.flush(2000));
+        sentryPromises.push(flush(2000));
       }
     } catch (error) {
-      Sentry.captureException({
+      captureException({
         message: 'Unexpected error during onboarding submission',
         level: 'error',
         extra: {
           error,
         },
       });
-      sentryPromises.push(Sentry.flush(2000));
+      sentryPromises.push(flush(2000));
     }
   } else {
     // This should never happen in prod. If it does, that's a bug and we'll send to Sentry
-    Sentry.captureException({
+    captureException({
       message: 'Invalid onboarding payload. This is a developer bug.',
       level: 'error',
       extra: {
         error: result.error,
       },
     });
-    sentryPromises.push(Sentry.flush(2000));
+    sentryPromises.push(flush(2000));
   }
 
   if (sentryPromises.length > 0) {

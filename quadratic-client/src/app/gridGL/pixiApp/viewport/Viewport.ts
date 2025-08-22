@@ -234,7 +234,8 @@ export class Viewport extends PixiViewport {
     }
   };
 
-  updateViewport = () => {
+  // Returns true if the viewport has changed
+  updateViewport = (): boolean => {
     let dirty = false;
     if (this.lastViewportScale !== this.scale.x) {
       this.lastViewportScale = this.scale.x;
@@ -291,6 +292,7 @@ export class Viewport extends PixiViewport {
         }
       }
     }
+    return dirty;
   };
 
   private handleWaitForZoomEnd = () => {

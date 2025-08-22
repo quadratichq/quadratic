@@ -1,10 +1,10 @@
+import { events } from '@/app/events/events';
 import { RefreshType } from '@/app/shared/types/RefreshType';
 import { FixedBottomAlert } from '@/shared/components/FixedBottomAlert';
 import { Type } from '@/shared/components/Type';
 import { Button } from '@/shared/shadcn/ui/button';
 import { RocketIcon } from '@radix-ui/react-icons';
 import { useEffect, useState } from 'react';
-import { events } from '../events/events';
 
 export const UpdateAlertVersion = () => {
   const [showDialog, setShowDialog] = useState<false | RefreshType>(false);

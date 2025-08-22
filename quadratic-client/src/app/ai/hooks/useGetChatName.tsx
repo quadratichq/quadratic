@@ -1,6 +1,6 @@
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { aiAnalystCurrentChatMessagesAtom } from '@/app/atoms/aiAnalystAtom';
-import { getPromptMessages } from 'quadratic-shared/ai/helpers/message.helper';
+import { getPromptMessagesForAI } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_GET_CHAT_NAME_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
@@ -14,9 +14,9 @@ export const useGetChatName = () => {
     ({ snapshot }) =>
       async (): Promise<string> => {
         const chatMessages = await snapshot.getPromise(aiAnalystCurrentChatMessagesAtom);
-        const chatPromptMessages = getPromptMessages(chatMessages).map((message) => ({
-          ...message,
-          content: message.content.filter((content) => !('type' in content) || content.type !== 'data'),
+        const chatPromptMessages = getPromptMessagesForAI(chatMessages).map((message) => ({
+          role: message.role,
+          content: message.content.filter((content) => 'type' in content && content.type === 'text'),
         }));
         const messages: ChatMessage[] = [
           {
@@ -40,6 +40,7 @@ ${JSON.stringify(chatPromptMessages)}
         const response = await handleAIRequestToAPI({
           chatId: v4(),
           source: 'GetChatName',
+          messageSource: 'GetChatName',
           modelKey: DEFAULT_GET_CHAT_NAME_MODEL,
           messages,
           signal: abortController.signal,

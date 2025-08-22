@@ -53,7 +53,7 @@ export class CellsImage extends Container {
   }
 
   get table(): Table {
-    const table = this.cellsSheet.tables.getTableFromCell(this.pos);
+    const table = this.cellsSheet.tables.getTable(this.pos.x, this.pos.y);
     if (!table) throw new Error('Expected table to be defined in CellsImage.table');
     return table;
   }

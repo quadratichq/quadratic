@@ -15,7 +15,7 @@ use tabled::{
 #[track_caller]
 pub fn pretty_print_data_table(data_table: &DataTable, title: Option<&str>, max: Option<usize>) {
     let data_table = output_pretty_print_data_table(data_table, title, max);
-    println!("{}", data_table);
+    println!("{data_table}");
 }
 
 /// Returns a String for a pretty print of a data table for testing
@@ -95,7 +95,7 @@ pub fn output_pretty_print_data_table(
 pub fn print_table_positions(gc: &GridController, sheet_id: SheetId) {
     let sheet = gc.try_sheet(sheet_id).expect("Sheet not found");
     sheet.data_tables.expensive_iter().for_each(|(pos, _)| {
-        println!("Data table at {:?}", pos);
+        println!("Data table at {pos:?}");
     });
 }
 

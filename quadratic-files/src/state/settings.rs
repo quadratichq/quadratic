@@ -24,7 +24,7 @@ impl Settings {
             config.environment == Environment::Docker || config.environment == Environment::Local;
         let expected = |val: &Option<String>, var: &str| {
             val.to_owned()
-                .unwrap_or_else(|| panic!("Expected {} to have a value", var))
+                .unwrap_or_else(|| panic!("Expected {var} to have a value"))
         };
 
         let storage = match config.storage_type {

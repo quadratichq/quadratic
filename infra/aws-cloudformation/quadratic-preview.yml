@@ -144,13 +144,18 @@ Resources:
           GCP_PROJECT_ID=$(aws ssm get-parameter --name "/quadratic-development/GCP_PROJECT_ID" --with-decryption --query "Parameter.Value" --output text)
           GCP_CLIENT_EMAIL=$(aws ssm get-parameter --name "/quadratic-development/GCP_CLIENT_EMAIL" --with-decryption --query "Parameter.Value" --output text)
           GCP_PRIVATE_KEY=$(aws ssm get-parameter --name "/quadratic-development/GCP_PRIVATE_KEY" --with-decryption --query "Parameter.Value" --output text)
+          GCP_GEMINI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/GCP_GEMINI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
 
           # ai api keys
           BILLING_AI_USAGE_LIMIT=$(aws ssm get-parameter --name "/quadratic-development/BILLING_AI_USAGE_LIMIT" --with-decryption --query "Parameter.Value" --output text)
-          OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           ANTHROPIC_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/ANTHROPIC_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          AZURE_OPENAI_ENDPOINT=$(aws ssm get-parameter --name "/quadratic-development/AZURE_OPENAI_ENDPOINT" --with-decryption --query "Parameter.Value" --output text)
+          AZURE_OPENAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/AZURE_OPENAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
           XAI_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/XAI_API_KEY" --with-decryption --query "Parameter.Value" --output text)
-          EXA_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/EXA_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          BASETEN_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/BASETEN_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          FIREWORKS_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/FIREWORKS_API_KEY" --with-decryption --query "Parameter.Value" --output text)
+          OPEN_ROUTER_API_KEY=$(aws ssm get-parameter --name "/quadratic-development/OPEN_ROUTER_API_KEY" --with-decryption --query "Parameter.Value" --output text)
 
           # stripe
           STRIPE_SECRET_KEY=$(aws ssm get-parameter --name "/quadratic-development/STRIPE_SECRET_KEY" --with-decryption --query "Parameter.Value" --output text)

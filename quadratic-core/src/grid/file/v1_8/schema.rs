@@ -181,7 +181,7 @@ impl From<i8> for AxisSchema {
         match val {
             0 => AxisSchema::X,
             1 => AxisSchema::Y,
-            _ => panic!("Invalid Axis value: {}", val),
+            _ => panic!("Invalid Axis value: {val}"),
         }
     }
 }

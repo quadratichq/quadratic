@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.generic.json",
   "compilerOptions": {
-    "lib": ["dom", "dom.Iterable", "webworker"],
+    "lib": ["ES2024", "dom", "dom.Iterable", "webworker"],
     "types": ["vite/client"]
   },
   "include": ["src", "public/pyright.worker.js"],

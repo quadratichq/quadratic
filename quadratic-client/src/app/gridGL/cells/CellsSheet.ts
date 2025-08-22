@@ -7,7 +7,7 @@ import { CellsLabels } from '@/app/gridGL/cells/cellsLabel/CellsLabels';
 import { CellsMarkers } from '@/app/gridGL/cells/CellsMarkers';
 import { CellsSearch } from '@/app/gridGL/cells/CellsSearch';
 import { Tables } from '@/app/gridGL/cells/tables/Tables';
-import type { JsHashValidationWarnings, JsRenderCodeCell } from '@/app/quadratic-core-types';
+import type { JsHashValidationWarnings } from '@/app/quadratic-core-types';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import type { Rectangle, Sprite } from 'pixi.js';
 import { Container } from 'pixi.js';
@@ -122,10 +122,5 @@ export class CellsSheet extends Container {
 
   getErrorMarkerValidation(x: number, y: number): boolean {
     return this.cellsLabels.getErrorMarker(x, y) !== undefined;
-  }
-
-  // Returns the table that the cursor is on, or undefined if the cursor is not on a table.
-  cursorOnDataTable(): JsRenderCodeCell | undefined {
-    return this.tables.cursorOnDataTable();
   }
 }

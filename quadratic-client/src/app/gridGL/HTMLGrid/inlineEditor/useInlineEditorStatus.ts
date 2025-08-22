@@ -1,5 +1,5 @@
+import { inlineEditorEvents } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorEvents';
 import { useEffect, useState } from 'react';
-import { inlineEditorEvents } from './inlineEditorEvents';
 
 export const useInlineEditorStatus = (): boolean => {
   // need to track whether inlineEditor is open

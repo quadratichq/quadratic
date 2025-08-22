@@ -30,7 +30,7 @@ pub struct A1Context {
 #[derive(Debug, Serialize, Deserialize, PartialEq, TS)]
 pub struct JsTableInfo {
     pub name: String,
-    pub sheet_name: String,
+    pub sheet_id: String,
     pub chart: bool,
     pub language: CodeCellLanguage,
 }
@@ -68,25 +68,9 @@ impl A1Context {
         self.table_map.iter_table_values()
     }
 
-    /// Returns an iterator over all the tables in the context.
-    pub fn iter_tables_in_sheet(&self, sheet_id: SheetId) -> impl Iterator<Item = &TableMapEntry> {
-        self.table_map.iter_table_values_in_sheet(sheet_id)
-    }
-
-    /// Returns a list of all table names in the context.
+    /// Returns a list of all table names in the context except for formulas.
     pub fn table_info(&self) -> Vec<JsTableInfo> {
-        self.iter_tables()
-            .filter_map(|table| {
-                self.sheet_map
-                    .try_sheet_id(table.sheet_id)
-                    .map(|sheet_name| JsTableInfo {
-                        name: table.table_name.clone(),
-                        sheet_name: sheet_name.to_string(),
-                        chart: table.is_html_image,
-                        language: table.language.clone(),
-                    })
-            })
-            .collect()
+        self.table_map.expensive_table_info()
     }
 
     /// Returns any table that intersects with the given sheet position.
@@ -114,10 +98,6 @@ impl A1Context {
         } else {
             Err(format!("Table {table_name} not found"))
         }
-    }
-
-    pub fn table_in_name_or_column(&self, sheet_id: SheetId, x: u32, y: u32) -> Option<String> {
-        self.table_map.table_in_name_or_column(sheet_id, x, y)
     }
 
     pub fn hide_column(&mut self, table_name: &str, column_name: &str) {
@@ -198,7 +178,7 @@ mod tests {
             info[0],
             JsTableInfo {
                 name: "Table1".to_string(),
-                sheet_name: "Sheet1".to_string(),
+                sheet_id: SheetId::TEST.to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }
@@ -207,7 +187,7 @@ mod tests {
             info[1],
             JsTableInfo {
                 name: "Table2".to_string(),
-                sheet_name: "Sheet1".to_string(),
+                sheet_id: SheetId::TEST.to_string(),
                 chart: false,
                 language: CodeCellLanguage::Import,
             }

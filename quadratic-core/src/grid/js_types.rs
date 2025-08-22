@@ -1,3 +1,6 @@
+#[cfg(feature = "js")]
+use wasm_bindgen::prelude::*;
+
 use core::fmt;
 
 use serde::{Deserialize, Serialize};
@@ -187,6 +190,8 @@ pub struct JsRenderCell {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub strike_through: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub table_name: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub column_header: Option<bool>,
 }
 
@@ -281,6 +286,8 @@ pub struct CellFormatSummary {
 
     pub underline: Option<bool>,
     pub strike_through: Option<bool>,
+
+    pub numeric_format: Option<NumericFormat>,
 }
 
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
@@ -461,7 +468,7 @@ pub enum JsSnackbarSeverity {
 
 impl fmt::Display for JsSnackbarSeverity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", self).to_lowercase())
+        write!(f, "{}", format!("{self:?}").to_lowercase())
     }
 }
 
@@ -505,10 +512,31 @@ pub struct JsResponse {
     pub result: bool,
     pub error: Option<String>,
 }
+impl From<JsResponse> for wasm_bindgen::JsValue {
+    fn from(response: JsResponse) -> Self {
+        serde_wasm_bindgen::to_value(&response).unwrap_or(JsValue::UNDEFINED)
+    }
+}
 
 #[derive(Serialize, Debug, PartialEq, TS)]
 pub struct JsUpdateCodeCell {
     pub sheet_id: SheetId,
     pub pos: Pos,
     pub render_code_cell: Option<JsRenderCodeCell>,
+}
+
+#[derive(Debug, Clone, TS)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+pub struct JsCoordinate {
+    pub x: u32,
+    pub y: u32,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[cfg_attr(feature = "js", wasm_bindgen)]
+pub enum Direction {
+    Up,
+    Down,
+    Left,
+    Right,
 }

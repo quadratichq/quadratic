@@ -10,7 +10,17 @@ const transformEmptyStringToUndefined = (val: string | undefined) => (val === ''
  */
 
 export const ConnectionNameSchema = z.string().min(1, { message: 'Required' });
-export const ConnectionTypeSchema = z.enum(['POSTGRES', 'MYSQL', 'MSSQL', 'SNOWFLAKE']);
+export const ConnectionTypeSchema = z.enum([
+  'POSTGRES',
+  'MYSQL',
+  'MSSQL',
+  'SNOWFLAKE',
+  'COCKROACHDB',
+  'BIGQUERY',
+  'MARIADB',
+  'SUPABASE',
+  'NEON',
+]);
 
 // Helper function to check if a host address is a localhost variant
 export function isLocalHostAddress(host: string): boolean {
@@ -73,11 +83,20 @@ export const ConnectionTypeDetailsBaseSchema = z.object({
   database: z.string().min(1, { message: 'Required' }),
   username: z.string().min(1, { message: 'Required' }),
   password: z.string().optional().transform(transformEmptyStringToUndefined),
+});
+export const ConnectionTypeDetailsBaseSchemaWithSsh = z.object({
+  ...ConnectionTypeDetailsBaseSchema.shape,
   ...ConnectionSshSchema.shape,
 });
-export const ConnectionTypeDetailsPostgresSchema = ConnectionTypeDetailsBaseSchema;
-export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsBaseSchema;
-export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsBaseSchema.extend({
+export const ConnectionTypeDetailsPostgresSchema = ConnectionTypeDetailsBaseSchemaWithSsh;
+export const ConnectionTypeDetailsCockroachdbSchema = ConnectionTypeDetailsBaseSchemaWithSsh;
+export const ConnectionTypeDetailsSupabaseSchema = ConnectionTypeDetailsBaseSchema;
+export const ConnectionTypeDetailsNeonSchema = ConnectionTypeDetailsBaseSchema;
+
+export const ConnectionTypeDetailsMysqlSchema = ConnectionTypeDetailsBaseSchemaWithSsh;
+export const ConnectionTypeDetailsMariadbSchema = ConnectionTypeDetailsBaseSchemaWithSsh;
+
+export const ConnectionTypeDetailsMssqlSchema = ConnectionTypeDetailsBaseSchemaWithSsh.extend({
   database: z.string().optional(),
   password: z.string().min(1, { message: 'Required' }),
 });
@@ -89,6 +108,12 @@ export const ConnectionTypeDetailsSnowflakeSchema = z.object({
   password: z.string().min(1, { message: 'Required' }),
   warehouse: z.string().optional().transform(transformEmptyStringToUndefined),
   role: z.string().optional().transform(transformEmptyStringToUndefined),
+});
+
+export const ConnectionTypeDetailsBigquerySchema = z.object({
+  project_id: z.string().min(1, { message: 'Required' }),
+  dataset: z.string().min(1, { message: 'Required' }),
+  service_account_configuration: z.string().min(1, { message: 'Required' }),
 });
 
 /**

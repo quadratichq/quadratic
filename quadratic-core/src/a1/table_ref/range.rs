@@ -102,11 +102,11 @@ impl fmt::Display for ColRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {
             ColRange::All => String::default(),
-            ColRange::Col(col) => format!("[{}]", col),
-            ColRange::ColRange(start, end) => format!("[{}]:[{}]", start, end),
-            ColRange::ColToEnd(col) => format!("[{}]:", col),
+            ColRange::Col(col) => format!("[{col}]"),
+            ColRange::ColRange(start, end) => format!("[{start}]:[{end}]"),
+            ColRange::ColToEnd(col) => format!("[{col}]:"),
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

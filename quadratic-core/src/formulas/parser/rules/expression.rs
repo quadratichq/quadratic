@@ -37,7 +37,7 @@ impl OpPrecedence {
             Self::CellRange => Self::Prefix,
             Self::Prefix => Self::Suffix,
             Self::Suffix => Self::Atom,
-            Self::Atom => panic!("tried to get operator precedence level beyond {:?}", self),
+            Self::Atom => panic!("tried to get operator precedence level beyond {self:?}"),
         }
     }
 

@@ -46,10 +46,7 @@ pub fn assert_validation_id(
     assert_eq!(
         expected_validation,
         validation.map(|v| v.id),
-        "Validation at {} is {:?}, which is not the expected {:?}",
-        sheet_pos,
-        validation,
-        expected_validation
+        "Validation at {sheet_pos} is {validation:?}, which is not the expected {expected_validation:?}"
     );
 }
 

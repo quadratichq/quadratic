@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use super::operation::Operation;
 use crate::cell_values::CellValues;
 use crate::controller::GridController;
-use crate::grid::DataTableKind;
 use crate::grid::formats::{FormatUpdate, SheetFormatUpdates};
 use crate::grid::sheet::validations::validation::Validation;
+use crate::grid::{DataTableKind, NumericFormatKind};
 use crate::{CellValue, SheetPos, a1::A1Selection};
 use crate::{Pos, Rect};
 use anyhow::{Error, Result, bail};
@@ -18,7 +18,7 @@ impl GridController {
         value: &str,
         allow_code: bool,
     ) -> (CellValue, FormatUpdate) {
-        CellValue::string_to_cell_value(value, allow_code)
+        CellValue::string_to_cell_value(value, allow_code, false)
     }
 
     /// Generate operations for a user-initiated change to a cell value
@@ -26,25 +26,30 @@ impl GridController {
         &mut self,
         sheet_pos: SheetPos,
         values: Vec<Vec<String>>,
+
+        // whether this was inputted directly by a user (which currently handles
+        // percentage conversions differently)
+        from_user_input: bool,
     ) -> Result<(Vec<Operation>, Vec<Operation>)> {
         let mut ops = vec![];
         let mut compute_code_ops = vec![];
         let mut data_table_ops = vec![];
 
         // move the cell values rect left and up by 1 to make adjacent tables intersect
-        let cell_value_rect = Rect::from_numbers(
+        let moved_left_up_rect = Rect::from_numbers(
             sheet_pos.x - 1,
             sheet_pos.y - 1,
             values[0].len() as i64 + 1,
             values.len() as i64 + 1,
         );
-        let existing_data_tables = self
-            .a1_context_sheet_table_bounds(sheet_pos.sheet_id)
-            .into_iter()
-            .filter(|rect| rect.intersects(cell_value_rect))
-            .collect::<Vec<_>>();
-
-        let mut growing_data_tables = existing_data_tables.clone();
+        let mut data_tables_rects = vec![];
+        if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
+            data_tables_rects = sheet
+                .data_tables_output_rects_intersect_rect(moved_left_up_rect, |_, data_table| {
+                    !data_table.is_code()
+                })
+                .collect();
+        }
 
         if let Some(sheet) = self.try_sheet(sheet_pos.sheet_id) {
             let height = values.len();
@@ -69,38 +74,33 @@ impl GridController {
             for (y, row) in values.into_iter().enumerate() {
                 for (x, value) in row.into_iter().enumerate() {
                     let value = value.trim().to_string();
-                    let (cell_value, format_update) = CellValue::string_to_cell_value(&value, true);
-
                     let pos = Pos::new(sheet_pos.x + x as i64, sheet_pos.y + y as i64);
+                    let user_enter_percent = from_user_input
+                        && sheet
+                            .cell_format(pos)
+                            .numeric_format
+                            .is_some_and(|format| format.kind == NumericFormatKind::Percentage);
+
+                    let (cell_value, format_update) =
+                        CellValue::string_to_cell_value(&value, true, user_enter_percent);
+
                     let current_sheet_pos = SheetPos::from((pos, sheet_pos.sheet_id));
 
                     let is_code = matches!(cell_value, CellValue::Code(_));
-                    let data_table_pos = existing_data_tables
-                        .iter()
-                        .find(|rect| rect.contains(pos))
-                        .map(|rect| rect.min);
+                    let data_table_import_pos = sheet.data_table_import_pos_that_contains(pos);
 
-                    // (x,y) is within a data table
-                    if let Some(data_table_pos) = data_table_pos {
-                        let is_source_cell = sheet.is_source_cell(pos);
-                        let is_formula_cell = sheet.is_formula_cell(pos);
-
-                        // if the cell is a formula cell and the source cell, set the cell value (which will remove the data table)
-                        if is_formula_cell && is_source_cell {
-                            cell_values[x][y] = Some(cell_value);
-                        } else {
-                            data_table_cell_values[x][y] = Some(cell_value);
-
-                            if !format_update.is_default() {
-                                ops.push(Operation::DataTableFormats {
-                                    sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
-                                    formats: sheet.to_sheet_format_updates(
-                                        sheet_pos,
-                                        data_table_pos,
-                                        format_update.to_owned(),
-                                    )?,
-                                });
-                            }
+                    // (x,y) is within a data table (import / editable)
+                    if let Some(data_table_pos) = data_table_import_pos {
+                        data_table_cell_values[x][y] = Some(cell_value);
+                        if !format_update.is_default() {
+                            ops.push(Operation::DataTableFormats {
+                                sheet_pos: data_table_pos.to_sheet_pos(sheet_pos.sheet_id),
+                                formats: sheet.to_sheet_format_updates(
+                                    sheet_pos,
+                                    data_table_pos,
+                                    format_update.to_owned(),
+                                )?,
+                            });
                         }
                     }
                     // (x,y) is not within a data table
@@ -111,7 +111,7 @@ impl GridController {
                         // cell value is touching the right or bottom edge
                         GridController::grow_data_table(
                             sheet,
-                            &mut growing_data_tables,
+                            &mut data_tables_rects,
                             &mut data_table_columns,
                             &mut data_table_rows,
                             current_sheet_pos,
@@ -190,7 +190,8 @@ impl GridController {
                 let mut delete_data_tables = vec![];
                 let mut data_tables_automatically_deleted = vec![];
 
-                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect(rect) {
+                for (_, data_table_pos, data_table) in sheet.data_tables_intersect_rect_sorted(rect)
+                {
                     let data_table_full_rect =
                         data_table.output_rect(data_table_pos.to_owned(), false);
                     let mut data_table_rect = data_table_full_rect;
@@ -277,7 +278,7 @@ impl GridController {
                     if save_data_table_anchors.is_empty() {
                         ops.push(Operation::SetCellValues {
                             sheet_pos: SheetPos::new(selection.sheet_id, rect.min.x, rect.min.y),
-                            values: CellValues::new(rect.width(), rect.height()),
+                            values: CellValues::new_blank(rect.width(), rect.height()),
                         });
                     } else {
                         // remove all saved_data_table_anchors from the rect
@@ -300,7 +301,7 @@ impl GridController {
                                     rect.min.x,
                                     rect.min.y,
                                 ),
-                                values: CellValues::new(rect.width(), rect.height()),
+                                values: CellValues::new_blank(rect.width(), rect.height()),
                             });
                         }
                     }
@@ -362,8 +363,8 @@ impl GridController {
         selection: &A1Selection,
         force_table_bounds: bool,
     ) -> Vec<Operation> {
-        let mut ops = self.clear_format_borders_operations(selection);
-        ops.extend(self.delete_cells_operations(selection, force_table_bounds));
+        let mut ops = self.delete_cells_operations(selection, force_table_bounds);
+        ops.extend(self.clear_format_borders_operations(selection, true));
         ops
     }
 
@@ -383,106 +384,139 @@ impl GridController {
         delete_value: bool,
     ) -> Result<Vec<Operation>> {
         let mut ops = vec![];
+
+        let handle_paste_table_in_import = |paste_table_in_import: &CellValue| {
+            let cell_type = match paste_table_in_import {
+                CellValue::Code(_) => "code",
+                CellValue::Import(_) => "table",
+                CellValue::Image(_) => "chart",
+                CellValue::Html(_) => "chart",
+                _ => "unknown",
+            };
+
+            let message = format!("Cannot place {cell_type} within a table");
+
+            #[cfg(any(target_family = "wasm", test))]
+            {
+                let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
+                crate::wasm_bindings::js::jsClientMessage(message.to_owned(), severity.to_string());
+            }
+
+            message
+        };
+
         if let Some(sheet) = self.try_sheet(start_pos.sheet_id) {
             let rect =
                 Rect::from_numbers(start_pos.x, start_pos.y, values.w as i64, values.h as i64);
 
-            for (output_rect, intersection_rect, data_table) in
-                sheet.iter_code_output_intersects_rect(rect)
+            for (output_rect, mut intersection_rect, data_table) in
+                sheet.iter_data_tables_intersects_rect(rect)
             {
-                let contains_source_cell = intersection_rect.contains(output_rect.min);
+                // there is no pasting on top of code cell output
+                if data_table.is_code() {
+                    continue;
+                }
+
+                let data_table_pos = output_rect.min;
+
+                let contains_source_cell = intersection_rect.contains(data_table_pos);
+                if contains_source_cell {
+                    continue;
+                }
 
                 let is_table_being_deleted = match (delete_value, selection) {
                     (true, Some(selection)) => {
                         start_pos.sheet_id == selection.sheet_id
-                            && selection.contains_pos(output_rect.min, self.a1_context())
+                            && selection.contains_pos(data_table_pos, self.a1_context())
                     }
                     _ => false,
                 };
+                if is_table_being_deleted {
+                    continue;
+                }
 
-                // there is no pasting on top of code cell output
-                if !data_table.is_code() && !contains_source_cell && !is_table_being_deleted {
-                    let adjusted_rect = Rect::from_numbers(
-                        intersection_rect.min.x - start_pos.x,
-                        intersection_rect.min.y - start_pos.y,
-                        intersection_rect.width() as i64,
-                        intersection_rect.height() as i64,
-                    );
+                let columns_y = output_rect.min.y + if data_table.get_show_name() { 1 } else { 0 };
 
-                    // pull the values from `values`, replacing
-                    // the values in `values` with CellValue::Blank
-                    let data_table_cell_values = values.get_rect(adjusted_rect);
+                let contains_header = data_table.get_show_columns()
+                    && intersection_rect.y_range().contains(&columns_y);
 
-                    let paste_table_in_import =
-                        data_table_cell_values.iter().flatten().find(|cell_value| {
-                            cell_value.is_code()
+                if data_table.get_show_columns() {
+                    intersection_rect.min.y = intersection_rect.min.y.max(columns_y + 1);
+                }
+
+                let adjusted_rect = Rect::from_numbers(
+                    intersection_rect.min.x - start_pos.x,
+                    intersection_rect.min.y - start_pos.y,
+                    intersection_rect.width() as i64,
+                    intersection_rect.height() as i64,
+                );
+
+                // pull the values from `values`, replacing
+                // the values in `values` with CellValue::Blank
+                let data_table_cell_values = values.get_rect(adjusted_rect);
+
+                let paste_table_in_import =
+                    data_table_cell_values
+                        .iter()
+                        .flatten()
+                        .find_map(|cell_value| {
+                            cell_value.as_ref().filter(|cv| {
+                                cv.is_code() || cv.is_import() || cv.is_image() || cv.is_html()
+                            })
+                        });
+
+                if let Some(paste_table_in_import) = paste_table_in_import {
+                    return Err(Error::msg(handle_paste_table_in_import(
+                        paste_table_in_import,
+                    )));
+                }
+
+                if let (Some(mut headers), true) =
+                    (data_table.column_headers.to_owned(), contains_header)
+                {
+                    let y = columns_y - start_pos.y;
+
+                    for x in intersection_rect.x_range() {
+                        let column_index = data_table.get_column_index_from_display_index(
+                            u32::try_from(x - output_rect.min.x).unwrap_or(0),
+                            true,
+                        );
+
+                        if let Some(header) = headers.get_mut(column_index as usize) {
+                            let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
+                            let safe_y = u32::try_from(y).unwrap_or(0);
+
+                            let cell_value =
+                                values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
+
+                            if cell_value.is_code()
                                 || cell_value.is_import()
                                 || cell_value.is_image()
                                 || cell_value.is_html()
-                        });
-
-                    if let Some(paste_table_in_import) = paste_table_in_import {
-                        let cell_type = match paste_table_in_import {
-                            CellValue::Code(_) => "code",
-                            CellValue::Import(_) => "table",
-                            CellValue::Image(_) => "chart",
-                            CellValue::Html(_) => "chart",
-                            _ => "unknown",
-                        };
-                        let message = format!("Cannot place {} within a table", cell_type);
-
-                        #[cfg(any(target_family = "wasm", test))]
-                        {
-                            let severity = crate::grid::js_types::JsSnackbarSeverity::Error;
-                            crate::wasm_bindings::js::jsClientMessage(
-                                message.to_owned(),
-                                severity.to_string(),
-                            );
-                        }
-
-                        return Err(Error::msg(message));
-                    }
-
-                    let contains_header = data_table.get_show_columns()
-                        && intersection_rect.y_range().contains(&output_rect.min.y);
-                    let headers = data_table.column_headers.to_owned();
-
-                    if let (Some(mut headers), true) = (headers, contains_header) {
-                        let y = output_rect.min.y - start_pos.y;
-
-                        for x in intersection_rect.x_range() {
-                            let new_x = x - output_rect.min.x;
-
-                            if let Some(header) = headers.get_mut(new_x as usize) {
-                                let safe_x = u32::try_from(x - start_pos.x).unwrap_or(0);
-                                let safe_y = u32::try_from(y).unwrap_or(0);
-
-                                let cell_value =
-                                    values.remove(safe_x, safe_y).unwrap_or(CellValue::Blank);
-
-                                header.name = cell_value;
+                            {
+                                return Err(Error::msg(handle_paste_table_in_import(&cell_value)));
                             }
-                        }
 
-                        let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
-                        ops.push(Operation::DataTableMeta {
-                            sheet_pos,
-                            name: None,
-                            alternating_colors: None,
-                            columns: Some(headers.to_vec()),
-                            show_ui: None,
-                            show_name: None,
-                            show_columns: None,
-                            readonly: None,
-                        });
+                            header.name = cell_value;
+                        }
                     }
 
-                    let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
-                    ops.push(Operation::SetDataTableAt {
+                    let sheet_pos = output_rect.min.to_sheet_pos(start_pos.sheet_id);
+                    ops.push(Operation::DataTableOptionMeta {
                         sheet_pos,
-                        values: CellValues::from(data_table_cell_values),
+                        name: None,
+                        alternating_colors: None,
+                        columns: Some(headers.to_vec()),
+                        show_name: None,
+                        show_columns: None,
                     });
                 }
+
+                let sheet_pos = intersection_rect.min.to_sheet_pos(start_pos.sheet_id);
+                ops.push(Operation::SetDataTableAt {
+                    sheet_pos,
+                    values: CellValues::from(data_table_cell_values),
+                });
             }
         }
 
@@ -500,14 +534,11 @@ impl GridController {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
     use crate::cell_values::CellValues;
     use crate::controller::GridController;
     use crate::controller::operations::operation::Operation;
     use crate::grid::{CodeCellLanguage, CodeCellValue, NumericFormat, NumericFormatKind, SheetId};
+    use crate::number::decimal_from_str;
     use crate::test_util::*;
     use crate::{CellValue, SheetPos, SheetRect, a1::A1Selection};
 
@@ -581,21 +612,21 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("123.45", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123.45").unwrap())
+            CellValue::Number(decimal_from_str("123.45").unwrap())
         );
         assert!(format_update.is_default());
 
         let (value, format_update) = gc.string_to_cell_value("123,456.78", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456.78").unwrap())
+            CellValue::Number(decimal_from_str("123456.78").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
         let (value, format_update) = gc.string_to_cell_value("123,456,789.01", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456789.01").unwrap())
+            CellValue::Number(decimal_from_str("123456789.01").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
@@ -603,7 +634,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+            CellValue::Number(decimal_from_str("123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -617,7 +648,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("(123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(decimal_from_str("-123456").unwrap())
         );
         assert_eq!(format_update.numeric_commas, Some(Some(true)));
 
@@ -630,7 +661,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$ 123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("123456").unwrap())
+            CellValue::Number(decimal_from_str("123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -644,7 +675,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("- $ 123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(decimal_from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -658,7 +689,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$ -123,456", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(decimal_from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -672,7 +703,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("($ 123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(decimal_from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -686,7 +717,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$(123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(decimal_from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -700,7 +731,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("$ ( 123,456)", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("-123456").unwrap())
+            CellValue::Number(decimal_from_str("-123456").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -719,7 +750,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("123456 %", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+            CellValue::Number(decimal_from_str("1234.56").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -733,7 +764,7 @@ mod test {
         let (value, format_update) = gc.string_to_cell_value("123,456%", true);
         assert_eq!(
             value,
-            CellValue::Number(BigDecimal::from_str("1234.56").unwrap())
+            CellValue::Number(decimal_from_str("1234.56").unwrap())
         );
         assert_eq!(
             format_update.numeric_format,
@@ -824,7 +855,7 @@ mod test {
             operations,
             vec![Operation::SetCellValues {
                 sheet_pos,
-                values: CellValues::new(2, 1)
+                values: CellValues::new_blank(2, 1)
             },]
         );
     }
@@ -861,11 +892,11 @@ mod test {
             vec![
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 2, 1),
-                    values: CellValues::new(1, 2)
+                    values: CellValues::new_blank(1, 2)
                 },
                 Operation::SetCellValues {
                     sheet_pos: SheetPos::new(sheet_id, 1, 2),
-                    values: CellValues::new(2, 1)
+                    values: CellValues::new_blank(2, 1)
                 },
             ]
         );
@@ -878,7 +909,7 @@ mod test {
 
         test_create_data_table(&mut gc, sheet_id, pos![A1], 3, 3);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(&gc.sheet(sheet_id));
+        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 3);
         assert_eq!(data_table.height(false), 5);
 
@@ -886,14 +917,14 @@ mod test {
         let sheet_pos = SheetPos::new(sheet_id, 4, 3);
         gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(&gc.sheet(sheet_id));
+        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.width(), 4);
 
         // add a cell to the bottom of the data table
         let sheet_pos = SheetPos::new(sheet_id, 1, 6);
         gc.set_cell_values(sheet_pos, vec![vec!["a".to_string()]], None);
         let data_table = gc.sheet(sheet_id).data_table_at(&pos![A1]).unwrap();
-        print_sheet(&gc.sheet(sheet_id));
+        print_sheet(gc.sheet(sheet_id));
         assert_eq!(data_table.height(false), 6);
     }
 

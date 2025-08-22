@@ -1,10 +1,11 @@
 use super::current;
 use crate::{
-    CellValue,
+    CellValue, Duration,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, ConnectionKind},
+    number::decimal_from_str,
 };
-use bigdecimal::BigDecimal;
+use rust_decimal::Decimal;
 use std::str::FromStr;
 
 pub fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCellLanguageSchema {
@@ -18,6 +19,11 @@ pub fn export_code_cell_language(language: CodeCellLanguage) -> current::CodeCel
                 ConnectionKind::Mysql => current::ConnectionKindSchema::Mysql,
                 ConnectionKind::Mssql => current::ConnectionKindSchema::Mssql,
                 ConnectionKind::Snowflake => current::ConnectionKindSchema::Snowflake,
+                ConnectionKind::Cockroachdb => current::ConnectionKindSchema::Cockroachdb,
+                ConnectionKind::Bigquery => current::ConnectionKindSchema::Bigquery,
+                ConnectionKind::Mariadb => current::ConnectionKindSchema::Mariadb,
+                ConnectionKind::Supabase => current::ConnectionKindSchema::Supabase,
+                ConnectionKind::Neon => current::ConnectionKindSchema::Neon,
             },
             id,
         },
@@ -51,16 +57,16 @@ pub fn export_cell_value(cell_value: CellValue) -> current::CellValueSchema {
     }
 }
 
-// Change BigDecimal to a current::CellValue (this will be used to convert BD to
+// Change Decimal to a current::CellValue (this will be used to convert BD to
 // various CellValue::Number* types, such as NumberF32, etc.)
-pub fn export_cell_value_number(number: BigDecimal) -> current::CellValueSchema {
+pub fn export_cell_value_number(number: Decimal) -> current::CellValueSchema {
     current::CellValueSchema::Number(number.to_string())
 }
 
-// Change BigDecimal's serialization to a grid::CellValue (this will be used to
+// Change Decimal's serialization to a grid::CellValue (this will be used to
 // convert BD to various CellValue::Number* types, such as NumberF32, etc.)
 pub fn import_cell_value_number(number: String) -> CellValue {
-    CellValue::Number(BigDecimal::from_str(&number).unwrap_or_default())
+    CellValue::Number(decimal_from_str(&number).unwrap_or_default())
 }
 
 pub fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> CodeCellLanguage {
@@ -74,6 +80,11 @@ pub fn import_code_cell_language(language: current::CodeCellLanguageSchema) -> C
                 current::ConnectionKindSchema::Mysql => ConnectionKind::Mysql,
                 current::ConnectionKindSchema::Mssql => ConnectionKind::Mssql,
                 current::ConnectionKindSchema::Snowflake => ConnectionKind::Snowflake,
+                current::ConnectionKindSchema::Cockroachdb => ConnectionKind::Cockroachdb,
+                current::ConnectionKindSchema::Bigquery => ConnectionKind::Bigquery,
+                current::ConnectionKindSchema::Mariadb => ConnectionKind::Mariadb,
+                current::ConnectionKindSchema::Supabase => ConnectionKind::Supabase,
+                current::ConnectionKindSchema::Neon => ConnectionKind::Neon,
             },
             id,
         },
@@ -96,7 +107,7 @@ pub fn import_cell_value(value: current::CellValueSchema) -> CellValue {
             CellValue::Instant(serde_json::from_str(&instant).unwrap_or_default())
         }
         current::CellValueSchema::Duration(duration) => {
-            CellValue::Duration(serde_json::from_str(&duration).unwrap_or_default())
+            CellValue::Duration(Duration::from_str(&duration).unwrap_or_default())
         }
         current::CellValueSchema::Date(date) => CellValue::Date(date),
         current::CellValueSchema::Time(time) => CellValue::Time(time),

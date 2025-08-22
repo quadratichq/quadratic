@@ -1,6 +1,14 @@
 // Messages sent between the javascript web worker and the javascript runner
 // (which is where the user code is executed).
 
+export interface RunnerJavascriptResults {
+  type: 'results';
+  results: any;
+  console: string;
+  lineNumber?: number;
+  chartPixelOutput?: [number, number];
+}
+
 export interface RunnerJavascriptGetCellsA1Length {
   type: 'getCellsA1Length';
   sharedBuffer: SharedArrayBuffer;
@@ -13,14 +21,6 @@ export interface RunnerJavascriptGetCellsData {
   sharedBuffer: SharedArrayBuffer;
 }
 
-export interface RunnerJavascriptResults {
-  type: 'results';
-  results: any;
-  console: string;
-  lineNumber?: number;
-  chartPixelOutput?: [number, number];
-}
-
 export interface RunnerJavascriptError {
   type: 'error';
   error: string;
@@ -29,7 +29,7 @@ export interface RunnerJavascriptError {
 }
 
 export type RunnerJavascriptMessage =
+  | RunnerJavascriptResults
   | RunnerJavascriptGetCellsA1Length
   | RunnerJavascriptGetCellsData
-  | RunnerJavascriptResults
   | RunnerJavascriptError;

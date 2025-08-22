@@ -1,8 +1,10 @@
-import { debug } from '@/app/debugFlags';
-import mixpanel from 'mixpanel-browser';
+import { useDebugFlags } from '@/app/debugFlags/useDebugFlags';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import { useLayoutEffect } from 'react';
 
 export function useRemoveInitialLoadingUI() {
+  const { debug } = useDebugFlags();
+
   useLayoutEffect(() => {
     // Get the initial start time (in ms) so we can track the load time
     const startTime = document.documentElement.getAttribute('data-loading-start');
@@ -20,10 +22,10 @@ export function useRemoveInitialLoadingUI() {
       console.log(`Loading time: ${loadTimeMs}ms`);
     }
     const route = window.location.pathname + window.location.search;
-    mixpanel.track('[Loading].complete', {
+    trackEvent('[Loading].complete', {
       route,
       loadTimeMs,
     });
-  }, []);
+  }, [debug]);
   return null;
 }

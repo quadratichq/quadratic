@@ -1,4 +1,4 @@
-import { debugShowCountRenderedObjects, debugShowFPS, debugShowTime } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { Container } from 'pixi.js';
 
 const MINIMUM_MS_TO_DISPLAY = 10;
@@ -10,7 +10,7 @@ export function debugTimeReset(): void {
 }
 
 export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): void {
-  if (!debugShowTime) return;
+  if (!debugFlag('debugShowTime')) return;
   const now = performance.now();
   if (now - lastTime > minimum) {
     console.log(`[Time Check] ${name}: ${Math.round(now - lastTime)}ms`);
@@ -19,7 +19,7 @@ export function debugTimeCheck(name: string, minimum = MINIMUM_MS_TO_DISPLAY): v
 }
 
 export function debugRendererLight(on: boolean): void {
-  if (!debugShowFPS) return;
+  if (!debugFlag('debugShowFPS')) return;
   const span = document.querySelector('.debug-show-renderer') as HTMLSpanElement;
   if (span) {
     span.style.backgroundColor = on ? '#aa0000' : '#00aa00';
@@ -41,14 +41,9 @@ function countChildren(parent: Container): void {
 }
 
 export function debugShowChildren(parent: Container, name?: string): void {
-  if (!debugShowCountRenderedObjects) return;
+  if (!debugFlag('debugShowCountRenderedObjects')) return;
   count = 0;
   visibleCount = 0;
   countChildren(parent);
   console.log(`[Rendered] ${name ? `[${name}] ` : ''}${count} objects | ${visibleCount} visible`);
-}
-
-export function debugShowCachedCounts(): void {
-  // if (!debugShowCachedSpriteCounts) return;
-  // app.cells.debugShowCachedCounts();
 }

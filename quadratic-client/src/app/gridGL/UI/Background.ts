@@ -1,7 +1,7 @@
 import { sheets } from '@/app/grid/controller/Sheets';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { colors } from '@/app/theme/colors';
 import { Graphics } from 'pixi.js';
-import { pixiApp } from '../pixiApp/PixiApp';
 
 export class Background extends Graphics {
   update = (dirty: boolean) => {

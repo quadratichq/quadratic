@@ -1,7 +1,7 @@
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
-import { clearDb, createFile, createTeam, createUser } from '../../tests/testDataGenerator';
+import { clearDb, createFile, createTeam, createUser, upgradeTeamToPro } from '../../tests/testDataGenerator';
 
 const auth0Id = 'user';
 
@@ -9,7 +9,8 @@ const payload: AIRequestBody = {
   chatId: '00000000-0000-0000-0000-000000000000',
   fileUuid: '11111111-1111-1111-1111-111111111111',
   source: 'AIAnalyst',
-  modelKey: 'bedrock-anthropic:claude:thinking-toggle-off',
+  messageSource: 'User',
+  modelKey: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
   messages: [
     {
       role: 'user',
@@ -41,14 +42,22 @@ jest.mock('@anthropic-ai/bedrock-sdk', () => ({
             input: { param1: 'value1' },
           },
         ],
+        usage: {
+          input_tokens: 100,
+          output_tokens: 100,
+          cache_read_input_tokens: 0,
+          cache_creation_input_tokens: 0,
+        },
       }),
     },
   })),
 }));
 
+let teamId: number;
 beforeAll(async () => {
   const user = await createUser({ auth0Id });
   const team = await createTeam({ users: [{ userId: user.id, role: 'OWNER' }] });
+  teamId = team.id;
   await createFile({
     data: {
       uuid: payload.fileUuid,
@@ -72,6 +81,7 @@ describe('POST /v0/ai/chat', () => {
     });
 
     it('responds with model response when the token is valid', async () => {
+      await upgradeTeamToPro(teamId);
       await request(app)
         .post('/v0/ai/chat')
         .send({ ...payload, chatId: '00000000-0000-0000-0000-000000000002' })
@@ -96,6 +106,8 @@ describe('POST /v0/ai/chat', () => {
               },
             ],
             modelKey: payload.modelKey,
+            isOnPaidPlan: true,
+            exceededBillingLimit: false,
           });
         });
 

@@ -40,9 +40,3 @@ export const updateRecentFiles = (uuid: string, name: string, loaded: boolean, o
     console.warn('Unable to update recent files', e);
   }
 };
-
-// Clears the recent files list in localStorage
-export const clearRecentFiles = () => {
-  localStorage.removeItem(RECENT_FILES_KEY);
-  window.dispatchEvent(new Event('local-storage'));
-};

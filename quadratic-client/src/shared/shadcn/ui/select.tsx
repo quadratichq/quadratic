@@ -1,8 +1,7 @@
-import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
-import * as SelectPrimitive from '@radix-ui/react-select';
-import * as React from 'react';
-
 import { cn } from '@/shared/shadcn/utils';
+import { CaretSortIcon, CheckIcon } from '@radix-ui/react-icons';
+import { Select as SelectPrimitive } from 'radix-ui';
+import * as React from 'react';
 
 const Select = SelectPrimitive.Root;
 

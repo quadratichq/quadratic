@@ -2,12 +2,7 @@ import { codeEditorCodeCellAtom } from '@/app/atoms/codeEditorAtom';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { getConnectionUuid } from '@/app/helpers/codeCellLanguage';
-import {
-  getTableNameFromPos,
-  newSingleSelection,
-  stringToSelection,
-  validateTableName,
-} from '@/app/quadratic-core/quadratic_core';
+import { newSingleSelection, validateTableName } from '@/app/quadratic-core/quadratic_core';
 import { useConnectionsFetcher } from '@/app/ui/hooks/useConnectionsFetcher';
 import { useRenameTableName } from '@/app/ui/hooks/useRenameTableName';
 import { Input } from '@/shared/shadcn/ui/input';
@@ -27,33 +22,42 @@ export function CodeEditorHeaderLabel() {
     const updateCellRef = () => {
       if (!codeCellState.sheetId) return;
       const selection = newSingleSelection(codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
-      const cellRef = selection.toA1String(sheets.current);
+      const cellRef = selection.toA1String(sheets.current, sheets.jsA1Context);
       setCellRef(cellRef);
     };
 
-    const updateTableName = (a1Context: Uint8Array) => {
+    const updateTableName = () => {
       if (!codeCellState.sheetId) return;
-      const tableName = getTableNameFromPos(a1Context, codeCellState.sheetId, codeCellState.pos.x, codeCellState.pos.y);
+      const tableName = sheets.sheet.cursor.jsSelection.getTableNameFromPos(
+        codeCellState.sheetId,
+        codeCellState.pos.x,
+        codeCellState.pos.y,
+        sheets.jsA1Context
+      );
       setTableName(tableName);
     };
 
     updateCellRef();
-    updateTableName(sheets.a1Context);
+    updateTableName();
 
     events.on('changeSheet', updateCellRef);
     events.on('sheetInfoUpdate', updateCellRef);
-    events.on('a1Context', updateTableName);
+    events.on('a1ContextUpdated', updateTableName);
     return () => {
       events.off('changeSheet', updateCellRef);
       events.off('sheetInfoUpdate', updateCellRef);
-      events.off('a1Context', updateTableName);
+      events.off('a1ContextUpdated', updateTableName);
     };
   }, [codeCellState.pos.x, codeCellState.pos.y, codeCellState.sheetId]);
 
   const focusCellRef = useCallback(() => {
-    if (!cellRef) return;
-    const selection = stringToSelection(cellRef, sheets.current, sheets.a1Context);
-    sheets.changeSelection(selection);
+    try {
+      if (!cellRef) return;
+      const selection = sheets.stringToSelection(cellRef, sheets.current);
+      sheets.changeSelection(selection);
+    } catch (error) {
+      console.error(error);
+    }
   }, [cellRef]);
 
   // Get the connection name (it's possible the user won't have access to it
@@ -89,7 +93,7 @@ export function CodeEditorHeaderLabel() {
             codeCellState.sheetId,
             codeCellState.pos.x,
             codeCellState.pos.y,
-            sheets.a1Context
+            sheets.jsA1Context
           );
         } catch (error) {
           isValid = false;

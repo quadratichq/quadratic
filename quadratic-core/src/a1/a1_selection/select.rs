@@ -270,7 +270,7 @@ impl A1Selection {
                 self.cursor.x = range.start.col();
             }
             range.end = CellRefRangeEnd {
-                col: CellRefCoord::UNBOUNDED,
+                col: CellRefCoord::REL_UNBOUNDED,
                 row: CellRefCoord::new_rel(row),
             };
         } else {
@@ -374,15 +374,14 @@ impl A1Selection {
                                 }
                             }
                             ColRange::Col(col) => {
-                                if table.show_columns {
-                                    if let Some(col_index) = table.try_col_index(col) {
+                                if table.show_columns
+                                    && let Some(col_index) = table.try_col_index(col) {
                                         start = Some((
                                             table.bounds.min.x + col_index,
                                             table.bounds.min.y
                                                 + if table.show_name { 1 } else { 0 },
                                         ));
                                     }
-                                }
                             }
                             ColRange::ColRange(start_col, _) => {
                                 if let Some(col_index) = table.try_col_index(start_col) {

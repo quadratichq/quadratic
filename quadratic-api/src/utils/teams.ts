@@ -1,6 +1,7 @@
 import type { Prisma, Team } from '@prisma/client';
 import { TeamClientDataKvSchema } from 'quadratic-shared/typesAndSchemas';
 import dbClient from '../dbClient';
+import { isRunningInTest } from '../env-vars';
 import { ApiError } from './ApiError';
 import { decryptFromEnv, encryptFromEnv, generateSshKeys } from './crypto';
 
@@ -12,7 +13,7 @@ export type DecryptedTeam = Omit<Team, 'sshPublicKey' | 'sshPrivateKey'> & {
 // keys singleton
 let keys: Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> | null = null;
 export async function getKeys(): Promise<{ sshPublicKey: Buffer; sshPrivateKey: Buffer }> {
-  if (keys === null || !isRunningInTest()) {
+  if (keys === null || !isRunningInTest) {
     keys = generateSshKeys().then(({ privateKey, publicKey }) => {
       const sshPublicKey = Buffer.from(encryptFromEnv(publicKey));
       const sshPrivateKey = Buffer.from(encryptFromEnv(privateKey));
@@ -20,10 +21,6 @@ export async function getKeys(): Promise<{ sshPublicKey: Buffer; sshPrivateKey: 
     });
   }
   return keys;
-}
-
-function isRunningInTest() {
-  return process.env.NODE_ENV === 'test';
 }
 
 export async function createTeam<T extends Prisma.TeamSelect>(

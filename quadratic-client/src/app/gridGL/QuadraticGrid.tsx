@@ -21,14 +21,28 @@ export default function QuadraticGrid() {
   const handleMouseChange = useRecoilCallback(
     ({ set }) =>
       (e: MouseEvent) => {
-        set(gridPanModeAtom, (prev) => ({ ...prev, mouseIsDown: e.buttons === 1 && e.button === 0 }));
+        set(gridPanModeAtom, (prev) => {
+          const mouseIsDown = e.buttons === 1 && e.button === 0;
+
+          if (prev && mouseIsDown === prev.mouseIsDown) {
+            return prev;
+          }
+
+          return { ...prev, mouseIsDown };
+        });
       },
     []
   );
   const disablePanMode = useRecoilCallback(
     ({ set }) =>
       () => {
-        set(gridPanModeAtom, (prev) => ({ ...prev, mouseIsDown: false, spaceIsDown: false }));
+        set(gridPanModeAtom, (prev) => {
+          if (prev && prev.mouseIsDown === false && prev.spaceIsDown === false) {
+            return prev;
+          }
+
+          return { ...prev, mouseIsDown: false, spaceIsDown: false };
+        });
       },
     []
   );
@@ -37,6 +51,7 @@ export default function QuadraticGrid() {
 
   return (
     <div
+      className="pointer-up-ignore"
       ref={containerRef}
       style={{
         position: 'relative',

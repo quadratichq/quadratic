@@ -223,8 +223,8 @@ impl GridController {
                     .top
                     .get_or_insert_default()
                     .set_rect(x1, y1 + 1, x2, y2, style);
-                if clear_neighbors {
-                    if let Some(y2) = y2 {
+                if clear_neighbors
+                    && let Some(y2) = y2 {
                         borders.bottom.get_or_insert_default().set_rect(
                             x1,
                             y1,
@@ -233,15 +233,14 @@ impl GridController {
                             Some(ClearOption::Clear),
                         );
                     }
-                }
             }
             BorderSelection::Vertical => {
                 borders
                     .left
                     .get_or_insert_default()
                     .set_rect(x1 + 1, y1, x2, y2, style);
-                if clear_neighbors {
-                    if let Some(x2) = x2 {
+                if clear_neighbors
+                    && let Some(x2) = x2 {
                         borders.right.get_or_insert_default().set_rect(
                             x1,
                             y1,
@@ -250,7 +249,6 @@ impl GridController {
                             Some(ClearOption::Clear),
                         );
                     }
-                }
             }
             BorderSelection::Left => {
                 borders
@@ -297,8 +295,8 @@ impl GridController {
                         style,
                     );
                 }
-                if clear_neighbors {
-                    if let Some(x2) = x2 {
+                if clear_neighbors
+                    && let Some(x2) = x2 {
                         borders.left.get_or_insert_default().set_rect(
                             x2 + 1,
                             y1,
@@ -307,7 +305,6 @@ impl GridController {
                             Some(ClearOption::Clear),
                         );
                     }
-                }
             }
             BorderSelection::Bottom => {
                 if let Some(y2) = y2 {
@@ -324,8 +321,8 @@ impl GridController {
                         style,
                     );
                 }
-                if clear_neighbors {
-                    if let Some(y2) = y2 {
+                if clear_neighbors
+                    && let Some(y2) = y2 {
                         borders.top.get_or_insert_default().set_rect(
                             x1,
                             y2 + 1,
@@ -334,7 +331,6 @@ impl GridController {
                             Some(ClearOption::Clear),
                         );
                     }
-                }
             }
             // for clear, we need to remove any borders that are at the edges of
             // the range--eg, the left border at the next column to the right of the range
@@ -433,13 +429,12 @@ impl GridController {
                     );
                 }
                 CellRefRange::Table { range } => {
-                    if let Some(table) = context.try_table(&range.table_name) {
-                        if let Some(range) =
+                    if let Some(table) = context.try_table(&range.table_name)
+                        && let Some(range) =
                             range.convert_to_ref_range_bounds(true, context, false, false)
                         {
                             add_table_ops(range, table, &mut sheet_borders, &mut tables_borders);
                         }
-                    }
                 }
             }
         }
@@ -454,8 +449,12 @@ impl GridController {
         border_selection: BorderSelection,
         mut style: Option<BorderStyle>,
         clear_neighbors: bool,
-    ) -> Option<Vec<Operation>> {
-        let sheet = self.try_sheet(selection.sheet_id)?;
+    ) -> Vec<Operation> {
+        let mut ops = vec![];
+
+        let Some(sheet) = self.try_sheet(selection.sheet_id) else {
+            return ops;
+        };
 
         if style.is_some_and(|style| {
             let (sheet_borders, tables_borders) = self.get_sheet_and_table_border_updates(
@@ -495,8 +494,6 @@ impl GridController {
             clear_neighbors,
         );
 
-        let mut ops = vec![];
-
         for (table_sheet_pos, table_borders) in tables_borders {
             if !table_borders.is_empty() {
                 ops.push(Operation::DataTableBorders {
@@ -513,7 +510,7 @@ impl GridController {
             });
         }
 
-        if ops.is_empty() { None } else { Some(ops) }
+        ops
     }
 }
 
@@ -587,14 +584,12 @@ mod tests {
     #[test]
     fn test_borders_operations_all_all() {
         let gc = GridController::test();
-        let ops = gc
-            .set_borders_a1_selection_operations(
-                A1Selection::test_a1("*"),
-                BorderSelection::All,
-                Some(BorderStyle::default()),
-                true,
-            )
-            .unwrap();
+        let ops = gc.set_borders_a1_selection_operations(
+            A1Selection::test_a1("*"),
+            BorderSelection::All,
+            Some(BorderStyle::default()),
+            true,
+        );
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
             panic!("Expected SetBordersA1")
@@ -607,14 +602,12 @@ mod tests {
     #[test]
     fn test_borders_operations_all_left() {
         let gc = GridController::test();
-        let ops = gc
-            .set_borders_a1_selection_operations(
-                A1Selection::test_a1("*"),
-                BorderSelection::Left,
-                Some(BorderStyle::default()),
-                true,
-            )
-            .unwrap();
+        let ops = gc.set_borders_a1_selection_operations(
+            A1Selection::test_a1("*"),
+            BorderSelection::Left,
+            Some(BorderStyle::default()),
+            true,
+        );
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
             panic!("Expected SetBordersA1")
@@ -630,14 +623,12 @@ mod tests {
     #[test]
     fn test_borders_operations_columns() {
         let gc = GridController::test();
-        let ops = gc
-            .set_borders_a1_selection_operations(
-                A1Selection::test_a1("C:E"),
-                BorderSelection::Right,
-                Some(BorderStyle::default()),
-                true,
-            )
-            .unwrap();
+        let ops = gc.set_borders_a1_selection_operations(
+            A1Selection::test_a1("C:E"),
+            BorderSelection::Right,
+            Some(BorderStyle::default()),
+            true,
+        );
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
             panic!("Expected SetBordersA1")
@@ -654,14 +645,12 @@ mod tests {
     #[test]
     fn test_borders_operations_rows() {
         let gc = GridController::test();
-        let ops = gc
-            .set_borders_a1_selection_operations(
-                A1Selection::test_a1("2:4"),
-                BorderSelection::Bottom,
-                Some(BorderStyle::default()),
-                true,
-            )
-            .unwrap();
+        let ops = gc.set_borders_a1_selection_operations(
+            A1Selection::test_a1("2:4"),
+            BorderSelection::Bottom,
+            Some(BorderStyle::default()),
+            true,
+        );
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
             panic!("Expected SetBordersA1")
@@ -680,14 +669,12 @@ mod tests {
     #[test]
     fn test_borders_operations_rects() {
         let gc = GridController::test();
-        let ops = gc
-            .set_borders_a1_selection_operations(
-                A1Selection::test_a1("B3:D5"),
-                BorderSelection::Outer,
-                Some(BorderStyle::default()),
-                true,
-            )
-            .unwrap();
+        let ops = gc.set_borders_a1_selection_operations(
+            A1Selection::test_a1("B3:D5"),
+            BorderSelection::Outer,
+            Some(BorderStyle::default()),
+            true,
+        );
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
             panic!("Expected SetBordersA1")
@@ -703,14 +690,12 @@ mod tests {
     fn test_borders_operations_reverse_range() {
         let gc = GridController::test();
 
-        let ops = gc
-            .set_borders_a1_selection_operations(
-                A1Selection::test_a1("D4:A1"),
-                BorderSelection::Top,
-                Some(BorderStyle::default()),
-                true,
-            )
-            .unwrap();
+        let ops = gc.set_borders_a1_selection_operations(
+            A1Selection::test_a1("D4:A1"),
+            BorderSelection::Top,
+            Some(BorderStyle::default()),
+            true,
+        );
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
             panic!("Expected SetBordersA1")
@@ -719,14 +704,12 @@ mod tests {
         assert_borders(&borders, pos![A1], "top");
         assert_borders(&borders, pos![D4], "");
 
-        let ops = gc
-            .set_borders_a1_selection_operations(
-                A1Selection::test_a1("D4:A1"),
-                BorderSelection::Bottom,
-                Some(BorderStyle::default()),
-                true,
-            )
-            .unwrap();
+        let ops = gc.set_borders_a1_selection_operations(
+            A1Selection::test_a1("D4:A1"),
+            BorderSelection::Bottom,
+            Some(BorderStyle::default()),
+            true,
+        );
         assert_eq!(ops.len(), 1);
         let Operation::SetBordersA1 { sheet_id, borders } = ops[0].clone() else {
             panic!("Expected SetBordersA1")

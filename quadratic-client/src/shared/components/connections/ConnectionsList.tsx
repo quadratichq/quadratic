@@ -1,7 +1,7 @@
 import { ConnectionsIcon } from '@/dashboard/components/CustomRadixIcons';
 import { useConfirmDialog } from '@/shared/components/ConfirmProvider';
 import { EmptyState } from '@/shared/components/EmptyState';
-import { AddIcon, CloseIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
+import { CloseIcon, ExploreSchemaIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import type {
@@ -9,7 +9,6 @@ import type {
   NavigateToCreateView,
   NavigateToView,
 } from '@/shared/components/connections/Connections';
-import { connectionsByType } from '@/shared/components/connections/connectionsByType';
 import { Button } from '@/shared/shadcn/ui/button';
 import { Input } from '@/shared/shadcn/ui/input';
 import { Skeleton } from '@/shared/shadcn/ui/skeleton';
@@ -17,7 +16,6 @@ import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import { timeAgo } from '@/shared/utils/timeAgo';
 import { Cross2Icon } from '@radix-ui/react-icons';
-import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
 import { useState } from 'react';
 import { useLocation } from 'react-router';
 
@@ -28,11 +26,13 @@ type Props = {
   handleNavigateToDetailsView: NavigateToView;
   handleNavigateToEditView: NavigateToView;
   handleShowConnectionDemo: (showConnectionDemo: boolean) => void;
+  handleNavigateToNewView: () => void;
 };
 
 export const ConnectionsList = ({
   connections,
   connectionsAreLoading,
+  handleNavigateToNewView,
   handleNavigateToCreateView,
   handleNavigateToDetailsView,
   handleNavigateToEditView,
@@ -42,23 +42,36 @@ export const ConnectionsList = ({
 
   return (
     <>
-      <div className="flex flex-col gap-4">
-        <div className="grid grid-cols-2 gap-4">
-          {Object.entries(connectionsByType).map(([type, { Logo }], i) => (
-            <Button
-              key={type}
-              variant="outline"
-              className="group relative h-auto w-full"
-              onClick={() => {
-                handleNavigateToCreateView(type as ConnectionType);
-              }}
-            >
-              <AddIcon className="absolute bottom-1 right-1 opacity-30 group-hover:opacity-100" />
-              <Logo className="h-[40px] w-[160px]" />
-            </Button>
-          ))}
+      <div className="grid gap-4">
+        <div className="flex gap-2">
+          <form
+            className="grid flex-grow gap-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+            }}
+          >
+            <div className="relative">
+              <Input
+                placeholder="Filter by name"
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                autoFocus
+              />
+              {filterQuery.length > 0 && (
+                <Button
+                  type="button"
+                  variant="link"
+                  aria-label="Clear"
+                  onClick={() => setFilterQuery('')}
+                  className="group absolute right-0 top-0"
+                >
+                  <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
+                </Button>
+              )}
+            </div>
+          </form>
+          <Button onClick={handleNavigateToNewView}>New connection</Button>
         </div>
-
         {connectionsAreLoading && (
           <div className="flex flex-col gap-2">
             <Skeleton className="h-[20px] w-full rounded" />
@@ -67,41 +80,13 @@ export const ConnectionsList = ({
         )}
 
         {!connectionsAreLoading && connections.length ? (
-          <>
-            <form
-              className="grid gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-              }}
-            >
-              <div className="relative">
-                <Input
-                  placeholder="Filter by name"
-                  value={filterQuery}
-                  onChange={(e) => setFilterQuery(e.target.value)}
-                  autoFocus
-                />
-                {filterQuery.length > 0 && (
-                  <Button
-                    type="button"
-                    variant="link"
-                    aria-label="Clear"
-                    onClick={() => setFilterQuery('')}
-                    className="group absolute right-0 top-0"
-                  >
-                    <Cross2Icon className="h-4 w-4 text-muted-foreground group-hover:text-foreground" />
-                  </Button>
-                )}
-              </div>
-            </form>
-            <ListItems
-              filterQuery={filterQuery}
-              items={connections}
-              handleNavigateToDetailsView={handleNavigateToDetailsView}
-              handleNavigateToEditView={handleNavigateToEditView}
-              handleShowConnectionDemo={handleShowConnectionDemo}
-            />
-          </>
+          <ListItems
+            filterQuery={filterQuery}
+            items={connections}
+            handleNavigateToDetailsView={handleNavigateToDetailsView}
+            handleNavigateToEditView={handleNavigateToEditView}
+            handleShowConnectionDemo={handleShowConnectionDemo}
+          />
         ) : (
           <EmptyState
             title="No connections"
@@ -182,7 +167,9 @@ function ListItems({
                 </div>
 
                 <div className="flex w-full min-w-0 flex-grow flex-col text-left">
-                  <span className="truncate text-sm">{name}</span>
+                  <span data-testid={`connection-name-${name}`} className="truncate text-sm">
+                    {name}
+                  </span>
 
                   {isDemo ? (
                     <span className="text-xs text-muted-foreground">Maintained by the Quadratic team</span>

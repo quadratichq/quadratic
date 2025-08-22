@@ -1,4 +1,4 @@
-import './python';
-import { pythonClient } from './pythonClient';
+import '@/app/web-workers/pythonWebWorker/worker/python';
+import { pythonClient } from '@/app/web-workers/pythonWebWorker/worker/pythonClient';
 
 pythonClient.start();

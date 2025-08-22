@@ -3,9 +3,9 @@ use std::ops::{Add, Mul, Neg, Sub};
 use std::str::FromStr;
 
 use anyhow::{Result, bail};
-use bigdecimal::{BigDecimal, ToPrimitive};
 use chrono::{DateTime, MappedLocalTime, NaiveDate, NaiveDateTime, NaiveTime, Utc};
 use regex::Regex;
+use rust_decimal::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum::VariantArray;
 
@@ -357,13 +357,13 @@ impl Duration {
 
     /// Constructs a duration lasting some number of days, automatically
     /// converting to `f64`.
-    pub fn from_days_bigdec(days: &BigDecimal) -> Self {
+    pub fn from_days_bigdec(days: &Decimal) -> Self {
         Self::from_days(days.to_f64().unwrap_or(0.0))
     }
 
     /// Constructs a duration lasting some number of hours, automatically
     /// converting to `f64`.
-    pub fn from_hours_bigdec(hours: &BigDecimal) -> Self {
+    pub fn from_hours_bigdec(hours: &Decimal) -> Self {
         Self::from_hours(hours.to_f64().unwrap_or(0.0))
     }
 
@@ -710,5 +710,11 @@ mod tests {
             (Duration::from_months(1) + Duration::from_days(-3.0)).to_fractional_days(),
             27.0,
         );
+    }
+
+    #[test]
+    fn test_duration_to_string() {
+        assert_eq!(Duration::from_seconds(5.0).to_string(), "5s");
+        assert_eq!(Duration::from_str("5s").unwrap().to_string(), "5s");
     }
 }

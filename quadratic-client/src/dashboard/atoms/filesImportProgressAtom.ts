@@ -1,7 +1,6 @@
 import { events } from '@/app/events/events';
 import type {
   CoreClientImportProgress,
-  CoreClientTransactionProgress,
   CoreClientTransactionStart,
 } from '@/app/web-workers/quadraticCore/coreClientMessages';
 import { filesImportProgressListAtom } from '@/dashboard/atoms/filesImportProgressListAtom';
@@ -18,14 +17,14 @@ export interface FileImportProgress {
   abortController?: AbortController;
 }
 
-interface FilesImportProgressState {
+export interface FilesImportProgressState {
   importing: boolean;
   createNewFile: boolean;
   currentFileIndex?: number;
   files: FileImportProgress[];
 }
 
-const defaultFilesImportProgressState: FilesImportProgressState = {
+export const defaultFilesImportProgressState: FilesImportProgressState = {
   importing: false,
   createNewFile: false,
   currentFileIndex: undefined,
@@ -45,7 +44,7 @@ export const filesImportProgressAtom = atom({
             if (prev instanceof DefaultValue) return prev;
             const updatedFiles = prev.files.map((file, index) => {
               if (index !== prev.currentFileIndex) return file;
-              const totalSteps = prev.createNewFile ? 3 : 2;
+              const totalSteps = prev.createNewFile ? 2 : 1;
               const newFile: FileImportProgress = {
                 ...file,
                 step: 'read',
@@ -66,7 +65,7 @@ export const filesImportProgressAtom = atom({
               if (prev instanceof DefaultValue) return prev;
               const updatedFiles = prev.files.map((file, index) => {
                 if (index !== prev.currentFileIndex) return file;
-                const totalSteps = prev.createNewFile ? 3 : 2;
+                const totalSteps = prev.createNewFile ? 2 : 1;
                 const newFile: FileImportProgress = {
                   ...file,
                   step: 'create',
@@ -84,41 +83,15 @@ export const filesImportProgressAtom = atom({
           }
         };
 
-        const handleTransactionProgress = (message: CoreClientTransactionProgress) => {
-          setSelf((prev) => {
-            if (prev instanceof DefaultValue) return prev;
-            const updatedFiles = prev.files.map((file) => {
-              if (file.transactionId !== message.transactionId) return file;
-              const transactionOps = Math.max(file.transactionOps ?? 1, message.remainingOperations + 1);
-              const totalSteps = prev.createNewFile ? 3 : 2;
-              const progress =
-                (Math.round((1 - (message.remainingOperations + 1) / transactionOps) * 100) + 100) / totalSteps;
-              const newFile: FileImportProgress = {
-                ...file,
-                step: 'create',
-                progress,
-                transactionOps,
-              };
-              return newFile;
-            });
-            return {
-              ...prev,
-              files: updatedFiles,
-            };
-          });
-        };
-
         if (!oldValue.importing && newValue.importing) {
           // add event listeners
           events.on('importProgress', handleImportProgress);
           events.on('transactionStart', handleTransactionStart);
-          events.on('transactionProgress', handleTransactionProgress);
         } else if (oldValue.importing && !newValue.importing) {
           const filesImportProgressListState = getLoadable(filesImportProgressListAtom);
           // remove event listeners
           events.off('importProgress', handleImportProgress);
           events.off('transactionStart', handleTransactionStart);
-          events.off('transactionProgress', handleTransactionProgress);
 
           // reset state
           if (!filesImportProgressListState.contents.show) {

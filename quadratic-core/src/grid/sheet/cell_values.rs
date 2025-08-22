@@ -33,46 +33,40 @@ impl Sheet {
     ) -> CellValues {
         let mut old = CellValues::new(cell_values.w, cell_values.h);
 
-        // add the values and return the old values
         for x in 0..cell_values.w {
             let grid_x = pos.x + x as i64;
 
             for y in 0..cell_values.h {
                 let grid_y = pos.y + y as i64;
 
-                let old_value = self.columns.set_value(
-                    &(grid_x, grid_y).into(),
-                    cell_values
-                        .get(x, y)
-                        .unwrap_or(&CellValue::Blank)
-                        .to_owned(),
-                );
+                let grid_pos = (grid_x, grid_y).into();
 
-                if let Some(old_value) = old_value {
-                    old.set(x, y, old_value);
-                }
-            }
-        }
-
-        for x in 0..cell_values.w {
-            let grid_x = pos.x + x as i64;
-            for y in 0..cell_values.h {
-                let grid_y = pos.y + y as i64;
-                let pos = Pos {
-                    x: grid_x,
-                    y: grid_y,
+                // set value in columns
+                match (self.columns.get_value(&grid_pos), cell_values.get(x, y)) {
+                    // old is blank and new is blank
+                    (None | Some(CellValue::Blank), None | Some(CellValue::Blank)) => (),
+                    // old is/isn't black and new isn't blank
+                    (_, Some(value)) => {
+                        let old_value = self.columns.set_value(&grid_pos, value.to_owned());
+                        old.set(x, y, old_value.unwrap_or(CellValue::Blank));
+                    }
+                    _ => (),
                 };
-                let sheet_pos = pos.to_sheet_pos(self.id);
-                if let Some(validation) = self.validations.validate(self, pos, a1_context) {
-                    let warning = JsValidationWarning {
-                        pos,
-                        validation: Some(validation.id),
-                        style: Some(validation.error.style.clone()),
-                    };
-                    transaction.validation_warning_added(self.id, warning);
+
+                // check for validation warnings
+                let sheet_pos = grid_pos.to_sheet_pos(self.id);
+                if let Some(validation) = self.validations.validate(self, grid_pos, a1_context) {
+                    transaction.validation_warning_added(
+                        self.id,
+                        JsValidationWarning {
+                            pos: grid_pos,
+                            validation: Some(validation.id),
+                            style: Some(validation.error.style.clone()),
+                        },
+                    );
                     self.validations.set_warning(sheet_pos, Some(validation.id));
-                } else if self.validations.has_warning(pos) {
-                    transaction.validation_warning_deleted(self.id, pos);
+                } else if self.validations.has_warning(grid_pos) {
+                    transaction.validation_warning_deleted(self.id, grid_pos);
                     self.validations.set_warning(sheet_pos, None);
                 }
             }
@@ -105,7 +99,7 @@ impl Sheet {
             for y in rect.min.y..=rect.max.y {
                 if let Some(value) = self.rendered_value(Pos { x, y }) {
                     let pos = Pos { x, y }.a1_string();
-                    cells.push(format!("{} is {}", pos, value));
+                    cells.push(format!("{pos} is {value}"));
                 }
             }
         }
@@ -122,7 +116,7 @@ impl Sheet {
             for y in rect.min.y..=rect.max.y {
                 let pos = Pos { x, y };
                 if let Some(format) = self.cell_text_format_as_string(pos) {
-                    formats.push(format!("{} is {:?}; ", pos, format));
+                    formats.push(format!("{pos} is {format:?}; "));
                 }
             }
         }
@@ -132,7 +126,6 @@ impl Sheet {
 
 #[cfg(test)]
 mod test {
-    use std::str::FromStr;
 
     use crate::{
         CellValue,
@@ -147,12 +140,12 @@ mod test {
             js_types::JsHashValidationWarnings,
             sheet::validations::{rules::ValidationRule, validation::Validation},
         },
+        number::decimal_from_str,
         test_create_gc,
         wasm_bindings::js::expect_js_call,
     };
 
     use super::*;
-    use bigdecimal::BigDecimal;
     use uuid::Uuid;
 
     #[test]
@@ -202,10 +195,7 @@ mod test {
     fn test_rendered_value() {
         let mut sheet = Sheet::test();
         let pos = Pos { x: 1, y: 1 };
-        sheet.set_cell_value(
-            pos,
-            CellValue::Number(BigDecimal::from_str("123.456").unwrap()),
-        );
+        sheet.set_cell_value(pos, CellValue::Number(decimal_from_str("123.456").unwrap()));
 
         sheet.formats.numeric_format.set(
             pos,

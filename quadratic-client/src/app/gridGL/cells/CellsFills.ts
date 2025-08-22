@@ -44,7 +44,7 @@ export class CellsFills extends Container {
 
     events.on('sheetFills', this.handleSheetFills);
     events.on('sheetMetaFills', this.handleSheetMetaFills);
-    events.on('sheetOffsets', this.drawSheetCells);
+    events.on('sheetOffsetsUpdated', this.drawSheetCells);
     events.on('cursorPosition', this.setDirty);
     events.on('resizeHeadingColumn', this.drawCells);
     events.on('resizeHeadingColumn', this.drawSheetCells);
@@ -56,7 +56,7 @@ export class CellsFills extends Container {
   destroy() {
     events.off('sheetFills', this.handleSheetFills);
     events.off('sheetMetaFills', this.handleSheetMetaFills);
-    events.off('sheetOffsets', this.drawSheetCells);
+    events.off('sheetOffsetsUpdated', this.drawSheetCells);
     events.off('cursorPosition', this.setDirty);
     events.off('resizeHeadingColumn', this.drawCells);
     events.off('resizeHeadingColumn', this.drawSheetCells);
@@ -194,7 +194,7 @@ export class CellsFills extends Container {
   // this is called by Table.ts
   updateAlternatingColors = (x: number, y: number, table?: JsRenderCodeCell) => {
     const key = `${x},${y}`;
-    if (table && table.alternating_colors && !table.is_html_image) {
+    if (table && table.h > 1 && table.alternating_colors && !table.is_html_image) {
       this.alternatingColors.set(key, table);
       this.dirtyTables = true;
     } else {

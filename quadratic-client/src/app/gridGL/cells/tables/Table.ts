@@ -1,6 +1,5 @@
 //! A table in the grid.
 
-import { sheets } from '@/app/grid/controller/Sheets';
 import type { Sheet } from '@/app/grid/sheet/Sheet';
 import { TableHeader } from '@/app/gridGL/cells/tables/TableHeader';
 import { TableOutline } from '@/app/gridGL/cells/tables/TableOutline';
@@ -64,13 +63,6 @@ export class Table extends Container {
     return cellsSheet.tables.hoverTableHeaders;
   }
 
-  activate = (active: boolean) => {
-    if (active === this.active) return;
-    this.active = active;
-    this.outline.update();
-    this.header.update(false);
-  };
-
   updateCodeCell = (codeCell?: JsRenderCodeCell) => {
     if (codeCell) {
       this.codeCell = codeCell;
@@ -82,7 +74,7 @@ export class Table extends Container {
       this.codeCell.spill_error ? 1 : this.codeCell.h
     );
     this.position.set(this.tableBounds.x, this.tableBounds.y);
-
+    this.hideIfNotVisible();
     this.header.update(false);
     this.outline.update();
 
@@ -108,14 +100,38 @@ export class Table extends Container {
       cellsMarkers.remove(this.codeCell.x, this.codeCell.y);
     }
 
-    if (
-      !this.codeCell.spill_error &&
-      // !this.codeCell.is_html_image &&
-      this.codeCell.show_name
-    ) {
+    if (!this.codeCell.spill_error && this.codeCell.show_name) {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y, this.codeCell.w, 1);
     } else {
       this.sheet.gridOverflowLines.updateImageHtml(this.codeCell.x, this.codeCell.y);
+    }
+  };
+
+  /// Based on any arbitrary viewport bounds, returns the bounds of the table header if it would be floating
+  calculateHeadingBounds = (bounds: Rectangle): Rectangle | undefined => {
+    const gridHeading = pixiApp.headings.headingSize.unscaledHeight;
+    const codeCell = this.codeCell;
+
+    // return undefined if the table is not floating
+    if (
+      codeCell.is_html ||
+      (!codeCell.show_name && !codeCell.show_columns) ||
+      this.tableBounds.top >= bounds.top + gridHeading
+    ) {
+      return;
+    }
+
+    const y = Math.min(this.header.bottomOfTable, this.tableBounds.y + bounds.top + gridHeading - this.tableBounds.top);
+    return new Rectangle(this.tableBounds.x, y, this.tableBounds.width, this.header.height);
+  };
+
+  private hideIfNotVisible = () => {
+    const bounds = pixiApp.viewport.getVisibleBounds();
+    if (!intersects.rectangleRectangle(this.tableBounds, bounds)) {
+      this.visible = false;
+      this.header.visible = false;
+      this.header.toGrid();
+      this.inOverHeadings = false;
     }
   };
 
@@ -133,14 +149,6 @@ export class Table extends Container {
       this.inOverHeadings = false;
     }
   };
-
-  intersectsCursor(x: number, y: number) {
-    if (this.codeCell.spill_error && (this.codeCell.x !== x || this.codeCell.y !== y)) {
-      return false;
-    }
-    const rect = new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1);
-    return intersects.rectanglePoint(rect, { x, y });
-  }
 
   // Checks whether the mouse cursor is hovering over the table or the table name
   checkHover = (world: Point): boolean => {
@@ -165,54 +173,44 @@ export class Table extends Container {
     if (this.inOverHeadings) this.header.update(true);
   }
 
-  hideActive() {
-    this.activate(false);
-    htmlCellsHandler.hideActive(this.codeCell);
-    pixiApp.setViewportDirty();
-  }
+  private activate = (active: boolean) => {
+    if (active === this.active) return;
+    this.active = active;
+    this.outline.update();
+    this.header.update(false);
+  };
 
   showActive() {
     this.activate(true);
     htmlCellsHandler.showActive(this.codeCell);
+    this.header.updateSelection();
     pixiApp.setViewportDirty();
   }
 
-  hideColumnHeaders(index: number) {
-    this.header.hideColumnHeaders(index);
+  hideActive() {
+    this.activate(false);
+    htmlCellsHandler.hideActive(this.codeCell);
+    this.header.updateSelection();
+    pixiApp.setViewportDirty();
   }
 
   showColumnHeaders() {
     this.header.showColumnHeaders();
   }
 
-  // Intersects a column/row rectangle
-  intersects = (rectangle: Rectangle): boolean => {
-    let width = this.codeCell.w;
-    let height = this.codeCell.h;
-    if (this.codeCell.spill_error || this.codeCell.state === 'RunError' || this.codeCell.state === 'SpillError') {
-      width = 1;
-      height = 1;
-    }
-    return intersects.rectangleRectangle(new Rectangle(this.codeCell.x, this.codeCell.y, width, height), rectangle);
-  };
+  hideColumnHeaders(index: number) {
+    this.header.hideColumnHeaders(index);
+  }
 
-  // Checks whether the cursor is on the table
-  isCursorOnDataTable(): boolean {
-    const cursor = sheets.sheet.cursor.position;
-    if (this.codeCell.spill_error) {
-      return this.codeCell.x === cursor.x && this.codeCell.y === cursor.y;
-    }
-    return intersects.rectanglePoint(
-      new Rectangle(this.codeCell.x, this.codeCell.y, this.codeCell.w - 1, this.codeCell.h - 1),
-      cursor
-    );
+  intersectsTableName(world: Point): TablePointerDownResult | undefined {
+    return this.header.intersectsTableName(world);
   }
 
   getTableNameBounds(ignoreOverHeadings = false): Rectangle | undefined {
     if (!this.codeCell.show_name) {
       return;
     }
-    const bounds = this.header.getTableNameBounds().clone();
+    const bounds = this.header.getTableNameBounds()?.clone();
     if (!ignoreOverHeadings && this.inOverHeadings) {
       const bounds = pixiApp.viewport.getVisibleBounds();
       bounds.y = bounds.top;
@@ -221,8 +219,12 @@ export class Table extends Container {
   }
 
   // Gets the column header bounds
-  getColumnHeaderBounds(index: number): Rectangle {
+  getColumnHeaderBounds(index: number): Rectangle | undefined {
     return this.header.getColumnHeaderBounds(index);
+  }
+
+  getSortDialogPosition(): JsCoordinate | undefined {
+    return this.header.getSortDialogPosition();
   }
 
   pointerMove(world: Point): 'table-name' | boolean {
@@ -254,14 +256,6 @@ export class Table extends Container {
     return this.codeCell.is_html_image && intersects.rectanglePoint(this.tableBounds, world);
   }
 
-  intersectsTableName(world: Point): TablePointerDownResult | undefined {
-    return this.header.intersectsTableName(world);
-  }
-
-  getSortDialogPosition(): JsCoordinate | undefined {
-    return this.header.getSortDialogPosition();
-  }
-
   // resizes an image or html table to its overlapping size
   resize(width: number, height: number) {
     this.tableBounds.width = width;
@@ -269,27 +263,4 @@ export class Table extends Container {
     this.outline.update();
     this.header.update(false);
   }
-
-  // Checks whether the cell is within the table
-  contains(cell: JsCoordinate): boolean {
-    // first check if we're even in the right x/y range
-    return (
-      cell.x >= this.codeCell.x &&
-      cell.y >= this.codeCell.y &&
-      cell.x < this.codeCell.x + this.codeCell.w &&
-      cell.y < this.codeCell.y + this.codeCell.h
-    );
-  }
-
-  shouldHideTableName(): boolean {
-    return !this.codeCell.show_name;
-  }
-
-  isCodeCell = (): boolean => {
-    return this.codeCell.language !== 'Import';
-  };
-
-  isSingleValue = (): boolean => {
-    return this.codeCell.w === 1 && this.codeCell.h === 1;
-  };
 }

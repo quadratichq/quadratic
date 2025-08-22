@@ -15,11 +15,7 @@ pub fn assert_data_table_at(dt: &DataTable, col: i64, row: i64, value: &str) {
         } else {
             Some(crate::CellValue::parse_from_str(value))
         },
-        "Cell at ({}, {}) does not have the value {:?}, it's actually {:?}",
-        col,
-        row,
-        value,
-        cell_value
+        "Cell at ({col}, {row}) does not have the value {value:?}, it's actually {cell_value:?}"
     );
 }
 
@@ -73,8 +69,7 @@ pub fn assert_data_table_eq(gc: &GridController, sheet_pos: SheetPos, dt: &DataT
     let data_table = sheet.data_table_at(&sheet_pos.into()).unwrap();
     assert_eq!(
         data_table, dt,
-        "Data table at {:?} is not equal to provided data table",
-        sheet_pos
+        "Data table at {sheet_pos:?} is not equal to provided data table"
     );
 }
 
@@ -94,17 +89,14 @@ pub fn assert_data_table_size(
 
     let sheet = gc.sheet(sheet_id);
     let Some(data_table) = sheet.data_table_at(&pos) else {
-        panic!("Data table at {} not found", pos);
+        panic!("Data table at {pos} not found");
     };
     let Some(cell_value) = sheet.cell_value(pos) else {
-        panic!("Anchor for data table at {} not found", pos);
+        panic!("Anchor for data table at {pos} not found");
     };
     match cell_value {
         CellValue::Import(_) | CellValue::Code(_) => (),
-        _ => panic!(
-            "Anchor for data table at {} is not a code or import cell",
-            pos
-        ),
+        _ => panic!("Anchor for data table at {pos} is not a code or import cell"),
     }
 
     if data_table.is_html_or_image() {
@@ -130,9 +122,7 @@ pub fn assert_data_table_size(
     assert_eq!(
         data_table.width(),
         width,
-        "Width of data table at {} is not {}",
-        pos,
-        width
+        "Width of data table at {pos} is not {width}"
     );
     assert_eq!(
         data_table.height(false) - adjust_height,
@@ -168,11 +158,10 @@ pub fn assert_data_table_sort_dirty(
     let sheet = gc.sheet(sheet_id);
     let data_table = sheet
         .data_table_at(&pos)
-        .unwrap_or_else(|| panic!("Data table at {} not found", pos));
+        .unwrap_or_else(|| panic!("Data table at {pos} not found"));
     assert_eq!(
         data_table.sort_dirty, sort_dirty,
-        "Sort data table at {} is not {}",
-        pos, sort_dirty
+        "Sort data table at {pos} is not {sort_dirty}"
     );
 }
 #[cfg(test)]

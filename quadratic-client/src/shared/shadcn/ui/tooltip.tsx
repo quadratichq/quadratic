@@ -1,6 +1,5 @@
 import { cn } from '@/shared/shadcn/utils';
-import type { PopoverContentProps } from '@radix-ui/react-popover';
-import * as TooltipPrimitive from '@radix-ui/react-tooltip';
+import { Tooltip as TooltipPrimitive } from 'radix-ui';
 import type { JSX } from 'react';
 import * as React from 'react';
 
@@ -45,7 +44,7 @@ const TooltipPopover = ({
   label: string;
   children: JSX.Element;
   shortcut?: string;
-  side?: PopoverContentProps['side'];
+  side?: React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>['side'];
   tooltipProps?: TooltipPrimitive.TooltipProps;
 }) => {
   return (

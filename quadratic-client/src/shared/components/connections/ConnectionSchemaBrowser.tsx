@@ -1,16 +1,18 @@
-import { ChevronRightIcon, RefreshIcon } from '@/shared/components/Icons';
+import { ChevronRightIcon, CloseIcon, RefreshIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Type } from '@/shared/components/Type';
 import { ROUTES } from '@/shared/constants/routes';
 import { CONTACT_URL } from '@/shared/constants/urls';
 import { useConnectionSchemaBrowser } from '@/shared/hooks/useConnectionSchemaBrowser';
 import { Button } from '@/shared/shadcn/ui/button';
+import { Input } from '@/shared/shadcn/ui/input';
 import { Label } from '@/shared/shadcn/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/shared/shadcn/ui/radio-group';
+import { Skeleton } from '@/shared/shadcn/ui/skeleton';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
 import { cn } from '@/shared/shadcn/utils';
 import type { ConnectionType } from 'quadratic-shared/typesAndSchemasConnections';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router';
 
 export const ConnectionSchemaBrowser = ({
@@ -28,6 +30,26 @@ export const ConnectionSchemaBrowser = ({
 }) => {
   const { data, isLoading, reloadSchema } = useConnectionSchemaBrowser({ type, uuid, teamUuid });
   const [selectedTableIndex, setSelectedTableIndex] = useState<number>(0);
+  const [filterQuery, setFilterQuery] = useState<string>('');
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const disabled = isLoading || data === undefined;
+  const filteredTables = useMemo(() => {
+    if (!data) return [];
+    const query = filterQuery.trim().toLowerCase();
+    if (!query) return data.tables;
+    return data.tables.filter(
+      (table) => table.name.toLowerCase().includes(query) || table.schema.toLowerCase().includes(query)
+    );
+  }, [data, filterQuery]);
+
+  useEffect(() => {
+    if (!data) return;
+    if (filteredTables.length === 0) {
+      setSelectedTableIndex(-1);
+      return;
+    }
+  }, [data, filteredTables]);
 
   if (type === undefined || uuid === undefined) return null;
 
@@ -36,31 +58,65 @@ export const ConnectionSchemaBrowser = ({
     <div
       className={cn('h-full overflow-auto text-sm', selfContained && 'h-96 overflow-auto rounded border border-border')}
     >
-      <div className={cn('sticky top-0 z-10 flex items-center justify-between bg-background px-2 py-1.5')}>
-        <div className="flex items-center gap-1 truncate">
-          {data && data.type ? (
-            <div className="flex h-6 w-6 flex-shrink-0 items-center">
-              <LanguageIcon language={data.type} />
-            </div>
-          ) : null}
-          <h3 className="truncate font-medium tracking-tight">{data?.name ? data.name : ''}</h3>
+      <div className="sticky top-0 z-10 mb-1.5 flex flex-col gap-1 bg-background px-2 pt-1.5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 truncate">
+            {data && data.type ? (
+              <>
+                <div className="flex h-6 w-6 flex-shrink-0 items-center">
+                  <LanguageIcon language={data.type} />
+                </div>
+                <h3 className="truncate font-medium tracking-tight">{data.name}</h3>
+              </>
+            ) : (
+              <Skeleton className="h-4 w-24" />
+            )}
+          </div>
+          <div className="flex flex-row-reverse items-center gap-1">
+            <TableQueryAction
+              query={
+                !isLoading && data && filteredTables[selectedTableIndex]
+                  ? getTableQuery({ table: filteredTables[selectedTableIndex], connectionKind: data.type })
+                  : ''
+              }
+            />
+            <TooltipPopover label="Reload schema">
+              <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
+                <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+              </Button>
+            </TooltipPopover>
+          </div>
         </div>
-        <div className="flex flex-row-reverse items-center gap-1">
-          {data && !data.tables[selectedTableIndex] && <div className="text-center">No tables in this connection</div>}
-          <TableQueryAction
-            query={
-              !isLoading && data && data.tables[selectedTableIndex]
-                ? getTableQuery({ table: data.tables[selectedTableIndex], connectionKind: data.type })
-                : ''
-            }
+        <div className="relative">
+          <Input
+            ref={inputRef}
+            value={filterQuery}
+            onChange={(e) => {
+              setFilterQuery(e.target.value);
+              setSelectedTableIndex(0);
+            }}
+            placeholder="Filter tables"
+            className="h-8"
+            disabled={disabled}
           />
-          <TooltipPopover label="Reload schema">
-            <Button onClick={reloadSchema} variant="ghost" size="icon-sm" className="text-muted-foreground">
-              <RefreshIcon className={cn(isLoading && 'animate-spin')} />
+          {filterQuery && (
+            <Button
+              disabled={disabled}
+              variant="ghost"
+              size="icon-sm"
+              className="absolute right-0 top-0 h-8 w-8 !bg-transparent text-muted-foreground hover:text-foreground"
+              onClick={() => {
+                setFilterQuery('');
+                setSelectedTableIndex(0);
+                inputRef.current?.focus();
+              }}
+            >
+              <CloseIcon />
             </Button>
-          </TooltipPopover>
+          )}
         </div>
       </div>
+
       {isLoading && data === undefined && (
         <div className="mb-4 flex min-h-16 items-center justify-center text-muted-foreground">Loading…</div>
       )}
@@ -74,8 +130,8 @@ export const ConnectionSchemaBrowser = ({
           }}
           className="block"
         >
-          {data.tables.map((table, i) => (
-            <TableListItem index={i} selfContained={selfContained} data={table} key={i} />
+          {filteredTables.map((table, index) => (
+            <TableListItem index={index} selfContained={selfContained} data={table} key={index} />
           ))}
         </RadioGroup>
       )}
@@ -193,12 +249,22 @@ function getTableQuery({ table: { name, schema }, connectionKind }: { table: Tab
   switch (connectionKind) {
     case 'POSTGRES':
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'COCKROACHDB':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'SUPABASE':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'NEON':
+      return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
     case 'MYSQL':
+      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
+    case 'MARIADB':
       return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
     case 'MSSQL':
       return `SELECT TOP 100 * FROM [${schema}].[${name}]`;
     case 'SNOWFLAKE':
       return `SELECT * FROM "${schema}"."${name}" LIMIT 100`;
+    case 'BIGQUERY':
+      return `SELECT * FROM \`${schema}\`.\`${name}\` LIMIT 100`;
     default:
       return '';
   }

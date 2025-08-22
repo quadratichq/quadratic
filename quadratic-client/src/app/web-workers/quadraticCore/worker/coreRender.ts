@@ -5,7 +5,7 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
 import type { TransactionName } from '@/app/quadratic-core-types';
 import type {
   CoreRenderMessage,
@@ -34,14 +34,14 @@ declare var self: WorkerGlobalScope &
 class CoreRender {
   private coreRenderPort?: MessagePort;
 
-  init(renderPort: MessagePort) {
+  async init(renderPort: MessagePort) {
     this.coreRenderPort = renderPort;
     this.coreRenderPort.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[coreRender] initialized');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[coreRender] initialized');
   }
 
   private handleMessage = (e: MessageEvent<RenderCoreMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[coreRender] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[coreRender] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'renderCoreRequestRenderCells':
@@ -70,7 +70,7 @@ class CoreRender {
   }
 
   private async getRenderCells(request: RenderCoreRequestRenderCells) {
-    const data = await core.getRenderCells(request);
+    const data = core.getRenderCells(request);
     this.send({ type: 'coreRenderRenderCells', id: request.id, data }, data?.buffer);
   }
 

@@ -1,4 +1,3 @@
-import { SubscriptionStatus } from '@prisma/client';
 import type { Response } from 'express';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import z from 'zod';
@@ -14,6 +13,7 @@ import { validateAccessToken } from '../../middleware/validateAccessToken';
 import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import type { RequestWithUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getIsOnPaidPlan } from '../../utils/billing';
 
 export default [
   validateRequestSchema(
@@ -61,8 +61,8 @@ async function handler(req: RequestWithUser, res: Response<ApiTypes['/v0/teams/:
 
   // Check if the user is member of this team and team is on a paid plan
   if (userTeamRole) {
-    const isOnPaidTeam = team.stripeSubscriptionStatus === SubscriptionStatus.ACTIVE;
-    if (isOnPaidTeam) {
+    const isOnPaidPlan = await getIsOnPaidPlan(team);
+    if (isOnPaidPlan) {
       return res.status(200).json({ exceededBillingLimit: false });
     }
   }

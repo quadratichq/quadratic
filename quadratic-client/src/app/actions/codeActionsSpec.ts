@@ -1,10 +1,12 @@
+import { isAvailableBecauseCanEditFile } from '@/app/actions';
 import { Action } from '@/app/actions/actions';
 import type { ActionSpecRecord } from '@/app/actions/actionsSpec';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { javascriptWebWorker } from '@/app/web-workers/javascriptWebWorker/javascriptWebWorker';
 import { pythonWebWorker } from '@/app/web-workers/pythonWebWorker/pythonWebWorker';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { SaveAndRunIcon } from '@/shared/components/Icons';
 
 type CodeActionSpec = Pick<
   ActionSpecRecord,
@@ -17,36 +19,50 @@ export const cancelExecution = () => {
 };
 
 export const executeCode = () => {
-  const { x, y } = sheets.sheet.cursor.position;
-  const table = pixiApp.cellsSheet().tables.getTableFromTableCell(x, y);
-  if (table?.isCodeCell()) {
-    quadraticCore.rerunCodeCells(sheets.current, table.codeCell.x, table.codeCell.y, sheets.getCursorPosition());
-  }
+  const selection = sheets.sheet.cursor.a1String();
+  quadraticCore.rerunCodeCells(sheets.current, selection, sheets.getCursorPosition());
 };
 
 export const rerunSheetCode = () => {
-  quadraticCore.rerunCodeCells(sheets.current, undefined, undefined, sheets.getCursorPosition());
+  quadraticCore.rerunCodeCells(sheets.current, undefined, sheets.getCursorPosition());
 };
 
 export const rerunAllCode = () => {
-  quadraticCore.rerunCodeCells(undefined, undefined, undefined, sheets.getCursorPosition());
+  quadraticCore.rerunCodeCells(undefined, undefined, sheets.getCursorPosition());
 };
 
 export const codeActionsSpec: CodeActionSpec = {
   [Action.CancelExecution]: {
     label: () => 'Cancel execution',
-    run: cancelExecution,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      cancelExecution();
+    },
   },
   [Action.ExecuteCode]: {
-    label: () => 'Execute code',
-    run: executeCode,
+    label: () => 'Run code',
+    Icon: SaveAndRunIcon,
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      executeCode();
+    },
   },
   [Action.RerunSheetCode]: {
-    label: () => 'Rerun sheet code',
-    run: rerunSheetCode,
+    label: () => 'Run sheet code',
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      rerunSheetCode();
+    },
   },
   [Action.RerunAllCode]: {
-    label: () => 'Rerun all code',
-    run: rerunAllCode,
+    label: () => 'Run all code',
+    isAvailable: isAvailableBecauseCanEditFile,
+    run: () => {
+      pixiAppSettings.setContextMenu?.({});
+      rerunAllCode();
+    },
   },
 };

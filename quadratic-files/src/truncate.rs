@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub(crate) fn processed_transaction_key(file_id: &str, sequence_num: &str) -> String {
-    format!("{}.{}", file_id, sequence_num)
+    format!("{file_id}.{sequence_num}")
 }
 
 pub(crate) fn parse_processed_transaction_key(key: &[u8]) -> Result<(String, String)> {
@@ -169,9 +169,7 @@ mod tests {
             assert_eq!(
                 messages.len(),
                 expected,
-                "expected file {} to have {} messages",
-                file_id,
-                expected
+                "expected file {file_id} to have {expected} messages"
             );
         }
     }

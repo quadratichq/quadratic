@@ -12,6 +12,7 @@ import { BordersHook } from '@/app/ui/menus/CommandPalette/commands/Borders';
 import codeCommandGroup from '@/app/ui/menus/CommandPalette/commands/Code';
 import { columnCommandGroup, rowCommandGroup } from '@/app/ui/menus/CommandPalette/commands/ColumnRow';
 import connectionsCommandGroup from '@/app/ui/menus/CommandPalette/commands/Connections';
+import dataTableCommandGroup from '@/app/ui/menus/CommandPalette/commands/DataTable';
 import editCommandGroup from '@/app/ui/menus/CommandPalette/commands/Edit';
 import fileCommandGroup from '@/app/ui/menus/CommandPalette/commands/File';
 import formatCommandGroup from '@/app/ui/menus/CommandPalette/commands/Format';
@@ -24,11 +25,10 @@ import viewCommandGroup from '@/app/ui/menus/CommandPalette/commands/View';
 import { useRootRouteLoaderData } from '@/routes/_root';
 import { useFileRouteLoaderData } from '@/shared/hooks/useFileRouteLoaderData';
 import { CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from '@/shared/shadcn/ui/command';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import fuzzysort from 'fuzzysort';
-import mixpanel from 'mixpanel-browser';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRecoilState, useRecoilValue, useSetRecoilState } from 'recoil';
-import dataTableCommandGroup from './commands/DataTable';
 
 export const CommandPalette = () => {
   const [showCommandPalette, setShowCommandPalette] = useRecoilState(editorInteractionStateShowCommandPaletteAtom);
@@ -52,7 +52,7 @@ export const CommandPalette = () => {
   }, [setAnnotationState]);
 
   useEffect(() => {
-    mixpanel.track('[CommandPalette].open');
+    trackEvent('[CommandPalette].open');
   }, []);
 
   const borderCommandGroup = BordersHook();

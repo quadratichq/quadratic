@@ -1,14 +1,13 @@
 use super::*;
 use crate::grid::js_types::*;
+
 use crate::wasm_bindings::controller::sheet_info::SheetInfo;
-use js_sys::{ArrayBuffer, Uint8Array};
 use std::str::FromStr;
 use util::set_panic_hook;
 
 pub mod ai_context;
 pub mod auto_complete;
 pub mod borders;
-pub mod bounds;
 pub mod cells;
 pub mod clipboard;
 pub mod code;
@@ -25,7 +24,6 @@ pub mod sheets;
 pub mod summarize;
 pub mod transactions;
 pub mod validation;
-pub mod worker;
 
 #[wasm_bindgen]
 impl GridController {
@@ -60,7 +58,7 @@ impl GridController {
                                 SheetInfo::from(sheet)
                             })
                         })
-                        .collect::<Vec<SheetInfo>>();
+                        .collect::<Vec<_>>();
                     if let Ok(sheets_info) = serde_json::to_vec(&sheets_info) {
                         crate::wasm_bindings::js::jsSheetInfo(sheets_info);
                     }
@@ -70,6 +68,12 @@ impl GridController {
                         grid.send_all_fills(*sheet_id);
 
                         if let Some(sheet) = grid.try_sheet(*sheet_id) {
+                            // sends SheetContentCache to the client
+                            sheet.send_content_cache();
+
+                            // sends SheetDataTablesCache to the client
+                            sheet.send_data_tables_cache();
+
                             // sends all code cells to the client
                             sheet.send_all_render_code_cells();
 
@@ -87,16 +91,15 @@ impl GridController {
                         }
                     });
 
-                    if !html.is_empty() {
-                        if let Ok(html) = serde_json::to_vec(&html) {
+                    if !html.is_empty()
+                        && let Ok(html) = serde_json::to_vec(&html) {
                             crate::wasm_bindings::js::jsHtmlOutput(html);
                         }
-                    }
                     drop(html);
                 }
                 Ok(grid)
             }
-            Err(e) => Err(JsValue::from_str(&format!("Failed to import grid: {}", e))),
+            Err(e) => Err(JsValue::from_str(&format!("Failed to import grid: {e}"))),
         }
     }
 
@@ -106,22 +109,22 @@ impl GridController {
         GridController::test()
     }
 
-    /// Exports a [`GridController`] to a file (consumes the grid). Returns a `ArrayBuffer`.
+    /// Exports a [`GridController`] to a file (consumes the grid). Returns a `Vec<u8>`.
     /// This is useful when exporting the grid to a file from dashboard, saves memory while exporting.
     #[wasm_bindgen(js_name = "exportGridToFile")]
-    pub fn js_export_grid_to_file(self) -> Result<ArrayBuffer, JsValue> {
+    pub fn js_export_grid_to_file(self) -> Result<Vec<u8>, JsValue> {
         match file::export(self.into_grid()) {
-            Ok(file) => Ok(Uint8Array::from(&file[..]).buffer()),
+            Ok(file) => Ok(file),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }
 
-    /// Exports a [`GridController`] to a file (exports the grid using clone). Returns a `ArrayBuffer`.
+    /// Exports a [`GridController`] to a file (exports the grid using clone). Returns a `Vec<u8>`.
     /// This is required when exporting the open file from app, requires a clone because the grid is still being used.
     #[wasm_bindgen(js_name = "exportOpenGridToFile")]
-    pub fn js_export_open_grid_to_file(&self) -> Result<ArrayBuffer, JsValue> {
+    pub fn js_export_open_grid_to_file(&self) -> Result<Vec<u8>, JsValue> {
         match file::export(self.grid().clone()) {
-            Ok(file) => Ok(Uint8Array::from(&file[..]).buffer()),
+            Ok(file) => Ok(file),
             Err(e) => Err(JsValue::from_str(&e.to_string())),
         }
     }

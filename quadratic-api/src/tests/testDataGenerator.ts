@@ -193,7 +193,7 @@ export async function createAIChat(
   const messages = data.messages ?? [
     {
       messageIndex: 1,
-      model: 'bedrock-anthropic:claude:thinking-toggle-off',
+      model: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
       messageType: 'userPrompt' as const,
     },
   ];
@@ -222,7 +222,7 @@ export async function upgradeTeamToPro(teamId?: number) {
     data: {
       stripeSubscriptionId: null,
       stripeSubscriptionStatus: 'ACTIVE',
-      stripeCurrentPeriodEnd: null,
+      stripeCurrentPeriodEnd: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
       stripeSubscriptionLastUpdated: null,
     },
   });

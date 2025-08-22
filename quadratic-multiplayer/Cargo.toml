@@ -1,6 +1,6 @@
 [package]
 name = "quadratic-multiplayer"
-version = "0.10.1"
+version = "0.16.4"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
@@ -47,7 +47,7 @@ tokio-tungstenite = "0.26"
 tower = { version = "0.5.2", features = ["util"] }
 tower-http = { version = "0.6.2", features = ["fs", "trace"] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]

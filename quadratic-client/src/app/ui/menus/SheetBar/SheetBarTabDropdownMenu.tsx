@@ -15,8 +15,8 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/shared/shadcn/ui/dropdown-menu';
+import { trackEvent } from '@/shared/utils/analyticsEvents';
 import '@szhsin/react-menu/dist/index.css';
-import mixpanel from 'mixpanel-browser';
 import type { JSX } from 'react';
 import type { ColorResult } from 'react-color';
 
@@ -50,7 +50,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         {numberOfSheets > 1 && (
           <DropdownMenuItem
             onClick={() => {
-              mixpanel.track('[Sheets].delete');
+              trackEvent('[Sheets].delete');
               sheets.userDeleteSheet(sheets.current);
               setTimeout(focusGrid);
             }}
@@ -60,7 +60,7 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         )}
         <DropdownMenuItem
           onClick={() => {
-            mixpanel.track('[Sheets].duplicate');
+            trackEvent('[Sheets].duplicate');
             sheets.duplicate();
             focusGrid();
           }}
@@ -100,7 +100,9 @@ export const SheetBarTabDropdownMenu = (props: Props): JSX.Element => {
         >
           Rename
         </DropdownMenuItem>
+
         <DropdownMenuSeparator />
+
         <DropdownMenuItem
           disabled={sheets.getFirst().id === sheets.current}
           onClick={() => {

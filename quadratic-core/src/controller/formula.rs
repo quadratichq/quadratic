@@ -224,7 +224,7 @@ mod tests {
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
                         CellRefCoord::new_rel(1),
-                        CellRefCoord::UNBOUNDED,
+                        CellRefCoord::REL_UNBOUNDED,
                     ),
                     explicit_sheet_name: false,
                 },
@@ -245,9 +245,9 @@ mod tests {
                 cell_ref: SheetCellRefRange {
                     sheet_id,
                     cells: CellRefRange::new_sheet_ref(
-                        CellRefCoord::START,
+                        CellRefCoord::REL_START,
                         CellRefCoord::new_rel(2),
-                        CellRefCoord::UNBOUNDED,
+                        CellRefCoord::REL_UNBOUNDED,
                         CellRefCoord::new_rel(3),
                     ),
                     explicit_sheet_name: false,

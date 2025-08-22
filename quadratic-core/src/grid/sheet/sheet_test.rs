@@ -6,18 +6,17 @@ use crate::{
     Array, ArraySize, CellValue, Pos, Value,
     cellvalue::Import,
     grid::{CodeCellLanguage, CodeCellValue, CodeRun, DataTable, DataTableKind},
+    number::decimal_from_str,
 };
-use bigdecimal::BigDecimal;
-use std::str::FromStr;
 
 #[cfg(test)]
 impl Sheet {
-    /// Sets a test value in the sheet of &str converted to a BigDecimal.
+    /// Sets a test value in the sheet of &str converted to a Decimal.
     pub fn test_set_value_number(&mut self, x: i64, y: i64, s: &str) {
         if s.is_empty() {
             return;
         }
-        let value = if let Ok(bd) = BigDecimal::from_str(s) {
+        let value = if let Ok(bd) = decimal_from_str(s) {
             CellValue::Number(bd)
         } else {
             CellValue::Text(s.to_string())
@@ -81,9 +80,9 @@ impl Sheet {
         );
     }
 
-    /// Sets a code run and CellValue::Code with an empty code string and a single value BigDecimal::from_str(n) result.
+    /// Sets a code run and CellValue::Code with an empty code string and a single value from_str(n) result.
     pub fn test_set_code_run_number(&mut self, x: i64, y: i64, n: &str) {
-        self.test_set_code_run_single(x, y, CellValue::Number(BigDecimal::from_str(n).unwrap()));
+        self.test_set_code_run_single(x, y, CellValue::Number(decimal_from_str(n).unwrap()));
     }
 
     /// Sets a code run array with code string of "" and an array output of the given values.
@@ -96,15 +95,15 @@ impl Sheet {
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
             if !s.is_empty() {
-                let value = if let Ok(bd) = BigDecimal::from_str(s) {
+                let value = if let Ok(bd) = decimal_from_str(s) {
                     CellValue::Number(bd)
                 } else {
                     CellValue::Text(s.to_string())
                 };
                 if vertical {
-                    let _ = array.set(0, i as u32, value);
+                    let _ = array.set(0, i as u32, value, false);
                 } else {
-                    let _ = array.set(i as u32, 0, value);
+                    let _ = array.set(i as u32, 0, value, false);
                 }
             }
         }
@@ -133,7 +132,7 @@ impl Sheet {
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table1",
-                Value::Array(array),
+                array.into(),
                 false,
                 Some(false),
                 Some(false),
@@ -157,12 +156,12 @@ impl Sheet {
         let mut array = Array::new_empty(array_size);
         for (i, s) in n.iter().enumerate() {
             if !s.is_empty() {
-                let value = if let Ok(bd) = BigDecimal::from_str(s) {
+                let value = if let Ok(bd) = decimal_from_str(s) {
                     CellValue::Number(bd)
                 } else {
                     CellValue::Text(s.to_string())
                 };
-                array.set(i as u32 % w, i as u32 / w, value).unwrap();
+                array.set(i as u32 % w, i as u32 / w, value, false).unwrap();
             }
         }
 
@@ -183,7 +182,7 @@ impl Sheet {
             Some(DataTable::new(
                 DataTableKind::CodeRun(code_run),
                 "Table1",
-                Value::Array(array),
+                array.into(),
                 false,
                 Some(false),
                 Some(false),
@@ -296,11 +295,7 @@ impl Sheet {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
-
-    use crate::{CellValue, Pos, grid::Sheet};
+    use crate::{CellValue, Pos, grid::Sheet, number::decimal_from_str};
 
     #[test]
     fn test_set_value() {
@@ -308,7 +303,7 @@ mod tests {
         sheet.test_set_value_number(0, 0, "1");
         assert_eq!(
             sheet.cell_value_ref(Pos { x: 0, y: 0 }),
-            Some(&CellValue::Number(BigDecimal::from(1)))
+            Some(&CellValue::Number(1.into()))
         );
         sheet.test_set_value_number(0, 0, "hello");
         assert_eq!(
@@ -323,19 +318,19 @@ mod tests {
         sheet.test_set_values(0, 0, 2, 2, vec!["1", "2", "3", "4"]);
         assert_eq!(
             sheet.cell_value_ref(Pos { x: 0, y: 0 }),
-            Some(&CellValue::Number(BigDecimal::from(1)))
+            Some(&CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.cell_value_ref(Pos { x: 1, y: 0 }),
-            Some(&CellValue::Number(BigDecimal::from(2)))
+            Some(&CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.cell_value_ref(Pos { x: 0, y: 1 }),
-            Some(&CellValue::Number(BigDecimal::from(3)))
+            Some(&CellValue::Number(3.into()))
         );
         assert_eq!(
             sheet.cell_value_ref(Pos { x: 1, y: 1 }),
-            Some(&CellValue::Number(BigDecimal::from(4)))
+            Some(&CellValue::Number(4.into()))
         );
 
         sheet.test_set_values(-10, -10, 2, 2, vec!["a", "b", "c", "d"]);
@@ -377,15 +372,15 @@ mod tests {
         sheet.test_set_code_run_array(1, 1, vec!["1", "2", "3"], false);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 3, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
     }
 
@@ -395,25 +390,25 @@ mod tests {
         sheet.test_set_code_run_array(1, 1, vec!["1", "2", "3"], true);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 3 }),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
     }
 
     #[test]
     fn test_set_code_run_empty() {
         let mut sheet = Sheet::test();
-        sheet.test_set_code_run_number(0, 0, "11");
+        sheet.test_set_code_run_number(1, 1, "11");
         assert_eq!(
-            sheet.display_value(Pos { x: 0, y: 0 }),
-            Some(CellValue::Number(BigDecimal::from_str("11").unwrap()))
+            sheet.display_value(Pos { x: 1, y: 1 }),
+            Some(CellValue::Number(decimal_from_str("11").unwrap()))
         );
     }
 
@@ -430,19 +425,19 @@ mod tests {
         sheet.test_set_code_run_array_2d(1, 1, 2, 2, vec!["1", "2", "3", "4"]);
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(1)))
+            Some(CellValue::Number(1.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 1 }),
-            Some(CellValue::Number(BigDecimal::from(2)))
+            Some(CellValue::Number(2.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 1, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(3)))
+            Some(CellValue::Number(3.into()))
         );
         assert_eq!(
             sheet.display_value(Pos { x: 2, y: 2 }),
-            Some(CellValue::Number(BigDecimal::from(4)))
+            Some(CellValue::Number(4.into()))
         );
     }
 }

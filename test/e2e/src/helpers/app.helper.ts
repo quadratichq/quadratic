@@ -1,22 +1,22 @@
-import { type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+import { gotoCells } from './sheet.helper';
 
 /*
  * Navigates to a specified [Column, Row] in a spreadsheet-like interface on a webpage, then fills in the cell with desired text
  * and arrows down to the next cell
  */
 type TypeInCellOptions = {
-  targetColumn: number;
-  targetRow: number;
+  a1: string;
   text: string;
 };
-export const typeInCell = async (page: Page, { targetColumn, targetRow, text }: TypeInCellOptions) => {
-  await navigateOnSheet(page, { targetColumn, targetRow });
+export const typeInCell = async (page: Page, { a1, text }: TypeInCellOptions) => {
+  await gotoCells(page, { a1 });
   // type some text
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(5 * 1000);
+  await page.waitForTimeout(2 * 1000);
   await page.keyboard.type(text, { delay: 250 });
   await page.keyboard.press('Enter');
-  await page.waitForTimeout(5 * 1000);
+  await page.waitForTimeout(2 * 1000);
 };
 
 /**
@@ -34,7 +34,7 @@ export const navigateOnSheet = async (
   // Click canvas if needed
   if (!skipCanvasClick) {
     try {
-      await page.locator(`#QuadraticCanvasID`).click();
+      await page.locator(`#QuadraticCanvasID`).click({ timeout: 60 * 1000 });
       await page.waitForTimeout(100);
     } catch (err) {
       console.error(err);
@@ -158,7 +158,7 @@ export const displayMouseCoords = async (page: Page, { offsets }: DisplayMouseCo
  * Helper Function to clear code editor
  */
 export const clearCodeEditor = async (page: Page) => {
-  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click();
+  await page.locator(`[id="QuadraticCodeEditorID"] section:visible`).click({ timeout: 60 * 1000 });
   // Click Control + A to Select All, then Backspace to Clear
   await page.keyboard.press('Control+A');
   await page.keyboard.press('Backspace');
@@ -180,27 +180,34 @@ export const cleanUpServerConnections = async (page: Page, { connectionName }: C
 
   // Press "/"
   await page.keyboard.press('/');
-  await page.locator(`span:text-is("Add or manage…")`).click();
-
-  if (await page.getByRole(`heading`, { name: `No connections` }).isVisible()) {
-    return;
-  }
+  await page.locator(`span:text-is("Add or manage…")`).click({ timeout: 60 * 1000 });
 
   // filter file by name
   await page.locator('[placeholder="Filter by name"]').waitFor();
   await page.locator('[placeholder="Filter by name"]').fill(connectionName);
   await page.waitForTimeout(2500);
 
+  const connectionNameLocator = page.locator(`span[data-testid="connection-name-${connectionName}"]`);
+
+  const connectionCount = await connectionNameLocator.count();
+  if (connectionCount === 0) {
+    return;
+  }
+
   // loop through and delete all the connections
-  const connectionCount = await page.locator(`form + div > div`).count();
   for (let i = 0; i < connectionCount; i++) {
-    await page.locator(`button:has-text("${connectionName}") div`).first().click();
-    await page.getByRole(`button`, { name: `Delete` }).click();
+    await page
+      .locator(`button:has-text("${connectionName}") div`)
+      .first()
+      .click({ timeout: 60 * 1000 });
+    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(1000);
     // Confirm delete action
-    await page.getByRole(`button`, { name: `Delete` }).click();
+    await page.getByRole(`button`, { name: `Delete` }).click({ timeout: 60 * 1000 });
     await page.waitForTimeout(1000);
   }
+
+  expect(await connectionNameLocator.count()).toBe(0);
 };
 
 /**
@@ -220,6 +227,6 @@ export const showCodeEditorConsole = async (page: Page, { targetColumn, targetRo
   await page.waitForTimeout(3000);
 
   // Click on 'Console' tab
-  await page.getByRole(`tab`, { name: `Console` }).click();
+  await page.getByRole(`tab`, { name: `Console` }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 };

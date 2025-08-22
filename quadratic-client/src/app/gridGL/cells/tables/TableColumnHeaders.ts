@@ -130,48 +130,32 @@ export class TableColumnHeaders extends Container {
     quadraticCore.sortDataTable(sheets.current, table.x, table.y, sort, sheets.getCursorPosition());
   };
 
-  private createColumnHeaders() {
-    if (!this.table.codeCell.show_columns || this.table.codeCell.is_html_image) {
+  private createColumnHeaders = () => {
+    this.columns.removeChildren();
+
+    const codeCell = this.table.codeCell;
+
+    if (!codeCell.show_columns) {
       this.columns.visible = false;
       return;
     }
-    while (this.columns.children.length > this.table.codeCell.columns.filter((c) => c.display).length) {
-      this.columns.children.pop();
-    }
-    let x = 0;
-    let displayIndex = 0;
-    const codeCell = this.table.codeCell;
-    codeCell.columns.forEach((column) => {
-      const columnHeader = this.columns.children.find((c) => c.index === column.valueIndex);
 
-      if (!column.display) {
-        if (columnHeader) {
-          this.columns.removeChild(columnHeader);
-          columnHeader.destroy();
-        }
-        return;
-      }
+    this.columns.visible = true;
 
-      const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + displayIndex);
-      const columnY = codeCell.show_name ? this.table.sheet.offsets.getRowHeight(codeCell.y) : 0;
-      if (columnHeader) {
-        // existing column, update it
-        columnHeader.updateHeader({
-          x,
-          width,
-          height: this.columnsHeight,
-          name: column.name,
-          sort: codeCell.sort?.find((s) => s.column_index === column.valueIndex),
-          dirtySort: codeCell.sort_dirty,
-          columnY,
-        });
-      } else {
-        // new column, add it
+    const columnY = codeCell.show_name ? this.table.sheet.offsets.getRowHeight(codeCell.y) : 0;
+
+    let displayX = 0;
+
+    codeCell.columns
+      .filter((c) => c.display)
+      .forEach((column, displayIndex) => {
+        const width = this.table.sheet.offsets.getColumnWidth(codeCell.x + displayIndex);
+
         this.columns.addChild(
           new TableColumnHeader({
             table: this.table,
             index: column.valueIndex,
-            x,
+            x: displayX,
             width,
             height: this.columnsHeight,
             name: column.name,
@@ -181,17 +165,15 @@ export class TableColumnHeaders extends Container {
             columnY,
           })
         );
-      }
 
-      x += width;
-      displayIndex++;
-    });
-  }
+        displayX += width;
+      });
+  };
 
   // update appearance when there is an updated code cell
-  update() {
+  update = () => {
     const codeCell = this.table.codeCell;
-    if (codeCell.show_columns && !codeCell.spill_error) {
+    if (codeCell.show_columns) {
       this.visible = true;
       this.columnsHeight = this.table.sheet.offsets.getRowHeight(codeCell.y + (codeCell.show_name ? 1 : 0));
       this.drawBackground();
@@ -199,7 +181,7 @@ export class TableColumnHeaders extends Container {
     } else {
       this.visible = false;
     }
-  }
+  };
 
   clearSortButtons(current?: TableColumnHeader) {
     this.columns.children.forEach((column) => {

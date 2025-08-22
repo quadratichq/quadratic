@@ -57,8 +57,8 @@ impl GridController {
 
             sheet.delete_columns(transaction, columns, copy_formats, &self.a1_context);
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.x = min_column;
 
@@ -77,10 +77,9 @@ impl GridController {
                                 .map(|&column| RefAdjust::new_delete_column(sheet_id, column))
                                 .collect_vec(),
                         );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -122,8 +121,8 @@ impl GridController {
 
             sheet.delete_rows(transaction, rows, copy_formats, &self.a1_context)?;
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.y = min_row;
 
@@ -142,10 +141,9 @@ impl GridController {
                                 .map(|&row| RefAdjust::new_delete_row(sheet_id, row))
                                 .collect_vec(),
                         );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
         Ok(())
     }
@@ -204,8 +202,8 @@ impl GridController {
                 return;
             }
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.x = column + 1;
 
@@ -217,10 +215,9 @@ impl GridController {
                             transaction,
                             &[RefAdjust::new_insert_column(sheet_id, column)],
                         );
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -240,8 +237,8 @@ impl GridController {
                 return;
             }
 
-            if let Some(sheet) = self.try_sheet(sheet_id) {
-                if let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
+            if let Some(sheet) = self.try_sheet(sheet_id)
+                && let GridBounds::NonEmpty(bounds) = sheet.bounds(true) {
                     let mut sheet_rect = bounds.to_sheet_rect(sheet_id);
                     sheet_rect.min.y = row + 1;
 
@@ -254,10 +251,9 @@ impl GridController {
                             &[RefAdjust::new_insert_row(sheet_id, row)],
                         );
 
-                        self.add_compute_operations(transaction, &sheet_rect, None);
+                        self.add_compute_operations(transaction, sheet_rect, None);
                     }
                 }
-            }
         }
     }
 
@@ -665,7 +661,7 @@ mod tests {
         gc.delete_rows(sheet_id, vec![2], None);
 
         // rerun the code cell to get the new value
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -674,7 +670,7 @@ mod tests {
         );
 
         gc.undo(None);
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -719,7 +715,7 @@ mod tests {
         gc.delete_rows(sheet_id, vec![2], None);
 
         // rerun the code cell to get the new value
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -728,7 +724,7 @@ mod tests {
         );
 
         gc.undo(None);
-        gc.rerun_code_cell(SheetPos::new(sheet_id, 1, 1), None);
+        gc.rerun_code_cell(A1Selection::test_a1_context("A1", gc.a1_context()), None);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(

@@ -129,8 +129,8 @@ export class Control {
             "--workspace=quadratic-api",
         ], { signal: this.signals.api.signal });
         this.ui.printOutput("api", (data) => this.handleResponse("api", data, {
-            success: "Server running on port",
-            error: "npm ERR!",
+            success: "Server running",
+            error: `"level":"error"`,
             start: "> quadratic-api",
         }, () => {
             if (firstRun && !restart) {
@@ -209,6 +209,11 @@ export class Control {
     }
     togglePerf() {
         this.cli.options.perf = !this.cli.options.perf;
+        this.cli.options.functionTimer = false;
+        this.restartCore();
+    }
+    toggleFunctionTimer() {
+        this.cli.options.functionTimer = !this.cli.options.functionTimer;
         this.restartCore();
     }
     async runCore(restart) {
@@ -225,7 +230,9 @@ export class Control {
             "run",
             this.cli.options.perf
                 ? `${this.cli.options.core ? "watch" : "build"}:wasm:perf:javascript`
-                : `${this.cli.options.core ? "watch" : "build"}:wasm:javascript`,
+                : this.cli.options.functionTimer
+                    ? `${this.cli.options.core ? "watch" : "build"}:wasm:javascript:function-timer`
+                    : `${this.cli.options.core ? "watch" : "build"}:wasm:javascript`,
         ], { signal: this.signals.core.signal });
         this.ui.printOutput("core", (data) => this.handleResponse("core", data, {
             success: ["[Finished running. Exit status: 0", "ready to publish"],

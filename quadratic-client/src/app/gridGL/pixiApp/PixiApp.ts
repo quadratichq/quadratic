@@ -17,6 +17,7 @@ import { UICellImages } from '@/app/gridGL/UI/UICellImages';
 import { UICellMoving } from '@/app/gridGL/UI/UICellMoving';
 import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
+import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
@@ -77,6 +78,7 @@ export class PixiApp {
   cellImages!: UICellImages;
   validations: UIValidations;
   copy: UICopy;
+  singleCellOutlines: UISingleCellOutlines;
 
   renderer: Renderer;
   momentumDetector: MomentumScrollDetector;
@@ -102,6 +104,7 @@ export class PixiApp {
     this.validations = new UIValidations();
     this.hoverTableHeaders = new Container();
     this.hoverTableColumnsSelection = new Graphics();
+    this.singleCellOutlines = new UISingleCellOutlines();
 
     this.canvas = document.createElement('canvas');
     this.renderer = new Renderer({
@@ -115,6 +118,8 @@ export class PixiApp {
     this.momentumDetector = new MomentumScrollDetector();
     this.copy = new UICopy();
     this.debug = new Graphics();
+
+    events.on('debugFlags', this.setViewportDirty);
   }
 
   init = (): Promise<void> => {
@@ -125,9 +130,9 @@ export class PixiApp {
         return;
       }
       if (!this.initialized) {
-        renderWebWorker.sendBitmapFonts();
         this.initCanvas();
         this.rebuild();
+        renderWebWorker.sendBitmapFonts();
         urlParams.init();
         this.waitingForFirstRender = resolve;
         if (this.alreadyRendered) {
@@ -166,9 +171,6 @@ export class PixiApp {
 
     this.background = this.viewportContents.addChild(this.background);
 
-    // useful for debugging at viewport locations
-    this.viewportContents.addChild(this.debug);
-
     this.cellsSheets = this.viewportContents.addChild(this.cellsSheets);
     this.gridLines = this.viewportContents.addChild(this.gridLines);
 
@@ -187,9 +189,13 @@ export class PixiApp {
     this.cellHighlights = this.viewportContents.addChild(new CellHighlights());
     this.cellMoving = this.viewportContents.addChild(new UICellMoving());
     this.validations = this.viewportContents.addChild(this.validations);
+    this.singleCellOutlines = this.viewportContents.addChild(this.singleCellOutlines);
     this.viewportContents.addChild(this.hoverTableHeaders);
     this.viewportContents.addChild(this.hoverTableColumnsSelection);
     this.headings = this.viewportContents.addChild(gridHeadings);
+
+    // useful for debugging at viewport locations
+    this.viewportContents.addChild(this.debug);
 
     this.reset();
 
@@ -302,24 +308,35 @@ export class PixiApp {
   };
 
   // called before and after a render
-  prepareForCopying = async (options?: { gridLines?: boolean; cull?: Rectangle; ai?: boolean }): Promise<Container> => {
+  prepareForCopying = async (options: {
+    sheetId: string;
+    cull: Rectangle;
+    gridLines?: boolean;
+    ai?: boolean;
+    thumbnail?: boolean;
+  }): Promise<Container> => {
+    // this is expensive, so we do it first, before blocking the canvas renderer
+    await this.htmlPlaceholders.prepare({ sheetId: options.sheetId, cull: options.cull });
+
+    // this blocks the canvas renderer
     this.copying = true;
-    this.gridLines.visible = options?.gridLines ?? false;
-    this.cursor.visible = options?.ai ?? false;
+
+    this.gridLines.visible = options.gridLines ?? false;
+    this.cursor.visible = options.ai ?? false;
     this.cellHighlights.visible = false;
     this.multiplayerCursor.visible = false;
-    this.headings.visible = options?.ai ?? false;
+    this.headings.visible = options.ai ?? false;
     this.boxCells.visible = false;
-    await this.htmlPlaceholders.prepare(options?.cull);
     this.cellsSheets.toggleOutlines(false);
     this.copy.visible = false;
-    if (options?.cull) {
-      this.cellsSheets.cull(options.cull);
+    this.cellsSheets.cull(options.cull);
+    if (options.thumbnail) {
+      this.cellsSheet().tables.forceUpdate(options.cull);
     }
     return this.viewportContents;
   };
 
-  cleanUpAfterCopying(culled?: boolean): void {
+  cleanUpAfterCopying = (): void => {
     this.gridLines.visible = true;
     this.cursor.visible = true;
     this.cellHighlights.visible = true;
@@ -329,11 +346,11 @@ export class PixiApp {
     this.htmlPlaceholders.hide();
     this.cellsSheets.toggleOutlines();
     this.copy.visible = true;
-    if (culled) {
-      this.cellsSheets.cull(this.viewport.getVisibleBounds());
-    }
+    const bounds = this.viewport.getVisibleBounds();
+    this.cellsSheets.cull(bounds);
+    this.cellsSheet().tables.forceUpdate(bounds);
     this.copying = false;
-  }
+  };
 
   render(): void {
     this.renderer.render(this.stage);
@@ -348,7 +365,7 @@ export class PixiApp {
     pixiAppSettings.setEditorInteractionState?.(defaultEditorInteractionState);
   }
 
-  rebuild() {
+  rebuild = () => {
     this.viewport.dirty = true;
     this.gridLines.dirty = true;
     this.headings.dirty = true;
@@ -358,7 +375,7 @@ export class PixiApp {
     this.boxCells.reset();
     this.reset();
     this.setViewportDirty();
-  }
+  };
 
   saveMultiplayerViewport(): string {
     const viewport = this.viewport;
@@ -396,10 +413,6 @@ export class PixiApp {
     }
   }
 
-  isCursorOnCodeCell(): boolean {
-    return this.cellsSheets.isCursorOnCodeCell();
-  }
-
   isCursorOnCodeCellOutput(): boolean {
     return this.cellsSheets.isCursorOnCodeCellOutput();
   }
@@ -431,6 +444,10 @@ export class PixiApp {
 
   cellsSheetsCreate() {
     this.cellsSheets.create();
+  }
+
+  setCursorDirty() {
+    if (this.cursor) this.cursor.dirty = true;
   }
 }
 

@@ -9,9 +9,10 @@ export const SENDGRID_API_KEY = process.env.SENDGRID_API_KEY;
 export const CORS = process.env.CORS || '*';
 export const SENTRY_DSN = process.env.SENTRY_DSN;
 export const NODE_ENV = process.env.NODE_ENV || 'development';
+export const LOG_REQUEST_INFO = process.env.LOG_REQUEST_INFO;
 export const PORT = process.env.PORT || 8000;
 export const AWS_S3_ENDPOINT = process.env.AWS_S3_ENDPOINT || undefined;
-export const ENVIRONMENT = process.env.ENVIRONMENT;
+export const ENVIRONMENT = process.env.ENVIRONMENT || 'development';
 export const AUTH0_DOMAIN = process.env.AUTH0_DOMAIN as string;
 export const AUTH0_CLIENT_ID = process.env.AUTH0_CLIENT_ID as string;
 export const AUTH0_CLIENT_SECRET = process.env.AUTH0_CLIENT_SECRET as string;
@@ -27,12 +28,13 @@ export const AWS_S3_ACCESS_KEY_ID = process.env.AWS_S3_ACCESS_KEY_ID as string;
 export const AWS_S3_SECRET_ACCESS_KEY = process.env.AWS_S3_SECRET_ACCESS_KEY as string;
 export const AWS_S3_BUCKET_NAME = process.env.AWS_S3_BUCKET_NAME as string;
 export const AWS_S3_ANALYTICS_BUCKET_NAME = process.env.AWS_S3_ANALYTICS_BUCKET_NAME as string;
-export const GCP_REGION = process.env.GCP_REGION as string;
-export const GCP_REGION_ANTHROPIC = process.env.GCP_REGION_ANTHROPIC as string;
-export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID as string;
-export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL as string;
-export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY as string;
-export const FINE_TUNE = process.env.FINE_TUNE || 'false';
+export const GCP_REGION = process.env.GCP_REGION || 'us-central1';
+export const GCP_REGION_ANTHROPIC = process.env.GCP_REGION_ANTHROPIC || 'us-east5';
+export const GCP_PROJECT_ID = process.env.GCP_PROJECT_ID || 'GCP_PROJECT_ID';
+export const GCP_CLIENT_EMAIL = process.env.GCP_CLIENT_EMAIL || 'GCP_CLIENT_EMAIL';
+export const GCP_PRIVATE_KEY = process.env.GCP_PRIVATE_KEY || 'GCP_PRIVATE_KEY';
+export const GCP_GEMINI_API_KEY = process.env.GCP_GEMINI_API_KEY || 'GCP_GEMINI_API_KEY';
+export const MIXPANEL_TOKEN = process.env.MIXPANEL_TOKEN || undefined;
 
 // Optional Billing
 export const BILLING_AI_USAGE_LIMIT = process.env.BILLING_AI_USAGE_LIMIT
@@ -51,12 +53,18 @@ export const LICENSE_KEY = process.env.LICENSE_KEY as string;
 
 // Required in prod, optional locally
 export const M2M_AUTH_TOKEN = process.env.M2M_AUTH_TOKEN;
-export const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-export const XAI_API_KEY = process.env.XAI_API_KEY;
+export const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+export const OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
+export const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT || 'AZURE_OPENAI_ENDPOINT';
+export const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY || 'AZURE_OPENAI_API_KEY';
+export const XAI_API_KEY = process.env.XAI_API_KEY || 'XAI_API_KEY';
+export const BASETEN_API_KEY = process.env.BASETEN_API_KEY || 'BASETEN_API_KEY';
+export const FIREWORKS_API_KEY = process.env.FIREWORKS_API_KEY || 'FIREWORKS_API_KEY';
+export const OPEN_ROUTER_API_KEY = process.env.OPEN_ROUTER_API_KEY || 'OPEN_ROUTER_API_KEY';
 export const SLACK_FEEDBACK_URL = process.env.SLACK_FEEDBACK_URL;
 export const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || '';
 export const CONNECTION_DEMO = process.env.CONNECTION_DEMO || '';
+export const FINE_TUNE = process.env.FINE_TUNE || 'false';
 
 if (NODE_ENV === 'production') {
   ['M2M_AUTH_TOKEN', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY', 'SLACK_FEEDBACK_URL'].forEach(ensureEnvVarExists);
@@ -86,4 +94,5 @@ function ensureSampleTokenNotUsedInProduction() {
   }
 }
 
+export const isRunningInTest = NODE_ENV === 'test';
 export const debugAndNotInProduction = ENVIRONMENT !== 'production' && !!DEBUG;

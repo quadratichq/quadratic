@@ -9,8 +9,8 @@ use arrow_array::{
 use arrow_buffer::ArrowNativeType;
 use arrow_data::ArrayData;
 use arrow_schema::{DataType, TimeUnit};
-use bigdecimal::BigDecimal;
 use chrono::{NaiveDate, NaiveTime, TimeDelta, TimeZone, Utc};
+use rust_decimal::Decimal;
 
 use crate::{CellValue, cell_values::CellValues};
 
@@ -78,7 +78,7 @@ impl TryFrom<&ArrayRef> for CellValues {
 fn arrow_int_to_cell_values<T>(array_data: ArrayData) -> Vec<CellValue>
 where
     T: ArrowNativeType,
-    T: Into<BigDecimal>,
+    T: Into<Decimal>,
 {
     let mut values = vec![];
 

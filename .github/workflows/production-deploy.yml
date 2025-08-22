@@ -8,7 +8,7 @@ on:
 jobs:
   build_client:
     name: Build Client
-    runs-on: blacksmith-4vcpu-ubuntu-2204
+    runs-on: blacksmith-4vcpu-ubuntu-2404
     concurrency:
       group: production-build-client
       cancel-in-progress: true
@@ -50,7 +50,7 @@ jobs:
           # Write to client.env file to be used in Dockerfile
           echo "$ENV_VARS" > ./quadratic-client/client.env
           # Remove quotes if present
-          sed -i 's/"//g' ./quadratic-client/client.env
+          sed -i 's/="\(.*\)"$/=\1/; s/='"'"'\(.*\)'"'"'$/=\1/' ./quadratic-client/client.env
 
           # Create hash from environment variables
           ENV_HASH=$(echo "$ENV_VARS" | sha256sum | cut -d' ' -f1)
@@ -131,13 +131,13 @@ jobs:
       matrix:
         include:
           - service: api
-            runner: blacksmith-2vcpu-ubuntu-2204
+            runner: blacksmith-2vcpu-ubuntu-2404
           - service: connection
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: files
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
           - service: multiplayer
-            runner: blacksmith-4vcpu-ubuntu-2204
+            runner: blacksmith-4vcpu-ubuntu-2404
       fail-fast: true
     steps:
       - name: Checkout code
@@ -189,7 +189,7 @@ jobs:
   deploy_client:
     needs: [build_client, build_images]
     name: Deploy Client to S3 + Cloudflare
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     concurrency:
       group: production-deploy-client
     timeout-minutes: 60
@@ -210,7 +210,7 @@ jobs:
       - name: Upload to S3
         run: |
           # Upload entire build directory to S3
-          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR --delete
+          aws s3 sync /tmp/quadratic-client-production/ $S3_DIR --delete --force
         env:
           S3_DIR: s3://app.quadratichq.com/
 
@@ -232,7 +232,7 @@ jobs:
   deploy_infra:
     needs: [build_client, build_images]
     name: Update Infrastructure with Pulumi
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     concurrency:
       group: production-deploy-infra
     timeout-minutes: 60
@@ -265,6 +265,7 @@ jobs:
 
           pulumi config set docker-image-tag ${{ github.sha }}
 
+          pulumi refresh -y
           pulumi up -y
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -275,7 +276,7 @@ jobs:
   verify_deployed_version:
     name: Verify Version
     needs: [build_client, build_images, deploy_client, deploy_infra]
-    runs-on: blacksmith-2vcpu-ubuntu-2204
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     concurrency:
       group: production-verify-version-${{ matrix.service.name }}
       cancel-in-progress: true
@@ -285,8 +286,10 @@ jobs:
         service:
           - name: client
             url: "https://app.quadratichq.com/version.json"
-          - name: api
-            url: "https://api.quadratichq.com/health"
+          # - name: api-heroku
+          #   url: "https://api.quadratichq.com/health"
+          - name: api-aws
+            url: "https://api-aws.quadratichq.com/health"
           - name: multiplayer
             url: "https://multiplayer.quadratichq.com/health"
           - name: connection

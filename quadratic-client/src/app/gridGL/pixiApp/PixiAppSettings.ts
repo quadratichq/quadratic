@@ -19,6 +19,10 @@ import type { CursorMode } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditor
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import type { SubmitAIAnalystPromptArgs } from '@/app/ui/menus/AIAnalyst/hooks/useSubmitAIAnalystPrompt';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import {
+  defaultFilesImportProgressState,
+  type FilesImportProgressState,
+} from '@/dashboard/atoms/filesImportProgressAtom';
 import type { GlobalSnackbar, SnackbarOptions } from '@/shared/components/GlobalSnackbarProvider';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type { JSX } from 'react';
@@ -70,8 +74,13 @@ export class PixiAppSettings {
 
   contextMenu = defaultContextMenuState;
   setContextMenu?: SetterOrUpdater<ContextMenuState>;
+
   aiAnalystState = defaultAIAnalystState;
   setAIAnalystState?: SetterOrUpdater<AIAnalystState>;
+
+  filesImportProgress = defaultFilesImportProgressState;
+  setFilesImportProgress?: SetterOrUpdater<FilesImportProgressState>;
+
   submitAIAnalystPrompt?: (prompt: SubmitAIAnalystPromptArgs) => Promise<void>;
 
   constructor() {
@@ -94,6 +103,9 @@ export class PixiAppSettings {
   }
 
   private getSettings = (): void => {
+    // need to wait until pixiApp is initialized before we can set it
+    if (!pixiApp?.initialized) return;
+
     const settings = localStorage.getItem('viewSettings');
     if (settings) {
       this.settings = JSON.parse(settings) as GridSettings;
@@ -108,6 +120,7 @@ export class PixiAppSettings {
       (this.lastSettings && this.lastSettings.presentationMode !== this.settings.presentationMode)
     ) {
       pixiApp.setViewportDirty();
+      pixiApp.singleCellOutlines.setDirty();
     }
     this.lastSettings = this.settings;
   };
@@ -164,6 +177,14 @@ export class PixiAppSettings {
     this.aiAnalystState = aiAnalystState;
     this.setAIAnalystState = setAIAnalystState;
     this.submitAIAnalystPrompt = submitAIAnalystPrompt;
+  }
+
+  updateFilesImportProgress(
+    filesImportProgress: FilesImportProgressState,
+    setFilesImportProgress: SetterOrUpdater<FilesImportProgressState>
+  ): void {
+    this.filesImportProgress = filesImportProgress;
+    this.setFilesImportProgress = setFilesImportProgress;
   }
 
   get showGridLines(): boolean {

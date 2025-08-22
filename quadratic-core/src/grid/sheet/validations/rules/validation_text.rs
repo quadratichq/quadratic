@@ -97,16 +97,14 @@ impl ValidationText {
                             }
                             TextMatch::TextLength { min, max } => {
                                 let text_len = text.len();
-                                if let Some(min) = min {
-                                    if text_len < *min as usize {
+                                if let Some(min) = min
+                                    && text_len < *min as usize {
                                         return false;
                                     }
-                                }
-                                if let Some(max) = max {
-                                    if text_len > *max as usize {
+                                if let Some(max) = max
+                                    && text_len > *max as usize {
                                         return false;
                                     }
-                                }
                                 return true;
                             }
                         }

@@ -15,6 +15,12 @@ extern "C" {
     // `log(..)`
     #[wasm_bindgen(js_namespace = console)]
     pub(crate) fn log(s: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    pub(crate) fn time(name: &str);
+
+    #[wasm_bindgen(js_namespace = console)]
+    pub(crate) fn timeEnd(name: &str);
 }
 
 #[cfg(not(test))]
@@ -67,17 +73,8 @@ extern "C" {
     );
     pub fn jsSheetBoundsUpdate(bounds: Vec<u8> /* Vec<SheetBounds> */);
 
-    pub fn jsImportProgress(
-        file_name: &str,
-        current: u32,
-        total: u32,
-        x: i64,
-        y: i64,
-        w: u32,
-        h: u32,
-    );
+    pub fn jsImportProgress(file_name: &str, current: u32, total: u32);
     pub fn jsTransactionStart(transaction_id: String, name: String);
-    pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32);
     pub fn jsTransactionEnd(transaction_id: String, name: String);
 
     pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32);
@@ -114,6 +111,9 @@ extern "C" {
     pub fn jsClientMessage(message: String, error: String);
 
     pub fn jsA1Context(context: Vec<u8> /* A1Context */);
+
+    pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */);
+    pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */);
 }
 
 #[cfg(test)]
@@ -140,7 +140,7 @@ pub fn print_js_calls() {
         let js_calls = js_calls.lock().unwrap();
         println!("JS calls:");
         for call in js_calls.iter() {
-            println!("  {:?}", call);
+            println!("  {call:?}");
         }
     });
 }
@@ -161,7 +161,7 @@ pub fn expect_js_call(name: &str, args: String, clear: bool) {
             }
             None => {
                 dbg!(&js_calls);
-                panic!("Expected to find in TEST_ARRAY: {:?}", result)
+                panic!("Expected to find in TEST_ARRAY: {result:?}")
             }
         }
         if clear {
@@ -217,7 +217,7 @@ pub fn expect_js_offsets(
     let offsets = serde_json::to_vec(&offsets).unwrap();
     expect_js_call(
         "jsOffsetsModified",
-        format!("{},{:?}", sheet_id, offsets),
+        format!("{sheet_id},{offsets:?}"),
         clear,
     );
 }
@@ -267,7 +267,7 @@ pub fn jsRunPython(
 ) -> JsValue {
     js_call(
         "jsRunPython",
-        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
+        format!("{transactionId},{x},{y},{sheet_id},{code}"),
     );
     JsValue::NULL
 }
@@ -283,7 +283,7 @@ pub fn jsRunJavascript(
 ) -> JsValue {
     js_call(
         "jsRunJavascript",
-        format!("{},{},{},{},{}", transactionId, x, y, sheet_id, code),
+        format!("{transactionId},{x},{y},{sheet_id},{code}"),
     );
     JsValue::NULL
 }
@@ -292,49 +292,49 @@ pub fn jsRunJavascript(
 #[allow(non_snake_case)]
 pub fn jsHashesRenderCells(render_cells: Vec<u8> /* Vec<JsHashRenderCells> */) {
     // we use a hash of cells to avoid storing too large test data
-    js_call("jsHashesRenderCells", format!("{:?}", render_cells));
+    js_call("jsHashesRenderCells", format!("{render_cells:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsHashesDirty(dirty_hashes: Vec<u8> /*Vec<JsHashesDirty>*/) {
-    js_call("jsHashesDirty", format!("{:?}", dirty_hashes));
+    js_call("jsHashesDirty", format!("{dirty_hashes:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsAddSheet(sheetInfo: Vec<u8> /*SheetInfo*/, user: bool) {
-    js_call("jsAddSheet", format!("{:?},{}", sheetInfo, user));
+    js_call("jsAddSheet", format!("{sheetInfo:?},{user}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsDeleteSheet(sheetId: String, user: bool) {
-    js_call("jsDeleteSheet", format!("{},{}", sheetId, user));
+    js_call("jsDeleteSheet", format!("{sheetId},{user}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetInfo(sheets_info: Vec<u8> /* Vec<JsSheetInfo> */) {
-    js_call("jsSheetInfo", format!("{:?}", sheets_info));
+    js_call("jsSheetInfo", format!("{sheets_info:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetInfoUpdate(sheet_info: Vec<u8> /* JsSheetInfo */) {
-    js_call("jsSheetInfoUpdate", format!("{:?}", sheet_info));
+    js_call("jsSheetInfoUpdate", format!("{sheet_info:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetFills(sheet_id: String, fills: Vec<u8> /* Vec<JsRenderFill> */) {
-    js_call("jsSheetFills", format!("{},{:?}", sheet_id, fills));
+    js_call("jsSheetFills", format!("{sheet_id},{fills:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetMetaFills(sheet_id: String, fills: Vec<u8> /* Vec<JsSheetFill> */) {
-    js_call("jsSheetMetaFills", format!("{},{:?}", sheet_id, fills));
+    js_call("jsSheetMetaFills", format!("{sheet_id},{fills:?}"));
 }
 
 #[cfg(test)]
@@ -346,13 +346,13 @@ pub fn jsRequestTransactions(sequence_num: u64) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsUpdateCodeCells(update_code_cells: Vec<u8> /* Vec<JsUpdateCodeCell> */) {
-    js_call("jsUpdateCodeCells", format!("{:?}", update_code_cells));
+    js_call("jsUpdateCodeCells", format!("{update_code_cells:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsOffsetsModified(sheet_id: String, offsets: Vec<u8> /*Vec<JsOffset>*/) {
-    js_call("jsOffsetsModified", format!("{},{:?}", sheet_id, offsets));
+    js_call("jsOffsetsModified", format!("{sheet_id},{offsets:?}"));
 }
 
 #[cfg(test)]
@@ -364,13 +364,13 @@ pub fn jsSetCursor(cursor: String) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsHtmlOutput(html: Vec<u8> /*Vec<JsHtmlOutput>*/) {
-    js_call("jsHtmlOutput", format!("{:?}", html));
+    js_call("jsHtmlOutput", format!("{html:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsUpdateHtml(html: Vec<u8> /*JsHtmlOutput*/) {
-    js_call("jsUpdateHtml", format!("{:?}", html));
+    js_call("jsUpdateHtml", format!("{html:?}"));
 }
 
 #[cfg(test)]
@@ -382,7 +382,7 @@ pub fn jsGenerateThumbnail() {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */) {
-    js_call("jsBordersSheet", format!("{},{:?}", sheet_id, borders));
+    js_call("jsBordersSheet", format!("{sheet_id},{borders:?}"));
 }
 
 #[cfg(test)]
@@ -390,50 +390,32 @@ pub fn jsBordersSheet(sheet_id: String, borders: Vec<u8> /* JsBordersSheet */) {
 pub fn jsSheetCodeCells(sheet_id: String, render_code_cells: Vec<u8>) {
     js_call(
         "jsSheetCodeCells",
-        format!("{},{:?}", sheet_id, render_code_cells),
+        format!("{sheet_id},{render_code_cells:?}"),
     );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSheetBoundsUpdate(bounds: Vec<u8>) {
-    js_call("jsSheetBoundsUpdate", format!("{:?}", bounds));
+    js_call("jsSheetBoundsUpdate", format!("{bounds:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
-pub fn jsImportProgress(file_name: &str, current: u32, total: u32, x: i64, y: i64, w: u32, h: u32) {
-    js_call(
-        "jsImportProgress",
-        format!(
-            "{},{},{},{},{},{},{}",
-            file_name, current, total, x, y, w, h
-        ),
-    );
+pub fn jsImportProgress(file_name: &str, current: u32, total: u32) {
+    js_call("jsImportProgress", format!("{file_name},{current},{total}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTransactionStart(transaction_id: String, name: String) {
-    js_call(
-        "jsTransactionStart",
-        format!("{},{}", transaction_id, name,),
-    );
-}
-
-#[cfg(test)]
-#[allow(non_snake_case)]
-pub fn jsTransactionProgress(transaction_id: String, remaining_operations: i32) {
-    js_call(
-        "jsTransactionProgress",
-        format!("{},{}", transaction_id, remaining_operations),
-    );
+    js_call("jsTransactionStart", format!("{transaction_id},{name}",));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsTransactionEnd(transaction_id: String, name: String) {
-    js_call("jsTransactionEnd", format!("{},{}", transaction_id, name,));
+    js_call("jsTransactionEnd", format!("{transaction_id},{name}",));
 }
 
 #[cfg(test)]
@@ -441,7 +423,7 @@ pub fn jsTransactionEnd(transaction_id: String, name: String) {
 pub fn addUnsentTransaction(transaction_id: String, transaction: String, operations: u32) {
     js_call(
         "addUnsentTransaction",
-        format!("{},{},{}", transaction_id, transaction, operations),
+        format!("{transaction_id},{transaction},{operations}"),
     );
 }
 
@@ -456,7 +438,7 @@ pub fn jsSendTransaction(transaction_id: String, _transaction: Vec<u8>) {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsUndoRedo(undo: bool, redo: bool) {
-    js_call("jsUndoRedo", format!("{},{}", undo, redo));
+    js_call("jsUndoRedo", format!("{undo},{redo}"));
 }
 
 #[cfg(test)]
@@ -472,10 +454,7 @@ pub fn jsConnection(
 ) -> JsValue {
     js_call(
         "jsConnection",
-        format!(
-            "{},{},{},{},{},{},{}",
-            transactionId, x, y, sheet_id, query, connector_type, connection_id
-        ),
+        format!("{transactionId},{x},{y},{sheet_id},{query},{connector_type},{connection_id}"),
     );
     JsValue::NULL
 }
@@ -503,7 +482,7 @@ pub fn jsSendImage(sheet_id: String, x: i32, y: i32, w: i32, h: i32, image: Opti
 pub fn jsSheetValidations(sheet_id: String, sheet_validations: Vec<u8> /* Vec<Validation> */) {
     js_call(
         "jsSheetValidations",
-        format!("{},{:?}", sheet_id, sheet_validations),
+        format!("{sheet_id},{sheet_validations:?}"),
     );
 }
 
@@ -516,14 +495,14 @@ pub fn jsRequestRowHeights(
 ) {
     js_call(
         "jsRequestRowHeights",
-        format!("{},{},{}", transaction_id, sheet_id, rows),
+        format!("{transaction_id},{sheet_id},{rows}"),
     );
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsValidationWarnings(warnings: Vec<u8> /* Vec<JsHashValidationWarnings> */) {
-    js_call("jsValidationWarnings", format!("{:?}", warnings));
+    js_call("jsValidationWarnings", format!("{warnings:?}"));
 }
 
 #[cfg(test)]
@@ -535,17 +514,29 @@ pub fn jsMultiplayerSynced() {
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsSendViewportBuffer(buffer: [u8; 112]) {
-    js_call("jsSendViewportBuffer", format!("{:?}", buffer));
+    js_call("jsSendViewportBuffer", format!("{buffer:?}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsClientMessage(message: String, severity: String) {
-    js_call("jsClientMessage", format!("{},{}", message, severity));
+    js_call("jsClientMessage", format!("{message},{severity}"));
 }
 
 #[cfg(test)]
 #[allow(non_snake_case)]
 pub fn jsA1Context(context: Vec<u8> /* A1Context */) {
-    js_call("jsA1Context", format!("{:?}", context));
+    js_call("jsA1Context", format!("{context:?}"));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendDataTablesCache(sheet_id: String, cache: Vec<u8> /* SheetDataTablesCache */) {
+    js_call("jsSendDataTablesCache", format!("{sheet_id},{cache:?}"));
+}
+
+#[cfg(test)]
+#[allow(non_snake_case)]
+pub fn jsSendContentCache(sheet_id: String, cache: Vec<u8> /* SheetContentCache */) {
+    js_call("jsSendContentCache", format!("{sheet_id},{cache:?}"));
 }

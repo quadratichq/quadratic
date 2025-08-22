@@ -8,7 +8,7 @@
     "start": "RUST_LOG=info cargo run",
     "build": "cargo build",
     "dev": "RUST_LOG=info cargo watch -x 'run'",
-    "test": "cargo test",
+    "test": "cargo test --all-features",
     "test:watch": "RUST_LOG=info cargo watch -x 'test'",
     "lint": "cargo clippy --all-targets --all-features -- -D warnings",
     "lint:fix": "cargo clippy --all-targets --all-features --fix --allow-dirty -- -D warnings",

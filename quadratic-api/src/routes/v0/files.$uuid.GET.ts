@@ -11,7 +11,9 @@ import { validateRequestSchema } from '../../middleware/validateRequestSchema';
 import { getFileUrl } from '../../storage/storage';
 import type { RequestWithOptionalUser } from '../../types/Request';
 import { ApiError } from '../../utils/ApiError';
+import { getIsOnPaidPlan } from '../../utils/billing';
 import { getDecryptedTeam } from '../../utils/teams';
+import { getUserClientDataKv } from '../../utils/userClientData';
 
 export default [
   validateRequestSchema(
@@ -44,6 +46,8 @@ async function handler(
   if (decryptedTeam.sshPublicKey === null) {
     throw new ApiError(500, 'Unable to retrieve SSH keys');
   }
+
+  const isOnPaidPlan = await getIsOnPaidPlan(ownerTeam);
 
   // Get the most recent checkpoint for the file
   const checkpoint = await dbClient.fileCheckpoint.findFirst({
@@ -78,6 +82,8 @@ async function handler(
     throw new ApiError(500, 'Unable to retrieve license');
   }
 
+  const clientDataKv = await getUserClientDataKv(userId);
+
   const data: ApiTypes['/v0/files/:uuid.GET.response'] = {
     file: {
       uuid,
@@ -94,12 +100,14 @@ async function handler(
     team: {
       uuid: ownerTeam.uuid,
       name: ownerTeam.name,
+      isOnPaidPlan,
       settings: {
         analyticsAi: ownerTeam.settingAnalyticsAi,
       },
       sshPublicKey: decryptedTeam.sshPublicKey,
     },
     userMakingRequest: {
+      clientDataKv,
       id: userId,
       filePermissions,
       fileRole,

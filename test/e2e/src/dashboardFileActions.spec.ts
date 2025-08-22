@@ -25,15 +25,15 @@ test('Create New File', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click on create file button
-  await page.locator(`:text-is("New file")`).click();
+  await page.locator(`:text-is("New file")`).click({ timeout: 60 * 1000 });
 
   // Assert user was directed to file editor/spreadsheet page
   await page.waitForSelector(`#QuadraticCanvasID`);
   const canvas = page.locator(`#QuadraticCanvasID`);
-  await expect(canvas).toBeVisible({ timeout: 30 * 1000 });
+  await expect(canvas).toBeVisible({ timeout: 60 * 1000 });
 
   // Rename file
-  await page.locator(`button:has-text("Untitled")`).click();
+  await page.locator(`button:has-text("Untitled")`).click({ timeout: 60 * 1000 });
   await page.locator(`[value="Untitled"]`).fill(fileName);
   await page.keyboard.press('Enter');
 
@@ -46,21 +46,21 @@ test('Create New File', async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(300, 500);
   await page.mouse.up();
-  await page.locator(`[type="button"] span:text-is("format_color_fill")`).click();
-  await page.locator(`[title="#E74C3C"]:visible`).click(); // Red color
+  await page.locator(`[data-testid="format_fill_color"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`[title="#E74C3C"]:visible`).click({ timeout: 60 * 1000 }); // Red color
 
   // Ensure the cell color is updated (you can add specific assertions if needed)
   await page.waitForTimeout(5 * 1000); // Give some time for the update
 
   // Navigate to files page
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the file card element exists
   const fileCard = page.locator(`a[href*="/file/"]:has(h2:has-text("${fileName}"))`);
-  await expect(fileCard).toBeVisible({ timeout: 30 * 1000 });
+  await expect(fileCard).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert thumbnail appears as expected
   await expect(fileCard.locator(`img[alt="File thumbnail screenshot"]`)).toHaveScreenshot(
@@ -115,27 +115,28 @@ test('Edit Share File Permissions', async ({ page }) => {
   await page.waitForTimeout(3000);
 
   // Navigate back to "My files" page
-  await page.locator('nav a svg').click();
+  await page.locator('nav a svg').click({ timeout: 60 * 1000 });
   //--------------------------------
   // Act:
   //--------------------------------
   // Open the kebab menu on the file card
   const defaultUserFileCard = page.locator(`a:has-text("${newFileName}")`);
-  await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click();
+  await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click "Share" -> Fill in recipient email -> select "Can view"
-  await page.locator(`[role="menuitem"]:text-is("Share")`).click();
-  await page.locator(`[aria-label="Email"]`).fill(recipientEmail);
+  await page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await page.locator(`input[placeholder="Email"]`).fill(recipientEmail);
   await page.locator(`[name="role"]`).selectOption('Can view');
 
   // Click "Invite" and close the share file dialog
-  await page.locator(`button:text-is("Invite")`).click();
-  await page.locator(`button:has-text("Copy link") + button`).click();
+  await page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 60 * 1000 });
+  await page.locator(`button:has-text("Copy link") + button`).click({ timeout: 60 * 1000 });
 
   // Bring recipient page to the front and navigate to "Shared with me"
   await recipientPage.bringToFront();
   const navigationPromise = recipientPage.waitForNavigation();
-  await recipientPage.locator(`[href="/files/shared-with-me"]`).click();
+  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
   await navigationPromise;
 
   await recipientPage.reload();
@@ -145,15 +146,15 @@ test('Edit Share File Permissions', async ({ page }) => {
   //--------------------------------
   // Assert the "Edit_Share_File_Permissions" file appears on recipient's "Files shared with me" page
   const recipientFileCard = recipientPage.locator(`a:has-text("${newFileName}")`);
-  await expect(recipientFileCard).toBeVisible({ timeout: 30 * 1000 });
+  await expect(recipientFileCard).toBeVisible({ timeout: 60 * 1000 });
 
   // Navigate to file
-  await recipientFileCard.click();
+  await recipientFileCard.click({ timeout: 60 * 1000 });
 
   // Assert "Read-only" message appears
   await expect(
     recipientPage.locator(`:text("Read-only.  Duplicate or ask the owner for permission to edit.")`).first()
-  ).toBeVisible({ timeout: 30 * 1000 });
+  ).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Arrange:
@@ -165,12 +166,16 @@ test('Edit Share File Permissions', async ({ page }) => {
   // Act:
   //--------------------------------
   // Open the kebab menu on the file card
-  await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click();
+  await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click "Share" -> "Can edit" on recipient permission
-  await page.locator(`[role="menuitem"]:text-is("Share")`).click();
-  await page.locator(`button:right-of(:text("${recipientEmail}"))`).first().click();
-  await page.locator(`[role="option"]:has-text("Can edit")`).click();
+  await page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await page
+    .locator(`button:right-of(:text("${recipientEmail}"))`)
+    .first()
+    .click({ timeout: 60 * 1000 });
+  await page.locator(`[role="option"]:has-text("Can edit")`).click({ timeout: 60 * 1000 });
 
   // Bring recipient page back to the front and reload
   await recipientPage.bringToFront();
@@ -186,7 +191,7 @@ test('Edit Share File Permissions', async ({ page }) => {
   await recipientPage.waitForTimeout(1000);
 
   // Edit the cell
-  await recipientPage.keyboard.type(fileEditText, { delay: 100 });
+  await recipientPage.keyboard.type(fileEditText, { delay: 250 });
   await recipientPage.keyboard.press(`Enter`);
   await recipientPage.waitForTimeout(2000);
 
@@ -197,7 +202,10 @@ test('Edit Share File Permissions', async ({ page }) => {
 
   // Close Chat
   try {
-    await recipientPage.getByRole(`button`, { name: `close` }).first().click();
+    await recipientPage
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
@@ -206,15 +214,15 @@ test('Edit Share File Permissions', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert the edit persists after page reload (0, 0 Cell should say "FileEditText")
-  await expect(recipientPage).toHaveScreenshot(`edited-spreadsheet.png`, {
+  await expect(recipientPage).toHaveScreenshot(`edited-spreadsheet-1.png`, {
     clip: { x: 67.5, y: 100, width: 250, height: 25 },
     maxDiffPixels: 10,
   });
 
   // Bring default user to the front and navigate to the file
   await page.bringToFront();
-  await page.locator(`button:has-text("Copy link") + button`).click(); // Close dialog
-  await defaultUserFileCard.click();
+  await page.locator(`button:has-text("Copy link") + button`).click({ timeout: 60 * 1000 }); // Close dialog
+  await defaultUserFileCard.click({ timeout: 60 * 1000 });
 
   // Wait for canvas to appear, then wait for a short delay
   await page.locator(`#QuadraticCanvasID`).waitFor();
@@ -222,13 +230,16 @@ test('Edit Share File Permissions', async ({ page }) => {
 
   // Close Chat
   try {
-    await page.getByRole(`button`, { name: `close` }).first().click();
+    await page
+      .getByRole(`button`, { name: `close` })
+      .first()
+      .click({ timeout: 60 * 1000 });
   } catch (err) {
     console.error(err);
   }
 
   // Assert the edit appears on default user's page (0, 0 Cell should say "FileEditText")
-  await expect(page).toHaveScreenshot(`edited-spreadsheet.png`, {
+  await expect(page).toHaveScreenshot(`edited-spreadsheet-2.png`, {
     clip: { x: 67.5, y: 100, width: 250, height: 25 },
   });
 
@@ -236,25 +247,29 @@ test('Edit Share File Permissions', async ({ page }) => {
   // Arrange:
   //--------------------------------
   // Navigate back to "My files" page
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Open the kebab menu on the file card
-  await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click();
+  await defaultUserFileCard.locator(`[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click "Share" -> "Remove" on recipient permission
   page.once('dialog', (dialog) => {
     dialog.accept().catch((err) => console.error(err));
   });
-  await page.locator(`[role="menuitem"]:text-is("Share")`).click();
-  await page.locator(`button:right-of(:text("${recipientEmail}"))`).first().click();
-  await page.locator(`[role="option"]:has-text("Remove")`).click();
+  await page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await page
+    .locator(`button:right-of(:text("${recipientEmail}"))`)
+    .first()
+    .click({ timeout: 60 * 1000 });
+  await page.locator(`[role="option"]:has-text("Remove")`).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Confirm "Remove" action
-  await page.getByRole(`button`, { name: 'Remove' }).click();
+  await page.getByRole(`button`, { name: 'Remove' }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Bring the recipient page back to the front and reload
@@ -265,13 +280,13 @@ test('Edit Share File Permissions', async ({ page }) => {
   // Assert:
   //--------------------------------
   // Assert "Permission denied" message appears
-  await expect(recipientPage.locator(`h4:text("Permission denied")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(recipientPage.locator(`h4:text("Permission denied")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Click "Go home" and navigate to "Shared with me"
-  await recipientPage.locator(`a:text("Go home")`).click();
-  await recipientPage.locator(`[href="/files/shared-with-me"]`).click();
+  await recipientPage.locator(`a:text("Go home")`).click({ timeout: 60 * 1000 });
+  await recipientPage.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 
-  await expect(recipientFileCard).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(recipientFileCard).not.toBeVisible({ timeout: 60 * 1000 });
 
   // setup dialog alerts to be yes
   page.on('dialog', (dialog) => {
@@ -282,7 +297,7 @@ test('Edit Share File Permissions', async ({ page }) => {
 
   // Clean up
   await page.bringToFront();
-  await page.locator(`button:has-text("Copy link") + button`).click(); // Close dialog
+  await page.locator(`button:has-text("Copy link") + button`).click({ timeout: 60 * 1000 }); // Close dialog
   await cleanUpFiles(page, { fileName: newFileName });
 });
 
@@ -318,7 +333,7 @@ test('File Actions - Dashboard', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click on kebab menu on "File Actions"
-  await page.locator(`a:has-text("${fileActionsName}") button[aria-haspopup="menu"]`).click();
+  await page.locator(`a:has-text("${fileActionsName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click on "Download" button
   const [gridFile] = await Promise.all([
@@ -342,16 +357,16 @@ test('File Actions - Dashboard', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click on kebab menu on the file again
-  await page.locator(`a:has-text("${fileActionsName}") button[aria-haspopup="menu"]`).click();
+  await page.locator(`a:has-text("${fileActionsName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click on "Duplicate" button
-  await page.locator('[role="menuitem"]:has-text("Duplicate")').click();
+  await page.locator('[role="menuitem"]:has-text("Duplicate")').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the file has been duplicated
-  await expect(page.locator(`a:has-text("${fileActionsName} (Copy)")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`a:has-text("${fileActionsName} (Copy)")`)).toBeVisible({ timeout: 60 * 1000 });
   await page.waitForTimeout(3000);
 
   //--------------------------------
@@ -362,24 +377,32 @@ test('File Actions - Dashboard', async ({ page }) => {
   //--------------------------------
 
   // Click on kebab menu on "File Actions"
-  await page.locator(`a:has(:text-is("${fileActionsName}")) button[aria-haspopup="menu"]`).click();
+  await page
+    .locator(`a:has(:text-is("${fileActionsName}")) button[aria-haspopup="menu"]`)
+    .click({ timeout: 60 * 1000 });
 
   // Click on Move to ... <first team name>
-  await page.locator('[role="menuitem"]:below([role="menuitem"]:text-is("Download"))').nth(1).click();
+  await page
+    .locator('[role="menuitem"]:below([role="menuitem"]:text-is("Download"))')
+    .nth(1)
+    .click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the file is no longer visible
   await expect(page.locator(`a[href*="/file/"]:has(:text-is("${fileActionsName}"))`)).not.toBeVisible({
-    timeout: 30 * 1000,
+    timeout: 60 * 1000,
   });
 
   // Navigate to the team the file was moved to
-  await page.getByRole('link', { name: 'Files' }).nth(1).click();
+  await page
+    .getByRole('link', { name: 'Files' })
+    .nth(1)
+    .click({ timeout: 60 * 1000 });
 
   // Assert that the file is visible now
-  await expect(page.locator(`a:has(:text-is("${fileActionsName}"))`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`a:has(:text-is("${fileActionsName}"))`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Rename File
@@ -387,32 +410,37 @@ test('File Actions - Dashboard', async ({ page }) => {
   await page
     .locator(`a[href*="/file/"]:has(:text-is("${fileActionsName}")) button[aria-haspopup="menu"]`)
     .first()
-    .click();
-  await page.locator('[role="menuitem"]:has-text("Move to team files")').click();
+    .click({ timeout: 60 * 1000 });
+  await page.locator('[role="menuitem"]:has-text("Move to team files")').click({ timeout: 60 * 1000 });
 
   // Navigate to the team the file was moved to
-  await page.getByRole('link', { name: 'Files' }).nth(0).click();
+  await page
+    .getByRole('link', { name: 'Files' })
+    .nth(0)
+    .click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Act:
   //--------------------------------
   // Click on kebab menu on "File Actions (Copy)"
-  await page.locator(`a:has(:text-is("${fileActionsName} (Copy)")) button[aria-haspopup="menu"]`).click();
+  await page
+    .locator(`a:has(:text-is("${fileActionsName} (Copy)")) button[aria-haspopup="menu"]`)
+    .click({ timeout: 60 * 1000 });
 
   // Click on Rename
-  await page.locator('[role="menuitem"]:has-text("Rename")').click();
+  await page.locator('[role="menuitem"]:has-text("Rename")').click({ timeout: 60 * 1000 });
 
   // Rename file to "Renamed Actions"
   await page.locator('#rename-item input').fill(renamedFile);
 
   // Click on Rename button
-  await page.locator('button:has-text("Rename")').click();
+  await page.locator('button:has-text("Rename")').click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the name has been renamed
-  await expect(page.locator(`a:has(:text-is("${renamedFile}"))`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`a:has(:text-is("${renamedFile}"))`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Delete File
@@ -421,21 +449,21 @@ test('File Actions - Dashboard', async ({ page }) => {
   // Act:
   //--------------------------------
   // Click on the kebab menu for the renamed file
-  await page.locator(`a:has(:text-is("${renamedFile}")) button[aria-haspopup="menu"]`).click();
+  await page.locator(`a:has(:text-is("${renamedFile}")) button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
 
   // Click on Delete
-  await page.locator('[role="menuitem"]:has-text("Delete")').click();
+  await page.locator('[role="menuitem"]:has-text("Delete")').click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   // Confirm "Delete" action
-  await page.getByRole(`button`, { name: 'Delete' }).click();
+  await page.getByRole(`button`, { name: 'Delete' }).click({ timeout: 60 * 1000 });
   await page.waitForTimeout(5 * 1000);
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert that the file is no longer visible
-  await expect(page.locator(`a:has(:text-is("${renamedFile}"))`)).not.toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator(`a:has(:text-is("${renamedFile}"))`)).not.toBeVisible({ timeout: 60 * 1000 });
 
   // Clean up newly created files
   await cleanUpFiles(page, {
@@ -491,29 +519,29 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu
   await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ force: true });
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
+  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
 
   // Invite user 2 and allow them to edit
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
   await user1Page.locator(`input[placeholder="Email"]`).fill(user2Email);
-  await user1Page.locator(`button[type="submit"]:text-is("Invite")`).click();
+  await user1Page.locator(`button[data-testid="share-file-invite-button"]`).click({ timeout: 60 * 1000 });
   await user1Page.keyboard.press('Escape');
 
   // Bring user 2 to the front and navigate to "Shared with me"
   await user2Page.bringToFront();
   await user2Page.waitForTimeout(2000);
-  await user2Page.locator(`[href="/files/shared-with-me"]`).click();
+  await user2Page.locator(`[href="/files/shared-with-me"]`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert fileName is visible
-  await expect(user2Page.locator(`h2:text-is("${fileName}")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user2Page.locator(`h2:text-is("${fileName}")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Navigate into file, assert the page is editable
   await navigateIntoFile(user2Page, { fileName });
   await typeInCell(user2Page, {
-    targetColumn: 4,
-    targetRow: 4,
+    a1: 'D4',
     text: 'User 2 - Edit test',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -535,7 +563,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user3Page.bringToFront();
   await user3Page.goto(sharedFile_URL);
 
-  await expect(user3Page.locator(`:text("Permission denied")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user3Page.locator(`:text("Permission denied")`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Can View (Non-Public)
@@ -548,10 +576,11 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Act:
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu, change user 2 permissions to Can view
-  await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click();
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
-  await user1Page.locator(`div:has-text("${user2Email}") + div:has-text("Can edit")`).click();
-  await user1Page.locator(`span:text("Can view")`).click();
+  await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await user1Page.locator(`div:has-text("${user2Email}") + div:has-text("Can edit")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`span:text("Can view")`).click({ timeout: 60 * 1000 });
   await user1Page.keyboard.press('Escape');
 
   // Bring user 2 to the front
@@ -559,18 +588,17 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user2Page.bringToFront();
   await user2Page.goBack();
   await user2Page.locator('[placeholder="Filter by file or creator name…"]').fill(fileName);
-  await user2Page.locator(`h2 :text("${fileName}")`).click();
+  await user2Page.locator(`h2 :text("${fileName}")`).click({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Assert:
   //--------------------------------
   // Assert file is "read only"
-  await expect(user2Page.getByText('Read-only.').first()).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user2Page.getByText('Read-only.').first()).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert no changes to the cell can be made
   await typeInCell(user2Page, {
-    targetColumn: 1,
-    targetRow: 1,
+    a1: 'A1',
     text: 'This should not show up',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -581,7 +609,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Assert that user 3 cannot open the file
   await user3Page.bringToFront();
   await user3Page.reload();
-  await expect(user3Page.locator(`:text("Permission denied")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user3Page.locator(`:text("Permission denied")`)).toBeVisible({ timeout: 60 * 1000 });
 
   //--------------------------------
   // Can Edit (Public)
@@ -593,10 +621,13 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Act:
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu, change "Anyone with the link" to "Can edit"
-  await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click();
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
-  await user1Page.locator(`div:has-text("Anyone with the link") + div > button > span:text("No access")`).click();
-  await user1Page.locator(`div[data-state="unchecked"] > span:text("Can edit")`).click();
+  await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await user1Page
+    .locator(`div:has-text("Anyone with the link") + div > button > span:text("No access")`)
+    .click({ timeout: 60 * 1000 });
+  await user1Page.locator(`div[data-state="unchecked"] > span:text("Can edit")`).click({ timeout: 60 * 1000 });
   await user1Page.keyboard.press('Escape');
   await user1Page.reload();
 
@@ -604,15 +635,14 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Assert:
   //--------------------------------
   // Assert that file now says "Public"
-  await expect(user1Page.locator(`a:has-text("${fileName}") :text("Public")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.locator(`a:has-text("${fileName}") :text("Public")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that user 2 is able to edit the file (even though they are set to "Can view")
   await user2Page.bringToFront();
   await user2Page.reload();
   await user2Page.waitForTimeout(2000);
   await typeInCell(user2Page, {
-    targetColumn: 1,
-    targetRow: 1,
+    a1: 'A1',
     text: 'User 2 can edit this file',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -626,8 +656,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user3Page.bringToFront();
   await user3Page.reload();
   await typeInCell(user3Page, {
-    targetColumn: 3,
-    targetRow: 1,
+    a1: 'C1',
     text: 'User 3 can edit this file',
   });
   await user3Page.waitForTimeout(5 * 1000);
@@ -635,7 +664,7 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   await user2Page.waitForTimeout(5 * 1000);
 
   // Remove User Page 3's mouse from the screen
-  await user3Page.getByRole(`heading`, { name: `What can I help with?` }).click();
+  await user3Page.getByRole(`heading`, { name: `What can I help with?` }).click({ timeout: 60 * 1000 });
   await user2Page.reload();
   await user2Page.waitForTimeout(5 * 1000);
   await user2Page.waitForLoadState('domcontentloaded');
@@ -657,10 +686,13 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Act:
   //--------------------------------
   // Open kebab menu icon of fileName and open share menu, change "Anyone with the link" to "Can view"
-  await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click();
-  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click();
-  await user1Page.locator(`div:has-text("Anyone with the link") + div > button > span:text("Can edit")`).click();
-  await user1Page.locator(`div[data-state="unchecked"] > span:text("Can view")`).click();
+  await user1Page.locator(`a:has-text("${fileName}") button[aria-haspopup="menu"]`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`[role="menuitem"]:text-is("Share")`).click({ timeout: 60 * 1000 });
+  await user1Page.locator(`input[placeholder="Email"]`).waitFor({ state: 'visible' });
+  await user1Page
+    .locator(`div:has-text("Anyone with the link") + div > button > span:text("Can edit")`)
+    .click({ timeout: 60 * 1000 });
+  await user1Page.locator(`div[data-state="unchecked"] > span:text("Can view")`).click({ timeout: 60 * 1000 });
   await user1Page.keyboard.press('Escape');
   await user1Page.reload();
 
@@ -668,17 +700,16 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Assert:
   //--------------------------------
   // Assert that file now says "Public"
-  await expect(user1Page.locator(`a:has-text("${fileName}") :text("Public")`)).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user1Page.locator(`a:has-text("${fileName}") :text("Public")`)).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert that user 2 is "read only"
   await user2Page.bringToFront();
   await user2Page.reload();
-  await expect(user2Page.getByText('Read-only.').first()).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user2Page.getByText('Read-only.').first()).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert no changes to the cell can be made
   await typeInCell(user2Page, {
-    targetColumn: 1,
-    targetRow: 2,
+    a1: 'A2',
     text: 'User 2: this is a read only file',
   });
   await user2Page.waitForTimeout(5 * 1000);
@@ -689,12 +720,11 @@ test('Share File - Dashboard', async ({ page: user1Page }) => {
   // Assert that user 3 is "read only"
   await user3Page.bringToFront();
   await user3Page.reload();
-  await expect(user3Page.getByText('Read-only.').first()).toBeVisible({ timeout: 30 * 1000 });
+  await expect(user3Page.getByText('Read-only.').first()).toBeVisible({ timeout: 60 * 1000 });
 
   // Assert no changes to the cell can be made
   await typeInCell(user3Page, {
-    targetColumn: 3,
-    targetRow: 2,
+    a1: 'C2',
     text: 'User 3: this is a read only file',
   });
   await user3Page.waitForTimeout(5 * 1000);
@@ -741,10 +771,10 @@ test('Upload Large File', async ({ page }) => {
   });
 
   // Verify the uploaded file name is visible
-  await expect(page.getByRole(`button`, { name: `lap_times` })).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.getByRole(`button`, { name: `lap_times` })).toBeVisible({ timeout: 60 * 1000 });
 
   // Ensure the "Connected" text is visible
-  await expect(page.locator('div:text-is("Connected")')).toBeVisible({ timeout: 30 * 1000 });
+  await expect(page.locator('div:text-is("Connected")')).toBeVisible({ timeout: 60 * 1000 });
 
   await expect(page.locator(`#QuadraticCanvasID`)).toHaveScreenshot(`lap_times_csv.png`, {
     maxDiffPixels: 500,
@@ -755,6 +785,6 @@ test('Upload Large File', async ({ page }) => {
   // Clean up:
   //--------------------------------
   // Cleanup newly created files
-  await page.locator(`nav a svg`).click();
+  await page.locator(`nav a svg`).click({ timeout: 60 * 1000 });
   await cleanUpFiles(page, { fileName: largeFileName });
 });

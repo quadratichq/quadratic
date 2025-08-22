@@ -15,12 +15,13 @@ import {
   isContentImage,
   isContentPdfFile,
   isContentTextFile,
+  isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
-  AIMessagePrompt,
   AIRequestHelperArgs,
   AISource,
   AIUsage,
@@ -33,69 +34,73 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const imageBlockParam: ImageBlockParam = {
-        type: 'image' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
-          type: 'base64' as const,
-        },
-      };
-      return imageBlockParam;
-    } else if (isContentPdfFile(content)) {
-      const documentBlockParam: DocumentBlockParam = {
-        type: 'document' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
-          type: 'base64' as const,
-        },
-        title: content.fileName,
-      };
-      return documentBlockParam;
-    } else if (isContentTextFile(content)) {
-      const documentBlockParam: DocumentBlockParam = {
-        type: 'document' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const imageBlockParam: ImageBlockParam = {
+          type: 'image' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'base64' as const,
+          },
+        };
+        return imageBlockParam;
+      } else if (isContentPdfFile(content)) {
+        const documentBlockParam: DocumentBlockParam = {
+          type: 'document' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'base64' as const,
+          },
+          title: content.fileName,
+        };
+        return documentBlockParam;
+      } else if (isContentTextFile(content)) {
+        const documentBlockParam: DocumentBlockParam = {
+          type: 'document' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'text' as const,
+          },
+          title: content.fileName,
+        };
+        return documentBlockParam;
+      } else {
+        const textBlockParam: TextBlockParam = {
           type: 'text' as const,
-        },
-        title: content.fileName,
-      };
-      return documentBlockParam;
-    } else {
-      const textBlockParam: TextBlockParam = {
-        type: 'text' as const,
-        text: content.text,
-      };
-      return textBlockParam;
-    }
-  });
+          text: content.text.trim(),
+        };
+        return textBlockParam;
+      }
+    });
 }
 
 function convertToolResultContent(content: ToolResultContent): Array<TextBlockParam | ImageBlockParam> {
-  return content.map((content) => {
-    if (isContentImage(content)) {
-      const imageBlockParam: ImageBlockParam = {
-        type: 'image' as const,
-        source: {
-          data: content.data,
-          media_type: content.mimeType,
-          type: 'base64' as const,
-        },
-      };
-      return imageBlockParam;
-    } else {
-      const textBlockParam: TextBlockParam = {
-        type: 'text' as const,
-        text: content.text,
-      };
-      return textBlockParam;
-    }
-  });
+  return content
+    .filter((content) => !('text' in content) || !!content.text.trim())
+    .map((content) => {
+      if (isContentImage(content)) {
+        const imageBlockParam: ImageBlockParam = {
+          type: 'image' as const,
+          source: {
+            data: content.data,
+            media_type: content.mimeType,
+            type: 'base64' as const,
+          },
+        };
+        return imageBlockParam;
+      } else {
+        const textBlockParam: TextBlockParam = {
+          type: 'text' as const,
+          text: content.text.trim(),
+        };
+        return textBlockParam;
+      }
+    });
 }
 
 export function getAnthropicApiArgs(
@@ -115,39 +120,42 @@ export function getAnthropicApiArgs(
   let cacheRemaining = promptCaching ? 4 : 0;
   const system: TextBlockParam[] = systemMessages.map((message) => ({
     type: 'text' as const,
-    text: message,
+    text: message.trim(),
     ...(cacheRemaining-- > 0 ? { cache_control: { type: 'ephemeral' } } : {}),
   }));
 
   const messages: MessageParam[] = promptMessages.reduce<MessageParam[]>((acc, message) => {
-    if (message.role === 'assistant' && message.contextType === 'userPrompt') {
+    if (isInternalMessage(message)) {
+      return acc;
+    } else if (message.role === 'assistant' && message.contextType === 'userPrompt') {
       const anthropicMessage: MessageParam = {
         role: message.role,
         content: [
           ...message.content
             .filter(
               (content) =>
-                content.text &&
+                !!content.text.trim() &&
                 (content.type !== 'anthropic_thinking' || !!content.signature) &&
                 (!!thinking || content.type === 'text')
             )
             .map((content) => {
-              if (content.type === 'anthropic_thinking') {
-                return {
-                  type: 'thinking' as const,
-                  thinking: content.text,
-                  signature: content.signature,
-                };
-              } else if (content.type === 'anthropic_redacted_thinking') {
-                return {
-                  type: 'redacted_thinking' as const,
-                  data: content.text,
-                };
-              } else {
-                return {
-                  type: 'text' as const,
-                  text: content.text,
-                };
+              switch (content.type) {
+                case 'anthropic_thinking':
+                  return {
+                    type: 'thinking' as const,
+                    thinking: content.text,
+                    signature: content.signature,
+                  };
+                case 'anthropic_redacted_thinking':
+                  return {
+                    type: 'redacted_thinking' as const,
+                    data: content.text,
+                  };
+                default:
+                  return {
+                    type: 'text' as const,
+                    text: content.text.trim(),
+                  };
               }
             }),
           ...message.toolCalls.map((toolCall) => ({
@@ -222,14 +230,18 @@ function getAnthropicToolChoice(toolName?: AITool): ToolChoice {
 export async function parseAnthropicStream(
   chunks: Stream<Anthropic.Messages.RawMessageStreamEvent>,
   modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): Promise<ParsedAIResponse> {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   response?.write(`data: ${JSON.stringify(responseMessage)}\n\n`);
@@ -246,14 +258,16 @@ export async function parseAnthropicStream(
       switch (chunk.type) {
         case 'content_block_start':
           if (chunk.content_block.type === 'text') {
-            responseMessage.content.push({
-              type: 'text',
-              text: chunk.content_block.text ?? '',
-            });
+            if (chunk.content_block.text.trim()) {
+              responseMessage.content.push({
+                type: 'text',
+                text: chunk.content_block.text,
+              });
 
-            responseMessage.toolCalls.forEach((toolCall) => {
-              toolCall.loading = false;
-            });
+              responseMessage.toolCalls.forEach((toolCall) => {
+                toolCall.loading = false;
+              });
+            }
           } else if (chunk.content_block.type === 'tool_use') {
             responseMessage.toolCalls.push({
               id: chunk.content_block.id,
@@ -262,83 +276,101 @@ export async function parseAnthropicStream(
               loading: true,
             });
           } else if (chunk.content_block.type === 'thinking') {
-            responseMessage.content.push({
-              type: 'anthropic_thinking',
-              text: chunk.content_block.thinking ?? '',
-              signature: chunk.content_block.signature ?? '',
-            });
+            if (chunk.content_block.thinking) {
+              responseMessage.content.push({
+                type: 'anthropic_thinking',
+                text: chunk.content_block.thinking,
+                signature: chunk.content_block.signature,
+              });
 
-            responseMessage.toolCalls.forEach((toolCall) => {
-              toolCall.loading = false;
-            });
+              responseMessage.toolCalls.forEach((toolCall) => {
+                toolCall.loading = false;
+              });
+            }
           } else if (chunk.content_block.type === 'redacted_thinking') {
-            responseMessage.content.push({
-              type: 'anthropic_redacted_thinking',
-              text: chunk.content_block.data ?? '',
-            });
+            if (chunk.content_block.data) {
+              responseMessage.content.push({
+                type: 'anthropic_redacted_thinking',
+                text: chunk.content_block.data,
+              });
 
-            responseMessage.toolCalls.forEach((toolCall) => {
-              toolCall.loading = false;
-            });
+              responseMessage.toolCalls.forEach((toolCall) => {
+                toolCall.loading = false;
+              });
+            }
           }
           break;
+
         case 'content_block_delta':
           if (chunk.delta.type === 'text_delta') {
-            let currentContent = responseMessage.content.pop();
-            if (currentContent?.type !== 'text') {
-              if (currentContent?.text) {
-                responseMessage.content.push(currentContent);
+            if (chunk.delta.text) {
+              let currentContent = responseMessage.content.pop();
+              if (currentContent?.type !== 'text') {
+                if (currentContent?.text) {
+                  responseMessage.content.push(currentContent);
+                }
+                currentContent = {
+                  type: 'text',
+                  text: '',
+                };
               }
-              currentContent = {
-                type: 'text',
-                text: '',
-              };
+
+              currentContent.text += chunk.delta.text ?? '';
+              responseMessage.content.push(currentContent);
             }
-            currentContent.text += chunk.delta.text ?? '';
-            responseMessage.content.push(currentContent);
           } else if (chunk.delta.type === 'input_json_delta') {
-            const toolCall = {
-              ...(responseMessage.toolCalls.pop() ?? {
-                id: '',
-                name: '',
-                arguments: '',
-                loading: true,
-              }),
-            };
-            toolCall.arguments += chunk.delta.partial_json;
-            responseMessage.toolCalls.push(toolCall);
+            if (chunk.delta.partial_json) {
+              const toolCall = {
+                ...(responseMessage.toolCalls.pop() ?? {
+                  id: '',
+                  name: '',
+                  arguments: '',
+                  loading: true,
+                }),
+              };
+
+              toolCall.arguments += chunk.delta.partial_json;
+              responseMessage.toolCalls.push(toolCall);
+            }
           } else if (chunk.delta.type === 'thinking_delta') {
-            let currentContent = responseMessage.content.pop();
-            if (currentContent?.type !== 'anthropic_thinking') {
-              if (currentContent?.text) {
-                responseMessage.content.push(currentContent);
+            if (chunk.delta.thinking) {
+              let currentContent = responseMessage.content.pop();
+              if (currentContent?.type !== 'anthropic_thinking') {
+                if (currentContent?.text) {
+                  responseMessage.content.push(currentContent);
+                }
+                currentContent = {
+                  type: 'anthropic_thinking',
+                  text: '',
+                  signature: '',
+                };
               }
-              currentContent = {
-                type: 'anthropic_thinking',
-                text: '',
-                signature: '',
-              };
+
+              currentContent.text += chunk.delta.thinking;
+              responseMessage.content.push(currentContent);
             }
-            currentContent.text += chunk.delta.thinking ?? '';
-            responseMessage.content.push(currentContent);
           } else if (chunk.delta.type === 'signature_delta') {
-            let currentContent = responseMessage.content.pop();
-            if (currentContent?.type !== 'anthropic_thinking') {
-              if (currentContent?.text) {
-                responseMessage.content.push(currentContent);
+            if (chunk.delta.signature) {
+              let currentContent = responseMessage.content.pop();
+              if (currentContent?.type !== 'anthropic_thinking') {
+                if (currentContent?.text) {
+                  responseMessage.content.push(currentContent);
+                }
+                currentContent = {
+                  type: 'anthropic_thinking',
+                  text: '',
+                  signature: '',
+                };
               }
-              currentContent = {
-                type: 'anthropic_thinking',
-                text: '',
-                signature: '',
-              };
+
+              if (currentContent.type === 'anthropic_thinking') {
+                currentContent.signature += chunk.delta.signature;
+              }
+              responseMessage.content.push(currentContent);
             }
-            if (currentContent.type === 'anthropic_thinking') {
-              currentContent.signature += chunk.delta.signature ?? '';
-            }
-            responseMessage.content.push(currentContent);
           }
           break;
+
         case 'content_block_stop':
           {
             const toolCall = responseMessage.toolCalls.pop();
@@ -347,6 +379,7 @@ export async function parseAnthropicStream(
             }
           }
           break;
+
         case 'message_start':
           if (chunk.message.usage) {
             usage.inputTokens = Math.max(usage.inputTokens, chunk.message.usage.input_tokens);
@@ -358,6 +391,7 @@ export async function parseAnthropicStream(
             );
           }
           break;
+
         case 'message_delta':
           if (chunk.usage) {
             usage.outputTokens = Math.max(usage.outputTokens, chunk.usage.output_tokens);
@@ -399,24 +433,31 @@ export async function parseAnthropicStream(
 export function parseAnthropicResponse(
   result: Anthropic.Messages.Message,
   modelKey: VertexAIAnthropicModelKey | BedrockAnthropicModelKey | AnthropicModelKey,
+  isOnPaidPlan: boolean,
+  exceededBillingLimit: boolean,
   response?: Response
 ): ParsedAIResponse {
-  const responseMessage: AIMessagePrompt = {
+  const responseMessage: ApiTypes['/v0/ai/chat.POST.response'] = {
     role: 'assistant',
     content: [],
     contextType: 'userPrompt',
     toolCalls: [],
     modelKey,
+    isOnPaidPlan,
+    exceededBillingLimit,
   };
 
   result.content?.forEach((message) => {
     switch (message.type) {
       case 'text':
-        responseMessage.content.push({
-          type: 'text',
-          text: message.text ?? '',
-        });
+        if (message.text) {
+          responseMessage.content.push({
+            type: 'text',
+            text: message.text,
+          });
+        }
         break;
+
       case 'tool_use':
         responseMessage.toolCalls.push({
           id: message.id,
@@ -425,18 +466,24 @@ export function parseAnthropicResponse(
           loading: false,
         });
         break;
+
       case 'thinking':
-        responseMessage.content.push({
-          type: 'anthropic_thinking',
-          text: message.thinking ?? '',
-          signature: message.signature ?? '',
-        });
+        if (message.thinking) {
+          responseMessage.content.push({
+            type: 'anthropic_thinking',
+            text: message.thinking,
+            signature: message.signature,
+          });
+        }
         break;
+
       case 'redacted_thinking':
-        responseMessage.content.push({
-          type: 'anthropic_redacted_thinking',
-          text: message.data ?? '',
-        });
+        if (message.data) {
+          responseMessage.content.push({
+            type: 'anthropic_redacted_thinking',
+            text: message.data,
+          });
+        }
         break;
     }
   });

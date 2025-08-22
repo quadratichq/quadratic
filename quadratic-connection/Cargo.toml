@@ -1,12 +1,12 @@
 [package]
 name = "quadratic-connection"
-version = "0.10.1"
+version = "0.16.4"
 edition = "2024"
 authors = ["David DiMaria <david.dimaria@quadratichq.com>"]
 
 [dependencies]
-arrow = "51.0.0"
-arrow-schema = "51.0.0"
+arrow = "=54.2.1"
+arrow-schema = "=54.2.1"
 axum = { version = "0.7.1", features = ["macros", "tokio"] }
 axum-extra = { version = "0.9.3", features = ["typed-header"] }
 axum-macros = "0.4.1"
@@ -27,7 +27,7 @@ hyper-util = { version = "0.1.5", features = ["service"] }
 jsonwebtoken = "9.2.0"
 log = "0.4.21"
 openssl = { version = "0.10.72", features = ["vendored"] }
-parquet = { version = "51.0.0", default-features = false, features = [
+parquet = { version = "=54.2.1", default-features = false, features = [
   "arrow",
   "arrow-array",
 ] }
@@ -56,10 +56,11 @@ tower-http = { version = "0.5.0", features = [
   "validate-request",
 ] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json"] }
 uuid = { version = "1.6.1", features = ["serde", "v4"] }
 
 [dev-dependencies]
+dotenv = "0.15.0"
 fake = { version = "2.9.1", features = ["derive"] }
 quadratic-rust-shared = { path = "../quadratic-rust-shared", features = [
   "test",

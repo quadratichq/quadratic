@@ -5,9 +5,9 @@
  * directly accessed by its siblings.
  */
 
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
-import type { SheetBounds } from '@/app/quadratic-core-types';
-import { type JsOffset, type JsRenderCell, type SheetInfo } from '@/app/quadratic-core-types';
+import { debugFlag, debugFlagWait } from '@/app/debugFlags/debugFlags';
+import type { JsRenderCell, SheetBounds } from '@/app/quadratic-core-types';
+import { type JsOffset, type SheetInfo } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type {
   CoreRenderCells,
@@ -19,17 +19,17 @@ import { renderText } from '@/app/web-workers/renderWebWorker/worker/renderText'
 
 class RenderCore {
   private renderCorePort?: MessagePort;
-  private waitingForResponse: Map<number, Function> = new Map();
+  private waitingForResponse: Record<number, Function> = {};
   private id = 0;
 
-  clientInit(renderPort: MessagePort) {
+  async clientInit(renderPort: MessagePort) {
     this.renderCorePort = renderPort;
     this.renderCorePort.onmessage = this.handleMessage;
-    if (debugWebWorkers) console.log('[renderCore] initialized');
+    if (await debugFlagWait('debugWebWorkers')) console.log('[renderCore] initialized');
   }
 
   private handleMessage = (e: MessageEvent<CoreRenderMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[renderCore] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[renderCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'coreRenderSheetsInfo':
@@ -129,7 +129,12 @@ class RenderCore {
         resolve([]);
         return;
       }
-      const id = this.id;
+
+      const id = this.id++;
+      this.waitingForResponse[id] = (cells: JsRenderCell[]) => {
+        resolve(cells);
+      };
+
       const message: RenderCoreRequestRenderCells = {
         type: 'renderCoreRequestRenderCells',
         id,
@@ -140,13 +145,9 @@ class RenderCore {
         height,
       };
       this.renderCorePort.postMessage(message);
-      this.waitingForResponse.set(id, (cells: JsRenderCell[]) => {
-        resolve(cells);
-      });
-      this.id++;
 
       abortSignal?.addEventListener('abort', () => {
-        this.waitingForResponse.set(id, () => {});
+        delete this.waitingForResponse[id];
         reject('Render cells request aborted');
       });
     });
@@ -158,17 +159,19 @@ class RenderCore {
 
   private renderCells(message: CoreRenderCells) {
     const { id, data } = message;
-    const response = this.waitingForResponse.get(id);
+
+    const response = this.waitingForResponse[id];
+    delete this.waitingForResponse[id];
     if (!response) {
       console.warn('No callback for requestRenderCells');
       return;
     }
+
     let cells = [] as JsRenderCell[];
     if (data) {
       cells = fromUint8Array<JsRenderCell[]>(data);
     }
     response(cells);
-    this.waitingForResponse.delete(id);
   }
 }
 

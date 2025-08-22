@@ -1,5 +1,6 @@
 use crate::{
     CellValue, Pos, SheetPos, SheetRect,
+    a1::A1Selection,
     controller::{
         GridController, active_transactions::pending_transaction::PendingTransaction,
         operations::operation::Operation,
@@ -12,7 +13,7 @@ impl GridController {
     pub fn add_compute_operations(
         &mut self,
         transaction: &mut PendingTransaction,
-        output: &SheetRect,
+        output: SheetRect,
         skip_compute: Option<SheetPos>,
     ) {
         if !transaction.is_user() {
@@ -56,12 +57,14 @@ impl GridController {
         {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_pixel_output;
             let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                 dt.chart_pixel_output = Some((pixel_width, pixel_height));
                 Ok(())
             })?;
+
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
             transaction.forward_operations.push(op);
             transaction
@@ -98,21 +101,14 @@ impl GridController {
         if let Operation::SetChartCellSize { sheet_pos, w, h } = op {
             let sheet_id = sheet_pos.sheet_id;
             let sheet = self.try_sheet_mut_result(sheet_id)?;
-            let data_table_pos = sheet.data_table_pos_that_contains(&sheet_pos.into())?;
+            let data_table_pos = sheet.data_table_pos_that_contains_result(sheet_pos.into())?;
             let original = sheet.data_table_result(&data_table_pos)?.chart_output;
             let (data_table, dirty_rects) = sheet.modify_data_table_at(&data_table_pos, |dt| {
                 dt.chart_output = Some((w, h));
                 Ok(())
             })?;
 
-            transaction.forward_operations.push(op);
-            transaction
-                .reverse_operations
-                .push(Operation::SetChartCellSize {
-                    sheet_pos,
-                    w: original.map(|(w, _)| w).unwrap_or(w),
-                    h: original.map(|(_, h)| h).unwrap_or(h),
-                });
+            transaction.add_update_selection(A1Selection::table(sheet_pos, data_table.name()));
 
             transaction.add_from_code_run(
                 sheet_pos.sheet_id,
@@ -123,6 +119,27 @@ impl GridController {
 
             let sheet = self.try_sheet_result(sheet_id)?;
             transaction.add_dirty_hashes_from_dirty_code_rects(sheet, dirty_rects);
+
+            if transaction.is_user_undo_redo() {
+                transaction.forward_operations.push(op);
+
+                transaction
+                    .reverse_operations
+                    .push(Operation::SetChartCellSize {
+                        sheet_pos,
+                        w: original.map(|(w, _)| w).unwrap_or(w),
+                        h: original.map(|(_, h)| h).unwrap_or(h),
+                    });
+
+                let sheet_rect = SheetRect::from_numbers(
+                    sheet_pos.x,
+                    sheet_pos.y,
+                    w as i64,
+                    h as i64,
+                    sheet_pos.sheet_id,
+                );
+                transaction.generate_thumbnail |= self.thumbnail_dirty_sheet_rect(sheet_rect);
+            }
         }
 
         Ok(())

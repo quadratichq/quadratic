@@ -1,16 +1,15 @@
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
-import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
-import { debugShowFocus, debugShowFPS, debugShowWhyRendering } from '../../debugFlags';
-import { FPS } from '../helpers/Fps';
 import {
   debugRendererLight,
-  debugShowCachedCounts,
   debugShowChildren,
   debugTimeCheck,
   debugTimeReset,
-} from '../helpers/debugPerformance';
-import { pixiApp } from './PixiApp';
-import { thumbnail } from './thumbnail';
+} from '@/app/gridGL/helpers/debugPerformance';
+import { FPS } from '@/app/gridGL/helpers/Fps';
+import type { ScrollBarsHandler } from '@/app/gridGL/HTMLGrid/scrollBars/ScrollBarsHandler';
+import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
+import { thumbnail } from '@/app/gridGL/pixiApp/thumbnail';
 
 export class Update {
   private raf?: number;
@@ -21,7 +20,7 @@ export class Update {
   firstRenderComplete = false;
 
   constructor() {
-    if (debugShowFPS) {
+    if (debugFlag('debugShowFPS')) {
       this.fps = new FPS();
     }
     events.on('scrollBarsHandler', this.setScrollBarsHandler);
@@ -55,13 +54,19 @@ export class Update {
     }
   };
 
+  private updateFps() {
+    if (!this.fps && debugFlag('debugShowFPS')) {
+      this.fps = new FPS();
+    }
+    this.fps?.update();
+  }
+
   // update loop w/debug checks
   private update = () => {
     if (pixiApp.destroyed) return;
 
     if (pixiApp.copying) {
       this.raf = requestAnimationFrame(this.update);
-      this.fps?.update();
       return;
     }
 
@@ -70,12 +75,11 @@ export class Update {
       return;
     }
 
-    if (debugShowFocus) {
+    if (debugFlag('debugShowFocus')) {
       this.showFocus();
     }
 
-    pixiApp.viewport.updateViewport();
-
+    const viewportChanged = pixiApp.viewport.updateViewport();
     let rendererDirty =
       pixiApp.gridLines.dirty ||
       pixiApp.headings.dirty ||
@@ -86,9 +90,10 @@ export class Update {
       pixiApp.cellHighlights.isDirty() ||
       pixiApp.cellMoving.dirty ||
       pixiApp.validations.dirty ||
-      pixiApp.copy.dirty;
+      pixiApp.copy.dirty ||
+      pixiApp.singleCellOutlines.dirty;
 
-    if (rendererDirty && debugShowWhyRendering) {
+    if (rendererDirty && debugFlag('debugShowWhyRendering')) {
       console.log(
         `dirty: ${[
           pixiApp.viewport.dirty && 'viewport',
@@ -102,6 +107,7 @@ export class Update {
           pixiApp.cellMoving.dirty && 'cellMoving',
           pixiApp.validations.dirty && 'validations',
           pixiApp.copy.dirty && 'copy',
+          pixiApp.singleCellOutlines.dirty && 'singleCellOutlines',
         ]
           .filter(Boolean)
           .join(', ')}`
@@ -115,8 +121,6 @@ export class Update {
     debugTimeCheck('[Update] headings');
     pixiApp.boxCells.update();
     debugTimeCheck('[Update] boxCells');
-    pixiApp.cursor.update(pixiApp.viewport.dirty);
-    debugTimeCheck('[Update] cursor');
     pixiApp.cellHighlights.update();
     debugTimeCheck('[Update] cellHighlights');
     pixiApp.multiplayerCursor.update(pixiApp.viewport.dirty);
@@ -127,6 +131,8 @@ export class Update {
     debugTimeCheck('[Update] cellMoving');
     pixiApp.cellsSheets.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] cellsSheets');
+    pixiApp.cursor.update(pixiApp.viewport.dirty);
+    debugTimeCheck('[Update] cursor');
     pixiApp.validations.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] validations');
     pixiApp.background.update(pixiApp.viewport.dirty);
@@ -135,6 +141,8 @@ export class Update {
     debugTimeCheck('[Update] copy');
     this.scrollBarsHandler?.update(pixiApp.viewport.dirty);
     debugTimeCheck('[Update] scrollbars');
+    pixiApp.singleCellOutlines.update(viewportChanged);
+    debugTimeCheck('[Update] singleCellOutlines');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
@@ -143,8 +151,8 @@ export class Update {
       debugTimeCheck('[Update] render');
       debugRendererLight(true);
       debugShowChildren(pixiApp.stage, 'stage');
-      debugShowCachedCounts();
       thumbnail.rendererBusy();
+      events.emit('viewportReadyAfterUpdate');
     } else {
       debugRendererLight(false);
       thumbnail.check();
@@ -156,6 +164,6 @@ export class Update {
     }
 
     this.raf = requestAnimationFrame(this.update);
-    this.fps?.update();
+    this.updateFps();
   };
 }

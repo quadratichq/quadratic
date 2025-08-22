@@ -103,6 +103,18 @@ const TeamUserMakingRequestSchema = z.object({
 
 export const TeamClientDataKvSchema = z.record(z.any());
 
+// Use this to store client-specific data that will be validated whenever it
+// is delivered to or received from the client. When the client no longer needs
+// pieces of this data, they can be removed from the schema and they'll be
+// removed from the stored data as the user continues to use the app and the
+// data is validated as it goes and comes over the network.
+export const UserClientDataKvSchema = z
+  .object({
+    knowsAboutModelPicker: z.boolean().optional(),
+  })
+  .strip();
+export type UserClientDataKv = z.infer<typeof UserClientDataKvSchema>;
+
 const TeamSettingsSchema = z.object({
   analyticsAi: z.boolean(),
 });
@@ -157,10 +169,12 @@ export const ApiSchemas = {
       ownerUserId: BaseUserSchema.shape.id.optional(),
     }),
     team: TeamSchema.pick({ uuid: true, name: true }).extend({
-      sshPublicKey: z.string(),
+      isOnPaidPlan: z.boolean(),
       settings: TeamSettingsSchema,
+      sshPublicKey: z.string(),
     }),
     userMakingRequest: z.object({
+      clientDataKv: UserClientDataKvSchema.optional(),
       id: BaseUserSchema.shape.id.optional(),
       filePermissions: z.array(FilePermissionSchema),
       fileTeamPrivacy: z.enum(['PRIVATE_TO_ME', 'PRIVATE_TO_SOMEONE_ELSE', 'PUBLIC_TO_TEAM']).optional(),
@@ -283,6 +297,7 @@ export const ApiSchemas = {
   '/v0/feedback.POST.request': z.object({
     feedback: z.string(),
     userEmail: z.string().optional(),
+    context: z.string(),
   }),
   '/v0/feedback.POST.response': z.object({
     message: z.string(),
@@ -446,6 +461,8 @@ export const ApiSchemas = {
       .catchall(z.any()),
   }),
   '/v0/user.POST.response': z.object({ message: z.string() }),
+  '/v0/user/client-data-kv.POST.request': UserClientDataKvSchema,
+  '/v0/user/client-data-kv.POST.response': UserClientDataKvSchema,
 
   /**
    *
@@ -463,7 +480,14 @@ export const ApiSchemas = {
    * AI
    */
   '/v0/ai/chat.POST.request': AIRequestBodySchema,
-  '/v0/ai/chat.POST.response': AIMessagePromptSchema,
+  '/v0/ai/chat.POST.response': z.intersection(
+    AIMessagePromptSchema,
+    z.object({
+      isOnPaidPlan: z.boolean(),
+      exceededBillingLimit: z.boolean(),
+      error: z.boolean().optional(),
+    })
+  ),
 
   '/v0/ai/feedback.PATCH.request': z.object({
     chatId: z.string().uuid(),

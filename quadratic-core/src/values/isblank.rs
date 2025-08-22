@@ -71,7 +71,7 @@ mod tests {
         assert!(!Value::Array(a.clone()).is_blank());
         let mut b = Array::new_empty(crate::ArraySize::new(4, 3).unwrap());
         assert!(Value::Array(b.clone()).is_blank());
-        b.set(1, 2, CellValue::from(0)).unwrap();
+        b.set(1, 2, CellValue::from(0), false).unwrap();
         assert!(!Value::Array(b.clone()).is_blank());
 
         let tuple = |elems: &[_]| Value::Tuple(elems.iter().copied().cloned().collect());

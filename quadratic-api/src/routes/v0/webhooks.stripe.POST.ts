@@ -1,6 +1,7 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { STRIPE_WEBHOOK_SECRET } from '../../env-vars';
 import { handleSubscriptionWebhookEvent, stripe } from '../../stripe/stripe';
+import logger from '../../utils/logger';
 
 export default [handler];
 
@@ -27,7 +28,7 @@ async function handler(req: Request, res: Response) {
       await handleSubscriptionWebhookEvent(event.data.object);
       break;
     default:
-      console.log(`Unhandled event type ${event.type}`);
+      logger.info('Unhandled event type', { eventType: event.type });
   }
 
   // Return a 200 response to acknowledge receipt of the event

@@ -5,7 +5,16 @@ use crate::{SheetPos, a1::A1Selection};
 impl GridController {
     /// Starts a transaction to set the value of a cell by converting a user's String input
     pub fn set_cell_value(&mut self, sheet_pos: SheetPos, value: String, cursor: Option<String>) {
-        self.set_cell_values(sheet_pos, vec![vec![value]], cursor);
+        match self.set_cell_values_operations(sheet_pos, vec![vec![value]], true) {
+            Ok((ops, data_table_ops)) => {
+                self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
+
+                if !data_table_ops.is_empty() {
+                    self.start_user_transaction(data_table_ops, cursor, TransactionName::SetCells);
+                }
+            }
+            Err(e) => dbgjs!(e),
+        }
     }
 
     /// Starts a transaction to set cell values using a 2d array of user's &str input where [[1, 2, 3], [4, 5, 6]] creates a grid of width 3 and height 2.
@@ -16,7 +25,7 @@ impl GridController {
         cursor: Option<String>,
     ) {
         // TODO(ddimaria): implement actual error bubbling and remove this dbgjs! and return a Result
-        match self.set_cell_values_operations(sheet_pos, values) {
+        match self.set_cell_values_operations(sheet_pos, values, false) {
             Ok((ops, data_table_ops)) => {
                 self.start_user_transaction(ops, cursor.to_owned(), TransactionName::SetCells);
 
@@ -36,7 +45,7 @@ impl GridController {
 
     /// Starts a transaction to clear formatting in a given rect.
     pub fn clear_formatting(&mut self, selection: &A1Selection, cursor: Option<String>) {
-        let ops = self.clear_format_borders_operations(selection);
+        let ops = self.clear_format_borders_operations(selection, false);
         self.start_user_transaction(ops, cursor, TransactionName::SetFormats);
     }
 
@@ -54,18 +63,13 @@ impl GridController {
 #[cfg(test)]
 mod test {
     use crate::{
-        CellValue, Pos, Rect, SheetPos,
+        CellValue, Duration, Pos, Rect, SheetPos,
         a1::A1Selection,
         controller::{GridController, user_actions::import::tests::simple_csv_at},
-        grid::{NumericFormat, SheetId, sort::SortDirection},
-        test_util::{
-            assert_cell_value_col, assert_cell_value_row, assert_display_cell_value_pos,
-            print_sheet, print_table_in_rect, str_vec_to_string_vec,
-        },
+        grid::{NumericFormat, SheetId, formats::FormatUpdate, sort::SortDirection},
+        number::decimal_from_str,
+        test_util::*,
     };
-    use std::str::FromStr;
-
-    use bigdecimal::BigDecimal;
 
     #[test]
     fn test_set_cell_value_undo_redo() {
@@ -131,7 +135,7 @@ mod test {
         let value = String::from("$123.123");
         assert_eq!(
             CellValue::unpack_currency(&value),
-            Some((String::from("$"), BigDecimal::from_str("123.123").unwrap()))
+            Some((String::from("$"), decimal_from_str("123.123").unwrap()))
         );
 
         let value = String::from("test");
@@ -185,7 +189,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "$1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+            CellValue::Number(decimal_from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_commas(&gc), None);
         assert_eq!(
@@ -201,7 +205,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "1.22".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str("1.22").unwrap())
+            CellValue::Number(decimal_from_str("1.22").unwrap())
         );
         assert_eq!(get_cell_numeric_decimals(&gc), None);
 
@@ -209,7 +213,7 @@ mod test {
         gc.set_cell_value(sheet_pos, "10.55%".into(), None);
         assert_eq!(
             get_cell_value(&gc),
-            CellValue::Number(BigDecimal::from_str(".1055").unwrap())
+            CellValue::Number(decimal_from_str(".1055").unwrap())
         );
         assert_eq!(
             get_cell_numeric_format(&gc),
@@ -783,5 +787,66 @@ mod test {
 
         assert_cell_value_col(&gc, sheet_id, 5, 3, 5, vec!["a", "b", "c"]);
         assert_cell_value_col(&gc, sheet_id, 6, 3, 5, vec!["d", "e", "f"]);
+    }
+
+    #[test]
+    fn test_set_cell_value_percentages() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None);
+
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Number(decimal_from_str("10").unwrap()),
+        );
+
+        gc.set_formats(
+            &A1Selection::test_a1("A1"),
+            FormatUpdate {
+                numeric_format: Some(Some(NumericFormat::percentage())),
+                ..Default::default()
+            },
+        );
+
+        gc.set_cell_value(pos![sheet_id!A1], "10".to_string(), None);
+
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Number(decimal_from_str("0.1").unwrap()),
+        );
+    }
+
+    #[test]
+    fn test_set_cell_value_5s() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        gc.set_cell_value(pos![sheet_id!A1], "5s".to_string(), None);
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Duration(Duration::from_seconds(5.0)),
+        );
+
+        assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "5s");
+
+        let gc = test_export_and_import(&gc);
+        assert_cell_value(
+            &gc,
+            sheet_id,
+            1,
+            1,
+            CellValue::Duration(Duration::from_seconds(5.0)),
+        );
+        assert_display_cell_value_pos(&gc, sheet_id, pos![A1], "5s");
     }
 }

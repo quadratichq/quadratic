@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { getModelFromModelKey } from 'quadratic-shared/ai/helpers/model.helper';
 import type { AIModelKey, AIRequestHelperArgs, ParsedAIResponse } from 'quadratic-shared/typesAndSchemasAI';
-import { getOpenAIApiArgs } from '../helpers/openai.helper';
+import { getOpenAIChatCompletionsApiArgs } from './openai.chatCompletions.helper';
 
 export const createFileForFineTuning = (
   modelKey: AIModelKey,
@@ -14,10 +14,10 @@ export const createFileForFineTuning = (
   const copyArgs = { ...args };
   const copyResponse = { ...parsedResponse.responseMessage };
   copyArgs.messages.push({ ...copyResponse });
-  const { messages, tools } = getOpenAIApiArgs(args, true);
+  const { messages, tools } = getOpenAIChatCompletionsApiArgs(copyArgs, true, true);
   const fineTuningInput = {
     messages,
-    ...(tools ? { functions: tools.map((tool) => tool.function) } : {}),
+    ...(tools ? { tools } : {}),
   };
 
   // write local file at quadratic/finetuning/<model>_<timestamp>.json
@@ -25,5 +25,10 @@ export const createFileForFineTuning = (
   if (!fs.existsSync(dirPath)) {
     fs.mkdirSync(dirPath, { recursive: true });
   }
-  fs.writeFileSync(path.join(dirPath, `${model}_${Date.now()}.json`), JSON.stringify(fineTuningInput, null, 2));
+  // Sanitize model name to prevent path issues with forward slashes
+  const sanitizedModel = model.replace(/\//g, '_');
+  fs.writeFileSync(
+    path.join(dirPath, `${sanitizedModel}_${Date.now()}.json`),
+    JSON.stringify(fineTuningInput, null, 2)
+  );
 };

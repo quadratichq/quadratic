@@ -61,15 +61,14 @@ pub fn replace_formula_a1_references_to_r1c1(grid: &mut Grid) {
                     continue;
                 }
                 for y in bounds.y_range() {
-                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into()) {
-                        if code_cell.language == CodeCellLanguage::Formula {
+                    if let Some(CellValue::Code(code_cell)) = sheet.cell_value_mut((x, y).into())
+                        && code_cell.language == CodeCellLanguage::Formula {
                             code_cell.code = convert_a1_to_rc(
                                 &code_cell.code,
                                 &a1_context,
                                 crate::SheetPos::new(*sheet_id, x + 1, y),
                             );
                         }
-                    }
                 }
             }
         }
@@ -170,7 +169,7 @@ fn migrate_python_c_cell_getcell(
                         .map(|m| format!("\'{}\'!", m.as_str()))
                         .unwrap_or_default();
                     let cell_ref_range = CellRefRange::new_relative_pos((x, y).into());
-                    return format!("q.cells(\"{}{}\")", sheet_name, cell_ref_range);
+                    return format!("q.cells(\"{sheet_name}{cell_ref_range}\")");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
@@ -179,7 +178,7 @@ fn migrate_python_c_cell_getcell(
                         .get(3)
                         .map(|m| format!(", sheet=\"{}\"", m.as_str()))
                         .unwrap_or_default();
-                    return format!("cell({}, {}{})", x, y, sheet_name);
+                    return format!("cell({x}, {y}{sheet_name})");
                 }
             }
 
@@ -235,7 +234,7 @@ fn migrate_python_cells_getcells(
                         .map(|m| format!("\'{}\'!", m.as_str()))
                         .unwrap_or_default();
                     let cell_ref_range = CellRefRange::new_relative_rect(Rect::new(x0, y0, x1, y1));
-                    return format!("q.cells(\"{}{}\"", sheet_name, cell_ref_range);
+                    return format!("q.cells(\"{sheet_name}{cell_ref_range}\"");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
@@ -244,7 +243,7 @@ fn migrate_python_cells_getcells(
                         .get(5)
                         .map(|m| format!(", \"{}\"", m.as_str()))
                         .unwrap_or_default();
-                    return format!("cells(({}, {}), ({}, {}){}", x0, y0, x1, y1, sheet_name);
+                    return format!("cells(({x0}, {y0}), ({x1}, {y1}){sheet_name}");
                 }
             }
 
@@ -273,11 +272,11 @@ fn migrate_python_rc_relcell(code_cell: &mut CodeCellValue, code_cell_pos: Pos) 
                 // migrate to new q.cells() api with equivalent a1 notation of reference coordinates
                 if x > 0 && y > 0 {
                     let cell_ref_range = CellRefRange::new_relative_pos((x, y).into());
-                    return format!("q.cells(\"{}\")", cell_ref_range);
+                    return format!("q.cells(\"{cell_ref_range}\")");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
-                    return format!("rel_cell({}, {})", x, y);
+                    return format!("rel_cell({x}, {y})");
                 }
             }
 
@@ -320,7 +319,7 @@ fn migrate_python_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
                         .map(|m| format!("\'{}\'!", m.as_str()))
                         .unwrap_or_default();
                     let cell_ref_range = CellRefRange::new_relative_rect(Rect::new(x0, y0, x1, y1));
-                    return format!("q.cells(\"{}{}\"", sheet_name, cell_ref_range);
+                    return format!("q.cells(\"{sheet_name}{cell_ref_range}\"");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
@@ -329,7 +328,7 @@ fn migrate_python_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos) {
                         .get(5)
                         .map(|m| format!(", \"{}\"", m.as_str()))
                         .unwrap_or_default();
-                    return format!("rel_cells(({}, {}), ({}, {}){}", x0, y0, x1, y1, sheet_name);
+                    return format!("rel_cells(({x0}, {y0}), ({x1}, {y1}){sheet_name}");
                 }
             }
 
@@ -376,7 +375,7 @@ fn migrate_javascript_c_cell_getcell(
                         .map(|m| format!("\'{}\'!", m.as_str()))
                         .unwrap_or_default();
                     let cell_ref_range = CellRefRange::new_relative_pos((x, y).into());
-                    return format!("q.cells(\"{}{}\")", sheet_name, cell_ref_range);
+                    return format!("q.cells(\"{sheet_name}{cell_ref_range}\")");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
@@ -385,7 +384,7 @@ fn migrate_javascript_c_cell_getcell(
                         .get(3)
                         .map(|m| format!(", \"{}\"", m.as_str()))
                         .unwrap_or_default();
-                    return format!("cell({}, {}{})", x, y, sheet_name);
+                    return format!("cell({x}, {y}{sheet_name})");
                 }
             }
 
@@ -441,7 +440,7 @@ fn migrate_javascript_cells_getcells(
                         .map(|m| format!("\'{}\'!", m.as_str()))
                         .unwrap_or_default();
                     let cell_ref_range = CellRefRange::new_relative_rect(Rect::new(x0, y0, x1, y1));
-                    return format!("q.cells(\"{}{}\"", sheet_name, cell_ref_range);
+                    return format!("q.cells(\"{sheet_name}{cell_ref_range}\"");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
@@ -450,7 +449,7 @@ fn migrate_javascript_cells_getcells(
                         .get(5)
                         .map(|m| format!(", \"{}\"", m.as_str()))
                         .unwrap_or_default();
-                    return format!("cells({}, {}, {}, {}{}", x0, y0, x1, y1, sheet_name);
+                    return format!("cells({x0}, {y0}, {x1}, {y1}{sheet_name}");
                 }
             }
 
@@ -479,11 +478,11 @@ fn migrate_javascript_rc_relcell(code_cell: &mut CodeCellValue, code_cell_pos: P
                 // migrate to new q.cells() api with equivalent a1 notation of reference coordinates
                 if x > 0 && y > 0 {
                     let cell_ref_range = CellRefRange::new_relative_pos((x, y).into());
-                    return format!("q.cells(\"{}\")", cell_ref_range);
+                    return format!("q.cells(\"{cell_ref_range}\")");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
-                    return format!("relCell({}, {})", x, y);
+                    return format!("relCell({x}, {y})");
                 }
             }
 
@@ -526,7 +525,7 @@ fn migrate_javascript_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos
                         .map(|m| format!("\'{}\'!", m.as_str()))
                         .unwrap_or_default();
                     let cell_ref_range = CellRefRange::new_relative_rect(Rect::new(x0, y0, x1, y1));
-                    return format!("q.cells(\"{}{}\"", sheet_name, cell_ref_range);
+                    return format!("q.cells(\"{sheet_name}{cell_ref_range}\"");
                 }
                 // update only coordinates in old api, as they are still negative and cannot be represented in A1 notation
                 else {
@@ -535,7 +534,7 @@ fn migrate_javascript_relcells(code_cell: &mut CodeCellValue, code_cell_pos: Pos
                         .get(5)
                         .map(|m| format!(", \"{}\"", m.as_str()))
                         .unwrap_or_default();
-                    return format!("relCells({}, {}, {}, {}{}", x0, y0, x1, y1, sheet_name);
+                    return format!("relCells({x0}, {y0}, {x1}, {y1}{sheet_name}");
                 }
             }
 

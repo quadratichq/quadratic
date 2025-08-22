@@ -2,7 +2,7 @@
  * Communication between the multiplayer web worker and the quadratic-multiplayer server
  */
 
-import { debugShow, debugShowMultiplayer } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type {
   ClientMultiplayerInit,
   MultiplayerState,
@@ -28,7 +28,7 @@ import {
 import { multiplayerClient } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerClient';
 import { multiplayerCore } from '@/app/web-workers/multiplayerWebWorker/worker/multiplayerCore';
 import type { User } from '@/auth/auth';
-import * as Sentry from '@sentry/react';
+import { sendAnalyticsError } from '@/shared/utils/error';
 
 const UPDATE_TIME_MS = 1000 / 60;
 const HEARTBEAT_TIME = 1000 * 10;
@@ -75,6 +75,10 @@ export class MultiplayerServer {
 
   private lastHeartbeat = 0;
   private updateId?: number;
+
+  private sendAnalyticsError = (from: string, error: Error | unknown) => {
+    sendAnalyticsError('multiplayerServer', from, error);
+  };
 
   init = (message: ClientMultiplayerInit) => {
     this.sessionId = message.sessionId;
@@ -131,17 +135,17 @@ export class MultiplayerServer {
     this.websocket.addEventListener('message', this.handleMessage);
 
     this.websocket.addEventListener('close', () => {
-      if (debugShowMultiplayer) console.log('[Multiplayer] websocket closed unexpectedly.');
+      if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] websocket closed unexpectedly.');
       this.state = 'waiting to reconnect';
       this.reconnect();
     });
     this.websocket.addEventListener('error', (e) => {
-      if (debugShowMultiplayer) console.log('[Multiplayer] websocket error', e);
+      if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] websocket error', e);
       this.state = 'waiting to reconnect';
       this.reconnect();
     });
     this.websocket.addEventListener('open', () => {
-      if (debugShow) console.log('[Multiplayer] websocket connected.');
+      if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] websocket connected.');
       this.state = 'connected';
       this.enterFileRoom();
       this.waitingForConnection.forEach((resolve) => resolve(0));
@@ -183,7 +187,7 @@ export class MultiplayerServer {
       follow: this.userData.follow,
     };
     this.send(enterRoom);
-    if (debugShowMultiplayer) console.log(`[Multiplayer] Joined room ${this.fileId}.`);
+    if (debugFlag('debugShowMultiplayer')) console.log(`[Multiplayer] Joined room ${this.fileId}.`);
   }
 
   private reconnect = (force = false) => {
@@ -213,20 +217,20 @@ export class MultiplayerServer {
         file_id: this.fileId,
         update: this.userUpdate,
       };
-      this.websocket!.send(JSON.stringify(message));
+      this.websocket.send(JSON.stringify(message));
       this.userUpdate = {};
       this.lastHeartbeat = now;
     }
     if (now - this.lastHeartbeat > HEARTBEAT_TIME) {
-      if (debugShowMultiplayer) {
+      if (debugFlag('debugShowMultiplayer')) {
         console.log('[Multiplayer] Sending heartbeat to the server...');
       }
       const heartbeat: Heartbeat = {
         type: 'Heartbeat',
         session_id: this.sessionId,
-        file_id: this.fileId!,
+        file_id: this.fileId,
       };
-      this.websocket!.send(JSON.stringify(heartbeat));
+      this.websocket.send(JSON.stringify(heartbeat));
       this.lastHeartbeat = now;
     }
   };
@@ -309,11 +313,7 @@ export class MultiplayerServer {
             break;
           }
 
-          Sentry.captureException({
-            message: `Error response from the multiplayer server: ${data.error}`,
-            level: 'error',
-          });
-          console.error(`[Multiplayer] Error`, data.error);
+          this.sendAnalyticsError('handleMessage', data.error);
         } else {
           console.warn(`[Multiplayer] Error`, data.error);
         }

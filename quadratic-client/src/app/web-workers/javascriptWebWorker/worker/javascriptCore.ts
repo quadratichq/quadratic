@@ -1,4 +1,4 @@
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type {
   CoreJavascriptGetCellsA1,
   CoreJavascriptMessage,
@@ -15,7 +15,7 @@ class JavascriptCore {
     this.coreMessagePort = messagePort;
     this.coreMessagePort.onmessage = this.handleMessage;
 
-    if (debugWebWorkers) console.log('[javascriptCore] initialized');
+    if (debugFlag('debugWebWorkers')) console.log('[javascriptCore] initialized');
   }
 
   private send(message: JavascriptCoreMessage, transfer?: Transferable[]) {
@@ -28,7 +28,7 @@ class JavascriptCore {
   }
 
   private handleMessage = async (e: MessageEvent<CoreJavascriptMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[javascriptCore] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[javascriptCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'coreJavascriptRun':

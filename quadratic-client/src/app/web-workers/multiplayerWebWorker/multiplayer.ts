@@ -1,5 +1,5 @@
 import { hasPermissionToEditFile } from '@/app/actions';
-import { debugShowMultiplayer, debugShowVersionCheck, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { MULTIPLAYER_COLORS, MULTIPLAYER_COLORS_TINT } from '@/app/gridGL/HTMLGrid/multiplayerCursor/multiplayerColors';
@@ -23,8 +23,8 @@ import type { User } from '@/auth/auth';
 import { authClient } from '@/auth/auth';
 import { parseDomain } from '@/auth/auth.helper';
 import { VERSION } from '@/shared/constants/appConstants';
+import { sendAnalyticsError } from '@/shared/utils/error';
 import { displayName } from '@/shared/utils/userUtil';
-import * as Sentry from '@sentry/react';
 import { v4 as uuid } from 'uuid';
 
 // time to recheck the version of the client after receiving a different version
@@ -72,30 +72,20 @@ export class Multiplayer {
     window.addEventListener('offline', () => this.sendOffline());
     events.on('changeSheet', this.sendChangeSheet);
     events.on('pythonState', this.pythonState);
-    events.on('a1Context', this.updateA1Context);
     events.on('multiplayerState', (state: MultiplayerState) => {
       this.state = state;
     });
   }
 
-  private updateA1Context = (context: Uint8Array) => {
-    this.users.forEach((user) => {
-      user.parsedSelection?.updateContext(context);
-    });
+  private sendAnalyticsError = (from: string, error: Error | unknown) => {
+    sendAnalyticsError('multiplayer', from, error);
   };
 
   initWorker() {
     this.worker = new Worker(new URL('./worker/multiplayer.worker.ts', import.meta.url), { type: 'module' });
     this.worker.onmessage = this.handleMessage;
-    this.worker.onerror = (e) => {
-      console.warn(`[multiplayer.worker] error: ${e.message}`);
-      Sentry.captureException({
-        message: 'Error for multiplayer.worker',
-        level: 'error',
-        extra: {
-          error: e.message,
-        },
-      });
+    this.worker.onerror = (error) => {
+      this.sendAnalyticsError('initWorker', error);
     };
   }
 
@@ -111,7 +101,7 @@ export class Multiplayer {
   };
 
   private handleMessage = async (e: MessageEvent<MultiplayerClientMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[Multiplayer] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[Multiplayer] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'multiplayerClientState':
@@ -130,7 +120,7 @@ export class Multiplayer {
         break;
 
       case 'multiplayerClientUsersInRoom':
-        this.receiveUsersInRoom(e.data.room);
+        await this.receiveUsersInRoom(e.data.room);
         break;
 
       case 'multiplayerClientReload':
@@ -244,11 +234,17 @@ export class Multiplayer {
   };
 
   private sendOnline = () => {
-    this.send({ type: 'clientMultiplayerOnline' });
+    // don't send this event if we not in app, if not initialized yet
+    if (this.fileId) {
+      this.send({ type: 'clientMultiplayerOnline' });
+    }
   };
 
   private sendOffline = () => {
-    this.send({ type: 'clientMultiplayerOffline' });
+    // don't send this event if we not in app, if not initialized yet
+    if (this.fileId) {
+      this.send({ type: 'clientMultiplayerOffline' });
+    }
   };
 
   sendCellEdit(options: {
@@ -295,7 +291,7 @@ export class Multiplayer {
   }
 
   private clearAllUsers() {
-    if (debugShowMultiplayer) console.log('[Multiplayer] Clearing all users.');
+    if (debugFlag('debugShowMultiplayer')) console.log('[Multiplayer] Clearing all users.');
     this.users.clear();
     pixiApp.multiplayerCursor.dirty = true;
     events.emit('multiplayerUpdate', this.getUsers());
@@ -338,7 +334,7 @@ export class Multiplayer {
 
     if (update.selection) {
       player.selection = update.selection;
-      player.parsedSelection = new JsSelection(player.sheet_id, sheets.a1Context);
+      player.parsedSelection = new JsSelection(player.sheet_id);
       if (player.selection) {
         player.parsedSelection.load(player.selection);
       }
@@ -386,7 +382,7 @@ export class Multiplayer {
       return;
     }
 
-    if (debugShowVersionCheck) {
+    if (debugFlag('debugShowVersionCheck')) {
       console.log(`Multiplayer server version (${serverVersion}) is different than the client version (${VERSION})`);
     }
 
@@ -405,7 +401,7 @@ export class Multiplayer {
           isPatchVersionDifferent(versionClient, VERSION) ? RefreshType.RECOMMENDED : RefreshType.REQUIRED
         );
       } else {
-        if (debugShowVersionCheck) {
+        if (debugFlag('debugShowVersionCheck')) {
           console.log(
             `quadratic-client's version (${versionClient}) does not yet match the quadratic-multiplayer's version (${serverVersion}) (trying again in ${RECHECK_VERSION_INTERVAL}ms)`
           );
@@ -413,14 +409,13 @@ export class Multiplayer {
         setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
       }
     } catch (e) {
-      console.error('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
+      console.warn('[multiplayer.ts] checkVersion: Failed to fetch /version.json file', e);
       setTimeout(() => this.checkVersion(serverVersion), RECHECK_VERSION_INTERVAL);
     }
   }
 
   // updates the React hook to populate the Avatar list
-  private receiveUsersInRoom(room: ReceiveRoom) {
-    this.checkVersion(room.version);
+  private async receiveUsersInRoom(room: ReceiveRoom) {
     const remaining = new Set(this.users.keys());
     for (const user of room.users) {
       if (user.session_id === this.sessionId) {
@@ -428,7 +423,7 @@ export class Multiplayer {
         this.colorString = MULTIPLAYER_COLORS[user.index % MULTIPLAYER_COLORS.length];
       } else {
         let player = this.users.get(user.session_id);
-        const parsedSelection = new JsSelection(user.sheet_id, sheets.a1Context);
+        const parsedSelection = new JsSelection(user.sheet_id);
         if (user.selection) {
           parsedSelection.load(user.selection);
         }
@@ -440,7 +435,7 @@ export class Multiplayer {
           player.selection = user.selection;
           player.parsedSelection = parsedSelection;
           remaining.delete(user.session_id);
-          if (debugShowMultiplayer) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
+          if (debugFlag('debugShowMultiplayer')) console.log(`[Multiplayer] Updated player ${user.first_name}.`);
         } else {
           player = {
             session_id: user.session_id,
@@ -466,16 +461,19 @@ export class Multiplayer {
             follow: user.follow,
           };
           this.users.set(user.session_id, player);
-          if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
+          if (debugFlag('debugShowMultiplayer')) console.log(`[Multiplayer] Player ${user.first_name} entered room.`);
         }
       }
     }
     remaining.forEach((sessionId) => {
-      if (debugShowMultiplayer) console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
+      if (debugFlag('debugShowMultiplayer'))
+        console.log(`[Multiplayer] Player ${this.users.get(sessionId)?.first_name} left room.`);
       this.users.delete(sessionId);
     });
     events.emit('multiplayerUpdate', this.getUsers());
     pixiApp.multiplayerCursor.dirty = true;
+
+    await this.checkVersion(room.version);
   }
 }
 

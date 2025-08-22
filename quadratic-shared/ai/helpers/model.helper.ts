@@ -4,9 +4,14 @@ import type {
   AIModelKey,
   AIRequestBody,
   AnthropicModelKey,
+  AzureOpenAIModelKey,
+  BasetenModelKey,
   BedrockAnthropicModelKey,
   BedrockModelKey,
+  FireworksModelKey,
+  GeminiAIModelKey,
   OpenAIModelKey,
+  OpenRouterModelKey,
   QuadraticModelKey,
   VertexAIAnthropicModelKey,
   VertexAIModelKey,
@@ -30,16 +35,36 @@ export function isAnthropicModel(modelKey: AIModelKey): modelKey is AnthropicMod
   return MODELS_CONFIGURATION[modelKey].provider === 'anthropic';
 }
 
-export function isXAIModel(modelKey: AIModelKey): modelKey is XAIModelKey {
-  return MODELS_CONFIGURATION[modelKey].provider === 'xai';
-}
-
 export function isOpenAIModel(modelKey: AIModelKey): modelKey is OpenAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'openai';
 }
 
+export function isXAIModel(modelKey: AIModelKey): modelKey is XAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'xai';
+}
+
+export function isAzureOpenAIModel(modelKey: AIModelKey): modelKey is AzureOpenAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'azure-openai';
+}
+
+export function isBasetenModel(modelKey: AIModelKey): modelKey is BasetenModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'baseten';
+}
+
+export function isFireworksModel(modelKey: AIModelKey): modelKey is FireworksModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'fireworks';
+}
+
+export function isOpenRouterModel(modelKey: AIModelKey): modelKey is OpenRouterModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'open-router';
+}
+
 export function isVertexAIModel(modelKey: AIModelKey): modelKey is VertexAIModelKey {
   return MODELS_CONFIGURATION[modelKey].provider === 'vertexai';
+}
+
+export function isGenAIModel(modelKey: AIModelKey): modelKey is GeminiAIModelKey {
+  return MODELS_CONFIGURATION[modelKey].provider === 'geminiai';
 }
 
 export function isBedrockModel(modelKey: AIModelKey): modelKey is BedrockModelKey {
@@ -58,11 +83,18 @@ export const getModelOptions = (
   temperature: number;
   max_tokens: number;
   thinking?: boolean;
+  thinkingBudget?: number;
   promptCaching: boolean;
   strictParams: boolean;
+  imageSupport: boolean;
+  serviceTier?: 'auto' | 'default' | 'flex' | 'scale' | 'priority';
+  top_p?: number;
+  top_k?: number;
+  min_p?: number;
+  repetition_penalty?: number;
 } => {
   const config = MODELS_CONFIGURATION[modelKey];
-  const { canStream, canStreamWithToolCalls, max_tokens } = config;
+  const { canStream, canStreamWithToolCalls } = config;
 
   const { useStream } = args;
   const useTools = Object.values(aiToolsSpec).some((tool) => tool.sources.includes(args.source));
@@ -72,13 +104,19 @@ export const getModelOptions = (
       : (useStream ?? canStream)
     : false;
 
-  const thinking = config.thinking;
-
-  const temperature = config.temperature;
-
-  const promptCaching = config.promptCaching;
-
-  const strictParams = !!config.strictParams;
-
-  return { stream, temperature, max_tokens, thinking, promptCaching, strictParams };
+  return {
+    stream,
+    temperature: config.temperature,
+    max_tokens: config.max_tokens,
+    thinking: config.thinking,
+    thinkingBudget: config.thinkingBudget,
+    promptCaching: config.promptCaching,
+    strictParams: !!config.strictParams,
+    imageSupport: config.imageSupport,
+    serviceTier: config.serviceTier,
+    top_p: config.top_p,
+    top_k: config.top_k,
+    min_p: config.min_p,
+    repetition_penalty: config.repetition_penalty,
+  };
 };

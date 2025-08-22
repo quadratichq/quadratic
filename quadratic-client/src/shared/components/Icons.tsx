@@ -7,18 +7,6 @@
 import { cn } from '@/shared/shadcn/utils';
 import './icons.css';
 
-// Icons are hidden by default and we only show them once the font loads
-if (document.fonts) {
-  document.fonts
-    .load('1em Material Symbols Outlined')
-    .then(() => {
-      document.documentElement.setAttribute('data-material-symbols-loaded', 'true');
-    })
-    .catch(() => {
-      console.error('Failed to load Material Symbols font. Things are going to look funky.');
-    });
-}
-
 const sizes = {
   sm: '20',
   // As needed, we can add these as scaled sizes in icons.css
@@ -291,6 +279,10 @@ export const DownloadIcon: IconComponent = (props) => {
   return <Icon {...props}>download</Icon>;
 };
 
+export const DownloadExcelIcon: IconComponent = (props) => {
+  return <Icon {...props}>file_export</Icon>;
+};
+
 export const DraftIcon: IconComponent = (props) => {
   return <Icon {...props}>draft</Icon>;
 };
@@ -333,6 +325,10 @@ export const ExpandCircleUpIcon: IconComponent = (props) => {
 
 export const ExternalLinkIcon: IconComponent = (props) => {
   return <Icon {...props}>arrow_outward</Icon>;
+};
+
+export const FastForwardIcon: IconComponent = (props) => {
+  return <Icon {...props}>fast_forward</Icon>;
 };
 
 export const FormatAlignCenterIcon: IconComponent = (props) => {
@@ -429,6 +425,10 @@ export const GroupIcon: IconComponent = (props) => {
 
 export const HistoryIcon: IconComponent = (props) => {
   return <Icon {...props}>history</Icon>;
+};
+
+export const InfoIcon: IconComponent = (props) => {
+  return <Icon {...props}>info</Icon>;
 };
 
 export const ImportIcon: IconComponent = (props) => {
@@ -691,6 +691,10 @@ export const ArrowRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_arrow_right</Icon>;
 };
 
+export const ArrowBackIcon: IconComponent = (props) => {
+  return <Icon {...props}>arrow_back</Icon>;
+};
+
 export const ArrowDoubleRightIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_right</Icon>;
 };
@@ -701,6 +705,18 @@ export const ArrowDownIcon: IconComponent = (props) => {
 
 export const ArrowDoubleDownIcon: IconComponent = (props) => {
   return <Icon {...props}>keyboard_double_arrow_down</Icon>;
+};
+
+export const ArrowSouthIcon: IconComponent = (props) => {
+  return <Icon {...props}>south</Icon>;
+};
+
+export const LightedBulbIcon: IconComponent = (props) => {
+  return (
+    <Icon {...props} className={cn(props.className, 'rotate-180')}>
+      wb_incandescent
+    </Icon>
+  );
 };
 
 export const SheetComeFromIcon: IconComponent = (props) => {
@@ -729,4 +745,8 @@ export const RadioButtonUncheckedIcon: IconComponent = (props) => {
 
 export const RadioButtonCheckedIcon: IconComponent = (props) => {
   return <Icon {...props}>radio_button_checked</Icon>;
+};
+
+export const WebBrowserIcon: IconComponent = (props) => {
+  return <Icon {...props}>captive_portal</Icon>;
 };

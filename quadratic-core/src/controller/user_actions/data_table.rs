@@ -45,9 +45,13 @@ impl GridController {
         table_name: Option<String>,
         first_row_is_header: bool,
         cursor: Option<String>,
-    ) {
-        let ops = self.grid_to_data_table_operations(sheet_rect, table_name, first_row_is_header);
+    ) -> Result<()> {
+        let ops =
+            self.grid_to_data_table_operations(sheet_rect, table_name, first_row_is_header)?;
+
         self.start_user_transaction(ops, cursor, TransactionName::GridToDataTable);
+
+        Ok(())
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -211,7 +215,7 @@ mod tests {
 
         let mut gc = GridController::test();
         let sheet_id = gc.grid.sheets()[0].id;
-        let pos = Pos { x: 0, y: 0 };
+        let pos = Pos { x: 1, y: 1 };
         let sheet = gc.sheet_mut(sheet_id);
         sheet.data_table_insert_full(&pos, data_table);
         let code_cell_value = CodeCellValue {
@@ -224,29 +228,29 @@ mod tests {
         let import = Import::new("".into());
 
         // initial value
-        print_table_in_rect(&gc, sheet_id, Rect::new(0, 0, 2, 1));
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 2));
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
         assert_cell_value(
             &gc,
             sheet_id,
-            0,
-            0,
+            1,
+            1,
             CellValue::Code(code_cell_value.clone()),
         );
 
         gc.code_data_table_to_data_table(sheet_pos, None).unwrap();
 
-        print_table_in_rect(&gc, sheet_id, Rect::new(0, 0, 2, 2));
-        assert_cell_value_row(&gc, sheet_id, 0, 2, 2, expected.clone());
-        assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import.clone()));
+        print_table_in_rect(&gc, sheet_id, Rect::new(1, 1, 3, 3));
+        assert_cell_value_row(&gc, sheet_id, 1, 3, 3, expected.clone());
+        assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Import(import.clone()));
 
         // undo, the value should be a code run data table again
         gc.undo(None);
-        assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Code(code_cell_value));
+        assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Code(code_cell_value));
 
         // redo, the value should be a data table
         gc.redo(None);
-        assert_cell_value(&gc, sheet_id, 0, 0, CellValue::Import(import));
+        assert_cell_value(&gc, sheet_id, 1, 1, CellValue::Import(import));
     }
 
     #[test]
@@ -481,7 +485,7 @@ mod tests {
             assert!(data_table.header_is_first_row);
             assert_eq!(
                 data_table.value,
-                Value::Array(Array::from(vec![
+                Array::from(vec![
                     vec![
                         CellValue::Text("Column 1".into()),
                         CellValue::Text("Column 2".into()),
@@ -497,7 +501,8 @@ mod tests {
                         CellValue::Number(5.into()),
                         CellValue::Number(6.into()),
                     ],
-                ]))
+                ])
+                .into()
             );
 
             // Check column headers
@@ -640,5 +645,63 @@ mod tests {
 
         assert_eq!(gc.data_table_at(pos![sheet_id!A1]), Some(&dt));
         assert!(gc.data_table_at(pos![sheet_id!A2]).is_none());
+    }
+
+    #[test]
+    fn test_data_table_delete_rows() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+
+        gc.data_table_mutations(
+            pos![sheet_id!A1],
+            false,
+            None,
+            None,
+            None,
+            Some(vec![2]),
+            None,
+            None,
+            None,
+        );
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["2", "3"]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+
+        gc.redo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["2", "3"]);
+    }
+
+    #[test]
+    fn test_data_table_delete_all_rows() {
+        let mut gc = test_create_gc();
+        let sheet_id = first_sheet_id(&gc);
+
+        test_create_data_table(&mut gc, sheet_id, pos![A1], 2, 2);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 4, vec!["2", "3"]);
+
+        gc.data_table_mutations(
+            pos![sheet_id!A1],
+            false,
+            None,
+            None,
+            None,
+            Some(vec![2, 3]),
+            None,
+            None,
+            None,
+        );
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["", ""]);
+
+        gc.undo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["0", "1"]);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 4, vec!["2", "3"]);
+
+        gc.redo(None);
+        assert_cell_value_row(&gc, sheet_id, 1, 2, 3, vec!["", ""]);
     }
 }

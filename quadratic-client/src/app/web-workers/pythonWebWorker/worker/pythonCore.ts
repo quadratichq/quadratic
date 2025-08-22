@@ -1,4 +1,4 @@
-import { debugWebWorkers, debugWebWorkersMessages } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { JsCellsA1Response } from '@/app/quadratic-core-types';
 import { fromUint8Array } from '@/app/shared/utils/Uint8Array';
 import type { CorePythonMessage, PythonCoreMessage } from '@/app/web-workers/pythonWebWorker/pythonCoreMessages';
@@ -7,42 +7,43 @@ import { python } from '@/app/web-workers/pythonWebWorker/worker/python';
 export class PythonCore {
   private coreMessagePort?: MessagePort;
 
-  init(messagePort: MessagePort) {
+  init = (messagePort: MessagePort) => {
     this.coreMessagePort = messagePort;
     this.coreMessagePort.onmessage = this.handleMessage;
 
-    if (debugWebWorkers) console.log('[pythonCore] initialized');
-  }
+    if (debugFlag('debugWebWorkers')) console.log('[pythonCore] initialized');
+  };
 
-  private send(message: PythonCoreMessage, transfer?: Transferable[]) {
+  private send = (message: PythonCoreMessage, transfer?: Transferable[]) => {
     if (!this.coreMessagePort) throw new Error('coreMessagePort not initialized');
     if (transfer) {
       this.coreMessagePort.postMessage(message, transfer);
     } else {
       this.coreMessagePort.postMessage(message);
     }
-  }
+  };
 
   private handleMessage = async (e: MessageEvent<CorePythonMessage>) => {
-    if (debugWebWorkersMessages) console.log(`[pythonCore] message: ${e.data.type}`);
+    if (debugFlag('debugWebWorkersMessages')) console.log(`[pythonCore] message: ${e.data.type}`);
 
     switch (e.data.type) {
       case 'corePythonRun':
         python.runPython(e.data);
         return;
+      default:
+        console.warn('[pythonCore] Unhandled message type', e.data);
     }
   };
 
-  sendPythonResults(transactionId: string, jsCodeResultBuffer: ArrayBuffer) {
+  sendPythonResults = (jsCodeResultBuffer: ArrayBuffer) => {
     this.send(
       {
         type: 'pythonCoreResults',
-        transactionId,
         jsCodeResultBuffer,
       },
       [jsCodeResultBuffer]
     );
-  }
+  };
 
   sendGetCellsA1 = (transactionId: string, a1: string): JsCellsA1Response => {
     try {

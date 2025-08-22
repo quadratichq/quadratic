@@ -5,7 +5,7 @@
 //! geometries sent to the GPU.
 //!
 
-import { debugShowLoadingHashes } from '@/app/debugFlags';
+import { debugFlag } from '@/app/debugFlags/debugFlags';
 import { sheetHashHeight, sheetHashWidth } from '@/app/gridGL/cells/CellsTypes';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { isFloatEqual } from '@/app/helpers/float';
@@ -73,6 +73,7 @@ export class CellsLabels {
   }
 
   updateSheetInfo(sheetInfo: SheetInfo) {
+    this.sheetOffsets.free();
     this.sheetOffsets = SheetOffsetsWasm.load(sheetInfo.offsets);
     const bounds = sheetInfo.bounds_without_formatting;
     if (bounds.type === 'nonEmpty' && bounds.min) {
@@ -316,30 +317,34 @@ export class CellsLabels {
     const visibleDirtyHashes: CellsTextHash[] = [];
     const notVisibleDirtyHashes: { hash: CellsTextHash; distance: number }[] = [];
 
-    const bounds = renderText.viewport;
+    const visibleSheetId = renderText.sheetId;
+    const visibleBounds = renderText.viewport;
     const neighborRect = this.getViewportNeighborBounds();
-    if (!bounds || !neighborRect) return;
+    if (!visibleSheetId || !visibleBounds || !neighborRect) return;
+
+    const isCurrentSheet = this.sheetId === visibleSheetId;
 
     // This divides the hashes into (1) visible in need of rendering, (2) not
     // visible and in need of rendering, and (3) not visible and loaded.
     this.cellsTextHash.forEach((hash) => {
       const dirty = hash.dirty || hash.dirtyText || hash.dirtyBuffers;
-      if (intersects.rectangleRectangle(hash.viewRectangle, bounds)) {
+      if (isCurrentSheet && intersects.rectangleRectangle(hash.viewRectangle, visibleBounds)) {
         if (!hash.loaded || !hash.clientLoaded || dirty) {
           visibleDirtyHashes.push(hash);
         }
-      } else if (intersects.rectangleRectangle(hash.viewRectangle, neighborRect) && !findHashToDelete) {
+      } else if (
+        isCurrentSheet &&
+        intersects.rectangleRectangle(hash.viewRectangle, neighborRect) &&
+        !findHashToDelete
+      ) {
         if (!hash.loaded || !hash.clientLoaded || dirty) {
           if (hash.clientLoaded && dirty) hash.unloadClient();
-          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
+
+          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, visibleBounds) });
         }
       } else {
-        if (dirty) {
-          if (hash.clientLoaded) hash.unloadClient();
-          notVisibleDirtyHashes.push({ hash, distance: this.hashDistanceSquared(hash, bounds) });
-        } else if (hash.loaded) {
-          hash.unload();
-        }
+        hash.unloadClient();
+        hash.unload();
       }
     });
 
@@ -360,19 +365,19 @@ export class CellsLabels {
     // hash has render cells if core has sent render cells for rerendering, process them first
     if (hashesWithRenderCells.length) {
       const hash = hashesWithRenderCells[0];
-      if (debugShowLoadingHashes) {
+      if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering hash with render cells: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
     } else if (!isTransactionRunning && visibleDirtyHashes.length) {
       const hash = visibleDirtyHashes[0];
-      if (debugShowLoadingHashes) {
+      if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering visible: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: true };
     } else if (!isTransactionRunning && notVisibleDirtyHashes.length) {
       const hash = notVisibleDirtyHashes[0].hash;
-      if (debugShowLoadingHashes) {
+      if (debugFlag('debugShowLoadingHashes')) {
         console.log(`[CellsTextHash] rendering offscreen: ${hash.hashX}, ${hash.hashY}`);
       }
       return { hash, visible: false };
@@ -398,7 +403,9 @@ export class CellsLabels {
       if (neighborRect && !intersects.rectangleRectangle(next.hash.viewRectangle, neighborRect)) {
         next.hash.unload();
       }
-      if (debugShowLoadingHashes) console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
+      if (debugFlag('debugShowLoadingHashes')) {
+        console.log(`[CellsTextHash] memory usage: ${Math.round(this.totalMemory())} bytes`);
+      }
       return next.visible ? 'visible' : true;
     }
     return false;

@@ -20,7 +20,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 0 : 0,
   /* Opt out of parallel tests. */
-  workers: 1,
+  workers: process.env.CI ? 1 : 10,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: process.env.CI ? [['blob']] : [['list'], ['html']],
   /* Configure custom snapshot path template */
@@ -34,9 +34,11 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'retain-on-failure',
-    video: 'on',
+    video: {
+      mode: 'retain-on-failure',
+    },
     screenshot: {
-      mode: 'on',
+      mode: 'only-on-failure',
     },
 
     /* Set a consistent timezone for all tests */

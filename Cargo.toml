@@ -7,6 +7,7 @@ members = [
   "quadratic-multiplayer",
   "quadratic-rust-shared",
 ]
+exclude = ["poc/number_type"]
 
 [workspace.package]
 authors = ["Quadratic"]
@@ -14,7 +15,8 @@ edition = "2024"
 description = "Infinite data grid with Python, JavaScript, and SQL built-in"
 repository = "https://github.com/quadratichq/quadratic"
 license-file = "LICENSE"
-version = "0.10.1"
+version = "0.16.4"
+
 
 [profile.release]
 # Tell `rustc` to optimize for small code size.
