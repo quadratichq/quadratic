@@ -1,7 +1,6 @@
 import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeCellContextMessages } from '@/app/ai/hooks/useCodeCellContextMessages';
-// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
@@ -23,6 +22,7 @@ import { getLanguage } from '@/app/helpers/codeCellLanguage';
 import { isSameCodeCell, type CodeCell } from '@/app/shared/types/codeCell';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
+  createTextContent,
   getLastAIPromptMessageIndex,
   getMessagesForAI,
   getPromptAndInternalMessages,
@@ -45,9 +45,8 @@ export type SubmitAIAssistantPromptArgs = {
 
 export function useSubmitAIAssistantPrompt() {
   const { handleAIRequestToAPI } = useAIRequestToAPI();
-  // const { getCurrentSheetContext } = useCurrentSheetContextMessages();
-  const { getVisibleContext } = useVisibleContextMessages();
   const { getFilesContext } = useFilesContextMessages();
+  const { getVisibleContext } = useVisibleContextMessages();
   const { getCodeCellContext } = useCodeCellContextMessages();
   const { modelKey } = useAIModel();
 
@@ -60,9 +59,8 @@ export function useSubmitAIAssistantPrompt() {
         codeCell: CodeCell;
         chatMessages: ChatMessage[];
       }): Promise<ChatMessage[]> => {
-        const [filesContext, /*currentSheetContext,*/ visibleContext, codeContext, prevMessages] = await Promise.all([
+        const [filesContext, visibleContext, codeContext, prevMessages] = await Promise.all([
           getFilesContext({ chatMessages }),
-          // getCurrentSheetContext({ currentSheetName: sheets.sheet.name }),
           getVisibleContext(),
           getCodeCellContext({ codeCell }),
           snapshot.getPromise(aiAssistantMessagesAtom),
@@ -70,7 +68,6 @@ export function useSubmitAIAssistantPrompt() {
 
         const messagesWithContext: ChatMessage[] = [
           ...filesContext,
-          // ...currentSheetContext,
           ...visibleContext,
           ...codeContext,
           ...getPromptAndInternalMessages(prevMessages),
@@ -78,7 +75,7 @@ export function useSubmitAIAssistantPrompt() {
 
         return messagesWithContext;
       },
-    [/*getCurrentSheetContext, */ getVisibleContext, getCodeCellContext]
+    [getFilesContext, getVisibleContext, getCodeCellContext]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -150,10 +147,7 @@ export function useSubmitAIAssistantPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
-              if (currentContent?.type !== 'text') {
-                currentContent = { type: 'text', text: '' };
-              }
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               currentContent.text = currentContent.text.trim();
               currentContent.text += '\n\nRequest aborted by the user.';
               newLastMessage.toolCalls = [];
@@ -166,7 +160,7 @@ export function useSubmitAIAssistantPrompt() {
 
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: [{ type: 'text', text: 'Request aborted by the user.' }],
+                content: [createTextContent('Request aborted by the user.')],
                 contextType: 'userPrompt',
                 toolCalls: [],
                 modelKey,
@@ -263,23 +257,13 @@ export function useSubmitAIAssistantPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    content: [
-                      {
-                        type: 'text',
-                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
-                      },
-                    ],
+                    content: [createTextContent(`Error parsing ${toolCall.name} tool's arguments: ${error}`)],
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: [
-                    {
-                      type: 'text',
-                      text: 'Unknown tool',
-                    },
-                  ],
+                  content: [createTextContent('Unknown tool')],
                 });
               }
             }
@@ -305,9 +289,9 @@ export function useSubmitAIAssistantPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {
-                currentContent = { type: 'text', text: '' };
+                currentContent = createTextContent('');
               }
               currentContent.text = currentContent.text.trim();
               currentContent.text += '\n\nLooks like there was a problem. Please try again.';
@@ -317,7 +301,7 @@ export function useSubmitAIAssistantPrompt() {
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
+                content: [createTextContent('Looks like there was a problem. Please try again.')],
                 contextType: 'userPrompt',
                 toolCalls: [],
                 modelKey,

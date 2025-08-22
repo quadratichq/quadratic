@@ -3,7 +3,7 @@ import { apiClient } from '@/shared/api/apiClient';
 import { snackbarMsgQueryParam, snackbarSeverityQueryParam } from '@/shared/components/GlobalSnackbarProvider';
 import { ROUTES } from '@/shared/constants/routes';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 import type { ActionFunctionArgs, LoaderFunctionArgs } from 'react-router';
 import { replace } from 'react-router';
 
@@ -47,7 +47,7 @@ export const loader = async (loaderArgs: LoaderFunctionArgs) => {
       trackEvent('[Files].newExampleFile', { fileName: name });
       return replace(ROUTES.FILE({ uuid, searchParams: searchParams.toString() }));
     } catch (error) {
-      Sentry.captureEvent({
+      captureEvent({
         message: 'Client failed to load the selected example file.',
         level: 'warning',
         extra: {

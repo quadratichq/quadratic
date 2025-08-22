@@ -1,4 +1,5 @@
 import {
+  createTextContent,
   getLastAIPromptMessageModelKey,
   getPromptMessagesForAI,
   getUserPromptMessages,
@@ -35,12 +36,6 @@ export const getModelKey = async (
 
     const promptMessages = getPromptMessagesForAI(messages);
 
-    // if the last message is not a user prompt, use the last AI prompt message model key
-    const lastPromptMessage = promptMessages[promptMessages.length - 1];
-    if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
-      return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
-    }
-
     // if the model is the default free model, check if the user prompt contains an image file
     if (!isQuadraticModel(modelKey) && !MODELS_CONFIGURATION[modelKey].imageSupport) {
       const hasImageFile = getUserPromptMessages(promptMessages).some((message) =>
@@ -53,6 +48,12 @@ export const getModelKey = async (
     // if the model is not the model router model, return the model key
     if (!isQuadraticModel(modelKey)) {
       return modelKey;
+    }
+
+    // if the last message is not a user prompt, use the last AI prompt message model key
+    const lastPromptMessage = promptMessages[promptMessages.length - 1];
+    if (lastPromptMessage.role !== 'user' || lastPromptMessage.contextType !== 'userPrompt') {
+      return getLastAIPromptMessageModelKey(promptMessages) ?? DEFAULT_BACKUP_MODEL;
     }
 
     const userTextPrompt = lastPromptMessage.content
@@ -71,9 +72,7 @@ export const getModelKey = async (
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `
+            createTextContent(`
  <role>
   You are an AI model selector for a spreadsheet application. Based on the user's prompt, choose the most suitable model.
  </role>
@@ -205,21 +204,17 @@ export const getModelKey = async (
    <answer>Claude</answer>
   </example>
  </examples>
-`,
-            },
+`),
           ],
           contextType: 'modelRouter',
         },
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `
+            createTextContent(`
 Choose the most suitable model for the following prompt:
 ${userTextPrompt}
-`,
-            },
+`),
           ],
           contextType: 'userPrompt',
         },

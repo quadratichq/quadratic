@@ -5,6 +5,7 @@ import { fileHasData } from '@/app/gridGL/helpers/fileHasData';
 import { pluralize } from '@/app/helpers/pluralize';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { joinListWith } from '@/shared/components/JointListWith';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -14,12 +15,7 @@ export function useSummaryContextMessages() {
       return [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: `Summary: Empty file with no data. Current sheet: '${sheets.sheet.name}'.`,
-            },
-          ],
+          content: [createTextContent(`Summary: Empty file with`)],
           contextType: 'fileSummary',
         },
       ];
@@ -36,12 +32,7 @@ export function useSummaryContextMessages() {
       return [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: 'Summary: Failed to get context from sheets. Please try again.',
-            },
-          ],
+          content: [createTextContent('Summary: Failed to get context from sheets. Please try again.')],
           contextType: 'fileSummary',
         },
       ];
@@ -193,21 +184,15 @@ This is the flat data on the sheet (limited to ${MAX_ROWS} rows each):
     return [
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text,
-          },
-        ],
+        content: [createTextContent(text)],
         contextType: 'fileSummary',
       },
       {
         role: 'assistant',
         content: [
-          {
-            type: 'text',
-            text: `I understand the file structure summary. If asked to solve a data problem, I will check this context, and if I'm missing data, use get_cell_data tool to view more data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`,
-          },
+          createTextContent(
+            `I understand the file structure summary. If asked to solve a data problem, I will check this context, and if I'm missing data, use get_cell_data tool to view more data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`
+          ),
         ],
         contextType: 'fileSummary',
       },

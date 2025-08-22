@@ -15,6 +15,7 @@ import type {
 import type { Stream } from 'openai/streaming';
 import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentImage,
   isContentOpenAIReasoning,
@@ -264,10 +265,7 @@ export async function parseOpenAIResponsesStream(
             for (const content of output.content) {
               switch (content.type) {
                 case 'output_text':
-                  responseMessage.content.push({
-                    type: 'text',
-                    text: content.text,
-                  });
+                  responseMessage.content.push(createTextContent(content.text));
               }
             }
             break;
@@ -325,10 +323,7 @@ export async function parseOpenAIResponsesStream(
   responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -370,10 +365,7 @@ export function parseOpenAIResponsesResponse(
         output.content.forEach((content) => {
           switch (content.type) {
             case 'output_text':
-              responseMessage.content.push({
-                type: 'text',
-                text: content.text.trim(),
-              });
+              responseMessage.content.push(createTextContent(content.text.trim()));
               break;
           }
         });
@@ -390,10 +382,7 @@ export function parseOpenAIResponsesResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

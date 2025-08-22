@@ -24,6 +24,7 @@
     "cellvalue",
     "chrono",
     "Cinstrument",
+    "clickhouse",
     "clippy",
     "cmdk",
     "Cockroachdb",

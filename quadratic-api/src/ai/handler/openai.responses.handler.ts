@@ -33,12 +33,15 @@ export const handleOpenAIResponsesRequest = async (
     stream: options.stream,
     tools,
     tool_choice,
-    ...(options.supportsReasoning && {
-      reasoning: {
-        effort: 'medium',
-        summary: 'auto',
-      },
-    }),
+    ...(options.supportsReasoning
+      ? {
+          reasoning: {
+            effort: 'medium',
+            summary: 'auto',
+          },
+        }
+      : {}),
+    service_tier: options.serviceTier,
     ...(options.top_p !== undefined ? { top_p: options.top_p } : {}),
     ...(options.top_k !== undefined ? { top_k: options.top_k } : {}),
     ...(options.min_p !== undefined ? { min_p: options.min_p } : {}),

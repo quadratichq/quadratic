@@ -2,8 +2,6 @@ import { useAIModel } from '@/app/ai/hooks/useAIModel';
 import { useAIRequestToAPI } from '@/app/ai/hooks/useAIRequestToAPI';
 import { useCodeErrorMessages } from '@/app/ai/hooks/useCodeErrorMessages';
 import { useCurrentDateTimeContextMessages } from '@/app/ai/hooks/useCurrentDateTimeContextMessages';
-// import { useCurrentSheetContextMessages } from '@/app/ai/hooks/useCurrentSheetContextMessages';
-// import { useOtherSheetsContextMessages } from '@/app/ai/hooks/useOtherSheetsContextMessages';
 import { useFilesContextMessages } from '@/app/ai/hooks/useFilesContextMessages';
 import { useGetUserPromptSuggestions } from '@/app/ai/hooks/useGetUserPromptSuggestions';
 import { useSqlContextMessages } from '@/app/ai/hooks/useSqlContextMessages';
@@ -30,6 +28,7 @@ import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPD
 import { useAnalystWebSearch } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystWebSearch';
 import { trackEvent } from '@/shared/utils/analyticsEvents';
 import {
+  createTextContent,
   getLastAIPromptMessageIndex,
   getMessagesForAI,
   getPromptAndInternalMessages,
@@ -78,15 +77,15 @@ export type SubmitAIAnalystPromptArgs = {
 export function useSubmitAIAnalystPrompt() {
   const aiModel = useAIModel();
   const { handleAIRequestToAPI } = useAIRequestToAPI();
+  const { getSqlContext } = useSqlContextMessages();
+  const { getFilesContext } = useFilesContextMessages();
   const { getCurrentDateTimeContext } = useCurrentDateTimeContextMessages();
+  const { getVisibleContext } = useVisibleContextMessages();
   const { getSummaryContext } = useSummaryContextMessages();
   const { getCodeErrorContext } = useCodeErrorMessages();
-  const { getVisibleContext } = useVisibleContextMessages();
-  const { getFilesContext } = useFilesContextMessages();
   const { importPDF } = useAnalystPDFImport();
   const { search } = useAnalystWebSearch();
   const { getUserPromptSuggestions } = useGetUserPromptSuggestions();
-  const { getSqlContext } = useSqlContextMessages();
 
   const updateInternalContext = useRecoilCallback(
     () =>
@@ -206,9 +205,9 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {
-                currentContent = { type: 'text', text: '' };
+                currentContent = createTextContent('');
               }
               currentContent.text += '\n\nRequest aborted by the user.';
               currentContent.text = currentContent.text.trim();
@@ -222,7 +221,7 @@ export function useSubmitAIAnalystPrompt() {
 
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: [{ type: 'text', text: 'Request aborted by the user.' }],
+                content: [createTextContent('Request aborted by the user.')],
                 contextType: 'userPrompt',
                 toolCalls: [],
                 modelKey: aiModel.modelKey,
@@ -363,23 +362,13 @@ export function useSubmitAIAnalystPrompt() {
                 } catch (error) {
                   toolResultMessage.content.push({
                     id: toolCall.id,
-                    content: [
-                      {
-                        type: 'text',
-                        text: `Error parsing ${toolCall.name} tool's arguments: ${error}`,
-                      },
-                    ],
+                    content: [createTextContent(`Error parsing ${toolCall.name} tool's arguments: ${error}`)],
                   });
                 }
               } else {
                 toolResultMessage.content.push({
                   id: toolCall.id,
-                  content: [
-                    {
-                      type: 'text',
-                      text: 'Unknown tool',
-                    },
-                  ],
+                  content: [createTextContent('Unknown tool')],
                 });
               }
             }
@@ -444,9 +433,9 @@ export function useSubmitAIAnalystPrompt() {
             const lastMessage = prevMessages.at(-1);
             if (lastMessage?.role === 'assistant' && lastMessage?.contextType === 'userPrompt') {
               const newLastMessage = { ...lastMessage };
-              let currentContent = { ...(newLastMessage.content.at(-1) ?? { type: 'text', text: '' }) };
+              let currentContent = { ...(newLastMessage.content.at(-1) ?? createTextContent('')) };
               if (currentContent?.type !== 'text') {
-                currentContent = { type: 'text', text: '' };
+                currentContent = createTextContent('');
               }
               currentContent.text += '\n\nLooks like there was a problem. Please try again.';
               currentContent.text = currentContent.text.trim();
@@ -456,7 +445,7 @@ export function useSubmitAIAnalystPrompt() {
             } else if (lastMessage?.role === 'user') {
               const newLastMessage: AIMessage = {
                 role: 'assistant',
-                content: [{ type: 'text', text: 'Looks like there was a problem. Please try again.' }],
+                content: [createTextContent('Looks like there was a problem. Please try again.')],
                 contextType: 'userPrompt',
                 toolCalls: [],
                 modelKey: aiModel.modelKey,
