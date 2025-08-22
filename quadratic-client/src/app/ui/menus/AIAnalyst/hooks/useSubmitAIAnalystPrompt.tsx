@@ -89,7 +89,7 @@ export function useSubmitAIAnalystPrompt() {
 
   const updateInternalContext = useRecoilCallback(
     () =>
-      async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
+      async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
         const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext] = await Promise.all([
           getSqlContext(),
           getFilesContext({ chatMessages }),
@@ -110,7 +110,14 @@ export function useSubmitAIAnalystPrompt() {
 
         return messagesWithContext;
       },
-    [getCurrentDateTimeContext, getSummaryContext, getVisibleContext, getFilesContext, getSqlContext]
+    [
+      getSqlContext,
+      getFilesContext,
+      getCurrentDateTimeContext,
+      getVisibleContext,
+      getSummaryContext,
+      getCodeErrorContext,
+    ]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -255,7 +262,7 @@ export function useSubmitAIAnalystPrompt() {
             toolCallIterations++;
 
             // Update internal context
-            chatMessages = await updateInternalContext({ context, chatMessages });
+            chatMessages = await updateInternalContext({ chatMessages });
             set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
@@ -263,10 +270,7 @@ export function useSubmitAIAnalystPrompt() {
 
             if (debugFlag('debugLogJsonAIInternalContext')) {
               debugAIContext(messagesForAI);
-              console.log('AIAnalyst messages with context:', {
-                context,
-                messagesForAI,
-              });
+              console.log('AIAnalyst messages with context:', { messagesForAI });
             }
 
             if (debugFlag('debugLogReadableAIInternalContext')) {
