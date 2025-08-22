@@ -20,7 +20,7 @@ export function ConnectionFormAICheckbox({
           className={cn('flex flex-col font-normal leading-5', showError && 'text-destructive')}
         >
           The credentials I'm using are read-only. I acknowledge connecting credentials with write permissions can
-          result in data being written or overwritten in my data source.
+          result in data being overwritten in my data source.
         </Label>
       </div>
       {showError && <p className="text-xs font-medium text-destructive">Required</p>}
