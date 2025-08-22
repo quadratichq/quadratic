@@ -171,6 +171,7 @@ export const AIModelConfigSchema = z
     thinkingToggle: z.boolean().optional(),
     thinkingBudget: z.number().optional(),
     imageSupport: z.boolean(),
+    serviceTier: z.enum(['auto', 'default', 'flex', 'scale', 'priority']).optional(),
     // Sampling parameters
     top_p: z.number().optional(),
     top_k: z.number().optional(),

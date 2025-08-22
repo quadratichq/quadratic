@@ -2,14 +2,14 @@ import type { AuthClient, User } from '@/auth/auth';
 import { waitForAuthClientToRedirect } from '@/auth/auth.helper';
 import type { Session } from '@ory/kratos-client';
 import { Configuration, FrontendApi } from '@ory/kratos-client';
-import * as Sentry from '@sentry/react';
+import { captureEvent } from '@sentry/react';
 
 const ORY_HOST = import.meta.env.VITE_ORY_HOST;
 
 // verify all Ory env variables are set
 if (!ORY_HOST) {
   const message = 'Ory variables are not configured correctly.';
-  Sentry.captureEvent({
+  captureEvent({
     message,
     level: 'fatal',
   });

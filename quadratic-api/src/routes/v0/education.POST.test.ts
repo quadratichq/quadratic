@@ -1,7 +1,35 @@
+import { auth0Mock } from '../../tests/auth0Mock';
+jest.mock('auth0', () =>
+  auth0Mock([
+    {
+      user_id: 'userHarvard',
+      email: 'user@harvard.edu',
+    },
+    {
+      user_id: 'userEligible',
+      email: 'user@eligible-domain.com',
+    },
+    {
+      user_id: 'userIneligible',
+      email: 'user@ineligible-domain.com',
+    },
+  ])
+);
+jest.mock('quadratic-shared/sanityClient', () => ({
+  sanityClient: {
+    educationWhitelist: {
+      get: jest.fn().mockImplementation(() => [
+        {
+          emailSuffix: 'user@eligible-domain.com',
+        },
+      ]),
+    },
+  },
+}));
+
 import request from 'supertest';
 import { app } from '../../app';
 import dbClient from '../../dbClient';
-import { auth0Mock } from '../../tests/auth0Mock';
 import { clearDb } from '../../tests/testDataGenerator';
 
 beforeAll(async () => {
@@ -23,33 +51,6 @@ beforeAll(async () => {
 });
 
 afterAll(clearDb);
-
-const auth0Users = [
-  {
-    user_id: 'userHarvard',
-    email: 'user@harvard.edu',
-  },
-  {
-    user_id: 'userEligible',
-    email: 'user@eligible-domain.com',
-  },
-  {
-    user_id: 'userIneligible',
-    email: 'user@ineligible-domain.com',
-  },
-];
-jest.mock('auth0', () => auth0Mock(auth0Users));
-jest.mock('quadratic-shared/sanityClient', () => ({
-  sanityClient: {
-    educationWhitelist: {
-      get: jest.fn().mockImplementation(() => [
-        {
-          emailSuffix: 'user@eligible-domain.com',
-        },
-      ]),
-    },
-  },
-}));
 
 describe('POST /v0/education', () => {
   describe('refresh education status', () => {
