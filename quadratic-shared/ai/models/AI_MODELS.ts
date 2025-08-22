@@ -224,6 +224,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    supportsReasoning: true,
     rate_per_million_input_tokens: 1.25,
     rate_per_million_output_tokens: 10,
     rate_per_million_cache_read_tokens: 0.125,
@@ -262,6 +263,23 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_input_tokens: 3,
     rate_per_million_output_tokens: 12,
     rate_per_million_cache_read_tokens: 0.75,
+    rate_per_million_cache_write_tokens: 0,
+  },
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    displayName: 'quad-ft-C7OBy3JX',
+    temperature: 0.1,
+    max_tokens: 32768,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'openai',
+    promptCaching: true, // not used for openai, managed by the api
+    strictParams: true,
+    imageSupport: true,
+    rate_per_million_input_tokens: 0.8,
+    rate_per_million_output_tokens: 3.2,
+    rate_per_million_cache_read_tokens: 0.2,
     rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-4.1-2025-04-14': {
@@ -311,6 +329,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    supportsReasoning: true,
     rate_per_million_input_tokens: 1.1,
     rate_per_million_output_tokens: 4.4,
     rate_per_million_cache_read_tokens: 0.275,
@@ -328,6 +347,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    supportsReasoning: true,
     rate_per_million_input_tokens: 10,
     rate_per_million_output_tokens: 40,
     rate_per_million_cache_read_tokens: 2.5,

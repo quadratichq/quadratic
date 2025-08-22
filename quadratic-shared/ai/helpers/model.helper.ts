@@ -89,6 +89,7 @@ export const getModelOptions = (
   strictParams: boolean;
   imageSupport: boolean;
   aiModelMode: ModelMode;
+  supportsReasoning?: boolean;
   top_p?: number;
   top_k?: number;
   min_p?: number;
@@ -115,6 +116,7 @@ export const getModelOptions = (
     strictParams: !!config.strictParams,
     imageSupport: config.imageSupport,
     aiModelMode: config.mode,
+    supportsReasoning: config.supportsReasoning,
     top_p: config.top_p,
     top_k: config.top_k,
     min_p: config.min_p,
