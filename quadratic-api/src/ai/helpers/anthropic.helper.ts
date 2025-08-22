@@ -11,6 +11,7 @@ import type {
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentImage,
   isContentPdfFile,
@@ -264,11 +265,7 @@ export async function parseAnthropicStream(
         case 'content_block_start':
           if (chunk.content_block.type === 'text') {
             if (chunk.content_block.text.trim()) {
-              responseMessage.content.push({
-                type: 'text',
-                text: chunk.content_block.text,
-              });
-
+              responseMessage.content.push(createTextContent(chunk.content_block.text));
               responseMessage.toolCalls.forEach((toolCall) => {
                 toolCall.loading = false;
               });
@@ -314,10 +311,7 @@ export async function parseAnthropicStream(
                 if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
-                currentContent = {
-                  type: 'text',
-                  text: '',
-                };
+                currentContent = createTextContent('');
               }
 
               currentContent.text += chunk.delta.text ?? '';
@@ -415,10 +409,7 @@ export async function parseAnthropicStream(
   );
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -456,10 +447,7 @@ export function parseAnthropicResponse(
     switch (message.type) {
       case 'text':
         if (message.text) {
-          responseMessage.content.push({
-            type: 'text',
-            text: message.text,
-          });
+          responseMessage.content.push(createTextContent(message.text));
         }
         break;
 
@@ -494,10 +482,7 @@ export function parseAnthropicResponse(
   });
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

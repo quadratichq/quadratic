@@ -3,6 +3,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import { getRectSelection } from '@/app/grid/sheet/selection';
 import { intersects } from '@/app/gridGL/helpers/intersects';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -78,21 +79,15 @@ The user can see the following charts in the viewport:`;
     return [
       {
         role: 'user',
-        content: [
-          {
-            type: 'text',
-            text,
-          },
-        ],
+        content: [createTextContent(text)],
         contextType: 'visibleData',
       },
       {
         role: 'assistant',
         content: [
-          {
-            type: 'text',
-            text: `I understand the visible data, I will reference it to answer following messages. How can I help you?`,
-          },
+          createTextContent(
+            `I understand the visible data, I will reference it to answer following messages. How can I help you?`
+          ),
         ],
         contextType: 'visibleData',
       },

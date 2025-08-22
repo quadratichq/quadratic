@@ -1,3 +1,4 @@
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AIRequestBody } from 'quadratic-shared/typesAndSchemasAI';
 import request from 'supertest';
 import { app } from '../../app';
@@ -14,7 +15,7 @@ const payload: AIRequestBody = {
   messages: [
     {
       role: 'user',
-      content: [{ type: 'text', text: 'Hello' }],
+      content: [createTextContent('Hello')],
       contextType: 'userPrompt',
     },
   ],
@@ -31,10 +32,7 @@ jest.mock('@anthropic-ai/bedrock-sdk', () => ({
       create: jest.fn().mockResolvedValue({
         id: 'msg_mock123',
         content: [
-          {
-            type: 'text',
-            text: 'This is a mocked response from Claude',
-          },
+          createTextContent('This is a mocked response from Claude'),
           {
             type: 'tool_use',
             id: 'tool_123',
@@ -90,12 +88,7 @@ describe('POST /v0/ai/chat', () => {
         .expect(({ body }) => {
           expect(body).toEqual({
             role: 'assistant',
-            content: [
-              {
-                type: 'text',
-                text: 'This is a mocked response from Claude',
-              },
-            ],
+            content: [createTextContent('This is a mocked response from Claude')],
             contextType: 'userPrompt',
             toolCalls: [
               {

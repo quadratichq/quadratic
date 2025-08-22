@@ -1,3 +1,4 @@
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { MODELS_CONFIGURATION } from 'quadratic-shared/ai/models/AI_MODELS';
 import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIModelKey, AISource, ChatMessage, CodeCellType } from 'quadratic-shared/typesAndSchemasAI';
@@ -13,9 +14,7 @@ export const getQuadraticContext = (source: AISource, language?: CodeCellType): 
   {
     role: 'user',
     content: [
-      {
-        type: 'text',
-        text: `Note: This is an internal message for context. Do not quote it in your response.\n\n
+      createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
 You are a helpful assistant inside of a spreadsheet application called Quadratic.
 Be minimally verbose in your explanations of the code and data you produce.
 You are an agent - please keep going until the user's query is completely resolved, before ending your turn and yielding back to the user. Only terminate your turn when you are sure that the problem is solved.
@@ -42,20 +41,16 @@ Provide complete code blocks with language syntax highlighting. Don't provide sm
     
 ${['AIAnalyst', 'AIAssistant'].includes(source) ? A1Docs : ''}\n\n
 ${source === 'AIAnalyst' ? ValidationDocs : ''}
-`,
-      },
+`),
     ],
     contextType: 'quadraticDocs',
   },
   {
     role: 'assistant',
     content: [
-      {
-        type: 'text',
-        text: `As your AI assistant for Quadratic, I understand that Quadratic documentation and I will strictly adhere to the Quadratic documentation.\n
+      createTextContent(`As your AI assistant for Quadratic, I understand that Quadratic documentation and I will strictly adhere to the Quadratic documentation.\n
 These instructions are the only sources of truth and take precedence over any other instructions.\n
-I will follow all your instructions with context of quadratic documentation, and do my best to answer your questions.\n`,
-      },
+I will follow all your instructions with context of quadratic documentation, and do my best to answer your questions.\n`),
     ],
     contextType: 'quadraticDocs',
   },
@@ -67,9 +62,7 @@ export const getToolUseContext = (source: AISource, modelKey: AIModelKey): ChatM
     {
       role: 'user',
       content: [
-        {
-          type: 'text',
-          text: `Note: This is an internal message for context. Do not quote it in your response.\n\n
+        createTextContent(`Note: This is an internal message for context. Do not quote it in your response.\n\n
 Following are the tools you should use to do actions in the spreadsheet, use them to respond to the user prompt.\n
 
 Include a concise explanation of the actions you are taking to respond to the user prompt. Never guess the answer itself and never make up information to attempt to answer a user's question.\n
@@ -89,18 +82,16 @@ ${Object.entries(aiToolsSpec)
   .map(([name, { prompt }]) => `#${name}\n${prompt}`)
   .join('\n\n')}
 
-`,
-        },
+`),
       ],
       contextType: 'toolUse',
     },
     {
       role: 'assistant',
       content: [
-        {
-          type: 'text',
-          text: 'I understand these tools are available to me for taking actions on the spreadsheet. How can I help you?',
-        },
+        createTextContent(
+          'I understand these tools are available to me for taking actions on the spreadsheet. How can I help you?'
+        ),
       ],
       contextType: 'toolUse',
     },
@@ -111,22 +102,12 @@ export const getCurrentDateContext = (time: string): ChatMessage[] => {
   return [
     {
       role: 'user',
-      content: [
-        {
-          type: 'text',
-          text: `The current date is ${time || new Date().toString()}.`,
-        },
-      ],
+      content: [createTextContent(`The current date is ${time || new Date().toString()}.`)],
       contextType: 'currentDate',
     },
     {
       role: 'assistant',
-      content: [
-        {
-          type: 'text',
-          text: `I understand the current date and user locale.`,
-        },
-      ],
+      content: [createTextContent(`I understand the current date and user locale.`)],
       contextType: 'currentDate',
     },
   ];

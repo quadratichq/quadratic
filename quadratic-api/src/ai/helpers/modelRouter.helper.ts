@@ -1,4 +1,5 @@
 import {
+  createTextContent,
   getLastAIPromptMessageModelKey,
   getPromptMessagesForAI,
   getUserPromptMessages,
@@ -71,9 +72,7 @@ export const getModelKey = async (
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `
+            createTextContent(`
  <role>
   You are an AI model selector for a spreadsheet application. Based on the user's prompt, choose the most suitable model.
  </role>
@@ -205,21 +204,17 @@ export const getModelKey = async (
    <answer>Claude</answer>
   </example>
  </examples>
-`,
-            },
+`),
           ],
           contextType: 'modelRouter',
         },
         {
           role: 'user',
           content: [
-            {
-              type: 'text',
-              text: `
+            createTextContent(`
 Choose the most suitable model for the following prompt:
 ${userTextPrompt}
-`,
-            },
+`),
           ],
           contextType: 'userPrompt',
         },

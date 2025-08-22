@@ -8,6 +8,7 @@ import { pluralize } from '@/app/helpers/pluralize';
 import type { JsCellValueDescription } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { joinListWith } from '@/shared/components/JointListWith';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useCallback } from 'react';
 
@@ -27,10 +28,9 @@ export function useSummaryContextMessages() {
           {
             role: 'user',
             content: [
-              {
-                type: 'text',
-                text: `Summary: Empty file with no data. Current sheet: '${currentSheetName}'. Use q.cells() to reference data.`,
-              },
+              createTextContent(
+                `Summary: Empty file with no data. Current sheet: '${currentSheetName}'. Use q.cells() to reference data.`
+              ),
             ],
             contextType: 'tables',
           },
@@ -252,21 +252,15 @@ Use get_cell_data tool to get more information about the data in these sheets.
       return [
         {
           role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: summary,
-            },
-          ],
+          content: [createTextContent(summary)],
           contextType: 'fileSummary',
         },
         {
           role: 'assistant',
           content: [
-            {
-              type: 'text',
-              text: `I understand the file structure summary. If asked to solve a data problem, I will check this context, and if I'm missing data, use get_cell_data tool to view more data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`,
-            },
+            createTextContent(
+              `I understand the file structure summary. If asked to solve a data problem, I will check this context, and if I'm missing data, use get_cell_data tool to view more data in my current sheet. Then I will use the appropriate cell references to access the data and write code and formulas to solve the problem. I will search the web if needed and make full appropriate use of my tools as needed to solve problems. How can I help you?`
+            ),
           ],
           contextType: 'fileSummary',
         },

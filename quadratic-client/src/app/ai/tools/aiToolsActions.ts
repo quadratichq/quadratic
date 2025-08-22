@@ -298,12 +298,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     // Get team UUID from the current context
     const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
     if (!teamUuid) {
-      return [
-        {
-          type: 'text',
-          text: 'Unable to retrieve database schemas. Access to team is required.',
-        },
-      ];
+      return [createTextContent('Unable to retrieve database schemas. Access to team is required.')];
     }
 
     // Import the connection client
@@ -312,10 +307,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       connectionClient = (await import('@/shared/api/connectionClient')).connectionClient;
     } catch (error) {
       return [
-        {
-          type: 'text',
-          text: 'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.',
-        },
+        createTextContent(
+          'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.'
+        ),
       ];
     }
 
@@ -330,19 +324,17 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       if (connections.length === 0) {
         return [
-          {
-            type: 'text',
-            text: `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`,
-          },
+          createTextContent(
+            `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`
+          ),
         ];
       }
     } catch (connectionError) {
       console.warn('[GetDatabaseSchemas] Failed to fetch team connections:', connectionError);
       return [
-        {
-          type: 'text',
-          text: `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`,
-        },
+        createTextContent(
+          `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`
+        ),
       ];
     }
 
@@ -383,10 +375,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Filter out null results
       if (schemas.length === 0) {
         return [
-          {
-            type: 'text',
-            text: 'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.',
-          },
+          createTextContent(
+            'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.'
+          ),
         ];
       }
 
@@ -424,20 +415,18 @@ export const aiToolsActions: AIToolActionsRecord = {
         : '';
 
       return [
-        {
-          type: 'text',
-          text: schemaText
+        createTextContent(
+          schemaText
             ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
-            : `No database schema information available.${summaryText}`,
-        },
+            : `No database schema information available.${summaryText}`
+        ),
       ];
     } catch (error) {
       console.error('[GetDatabaseSchemas] Unexpected error:', error);
       return [
-        {
-          type: 'text',
-          text: `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`,
-        },
+        createTextContent(
+          `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`
+        ),
       ];
     }
   },
