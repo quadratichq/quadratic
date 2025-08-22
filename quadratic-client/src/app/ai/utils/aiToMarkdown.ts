@@ -12,7 +12,7 @@ const convertJsCellValue = (cell: JsCellValueCode, showLanguage: boolean): strin
     return `{"language": "${cell.language}", result: ${convertJsCellValue(cell, false)}}`;
   }
   if (cell.kind === 'Number') {
-    return new BigNumber(cell.value).toString();
+    return new BigNumber(cell.value.replace(/,/g, '')).toString();
   } else if (cell.kind === 'Text') {
     return `"${cell.value}"`;
   } else if (cell.kind === 'Logical') {
