@@ -224,9 +224,10 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
-    rate_per_million_input_tokens: 1.25,
-    rate_per_million_output_tokens: 10,
-    rate_per_million_cache_read_tokens: 0.125,
+    serviceTier: 'priority',
+    rate_per_million_input_tokens: 2.5,
+    rate_per_million_output_tokens: 20,
+    rate_per_million_cache_read_tokens: 0.25,
     rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-5-mini-2025-08-07': {
@@ -471,7 +472,7 @@ export const MODELS_CONFIGURATION: {
     model: 'accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
     backupModelKey: 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct',
     displayName: 'Qwen3 Coder 480B',
-    temperature: 0.1,
+    temperature: 0.7,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,

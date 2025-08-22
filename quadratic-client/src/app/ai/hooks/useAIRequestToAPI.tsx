@@ -4,6 +4,7 @@ import { authClient } from '@/auth/auth';
 import { apiClient } from '@/shared/api/apiClient';
 import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import { getModelOptions } from 'quadratic-shared/ai/helpers/model.helper';
+import { AIToolSchema, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import { ApiSchemas, type ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import { type AIMessagePrompt, type AIRequestBody, type ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import type { SetterOrUpdater } from 'recoil';
@@ -127,6 +128,29 @@ export function useAIRequestToAPI() {
             setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
             responseMessage = newResponseMessage;
           }
+
+          // filter out tool calls that are not valid
+          let newResponseMessage = {
+            ...responseMessage,
+            toolCalls: responseMessage.toolCalls.filter((toolCall) => {
+              try {
+                const aiTool = AIToolSchema.parse(toolCall.name);
+                const argsObject = JSON.parse(toolCall.arguments);
+                aiToolsSpec[aiTool].responseSchema.parse(argsObject);
+                return true;
+              } catch (error) {
+                return false;
+              }
+            }),
+          };
+          if (newResponseMessage.content.length === 0 && newResponseMessage.toolCalls.length === 0) {
+            newResponseMessage = {
+              ...newResponseMessage,
+              content: [{ type: 'text', text: 'Please try again.' }],
+            };
+          }
+          setMessages?.((prev) => [...prev.slice(0, -1), { ...newResponseMessage }]);
+          responseMessage = newResponseMessage;
 
           setIsOnPaidPlan(responseMessage.isOnPaidPlan);
           onExceededBillingLimit?.(responseMessage.exceededBillingLimit);

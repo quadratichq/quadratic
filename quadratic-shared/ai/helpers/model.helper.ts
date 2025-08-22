@@ -89,6 +89,7 @@ export const getModelOptions = (
   strictParams: boolean;
   imageSupport: boolean;
   aiModelMode: ModelMode;
+  serviceTier?: 'auto' | 'default' | 'flex' | 'scale' | 'priority';
   top_p?: number;
   top_k?: number;
   min_p?: number;
@@ -115,6 +116,7 @@ export const getModelOptions = (
     strictParams: !!config.strictParams,
     imageSupport: config.imageSupport,
     aiModelMode: config.mode,
+    serviceTier: config.serviceTier,
     top_p: config.top_p,
     top_k: config.top_k,
     min_p: config.min_p,
