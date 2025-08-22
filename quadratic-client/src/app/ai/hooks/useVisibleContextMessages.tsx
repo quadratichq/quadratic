@@ -63,7 +63,7 @@ export function useVisibleContextMessages() {
         for (const table of sheetContext.connections) {
           if (typeof table.language !== 'object' || !table.language.Connection) {
             console.warn('Unexpected non-connection table in useSummaryContextMessages');
-            break;
+            continue;
           }
           text += `- '${table.code_table_name}' is a connection table of type ${table.language.Connection.kind} with bounds of ${table.bounds}\n`;
         }
