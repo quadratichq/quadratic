@@ -15,7 +15,7 @@ export function useSummaryContextMessages() {
       return [
         {
           role: 'user',
-          content: [createTextContent(`Summary: Empty file with`)],
+          content: [createTextContent(`Summary: Empty file with no data`)],
           contextType: 'fileSummary',
         },
       ];
