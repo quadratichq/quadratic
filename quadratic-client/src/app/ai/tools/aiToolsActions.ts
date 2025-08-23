@@ -25,18 +25,15 @@ import type {
   FormatUpdate,
   JsCoordinate,
   JsDataTableColumnHeader,
-  JsGetAICellResult,
-  JsResponse,
   JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
+  SheetPos,
   SheetRect,
 } from '@/app/quadratic-core-types';
 import {
   columnNameToIndex,
   convertTableToSheetPos,
-  selectionToSheetRect,
-  stringToSelection,
   xyToA1,
   type JsSelection,
 } from '@/app/quadratic-core/quadratic_core';
@@ -611,12 +608,11 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { selection, sheet_name, page } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const response = await quadraticCore.getAICells(selection, sheetId, page);
-      if ((response as JsResponse)?.error) {
-        return [
-          createTextContent(`There was an error executing the get cells tool ${(response as JsResponse)?.error}`),
-        ];
-      } else if (typeof response === 'object') {
-        return [createTextContent(AICellResultToMarkdown(response as any as JsGetAICellResult))];
+      if (!response || typeof response === 'string' || ('error' in response && response.error)) {
+        const error = typeof response === 'string' ? response : response?.error;
+        return [createTextContent(`There was an error executing the get cells tool ${error}`)];
+      } else if ('values' in response) {
+        return [createTextContent(AICellResultToMarkdown(response))];
       } else {
         // should not be reached
         return [createTextContent('There was an error executing the get cells tool')];
@@ -892,7 +888,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       let jsSelection: JsSelection | undefined;
       try {
-        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+        jsSelection = sheets.stringToSelection(selection, sheetId);
       } catch (e: any) {
         return [createTextContent(`Error executing resize columns tool. Invalid selection: ${e.message}.`)];
       }
@@ -952,7 +948,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       let jsSelection: JsSelection | undefined;
       try {
-        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+        jsSelection = sheets.stringToSelection(selection, sheetId);
       } catch (e: any) {
         return [createTextContent(`Error executing resize rows tool. Invalid selection: ${e.message}.`)];
       }
@@ -1255,18 +1251,18 @@ export const aiToolsActions: AIToolActionsRecord = {
     }
     if (args.code_cell_name) {
       try {
-        const tableSheetPos = convertTableToSheetPos(args.code_cell_name, sheets.jsA1Context);
+        const tableSheetPos: SheetPos = convertTableToSheetPos(args.code_cell_name, sheets.jsA1Context);
         if (tableSheetPos) {
-          codePos = { x: tableSheetPos.x, y: tableSheetPos.y };
-          sheetId = tableSheetPos.sheetId.id;
+          codePos = { x: Number(tableSheetPos.x), y: Number(tableSheetPos.y) };
+          sheetId = tableSheetPos.sheet_id.id;
         }
       } catch (e) {}
     }
     if (!codePos && args.code_cell_position) {
       try {
-        const sheetRect = selectionToSheetRect(sheetId ?? sheets.current, args.code_cell_position, sheets.jsA1Context);
-        codePos = { x: sheetRect.min.x, y: sheetRect.min.y };
-        sheetId = sheetRect.sheetId.id;
+        const sheetRect: SheetRect = sheets.selectionToSheetRect(sheetId ?? sheets.current, args.code_cell_position);
+        codePos = { x: Number(sheetRect.min.x), y: Number(sheetRect.min.y) };
+        sheetId = sheetRect.sheet_id.id;
       } catch (e) {}
     }
 
