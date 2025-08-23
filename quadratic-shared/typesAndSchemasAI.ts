@@ -21,10 +21,7 @@ const QuadraticModelSchema = z.enum(['quadratic-auto']);
 const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4@20250514']);
 const VertexAIModelSchema = z.enum(['gemini-2.5-flash']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
-const BedrockAnthropicModelSchema = z.enum([
-  'us.anthropic.claude-sonnet-4-20250514-v1:0',
-  'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-]);
+const BedrockAnthropicModelSchema = z.enum(['us.anthropic.claude-sonnet-4-20250514-v1:0']);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-sonnet-4-20250514']);
 const OpenAIModelSchema = z.enum([
@@ -65,8 +62,9 @@ const QuadraticModelKeySchema = z.enum([
 export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 
 const VertexAIAnthropicModelKeySchema = z.enum([
-  'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
-  'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
+  'vertexai-anthropic:claude-sonnet-4@20250514:thinking-toggle-off',
+  'vertexai-anthropic:claude-sonnet-4@20250514:thinking-toggle-on',
+  'vertexai-anthropic:claude-sonnet-4@20250514',
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
@@ -91,7 +89,6 @@ export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 const AnthropicModelKeySchema = z.enum([
   'anthropic:claude-sonnet-4:thinking-toggle-off',
   'anthropic:claude-sonnet-4:thinking-toggle-on',
-  'anthropic:claude-sonnet-4',
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 

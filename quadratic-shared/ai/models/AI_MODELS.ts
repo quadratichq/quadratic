@@ -2,7 +2,7 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 26;
+export const DEFAULT_MODEL_VERSION = 27;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
@@ -57,9 +57,9 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
-  'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off': {
+  'vertexai-anthropic:claude-sonnet-4@20250514:thinking-toggle-off': {
     model: 'claude-sonnet-4@20250514',
-    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    backupModelKey: 'anthropic:claude-sonnet-4:thinking-toggle-off',
     displayName: 'claude sonnet 4',
     temperature: 0.1,
     max_tokens: 64000,
@@ -73,9 +73,9 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
-  'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on': {
+  'vertexai-anthropic:claude-sonnet-4@20250514:thinking-toggle-on': {
     model: 'claude-sonnet-4@20250514',
-    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    backupModelKey: 'anthropic:claude-sonnet-4:thinking-toggle-on',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -86,6 +86,21 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true,
     thinking: true,
     thinkingToggle: true,
+    imageSupport: true,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
+  },
+  'vertexai-anthropic:claude-sonnet-4@20250514': {
+    model: 'claude-sonnet-4-20250514',
+    backupModelKey: 'anthropic:claude-sonnet-4:thinking-toggle-on',
+    displayName: 'claude sonnet 4',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'plus',
+    provider: 'anthropic',
+    promptCaching: true,
+    thinking: true,
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
@@ -137,7 +152,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
+    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -153,7 +168,7 @@ export const MODELS_CONFIGURATION: {
   },
   'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on': {
     model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
-    backupModelKey: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
+    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -216,24 +231,9 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
-  'anthropic:claude-sonnet-4': {
-    model: 'claude-sonnet-4-20250514',
-    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
-    displayName: 'claude sonnet 4',
-    temperature: 1,
-    max_tokens: 64000,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    mode: 'plus',
-    provider: 'anthropic',
-    promptCaching: true,
-    thinking: true,
-    imageSupport: true,
-    ...AI_RATES.claude_sonnet_4_20250514_rate,
-  },
   'openai:gpt-5-2025-08-07': {
     model: 'gpt-5-2025-08-07',
-    backupModelKey: 'anthropic:claude-sonnet-4',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4@20250514',
     displayName: 'gpt-5',
     temperature: 1,
     max_tokens: 128000,
@@ -253,7 +253,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-mini-2025-08-07': {
     model: 'gpt-5-mini-2025-08-07',
-    backupModelKey: 'anthropic:claude-sonnet-4',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4@20250514',
     displayName: 'gpt-5 mini',
     temperature: 1,
     max_tokens: 128000,
