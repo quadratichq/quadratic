@@ -80,11 +80,13 @@ impl GridController {
     #[wasm_bindgen(js_name = "getAICodeErrors")]
     pub fn js_get_ai_code_errors(&self, max_errors: usize) -> Result<JsValue, JsValue> {
         let mut errors = HashMap::new();
-
         for sheet in self.grid().sheets().values() {
             let sheet_errors = sheet.get_ai_code_errors(max_errors);
             if !sheet_errors.is_empty() {
-                errors.insert(sheet.name.clone(), sheet_errors);
+                errors
+                    .entry(sheet.name.clone())
+                    .or_insert_with(Vec::new)
+                    .extend(sheet_errors);
             }
         }
         if errors.is_empty() {

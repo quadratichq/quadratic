@@ -24,6 +24,7 @@ import type {
   JsCodeResult,
   JsColumnWidth,
   JsDataTableColumnHeader,
+  JsGetAICellResult,
   JsResponse,
   JsRowHeight,
   JsSelectionContext,
@@ -1312,7 +1313,7 @@ class Core {
     }
   }
 
-  getAICells(selection: string, sheetName: string, page: number): string | JsResponse | undefined {
+  getAICells(selection: string, sheetName: string, page: number): string | JsResponse | JsGetAICellResult | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
       return this.gridController.getAICells(selection, sheetName, page) ?? '';

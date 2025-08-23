@@ -117,15 +117,6 @@ pub struct JsSelectionContext {
     pub charts_summary: Option<Vec<JsChartSummaryContext>>,
 }
 
-// #[derive(Serialize, Debug, PartialEq, Eq, TS)]
-// pub struct JsCellValuePosContext {
-//     pub sheet_name: String,
-//     pub rect_origin: String,
-//     pub rect_width: u32,
-//     pub rect_height: u32,
-//     pub starting_rect_values: Option<>,
-// }
-
 #[derive(Serialize, Debug, PartialEq, Eq, TS)]
 pub struct JsTableSummaryContext {
     pub sheet_name: String,
@@ -420,16 +411,6 @@ pub enum JsRenderCodeCellState {
 pub struct JsClipboard {
     pub plain_text: String,
     pub html: String,
-}
-
-// Used to serialize the checkboxes contained within a sheet.
-#[derive(Serialize, Deserialize, Debug, Clone, TS)]
-pub struct JsValidationSheet {
-    // checkboxes that need to be rendered
-    checkboxes: Vec<(Pos, bool)>,
-
-    // validation errors that will be displayed
-    errors: Vec<(Pos, String)>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq, TS)]

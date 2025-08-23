@@ -15,6 +15,7 @@ import type {
   JsCodeErrorContext,
   JsCoordinate,
   JsDataTableColumnHeader,
+  JsGetAICellResult,
   JsRenderCell,
   JsResponse,
   JsSelectionContext,
@@ -1271,7 +1272,7 @@ export interface ClientCoreGetAICells {
 export interface CoreClientGetAICells {
   type: 'coreClientGetAICells';
   id: number;
-  aiCells: string | JsResponse | undefined;
+  aiCells: string | JsResponse | JsGetAICellResult | undefined;
 }
 
 export interface ClientCoreSetFormats {
