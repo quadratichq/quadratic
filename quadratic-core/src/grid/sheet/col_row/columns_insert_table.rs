@@ -269,17 +269,19 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         // insert column before the table (which should shift the table over by 1)
-        gc.insert_columns(sheet_id, 2, 1, true, None);
+        gc.insert_columns(sheet_id, 2, 1, false, None);
         assert_data_table_size(&gc, sheet_id, pos![C2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
+        assert_cell_value_type(&gc, pos![sheet_id!C2], "import");
 
         gc.undo(None);
+        assert_cell_value_type(&gc, pos![sheet_id!B2], "import");
         assert_data_table_size(&gc, sheet_id, pos![B2], 3, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
 
         // insert column as the second column (cannot insert the first column except via the table menu)
-        gc.insert_columns(sheet_id, 2, 1, false, None);
+        gc.insert_columns(sheet_id, 2, 1, true, None);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "0");
@@ -301,6 +303,8 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         gc.insert_columns(sheet_id, 3, 1, false, None);
+
+        dbg!(&gc.sheet(sheet_id).data_tables);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "");

@@ -1324,6 +1324,7 @@ class QuadraticCore {
   }
 
   insertColumns(sheetId: string, column: number, count: number, right: boolean): Promise<JsResponse | undefined> {
+    console.log('insertColumns', sheetId, column, count, right);
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientInsertColumns) => {

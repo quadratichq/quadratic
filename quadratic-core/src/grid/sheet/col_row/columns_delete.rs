@@ -174,11 +174,19 @@ impl Sheet {
         self.delete_tables_with_all_columns(transaction, &columns);
         self.delete_tables_columns(transaction, &columns);
         self.delete_chart_columns(transaction, &columns);
-        self.move_tables_leftwards(transaction, &columns);
+
+        // we remove tables first so we can ship them after their anchor cell is moved
+        let dt_to_shift_left = self.prepare_to_move_tables_leftwards(transaction, &columns);
 
         for column in columns {
             self.delete_column(transaction, column, copy_formats, a1_context);
         }
+
+        // move tables leftwards to follow their anchor cells
+        self.move_tables_leftwards(transaction, dt_to_shift_left);
+
+        // recalculate bounds with the updated cache
+        self.recalculate_bounds(a1_context);
     }
 }
 

@@ -188,18 +188,19 @@ impl Sheet {
                         .filter(|col| **col >= output_rect.min.x && **col <= output_rect.max.x)
                         .count();
                     if count > 0
-                        && let Some((width, height)) = dt.chart_output {
-                            let min = (width - count as u32).max(1);
-                            if min != width {
-                                dt.chart_output = Some((min, height));
-                                transaction.add_from_code_run(
-                                    sheet_id,
-                                    pos,
-                                    dt.is_image(),
-                                    dt.is_html(),
-                                );
-                            }
+                        && let Some((width, height)) = dt.chart_output
+                    {
+                        let min = (width - count as u32).max(1);
+                        if min != width {
+                            dt.chart_output = Some((min, height));
+                            transaction.add_from_code_run(
+                                sheet_id,
+                                pos,
+                                dt.is_image(),
+                                dt.is_html(),
+                            );
                         }
+                    }
                 }
 
                 Ok(())
@@ -210,11 +211,11 @@ impl Sheet {
     }
 
     /// Moves data tables to the left if they are before the deleted columns.
-    pub(crate) fn move_tables_leftwards(
+    pub(crate) fn prepare_to_move_tables_leftwards(
         &mut self,
         transaction: &mut PendingTransaction,
         columns: &[i64],
-    ) {
+    ) -> Vec<(usize, Pos, i64, DataTable)> {
         let mut dt_to_shift_left = Vec::new();
 
         let min_column = columns.iter().min().unwrap_or(&1);
@@ -254,6 +255,7 @@ impl Sheet {
         }
 
         dt_to_shift_left.sort_by(|(a, _), (b, _)| a.x.cmp(&b.x));
+        let mut dt_to_shift_left_with_table = Vec::new();
         for (pos, shift_table) in dt_to_shift_left {
             let Some((index, _, old_dt, dirty_rects)) = self.data_table_shift_remove_full(&pos)
             else {
@@ -264,9 +266,21 @@ impl Sheet {
                 continue;
             };
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
+            dt_to_shift_left_with_table.push((index, pos, shift_table, old_dt));
+        }
 
+        dt_to_shift_left_with_table
+    }
+
+    pub(crate) fn move_tables_leftwards(
+        &mut self,
+        transaction: &mut PendingTransaction,
+        dt_to_shift_left_with_table: Vec<(usize, Pos, i64, DataTable)>,
+    ) {
+        for (index, pos, shift_table, old_dt) in dt_to_shift_left_with_table {
             let new_pos = pos.translate(-shift_table, 0, 1, 1);
             let dirty_rects = self.data_table_insert_before(index, &new_pos, old_dt).2;
+
             transaction.add_dirty_hashes_from_dirty_code_rects(self, dirty_rects);
         }
     }
