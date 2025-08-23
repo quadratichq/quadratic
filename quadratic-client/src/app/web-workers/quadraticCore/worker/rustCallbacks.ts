@@ -57,6 +57,7 @@ declare var self: WorkerGlobalScope &
     sendClientMessage: (message: string, severity: JsSnackbarSeverity) => void;
     sendDataTablesCache: (sheetId: string, dataTablesCache: Uint8Array) => void;
     sendContentCache: (sheetId: string, contentCache: Uint8Array) => void;
+    sendAIUpdates: (ops: Uint8Array) => void;
   };
 
 export const addUnsentTransaction = (transactionId: string, transactions: string, operations: number) => {
@@ -231,4 +232,8 @@ export const jsSendDataTablesCache = (sheetId: string, dataTablesCache: Uint8Arr
 
 export const jsSendContentCache = (sheetId: string, contentCache: Uint8Array) => {
   self.sendContentCache(sheetId, contentCache);
+};
+
+export const jsSendAIUpdates = (ops: Uint8Array) => {
+  self.sendAIUpdates(ops);
 };

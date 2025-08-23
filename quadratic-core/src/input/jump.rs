@@ -428,9 +428,9 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!5, 1], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!10, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!5, 1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!10, 1], "1".into(), None, false);
 
         test_create_html_chart(&mut gc, sheet_id, pos![10, 1], 3, 3);
         test_create_html_chart(&mut gc, sheet_id, pos![20, 1], 3, 3);
@@ -458,9 +458,9 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!2, 1], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!5, 1], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!10, 1], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!2, 1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!5, 1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!10, 1], "1".into(), None, false);
 
         test_create_html_chart(&mut gc, sheet_id, pos![20, 1], 3, 3);
         test_create_html_chart(&mut gc, sheet_id, pos![25, 1], 3, 3);
@@ -498,8 +498,8 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!3, 5], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!3, 10], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!3, 5], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!3, 10], "1".into(), None, false);
 
         test_create_html_chart(&mut gc, sheet_id, pos![3, 20], 3, 3);
         test_create_html_chart(&mut gc, sheet_id, pos![3, 25], 3, 3);
@@ -539,8 +539,8 @@ mod tests {
         let mut gc = test_create_gc();
         let sheet_id = first_sheet_id(&gc);
 
-        gc.set_cell_value(pos![sheet_id!3, 5], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!3, 10], "1".into(), None);
+        gc.set_cell_value(pos![sheet_id!3, 5], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!3, 10], "1".into(), None, false);
 
         test_create_html_chart(&mut gc, sheet_id, pos![3, 20], 3, 3);
         test_create_html_chart(&mut gc, sheet_id, pos![3, 25], 3, 3);
@@ -562,17 +562,17 @@ mod tests {
         let sheet_id = first_sheet_id(&gc);
 
         // Create vertical sequence of filled cells
-        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!1, 2], "2".into(), None);
-        gc.set_cell_value(pos![sheet_id!1, 3], "3".into(), None);
+        gc.set_cell_value(pos![sheet_id!1, 1], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!1, 2], "2".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!1, 3], "3".into(), None, false);
 
         assert_jump_down(&gc, pos![sheet_id!1, 1], pos![1, 3]);
         assert_jump_up(&gc, pos![sheet_id!1, 3], pos![1, 1]);
 
         // Create horizontal sequence of filled cells
-        gc.set_cell_value(pos![sheet_id!5, 5], "1".into(), None);
-        gc.set_cell_value(pos![sheet_id!6, 5], "2".into(), None);
-        gc.set_cell_value(pos![sheet_id!7, 5], "3".into(), None);
+        gc.set_cell_value(pos![sheet_id!5, 5], "1".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!6, 5], "2".into(), None, false);
+        gc.set_cell_value(pos![sheet_id!7, 5], "3".into(), None, false);
 
         assert_jump_right(&gc, pos![sheet_id!5, 5], pos![7, 5]);
         assert_jump_left(&gc, pos![sheet_id!7, 5], pos![5, 5]);
@@ -747,6 +747,7 @@ mod tests {
             "A1".into(),
             None,
             None,
+            false,
         );
 
         print_first_sheet(&gc);

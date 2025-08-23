@@ -326,6 +326,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -343,6 +344,7 @@ mod tests {
             BorderSelection::Top,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -359,6 +361,7 @@ mod tests {
             BorderSelection::Bottom,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -375,6 +378,7 @@ mod tests {
             BorderSelection::Left,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
@@ -391,6 +395,7 @@ mod tests {
             BorderSelection::Right,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
@@ -407,6 +412,7 @@ mod tests {
             BorderSelection::Outer,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -424,6 +430,7 @@ mod tests {
             BorderSelection::Inner,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -441,6 +448,7 @@ mod tests {
             BorderSelection::Horizontal,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -457,6 +465,7 @@ mod tests {
             BorderSelection::Vertical,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(sheet_id);
         assert!(sheet.borders.horizontal_borders(None).is_none());
@@ -472,6 +481,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(SheetId::TEST);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -488,6 +498,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(SheetId::TEST);
         let horizontal = sheet.borders.horizontal_borders(None).unwrap();
@@ -506,6 +517,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet = gc.sheet(SheetId::TEST);
         assert_eq!(sheet.borders.horizontal_borders(None).unwrap().len(), 1);
@@ -520,9 +532,10 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
-        gc.clear_format_borders(&A1Selection::test_a1("b5:c6"), None);
+        gc.clear_format_borders(&A1Selection::test_a1("b5:c6"), None, false);
 
         let sheet = gc.sheet(SheetId::TEST);
 

@@ -121,6 +121,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -133,6 +134,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -151,6 +153,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -163,12 +166,14 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         gc_expected.set_borders(
             A1Selection::test_a1("F1:K10"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -187,6 +192,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -199,6 +205,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -217,6 +224,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -229,6 +237,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -247,6 +256,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -259,6 +269,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -277,6 +288,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -289,6 +301,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -314,6 +327,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -326,6 +340,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -344,6 +359,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -356,12 +372,14 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         gc_expected.set_borders(
             A1Selection::test_a1("A6:J11"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -380,6 +398,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -392,6 +411,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -417,6 +437,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -429,6 +450,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -447,6 +469,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -459,6 +482,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -477,6 +501,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
         let sheet = gc.sheet_mut(sheet_id);
@@ -489,6 +514,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -502,18 +528,34 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "12".to_string(), None);
-        gc.set_cell_value(pos![A2].to_sheet_pos(sheet_id), "34".to_string(), None);
-        gc.set_cell_value(pos![A3].to_sheet_pos(sheet_id), "56".to_string(), None);
+        gc.set_cell_value(
+            pos![A1].to_sheet_pos(sheet_id),
+            "12".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos![A2].to_sheet_pos(sheet_id),
+            "34".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos![A3].to_sheet_pos(sheet_id),
+            "56".to_string(),
+            None,
+            false,
+        );
 
         gc.set_borders(
             A1Selection::test_a1("A1:J10"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
-        gc.delete_rows(sheet_id, vec![2], None);
+        gc.delete_rows(sheet_id, vec![2], None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -533,6 +575,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -564,6 +607,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -577,18 +621,34 @@ mod tests {
         let mut gc = GridController::test();
         let sheet_id = gc.sheet_ids()[0];
 
-        gc.set_cell_value(pos![A1].to_sheet_pos(sheet_id), "12".to_string(), None);
-        gc.set_cell_value(pos![A2].to_sheet_pos(sheet_id), "34".to_string(), None);
-        gc.set_cell_value(pos![A3].to_sheet_pos(sheet_id), "56".to_string(), None);
+        gc.set_cell_value(
+            pos![A1].to_sheet_pos(sheet_id),
+            "12".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos![A2].to_sheet_pos(sheet_id),
+            "34".to_string(),
+            None,
+            false,
+        );
+        gc.set_cell_value(
+            pos![A3].to_sheet_pos(sheet_id),
+            "56".to_string(),
+            None,
+            false,
+        );
 
         gc.set_borders(
             A1Selection::test_a1("A1:J10"),
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
 
-        gc.insert_rows(sheet_id, 2, 1, true, None);
+        gc.insert_rows(sheet_id, 2, 1, true, None, false);
 
         let sheet = gc.sheet(sheet_id);
         assert_eq!(
@@ -613,6 +673,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(
@@ -645,6 +706,7 @@ mod tests {
             BorderSelection::All,
             Some(BorderStyle::default()),
             None,
+            false,
         );
         let sheet_expected = gc_expected.sheet(sheet_id);
         assert!(Borders::compare_borders(

@@ -34,7 +34,7 @@ mod test {
     #[test]
     fn a1_selection_from_string_long_sheet_name() {
         let mut gc = GridController::test();
-        gc.add_sheet_with_name("Types: sequences, mapping, sets".to_string(), None);
+        gc.add_sheet_with_name("Types: sequences, mapping, sets".to_string(), None, false);
         let sheet_id = gc.sheet_ids()[1];
         let selection = gc
             .a1_selection_from_string("'Types: sequences, mapping, sets'!A1:B2", sheet_id)

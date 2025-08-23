@@ -113,6 +113,7 @@ mod tests {
                 selection,
                 Some(BorderStyle::default()),
                 None,
+                false,
             );
             let sheet = gc.sheet(SheetId::TEST);
             sheet.borders.print(Some(Rect::new(1, 1, 6, 6)));

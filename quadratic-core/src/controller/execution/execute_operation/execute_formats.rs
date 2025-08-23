@@ -28,7 +28,7 @@ impl GridController {
                 dirty_hashes.extend(hashes);
             }
 
-            if !rows.is_empty() && transaction.is_user() {
+            if !rows.is_empty() && transaction.is_user_ai() {
                 transaction
                     .resize_rows
                     .entry(sheet_id)
@@ -41,7 +41,7 @@ impl GridController {
             }
         }
 
-        if transaction.is_user_undo_redo() {
+        if transaction.is_user_ai_undo_redo() {
             transaction.generate_thumbnail |= self.thumbnail_dirty_formats(sheet_id, &formats);
 
             transaction

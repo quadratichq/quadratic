@@ -255,11 +255,14 @@ export function useSubmitAIAnalystPrompt() {
           while (toolCallIterations < MAX_TOOL_CALL_ITERATIONS) {
             toolCallIterations++;
 
+            console.log({ chatMessages });
             // Update internal context
             chatMessages = await updateInternalContext({ context, chatMessages });
+            console.log({ afterUpdate: chatMessages });
             set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
+            console.log({ messagesForAI });
             lastMessageIndex = getLastAIPromptMessageIndex(messagesForAI);
 
             if (debugFlag('debugLogJsonAIInternalContext')) {

@@ -231,7 +231,7 @@ export const addMessageToolCall = async (args: AIToolsArgs[AITool.AddMessage]): 
       message: '',
     },
   };
-  await quadraticCore.updateValidation(validation);
+  await quadraticCore.updateValidation(validation, true);
   return `Message successfully added to ${args.selection}`;
 };
 
@@ -258,7 +258,7 @@ export const addLogicalValidationToolCall = async (args: AIToolsArgs[AITool.AddL
       message: args.error_message ?? '',
     },
   };
-  await quadraticCore.updateValidation(validation);
+  await quadraticCore.updateValidation(validation, true);
   return `Logical validation successfully added to ${args.selection}`;
 };
 
@@ -294,7 +294,7 @@ export const addListValidationToolCall = async (args: AIToolsArgs[AITool.AddList
     },
   };
 
-  await quadraticCore.updateValidation(validation);
+  await quadraticCore.updateValidation(validation, true);
   return `List validation successfully added to ${args.selection}`;
 };
 
@@ -375,7 +375,7 @@ export const addTextValidationToolCall = async (args: AIToolsArgs[AITool.AddText
       message: args.error_message ?? '',
     },
   };
-  await quadraticCore.updateValidation(validation);
+  await quadraticCore.updateValidation(validation, true);
   return `Text validation successfully added to ${args.selection}`;
 };
 
@@ -433,7 +433,7 @@ export const addNumberValidationToolCall = async (args: AIToolsArgs[AITool.AddNu
       message: args.error_message ?? '',
     },
   };
-  await quadraticCore.updateValidation(validation);
+  await quadraticCore.updateValidation(validation, true);
   return `Number validation successfully added to ${args.selection}`;
 };
 
@@ -540,12 +540,12 @@ export const addDateTimeValidationToolCall = async (
       message: args.error_message ?? '',
     },
   };
-  await quadraticCore.updateValidation(validation);
+  await quadraticCore.updateValidation(validation, true);
   return `Date/time validation successfully added to ${args.selection}`;
 };
 
 export const removeValidationsToolCall = async (args: AIToolsArgs[AITool.RemoveValidations]) => {
   const sheet = getSheetFromSheetName(args.sheet_name);
-  await quadraticCore.removeValidationSelection(sheet.id, args.selection);
+  await quadraticCore.removeValidationSelection(sheet.id, args.selection, true);
   return `Validation successfully removed from ${args.selection}`;
 };

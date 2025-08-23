@@ -80,7 +80,7 @@ mod tests {
             columns: false,
             rows: false,
         }];
-        gc.start_user_transaction(ops, None, TransactionName::MoveCells);
+        gc.start_user_ai_transaction(ops, None, TransactionName::MoveCells, false);
         print_table_in_rect(&gc, sheet_id, Rect::new(6, 1, 10, 12));
     }
 
@@ -106,7 +106,7 @@ mod tests {
             columns: false,
             rows: false,
         }];
-        gc.start_user_transaction(ops, None, TransactionName::MoveCells);
+        gc.start_user_ai_transaction(ops, None, TransactionName::MoveCells, false);
         print_table_in_rect(&gc, sheet_id, Rect::new(5, 2, 9, 13));
 
         assert_eq!(gc.sheet(sheet_id).cell_value(pos), None);
