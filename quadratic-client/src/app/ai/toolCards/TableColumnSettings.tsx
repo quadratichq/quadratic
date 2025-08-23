@@ -28,7 +28,7 @@ export const TableColumnSettings = memo(
     }, [args, loading]);
 
     const icon = <GridActionIcon />;
-    const label = 'Table column names';
+    const label = 'Table column settings';
 
     if (loading) {
       return <ToolCard icon={icon} label={label} isLoading className={className} />;

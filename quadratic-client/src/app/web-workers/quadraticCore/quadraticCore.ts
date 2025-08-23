@@ -23,7 +23,9 @@ import type {
   JsCellValue,
   JsClipboard,
   JsCodeCell,
+  JsCodeErrorContext,
   JsDataTableColumnHeader,
+  JsGetAICellResult,
   JsHashValidationWarnings,
   JsHtmlOutput,
   JsOffset,
@@ -71,6 +73,7 @@ import type {
   CoreClientExportCsvSelection,
   CoreClientExportExcel,
   CoreClientGetAICells,
+  CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
   CoreClientGetAITablesContext,
@@ -413,7 +416,11 @@ class QuadraticCore {
     });
   }
 
-  getAICells(selection: string, sheetId: string, page: number): Promise<string | JsResponse | undefined> {
+  getAICells(
+    selection: string,
+    sheetId: string,
+    page: number
+  ): Promise<string | JsResponse | JsGetAICellResult | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientGetAICells) => {
@@ -426,9 +433,11 @@ class QuadraticCore {
   getAISelectionContexts(args: {
     selections: string[];
     maxRects?: number;
+    maxRows?: number;
     includeErroredCodeCells: boolean;
     includeTablesSummary: boolean;
     includeChartsSummary: boolean;
+    includeDataRectsSummary: boolean;
   }): Promise<JsSelectionContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
@@ -440,9 +449,11 @@ class QuadraticCore {
         id,
         selections: args.selections,
         maxRects: args.maxRects,
+        maxRows: args.maxRows,
         includeErroredCodeCells: args.includeErroredCodeCells,
         includeTablesSummary: args.includeTablesSummary,
         includeChartsSummary: args.includeChartsSummary,
+        includeDataRectsSummary: args.includeDataRectsSummary,
       });
     });
   }
@@ -1662,6 +1673,20 @@ class QuadraticCore {
         sheetId,
         selection,
         id,
+      });
+    });
+  }
+
+  getAICodeErrors(maxErrors: number): Promise<Map<string, JsCodeErrorContext[]> | undefined> {
+    const id = this.id++;
+    return new Promise((resolve) => {
+      this.waitingForResponse[id] = (message: CoreClientGetAICodeErrors) => {
+        resolve(message.errors);
+      };
+      this.send({
+        type: 'clientCoreGetAICodeErrors',
+        id,
+        maxErrors,
       });
     });
   }

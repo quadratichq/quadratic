@@ -10,6 +10,7 @@ import { arrayBufferToBase64, getExtension, getFileTypeFromName } from '@/app/he
 import type { CodeCellLanguage, JsCoordinate } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { isSupportedMimeType } from 'quadratic-shared/ai/helpers/files.helper';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { FileContent } from 'quadratic-shared/typesAndSchemasAI';
 
 export class UrlParamsUser {
@@ -229,7 +230,7 @@ export class UrlParamsUser {
     // submit the prompt and files to the ai analyst
     submitAIAnalystPrompt({
       chatId,
-      content: [...aiFiles, { type: 'text', text: prompt }],
+      content: [...aiFiles, createTextContent(prompt)],
       messageSource: chatId ? 'MarketingSite' : 'UrlPrompt',
       context: {
         sheets: [],

@@ -9,6 +9,8 @@ import {
   removeValidationsToolCall,
 } from '@/app/ai/tools/aiValidations';
 import { defaultFormatUpdate, describeFormatUpdates, expectedEnum } from '@/app/ai/tools/formatUpdate';
+import { AICellResultToMarkdown } from '@/app/ai/utils/aiToMarkdown';
+import { codeCellToMarkdown } from '@/app/ai/utils/codeCellToMarkdown';
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -21,13 +23,20 @@ import type {
   CellVerticalAlign,
   CellWrap,
   FormatUpdate,
+  JsCoordinate,
   JsDataTableColumnHeader,
   JsSheetPosText,
   NumericFormat,
   NumericFormatKind,
+  SheetPos,
   SheetRect,
 } from '@/app/quadratic-core-types';
-import { columnNameToIndex, stringToSelection, xyToA1, type JsSelection } from '@/app/quadratic-core/quadratic_core';
+import {
+  columnNameToIndex,
+  convertTableToSheetPos,
+  xyToA1,
+  type JsSelection,
+} from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { apiClient } from '@/shared/api/apiClient';
 import { CELL_HEIGHT, CELL_TEXT_MARGIN_LEFT, CELL_WIDTH, MIN_CELL_WIDTH } from '@/shared/constants/gridConstants';
@@ -105,12 +114,11 @@ Think and reason about the error and try to fix it. Do not attempt the same fix 
     return [
       createTextContent(
         `
-The code cell has spilled, because the output overlaps with existing data on the sheet at position:
-\`\`\`json\n
-${JSON.stringify(codeCell.spill_error?.map((p) => ({ x: Number(p.x), y: Number(p.y) })))}
-\`\`\`
-Output size is ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.
-Move the code cell to a new position to avoid spilling. Make sure the new position is not overlapping with existing data on the sheet. Do not attempt the same location repeatedly. If it failed once, it will fail again.
+The code cell has spilled, because the output overlaps with existing data on the sheet.
+Output size when not spilled will be ${tableCodeCell.w} cells wide and ${tableCodeCell.h} cells high.\n
+Use the move tool to move just the single cell position of the code you attempted to place to a new position.\n
+This should be a single cell, not a range. E.g. if you're moving the code cell you placed at C1 to G1 then you should move to G1:G1.\n
+Move the code cell to a new position that will avoid spilling. Make sure the new position is not overlapping with existing data on the sheet. Do not attempt the same location repeatedly. Attempt new locations until the spill is resolved.
 `
       ),
     ];
@@ -256,12 +264,7 @@ export const aiToolsActions: AIToolActionsRecord = {
     // Get team UUID from the current context
     const teamUuid = pixiAppSettings.editorInteractionState.teamUuid;
     if (!teamUuid) {
-      return [
-        {
-          type: 'text',
-          text: 'Unable to retrieve database schemas. Access to team is required.',
-        },
-      ];
+      return [createTextContent('Unable to retrieve database schemas. Access to team is required.')];
     }
 
     // Import the connection client
@@ -270,10 +273,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       connectionClient = (await import('@/shared/api/connectionClient')).connectionClient;
     } catch (error) {
       return [
-        {
-          type: 'text',
-          text: 'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.',
-        },
+        createTextContent(
+          'Error: Unable to retrieve connection client. This could be because of network issues, please try again later.'
+        ),
       ];
     }
 
@@ -288,19 +290,17 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       if (connections.length === 0) {
         return [
-          {
-            type: 'text',
-            text: `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`,
-          },
+          createTextContent(
+            `Error: ${connectionIds.length === 0 ? 'No database connections found for this team. Please set up database connections in the team settings first.' : 'None of the specified connection IDs were found or accessible. Make sure the connection IDs are correct. To see all available connections, call this tool with empty connection_ids array.'}`
+          ),
         ];
       }
     } catch (connectionError) {
       console.warn('[GetDatabaseSchemas] Failed to fetch team connections:', connectionError);
       return [
-        {
-          type: 'text',
-          text: `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`,
-        },
+        createTextContent(
+          `Error: Unable to retrieve database connections. This could be because of network issues, please try again later. ${connectionError}`
+        ),
       ];
     }
 
@@ -341,10 +341,9 @@ export const aiToolsActions: AIToolActionsRecord = {
       // Filter out null results
       if (schemas.length === 0) {
         return [
-          {
-            type: 'text',
-            text: 'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.',
-          },
+          createTextContent(
+            'No database schemas could be retrieved. All connections may be unavailable or have configuration issues.'
+          ),
         ];
       }
 
@@ -382,20 +381,18 @@ export const aiToolsActions: AIToolActionsRecord = {
         : '';
 
       return [
-        {
-          type: 'text',
-          text: schemaText
+        createTextContent(
+          schemaText
             ? `Database schemas retrieved successfully:\n\n${schemaText}${summaryText}`
-            : `No database schema information available.${summaryText}`,
-        },
+            : `No database schema information available.${summaryText}`
+        ),
       ];
     } catch (error) {
       console.error('[GetDatabaseSchemas] Unexpected error:', error);
       return [
-        {
-          type: 'text',
-          text: `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`,
-        },
+        createTextContent(
+          `Error retrieving database schemas: ${error instanceof Error ? error.message : String(error)}`
+        ),
       ];
     }
   },
@@ -611,10 +608,14 @@ export const aiToolsActions: AIToolActionsRecord = {
       const { selection, sheet_name, page } = args;
       const sheetId = sheet_name ? (sheets.getSheetByName(sheet_name)?.id ?? sheets.current) : sheets.current;
       const response = await quadraticCore.getAICells(selection, sheetId, page);
-      if (typeof response === 'string') {
-        return [createTextContent(response)];
+      if (!response || typeof response === 'string' || ('error' in response && response.error)) {
+        const error = typeof response === 'string' ? response : response?.error;
+        return [createTextContent(`There was an error executing the get cells tool ${error}`)];
+      } else if ('values' in response) {
+        return [createTextContent(AICellResultToMarkdown(response))];
       } else {
-        return [createTextContent(`There was an error executing the get cells tool ${response?.error}`)];
+        // should not be reached
+        return [createTextContent('There was an error executing the get cells tool')];
       }
     } catch (e) {
       return [createTextContent(`Error executing get cell data tool: ${e}`)];
@@ -887,7 +888,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       let jsSelection: JsSelection | undefined;
       try {
-        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+        jsSelection = sheets.stringToSelection(selection, sheetId);
       } catch (e: any) {
         return [createTextContent(`Error executing resize columns tool. Invalid selection: ${e.message}.`)];
       }
@@ -947,7 +948,7 @@ export const aiToolsActions: AIToolActionsRecord = {
 
       let jsSelection: JsSelection | undefined;
       try {
-        jsSelection = stringToSelection(selection, sheetId, sheets.jsA1Context);
+        jsSelection = sheets.stringToSelection(selection, sheetId);
       } catch (e: any) {
         return [createTextContent(`Error executing resize rows tool. Invalid selection: ${e.message}.`)];
       }
@@ -1237,6 +1238,46 @@ export const aiToolsActions: AIToolActionsRecord = {
       return [createTextContent(text)];
     } catch (e) {
       return [createTextContent(`Error executing remove validations tool: ${e}`)];
+    }
+  },
+  [AITool.GetCodeCellValue]: async (args) => {
+    let sheetId: string | undefined;
+    let codePos: JsCoordinate | undefined;
+    if (args.sheet_name) {
+      sheetId = sheets.getSheetIdFromName(args.sheet_name);
+    }
+    if (!sheetId) {
+      sheetId = sheets.current;
+    }
+    if (args.code_cell_name) {
+      try {
+        const tableSheetPos: SheetPos = convertTableToSheetPos(args.code_cell_name, sheets.jsA1Context);
+        if (tableSheetPos) {
+          codePos = { x: Number(tableSheetPos.x), y: Number(tableSheetPos.y) };
+          sheetId = tableSheetPos.sheet_id.id;
+        }
+      } catch (e) {}
+    }
+    if (!codePos && args.code_cell_position) {
+      try {
+        const sheetRect: SheetRect = sheets.selectionToSheetRect(sheetId ?? sheets.current, args.code_cell_position);
+        codePos = { x: Number(sheetRect.min.x), y: Number(sheetRect.min.y) };
+        sheetId = sheetRect.sheet_id.id;
+      } catch (e) {}
+    }
+
+    if (!codePos || !sheetId) {
+      return [
+        createTextContent(
+          `Error executing get code cell value tool. Invalid code cell position: ${args.code_cell_position} or table name: ${args.code_cell_name}.`
+        ),
+      ];
+    }
+    try {
+      const text = await codeCellToMarkdown(sheetId, codePos.x, codePos.y);
+      return [createTextContent(text)];
+    } catch (e) {
+      return [createTextContent(`Error executing get code cell value tool: ${e}`)];
     }
   },
 } as const;

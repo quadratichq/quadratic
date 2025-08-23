@@ -10,12 +10,13 @@ import {
 } from '@google/genai';
 import type { Response } from 'express';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentText,
   isInternalMessage,
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
-import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
+import { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -33,6 +34,7 @@ import type {
   VertexAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): Part[] {
   return content
@@ -167,7 +169,7 @@ function convertParametersToGenAISchema(parameter: AIToolArgsPrimitive | AIToolA
 
 function getGenAITools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
   let hasWebSearchInternal = toolName === AITool.WebSearchInternal;
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
     if (!toolSpec.sources.includes(source) || !toolSpec.aiModelModes.includes(aiModelMode)) {
       return false;
     }
@@ -270,10 +272,7 @@ export async function parseGenAIStream(
               if (currentContent?.text.trim()) {
                 responseMessage.content.push(currentContent);
               }
-              currentContent = {
-                type: 'text',
-                text: '',
-              };
+              currentContent = createTextContent('');
             }
             currentContent.text += part.text;
             responseMessage.content.push(currentContent);
@@ -306,10 +305,7 @@ export async function parseGenAIStream(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -349,10 +345,7 @@ export function parseGenAIResponse(
   // text and tool calls
   candidate?.content?.parts?.forEach((message) => {
     if (message.text) {
-      responseMessage.content.push({
-        type: 'text',
-        text: message.text.trim(),
-      });
+      responseMessage.content.push(createTextContent(message.text.trim()));
     } else if (message.functionCall?.name) {
       responseMessage.toolCalls.push({
         id: message.functionCall.id ?? v4(),
@@ -372,10 +365,7 @@ export function parseGenAIResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

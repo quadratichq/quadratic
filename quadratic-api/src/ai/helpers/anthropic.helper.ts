@@ -11,6 +11,7 @@ import type {
 import type { Stream } from '@anthropic-ai/sdk/streaming';
 import type { Response } from 'express';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentImage,
   isContentPdfFile,
@@ -19,7 +20,6 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -33,6 +33,7 @@ import type {
   ToolResultContent,
   VertexAIAnthropicModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content): Array<ContentBlockParam> {
   return content
@@ -203,7 +204,7 @@ export function getAnthropicApiArgs(
 }
 
 function getAnthropicTools(source: AISource, aiModelMode: ModelMode, toolName?: AITool): Tool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
     if (!toolSpec.aiModelModes.includes(aiModelMode)) {
       return false;
     }
@@ -264,11 +265,7 @@ export async function parseAnthropicStream(
         case 'content_block_start':
           if (chunk.content_block.type === 'text') {
             if (chunk.content_block.text.trim()) {
-              responseMessage.content.push({
-                type: 'text',
-                text: chunk.content_block.text,
-              });
-
+              responseMessage.content.push(createTextContent(chunk.content_block.text));
               responseMessage.toolCalls.forEach((toolCall) => {
                 toolCall.loading = false;
               });
@@ -314,10 +311,7 @@ export async function parseAnthropicStream(
                 if (currentContent?.text) {
                   responseMessage.content.push(currentContent);
                 }
-                currentContent = {
-                  type: 'text',
-                  text: '',
-                };
+                currentContent = createTextContent('');
               }
 
               currentContent.text += chunk.delta.text ?? '';
@@ -415,10 +409,7 @@ export async function parseAnthropicStream(
   );
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -456,10 +447,7 @@ export function parseAnthropicResponse(
     switch (message.type) {
       case 'text':
         if (message.text) {
-          responseMessage.content.push({
-            type: 'text',
-            text: message.text,
-          });
+          responseMessage.content.push(createTextContent(message.text));
         }
         break;
 
@@ -494,10 +482,7 @@ export function parseAnthropicResponse(
   });
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

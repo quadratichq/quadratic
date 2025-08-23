@@ -1,6 +1,7 @@
 import { editorInteractionStateTeamUuidAtom } from '@/app/atoms/editorInteractionStateAtom';
 import { apiClient } from '@/shared/api/apiClient';
 import { connectionClient } from '@/shared/api/connectionClient';
+import { createTextContent } from 'quadratic-shared/ai/helpers/message.helper';
 import type { ChatMessage } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 
@@ -65,25 +66,46 @@ export function useSqlContextMessages() {
             return [];
           }
 
-          // format as lightweight context message
-          const contextText = validConnections
-            .map((conn) => {
-              const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
+          let contextText = `# Database Connections
 
-              return `Connection: ${conn.connectionName} (${conn.connectionType}), id: ${conn.connectionId}\nDatabase: ${conn.database}\nTables: ${tablesText}`;
-            })
-            .join('\n\n');
+This is the available Database Connections. This shows only table names within each connection.
+
+Use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing.
+`;
+
+          // format as lightweight context message
+          validConnections.forEach((conn) => {
+            const tablesText = conn.tableNames.length > 0 ? conn.tableNames.join(', ') : 'No tables found';
+
+            contextText += `
+## Connection
+${conn.connectionName}
+
+### Information
+type: ${conn.connectionType}
+id: ${conn.connectionId}
+
+### Database
+${conn.database}
+
+#### Tables
+${tablesText}
+
+`;
+          });
 
           return [
             {
               role: 'user',
+              content: [createTextContent(contextText)],
+              contextType: 'sqlSchemas',
+            },
+            {
+              role: 'assistant',
               content: [
-                {
-                  type: 'text',
-                  text: `Available Database Connections and Tables:
-${contextText}
-Note: This shows only table names. Use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing.`,
-                },
+                createTextContent(
+                  `I understand the available database connections and tables. I will use the get_database_schemas tool to retrieve detailed column information, data types, and constraints when needed for SQL query writing. How can I help you?`
+                ),
               ],
               contextType: 'sqlSchemas',
             },

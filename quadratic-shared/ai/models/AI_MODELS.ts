@@ -8,18 +8,18 @@ export const DEFAULT_MODEL_VERSION = 25;
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct';
+export const DEFAULT_MODEL: AIModelKey = 'azure-openai:gpt-4.1';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
-export const DEFAULT_BACKUP_MODEL: AIModelKey = 'fireworks:accounts/fireworks/models/qwen3-coder-480b-a35b-instruct';
+export const DEFAULT_BACKUP_MODEL: AIModelKey = 'openai:gpt-4.1-2025-04-14';
 export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey =
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on';
 
 // Internal tool call models
 export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 export const DEFAULT_PDF_IMPORT_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
-export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
+export const DEFAULT_SEARCH_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-on';
 export const DEFAULT_CODE_EDITOR_COMPLETIONS_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off'; // not used
 export const DEFAULT_GET_USER_PROMPT_SUGGESTIONS_MODEL: AIModelKey = 'azure-openai:gpt-4.1-mini';
 
@@ -378,7 +378,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'fast',
     provider: 'azure-openai',
     promptCaching: true,
     strictParams: true,
@@ -453,7 +453,7 @@ export const MODELS_CONFIGURATION: {
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'disabled',
     provider: 'baseten',
     promptCaching: true,
     strictParams: true,

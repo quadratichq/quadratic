@@ -7,11 +7,15 @@ import type {
 } from 'quadratic-shared/typesAndSchemasAI';
 import { z } from 'zod';
 
+// This provides a list of AI Tools in the order that they will be sent to the
+// AI model. If you want to change order, change it here instead of the spec
+// below.
 export enum AITool {
   SetAIModel = 'set_ai_model',
   SetChatName = 'set_chat_name',
   AddDataTable = 'add_data_table',
   SetCellValues = 'set_cell_values',
+  GetCodeCellValue = 'get_code_cell_value',
   SetCodeCellValue = 'set_code_cell_value',
   GetDatabaseSchemas = 'get_database_schemas',
   SetSQLCodeCellValue = 'set_sql_code_cell_value',
@@ -61,6 +65,7 @@ export const AIToolSchema = z.enum([
   AITool.SetChatName,
   AITool.AddDataTable,
   AITool.SetCellValues,
+  AITool.GetCodeCellValue,
   AITool.SetCodeCellValue,
   AITool.GetDatabaseSchemas,
   AITool.SetSQLCodeCellValue,
@@ -220,6 +225,11 @@ export const AIToolsArgsSchema = {
     top_left_position: stringSchema,
     table_name: stringSchema,
     table_data: array2DSchema,
+  }),
+  [AITool.GetCodeCellValue]: z.object({
+    sheet_name: z.string().nullable().optional(),
+    code_cell_name: z.string().nullable().optional(),
+    code_cell_position: z.string().nullable().optional(),
   }),
   [AITool.SetCodeCellValue]: z.object({
     sheet_name: stringNullableOptionalSchema,
@@ -603,15 +613,12 @@ This name should be from user's perspective, not the assistant's.\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
 You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
 Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
 get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
 The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
-IMPORTANT: If the results include page information:\n
-- if the tool tells you it has too many pages, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- you MUST perform actions on the current page's results before requesting the next page of results.\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
 `,
     parameters: {
       type: 'object',
@@ -637,22 +644,21 @@ The string representation (in a1 notation) of the selection of cells to get the 
     },
     responseSchema: AIToolsArgsSchema[AITool.GetCellData],
     prompt: `
-This tool returns a list of cells and their values in the chosen selection. It ignores all empty cells.\n
+This tool returns the values of the cells in the chosen selection. The selection may be in the sheet or in a data table.\n
+Use this tool to get the actual values of data on the sheet. For placement purposes, you MUST use the information in your context about where there is data on all the sheets.
 Do NOT use this tool if there is no data based on the data bounds provided for the sheet, or if you already have the data in context.\n
-You SHOULD use the get_cell_data function to get the values of the cells when you need more data to reference for your response.\n
-You SHOULD use the get_cell_data function rather than assuming patterns; if you're not perfectly confident with the data already provided, check the data on the sheet first.\n
-This tool does NOT return formatting information (like bold, currency, etc.). Use get_text_formats function for cell formatting information.\n
-IMPORTANT: If the results include page information:\n
-- if the tool tells you it has too many pages, then you MUST try to find another way to deal with the request (unless the user is requesting this approach).\n
-- you MUST perform actions on the current page's results before requesting the next page of results.\n
-- as you get each page, IMMEDIATELY perform any actions before moving to the next page because the data for that page will be removed from the following AI call.\n
+You should use the get_cell_data function to get the values of the cells when you need more data for a successful reference.\n
+Include the sheet name in both the selection and the sheet_name parameter. Use the current sheet name in the context unless the user is requesting data from another sheet, in which case use that sheet name.\n
+get_cell_data function requires a string representation (in a1 notation) of a selection of cells to get the values of (e.g., "A1:B10", "TableName[Column 1]", or "Sheet2!D:D"), and the name of the current sheet.\n
+The get_cell_data function may return page information. Use the page parameter to get the next page of results.\n
 `,
   },
   [AITool.HasCellData]: {
     sources: ['AIAnalyst'],
-    aiModelModes: ['disabled', 'fast', 'max'],
+    aiModelModes: [],
     description: `
-This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n
+This tool checks if the cells in the chosen selection have any data.
+Use MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
 `,
     parameters: {
       type: 'object',
@@ -672,7 +678,10 @@ The string representation (in a1 notation) of the selection of cells to check fo
       additionalProperties: false,
     },
     responseSchema: AIToolsArgsSchema[AITool.HasCellData],
-    prompt: `This tool checks if the cells in the chosen selection have any data. This tool is useful to use before moving tables or cells to avoid moving cells over existing data.\n`,
+    prompt: `
+This tool checks if the cells in the chosen selection have any data.
+Use MUST use this tool before creating or moving tables, code, connections, or cells to avoid spilling cells over existing data.
+`,
   },
   [AITool.AddDataTable]: {
     sources: ['AIAnalyst', 'PDFImport'],
@@ -735,6 +744,7 @@ Don't attempt to add formulas or code to data tables.\n`,
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the values of the current open sheet cells to a 2d array of strings, requires the top_left_position (in a1 notation) and the 2d array of strings representing the cell values to set.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use set_cell_values function to add data to the current open sheet. Don't use code cell for adding data. Always add data using this function.\n\n
 Values are string representation of text, number, logical, time instant, duration, error, html, code, image, date, time or blank.\n
 top_left_position is the position of the top left corner of the 2d array of values on the current open sheet, in a1 notation. This should be a single cell, not a range. Each sub array represents a row of values.\n
@@ -771,6 +781,7 @@ Don't use this tool for adding formulas or code. Use set_code_cell_value functio
     responseSchema: AIToolsArgsSchema[AITool.SetCellValues],
     prompt: `
 You should use the set_cell_values function to set the values of a sheet to a 2d array of strings.\n
+Unless specifically requested, do NOT place cells over existing data on the sheet. You have enough information in the context to know where all cells are in the sheets.
 Use this function to add data to a sheet. Don't use code cell for adding data. Always add data using this function.\n\n
 CRITICALLY IMPORTANT: you MUST insert column headers ABOVE the first row of data.\n
 When setting cell values, follow these rules for headers:\n
@@ -785,19 +796,64 @@ To clear the values of a cell, set the value to an empty string.\n
 Don't use this tool for adding formulas or code. Use set_code_cell_value function for Python/Javascript code or set_formula_cell_value function for formulas.\n
 `,
   },
+  [AITool.GetCodeCellValue]: {
+    sources: ['AIAnalyst'],
+    aiModelModes: ['disabled', 'fast', 'max'],
+    description: `
+This tool gets the code for a Python, JavaScript, Formula, or connection cell.
+Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+    parameters: {
+      type: 'object',
+      properties: {
+        sheet_name: {
+          type: 'string',
+          description: 'The sheet name of the current sheet as defined in the context',
+        },
+        code_cell_name: {
+          type: 'string',
+          description: 'The name of the code cell to get the value of',
+        },
+        code_cell_position: {
+          type: 'string',
+          description: 'The position of the code cell to get the value of, in a1 notation',
+        },
+      },
+      required: ['sheet_name', 'code_cell_name', 'code_cell_position'],
+      additionalProperties: false,
+    },
+    responseSchema: AIToolsArgsSchema[AITool.GetCodeCellValue],
+    prompt: `
+This tool gets the code for a Python, JavaScript, Formula, or connection cell.
+Use this code to fix errors or make improvements by updating it using the set_code_cell_value tool call.`,
+  },
   [AITool.SetCodeCellValue]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Sets the value of a code cell and runs it in the current open sheet, requires the language (Python or Javascript), cell position (in a1 notation), and code string.\n
 Default output size of a new plot/chart is 7 wide * 23 tall cells.\n
+You MUST use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.
 You should use the set_code_cell_value function to set code cell values; use set_code_cell_value function instead of responding with code.\n
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add static data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 Provide a name for the output of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
 Note: only name the code cell if it is new.\n
+If this tool created a spill you MUST delete the original code cell and recreate it at a different location to avoid multiple code cells in the sheet.
 Always refer to the data from cell by its position in a1 notation from respective sheet.\n
 Do not attempt to add code to data tables, it will result in an error.\n
-This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
+This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value. For SQL Connections, use set_sql_code_cell_value.\n\n
+
+Code cell (Python and Javascript) placement instructions:\n
+- Determine the approximate output size of the code cell before placing it.
+- By default, charts will output 7 wide * 23 tall cells (if columns and rows have default width and height). If the code cell is placed in a location that is not empty, it will result in spill error.
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- Leave one extra column gap between the code cell being placed and the nearest content if placing horizontally. If placing vertically, leave one extra row gap between the code cell and the nearest content.
+- Pick a location that makes sense relative to the existing contents of the sheet. Line up placements with existing content. E.g. if placing next to a table at A1:C19, place the code cell at E1 (keeping in mind the extra column gap since placing horizontally).
+- In case there is not enough empty space near the existing contents of the sheet, choose a distant empty cell.\n
+- Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is supposed to be placed. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
 `,
     parameters: {
       type: 'object',
@@ -830,24 +886,27 @@ This tool is for Python and Javascript code only. For formulas, use set_formula_
     },
     responseSchema: AIToolsArgsSchema[AITool.SetCodeCellValue],
     prompt: `
+Use set_code_cell_value instead of responding with code.\n
 set_code_cell_value tool is used to add Python or Javascript code cell to the sheet.\n
-You should use the set_cell_values or add_data_table tool call to add values on the sheet. Use set_cell_values or add_data_table instead of responding with code for adding data to the sheet.\n
 Set code cell value tool should be used for relatively complex tasks. Tasks like data transformations, correlations, machine learning, slicing, etc. For more simple tasks, use set_formula_cell_value.\n
+If this tool created a spill you MUST delete the original code cell and recreate it at a different location to avoid multiple code cells in the sheet.
 Never use set_code_cell_value function to set the value of a cell to a value that is not code. Don't add data to the current open sheet using set_code_cell_value function, use set_cell_values instead. set_code_cell_value function is only meant to set the value of a cell to code.\n
 set_code_cell_value function requires language, codeString, and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation, using q.cells function. Don't add values manually in code cells.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size. For charts, use the default output size of 7 wide * 23 tall cells.\n
 This tool is for Python and Javascript code only. For formulas, use set_formula_cell_value.\n
 
 Code cell (Python and Javascript) placement instructions:\n
 - The code cell location should be empty and positioned such that it will not overlap other cells. If there is a value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
-- The code cell should be near the data it references, so that it is easy to understand the code in the context of the data. Identify the data being referred from code and use a cell close to it. If multiple data references are being made, choose the one which is most used or most important. This will make it easy to understand the code in the context of the table.\n
-- If the referenced data is portrait (more rows than columns, e.g. A1:C15), the code cell should be next to the top right corner of the table. In the example where the table is A1:C15, this would mean placing the code in row 1.\n
-- If the referenced data is landscape (more columns than rows, e.g. A1:H3), the code cell should be below the bottom left corner of the table. In the A1:H3 example, this would mean placing the code cell in column A.\n
-- Leave exactly one blank row / column between the code cell and the data it references. Example: if top right corner of referenced data is at D1, the code cell should be placed at F1, which leaves one column of space. If placing underneath data e.g. A3:D19, you'd place in A21.\n
-- In case there is not enough empty space near the referenced data, choose a distant empty cell which is in the same row as the top right corner of referenced data and to the right of this data.\n
-- If there are multiple tables or data sources being referenced, place the code cell in a location that provides a good balance between proximity to all referenced data and maintaining readability of the current open sheet.\n
+- Leave one extra column gap between the code cell being placed and the nearest content if placing horizontally. If placing vertically, leave one extra row gap between the code cell and the nearest content.\n
+- Pick a location that makes sense relative to the existing contents of the sheet. Line up placements with existing content. E.g. if placing next to a table at A1:C19, place the code cell at E1 (keeping in mind the extra column gap since placing horizontally).\n
+- In case there is not enough empty space near the existing contents of the sheet, choose a distant empty cell.\n
 - Consider the overall layout and organization of the current open sheet when placing the code cell, ensuring it doesn't disrupt existing data or interfere with other code cells.\n
-- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is suppose to take place. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- A plot returned by the code cell occupies space on the sheet and spills if there is any data present in the sheet where the plot is supposed to be placed. Default output size of a new plot is 7 wide * 23 tall cells.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
+
+Think carefully about the placement rules and examples. Always ensure the code cell is placed where it does not create a spill error.
 `,
   },
   [AITool.GetDatabaseSchemas]: {
@@ -855,8 +914,7 @@ Code cell (Python and Javascript) placement instructions:\n
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Retrieves detailed database table schemas including column names, data types, and constraints.\n
-Use this tool when you need detailed column information beyond the table names already available in context.\n
-Essential for writing accurate SQL queries that reference specific columns and their data types.\n
+Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
 If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
 `,
     parameters: {
@@ -876,29 +934,35 @@ If connection_ids is an empty array, it will return detailed schemas for all ava
     },
     responseSchema: AIToolsArgsSchema[AITool.GetDatabaseSchemas],
     prompt: `
-Use this tool to retrieve detailed database table schemas when you need column-level information for SQL queries.\n
-You already have table names in context - use this tool when you need:\n
-- Column names and their data types\n
-- Constraints and nullable information\n
-- Detailed schema structure for writing accurate SQL queries\n
-Call this tool when:\n
-- User asks for specific column information or data types\n
-- You need to write SQL queries that reference specific columns\n
-- User wants detailed database schema information\n
-- You need to understand column relationships and constraints\n
-The tool returns comprehensive schema information including column names, data types, constraints, and nullable flags.\n
+Retrieves detailed database table schemas including column names, data types, and constraints.\n
+Use this tool every time you want to write SQL. You need the table schema to write accurate queries.\n
+If connection_ids is an empty array, it will return detailed schemas for all available team connections.\n
+This tool should always be called before writing SQL. If you don't have the table schema, you cannot write accurate SQL queries.\n
 `,
   },
   [AITool.SetSQLCodeCellValue]: {
     sources: ['AIAnalyst'],
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
-Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
-Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
-SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n\n
+
+For SQL Connection code cells:\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- The Connection ID must be from an available database connection in the team.\n
+- Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
+- Write SQL queries that reference the database tables and schemas provided in context.\n
+
+SQL code cell placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
+- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
 `,
     parameters: {
       type: 'object',
@@ -944,26 +1008,26 @@ This tool is for SQL Connection code only. For Python and Javascript use set_cod
     },
     responseSchema: AIToolsArgsSchema[AITool.SetSQLCodeCellValue],
     prompt: `
-Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet, requires the connection_kind, connection_id, cell position (in a1 notation), and code string.\n
-Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters (but _ is allowed).\n
+Adds or updates a SQL Connection code cell and runs it in the 'sheet_name' sheet. Requires the connection_kind, connection_id, cell position (in A1 notation), and code string.\n
+Output of the code cell is a table. Provide a name for the output table of the code cell. The name cannot contain spaces or special characters, but _ is allowed.\n
 Note: only name the code cell if it is new.\n
-SQL Connections can reference single cell data from the sheet, using handlebars syntax. e.g. {{ A1 }} or {{ B2 }} where A1 and B2 are the positions of the cells in the sheet in a1 notation. We cannot reference multiple cells at once. Value of the cell is replaced in place of the handlebars syntax, via string replacement. For multiple cells, use multiple single cell references which upon string replacement will give you the desired output sql query.\n
 Do not attempt to add code to data tables, it will result in an error. Use set_cell_values or add_data_table to add data to the sheet.\n
-This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For formulas, use set_formula_cell_value.\n
+This tool is for SQL Connection code only. For Python and Javascript use set_code_cell_value. For Formulas, use set_formula_cell_value.\n
 
 For SQL Connection code cells:\n
-- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON\n
-- The Connection ID must be from an available database connection in the team\n
-- Use the GetDatabaseSchemas tool to get the database schemas for the connection\n
-- Write SQL queries that reference the database tables and schemas provided in context\n
-- Follow database-specific syntax rules (quotes for POSTGRES, backticks for MYSQL, Schema scoping in BIGQUERY, etc.)\n
-- POSTGRES uses advanced features like arrays, JSON operations, and custom data types with the most SQL standard compliance\n
-- MYSQL employs backticks for identifier quoting and has unique storage engine syntax (MyISAM, InnoDB) with more relaxed SQL standards\n
-- MSSQL uses square brackets for identifiers and T-SQL extensions like TOP clause, OUTPUT clause, and proprietary functions\n
-- SNOWFLAKE features cloud-native syntax with VARIANT data type for semi-structured data and unique clustering/warehouse scaling commands\n
-- BIGQUERY uses Standard SQL with nested and repeated fields, requiring backticks for table references and GoogleSQL functions for analytics\n
-- COCKROACHDB, SUPABASE and NEON have the same syntax as POSTGRES\n
-- MARIADB has the same syntax as MySQL\n
+- Use the Connection ID (uuid) and Connection language: POSTGRES, MYSQL, MSSQL, SNOWFLAKE, BIGQUERY, COCKROACHDB, MARIADB, SUPABASE or NEON.\n
+- The Connection ID must be from an available database connection in the team.\n
+- Use the GetDatabaseSchemas tool to get the database schemas before writing SQL queries.\n
+- Write SQL queries that reference the database tables and schemas provided in context.\n
+
+SQL code cell placement instructions:\n
+- The code cell location should be empty and positioned such that it will not overlap other cells. If there is an existing value in a single cell where the code result is supposed to go, it will result in spill error. Use current open sheet context to identify empty space.\n
+- SQL cells should always be placed fully clear of any existing data unless the user specifies a location. Place to the right of the last column of existing data in the sheet.\n
+- Leave one extra column gap between the code cell and the last column of existing data in the sheet. E.g. if nearest column of existing data is at column C, the SQL code cell should be placed at column E.\n
+- Cursor location should not impact placement decisions.\n
+- If the sheet is empty, place the code cell at A1.\n
+
+Think carefully about the placement rules and examples. For SQL code cells, ensure the code cell is placed all the way right of the last column of existing data in the sheet to avoid creating spill errors.
 `,
   },
 
@@ -1007,6 +1071,7 @@ Never use set_formula_cell_value function to set the value of a cell to a value 
 set_formula_cell_value function requires formula_string and the cell position (single cell in a1 notation).\n
 Always refer to the cells on sheet by its position in a1 notation. Don't add values manually in formula cells.\n
 This tool is for formulas only. For Python and Javascript code, use set_code_cell_value.\n
+Use the has_cell_data tool to check if the cells in the chosen selection have any data before creating code cells. Try to estimate the output size and check that range.\n
 Don't prefix formulas with \`=\` in formula cells.\n
 
 Formulas placement instructions:\n
@@ -1031,10 +1096,11 @@ Examples:
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 Moves a rectangular selection of cells from one location to another on the current open sheet, requires the source and target locations.\n
+You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
 move_cells function requires the source and target locations. Source location is the top left and bottom right corners of the selection rectangle to be moved.\n
-IMPORTANT: When moving a table, provide only the anchor cell of the table (the top-left cell of the table) in the source selection rectangle.\n
-IMPORTANT: Before moving a table, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
+IMPORTANT: Before moving a table, code, or a chart, use the has_cell_data tool to check if the cells in the new selection have any content. If they do, you should choose a different target location and check that location before moving the table.\n
 When moving a table, leave a space between the table and any surrounding content. This is more aesthetic and easier to read.\n
 Target location is the top left corner of the target location on the current open sheet.\n
 `,
@@ -1062,6 +1128,8 @@ Target location is the top left corner of the target location on the current ope
     responseSchema: AIToolsArgsSchema[AITool.MoveCells],
     prompt: `
 You should use the move_cells function to move a rectangular selection of cells from one location to another on the current open sheet.\n
+You MUST use this tool to fix spill errors to move code, tables, or charts to a different location.\n
+When moving a single spilled code cell, use the move tool to move just the single anchor cell of that code cell causing the spill.\n
 move_cells function requires the current sheet name provided in the context, the source selection, and the target position. Source selection is the string representation (in a1 notation) of a selection rectangle to be moved.\n
 Target position is the top left corner of the target position on the current open sheet, in a1 notation. This should be a single cell, not a range.\n
 `,
@@ -1073,6 +1141,8 @@ Target position is the top left corner of the target position on the current ope
 Deletes the value(s) of a selection of cells, requires a string representation of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 delete_cells functions requires a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 `,
     parameters: {
       type: 'object',
@@ -1094,6 +1164,8 @@ delete_cells functions requires a string representation (in a1 notation) of a se
     prompt: `
 You should use the delete_cells function to delete the value(s) of a selection of cells in the sheet with sheet_name.\n
 You MUST NOT delete cells that are referenced by code cells. For example, if you write Python code that references cells, you MUST NOT delete the original cells or the Python code will stop working.\n
+You MUST use this tool to delete columns in tables by providing it with the column name in A1. For example, "TableName[Column Name]".
+You MUST use this tool to delete tables by providing it with the table name in A1. For example, "TableName".
 delete_cells functions requires the current sheet name provided in the context, and a string representation (in a1 notation) of a selection of cells to delete. Selection can be a single cell or a range of cells or multiple ranges in a1 notation.\n
 `,
   },
@@ -1166,9 +1238,9 @@ The get_text_formats tool returns the text formatting information of a selection
 Do NOT use this tool if there is no formatting in the region based on the format bounds provided for the sheet.\n
 It should be used to find formatting within a sheet's formatting bounds.\n
 It returns a string representation of the formatting information of the cells in the selection.\n
-CRITICALLY IMPORTANT: If too large, the results will include page information:\n
-- if page information is provided, perform actions on the current page's results before requesting the next page of results.\n
-- ALWAYS review all pages of results; as you get each page, IMMEDIATELY perform any actions before moving to the next page.\n
+If too large, the results will include page information:\n
+- If page information is provided, perform actions on the current page's results before requesting the next page of results.\n
+- Always review all pages of results; as you get each page, immediately perform any actions before moving to the next page.\n
 `,
   },
   [AITool.SetTextFormats]: {
@@ -1524,6 +1596,7 @@ It requires the name of the new sheet, and an optional name of a sheet to insert
     prompt: `
 This tool adds a new sheet in the file.\n
 It requires the name of the new sheet, and an optional name of a sheet to insert the new sheet before.\n
+This tool is meant to be used whenever users ask to create new sheets or ask to perform an analysis or task in a new sheet.\n
 `,
   },
   [AITool.DuplicateSheet]: {
@@ -1552,6 +1625,7 @@ It requires the name of the sheet to duplicate and the name of the new sheet.\n
     prompt: `
 This tool duplicates a sheet in the file.\n
 It requires the name of the sheet to duplicate and the name of the new sheet.\n
+This tool should be used primarily when users explicitly ask to create a new sheet from the existing content or ask directly to copy or duplicate a sheet.\n
 `,
   },
   [AITool.RenameSheet]: {
@@ -2085,6 +2159,7 @@ This tool sets the meta data for a table. One or more options can be changed on 
     aiModelModes: ['disabled', 'fast', 'max'],
     description: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
     parameters: {
       type: 'object',
@@ -2127,6 +2202,7 @@ In the parameters, include only columns that you want to change. The remaining c
     responseSchema: AIToolsArgsSchema[AITool.TableColumnSettings],
     prompt: `
 This tool changes the columns of a table. It can rename them or show or hide them.\n
+Use the delete_cells tool to delete columns by providing it with the column name. For example, "TableName[Column Name]". Don't hide the column unless the user requests it.
 In the parameters, include only columns that you want to change. The remaining columns will remain the same.\n`,
   },
 

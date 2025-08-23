@@ -10,6 +10,7 @@ import type {
 import type { Stream } from 'openai/streaming';
 import { getDataBase64String } from 'quadratic-shared/ai/helpers/files.helper';
 import {
+  createTextContent,
   getSystemPromptMessages,
   isContentImage,
   isContentText,
@@ -17,7 +18,6 @@ import {
   isToolResultMessage,
 } from 'quadratic-shared/ai/helpers/message.helper';
 import type { AITool } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import { aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { ApiTypes } from 'quadratic-shared/typesAndSchemas';
 import type {
   AIRequestHelperArgs,
@@ -36,6 +36,7 @@ import type {
   XAIModelKey,
 } from 'quadratic-shared/typesAndSchemasAI';
 import { v4 } from 'uuid';
+import { getAIToolsInOrder } from './tools';
 
 function convertContent(content: Content, imageSupport: boolean): Array<ChatCompletionContentPart> {
   return content
@@ -89,10 +90,7 @@ export function getOpenAIChatCompletionsApiArgs(
         role: message.role,
         content: message.content
           .filter((content) => content.type === 'text' && !!content.text.trim())
-          .map((content) => ({
-            type: 'text',
-            text: content.text.trim(),
-          })),
+          .map((content) => createTextContent(content.text.trim())),
         tool_calls:
           message.toolCalls.length > 0
             ? message.toolCalls.map((toolCall) => ({
@@ -129,7 +127,7 @@ export function getOpenAIChatCompletionsApiArgs(
   }, []);
 
   const openaiMessages: ChatCompletionMessageParam[] = [
-    { role: 'system', content: systemMessages.map((message) => ({ type: 'text', text: message.trim() })) },
+    { role: 'system', content: systemMessages.map((message) => createTextContent(message.trim())) },
     ...messages,
   ];
 
@@ -145,7 +143,7 @@ function getOpenAITools(
   toolName: AITool | undefined,
   strictParams: boolean
 ): ChatCompletionTool[] | undefined {
-  const tools = Object.entries(aiToolsSpec).filter(([name, toolSpec]) => {
+  const tools = getAIToolsInOrder().filter(([name, toolSpec]) => {
     if (!toolSpec.aiModelModes.includes(aiModelMode)) {
       return false;
     }
@@ -216,12 +214,7 @@ export async function parseOpenAIChatCompletionsStream(
       if (chunk.choices && chunk.choices[0] && chunk.choices[0].delta) {
         // text delta
         if (chunk.choices[0].delta.content) {
-          const currentContent = {
-            ...(responseMessage.content.pop() ?? {
-              type: 'text',
-              text: '',
-            }),
-          };
+          const currentContent = { ...(responseMessage.content.pop() ?? createTextContent('')) };
           currentContent.text += chunk.choices[0].delta.content;
           responseMessage.content.push(currentContent);
 
@@ -281,10 +274,7 @@ export async function parseOpenAIChatCompletionsStream(
   responseMessage.content = responseMessage.content.filter((content) => content.text !== '');
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   if (responseMessage.toolCalls.some((toolCall) => toolCall.loading)) {
@@ -322,10 +312,7 @@ export function parseOpenAIChatCompletionsResponse(
   const message = result.choices[0].message;
 
   if (message.content) {
-    responseMessage.content.push({
-      type: 'text',
-      text: message.content.trim(),
-    });
+    responseMessage.content.push(createTextContent(message.content.trim()));
   }
 
   if (message.tool_calls) {
@@ -342,10 +329,7 @@ export function parseOpenAIChatCompletionsResponse(
   }
 
   if (responseMessage.content.length === 0 && responseMessage.toolCalls.length === 0) {
-    responseMessage.content.push({
-      type: 'text',
-      text: 'Please try again.',
-    });
+    responseMessage.content.push(createTextContent('Please try again.'));
   }
 
   response?.json(responseMessage);

@@ -2,7 +2,7 @@ import { sheets } from '@/app/grid/controller/Sheets';
 import type { Validation } from '@/app/quadratic-core-types';
 import { numberToDate, numberToTime } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { JoinWithOr } from '@/shared/components/JoinWithOr';
+import { JoinListWith } from '@/shared/components/JointListWith';
 import { isNotUndefinedOrNull } from '@/shared/utils/undefined';
 import type { JSX } from 'react';
 
@@ -27,14 +27,14 @@ export const translateValidationError = async (
               return (
                 <div key={i}>
                   Text {verb} be one of these values:{' '}
-                  <JoinWithOr arr={r.Exactly.CaseSensitive} className={listClassName} /> (case sensitive).
+                  <JoinListWith arr={r.Exactly.CaseSensitive} className={listClassName} /> (case sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
                   Text {verb} be one of these values:{' '}
-                  <JoinWithOr arr={r.Exactly.CaseInsensitive} className={listClassName} />.
+                  <JoinListWith arr={r.Exactly.CaseInsensitive} className={listClassName} />.
                 </div>
               );
             }
@@ -45,14 +45,14 @@ export const translateValidationError = async (
               return (
                 <div key={i}>
                   Text {verb} contain one of these values:{' '}
-                  <JoinWithOr arr={r.Contains.CaseSensitive} className={listClassName} /> (case sensitive).
+                  <JoinListWith arr={r.Contains.CaseSensitive} className={listClassName} /> (case sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
                   Text {verb} contain one of these values:{' '}
-                  <JoinWithOr arr={r.Contains.CaseInsensitive} className={listClassName} />.
+                  <JoinListWith arr={r.Contains.CaseInsensitive} className={listClassName} />.
                 </div>
               );
             }
@@ -63,14 +63,14 @@ export const translateValidationError = async (
               return (
                 <div key={i}>
                   Text {verb} not contain any of these values:{' '}
-                  <JoinWithOr arr={r.NotContains.CaseSensitive} className={listClassName} /> (case sensitive).
+                  <JoinListWith arr={r.NotContains.CaseSensitive} className={listClassName} /> (case sensitive).
                 </div>
               );
             } else {
               return (
                 <div key={i}>
                   Text {verb} <span className="underline">not</span> contain any of these values:{' '}
-                  <JoinWithOr arr={r.NotContains.CaseInsensitive} className={listClassName} />.
+                  <JoinListWith arr={r.NotContains.CaseInsensitive} className={listClassName} />.
                 </div>
               );
             }
@@ -137,7 +137,7 @@ export const translateValidationError = async (
           if ('Equal' in r) {
             return (
               <div key={i}>
-                Number {verb} be equal to <JoinWithOr arr={r.Equal} className={listClassName} />.
+                Number {verb} be equal to <JoinListWith arr={r.Equal} className={listClassName} />.
               </div>
             );
           }
@@ -146,7 +146,7 @@ export const translateValidationError = async (
             return (
               <div key={i}>
                 Number {verb} <span className="underline">not</span> be equal to{' '}
-                <JoinWithOr arr={r.NotEqual} className={listClassName} />.
+                <JoinListWith arr={r.NotEqual} className={listClassName} />.
               </div>
             );
           }
@@ -170,7 +170,7 @@ export const translateValidationError = async (
       return (
         <div className="whitespace-normal">
           Value {verb} be one of these values:{' '}
-          <JoinWithOr arr={validation.rule.List.source.List} className={listClassName} />.
+          <JoinListWith arr={validation.rule.List.source.List} className={listClassName} />.
         </div>
       );
     } else if ('Selection' in validation.rule.List.source) {
@@ -179,7 +179,7 @@ export const translateValidationError = async (
         <div className="whitespace-normal">
           {cells ? (
             <>
-              Value {verb} be one of these values: <JoinWithOr arr={cells} className={listClassName} />.
+              Value {verb} be one of these values: <JoinListWith arr={cells} className={listClassName} />.
             </>
           ) : (
             <>
@@ -230,7 +230,7 @@ export const translateValidationError = async (
             return (
               <div key={i}>
                 Date {verb} be{' '}
-                <JoinWithOr
+                <JoinListWith
                   arr={r.DateEqual.map((n) => numberToDate(BigInt(n))).filter((n): n is string =>
                     isNotUndefinedOrNull(n)
                   )}
@@ -245,7 +245,7 @@ export const translateValidationError = async (
             return (
               <div key={i}>
                 Date {verb} <span className="underline">not</span> be{' '}
-                <JoinWithOr
+                <JoinListWith
                   arr={r.DateNotEqual.map((n) => numberToDate(BigInt(n))).filter((n): n is string =>
                     isNotUndefinedOrNull(n)
                   )}
@@ -286,7 +286,7 @@ export const translateValidationError = async (
             return (
               <div key={i}>
                 Time {verb} be{' '}
-                <JoinWithOr
+                <JoinListWith
                   arr={r.TimeEqual.map((n) => numberToTime(n)).filter((n): n is string => isNotUndefinedOrNull(n))}
                   className={listClassName}
                 />
@@ -299,7 +299,7 @@ export const translateValidationError = async (
             return (
               <div key={i}>
                 Time {verb} <span className="underline">not</span> be{' '}
-                <JoinWithOr
+                <JoinListWith
                   arr={r.TimeNotEqual.map((n) => numberToTime(n)).filter((n): n is string => isNotUndefinedOrNull(n))}
                   className={listClassName}
                 />
