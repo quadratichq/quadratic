@@ -2,12 +2,12 @@ import { ToolCard } from '@/app/ai/toolCards/ToolCard';
 import { codeEditorAtom } from '@/app/atoms/codeEditorAtom';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
+import { parseFullJson, parsePartialJson } from '@/app/shared/utils/SafeJsonParsing';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { CodeIcon, SaveAndRunIcon } from '@/shared/components/Icons';
 import { LanguageIcon } from '@/shared/components/LanguageIcon';
 import { Button } from '@/shared/shadcn/ui/button';
 import { TooltipPopover } from '@/shared/shadcn/ui/tooltip';
-import { OBJ, parse, STR } from 'partial-json';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
 import type { AIToolCall } from 'quadratic-shared/typesAndSchemasAI';
 import { memo, useEffect, useMemo, useState } from 'react';
@@ -23,28 +23,33 @@ export const SetCodeCellValue = memo(
     const [codeCellPos, setCodeCellPos] = useState<JsCoordinate | undefined>();
 
     useEffect(() => {
-      if (!loading) {
-        const fullJson = parseFullJson(args);
-        if (fullJson) {
-          const toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
-          setToolArgs(toolArgs);
+      if (loading) {
+        setToolArgs(undefined);
+        return;
+      }
 
-          if (toolArgs.success) {
-            try {
-              const sheetId = toolArgs.data.sheet_name
-                ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
-                : sheets.current;
-              const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
-              const { x, y } = selection.getCursor();
-              selection.free();
-              setCodeCellPos({ x, y });
-            } catch (e) {
-              console.error('[SetCodeCellValue] Failed to parse args: ', e);
-              setCodeCellPos(undefined);
-            }
-          }
-        } else {
-          setToolArgs(undefined);
+      const fullJson = parseFullJson<SetCodeCellValueResponse>(args);
+      if (!fullJson) {
+        setToolArgs(undefined);
+        setCodeCellPos(undefined);
+        return;
+      }
+
+      const toolArgs = aiToolsSpec[AITool.SetCodeCellValue].responseSchema.safeParse(fullJson);
+      setToolArgs(toolArgs);
+
+      if (toolArgs.success) {
+        try {
+          const sheetId = toolArgs.data.sheet_name
+            ? (sheets.getSheetByName(toolArgs.data.sheet_name)?.id ?? sheets.current)
+            : sheets.current;
+          const selection = sheets.stringToSelection(toolArgs.data.code_cell_position, sheetId);
+          const { x, y } = selection.getCursor();
+          selection.free();
+          setCodeCellPos({ x, y });
+        } catch (e) {
+          console.warn('[SetCodeCellValue] Failed to set code cell position: ', e);
+          setCodeCellPos(undefined);
         }
       }
     }, [args, loading]);
@@ -87,7 +92,6 @@ export const SetCodeCellValue = memo(
           y: codeCellPos.y,
           codeString: toolArgs.code_string,
           language: toolArgs.code_cell_language,
-          cursor: sheets.getCursorPosition(),
         });
       },
       [codeCellPos]
@@ -102,12 +106,12 @@ export const SetCodeCellValue = memo(
     }, [toolArgs, args]);
 
     if (loading && estimatedNumberOfLines) {
-      const partialJson = parsePartialJson(args);
+      const partialJson = parsePartialJson<SetCodeCellValueResponse>(args);
       if (partialJson && 'code_cell_language' in partialJson) {
         const { code_cell_language: language, code_cell_position: position } = partialJson;
         return (
           <ToolCard
-            icon={<LanguageIcon language={language} />}
+            icon={<LanguageIcon language={language ?? ''} />}
             label={language}
             description={
               `${estimatedNumberOfLines} line` +
@@ -175,22 +179,3 @@ export const SetCodeCellValue = memo(
     );
   }
 );
-
-const parsePartialJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
-  try {
-    const parsed = parse(args, STR | OBJ);
-    return parsed;
-  } catch (error) {
-    return null;
-  }
-};
-
-const parseFullJson = (args: string): Partial<SetCodeCellValueResponse> | null => {
-  try {
-    const json = JSON.parse(args);
-    return json;
-  } catch (error) {
-    console.error('[SetCodeCellValue] Failed to parse args: ', error);
-    return null;
-  }
-};

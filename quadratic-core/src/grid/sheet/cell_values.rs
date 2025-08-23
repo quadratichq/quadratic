@@ -1,7 +1,9 @@
 use crate::{
-    CellValue, Pos, Rect, a1::A1Context, cell_values::CellValues,
+    CellValue, Pos, Rect,
+    a1::A1Context,
+    cell_values::CellValues,
     controller::active_transactions::pending_transaction::PendingTransaction,
-    grid::js_types::JsValidationWarning,
+    grid::js_types::{JsCellValueCode, JsCellValueKind, JsValidationWarning},
 };
 
 use super::Sheet;
@@ -88,22 +90,43 @@ impl Sheet {
                 let numeric_commas = self.formats.numeric_commas.get(pos);
                 Some(value.to_number_display(numeric_format, numeric_decimals, numeric_commas))
             }
+            CellValue::Image(_) => Some("Javascript chart code cell anchor".into()),
+            CellValue::Html(_) => Some("Python chart code cell anchor".into()),
             _ => Some(value.to_display()),
         }
     }
 
     /// Returns the rendered value of the cells in a given rect.
-    pub fn cells_as_string(&self, rect: Rect) -> Option<Vec<String>> {
-        let mut cells = Vec::new();
-        for x in rect.min.x..=rect.max.x {
-            for y in rect.min.y..=rect.max.y {
-                if let Some(value) = self.rendered_value(Pos { x, y }) {
-                    let pos = Pos { x, y }.a1_string();
-                    cells.push(format!("{pos} is {value}"));
-                }
+    pub fn cells_as_string(&self, rect: Rect) -> Vec<Vec<JsCellValueCode>> {
+        let mut values = Vec::new();
+        for y in rect.min.y..=rect.max.y {
+            let mut row = Vec::new();
+            for x in rect.min.x..=rect.max.x {
+                let value = if let Some(value) = self.rendered_value(Pos { x, y }) {
+                    value
+                } else {
+                    "".to_string()
+                };
+                let kind = if let Some(value) = self.display_value(Pos { x, y }) {
+                    value.into()
+                } else {
+                    JsCellValueKind::Blank
+                };
+                let language =
+                    if let Some(CellValue::Code(code)) = self.cell_value_ref(Pos { x, y }) {
+                        Some(code.language.clone())
+                    } else {
+                        None
+                    };
+                row.push(JsCellValueCode {
+                    value,
+                    kind,
+                    language,
+                });
             }
+            values.push(row);
         }
-        if cells.is_empty() { None } else { Some(cells) }
+        values
     }
 
     /// Returns the rendered formats of the cells in a given rect.
@@ -141,7 +164,7 @@ mod test {
             sheet::validations::{rules::ValidationRule, validation::Validation},
         },
         number::decimal_from_str,
-        test_create_gc,
+        test_util::*,
         wasm_bindings::js::expect_js_call,
     };
 

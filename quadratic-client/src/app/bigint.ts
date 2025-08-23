@@ -3,8 +3,3 @@
 export const bigIntReplacer = (_key: string, value: any): any => {
   return typeof value === 'bigint' ? Number(value) : value;
 };
-
-// export const parseWithBigInt = (jsonString, bigNumChecker) =>
-//   JSON.parse(enquoteBigNumber(jsonString, bigNumChecker), (key, value) =>
-//     !isNaN(value) && bigNumChecker(value) ? BigInt(value) : value
-//   );

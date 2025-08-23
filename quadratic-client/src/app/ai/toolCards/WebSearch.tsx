@@ -14,16 +14,17 @@ export const WebSearch = memo(
     const [toolArgs, setToolArgs] = useState<z.SafeParseReturnType<WebSearchResponse, WebSearchResponse>>();
 
     useEffect(() => {
-      if (!loading) {
-        try {
-          const json = JSON.parse(args);
-          setToolArgs(aiToolsSpec[AITool.WebSearch].responseSchema.safeParse(json));
-        } catch (error) {
-          setToolArgs(undefined);
-          console.error('[WebSearch] Failed to parse args: ', error);
-        }
-      } else {
+      if (loading) {
         setToolArgs(undefined);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(args);
+        setToolArgs(aiToolsSpec[AITool.WebSearch].responseSchema.safeParse(json));
+      } catch (error) {
+        setToolArgs(undefined);
+        console.error('[WebSearch] Failed to parse args: ', error);
       }
     }, [args, loading]);
 
