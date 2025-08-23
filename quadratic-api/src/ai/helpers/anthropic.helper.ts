@@ -72,10 +72,7 @@ function convertContent(content: Content): Array<ContentBlockParam> {
         };
         return documentBlockParam;
       } else {
-        const textBlockParam: TextBlockParam = {
-          type: 'text' as const,
-          text: content.text.trim(),
-        };
+        const textBlockParam: TextBlockParam = createTextContent(content.text.trim());
         return textBlockParam;
       }
     });
@@ -96,10 +93,7 @@ function convertToolResultContent(content: ToolResultContent): Array<TextBlockPa
         };
         return imageBlockParam;
       } else {
-        const textBlockParam: TextBlockParam = {
-          type: 'text' as const,
-          text: content.text.trim(),
-        };
+        const textBlockParam: TextBlockParam = createTextContent(content.text.trim());
         return textBlockParam;
       }
     });
@@ -155,10 +149,7 @@ export function getAnthropicApiArgs(
                     data: content.text,
                   };
                 default:
-                  return {
-                    type: 'text' as const,
-                    text: content.text.trim(),
-                  };
+                  return createTextContent(content.text.trim());
               }
             }),
           ...message.toolCalls.map((toolCall) => ({
@@ -179,10 +170,7 @@ export function getAnthropicApiArgs(
             tool_use_id: toolResult.id,
             content: convertToolResultContent(toolResult.content),
           })),
-          {
-            type: 'text' as const,
-            text: 'Given the above tool calls results, continue with your response.',
-          },
+          createTextContent('Given the above tool calls results, continue with your response.'),
         ],
       };
       return [...acc, anthropicMessages];

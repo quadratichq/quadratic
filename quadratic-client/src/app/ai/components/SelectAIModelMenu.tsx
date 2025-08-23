@@ -28,6 +28,7 @@ const MODEL_MODES_LABELS_DESCRIPTIONS: Record<
   { label: string; description: string }
 > = {
   fast: { label: 'Fast', description: 'Good for everyday tasks' },
+  plus: { label: 'Plus', description: 'Mid speed, mid intelligence' },
   max: { label: 'Max', description: 'Very slow, but most capable' },
 };
 

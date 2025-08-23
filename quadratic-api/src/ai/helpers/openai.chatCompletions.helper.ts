@@ -63,10 +63,7 @@ function convertToolResultContent(content: ToolResultContent): Array<ChatComplet
   return content
     .filter((content) => !('text' in content) || !!content.text.trim())
     .filter((content): content is TextContent => isContentText(content))
-    .map((content) => ({
-      type: 'text' as const,
-      text: content.text.trim(),
-    }));
+    .map((content) => createTextContent(content.text.trim()));
 }
 
 export function getOpenAIChatCompletionsApiArgs(

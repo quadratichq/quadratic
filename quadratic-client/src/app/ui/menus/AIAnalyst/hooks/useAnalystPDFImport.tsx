@@ -3,12 +3,11 @@ import { useSummaryContextMessages } from '@/app/ai/hooks/useSummaryContextMessa
 import { useVisibleContextMessages } from '@/app/ai/hooks/useVisibleContextMessages';
 import { aiToolsActions } from '@/app/ai/tools/aiToolsActions';
 import { aiAnalystPDFImportAtom } from '@/app/atoms/aiAnalystAtom';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { createTextContent, getPdfFileFromChatMessages } from 'quadratic-shared/ai/helpers/message.helper';
 import { DEFAULT_PDF_IMPORT_MODEL } from 'quadratic-shared/ai/models/AI_MODELS';
 import { AITool, aiToolsSpec } from 'quadratic-shared/ai/specs/aiToolsSpec';
-import type { ChatMessage, Context, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
+import type { ChatMessage, ToolResultContent } from 'quadratic-shared/typesAndSchemasAI';
 import { useRecoilCallback } from 'recoil';
 import { v4 } from 'uuid';
 import type { z } from 'zod';
@@ -24,11 +23,9 @@ export const useAnalystPDFImport = () => {
     ({ set }) =>
       async ({
         pdfImportArgs,
-        context,
         chatMessages,
       }: {
         pdfImportArgs: PDFImportResponse;
-        context: Context;
         chatMessages: ChatMessage[];
       }): Promise<ToolResultContent> => {
         let importPDFResult = '';
@@ -39,10 +36,7 @@ export const useAnalystPDFImport = () => {
             return [createTextContent(`File with name ${file_name} not found`)];
           }
 
-          const [visibleContext, summaryContext] = await Promise.all([
-            getVisibleContext(),
-            getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
-          ]);
+          const [visibleContext, summaryContext] = await Promise.all([getVisibleContext(), getSummaryContext()]);
 
           const messagesWithContext: ChatMessage[] = [
             {

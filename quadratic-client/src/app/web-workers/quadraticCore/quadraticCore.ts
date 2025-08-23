@@ -31,12 +31,11 @@ import type {
   JsOffset,
   JsRenderFill,
   JsResponse,
-  JsSelectionContext,
   JsSheetFill,
   JsSheetNameToColor,
   JsSheetPosText,
   JsSummarizeSelectionResult,
-  JsTablesContext,
+  JsSummaryContext,
   JsUpdateCodeCell,
   PasteSpecial,
   Pos,
@@ -76,7 +75,6 @@ import type {
   CoreClientGetAICodeErrors,
   CoreClientGetAIFormats,
   CoreClientGetAISelectionContexts,
-  CoreClientGetAITablesContext,
   CoreClientGetCellFormatSummary,
   CoreClientGetCellValue,
   CoreClientGetCodeCell,
@@ -432,39 +430,19 @@ class QuadraticCore {
 
   getAISelectionContexts(args: {
     selections: string[];
-    maxRects?: number;
-    maxRows?: number;
-    includeErroredCodeCells: boolean;
-    includeTablesSummary: boolean;
-    includeChartsSummary: boolean;
-    includeDataRectsSummary: boolean;
-  }): Promise<JsSelectionContext[] | undefined> {
+    maxRows: number | undefined;
+  }): Promise<JsSummaryContext[] | undefined> {
     const id = this.id++;
     return new Promise((resolve) => {
       this.waitingForResponse[id] = (message: CoreClientGetAISelectionContexts) => {
-        resolve(message.selectionContexts);
+        resolve(message.summaryContexts);
       };
       this.send({
         type: 'clientCoreGetAISelectionContexts',
         id,
         selections: args.selections,
-        maxRects: args.maxRects,
         maxRows: args.maxRows,
-        includeErroredCodeCells: args.includeErroredCodeCells,
-        includeTablesSummary: args.includeTablesSummary,
-        includeChartsSummary: args.includeChartsSummary,
-        includeDataRectsSummary: args.includeDataRectsSummary,
       });
-    });
-  }
-
-  getAITablesContext(): Promise<JsTablesContext[] | undefined> {
-    const id = this.id++;
-    return new Promise((resolve) => {
-      this.waitingForResponse[id] = (message: CoreClientGetAITablesContext) => {
-        resolve(message.tablesContext);
-      };
-      this.send({ type: 'clientCoreGetAITablesContext', id });
     });
   }
 

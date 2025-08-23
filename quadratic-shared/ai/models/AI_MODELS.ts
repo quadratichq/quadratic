@@ -2,19 +2,18 @@ import * as AI_RATES from 'quadratic-shared/ai/models/AI_RATES';
 import type { AIModelConfig, AIModelKey } from 'quadratic-shared/typesAndSchemasAI';
 
 // updating this will force the model to be reset to the default model in local storage
-export const DEFAULT_MODEL_VERSION = 25;
+export const DEFAULT_MODEL_VERSION = 26;
 
 // used when `quadratic:quadratic-auto:thinking-toggle-off` is selected, in model router
 export const DEFAULT_MODEL_ROUTER_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
 
 // AI Analyst and AI Assistant chat models
-export const DEFAULT_MODEL: AIModelKey = 'azure-openai:gpt-4.1';
+export const DEFAULT_MODEL: AIModelKey = 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX';
 export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'openai:gpt-4.1-2025-04-14';
-export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey =
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on';
+export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'anthropic:claude-sonnet-4:thinking-toggle-on';
 
 // Internal tool call models
 export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
@@ -31,7 +30,7 @@ export const MODELS_CONFIGURATION: {
   'quadratic:quadratic-auto:thinking-toggle-off': {
     model: 'quadratic-auto',
     displayName: 'auto',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 8192,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -60,8 +59,9 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4@20250514',
+    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
     displayName: 'claude sonnet 4',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -75,6 +75,7 @@ export const MODELS_CONFIGURATION: {
   },
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'claude-sonnet-4@20250514',
+    backupModelKey: 'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -91,7 +92,7 @@ export const MODELS_CONFIGURATION: {
   'vertexai:gemini-2.5-flash:thinking-toggle-off': {
     model: 'gemini-2.5-flash',
     displayName: 'gemini 2.5 flash',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -106,7 +107,7 @@ export const MODELS_CONFIGURATION: {
   'vertexai:gemini-2.5-flash:thinking-toggle-on': {
     model: 'gemini-2.5-flash',
     displayName: 'gemini 2.5 flash',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -122,7 +123,7 @@ export const MODELS_CONFIGURATION: {
   'geminiai:gemini-2.5-flash-lite-preview-06-17': {
     model: 'gemini-2.5-flash-lite-preview-06-17',
     displayName: 'gemini 2.5 flash lite',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 65535,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -134,26 +135,12 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
     ...AI_RATES.gemini_2_5_flash_lite_rate,
   },
-  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0': {
-    model: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
-    displayName: 'claude sonnet 3.5',
-    temperature: 0,
-    max_tokens: 8192,
-    canStream: true,
-    canStreamWithToolCalls: true,
-    mode: 'disabled',
-    provider: 'bedrock-anthropic',
-    promptCaching: false,
-    thinking: false,
-    thinkingToggle: false,
-    imageSupport: true,
-    ...AI_RATES.claude_sonnet_3_5_20250514_rate,
-  },
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on': {
-    model: 'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-    displayName: 'claude 3.7 sonnet',
+  'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off': {
+    model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
+    displayName: 'claude sonnet 4',
     temperature: 1,
-    max_tokens: 16000,
+    max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
     mode: 'disabled',
@@ -162,12 +149,28 @@ export const MODELS_CONFIGURATION: {
     thinking: true,
     thinkingToggle: true,
     imageSupport: true,
-    ...AI_RATES.claude_sonnet_3_7_20250514_rate,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
+  },
+  'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on': {
+    model: 'us.anthropic.claude-sonnet-4-20250514-v1:0',
+    backupModelKey: 'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
+    displayName: 'claude sonnet 4',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'disabled',
+    provider: 'bedrock-anthropic',
+    promptCaching: true,
+    thinking: true,
+    thinkingToggle: true,
+    imageSupport: true,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
   'bedrock:us.deepseek.r1-v1:0': {
     model: 'us.deepseek.r1-v1:0',
     displayName: 'deepseek r1',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: false,
@@ -183,8 +186,9 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-sonnet-4:thinking-toggle-off': {
     model: 'claude-sonnet-4-20250514',
+    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off',
     displayName: 'claude sonnet 4',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 64000,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -198,6 +202,7 @@ export const MODELS_CONFIGURATION: {
   },
   'anthropic:claude-sonnet-4:thinking-toggle-on': {
     model: 'claude-sonnet-4-20250514',
+    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
     displayName: 'claude sonnet 4',
     temperature: 1,
     max_tokens: 64000,
@@ -211,9 +216,24 @@ export const MODELS_CONFIGURATION: {
     imageSupport: true,
     ...AI_RATES.claude_sonnet_4_20250514_rate,
   },
+  'anthropic:claude-sonnet-4': {
+    model: 'claude-sonnet-4-20250514',
+    backupModelKey: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
+    displayName: 'claude sonnet 4',
+    temperature: 1,
+    max_tokens: 64000,
+    canStream: true,
+    canStreamWithToolCalls: true,
+    mode: 'plus',
+    provider: 'anthropic',
+    promptCaching: true,
+    thinking: true,
+    imageSupport: true,
+    ...AI_RATES.claude_sonnet_4_20250514_rate,
+  },
   'openai:gpt-5-2025-08-07': {
     model: 'gpt-5-2025-08-07',
-    backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    backupModelKey: 'anthropic:claude-sonnet-4',
     displayName: 'gpt-5',
     temperature: 1,
     max_tokens: 128000,
@@ -224,6 +244,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    supportsReasoning: true,
     serviceTier: 'priority',
     rate_per_million_input_tokens: 2.5,
     rate_per_million_output_tokens: 20,
@@ -232,7 +253,7 @@ export const MODELS_CONFIGURATION: {
   },
   'openai:gpt-5-mini-2025-08-07': {
     model: 'gpt-5-mini-2025-08-07',
-    backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    backupModelKey: 'anthropic:claude-sonnet-4',
     displayName: 'gpt-5 mini',
     temperature: 1,
     max_tokens: 128000,
@@ -248,27 +269,28 @@ export const MODELS_CONFIGURATION: {
     rate_per_million_cache_read_tokens: 2,
     rate_per_million_cache_write_tokens: 0,
   },
-  'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW': {
-    model: 'ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
-    displayName: 'quad-ft-BvusunQW',
+  'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX': {
+    model: 'ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
+    backupModelKey: 'azure-openai:gpt-4.1',
+    displayName: 'quad-ft-C7OBy3JX',
     temperature: 0.1,
-    max_tokens: 16384,
+    max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'disabled',
+    mode: 'fast',
     provider: 'openai',
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
-    rate_per_million_input_tokens: 3,
-    rate_per_million_output_tokens: 12,
-    rate_per_million_cache_read_tokens: 0.75,
+    rate_per_million_input_tokens: 0.8,
+    rate_per_million_output_tokens: 3.2,
+    rate_per_million_cache_read_tokens: 0.2,
     rate_per_million_cache_write_tokens: 0,
   },
   'openai:gpt-4.1-2025-04-14': {
     model: 'gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -286,7 +308,7 @@ export const MODELS_CONFIGURATION: {
     model: 'gpt-4.1-mini-2025-04-14',
     backupModelKey: 'baseten:Qwen/Qwen3-Coder-480B-A35B-Instruct',
     displayName: 'gpt 4.1 mini',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -312,6 +334,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    supportsReasoning: true,
     rate_per_million_input_tokens: 1.1,
     rate_per_million_output_tokens: 4.4,
     rate_per_million_cache_read_tokens: 0.275,
@@ -329,6 +352,7 @@ export const MODELS_CONFIGURATION: {
     promptCaching: true, // not used for openai, managed by the api
     strictParams: true,
     imageSupport: true,
+    supportsReasoning: true,
     rate_per_million_input_tokens: 10,
     rate_per_million_output_tokens: 40,
     rate_per_million_cache_read_tokens: 2.5,
@@ -374,11 +398,11 @@ export const MODELS_CONFIGURATION: {
     model: 'gpt-4.1',
     backupModelKey: 'openai:gpt-4.1-2025-04-14',
     displayName: 'gpt 4.1',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
-    mode: 'fast',
+    mode: 'disabled',
     provider: 'azure-openai',
     promptCaching: true,
     strictParams: true,
@@ -392,7 +416,7 @@ export const MODELS_CONFIGURATION: {
     model: 'gpt-4.1-mini',
     backupModelKey: 'openai:gpt-4.1-mini-2025-04-14',
     displayName: 'gpt 4.1 mini',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 32768,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -409,7 +433,7 @@ export const MODELS_CONFIGURATION: {
   'xai:grok-4-0709': {
     model: 'grok-4-0709',
     displayName: 'grok 4',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 256000,
     canStream: true,
     canStreamWithToolCalls: true,
@@ -426,7 +450,7 @@ export const MODELS_CONFIGURATION: {
   'baseten:moonshotai/Kimi-K2-Instruct': {
     model: 'moonshotai/Kimi-K2-Instruct',
     displayName: 'Kimi K2 Instruct',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,
@@ -494,7 +518,7 @@ export const MODELS_CONFIGURATION: {
   'open-router:deepseek/deepseek-r1-0528': {
     model: 'deepseek/deepseek-r1-0528',
     displayName: 'deepseek r1 0528',
-    temperature: 0,
+    temperature: 0.1,
     max_tokens: 0, // use api default
     canStream: true,
     canStreamWithToolCalls: true,

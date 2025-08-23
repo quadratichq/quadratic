@@ -5,7 +5,6 @@
  * directly accessed by its siblings.
  */
 
-import { maxRows } from '@/app/ai/constants/context';
 import { bigIntReplacer } from '@/app/bigint';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
 import type { ColumnRowResize } from '@/app/gridGL/interaction/pointer/PointerHeading';
@@ -27,11 +26,10 @@ import type {
   JsGetAICellResult,
   JsResponse,
   JsRowHeight,
-  JsSelectionContext,
   JsSheetNameToColor,
   JsSheetPosText,
   JsSummarizeSelectionResult,
-  JsTablesContext,
+  JsSummaryContext,
   Pos,
   SearchOptions,
   SheetPos,
@@ -1070,38 +1068,12 @@ class Core {
     }
   }
 
-  getAISelectionContexts(args: {
-    selections: string[];
-    maxRects?: number;
-    maxRows?: number;
-    includeErroredCodeCells: boolean;
-    includeTablesSummary: boolean;
-    includeChartsSummary: boolean;
-    includeDataRectsSummary: boolean;
-  }): JsSelectionContext[] | undefined {
+  getAISelectionContexts(args: { selections: string[]; maxRows: number | undefined }): JsSummaryContext[] | undefined {
     try {
       if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.getAISelectionContexts(
-        args.selections,
-        args.maxRects,
-        args.maxRows,
-        args.includeErroredCodeCells,
-        args.includeTablesSummary,
-        args.includeChartsSummary,
-        args.includeDataRectsSummary
-      );
+      return this.gridController.getAISelectionContexts(args.selections, args.maxRows);
     } catch (e) {
       this.handleCoreError('getAISelectionContexts', e);
-      return undefined;
-    }
-  }
-
-  getAITablesContext(): JsTablesContext[] | undefined {
-    try {
-      if (!this.gridController) throw new Error('Expected gridController to be defined');
-      return this.gridController.getAITablesContext(maxRows);
-    } catch (e) {
-      this.handleCoreError('getAITablesContext', e);
       return undefined;
     }
   }

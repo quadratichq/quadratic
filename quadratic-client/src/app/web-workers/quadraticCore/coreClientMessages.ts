@@ -18,12 +18,11 @@ import type {
   JsGetAICellResult,
   JsRenderCell,
   JsResponse,
-  JsSelectionContext,
   JsSheetNameToColor,
   JsSheetPosText,
   JsSnackbarSeverity,
   JsSummarizeSelectionResult,
-  JsTablesContext,
+  JsSummaryContext,
   Pos,
   SearchOptions,
   SheetRect,
@@ -1012,29 +1011,13 @@ export interface ClientCoreGetAISelectionContexts {
   type: 'clientCoreGetAISelectionContexts';
   id: number;
   selections: string[];
-  maxRects: number | undefined;
   maxRows: number | undefined;
-  includeErroredCodeCells: boolean;
-  includeTablesSummary: boolean;
-  includeChartsSummary: boolean;
-  includeDataRectsSummary: boolean;
 }
 
 export interface CoreClientGetAISelectionContexts {
   type: 'coreClientGetAISelectionContexts';
   id: number;
-  selectionContexts: JsSelectionContext[] | undefined;
-}
-
-export interface ClientCoreGetAITablesContext {
-  type: 'clientCoreGetAITablesContext';
-  id: number;
-}
-
-export interface CoreClientGetAITablesContext {
-  type: 'coreClientGetAITablesContext';
-  id: number;
-  tablesContext: JsTablesContext[] | undefined;
+  summaryContexts: JsSummaryContext[] | undefined;
 }
 
 export interface ClientCoreNeighborText {
@@ -1478,7 +1461,6 @@ export type ClientCoreMessage =
   | ClientCoreDataTableFirstRowAsHeader
   | ClientCoreGetCellValue
   | ClientCoreGetAISelectionContexts
-  | ClientCoreGetAITablesContext
   | ClientCoreMoveCodeCellVertically
   | ClientCoreMoveCodeCellHorizontally
   | ClientCoreAddDataTable
@@ -1550,7 +1532,6 @@ export type CoreClientMessage =
   | CoreClientGetCellValue
   | CoreClientClientMessage
   | CoreClientGetAISelectionContexts
-  | CoreClientGetAITablesContext
   | CoreClientMoveCodeCellVertically
   | CoreClientMoveCodeCellHorizontally
   | CoreClientA1Context

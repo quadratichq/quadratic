@@ -22,7 +22,6 @@ import {
   showAIAnalystAtom,
 } from '@/app/atoms/aiAnalystAtom';
 import { debugFlag } from '@/app/debugFlags/debugFlags';
-import { sheets } from '@/app/grid/controller/Sheets';
 import { inlineEditorHandler } from '@/app/gridGL/HTMLGrid/inlineEditor/inlineEditorHandler';
 import { debugAIContext } from '@/app/ui/menus/AIAnalyst/hooks/debugContext';
 import { useAnalystPDFImport } from '@/app/ui/menus/AIAnalyst/hooks/useAnalystPDFImport';
@@ -90,12 +89,12 @@ export function useSubmitAIAnalystPrompt() {
 
   const updateInternalContext = useRecoilCallback(
     () =>
-      async ({ context, chatMessages }: { context: Context; chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
+      async ({ chatMessages }: { chatMessages: ChatMessage[] }): Promise<ChatMessage[]> => {
         const [sqlContext, filesContext, visibleContext, summaryContext, codeErrorContext] = await Promise.all([
           getSqlContext(),
           getFilesContext({ chatMessages }),
           getVisibleContext(),
-          getSummaryContext({ currentSheetName: context.currentSheet, allSheets: sheets.sheets }),
+          getSummaryContext(),
           getCodeErrorContext(),
         ]);
 
@@ -111,7 +110,14 @@ export function useSubmitAIAnalystPrompt() {
 
         return messagesWithContext;
       },
-    [getCurrentDateTimeContext, getSummaryContext, getVisibleContext, getFilesContext, getSqlContext]
+    [
+      getSqlContext,
+      getFilesContext,
+      getCurrentDateTimeContext,
+      getVisibleContext,
+      getSummaryContext,
+      getCodeErrorContext,
+    ]
   );
 
   const submitPrompt = useRecoilCallback(
@@ -256,7 +262,7 @@ export function useSubmitAIAnalystPrompt() {
             toolCallIterations++;
 
             // Update internal context
-            chatMessages = await updateInternalContext({ context, chatMessages });
+            chatMessages = await updateInternalContext({ chatMessages });
             set(aiAnalystCurrentChatMessagesAtom, chatMessages);
 
             const messagesForAI = getMessagesForAI(chatMessages);
@@ -264,10 +270,7 @@ export function useSubmitAIAnalystPrompt() {
 
             if (debugFlag('debugLogJsonAIInternalContext')) {
               debugAIContext(messagesForAI);
-              console.log('AIAnalyst messages with context:', {
-                context,
-                messagesForAI,
-              });
+              console.log('AIAnalyst messages:', messagesForAI);
             }
 
             if (debugFlag('debugLogReadableAIInternalContext')) {
@@ -317,6 +320,10 @@ export function useSubmitAIAnalystPrompt() {
               return nextChatMessages;
             });
             chatMessages = nextChatMessages;
+
+            if (abortController.signal.aborted) {
+              break;
+            }
 
             if (response.toolCalls.length === 0) {
               getUserPromptSuggestions();
@@ -378,7 +385,7 @@ export function useSubmitAIAnalystPrompt() {
             for (const toolCall of importPDFToolCalls) {
               const argsObject = toolCall.arguments ? JSON.parse(toolCall.arguments) : {};
               const pdfImportArgs = aiToolsSpec[AITool.PDFImport].responseSchema.parse(argsObject);
-              const toolResultContent = await importPDF({ pdfImportArgs, context, chatMessages });
+              const toolResultContent = await importPDF({ pdfImportArgs, chatMessages });
               toolResultMessage.content.push({
                 id: toolCall.id,
                 content: toolResultContent,

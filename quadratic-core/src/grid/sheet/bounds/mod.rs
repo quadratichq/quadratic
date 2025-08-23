@@ -2,7 +2,6 @@
 //! this value and only recalculate when necessary.
 
 use crate::{CellValue, Pos, Rect, a1::A1Context, grid::GridBounds};
-use std::cmp::Reverse;
 
 use super::Sheet;
 
@@ -30,10 +29,10 @@ impl Sheet {
             if validation.render_special().is_some()
                 && let Some(rect) =
                     self.selection_bounds(&validation.selection, false, false, true, a1_context)
-                {
-                    self.data_bounds.add(rect.min);
-                    self.data_bounds.add(rect.max);
-                }
+            {
+                self.data_bounds.add(rect.min);
+                self.data_bounds.add(rect.max);
+            }
         }
         for (&pos, _) in self.validations.warnings.iter() {
             self.data_bounds.add(pos);
@@ -298,15 +297,16 @@ impl Sheet {
                     let rect_range = rect_start_x..(rect_start_x + rect.width() as i64);
                     for x in rect_range {
                         if let Some(next_row_with_content) = self.find_next_row(row, x, false, true)
-                            && (next_row_with_content - row) < rect.height() as i64 {
-                                rect_start_x = if !reverse {
-                                    x + 1
-                                } else {
-                                    x - rect.width() as i64
-                                };
-                                is_valid = false;
-                                break;
-                            }
+                            && (next_row_with_content - row) < rect.height() as i64
+                        {
+                            rect_start_x = if !reverse {
+                                x + 1
+                            } else {
+                                x - rect.width() as i64
+                            };
+                            is_valid = false;
+                            break;
+                        }
                     }
                     if is_valid {
                         return rect_start_x;
@@ -341,15 +341,16 @@ impl Sheet {
                     for y in rect_range {
                         if let Some(next_column_with_content) =
                             self.find_next_column(column, y, false, true)
-                            && (next_column_with_content - column) < rect.width() as i64 {
-                                rect_start_y = if !reverse {
-                                    y + 1
-                                } else {
-                                    y - rect.height() as i64
-                                };
-                                is_valid = false;
-                                break;
-                            }
+                            && (next_column_with_content - column) < rect.width() as i64
+                        {
+                            rect_start_y = if !reverse {
+                                y + 1
+                            } else {
+                                y - rect.height() as i64
+                            };
+                            is_valid = false;
+                            break;
+                        }
                     }
                     if is_valid {
                         return rect_start_y;
@@ -363,7 +364,6 @@ impl Sheet {
     pub fn find_tabular_data_rects_in_selection_rects(
         &self,
         selection_rects: Vec<Rect>,
-        max_rects: Option<usize>,
     ) -> Vec<Rect> {
         let mut tabular_data_rects = Vec::new();
 
@@ -442,11 +442,6 @@ impl Sheet {
                     tabular_data_rects.push(tabular_data_rect);
                 }
             }
-        }
-
-        if let Some(max_rects) = max_rects {
-            tabular_data_rects.sort_by_key(|rect| Reverse(rect.len()));
-            tabular_data_rects.truncate(max_rects);
         }
 
         tabular_data_rects
@@ -1054,7 +1049,7 @@ mod test {
         );
 
         let tabular_data_rects =
-            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 400)], None);
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 50, 400)]);
         assert_eq!(tabular_data_rects.len(), 2);
 
         let expected_rects = vec![
@@ -1088,7 +1083,7 @@ mod test {
 
         let sheet = gc.sheet(sheet_id);
         let tabular_data_rects =
-            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)], None);
+            sheet.find_tabular_data_rects_in_selection_rects(vec![Rect::new(1, 1, 10, 10)]);
         assert_eq!(tabular_data_rects.len(), 1);
         assert_eq!(tabular_data_rects[0], Rect::new(1, 1, 1, 10));
     }
