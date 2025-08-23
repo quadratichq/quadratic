@@ -45,16 +45,6 @@ impl Sheet {
         }
     }
 
-    /// Returns true if the column is in the anchor cell.
-    fn is_column_in_anchor_cell(column: i64, pos: Pos, copy_formats: CopyFormats) -> bool {
-        if copy_formats == CopyFormats::After {
-            column == pos.x
-        } else {
-            // CopyFormats::Before
-            column - 1 == pos.x
-        }
-    }
-
     /// Insert columns in data tables that overlap the inserted column.
     pub(crate) fn check_insert_tables_columns(
         &mut self,
@@ -85,30 +75,24 @@ impl Sheet {
                     // table. Code is not impacted by this change.
                     if !dt.is_code() && Self::is_column_inside_table(column, pos, dt, copy_formats)
                     {
-                        if let Ok(display_column_index) = u32::try_from(column - pos.x) {
-                            let column_index =
-                                dt.get_column_index_from_display_index(display_column_index, true);
-                            let _ = dt.insert_column_sorted(column_index as usize, None, None);
-                            transaction.add_from_code_run(
-                                sheet_id,
-                                pos,
-                                dt.is_image(),
-                                dt.is_html(),
-                            );
-                            if dt
-                                .formats
-                                .as_ref()
-                                .is_some_and(|formats| formats.has_fills())
-                            {
-                                transaction.add_fill_cells(sheet_id);
-                            }
-                            if !dt
-                                .borders
-                                .as_ref()
-                                .is_none_or(|borders| borders.is_default())
-                            {
-                                transaction.add_borders(sheet_id);
-                            }
+                        let display_column_index = u32::try_from(column - pos.x)?;
+                        let column_index =
+                            dt.get_column_index_from_display_index(display_column_index, true);
+                        dt.insert_column_sorted(column_index as usize, None, None)?;
+                        transaction.add_from_code_run(sheet_id, pos, dt.is_image(), dt.is_html());
+                        if dt
+                            .formats
+                            .as_ref()
+                            .is_some_and(|formats| formats.has_fills())
+                        {
+                            transaction.add_fill_cells(sheet_id);
+                        }
+                        if !dt
+                            .borders
+                            .as_ref()
+                            .is_none_or(|borders| borders.is_default())
+                        {
+                            transaction.add_borders(sheet_id);
                         }
                     }
                 }
@@ -145,10 +129,8 @@ impl Sheet {
             .get_pos_in_columns_sorted(&[column], false)
             .into_iter()
             .filter(|(_, pos)| {
-                self.data_table_at(pos).is_some_and(|dt| {
-                    Self::is_column_inside_table(column, *pos, dt, copy_formats)
-                        && Self::is_column_in_anchor_cell(column, *pos, copy_formats)
-                })
+                self.data_table_at(pos)
+                    .is_some_and(|_| copy_formats == CopyFormats::After && column == pos.x)
             })
             .collect::<Vec<_>>();
 
@@ -303,8 +285,6 @@ mod tests {
         test_create_data_table(&mut gc, sheet_id, pos![B2], 3, 3);
 
         gc.insert_columns(sheet_id, 3, 1, false, None);
-
-        dbg!(&gc.sheet(sheet_id).data_tables);
         assert_data_table_size(&gc, sheet_id, pos![B2], 4, 3, false);
         assert_display_cell_value(&gc, sheet_id, 2, 4, "0");
         assert_display_cell_value(&gc, sheet_id, 3, 4, "");
@@ -416,28 +396,6 @@ mod tests {
         check(3 + 1, CopyFormats::Before, true);
         check(4 + 1, CopyFormats::Before, true);
         check(5 + 1, CopyFormats::Before, true);
-        check(6 + 1, CopyFormats::Before, false);
-        check(2 + 1, CopyFormats::Before, false);
-    }
-
-    #[test]
-    fn test_column_is_in_anchor_cell() {
-        let check = |column: i64, copy_formats: CopyFormats, expected: bool| {
-            assert!(Sheet::is_column_in_anchor_cell(column, pos![C1], copy_formats) == expected);
-            assert!(Sheet::is_column_in_anchor_cell(column, pos![C7], copy_formats) == expected);
-        };
-
-        // insert to the left
-        check(3, CopyFormats::After, true);
-        check(4, CopyFormats::After, false);
-        check(5, CopyFormats::After, false);
-        check(6, CopyFormats::After, false);
-        check(2, CopyFormats::After, false);
-
-        // insert to the right
-        check(3 + 1, CopyFormats::Before, true);
-        check(4 + 1, CopyFormats::Before, false);
-        check(5 + 1, CopyFormats::Before, false);
         check(6 + 1, CopyFormats::Before, false);
         check(2 + 1, CopyFormats::Before, false);
     }

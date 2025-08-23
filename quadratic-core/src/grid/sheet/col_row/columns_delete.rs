@@ -175,7 +175,9 @@ impl Sheet {
         self.delete_tables_columns(transaction, &columns);
         self.delete_chart_columns(transaction, &columns);
 
-        // we remove tables first so we can ship them after their anchor cell is moved
+        // we remove tables first so we can add them back after their anchor
+        // cell is moved (this avoids creating spills since the anchor cells
+        // will not match)
         let dt_to_shift_left = self.prepare_to_move_tables_leftwards(transaction, &columns);
 
         for column in columns {
