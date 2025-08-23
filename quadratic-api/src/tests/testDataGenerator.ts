@@ -193,7 +193,7 @@ export async function createAIChat(
   const messages = data.messages ?? [
     {
       messageIndex: 1,
-      model: 'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+      model: 'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0',
       messageType: 'userPrompt' as const,
     },
   ];

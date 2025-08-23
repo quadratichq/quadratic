@@ -22,15 +22,14 @@ const VertexAnthropicModelSchema = z.enum(['claude-sonnet-4@20250514']);
 const VertexAIModelSchema = z.enum(['gemini-2.5-flash']);
 const GenAIModelSchema = z.enum(['gemini-2.5-flash-lite-preview-06-17']);
 const BedrockAnthropicModelSchema = z.enum([
+  'us.anthropic.claude-sonnet-4-20250514-v1:0',
   'us.anthropic.claude-3-7-sonnet-20250219-v1:0',
-  'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
 ]);
 const BedrockModelSchema = z.enum(['us.deepseek.r1-v1:0']);
 const AnthropicModelSchema = z.enum(['claude-sonnet-4-20250514']);
 const OpenAIModelSchema = z.enum([
   'gpt-5-2025-08-07',
   'gpt-5-mini-2025-08-07',
-  'ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
   'ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
   'gpt-4.1-2025-04-14',
   'gpt-4.1-mini-2025-04-14',
@@ -68,6 +67,7 @@ export type QuadraticModelKey = z.infer<typeof QuadraticModelKeySchema>;
 const VertexAIAnthropicModelKeySchema = z.enum([
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-off',
   'vertexai-anthropic:claude-sonnet-4:thinking-toggle-on',
+  'vertexai-anthropic:claude-sonnet-4',
 ]);
 export type VertexAIAnthropicModelKey = z.infer<typeof VertexAIAnthropicModelKeySchema>;
 
@@ -81,8 +81,8 @@ const GeminiAIModelKeySchema = z.enum(['geminiai:gemini-2.5-flash-lite-preview-0
 export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
+  'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0',
   'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on',
-  'bedrock-anthropic:us.anthropic.claude-3-5-sonnet-20241022-v2:0',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
@@ -98,7 +98,6 @@ export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 const OpenAIModelKeySchema = z.enum([
   'openai:gpt-5-2025-08-07',
   'openai:gpt-5-mini-2025-08-07',
-  'openai:ft:gpt-4.1-2025-04-14:quadratic::BvusunQW',
   'openai:ft:gpt-4.1-mini-2025-04-14:quadratic::C7OBy3JX',
   'openai:gpt-4.1-2025-04-14',
   'openai:gpt-4.1-mini-2025-04-14',
@@ -154,7 +153,7 @@ const AIRatesSchema = z.object({
   rate_per_million_cache_write_tokens: z.number(),
 });
 export type AIRates = z.infer<typeof AIRatesSchema>;
-const ModelModeSchema = z.enum(['disabled', 'fast', 'max']);
+const ModelModeSchema = z.enum(['disabled', 'fast', 'plus', 'max']);
 export type ModelMode = z.infer<typeof ModelModeSchema>;
 export const AIModelConfigSchema = z
   .object({

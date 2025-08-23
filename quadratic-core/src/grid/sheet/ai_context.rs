@@ -148,40 +148,26 @@ impl Sheet {
                     continue;
                 };
 
+                let table_context = JsCodeTableContext {
+                    sheet_name: self.name.clone(),
+                    code_table_name: table.name().to_string(),
+                    all_columns: table.columns_map(true),
+                    visible_columns: table.columns_map(false),
+                    values,
+                    bounds: bounds.a1_string(),
+                    intended_bounds: intended_bounds.a1_string(),
+                    show_name: table.get_show_name(),
+                    show_columns: table.get_show_columns(),
+                    language: code_cell_value.language.to_owned(),
+                    code_string: code_cell_value.code.to_owned(),
+                    std_err: code_run.std_err.to_owned(),
+                    error: code_run.error.is_some(),
+                    spill: table.has_spill(),
+                };
                 if let CodeCellLanguage::Connection { .. } = &code_cell_value.language {
-                    tables_context.connections.push(JsCodeTableContext {
-                        sheet_name: self.name.clone(),
-                        code_table_name: table.name().to_string(),
-                        bounds: bounds.a1_string(),
-                        intended_bounds: intended_bounds.a1_string(),
-                        language: code_cell_value.language.to_owned(),
-                        code_string: code_cell_value.code.to_owned(),
-                        spill: table.has_spill(),
-                        all_columns: table.columns_map(true),
-                        visible_columns: table.columns_map(false),
-                        values,
-                        show_name: table.get_show_name(),
-                        show_columns: table.get_show_columns(),
-                        std_err: code_run.std_err.to_owned(),
-                        error: code_run.error.is_some(),
-                    });
+                    tables_context.connections.push(table_context);
                 } else {
-                    tables_context.code_tables.push(JsCodeTableContext {
-                        sheet_name: self.name.clone(),
-                        code_table_name: table.name().to_string(),
-                        all_columns: table.columns_map(true),
-                        visible_columns: table.columns_map(false),
-                        values,
-                        bounds: bounds.a1_string(),
-                        intended_bounds: intended_bounds.a1_string(),
-                        show_name: table.get_show_name(),
-                        show_columns: table.get_show_columns(),
-                        language: code_cell_value.language.to_owned(),
-                        code_string: code_cell_value.code.to_owned(),
-                        std_err: code_run.std_err.to_owned(),
-                        error: code_run.error.is_some(),
-                        spill: table.has_spill(),
-                    });
+                    tables_context.code_tables.push(table_context);
                 }
             } else if cell_value.is_import() {
                 tables_context.data_tables.push(JsDataTableContext {

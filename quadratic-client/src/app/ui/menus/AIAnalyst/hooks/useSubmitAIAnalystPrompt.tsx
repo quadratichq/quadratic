@@ -270,7 +270,7 @@ export function useSubmitAIAnalystPrompt() {
 
             if (debugFlag('debugLogJsonAIInternalContext')) {
               debugAIContext(messagesForAI);
-              console.log('AIAnalyst messages with context:', { messagesForAI });
+              console.log('AIAnalyst messages:', messagesForAI);
             }
 
             if (debugFlag('debugLogReadableAIInternalContext')) {
