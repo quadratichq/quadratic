@@ -13,7 +13,8 @@ export const DEFAULT_MODEL_WITH_IMAGE: AIModelKey = 'azure-openai:gpt-4.1';
 
 // Backup models for AI Analyst and AI Assistant chat models
 export const DEFAULT_BACKUP_MODEL: AIModelKey = 'openai:gpt-4.1-2025-04-14';
-export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey = 'anthropic:claude-sonnet-4:thinking-toggle-on';
+export const DEFAULT_BACKUP_MODEL_THINKING: AIModelKey =
+  'vertexai-anthropic:claude-sonnet-4@20250514:thinking-toggle-on';
 
 // Internal tool call models
 export const DEFAULT_GET_CHAT_NAME_MODEL: AIModelKey = 'vertexai:gemini-2.5-flash:thinking-toggle-off';
