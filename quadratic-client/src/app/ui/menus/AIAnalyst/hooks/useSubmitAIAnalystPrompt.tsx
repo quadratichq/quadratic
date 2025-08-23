@@ -321,6 +321,10 @@ export function useSubmitAIAnalystPrompt() {
             });
             chatMessages = nextChatMessages;
 
+            if (abortController.signal.aborted) {
+              break;
+            }
+
             if (response.toolCalls.length === 0) {
               getUserPromptSuggestions();
               break;

@@ -225,6 +225,10 @@ export function useSubmitAIAssistantPrompt() {
               break;
             }
 
+            if (abortController.signal.aborted) {
+              break;
+            }
+
             if (response.toolCalls.length === 0) {
               break;
             }

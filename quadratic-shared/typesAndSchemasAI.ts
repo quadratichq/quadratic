@@ -80,8 +80,8 @@ const GeminiAIModelKeySchema = z.enum(['geminiai:gemini-2.5-flash-lite-preview-0
 export type GeminiAIModelKey = z.infer<typeof GeminiAIModelKeySchema>;
 
 const BedrockAnthropicModelKeySchema = z.enum([
-  'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0',
-  'bedrock-anthropic:us.anthropic.claude-3-7-sonnet-20250219-v1:0:thinking-toggle-on',
+  'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-off',
+  'bedrock-anthropic:us.anthropic.claude-sonnet-4-20250514-v1:0:thinking-toggle-on',
 ]);
 export type BedrockAnthropicModelKey = z.infer<typeof BedrockAnthropicModelKeySchema>;
 
@@ -91,6 +91,7 @@ export type BedrockModelKey = z.infer<typeof BedrockModelKeySchema>;
 const AnthropicModelKeySchema = z.enum([
   'anthropic:claude-sonnet-4:thinking-toggle-off',
   'anthropic:claude-sonnet-4:thinking-toggle-on',
+  'anthropic:claude-sonnet-4',
 ]);
 export type AnthropicModelKey = z.infer<typeof AnthropicModelKeySchema>;
 
