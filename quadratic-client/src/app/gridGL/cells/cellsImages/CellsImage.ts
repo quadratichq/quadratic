@@ -3,7 +3,6 @@ import type { Sheet } from '@/app/grid/sheet/Sheet';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import type { Table } from '@/app/gridGL/cells/tables/Table';
 import { intersects } from '@/app/gridGL/helpers/intersects';
-import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { IMAGE_BORDER_OFFSET, IMAGE_BORDER_WIDTH } from '@/app/gridGL/UI/UICellImages';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
 import type { CoreClientImage } from '@/app/web-workers/quadraticCore/coreClientMessages';
@@ -28,6 +27,8 @@ export class CellsImage extends Container {
   imageBounds: Rectangle;
 
   dataUrl: string | undefined;
+
+  dirty = false;
 
   constructor(cellsSheet: CellsSheet, message: CoreClientImage) {
     super();
@@ -147,7 +148,7 @@ export class CellsImage extends Container {
     );
 
     if (this.cellsSheet.sheetId === sheets.current) {
-      pixiApp.setViewportDirty();
+      this.dirty = true;
     }
 
     const end = sheets.sheet.getColumnRowFromScreen(tableBounds.right, tableBounds.bottom);
@@ -172,5 +173,9 @@ export class CellsImage extends Container {
   isImageCell(x: number, y: number): boolean {
     const bounds = this.table.tableBounds;
     return x >= bounds.left && x < bounds.right && y >= bounds.top && y < bounds.bottom;
+  }
+
+  update() {
+    this.dirty = false;
   }
 }

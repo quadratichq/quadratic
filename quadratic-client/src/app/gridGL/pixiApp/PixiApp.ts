@@ -18,8 +18,9 @@ import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
 import { isEmbed } from '@/app/helpers/isEmbed';
-import type { JsCoordinate } from '@/app/quadratic-core-types';
+import type { JsCoordinate, Rect } from '@/app/quadratic-core-types';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
+import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
 import { Container, Rectangle, Renderer } from 'pixi.js';
 
@@ -254,6 +255,25 @@ export class PixiApp {
       };
     }
   }
+
+  getVisibleRect = (): Rect => {
+    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
+    const scale = pixiApp.viewport.scale.x;
+    let { width: leftHeadingWidth, height: topHeadingHeight } = content.headings.headingSize;
+    leftHeadingWidth /= scale;
+    topHeadingHeight /= scale;
+    const top_left_cell = sheets.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);
+    const bottom_right_cell = sheets.sheet.getColumnRow(right, bottom);
+    return {
+      min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
+      max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
+    };
+  };
+
+  getVisibleRectangle = (): Rectangle => {
+    const visibleRect = this.getVisibleRect();
+    return rectToRectangle(visibleRect);
+  };
 }
 
 export const pixiApp = new PixiApp();

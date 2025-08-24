@@ -8,7 +8,6 @@ import type {
   CellRefRange,
   JsOffset,
   JsTableInfo,
-  Rect,
   RefRangeBounds,
   SheetInfo,
   SheetRect,
@@ -27,9 +26,7 @@ import {
   xyxyToA1,
 } from '@/app/quadratic-core/quadratic_core';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
-import { rectToRectangle } from '@/app/web-workers/quadraticCore/worker/rustConversions';
 import { SEARCH_PARAMS } from '@/shared/constants/routes';
-import type { Rectangle } from 'pixi.js';
 
 export class Sheets {
   initialized: boolean;
@@ -388,25 +385,6 @@ export class Sheets {
 
   getRustSelection = (): string => {
     return this.sheet.cursor.save();
-  };
-
-  getVisibleRect = (): Rect => {
-    const { left, top, right, bottom } = pixiApp.viewport.getVisibleBounds();
-    const scale = pixiApp.viewport.scale.x;
-    let { width: leftHeadingWidth, height: topHeadingHeight } = content.headings.headingSize;
-    leftHeadingWidth /= scale;
-    topHeadingHeight /= scale;
-    const top_left_cell = this.sheet.getColumnRow(left + 1 + leftHeadingWidth, top + 1 + topHeadingHeight);
-    const bottom_right_cell = this.sheet.getColumnRow(right, bottom);
-    return {
-      min: { x: BigInt(top_left_cell.x), y: BigInt(top_left_cell.y) },
-      max: { x: BigInt(bottom_right_cell.x), y: BigInt(bottom_right_cell.y) },
-    };
-  };
-
-  getVisibleRectangle = (): Rectangle => {
-    const visibleRect = this.getVisibleRect();
-    return rectToRectangle(visibleRect);
   };
 
   updateTableName = (oldName: string, newName: string) => {

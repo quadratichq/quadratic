@@ -92,7 +92,8 @@ export class Update {
       content.cellMoving.dirty ||
       content.validations.dirty ||
       content.copy.dirty ||
-      content.singleCellOutlines.dirty;
+      content.singleCellOutlines.dirty ||
+      content.cellImages.dirty;
 
     if (rendererDirty && debugFlag('debugShowWhyRendering')) {
       console.log(
@@ -109,6 +110,7 @@ export class Update {
           content.validations.dirty && 'validations',
           content.copy.dirty && 'copy',
           content.singleCellOutlines.dirty && 'singleCellOutlines',
+          content.cellImages.dirty && 'cellImages',
         ]
           .filter(Boolean)
           .join(', ')}`
@@ -144,6 +146,8 @@ export class Update {
     debugTimeCheck('[Update] scrollbars');
     content.singleCellOutlines.update(viewportChanged);
     debugTimeCheck('[Update] singleCellOutlines');
+    content.cellImages.update();
+    debugTimeCheck('[Update] cellImages');
 
     if (pixiApp.viewport.dirty || rendererDirty) {
       debugTimeReset();
