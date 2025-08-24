@@ -209,8 +209,8 @@ impl GridController {
                 return Err("Invalid chart size".to_string());
             }
 
-            let sheet_pos =
-                serde_json::from_str::<SheetPos>(&sheet_pos).map_err(|_| "Invalid sheet pos")?;
+            let sheet_pos = serde_json::from_str::<SheetPos>(&sheet_pos)
+                .map_err(|e| format!("Invalid sheet pos: {e}"))?;
             self.set_chart_size(sheet_pos, columns as u32, rows as u32, cursor);
             Ok(None)
         })
@@ -288,7 +288,7 @@ impl GridController {
     pub fn js_get_format_selection(&self, selection: String) -> JsValue {
         capture_core_error(|| {
             let selection = serde_json::from_str::<A1Selection>(&selection)
-                .map_err(|_| "Unable to parse A1Selection")?;
+                .map_err(|e| format!("Unable to parse A1Selection: {e}"))?;
 
             let sheet = self
                 .try_sheet(selection.sheet_id)
@@ -310,12 +310,14 @@ impl GridController {
         formats: String,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
 
             let selection = A1Selection::parse_a1(&selection, sheet_id, self.a1_context())
-                .map_err(|_| "Invalid selection")?;
+                .map_err(|e| format!("Invalid selection: {e}"))?;
 
-            let format = serde_json::from_str::<Format>(&formats).map_err(|_| "Invalid formats")?;
+            let format = serde_json::from_str::<Format>(&formats)
+                .map_err(|e| format!("Invalid formats: {e}"))?;
 
             let mut format_update = FormatUpdate::from(format);
 

@@ -1140,6 +1140,9 @@ test('SQL - Create a Connection, Add Data to Database, Query Database', async ({
   await page.getByLabel(`Username`).fill(POSTGRES_DB.username);
   await page.getByLabel(`Password`).fill(POSTGRES_DB.password);
 
+  // Acknowledge
+  await page.getByTestId('ai-checkbox').check();
+
   // Click Test
   await page.getByRole(`button`, { name: `Test` }).click({ timeout: 60 * 1000 });
 
@@ -1374,6 +1377,9 @@ test('SQL - Reference Data in Formula and Python', async ({ page }) => {
   await page.getByLabel(`Database name`).fill(POSTGRES_DB.database);
   await page.getByLabel(`Username`).fill(POSTGRES_DB.username);
   await page.getByLabel(`Password`).fill(POSTGRES_DB.password);
+
+  // Acknowledge
+  await page.getByTestId('ai-checkbox').check();
 
   // Click Test
   await page.getByRole(`button`, { name: `Test` }).click({ timeout: 60 * 1000 });
@@ -1627,6 +1633,9 @@ test('SQL - Reference Data in Javascript', async ({ page }) => {
   await page.getByLabel(`Database name`).fill(POSTGRES_DB.database);
   await page.getByLabel(`Username`).fill(POSTGRES_DB.username);
   await page.getByLabel(`Password`).fill(POSTGRES_DB.password);
+
+  // Acknowledge
+  await page.getByTestId('ai-checkbox').check();
 
   // Click Test
   await page.getByRole(`button`, { name: `Test` }).click({ timeout: 60 * 1000 });

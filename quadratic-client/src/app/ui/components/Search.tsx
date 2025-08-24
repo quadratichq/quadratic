@@ -5,7 +5,7 @@ import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import { focusGrid } from '@/app/helpers/focusGrid';
 import { matchShortcut } from '@/app/helpers/keyboardShortcuts';
-import type { SearchOptions, SheetPos } from '@/app/quadratic-core-types';
+import type { JsSheetPosText, SearchOptions, SheetPos } from '@/app/quadratic-core-types';
 import { quadraticCore } from '@/app/web-workers/quadraticCore/quadraticCore';
 import { Button } from '@/shared/shadcn/ui/button';
 import {
@@ -33,7 +33,7 @@ export function Search() {
     search_code: false,
     sheet_id: sheets.current,
   });
-  const [results, setResults] = useState<SheetPos[]>([]);
+  const [results, setResults] = useState<JsSheetPosText[]>([]);
   const [current, setCurrent] = useState(0);
   const [inputEl, setInputEl] = useState<HTMLInputElement | null>(null);
   const ref = useCallback((el: HTMLInputElement) => {
@@ -62,10 +62,10 @@ export function Search() {
         if (found.length) {
           setResults(found);
           setCurrent(0);
-          setCursor(found[0]);
+          setCursor({ x: found[0].x, y: found[0].y, sheet_id: { id: found[0].sheet_id } });
           events.emit(
             'search',
-            found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), 0)
+            found.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), 0)
           );
           return;
         }
@@ -83,10 +83,10 @@ export function Search() {
         if (next < 0) next = results.length - 1;
         events.emit(
           'search',
-          results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id.id }), next)
+          results.map((found) => ({ x: Number(found.x), y: Number(found.y), sheetId: found.sheet_id }), next)
         );
         const result = results[next];
-        setCursor(result);
+        setCursor({ x: result.x, y: result.y, sheet_id: { id: result.sheet_id } });
         return next;
       });
     },

@@ -56,7 +56,7 @@ export const useConnectionSchemaBrowser = ({
 
   const reloadSchema = useCallback(() => {
     trackEvent('[Connections].schemaViewer.refresh');
-    fetcher.load(fetcherUrl);
+    fetcher.load(`${fetcherUrl}?forceCacheRefresh=true`);
   }, [fetcher, fetcherUrl]);
 
   return {
