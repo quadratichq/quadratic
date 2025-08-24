@@ -1,5 +1,8 @@
+import { events } from '@/app/events/events';
+import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
 import { CellsSheets } from '@/app/gridGL/cells/CellsSheets';
+import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { Background } from '@/app/gridGL/UI/Background';
 import { BoxCells } from '@/app/gridGL/UI/boxCells';
 import { CellHighlights } from '@/app/gridGL/UI/cellHighlights/CellHighlights';
@@ -13,6 +16,9 @@ import { UICopy } from '@/app/gridGL/UI/UICopy';
 import { UIMultiPlayerCursor } from '@/app/gridGL/UI/UIMultiplayerCursor';
 import { UISingleCellOutlines } from '@/app/gridGL/UI/UISingleCellOutlines';
 import { UIValidations } from '@/app/gridGL/UI/UIValidations';
+import { getCSSVariableTint } from '@/app/helpers/convertColor';
+import { colors } from '@/app/theme/colors';
+import { sharedEvents } from '@/shared/sharedEvents';
 import { Container, Graphics, type Rectangle } from 'pixi.js';
 
 export class Content extends Container {
@@ -44,6 +50,7 @@ export class Content extends Container {
   debug = new Graphics();
 
   copying = false;
+  accentColor = colors.cursorCell;
 
   constructor() {
     super();
@@ -70,7 +77,21 @@ export class Content extends Container {
 
       this.debug
     );
+
+    sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
   }
+
+  destroy() {
+    sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
+    super.destroy();
+  }
+
+  private setAccentColor = () => {
+    // Pull the value from the current value as defined in CSS
+    const accentColor = getCSSVariableTint('primary');
+    this.accentColor = accentColor;
+    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, cellHighlights: true });
+  };
 
   get cellsSheet(): CellsSheet {
     if (!this.cellsSheets.current) {
@@ -126,6 +147,22 @@ export class Content extends Container {
   changeHoverTableHeaders(hoverTableHeaders: Container) {
     content.hoverTableHeaders.removeChildren();
     content.hoverTableHeaders.addChild(hoverTableHeaders);
+  }
+
+  adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
+    content.cellsSheets.adjustHeadings(options);
+    content.cellsSheets.adjustOffsetsBorders(options.sheetId);
+    content.cellsSheets.adjustCellsImages(options.sheetId);
+    htmlCellsHandler.updateOffsets([sheets.current]);
+    if (sheets.current === options.sheetId) {
+      events.emit('setDirty', {
+        gridLines: true,
+        headings: true,
+        cursor: true,
+        cellHighlights: true,
+        multiplayerCursor: true,
+      });
+    }
   }
 }
 

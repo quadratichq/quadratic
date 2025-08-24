@@ -129,7 +129,7 @@ export class GridHeadings extends Container {
     const left = Math.max(bounds.left, clamp.left);
     const leftColumn = sheet.getColumnFromScreen(left);
     const rightColumn = sheet.getColumnFromScreen(left + bounds.width);
-    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
     this.selectedColumns = cursor.getSelectedColumnRanges(leftColumn - 1, rightColumn + 1);
     for (let i = 0; i < this.selectedColumns.length; i += 2) {
       const startPlacement = offsets.getColumnPlacement(this.selectedColumns[i]);
@@ -297,7 +297,7 @@ export class GridHeadings extends Container {
     const top = Math.max(bounds.top, clamp.top);
     const topRow = sheet.getRowFromScreen(top);
     const bottomRow = sheet.getRowFromScreen(top + bounds.height);
-    this.headingsGraphics.beginFill(pixiApp.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
+    this.headingsGraphics.beginFill(content.accentColor, colors.headerSelectedRowColumnBackgroundColorAlpha);
 
     this.selectedRows = cursor.getSelectedRowRanges(topRow, bottomRow);
     for (let i = 0; i < this.selectedRows.length; i += 2) {

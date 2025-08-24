@@ -66,7 +66,7 @@ export class Update {
   private update = () => {
     if (pixiApp.destroyed) return;
 
-    if (pixiApp.copying) {
+    if (content.copying) {
       this.raf = requestAnimationFrame(this.update);
       return;
     }

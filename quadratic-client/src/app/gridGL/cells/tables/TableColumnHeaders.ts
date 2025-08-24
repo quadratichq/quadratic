@@ -82,7 +82,7 @@ export class TableColumnHeaders extends Container {
         );
         const endX = end.position + end.size;
         this.background.lineStyle();
-        this.background.beginFill(pixiApp.accentColor, FILL_SELECTION_ALPHA);
+        this.background.beginFill(content.accentColor, FILL_SELECTION_ALPHA);
         this.background.drawRect(startX - this.table.tableBounds.x, 0, endX - startX, this.columnsHeight);
         this.background.endFill();
       }

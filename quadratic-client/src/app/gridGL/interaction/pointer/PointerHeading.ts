@@ -275,7 +275,7 @@ export class PointerHeading {
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.current, this.resizing.column, null, delta);
             events.emit('setDirty', { gridLines: true, headings: true, cursor: true });
-            pixiApp.adjustHeadings({
+            content.adjustHeadings({
               sheetId: sheets.current,
               column: this.resizing.column,
               row: null,
@@ -305,7 +305,7 @@ export class PointerHeading {
           if (delta) {
             renderWebWorker.updateSheetOffsetsTransient(sheets.current, null, this.resizing.row, delta);
             events.emit('setDirty', { gridLines: true, headings: true, cursor: true });
-            pixiApp.adjustHeadings({
+            content.adjustHeadings({
               sheetId: sheets.current,
               column: null,
               row: this.resizing.row,

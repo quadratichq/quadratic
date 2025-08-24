@@ -8,7 +8,6 @@ import {
   pasteFromClipboardEvent,
 } from '@/app/grid/actions/clipboard/clipboard';
 import { sheets } from '@/app/grid/controller/Sheets';
-import { htmlCellsHandler } from '@/app/gridGL/HTMLGrid/htmlCells/htmlCellsHandler';
 import { Pointer } from '@/app/gridGL/interaction/pointer/Pointer';
 import { ensureVisible } from '@/app/gridGL/interaction/viewportHelper';
 import { isBitmapFontLoaded } from '@/app/gridGL/loadAssets';
@@ -18,14 +17,10 @@ import { pixiAppSettings } from '@/app/gridGL/pixiApp/PixiAppSettings';
 import { Update } from '@/app/gridGL/pixiApp/Update';
 import { urlParams } from '@/app/gridGL/pixiApp/urlParams/urlParams';
 import { Viewport } from '@/app/gridGL/pixiApp/viewport/Viewport';
-import { getCSSVariableTint } from '@/app/helpers/convertColor';
 import { isEmbed } from '@/app/helpers/isEmbed';
 import type { JsCoordinate } from '@/app/quadratic-core-types';
-import { colors } from '@/app/theme/colors';
 import { multiplayer } from '@/app/web-workers/multiplayerWebWorker/multiplayer';
 import { renderWebWorker } from '@/app/web-workers/renderWebWorker/renderWebWorker';
-import { sharedEvents } from '@/shared/sharedEvents';
-import type { Graphics } from 'pixi.js';
 import { Container, Rectangle, Renderer } from 'pixi.js';
 
 export class PixiApp {
@@ -39,25 +34,18 @@ export class PixiApp {
 
   // todo: UI should be pulled out and separated into its own class
 
-  canvas!: HTMLCanvasElement;
-  viewport!: Viewport;
+  canvas: HTMLCanvasElement;
+  viewport: Viewport;
   pointer!: Pointer;
 
   renderer: Renderer;
   momentumDetector: MomentumScrollDetector;
   stage = new Container();
+
   loading = true;
   destroyed = false;
 
-  accentColor = colors.cursorCell;
-
-  // for testing purposes
-  debug!: Graphics;
-
   initialized = false;
-
-  // only prepare one copy at a time
-  copying = false;
 
   constructor() {
     this.canvas = document.createElement('canvas');
@@ -127,7 +115,6 @@ export class PixiApp {
   };
 
   private setupListeners = () => {
-    sharedEvents.on('changeThemeAccentColor', this.setAccentColor);
     window.addEventListener('resize', this.resize);
     document.addEventListener('copy', copyToClipboardEvent);
     document.addEventListener('paste', pasteFromClipboardEvent);
@@ -135,7 +122,6 @@ export class PixiApp {
   };
 
   private removeListeners = () => {
-    sharedEvents.off('changeThemeAccentColor', this.setAccentColor);
     window.removeEventListener('resize', this.resize);
     document.removeEventListener('copy', copyToClipboardEvent);
     document.removeEventListener('paste', pasteFromClipboardEvent);
@@ -198,14 +184,6 @@ export class PixiApp {
     this.destroyed = true;
   };
 
-  setAccentColor = (): void => {
-    // Pull the value from the current value as defined in CSS
-    const accentColor = getCSSVariableTint('primary');
-    this.accentColor = accentColor;
-    events.emit('setDirty', { gridLines: true, headings: true, cursor: true, cellHighlights: true });
-    this.render();
-  };
-
   resize = (): void => {
     if (!this.parent || this.destroyed) return;
     const width = this.parent.offsetWidth;
@@ -264,22 +242,6 @@ export class PixiApp {
     }
 
     events.emit('cursorPosition');
-  }
-
-  adjustHeadings(options: { sheetId: string; delta: number; row: number | null; column: number | null }): void {
-    content.cellsSheets.adjustHeadings(options);
-    content.cellsSheets.adjustOffsetsBorders(options.sheetId);
-    content.cellsSheets.adjustCellsImages(options.sheetId);
-    htmlCellsHandler.updateOffsets([sheets.current]);
-    if (sheets.current === options.sheetId) {
-      events.emit('setDirty', {
-        gridLines: true,
-        headings: true,
-        cursor: true,
-        cellHighlights: true,
-        multiplayerCursor: true,
-      });
-    }
   }
 
   // called when the viewport is loaded from the URL

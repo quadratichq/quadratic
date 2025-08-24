@@ -41,7 +41,7 @@ class Thumbnail {
   check = async () => {
     if (
       this.thumbnailDirty &&
-      !pixiApp.copying &&
+      !content.copying &&
       pixiAppSettings.editorInteractionState.transactionsInfo.length === 0
     ) {
       const now = performance.now();

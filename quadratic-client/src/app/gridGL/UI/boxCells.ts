@@ -2,6 +2,7 @@
 
 import { events, type DirtyObject } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
+import { content } from '@/app/gridGL/pixiApp/Content';
 import { pixiApp } from '@/app/gridGL/pixiApp/PixiApp';
 import { colors } from '@/app/theme/colors';
 import type { Rectangle } from 'pixi.js';
@@ -64,7 +65,7 @@ export class BoxCells extends Graphics {
     this.dirty = false;
     this.clear();
     this.lineStyle({
-      color: pixiApp.accentColor,
+      color: content.accentColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });
@@ -73,7 +74,7 @@ export class BoxCells extends Graphics {
     this.moveTo(screenRectangle.x + screenRectangle.width, screenRectangle.y);
     this.lineTo(screenRectangle.x + screenRectangle.width, screenRectangle.y + screenRectangle.height);
     this.lineStyle({
-      color: pixiApp.accentColor,
+      color: content.accentColor,
       alpha: colors.boxCellsAlpha,
       width: thickness,
     });

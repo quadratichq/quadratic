@@ -99,7 +99,7 @@ export class Cursor extends Container {
     }
     const tableColumn = tables.getColumnHeaderCell(cell);
     let { x, y, width, height } = tableName ?? tableColumn ?? sheet.getCellOffsets(cell.x, cell.y);
-    const color = pixiApp.accentColor;
+    const color = content.accentColor;
     const codeCell = codeEditorState.codeCell;
 
     content.hoverTableColumnsSelection.clear();
@@ -202,7 +202,7 @@ export class Cursor extends Container {
     this.startCell = sheet.getCellOffsets(cursor.position.x, cursor.position.y);
 
     if (!sheets.sheet.cursor.isSingleSelection()) {
-      drawFiniteSelection(this.graphics, pixiApp.accentColor, FILL_SELECTION_ALPHA, ranges);
+      drawFiniteSelection(this.graphics, content.accentColor, FILL_SELECTION_ALPHA, ranges);
     }
   }
 
@@ -222,7 +222,7 @@ export class Cursor extends Container {
       this.indicator.y = y - indicatorSize / 2;
       this.graphics.lineStyle(0);
 
-      const color = pixiApp.accentColor;
+      const color = content.accentColor;
       this.graphics.beginFill(color).drawShape(this.indicator).endFill();
     }
   }
@@ -281,7 +281,7 @@ export class Cursor extends Container {
     width = Math.max(inlineEditorHandler.width + CURSOR_THICKNESS * (formula ? 1 : 2), width);
     height = Math.max(inlineEditorHandler.height + CURSOR_THICKNESS * (formula ? 1 : 2), height);
 
-    const color = formula ? getCSSVariableTint('primary') : pixiApp.accentColor;
+    const color = formula ? getCSSVariableTint('primary') : content.accentColor;
     const indicatorSize = INLINE_NAVIGATE_TEXT_INDICATOR_SIZE;
     const halfSize = indicatorSize / 2;
     const corners = [
@@ -301,7 +301,7 @@ export class Cursor extends Container {
   private drawUnselectDown() {
     const { unselectDown } = pixiApp.pointer.pointerDown;
     if (!unselectDown) return;
-    const foreground = pixiApp.accentColor;
+    const foreground = content.accentColor;
     this.graphics.lineStyle({ color: foreground, width: 1 });
     const background = getCSSVariableTint('background');
     this.graphics.beginFill(background, 0.5);
@@ -374,7 +374,7 @@ export class Cursor extends Container {
       const infiniteRanges = cursor.getInfiniteRefRangeBounds();
       const infiniteRectangle = drawInfiniteSelection({
         g: this.graphics,
-        color: pixiApp.accentColor,
+        color: content.accentColor,
         alpha: FILL_SELECTION_ALPHA,
         ranges: infiniteRanges,
       });
