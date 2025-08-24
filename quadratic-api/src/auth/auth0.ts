@@ -12,7 +12,7 @@ import {
   AUTH0_JWKS_URI,
 } from '../env-vars';
 import logger from '../utils/logger';
-import type { ByEmailUser } from './auth';
+import type { ByEmailUser, UsersRequest } from './auth';
 
 // Guide to Setting up on Auth0
 // 1. Create an Auth0 Machine to Machine Application
@@ -57,7 +57,7 @@ const getAuth0 = () => {
  *     }
  *   }
  */
-export const getUsersFromAuth0 = async (users: { id: number; auth0Id: string }[]) => {
+export const getUsersFromAuth0 = async (users: UsersRequest[]) => {
   // If we got nothing, we return an empty object
   if (users.length === 0) {
     return {};

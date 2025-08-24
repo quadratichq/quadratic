@@ -92,7 +92,6 @@ export const pasteFromClipboardEvent = (e: ClipboardEvent) => {
         selection: sheets.sheet.cursor.save(),
         jsClipboard: jsClipboardUint8Array,
         special: 'None',
-        cursor: sheets.getCursorPosition(),
       });
     }
 
@@ -120,15 +119,12 @@ const toClipboardCut = async () => {
             .copyToClipboard(sheets.getRustSelection())
             .then(({ html }) => new Blob([html], { type: 'text/html' })),
           'text/plain': quadraticCore
-            .cutToClipboard(sheets.getRustSelection(), sheets.getCursorPosition())
+            .cutToClipboard(sheets.getRustSelection())
             .then(({ plainText }) => new Blob([plainText], { type: 'text/plain' })),
         }),
       ]);
     } else {
-      const { plainText, html } = await quadraticCore.cutToClipboard(
-        sheets.getRustSelection(),
-        sheets.getCursorPosition()
-      );
+      const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection());
       await navigator.clipboard.write([
         new ClipboardItem({
           'text/html': new Blob([html], { type: 'text/html' }),
@@ -140,10 +136,7 @@ const toClipboardCut = async () => {
 
   // fallback support for firefox
   else {
-    const { plainText, html } = await quadraticCore.cutToClipboard(
-      sheets.getRustSelection(),
-      sheets.getCursorPosition()
-    );
+    const { plainText, html } = await quadraticCore.cutToClipboard(sheets.getRustSelection());
     await Promise.all([navigator.clipboard.writeText(plainText), localforage.setItem(clipboardLocalStorageKey, html)]);
   }
 };
@@ -272,7 +265,6 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
           selection: sheets.sheet.cursor.save(),
           jsClipboard: jsClipboardUint8Array,
           special,
-          cursor: sheets.getCursorPosition(),
         });
       }
     }
@@ -292,7 +284,6 @@ export const pasteFromClipboard = async (special: PasteSpecial = 'None') => {
           selection: sheets.sheet.cursor.save(),
           jsClipboard: jsClipboardUint8Array,
           special,
-          cursor: sheets.getCursorPosition(),
         });
       }
     }

@@ -543,7 +543,7 @@ mod test {
         let mut gc = GridController::test();
         let sheet_id_1 = gc.sheet_ids()[0];
 
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         let sheet_id_2 = gc.sheet_ids()[1];
 
         gc.set_borders(

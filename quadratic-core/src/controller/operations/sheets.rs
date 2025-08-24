@@ -2,7 +2,7 @@ use lexicon_fractional_index::key_between;
 
 use crate::{
     controller::GridController,
-    grid::{Sheet, SheetId},
+    grid::{Sheet, SheetId, js_types::JsSheetNameToColor},
     util,
 };
 
@@ -21,6 +21,23 @@ impl GridController {
         vec![Operation::SetSheetColor { sheet_id, color }]
     }
 
+    pub fn set_sheets_color_operations(
+        &mut self,
+        sheet_names_to_color: Vec<JsSheetNameToColor>,
+    ) -> Vec<Operation> {
+        sheet_names_to_color
+            .into_iter()
+            .filter_map(|JsSheetNameToColor { sheet_name, color }| {
+                self.grid
+                    .try_sheet_from_name(&sheet_name)
+                    .map(|sheet| Operation::SetSheetColor {
+                        sheet_id: sheet.id,
+                        color: Some(color),
+                    })
+            })
+            .collect()
+    }
+
     /// Returns all sheet names
     pub fn sheet_names(&self) -> Vec<&str> {
         self.grid
@@ -34,10 +51,21 @@ impl GridController {
         util::unused_name("Sheet", &self.sheet_names())
     }
 
-    pub fn add_sheet_operations(&mut self, name: Option<String>) -> Vec<Operation> {
+    pub fn add_sheet_operations(
+        &mut self,
+        name: Option<String>,
+        insert_before_sheet_name: Option<String>,
+    ) -> Vec<Operation> {
         let id = SheetId::new();
         let name = name.unwrap_or_else(|| self.get_next_sheet_name());
-        let order = self.grid.end_order();
+        let order =
+            match insert_before_sheet_name.and_then(|name| self.grid.try_sheet_from_name(&name)) {
+                Some(sheet) => {
+                    key_between(self.grid.previous_sheet_order(sheet.id), Some(&sheet.order))
+                        .unwrap_or_else(|_| self.grid.end_order())
+                }
+                None => self.grid.end_order(),
+            };
         let sheet = Sheet::new(id, name, order);
 
         vec![Operation::AddSheet {
@@ -78,7 +106,11 @@ impl GridController {
         }]
     }
 
-    pub fn duplicate_sheet_operations(&mut self, sheet_id: SheetId) -> Vec<Operation> {
+    pub fn duplicate_sheet_operations(
+        &mut self,
+        sheet_id: SheetId,
+        name_of_new_sheet: Option<String>,
+    ) -> Vec<Operation> {
         let Some(sheet) = self.try_sheet(sheet_id) else {
             // sheet may have been deleted
             return vec![];
@@ -87,7 +119,7 @@ impl GridController {
         // clone the sheet and update id, name and order
         let mut new_sheet = sheet.clone();
         let new_sheet_id = SheetId::new();
-        let new_name = format!("{} Copy", sheet.name);
+        let new_name = name_of_new_sheet.unwrap_or_else(|| format!("{} Copy", sheet.name));
         new_sheet.id = new_sheet_id;
         new_sheet.name = new_name.clone();
 
@@ -128,8 +160,8 @@ mod test {
     #[test]
     fn test_move_sheet_operation() {
         let mut gc = GridController::test();
-        gc.add_sheet(None);
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None);
 
         // 1, 2, 3
         let sheet_ids = gc.sheet_ids();
@@ -175,17 +207,17 @@ mod test {
     fn get_sheet_next_name() {
         // Sheet1
         let mut gc = GridController::test();
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         // Sheet1 | Sheet 2
         assert_eq!(gc.sheet_index(1).name, "Sheet 2");
         gc.sheet_mut(gc.sheet_ids()[1]).name = "Sheet 2 modified".to_string();
         // Sheet1 | Sheet 2 modified
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         // Sheet1 | Sheet 2 modified | Sheet 2
         assert_eq!(gc.sheet_index(2).name, "Sheet 2");
         gc.delete_sheet(gc.sheet_ids()[0], None);
         // Sheet 2 modified | Sheet 2
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
         // Sheet 2 modified | Sheet 2 | Sheet 3
         assert_eq!(gc.sheet_index(2).name, "Sheet 3");
     }
@@ -193,8 +225,8 @@ mod test {
     #[test]
     fn sheet_names() {
         let mut gc = GridController::test();
-        gc.add_sheet(None);
-        gc.add_sheet(None);
+        gc.add_sheet(None, None, None);
+        gc.add_sheet(None, None, None);
         assert_eq!(gc.sheet_names(), vec!["Sheet 1", "Sheet 2", "Sheet 3"]);
     }
 

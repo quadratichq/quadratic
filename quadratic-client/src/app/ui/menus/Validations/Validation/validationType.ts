@@ -1,8 +1,8 @@
-import type { Validation } from '@/app/quadratic-core-types';
+import type { Validation, ValidationUpdate } from '@/app/quadratic-core-types';
 
 export const ValidationRuleSimpleValues = ['text', 'number', 'list', 'list-range', 'logical', 'date', 'none'];
 export type ValidationRuleSimple = 'text' | 'number' | 'list' | 'list-range' | 'logical' | 'date' | 'none' | '';
-export type ValidationUndefined = Validation | Omit<Validation, 'rule'> | undefined;
+export type ValidationUndefined = Validation | Omit<ValidationUpdate, 'rule'> | ValidationUpdate | undefined;
 export type ValidationUIType = 'checkbox' | 'dropdown';
 
 // Converts a Validation to a ValidationRuleSimple (to make it easier to work with)

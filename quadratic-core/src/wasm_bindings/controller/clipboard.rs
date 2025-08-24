@@ -85,7 +85,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             match serde_wasm_bindgen::to_value(
                 &self.move_code_cell_vertically(sheet_id, x, y, sheet_end, reverse, cursor),
             ) {
@@ -106,7 +107,8 @@ impl GridController {
         cursor: Option<String>,
     ) -> JsValue {
         capture_core_error(|| {
-            let sheet_id = SheetId::from_str(&sheet_id).map_err(|_| "Invalid sheet ID")?;
+            let sheet_id =
+                SheetId::from_str(&sheet_id).map_err(|e| format!("Invalid sheet ID: {e}"))?;
             match serde_wasm_bindgen::to_value(
                 &self.move_code_cell_horizontally(sheet_id, x, y, sheet_end, reverse, cursor),
             ) {
