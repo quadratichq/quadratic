@@ -13,7 +13,6 @@ export class UISingleCellOutlines extends Graphics {
 
   constructor() {
     super();
-
     events.on('setDirty', this.setDirtyHandler);
     events.on('sheetInfoUpdate', this.setDirty);
     events.on('sheetOffsetsUpdated', this.setDirty);

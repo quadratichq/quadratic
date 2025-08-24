@@ -454,17 +454,8 @@ export class GridHeadings extends Container {
   }
 
   update = (viewportDirty: boolean) => {
-    // update only if dirty or if viewport is dirty and there is a column or row
-    // selection (which requires a redraw)
-    if (
-      !this.dirty &&
-      !viewportDirty
+    if (!this.dirty && !viewportDirty) return;
 
-      // todo....
-      // !(viewportDirty && (sheets.sheet.cursor.columnRow?.columns || sheets.sheet.cursor.columnRow?.rows))
-    ) {
-      return;
-    }
     this.dirty = false;
     this.labels.clear();
     this.headingsGraphics.clear();

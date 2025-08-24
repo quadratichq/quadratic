@@ -1,3 +1,6 @@
+//! Content is the main container for all data and UI elements. It is
+//! independent of any renderer.
+
 import { events } from '@/app/events/events';
 import { sheets } from '@/app/grid/controller/Sheets';
 import type { CellsSheet } from '@/app/gridGL/cells/CellsSheet';
@@ -51,6 +54,10 @@ export class Content extends Container {
 
   copying = false;
   accentColor = colors.cursorCell;
+
+  // used to track the last time the content was updated (since its used by
+  // multiple renderers)
+  lastUpdateId = 0;
 
   constructor() {
     super();
@@ -164,6 +171,8 @@ export class Content extends Container {
       });
     }
   }
+
+  update = () => {};
 }
 
 export const content = new Content();

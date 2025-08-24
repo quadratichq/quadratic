@@ -32,8 +32,6 @@ export class PixiApp {
   private waitingForFirstRender?: Function;
   private alreadyRendered = false;
 
-  // todo: UI should be pulled out and separated into its own class
-
   canvas: HTMLCanvasElement;
   viewport: Viewport;
   pointer!: Pointer;
